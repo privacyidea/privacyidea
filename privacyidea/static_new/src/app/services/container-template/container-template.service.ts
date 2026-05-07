@@ -92,8 +92,9 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   }
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
+    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
       return undefined;
+    }
 
     let params: any = {};
     if (this.containerService.selectedContainerType()) {
@@ -110,8 +111,14 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   readonly templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
+    if (
+      !this.contentService.onTokensContainersCreate() &&
+      !this.contentService.onTokensContainersTemplates() &&
+      !this.contentService.onTokensContainersTemplatesCreate() &&
+      !this.contentService.onTokensContainersTemplatesDetails()
+    ) {
       return undefined;
+    }
 
     return {
       url: environment.proxyUrl + `/container/template/tokentypes`,

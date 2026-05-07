@@ -135,7 +135,6 @@ export class TokenDetailsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
-  containerSerial = this.containerService.containerSerial;
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
@@ -282,7 +281,9 @@ export class TokenDetailsComponent {
   saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
       case "container_serial":
-        this.containerService.selectedContainer.set(this.containerService.selectedContainer()?.trim() ?? null);
+        this.containerService.selectedContainerSerial.set(
+          this.containerService.selectedContainerSerial()?.trim() ?? null
+        );
         this.saveContainer();
         break;
       case "tokengroup":
@@ -326,7 +327,7 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    const selectedContainer = this.containerService.selectedContainer();
+    const selectedContainer = this.containerService.selectedContainerSerial();
     if (selectedContainer) {
       this.containerService.addToken(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
@@ -345,7 +346,7 @@ export class TokenDetailsComponent {
 
     this.containerService.removeToken(this.tokenSerial(), containerSerial).subscribe({
       next: () => {
-        this.containerService.selectedContainer.set("");
+        this.containerService.selectedContainerSerial.set("");
         this.tokenDetailResource.reload();
       }
     });
@@ -377,7 +378,7 @@ export class TokenDetailsComponent {
   private resetEdit(type: string): void {
     switch (type) {
       case "container_serial":
-        this.containerService.selectedContainer.set("");
+        this.containerService.selectedContainerSerial.set("");
         break;
       case "tokengroup":
         this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);

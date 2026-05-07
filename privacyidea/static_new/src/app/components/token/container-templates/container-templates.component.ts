@@ -18,13 +18,15 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -36,7 +38,6 @@ import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
-import { ContainerTemplateEditDialogComponent } from "./dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
@@ -101,6 +102,8 @@ export class ContainerTemplatesComponent {
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly router = inject(Router);
+  readonly filterComponent = viewChild(ContainerTemplatesFilterComponent);
 
   readonly columns = {
     name: { label: $localize`Name`, filterable: true, sortable: true },
@@ -161,6 +164,12 @@ export class ContainerTemplatesComponent {
 
       if (typeof valueA === "string" && typeof valueB === "string") {
         return valueA.localeCompare(valueB) * modifier;
+      }
+      if (valueA === undefined || valueA === null) {
+        return 1 * modifier; // undefined/null values are sorted last
+      }
+      if (valueB === undefined || valueB === null) {
+        return -1 * modifier; // undefined/null values are sorted last
       }
 
       return (valueA < valueB ? -1 : 1) * modifier;
@@ -251,6 +260,7 @@ export class ContainerTemplatesComponent {
 
   onClickFilter(filterKey: string): void {
     this.onFilterChange(this.filter().toggleKey(filterKey));
+    this.filterComponent()?.focusInput();
   }
 
   getFilterIconName(columnKey: string): string {
@@ -268,11 +278,8 @@ export class ContainerTemplatesComponent {
     }
   }
 
-  openEditDialog(template: ContainerTemplate): void {
+  onClickTemplateName(template: ContainerTemplate): void {
     if (!template.name) return;
-    this.dialogService.openDialog({
-      component: ContainerTemplateEditDialogComponent,
-      data: template
-    });
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS + template.name);
   }
 }

@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal, signal } from "@angular/core";
+
+import { computed, signal, Signal } from "@angular/core";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentServiceInterface } from "@services/content/content.service";
@@ -62,6 +63,12 @@ export class MockContentService implements ContentServiceInterface {
   onTokensContainersTemplates: Signal<boolean> = computed(
     () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES
   );
+  onTokensContainersTemplatesCreate: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE
+  );
+  onTokensContainersTemplatesDetails: Signal<boolean> = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)
+  );
   onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
   onConfigurationSystem: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
   onConfigurationTokenTypes: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);
@@ -80,7 +87,7 @@ export class MockContentService implements ContentServiceInterface {
   onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
 
   tokenSelected = jest.fn();
-  containerSelected = jest.fn();
+  navigateContainerDetails = jest.fn();
   userSelected = jest.fn();
   machineResolverSelected = jest.fn();
 }

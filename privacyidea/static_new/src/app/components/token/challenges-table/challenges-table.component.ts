@@ -140,7 +140,7 @@ export class ChallengesTableComponent {
 
   serialClicked(element: { data: { type: string }; serial: string }): void {
     if (element.data && element.data.type === "container") {
-      this.contentService.containerSelected(element.serial);
+      this.contentService.navigateContainerDetails(element.serial);
     } else {
       this.contentService.tokenSelected(element.serial);
     }

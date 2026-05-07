@@ -91,6 +91,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly _route = inject(ActivatedRoute);
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
+
   protected readonly _renderer: Renderer2 = inject(Renderer2);
 
   private _observer!: IntersectionObserver;
@@ -429,7 +430,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     if (!this.isEditMode) {
       this._resetForm();
     }
-    this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
+    this._closeCurrent();
   }
 
   private _closeCurrent(): void {

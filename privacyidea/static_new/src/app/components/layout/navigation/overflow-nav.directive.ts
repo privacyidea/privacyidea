@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AfterViewInit, Directive, ElementRef, inject, NgZone, OnDestroy, Renderer2 } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, Renderer2 } from "@angular/core";
 
 const GAP = 8;
 const PADDING = 16;
@@ -49,7 +49,6 @@ function getOuterWidth(el: HTMLElement): number {
 })
 export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private el = inject(ElementRef<HTMLElement>);
-  private ngZone = inject(NgZone);
   private renderer = inject(Renderer2);
   private resizeObserver: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
@@ -140,7 +139,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private setupObservers(): void {
     this.resizeObserver = new ResizeObserver(() => {
       if (!this.isCalculating) {
-        this.ngZone.run(() => this.calculateOverflow());
+        this.calculateOverflow();
       }
     });
     this.resizeObserver.observe(this.container);
@@ -163,7 +162,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         return false;
       });
       if (hasRelevantChange) {
-        this.ngZone.run(() => this.calculateOverflow());
+        this.calculateOverflow();
       }
     });
     this.mutationObserver.observe(this.container, {
@@ -261,6 +260,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private determineVisibleButtons(buttons: HTMLElement[], maxWidth: number): boolean[] {
     const visible = new Array(buttons.length).fill(false);
     let usedWidth = 0;
+    const priorityIndices = new Set<number>();
 
     const activeIndex = buttons.findIndex(isActive);
     if (activeIndex >= 0) {
@@ -268,11 +268,22 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       if (w <= maxWidth) {
         usedWidth += w;
         visible[activeIndex] = true;
+        priorityIndices.add(activeIndex);
+      }
+      // Keep parents of contextual child items (detail/create pages) marked with data-overflow-child visible too
+      if (activeIndex > 0 && buttons[activeIndex].hasAttribute("data-overflow-child")) {
+        const parentIndex = activeIndex - 1;
+        const pw = buttons[parentIndex].offsetWidth + GAP;
+        if (usedWidth + pw <= maxWidth) {
+          usedWidth += pw;
+          visible[parentIndex] = true;
+          priorityIndices.add(parentIndex);
+        }
       }
     }
 
     for (let i = 0; i < buttons.length; i++) {
-      if (i === activeIndex) continue;
+      if (priorityIndices.has(i)) continue;
       const w = buttons[i].offsetWidth + GAP;
       if (usedWidth + w <= maxWidth) {
         usedWidth += w;

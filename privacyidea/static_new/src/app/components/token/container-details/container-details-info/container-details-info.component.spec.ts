@@ -100,7 +100,7 @@ describe("ContainerDetailsInfoComponent", () => {
     expect(containerSvc.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1", b: "2" });
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(containerSvc.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("saveInfo without new pair still calls setContainerInfos and reloads", () => {
@@ -115,7 +115,7 @@ describe("ContainerDetailsInfoComponent", () => {
     expect(el.value).toEqual({ a: "1" });
     expect(containerSvc.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(containerSvc.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("deleteInfo calls service, marks info section as editing, and reloads", () => {
@@ -125,6 +125,6 @@ describe("ContainerDetailsInfoComponent", () => {
 
     expect(containerSvc.deleteInfo).toHaveBeenCalledWith("CONT-7", "a");
     expect(component.isEditingInfo()).toBe(true);
-    expect(containerSvc.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 });

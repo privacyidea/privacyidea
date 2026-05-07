@@ -21,19 +21,23 @@ import { HttpClient } from "@angular/common/http";
 import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
+import { PiResponse } from "@app/app.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ContainerCreatedDialogWizardComponent } from "@components/token/container-create/container-created-dialog/container-created-dialog.wizard.component";
+import { ContainerRegistrationCompletedDialogData } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 import { environment } from "@env/environment";
-import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import {
+  ContainerRegisterData,
+  ContainerService,
+  ContainerServiceInterface
+} from "@services/container/container.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { map } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
 
@@ -54,14 +58,10 @@ import { ContainerCreateComponent } from "./container-create.component";
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateWizardComponent extends ContainerCreateComponent {
-  protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected override readonly userService: UserServiceInterface = inject(UserService);
-  protected override readonly realmService: RealmServiceInterface = inject(RealmService);
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected override readonly wizard: boolean = true;
 
   override generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: () => ({
@@ -70,10 +70,6 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
       canRegister: this.authService.actionAllowed("container_register")
     }),
     computation: (source) => source.registration && source.containerType === "smartphone" && source.canRegister
-  });
-  override selectedTemplate = linkedSignal({
-    source: this.authService.containerWizard,
-    computation: (containerWizard) => containerWizard.template || ""
   });
 
   protected override resetCreateOptions = () => {
@@ -84,7 +80,9 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.description.set("");
   };
 
-  // TODO: Get custom path from pi.cfg
+  private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
+
   customizationPath = "/static/public/customize/";
 
   readonly preTopHtml$ = this.http
@@ -104,11 +102,30 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     })
     .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer,
-    registrationDialog: MatDialog
-  ) {
-    super(registrationDialog);
+  protected override onCreationSuccess(serial: string) {
+    this.containerSerial.set(serial);
+    this.openRegistrationDialog({
+      result: { value: { container_serial: serial } }
+    } as any);
+  }
+
+  protected override openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+    this.dialogData.set({
+      response: response,
+      containerSerial: this.containerSerial,
+      registerContainer: this.registerContainer.bind(this)
+    });
+
+    this.dialogService.openDialog({
+      component: ContainerCreatedDialogWizardComponent,
+      data: this.dialogData
+    });
+  }
+
+  protected override openRegistrationCompletedDialog(serial: string) {
+    this.dialogService.openDialog({
+      component: ContainerRegistrationCompletedDialogWizardComponent,
+      data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
+    });
   }
 }

@@ -39,18 +39,18 @@ import { ChallengesService } from "@services/token/challenges/challenges.service
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
-    MockAuditService,
-    MockChallengesService,
-    MockContainerService,
-    MockContentService,
-    MockDialogService,
-    MockLocalService,
-    MockMachineService,
-    MockNotificationService,
-    MockPendingChangesService,
-    MockSessionTimerService,
-    MockTokenService,
-    MockUserService
+  MockAuditService,
+  MockChallengesService,
+  MockContainerService,
+  MockContentService,
+  MockDialogService,
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
+  MockPendingChangesService,
+  MockSessionTimerService,
+  MockTokenService,
+  MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
@@ -156,7 +156,7 @@ describe("UserUtilsPanelComponent", () => {
     it("refreshes tokens containers details route", () => {
       content.routeUrl.set(`${ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS}/abc`);
       component.refreshPage();
-      expect(containerService.containerDetailResource.reload).toHaveBeenCalled();
+      expect(containerService.containerDetailsResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
     });
 

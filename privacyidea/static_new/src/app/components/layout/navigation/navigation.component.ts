@@ -17,17 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  NgZone,
-  OnDestroy,
-  signal,
-  ViewChild
-} from "@angular/core";
+import { AfterViewInit, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -109,7 +99,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
-  private ngZone = inject(NgZone);
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
@@ -254,7 +243,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     const navEl = this.mainNavRef.nativeElement;
 
     this.resizeObserver = new ResizeObserver(() => {
-      this.ngZone.run(() => this.calculateVisibleItems(navEl));
+      this.calculateVisibleItems(navEl);
     });
     this.resizeObserver.observe(navEl);
 

@@ -91,7 +91,7 @@ export class ContainerDetailsInfoComponent {
     forkJoin(requests).subscribe({
       next: () => {
         this.newInfo.set({ key: "", value: "" });
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       }
     });
     this.isEditingInfo.set(false);
@@ -114,7 +114,7 @@ export class ContainerDetailsInfoComponent {
       )
       .subscribe({
         next: () => {
-          this.containerService.containerDetailResource.reload();
+          this.containerService.containerDetailsResource.reload();
         }
       });
   }

@@ -26,10 +26,10 @@ import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import {
-    MockContainerService,
-    MockContentService,
-    MockLocalService,
-    MockNotificationService
+  MockContainerService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
@@ -133,10 +133,10 @@ describe("ContainerDetailsActionsComponent", () => {
     const unregisterResponse = { result: { value: { success: true } } } as PiResponse<any>;
     mockContainerService.unregister.mockReturnValue(of(unregisterResponse));
     jest.spyOn(mockNotificationService, "success");
-    jest.spyOn(mockContainerService.containerDetailResource, "reload");
+    jest.spyOn(mockContainerService.containerDetailsResource, "reload");
     component.unregisterContainer();
     expect(mockContainerService.unregister).toHaveBeenCalledWith("SMPH-1");
     expect(mockNotificationService.success).toHaveBeenCalledWith("Container unregistered successfully.");
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+    expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 });

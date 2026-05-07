@@ -72,6 +72,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   }
 
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
+    if (this.authService.isSelfServiceUser()) return undefined;
     if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {
       return undefined;
     }

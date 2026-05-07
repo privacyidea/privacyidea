@@ -66,15 +66,8 @@ export class ContainerDetailsTokenActionsComponent {
     return tokens.some((token) => token.username && token.username !== "");
   });
 
-  anyActiveTokens = computed(() => {
-    return this.tokenData().data.some((token) => token.active);
-  });
-
-  anyDisabledTokens = computed(() => {
-    // explicitly check to be false to exclude undefined states
-    return this.tokenData().data.some((token) => token.active === false);
-  });
-
+  anyActiveTokens = computed(() => this.tokenData().data.some((token) => token.active));
+  anyDisabledTokens = computed(() => this.tokenData().data.some((token) => token.active === false));
   unassignFromAllToken() {
     const tokenToUnassign = this.tokenData().data.filter((token) => token.username !== "");
     if (tokenToUnassign.length === 0) {
@@ -97,7 +90,7 @@ export class ContainerDetailsTokenActionsComponent {
           if (result) {
             this.tokenService.unassignUserFromAll(tokenSerials).subscribe({
               next: () => {
-                this.containerService.containerDetailResource.reload();
+                this.containerService.containerDetailsResource.reload();
               },
               error: (error) => {
                 console.error("Error unassigning user from token:", error);
@@ -129,7 +122,7 @@ export class ContainerDetailsTokenActionsComponent {
             realm: realm
           })
           .subscribe({
-            next: () => this.containerService.containerDetailResource.reload(),
+            next: () => this.containerService.containerDetailsResource.reload(),
             error: (error) => console.error("Error assigning user to all tokens:", error)
           });
       }
@@ -139,7 +132,7 @@ export class ContainerDetailsTokenActionsComponent {
   toggleAll(action: "activate" | "deactivate") {
     this.containerService.toggleAll(action).subscribe({
       next: () => {
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       }
     });
   }
@@ -164,7 +157,7 @@ export class ContainerDetailsTokenActionsComponent {
           if (result) {
             this.containerService.removeAll(this.containerSerial).subscribe({
               next: () => {
-                this.containerService.containerDetailResource.reload();
+                this.containerService.containerDetailsResource.reload();
               }
             });
           }
@@ -175,7 +168,7 @@ export class ContainerDetailsTokenActionsComponent {
   deleteAllTokens() {
     const serialList = this.tokenData().data.map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, () =>
-      this.containerService.containerDetailResource.reload()
+      this.containerService.containerDetailsResource.reload()
     );
   }
 }

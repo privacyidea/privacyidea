@@ -23,12 +23,7 @@ import { TestBed } from "@angular/core/testing";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
-import {
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockPiResponse
-} from "@testing/mock-services";
+import { MockContentService, MockLocalService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { RealmService } from "./realm.service";
 
@@ -162,7 +157,7 @@ describe("RealmService", () => {
     });
 
     it("should update realms from resource", async () => {
-      contentService.onUsers = signal(true);
+      contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/`);
@@ -181,7 +176,7 @@ describe("RealmService", () => {
     });
 
     it("should fallback to empty object on error", async () => {
-      contentService.onUsers = signal(true);
+      contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/`);
@@ -205,7 +200,7 @@ describe("RealmService", () => {
     });
 
     it("should update adminRealmOptions from resource", async () => {
-      contentService.onUsers = signal(true);
+      contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
@@ -220,7 +215,7 @@ describe("RealmService", () => {
     });
 
     it("should fallback to empty array on error", async () => {
-      contentService.onUsers = signal(true);
+      contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
@@ -243,7 +238,7 @@ describe("RealmService", () => {
     });
 
     it("should update defaultRealm from resource", async () => {
-      contentService.onUsers = signal(true);
+      contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
@@ -258,7 +253,7 @@ describe("RealmService", () => {
     });
 
     it("should fallback to empty string on error", async () => {
-      contentService.onUsers = signal(true);
+      contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);

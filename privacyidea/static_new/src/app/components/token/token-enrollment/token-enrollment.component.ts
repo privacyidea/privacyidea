@@ -258,7 +258,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
-  selectedContainerControl = new FormControl(this.containerService.selectedContainer(), { nonNullable: true });
+  selectedContainerControl = new FormControl(this.containerService.selectedContainerSerial(), { nonNullable: true });
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
@@ -388,7 +388,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
-      this.containerService.selectedContainer.set(value ?? "")
+      this.containerService.selectedContainerSerial.set(value ?? "")
     );
   }
 

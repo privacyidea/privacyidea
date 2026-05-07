@@ -97,7 +97,7 @@ export class RealmService implements RealmServiceInterface {
       this.contentService.onTokenDetails() ||
       this.contentService.onTokensContainersDetails() ||
       this.contentService.onTokens() ||
-      this.contentService.onUsers() ||
+      this.contentService.onAnyUsersRoute() ||
       this.contentService.onTokensContainersCreate() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensImport() ||

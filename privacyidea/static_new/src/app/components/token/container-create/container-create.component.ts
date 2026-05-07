@@ -33,7 +33,6 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -47,12 +46,14 @@ import {
   ContainerCreatedDialogComponent,
   ContainerCreationDialogData
 } from "@components/token/container-create/container-created-dialog/container-created-dialog.component";
-import { ContainerCreatedDialogWizardComponent } from "@components/token/container-create/container-created-dialog/container-created-dialog.wizard.component";
 import {
   ContainerRegistrationCompletedDialogComponent,
   ContainerRegistrationCompletedDialogData
 } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
-import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import {
+  ContainerTokensEnrolledDialogComponent,
+  ContainerTokensEnrolledDialogData
+} from "@components/token/container-create/container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
 import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -62,14 +63,13 @@ import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
+  ContainerTemplate,
   ContainerType
 } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 
 @Component({
   selector: "app-container-create",
@@ -92,23 +92,48 @@ import { VersioningService, VersioningServiceInterface } from "@services/version
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
-  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly userService: UserServiceInterface = inject(UserService);
-  protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly wizard: boolean = false;
-  private router = inject(Router);
+  protected readonly renderer: Renderer2 = inject(Renderer2);
+  private readonly router = inject(Router);
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild(UserAssignmentComponent) userAssignmentComponent!: UserAssignmentComponent;
+  @ViewChild(ContainerRegistrationConfigComponent) registrationConfigComponent!: ContainerRegistrationConfigComponent;
+
   private observer!: IntersectionObserver;
-  containerSerial = this.containerService.containerSerial;
+  validInput = true;
+
   description = signal("");
-  selectedTemplate = signal("");
+  containerSerial = this.containerService.containerSerial;
+  selectedUser = this.userService.selectionUsernameFilter;
+  selectedUserRealm = this.userService.selectedUserRealm;
+  isUserSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
+
   templateOptions = this.containerTemplateService.templates;
+  selectedTemplate: WritableSignal<ContainerTemplate> = linkedSignal({
+    source: this.containerService.selectedContainerType,
+    computation: (selectedContainerType, previous) => {
+      if (previous?.value && selectedContainerType?.containerType === previous.value.container_type) {
+        return previous.value;
+      }
+      return this._getEmptyTemplate();
+    }
+  });
+  templateIsSelected = computed(() => this.selectedTemplate()?.name !== "");
+
+  availableTokenTypes = computed(() => {
+    const containerType = this.selectedTemplate()?.container_type;
+    return containerType ? this.containerTemplateService.getTokenTypesForContainerType(containerType) : [];
+  });
+
   generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: this.containerService.selectedContainerType,
     computation: (containerType?: ContainerType) =>
@@ -116,94 +141,38 @@ export class ContainerCreateComponent {
       this.authService.actionAllowed("container_register") &&
       this.authService.actionAllowed("container_create")
   });
+
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
   userStorePassphrase = signal(false);
+
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
-  userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild(UserAssignmentComponent)
-  userAssignmentComponent!: UserAssignmentComponent;
-  @ViewChild(ContainerRegistrationConfigComponent)
-  registrationConfigComponent!: ContainerRegistrationConfigComponent;
-  validInput = true;
-  protected resetCreateOptions = () => {
-    this.registerResponse.set(null);
-    this.passphrasePrompt.set("");
-    this.passphraseResponse.set("");
-    this.userStorePassphrase.set(false);
-    this.description.set("");
-    this.selectedTemplate.set("");
-  };
-
-  constructor(protected registrationDialog: MatDialog) {
-    // Clear container serial and detail resource when entering create page
-    this.containerService.containerSerial.set("");
-    this.containerService.containerDetailResource.set(undefined);
+  constructor() {
+    this.containerSerial.set("");
+    this.containerService.containerDetailsResource.set(undefined);
 
     effect(() => {
       this.containerService.selectedContainerType();
-      untracked(() => {
-        this.resetCreateOptions();
-      });
+      untracked(() => this.resetCreateOptions());
     });
 
     effect(() => {
-      const serial = this.containerService.containerSerial();
+      const containerDetail = this.containerService.containerDetail();
+      if (!containerDetail) return;
 
-      if (!serial) {
-        return;
-      }
-
-      if (!this.containerService.containerDetailResource.hasValue()) {
-        return;
-      }
-
-      const containerDetailResource = this.containerService.containerDetailResource.value();
-      if (containerDetailResource?.result?.value) {
-        const container = containerDetailResource.result.value.containers[0];
-        const registrationState = container?.info?.registration_state;
-
-        if (registrationState !== "client_wait") {
-          this.registrationDialog.closeAll();
-          this.containerService.stopPolling();
-
-          if (
-            container?.type === "smartphone" &&
-            this.authService.containerWizard().registration &&
-            this.authService.actionAllowed("container_register")
-          ) {
-            let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
-            if (this.wizard) {
-              registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
-            }
-
-            this.registrationDialog.open(registrationCompletedDialogComponent, {
-              data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
-            });
-          } else if (this.wizard) {
-            this.openRegistrationDialog({
-              result: {
-                value: {
-                  container_serial: serial
-                }
-              }
-            } as unknown as PiResponse<ContainerRegisterData>);
-          }
-        }
+      if (containerDetail?.info?.registration_state === "registered") {
+        const serial = containerDetail.serial;
+        this.dialogService.closeAllDialogs();
+        this.openRegistrationCompletedDialog(serial);
       }
     });
   }
 
   ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
 
     const options = {
       root: this.scrollContainer.nativeElement,
@@ -212,9 +181,7 @@ export class ContainerCreateComponent {
 
     this.observer = new IntersectionObserver(([entry]) => {
       if (!entry.rootBounds) return;
-
       const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
       if (isSticky) {
         this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
       } else {
@@ -226,39 +193,47 @@ export class ContainerCreateComponent {
   }
 
   ngOnDestroy(): void {
-    if (this.observer) {
-      this.observer.disconnect();
-    }
+    if (this.observer) this.observer.disconnect();
     this.containerService.stopPolling();
   }
 
-  onValidInputChange(isValid: boolean) {
+  protected onValidInputChange(isValid: boolean) {
     this.validInput = isValid;
   }
 
-  reopenEnrollmentDialog() {
-    const currentResponse = this.registerResponse();
-    if (currentResponse) {
-      this.openRegistrationDialog(currentResponse);
-      this.containerService.startPolling(this.containerSerial());
-    }
+  protected onTemplateChange(template: ContainerTemplate) {
+    this.selectedTemplate.set(template);
   }
+
+  protected clearTemplateSelection() {
+    this.selectedTemplate.set(this._getEmptyTemplate());
+  }
+
+  protected compareTemplates = (t1: ContainerTemplate | null, t2: ContainerTemplate | null): boolean => {
+    return t1?.name === t2?.name;
+  };
 
   createContainer() {
     this.registerResponse.set(null);
     const containerType = this.containerService.selectedContainerType()?.containerType;
     if (!containerType) return;
+
     const createData: ContainerCreateData = {
-      container_type: containerType,
+      type: containerType,
       description: this.description(),
       user: this.userService.selectionUsernameFilter()
     };
+
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
-      createData.realm = this.userService.selectedUserRealm();
+      createData.realm = this.selectedUserRealm();
     }
-    if (this.selectedTemplate()) {
-      createData.template_name = this.selectedTemplate();
+
+    const template = this.selectedTemplate();
+    if (template && template.template_options.tokens.length > 0) {
+      createData.name = template.name;
+      createData.template = template;
     }
+
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
@@ -268,17 +243,27 @@ export class ContainerCreateComponent {
         }
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
-        } else if (this.wizard) {
-          this.containerSerial.set(containerSerial);
         } else {
-          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-          this.containerSerial.set(containerSerial);
+          const tokensRecord = response.result?.value?.tokens;
+          const enrolledTokens = tokensRecord
+            ? Object.entries(tokensRecord).map(([serial, detail]) => ({ ...detail, serial }))
+            : [];
+          if (enrolledTokens.length > 0) {
+            this.openTokensEnrolledDialog({ enrolledTokens, containerSerial });
+          } else {
+            this.onCreationSuccess(containerSerial);
+          }
         }
       }
     });
   }
 
-  registerContainer(serial: string, regenerate: boolean = false) {
+  protected onCreationSuccess(serial: string) {
+    this.containerService.containerSerial.set(serial);
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + serial);
+  }
+
+  protected registerContainer(serial: string, regenerate: boolean = false) {
     this.containerService
       .registerContainer({
         container_serial: serial,
@@ -291,28 +276,65 @@ export class ContainerCreateComponent {
         if (regenerate) {
           this.dialogData.update((data) => (data ? { ...data, response: registerResponse } : data));
         } else {
-          this.openRegistrationDialog(registerResponse);
-          this.containerService.startPolling(serial);
+          this.containerSerial.set(serial);
+          this.openRegistrationDialog(registerResponse, serial);
         }
       });
   }
 
-  clearTemplateSelection() {
-    this.selectedTemplate.set("");
+  reopenEnrollmentDialog() {
+    const currentResponse = this.registerResponse();
+    if (currentResponse) {
+      this.openRegistrationDialog(currentResponse, this.containerService.containerSerial());
+    }
   }
 
-  private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+  protected openRegistrationDialog(response: PiResponse<ContainerRegisterData>, serial: string) {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     });
-    let dialogComponent: any = ContainerCreatedDialogComponent;
-    if (this.wizard) {
-      dialogComponent = ContainerCreatedDialogWizardComponent;
-    }
-    this.registrationDialog.open(dialogComponent, {
+
+    const dialogRef = this.dialogService.openDialog({
+      component: ContainerCreatedDialogComponent,
       data: this.dialogData
     });
+
+    this.containerService.startPolling(serial);
+    dialogRef.afterClosed().subscribe(() => this.containerService.stopPolling());
+  }
+
+  protected openTokensEnrolledDialog(data: ContainerTokensEnrolledDialogData) {
+    this.dialogService.openDialog({
+      component: ContainerTokensEnrolledDialogComponent,
+      data,
+      configOverride: { minWidth: "750px", disableClose: true }
+    });
+  }
+
+  protected openRegistrationCompletedDialog(serial: string) {
+    this.dialogService.openDialog({
+      component: ContainerRegistrationCompletedDialogComponent,
+      data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
+    });
+  }
+
+  protected resetCreateOptions = () => {
+    this.registerResponse.set(null);
+    this.passphrasePrompt.set("");
+    this.passphraseResponse.set("");
+    this.userStorePassphrase.set(false);
+    this.description.set("");
+    this.clearTemplateSelection();
+  };
+
+  private _getEmptyTemplate(): ContainerTemplate {
+    return {
+      container_type: this.containerService.selectedContainerType()?.containerType ?? "",
+      default: false,
+      name: "",
+      template_options: { tokens: [] }
+    };
   }
 }

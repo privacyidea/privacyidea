@@ -118,6 +118,42 @@ class NoSpacerHostComponent {
   @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
 }
 
+@Component({
+  standalone: true,
+  imports: [OverflowNavDirective],
+  template: `
+    <nav #nav appOverflowNav>
+      <button class="nav-button" id="btn1"><span>Home</span></button>
+      <button class="nav-button" id="btn2"><span>Users</span></button>
+      <button class="nav-button nav-active" id="btn3" data-overflow-child><span>User Details</span></button>
+      <button class="nav-button" id="btn4"><span>Config</span></button>
+      <button class="nav-button" id="btn5"><span>Events</span></button>
+      <div class="spacer"></div>
+    </nav>
+  `
+})
+class OverflowChildHostComponent {
+  @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
+}
+
+@Component({
+  standalone: true,
+  imports: [OverflowNavDirective],
+  template: `
+    <nav #nav appOverflowNav>
+      <button class="nav-button nav-active" id="btn1" data-overflow-child><span>Details</span></button>
+      <button class="nav-button" id="btn2"><span>Tokens</span></button>
+      <button class="nav-button" id="btn3"><span>Users</span></button>
+      <button class="nav-button" id="btn4"><span>Config</span></button>
+      <button class="nav-button" id="btn5"><span>Events</span></button>
+      <div class="spacer"></div>
+    </nav>
+  `
+})
+class FirstActiveOverflowChildHostComponent {
+  @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
+}
+
 describe("OverflowNavDirective", () => {
   beforeAll(() => {
     patchGetComputedStyle();
@@ -530,6 +566,32 @@ describe("OverflowNavDirective", () => {
     it("should not throw on destroy", async () => {
       const { fixture } = await setup(TestHostComponent, 2000, 100);
       expect(() => fixture.destroy()).not.toThrow();
+    });
+  });
+
+  describe("data-overflow-child parent prioritization", () => {
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [OverflowChildHostComponent, FirstActiveOverflowChildHostComponent]
+      }).compileComponents();
+    });
+
+    it("should keep the parent button visible when active child has data-overflow-child and space allows", async () => {
+      const { navEl, fixture } = await setup(OverflowChildHostComponent, 350, 60);
+      const parent = navEl.querySelector("#btn2") as HTMLElement;
+      const activeChild = navEl.querySelector("#btn3") as HTMLElement;
+      expect(activeChild.classList.contains("sub-overflow-hidden")).toBe(false);
+      expect(parent.classList.contains("sub-overflow-hidden")).toBe(false);
+      fixture.destroy();
+    });
+
+    it("should not keep the parent visible when there is not enough space for it", async () => {
+      const { navEl, fixture } = await setup(OverflowChildHostComponent, 250, 60);
+      const parent = navEl.querySelector("#btn2") as HTMLElement;
+      const activeChild = navEl.querySelector("#btn3") as HTMLElement;
+      expect(activeChild.classList.contains("sub-overflow-hidden")).toBe(false);
+      expect(parent.classList.contains("sub-overflow-hidden")).toBe(true);
+      fixture.destroy();
     });
   });
 });

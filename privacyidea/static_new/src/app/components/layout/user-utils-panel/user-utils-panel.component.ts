@@ -188,7 +188,7 @@ export class UserUtilsPanelComponent {
       this.containerService.containerResource.reload();
       return;
     } else if (this.contentService.onTokensContainersDetails()) {
-      this.containerService.containerDetailResource.reload();
+      this.containerService.containerDetailsResource.reload();
       this.tokenService.tokenResource.reload();
       this.userService.usersResource.reload();
       return;

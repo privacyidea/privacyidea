@@ -35,13 +35,13 @@ import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-    MockContainerService,
-    MockContentService,
-    MockDialogService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService,
-    MockTokenService
+  MockContainerService,
+  MockContentService,
+  MockDialogService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService,
+  MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { Subject, of } from "rxjs";
@@ -146,7 +146,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     component.handleFilterInput(mockEvent);
 
     expect(component.filterValue()).toBe("testFilter");
-    expect(component.dataSource.filter).toBe("testfilter");
+    expect(component.dataSource().filter).toBe("testfilter");
     expect(component.containerTokenData().filter).toBe("testfilter");
   });
 
@@ -164,7 +164,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   });
 
   it("isAssignableToAllToken true when assigned user is set and at least one token is unassigned", () => {
-    containerServiceMock.containerDetail.set({
+    containerServiceMock.containerDetails.set({
       containers: [
         {
           serial: "CONT-1",
@@ -218,7 +218,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
     component.toggleActive(t);
     expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("Mock serial", true);
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
@@ -238,7 +238,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     confirmClosed.next(true);
     confirmClosed.complete();
     expect(containerServiceMock.removeTokenFromContainer).toHaveBeenCalledWith("CONT-1", "Mock serial");
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
+    expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalled();
   });
 
   it("removeTokenFromContainer does nothing when confirm=false", () => {
@@ -262,6 +262,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
     confirmClosed.next(true);
     confirmClosed.complete();
     expect(tokenServiceMock.deleteToken as any).toHaveBeenCalledWith("Another serial");
-    expect(containerServiceMock.containerDetailResource.reload).toHaveBeenCalled();
+    expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalled();
   });
 });

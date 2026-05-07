@@ -22,11 +22,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { CreateUserDialogComponent } from "@components/user/create-user-dialog/create-user-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { DialogService } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
@@ -42,18 +41,13 @@ export class UserTableActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   anyEditableResolver = computed(() => this.resolverService.editableResolvers().length > 0);
 
-  openCreateUserDialog() {
-    this.dialogService.openDialog({
-      component: CreateUserDialogComponent,
-      data: {
-        realm: this.userService.selectedUserRealm()
-      }
-    });
+  navigateToCreateUser() {
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_NEW);
   }
 }

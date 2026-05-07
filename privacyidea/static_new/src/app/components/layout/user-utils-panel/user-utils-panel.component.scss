@@ -1,5 +1,4 @@
 @use "styles";
-@use "@angular/material" as mat;
 
 $font-size-default: 14px;
 $breakpoint-compact: 1701px;
@@ -20,8 +19,9 @@ $breakpoint-compact: 1701px;
   gap: 4px;
   padding: 12px;
   background-color: var(--table-color);
-  border-left: 1px solid var(--nav-item-border);
-  border-right: 1px solid var(--nav-item-border);
+  box-shadow: -8px 0 8px -8px var(--nav-item-border), 8px 0 8px -8px var(--nav-item-border);
+  border-top-right-radius: var(--border-radius);
+  border-top-left-radius: var(--border-radius);
 }
 
 .utils-group-self-service {
@@ -29,7 +29,7 @@ $breakpoint-compact: 1701px;
   min-height: 48px;
   background-color: var(--mat-sys-surface-container-low);
   border-radius: var(--border-radius);
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 
   &.utils {
     display: flex;

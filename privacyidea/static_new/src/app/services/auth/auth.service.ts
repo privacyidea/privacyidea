@@ -180,27 +180,16 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
-
   authenticate(params: any): Observable<AuthResponse>;
-
   acceptAuthentication(): void;
-
   logout(): void;
-
   actionAllowed(action: PolicyAction): boolean;
-
   actionsAllowed(actions: PolicyAction[]): boolean;
-
   oneActionAllowed(actions: PolicyAction[]): boolean;
-
   anyContainerActionAllowed(): boolean;
-
   tokenEnrollmentAllowed(): boolean;
-
   anyTokenActionAllowed(): boolean;
-
   checkForceServerGenerateOTPKey(tokenType: string): boolean;
-
   check2Step(tokenType: string): TwoStepValue;
 }
 

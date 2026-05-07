@@ -16,78 +16,41 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<app-dialog-wrapper
-  [title]="isNewTemplate() ? 'New Container Template' : 'Edit Container Template'"
-  i18n-title
-  [showCancelButton]="true"
-  [handleCloseExternally]="true"
-  (close)="close()"
-  [actions]="actions()"
-  (onAction)="onAction($event)">
-  <div class="flex-column">
-    <div class="flex-fix-size">
-      <mat-card class="default-template-card-row">
-        <mat-form-field subscriptSizing="dynamic">
-          <mat-label i18n>Template Name</mat-label>
-          <input
-            matInput
-            type="text"
-            placeholder="Template Name"
-            i18n-placeholder
-            aria-label="Template Name"
-            [ngModel]="template().name"
-            (ngModelChange)="editTemplate({ name: $event })"
-            (keydown)="$event.stopPropagation()"
-            [errorStateMatcher]="nameErrorMatcher" />
-          @if (nameConflict()) {
-            <mat-error i18n>Another template with this name already exists.</mat-error>
-          }
-          @if (template().name.length > 0 && nameInvalidPattern()) {
-            <mat-error
-              i18n>Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
-            </mat-error>
-          }
-        </mat-form-field>
 
-        <mat-card-content>
-          <mat-checkbox
-            [checked]="template().default"
-            (change)="editTemplate({ default: $event.checked })"
-            (click)="$event.stopPropagation()"
-            matTooltip="Set as default template"
-            i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
-            <span i18n>Set as default template</span>
-          </mat-checkbox>
-        </mat-card-content>
-      </mat-card>
+<div
+  #scrollContainer
+  class="edit-template-layout">
+  <h3 class="margin-8">
+    @if (initTemplate()) {
+      <span i18n>Editing Template: {{ initTemplate()?.name }}</span>
+    } @else {
+      <span i18n>New Container Template</span>
+    }
+  </h3>
 
-      <div>
-        <h3 i18n>Container Type</h3>
-        <app-selector-buttons
-          [values]="containerTypes()"
-          [labels]="containerTypesTitleCase()"
-          [initialValue]="template().container_type"
-          [allowDeselect]="true"
-          (onSelect)="editTemplate({ container_type: $event })"
-          [disabled]="hasToken()" />
-      </div>
+  <div
+    #stickySentinel
+    class="sticky-sentinel"></div>
 
-      @if (template().container_type) {
-        <app-container-template-add-token
-          [tokenTypes]="availableTokenTypes()"
-          (onAddToken)="onAddToken($event)" />
-      }
-    </div>
-
-    <div class="added-tokens-list">
-      @for (token of tokens(); track $index) {
-        <app-template-added-token-row
-          [tokenEnrollmentPayload]="token"
-          [index]="$index"
-          (onEditToken)="onEditToken($event, $index)"
-          (onRemoveToken)="onDeleteToken($index)">
-        </app-template-added-token-row>
-      }
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="sticky-controls ali-center">
+      <button
+        (click)="onCancel()"
+        class="action-button-secondary button-width-s"
+        mat-stroked-button>
+        <span i18n>Cancel</span>
+      </button>
+      <button
+        (click)="onSave()"
+        [disabled]="!canSave()"
+        class="action-button-primary button-width-s"
+        mat-stroked-button>
+        <mat-icon>save</mat-icon>
+        <span i18n>Save</span>
+      </button>
     </div>
   </div>
-</app-dialog-wrapper>
+  <app-container-template-edit [(template)]="template"></app-container-template-edit>
+</div>

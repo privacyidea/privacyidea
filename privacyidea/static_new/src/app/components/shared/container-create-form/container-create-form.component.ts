@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output, WritableSignal } from "@angular/core";
+import { Component, EventEmitter, Input, Output, Signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -31,8 +31,9 @@ import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
+import { ContainerTemplateEditBodyComponent } from "@components/token/container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
 import { AuthServiceInterface } from "@services/auth/auth.service";
-import { ContainerServiceInterface } from "@services/container/container.service";
+import { ContainerServiceInterface, ContainerTemplate } from "@services/container/container.service";
 import { TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
@@ -52,7 +53,8 @@ import { TokenServiceInterface } from "@services/token/token.service";
     MatExpansionPanelTitle,
     MatSuffix,
     ClearButtonComponent,
-    ContainerRegistrationConfigComponent
+    ContainerRegistrationConfigComponent,
+    ContainerTemplateEditBodyComponent
   ],
   templateUrl: "./container-create-form.component.html"
 })
@@ -61,20 +63,30 @@ export class ContainerCreateFormComponent {
   @Input({ required: true }) tokenService!: TokenServiceInterface;
   @Input({ required: true }) authService!: AuthServiceInterface;
   @Input({ required: true }) description!: WritableSignal<string>;
-  @Input({ required: true }) selectedTemplate!: WritableSignal<string>;
+  @Input({ required: true }) selectedTemplate!: WritableSignal<ContainerTemplate>;
   @Input({ required: true }) templateOptions!: any;
   @Input({ required: true }) generateQRCode!: WritableSignal<boolean>;
   @Input({ required: true }) passphrasePrompt!: WritableSignal<string>;
   @Input({ required: true }) passphraseResponse!: WritableSignal<string>;
   @Input({ required: true }) userStorePassphrase!: WritableSignal<boolean>;
+  @Input({ required: true }) availableTokenTypes!: Signal<string[]>;
   @Input() showRegistration = false;
   @Input() containerHasOwner = false;
   @Input() templateFieldClass = "input-width-l";
 
   @Output() validInputChange = new EventEmitter<boolean>();
   @Output() clearTemplate = new EventEmitter<void>();
+  @Output() templateChange = new EventEmitter<ContainerTemplate>();
+
+  compareTemplates(t1: ContainerTemplate | null, t2: ContainerTemplate | null): boolean {
+    return t1?.name === t2?.name;
+  }
 
   clearTemplateSelection() {
     this.clearTemplate.emit();
+  }
+
+  get templateIsSelected(): boolean {
+    return !!this.selectedTemplate?.()?.name;
   }
 }

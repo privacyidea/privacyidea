@@ -47,6 +47,6 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 }

@@ -295,6 +295,7 @@ describe("UserNewResolverComponent", () => {
 
     expect(success).toBe(true);
     expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("created"));
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
@@ -324,6 +325,7 @@ describe("UserNewResolverComponent", () => {
 
     expect(success).toBe(true);
     expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("updated"));
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 

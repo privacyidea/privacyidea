@@ -140,7 +140,7 @@
                 @case ("serial") {
                   <div class="flex-row flex-nowrap ali-center">
                     <a
-                      (click)="contentService.containerSelected(element.serial)"
+                      (click)="contentService.navigateContainerDetails(element.serial)"
                       attr.aria-label="{{ column.label }} Link">
                       {{ element[column.key] }}
                     </a>
@@ -247,8 +247,7 @@
   }
 </div>
 
-<mat-menu
-  #typeMenu="matMenu">
+<mat-menu #typeMenu="matMenu">
   <ng-template
     let-keyword="keyword"
     matMenuContent>

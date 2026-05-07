@@ -85,6 +85,17 @@ export class TokenEnrollmentDataComponent {
   protected readonly verify_message = computed(() => this.enrolledData()?.verify?.message ?? null);
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
+  protected readonly hasEnrollmentData = computed(
+    () =>
+      !!(
+        (this.showQRCode() && this.qrCode()) ||
+        this.enrolledData()?.["password"] ||
+        (this.enrolledData()?.otpkey?.value && !this.enrolledData()?.["otps"] && this.showQRCode()) ||
+        this.tokenType() === "tiqr" ||
+        this.tokenType() === "registration" ||
+        this.enrolledData()?.["otps"]
+      )
+  );
   showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())

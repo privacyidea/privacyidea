@@ -35,16 +35,16 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
-    MockAuditService,
-    MockContainerService,
-    MockContentService,
-    MockLocalService,
-    MockMachineService,
-    MockNotificationService,
-    MockRealmService,
-    MockTableUtilsService,
-    MockTokenService,
-    MockValidateService
+  MockAuditService,
+  MockContainerService,
+  MockContentService,
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
+  MockRealmService,
+  MockTableUtilsService,
+  MockTokenService,
+  MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { TokenDetailsComponent } from "./token-details.component";
@@ -140,7 +140,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("saveContainer assigns when a container is selected", () => {
-    containerSvc.selectedContainer.set("container1");
+    containerSvc.selectedContainerSerial.set("container1");
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
@@ -151,7 +151,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("saveContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainer.set("");
+    containerSvc.selectedContainerSerial.set("");
     (containerSvc.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
@@ -246,10 +246,10 @@ describe("TokenDetailsComponent", () => {
       isEditing: signal(true)
     } as any;
 
-    containerSvc.selectedContainer.set("X");
+    containerSvc.selectedContainerSerial.set("X");
     component.cancelTokenEdit(el);
 
-    expect(containerSvc.selectedContainer()).toBe("");
+    expect(containerSvc.selectedContainerSerial()).toBe("");
     expect(el.isEditing()).toBe(false);
   });
 

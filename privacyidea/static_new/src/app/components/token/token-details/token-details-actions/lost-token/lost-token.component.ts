@@ -23,6 +23,7 @@ import { MatCard, MatCardContent } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { LostTokenData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -43,6 +44,12 @@ export class LostTokenComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
+  protected closeAction: DialogAction<void> = {
+    label: "Close",
+    type: "cancel",
+    value: undefined,
+    primary: this.data.isLost()
+  };
 
   constructor() {
     super();
@@ -68,5 +75,11 @@ export class LostTokenComponent extends AbstractDialogComponent<
     }
     this.dialogRef.close();
     this.data.tokenSerial.set(tokenSerial);
+  }
+
+  onCloseAction(): void {
+    this.data.isLost.set(false);
+    this.lostTokenData = undefined;
+    this.dialogRef.close();
   }
 }

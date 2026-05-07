@@ -37,23 +37,23 @@ import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
-    MockContainerService,
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockRealmService,
-    MockTokenService,
-    MockUserService,
-    MockVersioningService
+  MockContainerService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockRealmService,
+  MockTokenService,
+  MockUserService,
+  MockVersioningService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
-    NO_QR_CODE_TOKEN_TYPES,
-    NO_REGENERATE_TOKEN_TYPES,
-    REGENERATE_AS_VALUES_TOKEN_TYPES
+  NO_QR_CODE_TOKEN_TYPES,
+  NO_REGENERATE_TOKEN_TYPES,
+  REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
@@ -673,7 +673,7 @@ describe("TokenEnrollmentComponent", () => {
       component.ngOnInit();
       component.selectedContainerControl.setValue("CONT-42");
 
-      expect(containers.selectedContainer()).toBe("CONT-42");
+      expect(containers.selectedContainerSerial()).toBe("CONT-42");
     });
   });
 

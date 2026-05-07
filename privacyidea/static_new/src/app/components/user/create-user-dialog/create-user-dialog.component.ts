@@ -17,20 +17,33 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
+import {
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  OnInit,
+  signal,
+  Signal,
+  WritableSignal
+} from "@angular/core";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
-import { DialogAction } from "@models/dialog";
-import { ContentService } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { EditUserData, UserService } from "@services/user/user.service";
@@ -43,11 +56,7 @@ export interface CreateUserDialogData {
 @Component({
   selector: "app-create-user-dialog",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
-    DialogWrapperComponent,
     UserDetailsEditComponent,
     MatFormField,
     MatLabel,
@@ -57,19 +66,25 @@ export interface CreateUserDialogData {
     MatHint,
     MatError,
     MatInput,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatIconModule,
+    ScrollToTopDirective
   ],
   templateUrl: "./create-user-dialog.component.html",
   styleUrl: "./create-user-dialog.component.scss"
 })
-export class CreateUserDialogComponent extends PendingChangesDialogComponent<CreateUserDialogData, boolean> {
+export class CreateUserDialogComponent implements OnInit, OnDestroy {
   protected readonly userService = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
   protected readonly realmService = inject(RealmService);
   protected readonly notificationService = inject(NotificationService);
-  private readonly contentService = inject(ContentService);
+  private readonly router = inject(Router);
+  private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  realm = linkedSignal(() => this.data.realm || this.userService.selectedUserRealm() || "");
+  realm = linkedSignal(() => this.userService.selectedUserRealm() || "");
   username = new FormControl("", { nonNullable: true, validators: [Validators.required] });
   resolverControl = new FormControl("", { nonNullable: true, validators: [Validators.required] });
   selectedResolver = toSignal(this.resolverControl.valueChanges, { initialValue: this.resolverControl.value });
@@ -80,59 +95,41 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
 
   canSave = signal(this.inputGroup.valid);
   inputGroupPristine = signal(this.inputGroup.pristine);
-  isDirty = computed(() => {
-    return !this.inputGroupPristine() || !this.editUserDataIsEmpty();
-  });
+  isDirty = computed(() => !this.inputGroupPristine() || !this.editUserDataIsEmpty());
 
   constructor() {
-    super();
-    this.inputGroup.statusChanges.subscribe(() => {
+    this.inputGroup.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.canSave.set(this.inputGroup.valid);
       this.inputGroupPristine.set(this.inputGroup.pristine);
     });
-    this.inputGroup.valueChanges.subscribe(() => {
+    this.inputGroup.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.inputGroupPristine.set(this.inputGroup.pristine);
     });
 
-    // Select initial resolver
-    let resolver = this.data.resolver;
-    if (!resolver && this.realm()) {
-      const realmConfig = this.realmService.realms()[this.realm()];
+    const realm = this.realm();
+    let resolver: string | undefined;
+    if (realm) {
+      const realmConfig = this.realmService.realms()[realm];
       resolver = realmConfig?.resolver[0]?.name;
     }
     this.resolverControl.setValue(resolver || "");
-
-    // Close the dialog when navigating away from the events route
-    // However, changing the route is disabled via the pendingChangesGuard when there are unsaved changes. This effect
-    // will only be triggered when there are no unsaved changes or when the user confirmed discarding them.
-    effect(() => {
-      if (this.contentService.routeUrl() !== ROUTE_PATHS.USERS) {
-        this.dialogRef?.close(true);
-      }
-    });
   }
 
-  title = $localize`Create New User`;
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.isDirty());
+    this.pendingChangesService.registerValidChanges(() => this.canSave());
+    this.pendingChangesService.registerSave(() => this.onSave());
+  }
 
-  dialogActions = linkedSignal(() => {
-    return [
-      {
-        type: "confirm",
-        label: $localize`Create`,
-        value: true,
-        primary: true,
-        disabled: !this.canSave()
-      }
-    ] as DialogAction<boolean>[];
-  });
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
 
-  editedUserData: WritableSignal<EditUserData> = linkedSignal(() => {
-    return { username: "" };
-  });
+  editedUserData: WritableSignal<EditUserData> = linkedSignal(() => ({ username: "" }));
 
-  editUserDataIsEmpty = computed(() => {
-    return Object.values(this.editedUserData()).every((value) => value === "" || value === undefined);
-  });
+  editUserDataIsEmpty = computed(() =>
+    Object.values(this.editedUserData()).every((value) => value === "" || value === undefined)
+  );
 
   correspondingRealms: Signal<string[]> = computed(() => {
     const realms = this.realmService.realms();
@@ -145,14 +142,19 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
     return result;
   });
 
-  override async onSave(): Promise<boolean> {
+  async onSave(): Promise<boolean> {
+    if (this.inputGroup.invalid) {
+      this.inputGroup.markAllAsTouched();
+      this.notificationService.warning($localize`Please fill in all required fields.`);
+      return false;
+    }
     this.editedUserData().username = this.username.value;
     return new Promise((resolve) => {
       this.userService.createUser(this.resolverControl.value, this.editedUserData()).subscribe({
         next: (success) => {
           if (success) {
             this.userService.usersResource.reload();
-            this.dialogRef.close();
+            this._navigateBack();
             resolve(true);
           } else {
             resolve(false);
@@ -163,20 +165,33 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
     });
   }
 
-  create() {
-    if (this.inputGroup.invalid) {
-      this.inputGroup.markAllAsTouched();
-      this.notificationService.warning($localize`Please fill in all required fields.`);
+  onCancel(): void {
+    if (!this.isDirty()) {
+      this._navigateBack();
       return;
     }
-    this.editedUserData().username = this.username.value;
-    this.userService.createUser(this.resolverControl.value, this.editedUserData()).subscribe({
-      next: (success) => {
-        if (success) {
-          this.userService.usersResource.reload();
-          this.dialogRef.close();
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSave(),
+          saveExitDisabled: !this.canSave()
         }
-      }
-    });
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result === "save-exit") {
+          if (!this.canSave()) return;
+          Promise.resolve(this.pendingChangesService.save());
+        } else if (result === "discard") {
+          this._navigateBack();
+        }
+      });
+  }
+
+  private _navigateBack(): void {
+    this.pendingChangesService.clearAllRegistrations();
+    this.router.navigateByUrl(ROUTE_PATHS.USERS);
   }
 }

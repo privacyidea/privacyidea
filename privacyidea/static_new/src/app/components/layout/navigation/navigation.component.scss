@@ -1,5 +1,4 @@
 @use "styles";
-@use "@angular/material" as mat;
 
 $icon-size-sm: 18px;
 $toolbar-padding: 8px 16px;
@@ -41,7 +40,6 @@ $breakpoint-compact: 1822px;
   padding: $toolbar-padding;
   background: var(--mat-sys-surface-variant);
   min-height: 0;
-  @include mat.elevation(4);
 }
 
 .toolbar-brand {
@@ -60,7 +58,7 @@ $breakpoint-compact: 1822px;
   height: 48px;
   width: 48px;
   border-radius: 50%;
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 }
 
 .toolbar-logo-custom {
@@ -116,8 +114,9 @@ $breakpoint-compact: 1822px;
 
   &.active {
     background-color: var(--mat-sys-surface-container-lowest);
-    border-left: 1px solid var(--nav-item-border);
-    border-right: 1px solid var(--nav-item-border);
+    box-shadow: -8px 0 8px -8px var(--nav-item-border), 8px 0 8px -8px var(--nav-item-border);
+    border-top-right-radius: var(--border-radius);
+    border-top-left-radius: var(--border-radius);
   }
 }
 
@@ -136,7 +135,8 @@ $breakpoint-compact: 1822px;
   background: var(--mat-sys-surface-container-lowest);
   overflow: hidden;
   flex-wrap: nowrap;
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
+  border-radius: var(--border-radius);
 
   a:not(.overflow-more-btn), button:not(.overflow-more-btn) {
     @include nav-button-base;

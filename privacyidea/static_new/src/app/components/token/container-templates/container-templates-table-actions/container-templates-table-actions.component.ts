@@ -20,9 +20,10 @@
 import { Component, inject, input } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/token/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
-import { ContainerTemplateEditDialogComponent } from "@components/token/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
@@ -40,13 +41,12 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 export class ContainerTemplatesTableActionsComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  readonly router = inject(Router);
 
   readonly selectedTemplates = input.required<ContainerTemplate[]>();
 
-  openNewTemplateDialog() {
-    this.dialogService.openDialog({
-      component: ContainerTemplateEditDialogComponent
-    });
+  onClickCreateTemplate() {
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE);
   }
 
   async openCopyTemplateDialog() {

@@ -62,7 +62,6 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { NotificationService } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -72,7 +71,8 @@ export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
   { key: "states", label: "Status" },
   { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" }
+  { key: "realms", label: "Realms" },
+  { key: "template", label: "Template" }
 ];
 
 const containerUserDetailsKeyMap = [
@@ -128,16 +128,15 @@ interface TokenOption {
   styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsComponent implements OnDestroy {
-  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  protected readonly notificationService = inject(NotificationService);
   private previousPageSize = 10;
   private router = inject(Router);
   states = this.containerService.states;
@@ -167,7 +166,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       return previous?.value ?? 0;
     }
   });
-  containerDetailResource = this.containerService.containerDetailResource;
+  containerDetailResource = this.containerService.containerDetailsResource;
   containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResourceValue, previous) => {

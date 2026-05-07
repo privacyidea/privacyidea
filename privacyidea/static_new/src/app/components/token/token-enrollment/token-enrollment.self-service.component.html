@@ -23,7 +23,8 @@
   class="token-enrollment-container">
   <h3
     class="margin-8"
-    i18n>Enroll a New Token
+    i18n>
+    Enroll a New Token
   </h3>
   <form
     (ngSubmit)="enrollToken()"
@@ -33,8 +34,7 @@
       #stickyHeader
       class="sticky-header">
       <div class="sticky-controls ali-center">
-        <mat-form-field
-          class="input-width-xl">
+        <mat-form-field class="input-width-xl">
           <mat-select
             [(ngModel)]="tokenService.selectedTokenType"
             [ngModelOptions]="{ standalone: true }"
@@ -119,7 +119,7 @@
             <mat-label i18n>Enter Container</mat-label>
             <app-clearable-input
               (onClick)="selectedContainerControl.setValue('')"
-              [showClearButton]="containerService.selectedContainer() !== ''">
+              [showClearButton]="containerService.selectedContainerSerial() !== ''">
               <input
                 [formControlName]="'selectedContainer'"
                 [formControl]="selectedContainerControl"

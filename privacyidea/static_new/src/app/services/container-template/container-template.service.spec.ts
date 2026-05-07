@@ -177,6 +177,28 @@ describe("ContainerTemplateService", () => {
       expect(service.templateTokenTypes()).toEqual({});
     });
 
+    it("availableContainerTypes returns keys of templateTokenTypes", async () => {
+      TestBed.tick();
+
+      const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
+      tokenTypesReq.flush({ result: { value: { generic: { token_types: ["hotp"] }, smartphone: { token_types: ["push"] } } } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      expect(service.availableContainerTypes()).toEqual(["generic", "smartphone"]);
+    });
+
+    it("availableContainerTypes is empty when templateTokenTypes has no values", async () => {
+      TestBed.tick();
+
+      const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
+      tokenTypesReq.flush({ result: { value: {} } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      expect(service.availableContainerTypes()).toEqual([]);
+    });
+
     it("should not fetch token types if not on the correct route", async () => {
       contentServiceMock.routeUrl.set("/wrong/route");
       TestBed.tick();
@@ -428,6 +450,66 @@ describe("ContainerTemplateService", () => {
       await deletePromise;
 
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete template. ");
+    });
+
+    it("copyTemplate creates a copy with the new name and default false", async () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
+      const source: ContainerTemplate = {
+        name: "Original",
+        container_type: "generic",
+        default: true,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      const promise = service.copyTemplate(source, "Copy");
+
+      const req = httpMock.expectOne(`/container/generic/template/Copy`);
+      expect(req.request.method).toBe("POST");
+      expect(req.request.body.name).toBe("Copy");
+      expect(req.request.body.default).toBe(false);
+      req.flush(MockPiResponse.fromValue(true));
+
+      const result = await promise;
+      expect(result).toBe(true);
+    });
+
+    it("canSaveTemplate returns false for names with special characters", () => {
+      const template: ContainerTemplate = {
+        name: "bad name!",
+        container_type: "generic",
+        default: false,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
+    });
+
+    it("canSaveTemplate returns false when name is empty", () => {
+      const template: ContainerTemplate = {
+        name: "",
+        container_type: "generic",
+        default: false,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
+    });
+
+    it("canSaveTemplate returns false when container_type is empty", () => {
+      const template: ContainerTemplate = {
+        name: "valid",
+        container_type: "",
+        default: false,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
+    });
+
+    it("canSaveTemplate returns false when tokens list is empty", () => {
+      const template: ContainerTemplate = {
+        name: "valid",
+        container_type: "generic",
+        default: false,
+        template_options: { tokens: [] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
     });
 
     it("should show a generic error notification on post if error response contains no message", async () => {

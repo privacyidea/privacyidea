@@ -20,9 +20,10 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/token/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
-import { ContainerTemplateEditDialogComponent } from "@components/token/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockContainerTemplateService, MockDialogService } from "@testing/mock-services";
@@ -44,7 +45,8 @@ describe("ContainerTemplatesTableActionsComponent", () => {
       imports: [ContainerTemplatesTableActionsComponent, NoopAnimationsModule],
       providers: [
         { provide: DialogService, useClass: MockDialogService },
-        { provide: ContainerTemplateService, useClass: MockContainerTemplateService }
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
       ]
     }).compileComponents();
 
@@ -78,15 +80,11 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     expect(buttons[2].nativeElement.disabled).toBeFalsy();
   });
 
-  it("should open ContainerTemplateEditDialogComponent when Create is clicked", () => {
-    const spy = jest.spyOn(dialogServiceMock, "openDialog");
-    component.openNewTemplateDialog();
-
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        component: ContainerTemplateEditDialogComponent
-      })
-    );
+  it("should navigate to create route when Create is clicked", () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
+    component.onClickCreateTemplate();
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE);
   });
 
   it("should open Copy dialog and call service for each selected template", async () => {
@@ -111,13 +109,26 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     );
     expect(serviceSpy).toHaveBeenCalledTimes(2);
     expect(serviceSpy).toHaveBeenCalledWith(mockTemplates[0], "Template1_Copy");
+    expect(serviceSpy).toHaveBeenCalledWith(mockTemplates[1], "Template2_Copy");
   });
 
-  it("should not call copyTemplate if dialog is cancelled or name is unchanged", async () => {
+  it("should not call copyTemplate if dialog is cancelled (null result)", async () => {
     fixture.componentRef.setInput("selectedTemplates", [mockTemplates[0]]);
     fixture.detectChanges();
 
     jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue(null);
+    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "copyTemplate");
+
+    await component.openCopyTemplateDialog();
+
+    expect(serviceSpy).not.toHaveBeenCalled();
+  });
+
+  it("should not call copyTemplate if returned name equals the original name", async () => {
+    fixture.componentRef.setInput("selectedTemplates", [mockTemplates[0]]);
+    fixture.detectChanges();
+
+    jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue("Template1");
     const serviceSpy = jest.spyOn(containerTemplateServiceMock, "copyTemplate");
 
     await component.openCopyTemplateDialog();
@@ -146,12 +157,12 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     expect(serviceSpy).toHaveBeenCalledWith(["Template1", "Template2"]);
   });
 
-  it("should not call deleteTemplate if deletion is not confirmed", async () => {
+  it("should not call deleteTemplates if deletion is not confirmed", async () => {
     fixture.componentRef.setInput("selectedTemplates", [mockTemplates[0]]);
     fixture.detectChanges();
 
     jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue(false);
-    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplate");
+    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplates");
 
     await component.openDeleteTemplateDialog();
 

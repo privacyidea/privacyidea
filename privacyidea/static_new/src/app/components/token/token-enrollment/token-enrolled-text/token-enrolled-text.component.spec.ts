@@ -49,7 +49,7 @@ describe("TokenEnrolledTextComponent", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("serial", "SERIAL123");
     fixture.detectChanges();
-    component.switchRoute.subscribe(switchRouteSpy);
+    component.onSwitchRoute.subscribe(switchRouteSpy);
     component.tokenSelected();
     expect(switchRouteSpy).toHaveBeenCalled();
     expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
@@ -57,26 +57,26 @@ describe("TokenEnrolledTextComponent", () => {
 
   it("should do nothing if serial is not set", () => {
     const switchRouteSpy = jest.fn();
-    component.switchRoute.subscribe(switchRouteSpy);
+    component.onSwitchRoute.subscribe(switchRouteSpy);
     component.tokenSelected();
     expect(switchRouteSpy).not.toHaveBeenCalled();
     expect(mockContentService.tokenSelected).not.toHaveBeenCalled();
   });
 
-  it("should emit switchRoute and call contentService.containerSelected if containerSerial is set", () => {
+  it("natigateContainerDetails emits switchRoute and calls contentService.navigateContainerDetails if containerSerial is set", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("containerSerial", "CONT123");
-    component.switchRoute.subscribe(switchRouteSpy);
-    component.containerSelected();
+    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.natigateContainerDetails();
     expect(switchRouteSpy).toHaveBeenCalled();
-    expect(mockContentService.containerSelected).toHaveBeenCalledWith("CONT123");
+    expect(mockContentService.navigateContainerDetails).toHaveBeenCalledWith("CONT123");
   });
 
-  it("should do nothing if containerSerial is not set", () => {
+  it("natigateContainerDetails does nothing if containerSerial is not set", () => {
     const switchRouteSpy = jest.fn();
-    component.switchRoute.subscribe(switchRouteSpy);
-    component.containerSelected();
+    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.natigateContainerDetails();
     expect(switchRouteSpy).not.toHaveBeenCalled();
-    expect(mockContentService.containerSelected).not.toHaveBeenCalled();
+    expect(mockContentService.navigateContainerDetails).not.toHaveBeenCalled();
   });
 });

@@ -18,9 +18,9 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
+import { Component, computed, inject, SecurityContext } from "@angular/core";
 import { MatButton } from "@angular/material/button";
-import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef } from "@angular/material/dialog";
+import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -37,15 +37,20 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected override readonly dialogRef: MatDialogRef<ContainerCreatedDialogWizardComponent> = inject(MatDialogRef);
   public readonly authService: AuthServiceInterface = inject(AuthService);
-  tagData: Signal<Record<string, string>> = computed(() => ({
-    containerSerial: this.data().containerSerial(),
-    containerRegistrationURL: this.data().response.result?.value?.container_url?.value || "",
-    containerRegistrationQR: this.data().response.result?.value?.container_url?.img || ""
-  }));
+  tagData = computed<Record<string, string>>(() => {
+    const data = this.data();
+    if (!data) {
+      const record = {};
+      return record;
+    }
+    return {
+      containerSerial: data.containerSerial(),
+      containerRegistrationURL: data.response.result?.value?.container_url?.value || "",
+      containerRegistrationQR: data.response.result?.value?.container_url?.img || ""
+    };
+  });
 
-  // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
 
   readonly postTopHtml$ = this.http

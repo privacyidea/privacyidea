@@ -19,14 +19,8 @@
 
 import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 export type ContainerRegistrationCompletedDialogData = {
@@ -39,13 +33,14 @@ export type ContainerRegistrationCompletedDialogData = {
   styleUrls: ["./container-registration-completed-dialog.component.scss"],
   imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose]
 })
-export class ContainerRegistrationCompletedDialogComponent {
-  public readonly data: ContainerRegistrationCompletedDialogData = inject(MAT_DIALOG_DATA);
-  protected readonly dialogRef: MatDialogRef<ContainerRegistrationCompletedDialogComponent> = inject(MatDialogRef);
+export class ContainerRegistrationCompletedDialogComponent extends AbstractDialogComponent<
+  ContainerRegistrationCompletedDialogData,
+  void
+> {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 }
