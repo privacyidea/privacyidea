@@ -16,18 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatButton, MatIconButton } from "@angular/material/button";
 import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAdapter } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltip } from "@angular/material/tooltip";
+import { MatOption } from "@angular/material/select";
 import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
@@ -42,46 +38,35 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { EnrollTokenTypeSwitchComponent } from "../../shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "../../shared/enrollment-pin/enrollment-pin.component";
 import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
-import {
-  CUSTOM_DATE_FORMATS,
-  CUSTOM_TOOLTIP_OPTIONS,
-  CustomDateAdapter,
-  TokenEnrollmentComponent
-} from "./token-enrollment.component";
+import { CUSTOM_DATE_FORMATS, CustomDateAdapter, TokenEnrollmentComponent } from "./token-enrollment.component";
+import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 
 @Component({
   selector: "app-token-enrollment-self-service",
   imports: [
-    MatFormField,
-    MatSelect,
-    MatOption,
     ReactiveFormsModule,
-    FormsModule,
+    MatFormField,
+    MatOption,
     MatInput,
     MatLabel,
+    MatHint,
+    MatError,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatNativeDateModule,
     MatDatepickerModule,
-    MatButton,
-    MatIcon,
-    MatIconButton,
-    NgClass,
-    MatError,
-    MatTooltip,
     ClearableInputComponent,
     ScrollToTopDirective,
-    MatHint,
     EnrollTokenTypeSwitchComponent,
-    EnrollmentPinComponent
+    EnrollmentPinComponent,
+    TokenEnrollmentTypeSelectorComponent
   ],
   templateUrl: "./token-enrollment.self-service.component.html",
   styleUrl: "./token-enrollment.component.scss",
   providers: [
     provideNativeDateAdapter(),
     { provide: DateAdapter, useFactory: () => new CustomDateAdapter("+00:00") },
-    { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
-    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }
+    { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS }
   ]
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {

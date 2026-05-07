@@ -29,49 +29,11 @@
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
-    <div #stickySentinel></div>
-    <div
-      #stickyHeader
-      class="sticky-header">
-      <div class="sticky-controls ali-center">
-        <mat-form-field class="input-width-xl">
-          <mat-select
-            [(ngModel)]="tokenService.selectedTokenType"
-            [ngModelOptions]="{ standalone: true }"
-            [panelClass]="'multi-column-panel'"
-            [value]="tokenService.selectedTokenType()">
-            @for (type of tokenService.tokenTypeOptions(); track type) {
-              <mat-option
-                #tooltip="matTooltip"
-                (click)="tooltip.hide()"
-                [matTooltip]="type.info.split(':')[1]"
-                [value]="type"
-                class="select-option">
-                {{ type.info.split(":")[0] }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <div class="enroll-button-container margin-left-auto">
-          <button
-            [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            class="action-button-primary button-width-m"
-            mat-stroked-button
-            type="submit">
-            <mat-icon>add_moderator</mat-icon>
-            Enroll Token
-          </button>
-          <button
-            (click)="reopenEnrollmentDialog()"
-            [matTooltip]="'Reopen enrollment dialog'"
-            [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
-            mat-icon-button
-            type="button">
-            <mat-icon>open_in_new</mat-icon>
-          </button>
-        </div>
-      </div>
-    </div>
+    <app-token-enrollment-type-selector
+      [canReopenDialog]="canReopenEnrollmentDialog()"
+      [formInvalid]="formGroupSignal().invalid"
+      [scrollContainer]="scrollContainer"
+      (reopenDialog)="reopenEnrollmentDialog()" />
     <div class="responsive-margin-left-1310">
       <div class="width-884 margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
@@ -83,59 +45,54 @@
         (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
         (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
         (reopenDialogChange)="updateReopenDialog($event)" />
-    <mat-form-field class="input-width-xl margin-top-16">
-      <mat-label i18n>Description</mat-label>
-      <textarea
-        [formControl]="descriptionControl"
-        [maxlength]="80"
-        matInput
-        placeholder="Enter description"
-        rows="3"></textarea>
-      <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
-      </mat-hint>
-      @if (descriptionControl.hasError("required")) {
-        <mat-error i18n>
-          Description is <strong>required</strong>.
-        </mat-error>
-      } @else if (descriptionControl.hasError("maxlength")) {
-        <mat-error i18n>
-          Description cannot exceed <strong>80 characters</strong>.
-        </mat-error>
-      }
-    </mat-form-field>
+      <mat-form-field
+        class="input-width-xl margin-top-16">
+        <mat-label i18n>Description</mat-label>
+        <textarea
+          [formControl]="descriptionControl"
+          [maxlength]="80"
+          matInput
+          placeholder="Enter description"
+          rows="3"></textarea>
+        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        </mat-hint>
+        @if (descriptionControl.hasError("required")) {
+          <mat-error i18n>
+            Description is <strong>required</strong>.
+          </mat-error>
+        }
+      </mat-form-field>
 
-    <div class="flex-row gap-16">
-      @if (authService.actionAllowed("enrollpin")) {
-        <app-enrollment-pin
-          [setPinControl]="setPinControl"
-          [repeatPinControl]="repeatPinControl"
-          [formGroup]="formGroupSignal()" />
-      }
+      <div class="flex-row gap-16">
+        @if (authService.actionAllowed("enrollpin")) {
+          <app-enrollment-pin
+            [setPinControl]="setPinControl"
+            [repeatPinControl]="repeatPinControl"
+            [formGroup]="formGroupSignal()" />
+        }
 
-      @if (authService.actionAllowed("container_list")) {
-        <div class="flex-column width-100">
-          <h4 i18n>Add Token to a Container</h4>
-          <mat-form-field class="input-width-l">
-            <mat-label i18n>Enter Container</mat-label>
-            <app-clearable-input
-              (onClick)="selectedContainerControl.setValue('')"
-              [showClearButton]="containerService.selectedContainerSerial() !== ''">
-              <input
-                [formControlName]="'selectedContainer'"
-                [formControl]="selectedContainerControl"
-                [matAutocomplete]="containerAuto"
-                matInput />
-            </app-clearable-input>
-            <mat-label i18n>Container Serial</mat-label>
-            <mat-autocomplete #containerAuto="matAutocomplete">
-              @for (option of containerService.filteredContainerOptions(); track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-        </div>
-      }
+        @if (authService.actionAllowed("container_list")) {
+          <div class="flex-column">
+            <h4 i18n>Add Token to a Container</h4>
+            <mat-form-field class="input-width-l">
+              <app-clearable-input
+                (onClick)="selectedContainerControl.setValue('')"
+                [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                <input
+                  [formControl]="selectedContainerControl"
+                  [matAutocomplete]="containerAuto"
+                  matInput />
+              </app-clearable-input>
+              <mat-label i18n>Container Serial</mat-label>
+              <mat-autocomplete #containerAuto="matAutocomplete">
+                @for (option of containerService.filteredContainerOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          </div>
+        }
+      </div>
     </div>
-  </div>
-</form>
+  </form>
 </div>
