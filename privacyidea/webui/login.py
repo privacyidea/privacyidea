@@ -249,7 +249,8 @@ def single_page_application():
         dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
         if os.path.isfile(os.path.join(dist, "index.html")):
             return redirect(f"/app/v2/{url_locale}/")
-    if _serve_locale("en"):
+    en_dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", "en")
+    if os.path.isfile(os.path.join(en_dist, "index.html")):
         return redirect("/app/v2/")
     render_context = get_render_context()
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
@@ -263,9 +264,12 @@ def single_page_application_locale(locale, subpath=None):
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     canonical = _canonical_locale(locale, pi_lang_list)
     if not canonical:
-        abort(404)
+        return _serve_locale("en") or abort(404)
     if canonical != locale or subpath is None:
         path = f"/app/v2/{canonical}/" + (subpath or "")
+        qs = request.query_string.decode()
+        if qs:
+            path += "?" + qs
         return redirect(path)
     return _serve_locale(locale) or abort(404)
 

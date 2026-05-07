@@ -278,8 +278,7 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_root_does_not_redirect_when_build_missing(self):
         """GET / with German Accept-Language falls back to old UI when no build."""
-        with mock.patch("privacyidea.webui.login.os.path.isdir", return_value=False), \
-             mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False):
             with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
@@ -287,7 +286,7 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_root_redirects_to_app_v2_for_english(self):
         """GET / with English redirects to /app/v2/ when build exists."""
-        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
             with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "en"}):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 302)
@@ -295,7 +294,7 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_root_falls_back_to_old_ui_when_no_build(self):
         """GET / falls back to old Jinja2 UI when no Angular build exists."""
-        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False):
             with self.app.test_request_context("/", method="GET"):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
@@ -329,6 +328,14 @@ class NewUIRoutingTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
         self.assertIn(res.status_code, [301, 302, 308])
         self.assertIn("/app/v2/de/", res.location)
+
+    def test_canonicalization_redirect_preserves_query_string(self):
+        """GET /app/v2/DE/?next=/tokens preserves query string in redirect to /app/v2/de/."""
+        with self.app.test_request_context("/app/v2/DE/?next=/tokens", method="GET"):
+            res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [301, 302, 308])
+        self.assertIn("/app/v2/de/", res.location)
+        self.assertIn("next=/tokens", res.location)
 
     def test_unknown_locale_falls_back_to_english(self):
         """GET /app/v2/invalid/ falls back to English when locale not in list."""
