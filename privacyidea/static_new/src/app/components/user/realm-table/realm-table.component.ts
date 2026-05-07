@@ -33,9 +33,8 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { Router } from "@angular/router";
-import { MatSelectModule } from "@angular/material/select";
+import { MatInput } from "@angular/material/input";
+import { MatFormField, MatLabel, MatSelectModule } from "@angular/material/select";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -56,25 +55,20 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmRow, Realms, RealmService, RealmServiceInterface, ResolverGroup } from "@services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { NodeInfo, SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, take } from "rxjs";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
-import {
-  RealmRow,
-  Realms,
-  RealmService,
-  RealmServiceInterface,
-  ResolverGroup
-} from "src/app/services/realm/realm.service";
-import { ResolverService, ResolverServiceInterface } from "src/app/services/resolver/resolver.service";
-import { NodeInfo, SystemService, SystemServiceInterface } from "src/app/services/system/system.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "src/app/services/table-utils/table-utils.service";
-import { ROUTE_PATHS } from "../../../route_paths";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -293,7 +287,9 @@ export class RealmTableComponent {
 
   // --- Create Handlers ---
   canSubmitNewRealm(): boolean {
-    return this.newRealmName().trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.newRealmName()) && !this.isCreatingRealm();
+    return (
+      this.newRealmName().trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.newRealmName()) && !this.isCreatingRealm()
+    );
   }
 
   resetCreateForm(): void {

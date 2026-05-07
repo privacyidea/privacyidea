@@ -29,12 +29,12 @@ import {
 import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ContainerServiceInterface, ContainerTemplate } from "../../../services/container/container.service";
-import { TokenServiceInterface } from "../../../services/token/token.service";
-import { ContainerRegistrationConfigComponent } from "../../token/container-registration/container-registration-config/container-registration-config.component";
-import { ContainerTemplateEditBodyComponent } from "../../token/container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
-import { ClearButtonComponent } from "../clear-button/clear-button.component";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
+import { ContainerTemplateEditBodyComponent } from "@components/token/container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
+import { AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerServiceInterface, ContainerTemplate } from "@services/container/container.service";
+import { TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-container-create-form",

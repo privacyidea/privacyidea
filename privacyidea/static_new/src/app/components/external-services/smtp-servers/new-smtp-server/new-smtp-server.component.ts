@@ -28,23 +28,24 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../../services/smtp/smtp.service";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatButtonModule } from "@angular/material/button";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltip } from "@angular/material/tooltip";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { MatDivider } from "@angular/material/list";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 @Component({
   selector: "app-smtp-edit-dialog",

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,21 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, EventEmitter, inject, input, linkedSignal, OnInit, Output } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel, MatSuffix, MatError } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   CertificateApiPayloadMapper,
   CertificateEnrollmentData
-} from "../../../../mappers/token-api-payload/certificate-token-api-payload.mapper";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
+} from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   type: "certificate";

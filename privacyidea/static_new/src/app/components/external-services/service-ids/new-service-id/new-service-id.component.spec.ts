@@ -16,21 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewServiceIdComponent } from "./new-service-id.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ServiceIdService } from "@services/service-id/service-id.service";
+import { MockDialogService } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockServiceIdService } from "@testing/mock-services/mock-service-id-service";
 import { of } from "rxjs";
-import { ServiceIdService } from "../../../../services/service-id/service-id.service";
-import { MockServiceIdService } from "../../../../../testing/mock-services/mock-service-id-service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services";
-import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../route_paths";
+import { NewServiceIdComponent } from "./new-service-id.component";
 
 describe("NewServiceIdComponent", () => {
   let component: NewServiceIdComponent;
@@ -151,7 +151,7 @@ describe("NewServiceIdComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
@@ -168,7 +168,7 @@ describe("NewServiceIdComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
@@ -186,7 +186,7 @@ describe("NewServiceIdComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
@@ -199,7 +199,7 @@ describe("NewServiceIdComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.save).not.toHaveBeenCalled();
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
@@ -216,7 +216,7 @@ describe("NewServiceIdComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();

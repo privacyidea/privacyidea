@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SearchTokenDialogComponent } from "./search-token-dialog";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { SearchTokenDialogComponent } from "./search-token-dialog";
 
 describe("SearchTokenDialogComponent", () => {
   let component: SearchTokenDialogComponent;

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,26 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, signal } from "@angular/core";
+import { Component, signal } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
-import { MatError, MatOption, MatSelect } from "@angular/material/select";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatTableModule } from "@angular/material/table";
 import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
+import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
+import { MatCheckbox } from "@angular/material/checkbox";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
+import { MatIconModule } from "@angular/material/icon";
+import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatDivider } from "@angular/material/list";
-import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/http-resolver.component";
-import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
-import { HttpConfigComponent } from "../http-resolver/http-config/http-config.component";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { HttpGroupsAttributeComponent } from "../http-resolver/http-groups-attribute/http-groups-attribute.component";
+import { MatError, MatOption, MatSelect } from "@angular/material/select";
+import { MatTableModule } from "@angular/material/table";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { HttpConfigComponent } from "@components/user/user-new-resolver/http-resolver/http-config/http-config.component";
+import { HttpGroupsAttributeComponent } from "@components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component";
+import {
+  AttributeMappingRow,
+  HttpResolverComponent
+} from "@components/user/user-new-resolver/http-resolver/http-resolver.component";
 
 @Component({
   selector: "app-keycloak-resolver",

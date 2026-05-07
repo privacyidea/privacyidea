@@ -17,24 +17,24 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, HttpErrorResponse, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, Signal, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { Observable, Subject, catchError, forkJoin, lastValueFrom, of, throwError } from "rxjs";
-import { PiResponse } from "src/app/app.component";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
+import { PiResponse } from "@app/app.component";
 import {
   EnrollmentResponseDetail,
   EnrollmentUrl,
   TokenEnrollmentPayload
-} from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "src/app/services/token/token.service";
-import { UserService, UserServiceInterface } from "src/app/services/user/user.service";
-import { StringUtils } from "src/app/utils/string.utils";
-import { environment } from "src/environments/environment";
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { StringUtils } from "@utils/string.utils";
+import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -23,7 +23,7 @@ import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-system-documentation-dialog",

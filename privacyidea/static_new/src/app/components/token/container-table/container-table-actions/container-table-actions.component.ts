@@ -23,17 +23,17 @@ import { MatIcon } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { forkJoin } from "rxjs";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { DocumentationService } from "../../../../services/documentation/documentation.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-container-table-actions",

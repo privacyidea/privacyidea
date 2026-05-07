@@ -26,16 +26,16 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { Router } from "@angular/router";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "../../../services/container-template/container-template.service";
-import { ContainerTemplate } from "../../../services/container/container.service";
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";

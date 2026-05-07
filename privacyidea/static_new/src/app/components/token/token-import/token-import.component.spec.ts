@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,21 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenImportComponent } from "./token-import.component";
-import {
-  MockNotificationService,
-  MockRealmService,
-  MockTokenService,
-  MockUserService
-} from "../../../../testing/mock-services";
-import { TokenService } from "../../../services/token/token.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { UserService } from "../../../services/user/user.service";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import {
+    MockNotificationService,
+    MockRealmService,
+    MockTokenService,
+    MockUserService
+} from "@testing/mock-services";
+import { of } from "rxjs";
+import { TokenImportComponent } from "./token-import.component";
 
 describe("TokenImportComponent", () => {
   let component: TokenImportComponent;

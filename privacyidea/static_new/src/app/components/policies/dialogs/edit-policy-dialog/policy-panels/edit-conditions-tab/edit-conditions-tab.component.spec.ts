@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditConditionsTabComponent } from "./edit-conditions-tab.component";
-import { PolicyService } from "../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
 import { Component, input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { EditConditionsTabComponent } from "./edit-conditions-tab.component";
 
 @Component({ selector: "app-edit-admin-conditions", standalone: true, template: "" })
 class MockAdminComp {

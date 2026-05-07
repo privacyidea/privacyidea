@@ -25,7 +25,19 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ActivatedRoute, provideRouter, Router } from "@angular/router";
-import { of } from "rxjs";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MachineService } from "@services/machine/machine.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { ChallengesService } from "@services/token/challenges/challenges.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import {
   MockAuditService,
   MockChallengesService,
@@ -39,21 +51,9 @@ import {
   MockSessionTimerService,
   MockTokenService,
   MockUserService
-} from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { AuditService } from "../../../services/audit/audit.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ContentService } from "../../../services/content/content.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { MachineService } from "../../../services/machine/machine.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { SessionTimerService } from "../../../services/session-timer/session-timer.service";
-import { ChallengesService } from "../../../services/token/challenges/challenges.service";
-import { TokenService } from "../../../services/token/token.service";
-import { UserService } from "../../../services/user/user.service";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
 import { UserUtilsPanelComponent } from "./user-utils-panel.component";
 
 describe("UserUtilsPanelComponent", () => {

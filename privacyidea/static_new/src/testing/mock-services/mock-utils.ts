@@ -77,6 +77,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   constructor(initial: T) {
     this.value = signal(initial) as WritableSignal<T>;
   }
+  snapshot: Signal<ResourceSnapshot<T>>;
 }
 
 export class MockBase64Service {

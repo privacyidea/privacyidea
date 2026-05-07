@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, input, Input, signal } from "@angular/core";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
-import { MatInput, MatLabel } from "@angular/material/input";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint } from "@angular/material/form-field";
+import { MatInput, MatLabel } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-assignment",

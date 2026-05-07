@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { HttpResolverComponent } from "./http-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockPiResponse } from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { of } from "rxjs";
-import { MockPiResponse } from "../../../../../testing/mock-services";
+import { HttpResolverComponent } from "./http-resolver.component";
 
 describe("HttpResolverComponent", () => {
   let component: HttpResolverComponent;

@@ -19,23 +19,24 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { CreateUserDialogComponent } from "./create-user-dialog.component";
-import { UserService } from "../../../services/user/user.service";
-import { Realm, RealmResolver, RealmService } from "../../../services/realm/realm.service";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { NotificationService } from "../../../services/notification/notification.service";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { Realm, RealmResolver, RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { UserService } from "@services/user/user.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
   MockDialogService,
-  MockNotificationService, MockPendingChangesService,
+  MockNotificationService,
+  MockPendingChangesService,
   MockRealmService,
   MockUserService
-} from "../../../../testing/mock-services";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { provideRouter, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+} from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { CreateUserDialogComponent } from "./create-user-dialog.component";
 
 describe("CreateUserDialogComponent", () => {
   let component: CreateUserDialogComponent;

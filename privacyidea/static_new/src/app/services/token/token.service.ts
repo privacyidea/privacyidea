@@ -19,6 +19,24 @@
 import { HttpClient, HttpErrorResponse, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
+import { PiResponse } from "@app/app.component";
+import {
+  BaseApiPayloadMapper,
+  EnrollmentResponse,
+  EnrollmentResponseDetail,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { StringUtils } from "@utils/string.utils";
+import { tokenTypes } from "@utils/token.utils";
 import {
   catchError,
   forkJoin,
@@ -31,24 +49,6 @@ import {
   throwError,
   timer
 } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import {
-  BaseApiPayloadMapper,
-  EnrollmentResponse,
-  EnrollmentResponseDetail,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { tokenTypes } from "../../utils/token.utils";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { RealmService, RealmServiceInterface } from "../realm/realm.service";
-import { StringUtils } from "../../utils/string.utils";
-import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export type TokenTypeKey =
   | "hotp"
@@ -1048,14 +1048,16 @@ export class TokenService implements TokenServiceInterface {
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse> {
     const headers = this.authService.getHeaders();
-    return this.http.post<LostTokenResponse>(`${this.tokenBaseUrl}lost/${encodeURIComponent(tokenSerial)}`, {}, { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to mark token as lost.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to mark token as lost. " + message);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .post<LostTokenResponse>(`${this.tokenBaseUrl}lost/${encodeURIComponent(tokenSerial)}`, {}, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to mark token as lost.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to mark token as lost. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   stopPolling(): void {

@@ -16,12 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal, signal, WritableSignal } from "@angular/core";
-import { of, Subject } from "rxjs";
 
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
-import { PiResponse } from "../../app/app.component";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -30,12 +29,13 @@ import {
   ContainerType,
   ContainerTypes,
   TemplateComparisonResult
-} from "../../app/services/container/container.service";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+} from "@services/container/container.service";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
+import { of, Subject } from "rxjs";
 
 export class MockContainerService implements ContainerServiceInterface {
   containersForTokenType: Signal<string[]> = signal([]);
-  compareWithTemplate: Signal<() => void> = signal(() => {});
+  compareWithTemplate: () => Promise<void> = jest.fn().mockResolvedValue(undefined);
   compatibleWithSelectedTokenType = signal<string | null>(null);
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];

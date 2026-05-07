@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { Resolver, Resolvers, ResolverService } from "./resolver.service";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { HttpHeaders, provideHttpClient } from "@angular/common/http";
-import { MockPiResponse } from "../../../testing/mock-services";
-import { AuthService } from "../auth/auth.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { MockContentService } from "../../../testing/mock-services/mock-content-service";
-import { ContentService } from "../content/content.service";
-import { ROUTE_PATHS } from "../../route_paths";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { lastValueFrom, of } from "rxjs";
+import { Resolver, Resolvers, ResolverService } from "./resolver.service";
 
 describe("ResolverService", () => {
   let resolverService: ResolverService;
@@ -120,8 +120,9 @@ describe("ResolverService", () => {
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
-      });
+      status: 403,
+      statusText: "Permission denied"
+    });
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(resolverService.resolverResourceValue()).toEqual({});
@@ -178,7 +179,7 @@ describe("ResolverService", () => {
   describe("userAttributes signal", () => {
     it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
       const mockResolvers = {
-        "ldap/1": { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: '{ "surname": "sn", "givenname": "givenName" }' }, type: "ldapresolver" }
       };
       (resolverService as any).selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
@@ -236,7 +237,8 @@ describe("ResolverService", () => {
               mobile: "mobilePhone",
               surname: "surname"
             }
-          }, type: "httpresolver"
+          },
+          type: "httpresolver"
         }
       };
       const mockResponse = MockPiResponse.fromValue(mockResolvers);

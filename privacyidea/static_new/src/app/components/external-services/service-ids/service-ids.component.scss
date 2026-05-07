@@ -1,8 +1,10 @@
 @use "styles";
+@use "table";
+@use "@angular/material" as mat;
 
 .service-ids-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".service-ids-table", ".table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".service-ids-table", ".table-filter", ".table-scroll-container");
 }
 
 .actions-container {

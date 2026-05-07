@@ -27,27 +27,27 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   RadiusServer,
   RadiusServerService,
   RadiusServerServiceInterface
-} from "../../../../services/radius-server/radius-server.service";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatTooltip } from "@angular/material/tooltip";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { ScrollToTopDirective } from "../../../shared/directives/app-scroll-to-top.directive";
+} from "@services/radius-server/radius-server.service";
 
 @Component({
   selector: "app-new-radius-server",
@@ -125,7 +125,6 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
   get canSave(): boolean {
     return this.authService.actionAllowed("radiusserver_write") && this.radiusForm.valid;
   }
-
 
   ngAfterViewInit(): void {
     if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;

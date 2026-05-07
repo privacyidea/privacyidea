@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,22 +24,23 @@ import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
-import { map } from "rxjs";
-import { PiResponse } from "src/app/app.component";
-import { ContainerCreatedDialogWizardComponent } from "src/app/components/token/container-create/container-created-dialog/container-created-dialog.wizard.component";
-import { environment } from "../../../../environments/environment";
+import { PiResponse } from "@app/app.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ContainerCreatedDialogWizardComponent } from "@components/token/container-create/container-created-dialog/container-created-dialog.wizard.component";
+import { ContainerRegistrationCompletedDialogData } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { environment } from "@env/environment";
 import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface
-} from "../../../services/container/container.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+} from "@services/container/container.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { map } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
-import { ContainerRegistrationCompletedDialogData } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
-import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+
 @Component({
   selector: "app-container-create-wizard",
   imports: [

@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { SmtpService } from "./smtp.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
 import { signal } from "@angular/core";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { SmtpService } from "./smtp.service";
 
 describe("SmtpService", () => {
   let service: SmtpService;
@@ -135,7 +135,6 @@ describe("SmtpService", () => {
   });
 
   describe("smtpServers", () => {
-
     it("smsGateways falls back to default when resource empty", () => {
       expect(service.smtpServers()).toEqual([]);
     });
@@ -147,7 +146,7 @@ describe("SmtpService", () => {
       const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
       expect(req.request.method).toBe("GET");
       const smtpServers = {
-        "test": {
+        test: {
           identifier: "test",
           server: "",
           port: 25,
@@ -172,7 +171,8 @@ describe("SmtpService", () => {
       const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,10 +26,10 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { forkJoin, Observable, switchMap } from "rxjs";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 
 export interface ContainerInfoDetail<T = any> {
   value: T;

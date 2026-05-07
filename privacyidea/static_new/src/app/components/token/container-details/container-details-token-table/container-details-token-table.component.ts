@@ -31,10 +31,10 @@ import {
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatFormField, MatLabel } from "@angular/material/select";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -47,22 +47,19 @@ import {
 } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailToken,
   ContainerService,
   ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 

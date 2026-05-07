@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -21,19 +21,16 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { Router } from "@angular/router";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   EmailApiPayloadMapper,
   EmailEnrollmentData
-} from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { Router } from "@angular/router";
+} from "@app/mappers/token-api-payload/email-token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: "email";
@@ -146,7 +143,7 @@ export class EnrollEmailComponent implements OnInit {
   }
 
   onEmailConfigKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === "Enter" || event.key === " ") {
       this.goToEmailConfig();
     }
   }

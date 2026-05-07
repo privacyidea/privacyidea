@@ -4,10 +4,16 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "src/*": ["./src/*"],
       "@styles/*": ["./src/styles/*"],
       "@components/*": ["./src/app/components/*"],
-      "@env/*": ["./src/environments/*"]
+      "@env/*": ["./src/environments/*"],
+      "@testing/*": ["./src/testing/*"],
+      "@services/*": ["./src/app/services/*"],
+      "@utils/*": ["./src/app/utils/*"],
+      "@constants/*": ["./src/app/constants/*"],
+      "@models/*": ["./src/app/models/*"],
+      "@core/*": ["./src/app/core/*"],
+      "@app/*": ["./src/app/*"]
     },
     "outDir": "./dist/out-tsc",
     "strict": true,

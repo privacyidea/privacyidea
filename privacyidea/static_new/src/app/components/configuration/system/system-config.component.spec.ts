@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SystemConfigComponent } from "./system-config.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { provideRouter, Router } from "@angular/router";
 import { provideLocationMocks } from "@angular/common/testing";
-import { of } from "rxjs";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { ContentService } from "../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockContentService } from "../../../../testing/mock-services";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockSystemService } from "../../../../testing/mock-services/mock-system-service";
-import { MockPiResponse } from "../../../../testing/mock-services";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SystemService } from "@services/system/system.service";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { of } from "rxjs";
+import { SystemConfigComponent } from "./system-config.component";
 
 describe("SystemConfigComponent", () => {
   let component: SystemConfigComponent;

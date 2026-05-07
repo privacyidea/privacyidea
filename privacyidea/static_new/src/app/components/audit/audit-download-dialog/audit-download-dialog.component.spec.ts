@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { AuditDownloadDialogComponent } from "./audit-download-dialog.component";
+import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 describe("AuditDownloadDialogComponent", () => {
   let component: AuditDownloadDialogComponent;

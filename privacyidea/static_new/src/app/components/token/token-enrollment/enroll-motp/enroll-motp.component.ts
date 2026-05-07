@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,17 +28,11 @@ import {
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-  MotpApiPayloadMapper,
-  MotpEnrollmentData
-} from "../../../../mappers/token-api-payload/motp-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { MotpApiPayloadMapper, MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   type: "motp";

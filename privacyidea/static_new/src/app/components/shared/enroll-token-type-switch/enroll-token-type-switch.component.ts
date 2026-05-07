@@ -18,37 +18,37 @@
  **/
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormControl } from "@angular/forms";
-import { EnrollApplspecComponent } from "../../token/token-enrollment/enroll-asp/enroll-applspec.component";
-import { EnrollCertificateComponent } from "../../token/token-enrollment/enroll-certificate/enroll-certificate.component";
-import { EnrollDaypasswordComponent } from "../../token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "../../token/token-enrollment/enroll-email/enroll-email.component";
-import { EnrollFoureyesComponent } from "../../token/token-enrollment/enroll-foureyes/enroll-foureyes.component";
-import { EnrollHotpComponent } from "../../token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "../../token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollMotpComponent } from "../../token/token-enrollment/enroll-motp/enroll-motp.component";
-import { EnrollPaperComponent } from "../../token/token-enrollment/enroll-paper/enroll-paper.component";
-import { EnrollPasskeyComponent } from "../../token/token-enrollment/enroll-passkey/enroll-passkey.component";
-import { EnrollPushComponent } from "../../token/token-enrollment/enroll-push/enroll-push.component";
-import { EnrollQuestionComponent } from "../../token/token-enrollment/enroll-questionnaire/enroll-question.component";
-import { EnrollRadiusComponent } from "../../token/token-enrollment/enroll-radius/enroll-radius.component";
-import { EnrollRegistrationComponent } from "../../token/token-enrollment/enroll-registration/enroll-registration.component";
-import { EnrollRemoteComponent } from "../../token/token-enrollment/enroll-remote/enroll-remote.component";
-import { EnrollSmsComponent } from "../../token/token-enrollment/enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "../../token/token-enrollment/enroll-spass/enroll-spass.component";
-import { EnrollSshkeyComponent } from "../../token/token-enrollment/enroll-sshkey/enroll-sshkey.component";
-import { EnrollTanComponent } from "../../token/token-enrollment/enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "../../token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "../../token/token-enrollment/enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "../../token/token-enrollment/enroll-u2f/enroll-u2f.component";
-import { EnrollVascoComponent } from "../../token/token-enrollment/enroll-vasco/enroll-vasco.component";
-import { EnrollWebauthnComponent } from "../../token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
-import { EnrollYubicoComponent } from "../../token/token-enrollment/enroll-yubico/enroll-yubico.component";
-import { EnrollYubikeyComponent } from "../../token/token-enrollment/enroll-yubikey/enroll-yubikey.component";
+import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
+import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
+import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
+import { EnrollEmailComponent } from "@components/token/token-enrollment/enroll-email/enroll-email.component";
+import { EnrollFoureyesComponent } from "@components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component";
+import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { EnrollIndexedsecretComponent } from "@components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
+import { EnrollMotpComponent } from "@components/token/token-enrollment/enroll-motp/enroll-motp.component";
+import { EnrollPaperComponent } from "@components/token/token-enrollment/enroll-paper/enroll-paper.component";
+import { EnrollPasskeyComponent } from "@components/token/token-enrollment/enroll-passkey/enroll-passkey.component";
+import { EnrollPushComponent } from "@components/token/token-enrollment/enroll-push/enroll-push.component";
+import { EnrollQuestionComponent } from "@components/token/token-enrollment/enroll-questionnaire/enroll-question.component";
+import { EnrollRadiusComponent } from "@components/token/token-enrollment/enroll-radius/enroll-radius.component";
+import { EnrollRegistrationComponent } from "@components/token/token-enrollment/enroll-registration/enroll-registration.component";
+import { EnrollRemoteComponent } from "@components/token/token-enrollment/enroll-remote/enroll-remote.component";
+import { EnrollSmsComponent } from "@components/token/token-enrollment/enroll-sms/enroll-sms.component";
+import { EnrollSpassComponent } from "@components/token/token-enrollment/enroll-spass/enroll-spass.component";
+import { EnrollSshkeyComponent } from "@components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component";
+import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-tan/enroll-tan.component";
+import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
+import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
+import { EnrollU2fComponent } from "@components/token/token-enrollment/enroll-u2f/enroll-u2f.component";
+import { EnrollVascoComponent } from "@components/token/token-enrollment/enroll-vasco/enroll-vasco.component";
+import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
+import { EnrollYubicoComponent } from "@components/token/token-enrollment/enroll-yubico/enroll-yubico.component";
+import { EnrollYubikeyComponent } from "@components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component";
 import type {
   enrollmentArgsGetterFn,
   OnEnrollmentResponseFn,
   ReopenDialogFn
-} from "../../token/token-enrollment/token-enrollment.component";
+} from "@components/token/token-enrollment/token-enrollment.component";
 
 @Component({
   selector: "app-enroll-token-type-switch",
@@ -92,4 +92,3 @@ export class EnrollTokenTypeSwitchComponent {
   @Output() onEnrollmentResponseChange = new EventEmitter<OnEnrollmentResponseFn>();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
 }
-

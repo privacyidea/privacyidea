@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { SystemService } from "./system.service";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { AuthService } from "../auth/auth.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { environment } from "../../../environments/environment";
-import { lastValueFrom, of } from "rxjs";
-import { ROUTE_PATHS } from "../../route_paths";
-import { ContentService } from "../content/content.service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { lastValueFrom, of } from "rxjs";
+import { SystemService } from "./system.service";
 
 describe("SystemService", () => {
   let service: SystemService;
@@ -102,7 +102,8 @@ describe("SystemService", () => {
     const req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
     expect(req.request.method).toBe("GET");
     req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-      status: 403, statusText: "Permission denied"
+      status: 403,
+      statusText: "Permission denied"
     });
     await lastValueFrom(of({})); // Wait for async updates
 
@@ -111,7 +112,6 @@ describe("SystemService", () => {
   });
 
   describe("systemConfigResource", () => {
-
     it("systemConfig and systemConfigInit fall back to default when resource empty", () => {
       expect(service.systemConfig()).toEqual({});
       expect(service.systemConfigInit()).toEqual({});
@@ -140,7 +140,8 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -151,7 +152,6 @@ describe("SystemService", () => {
   });
 
   describe("nodesResource", () => {
-
     it("nodes falls back to default when resource is empty", () => {
       expect(service.nodes()).toEqual([]);
     });
@@ -177,7 +177,8 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/nodes");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -187,7 +188,6 @@ describe("SystemService", () => {
   });
 
   describe("radiusServers", () => {
-
     beforeEach(() => {
       authService.actionAllowed.mockImplementation((action) => action === "enrollRADIUS");
     });
@@ -217,7 +217,8 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/names/radius");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

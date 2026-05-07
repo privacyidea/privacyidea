@@ -18,7 +18,7 @@
  **/
 
 import { Component, inject, input, output } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 @Component({
   selector: "app-token-enrolled-text",

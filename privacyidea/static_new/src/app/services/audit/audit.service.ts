@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { finalize, Subscription } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
-import { AuditDownloadDialogComponent } from "../../components/audit/audit-download-dialog/audit-download-dialog.component";
 
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { StringUtils } from "../../utils/string.utils";
+import { HttpClient, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
+import { PiResponse } from "@app/app.component";
+import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { StringUtils } from "@utils/string.utils";
+import { Subscription, finalize } from "rxjs";
 
 export interface Audit {
   auditcolumns: string[];
@@ -218,37 +218,41 @@ export class AuditService implements AuditServiceInterface {
       return;
     }
 
-    this.dialogService.openDialog({
-      component: AuditDownloadDialogComponent
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.executeDownload();
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: AuditDownloadDialogComponent
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.executeDownload();
+        }
+      });
   }
 
   private executeDownload(): void {
     this.isDownloading.set(true);
     const params = new HttpParams({ fromObject: this.filterParams() });
-    this.downloadSubscription = this.http.get(this.auditBaseUrl + "audit.csv", {
-      headers: this.authService.getHeaders(),
-      params,
-      responseType: "text"
-    }).pipe(
-      finalize(() => this.isDownloading.set(false))
-    ).subscribe({
-      next: (data) => {
-        const blob = new Blob([data], { type: "text/csv" });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "audit.csv";
-        a.click();
-        window.URL.revokeObjectURL(url);
-      },
-      error: (_) => {
-        this.notificationService.error($localize`Failed to download audit log.`);
-      }
-    });
+    this.downloadSubscription = this.http
+      .get(this.auditBaseUrl + "audit.csv", {
+        headers: this.authService.getHeaders(),
+        params,
+        responseType: "text"
+      })
+      .pipe(finalize(() => this.isDownloading.set(false)))
+      .subscribe({
+        next: (data) => {
+          const blob = new Blob([data], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "audit.csv";
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: (_) => {
+          this.notificationService.error($localize`Failed to download audit log.`);
+        }
+      });
   }
 }

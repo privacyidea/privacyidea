@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { AddedActionsListComponent } from "./added-actions-list.component";
-import { PolicyService } from "../../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { Component, input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { AddedActionsListComponent } from "./added-actions-list.component";
 
 @Component({
   selector: "app-policy-action-item-edit",

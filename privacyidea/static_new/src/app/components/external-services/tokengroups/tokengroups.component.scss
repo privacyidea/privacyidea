@@ -1,8 +1,9 @@
 @use "styles";
+@use "table";
 
 .tokengroups-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".tokengroups-table", ".tokengroups-table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".tokengroups-table", ".tokengroups-table-filter", ".table-scroll-container");
 }
 
 .actions-container {

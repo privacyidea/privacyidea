@@ -18,14 +18,14 @@
  **/
 import { Component, computed, effect, inject, input } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatHint, MatInput } from "@angular/material/input";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
-import { ResolverService, SQLResolverData } from "../../../../services/resolver/resolver.service";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatHint, MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ResolverService, SQLResolverData } from "@services/resolver/resolver.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 @Component({
   selector: "app-sql-resolver",

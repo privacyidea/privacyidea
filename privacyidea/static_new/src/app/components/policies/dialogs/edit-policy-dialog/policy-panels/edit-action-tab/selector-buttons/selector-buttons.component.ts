@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, WritableSignal, output, viewChildren, ElementRef } from "@angular/core";
+import { Component, ElementRef, input, linkedSignal, output, viewChildren, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 
 @Component({

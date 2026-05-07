@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { FilterOption, DummyFilterOption, FilterActionType } from "./filter-option";
+import { DummyFilterOption, FilterActionType, FilterOption } from "./filter-option";
 import { FilterValueGeneric } from "./filter-value-generic";
 
 describe("FilterOption", () => {

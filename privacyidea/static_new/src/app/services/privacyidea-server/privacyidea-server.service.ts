@@ -18,12 +18,12 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface PrivacyideaServer {
@@ -114,9 +114,12 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   }
 
   async deletePrivacyideaServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.privacyideaServerBaseUrl}${encodeURIComponent(identifier)}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<any>>(
+      `${this.privacyideaServerBaseUrl}${encodeURIComponent(identifier)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success($localize`Successfully deleted privacyIDEA server: ${identifier}.`);

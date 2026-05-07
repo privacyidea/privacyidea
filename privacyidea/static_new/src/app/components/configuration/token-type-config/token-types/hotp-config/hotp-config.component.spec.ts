@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { HotpConfigComponent } from "./hotp-config.component";
-import { provideRouter } from "@angular/router";
-import { HOTP_HASHLIB } from "../../../../../constants/token.constants";
 import { provideAnimations } from "@angular/platform-browser/animations";
+import { provideRouter } from "@angular/router";
+import { HOTP_HASHLIB } from "@constants/token.constants";
+import { HotpConfigComponent } from "./hotp-config.component";
 
 const mockHashLibs = ["sha1", "sha256", "sha512"];
 

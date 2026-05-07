@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { FilterValueGeneric } from "./filter-value-generic";
 import { FilterOption } from "./filter-option";
+import { FilterValueGeneric } from "./filter-value-generic";
 
 describe("FilterValueGeneric", () => {
   interface PolicyMock {

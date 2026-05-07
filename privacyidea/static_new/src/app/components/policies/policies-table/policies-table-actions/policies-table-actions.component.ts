@@ -19,16 +19,16 @@
 
 import { Component, inject, input } from "@angular/core";
 
-import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { lastValueFrom } from "rxjs";
+import { MatIconModule } from "@angular/material/icon";
 import { Router } from "@angular/router";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { PolicyService } from "../../../../services/policies/policies.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-policies-table-actions",

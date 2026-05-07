@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SqlResolverComponent } from "./sql-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { SqlResolverComponent } from "./sql-resolver.component";
 
 describe("SqlResolverComponent", () => {
   let component: SqlResolverComponent;

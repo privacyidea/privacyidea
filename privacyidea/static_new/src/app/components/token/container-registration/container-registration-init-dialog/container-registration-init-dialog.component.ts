@@ -18,10 +18,10 @@
  **/
 import { Component, ViewChild } from "@angular/core";
 import { MatDialogContent } from "@angular/material/dialog";
-import { ContainerRegistrationConfigComponent } from "../container-registration-config/container-registration-config.component";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "../../../../models/dialog";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
+import { DialogAction } from "@models/dialog";
 
 @Component({
   selector: "app-container-registration-init-dialog",

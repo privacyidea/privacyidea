@@ -17,21 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
-import { Component, inject, input, computed, output, linkedSignal, viewChild, ElementRef } from "@angular/core";
+import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import {
-  PolicyServiceInterface,
-  PolicyService,
-  PolicyActionDetail
-} from "../../../../../../../../services/policies/policies.service";
-import { SelectorButtonsComponent } from "../../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
 @Component({
   selector: "app-policy-action-item-new",

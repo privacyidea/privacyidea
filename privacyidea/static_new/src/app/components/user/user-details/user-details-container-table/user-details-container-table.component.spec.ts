@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,7 +19,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
-import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ContainerService } from "@services/container/container.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { UserService } from "@services/user/user.service";
 import {
   MockContainerService,
   MockLoadingService,
@@ -27,12 +31,8 @@ import {
   MockNotificationService,
   MockTableUtilsService,
   MockUserService
-} from "../../../../../testing/mock-services";
-import { ContainerService } from "../../../../services/container/container.service";
-import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { UserService } from "../../../../services/user/user.service";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+} from "@testing/mock-services";
+import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;

@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewCaConnectorComponent } from "./new-ca-connector.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { CaConnectorService } from "../../../../services/ca-connector/ca-connector.service";
-import { MockCaConnectorService } from "../../../../../testing/mock-services/mock-ca-connector-service";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { provideRouter, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { MockPendingChangesService } from "../../../../../testing/mock-services";
+import { Router, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockCaConnectorService, MockPendingChangesService } from "@testing/mock-services";
+import { NewCaConnectorComponent } from "./new-ca-connector.component";
 
 describe("NewCaConnectorComponent", () => {
   let component: NewCaConnectorComponent;

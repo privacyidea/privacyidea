@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenApplicationsComponent } from "./token-applications.component";
-import { TokenApplicationsSshComponent } from "./token-applications-ssh/token-applications-ssh.component";
-import { TokenApplicationsOfflineComponent } from "./token-applications-offline/token-applications-offline.component";
-import { MatSelectModule } from "@angular/material/select";
-import { MachineService } from "../../../services/machine/machine.service";
 import { provideHttpClient } from "@angular/common/http";
-import { MockLocalService, MockMachineService, MockNotificationService } from "../../../../testing/mock-services";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelectModule } from "@angular/material/select";
+import { MachineService } from "@services/machine/machine.service";
+import { MockLocalService, MockMachineService, MockNotificationService } from "@testing/mock-services";
+import { TokenApplicationsOfflineComponent } from "./token-applications-offline/token-applications-offline.component";
+import { TokenApplicationsSshComponent } from "./token-applications-ssh/token-applications-ssh.component";
+import { TokenApplicationsComponent } from "./token-applications.component";
 
 describe("TokenApplicationsComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsComponent>;

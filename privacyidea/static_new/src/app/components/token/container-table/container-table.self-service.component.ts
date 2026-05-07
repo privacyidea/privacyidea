@@ -27,17 +27,17 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ContainerTableComponent } from "./container-table.component";
 
 @Component({

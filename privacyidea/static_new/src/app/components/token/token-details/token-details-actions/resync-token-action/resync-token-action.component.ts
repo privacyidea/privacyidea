@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,8 +20,8 @@ import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-resync-token-action",

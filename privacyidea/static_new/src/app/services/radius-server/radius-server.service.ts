@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable, linkedSignal, WritableSignal, Signal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface RadiusServer {
@@ -82,7 +82,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   });
 
   radiusServers: WritableSignal<RadiusServer[]> = linkedSignal({
-    source: () => this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined,
+    source: () => (this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined),
     computation: (source, previous) =>
       Object.entries(source?.result?.value ?? {}).map(([identifier, server]) => ({ ...server, identifier })) ??
       previous?.value ??

@@ -18,10 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DialogWrapperComponent } from "./dialog-wrapper.component";
-import { DialogAction } from "../../../../models/dialog";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 import { MatDialogRef } from "@angular/material/dialog";
+import { DialogAction } from "@models/dialog";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { DialogWrapperComponent } from "./dialog-wrapper.component";
 
 describe("DialogWrapperComponent", () => {
   let component: DialogWrapperComponent;

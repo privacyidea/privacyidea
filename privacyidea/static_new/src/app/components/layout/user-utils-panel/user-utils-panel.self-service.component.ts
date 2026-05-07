@@ -17,24 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { DatePipe, NgClass } from "@angular/common";
 import { Component, input } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatIconButton } from "@angular/material/button";
-import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
-import { DatePipe, NgClass } from "@angular/common";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
+import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 
 @Component({
   selector: "app-user-utils-panel-self-service",
-  imports: [
-    MatIcon,
-    MatIconButton,
-    MatTooltip,
-    ThemeSwitcherComponent,
-    NgClass,
-    DatePipe
-  ],
+  imports: [MatIcon, MatIconButton, MatTooltip, ThemeSwitcherComponent, NgClass, DatePipe],
   templateUrl: "./user-utils-panel.self-service.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })

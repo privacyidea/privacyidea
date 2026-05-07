@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { Component, EventEmitter, Output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 import { FormControl } from "@angular/forms";
 import { By } from "@angular/platform-browser";
-import { Component, Output, EventEmitter } from "@angular/core";
-import { EnrollHotpComponent } from "src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 
 @Component({
   selector: "app-enroll-hotp",

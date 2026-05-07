@@ -16,12 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { Router } from "@angular/router";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ROUTE_PATHS } from "src/app/route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 
 @Component({
   selector: "app-resolver-table-actions",
