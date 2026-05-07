@@ -306,7 +306,7 @@ def set_default_realm_api(realm=None):
     """
     realm = realm.lower().strip()
     r = set_default_realm(realm)
-    g.audit_object.log({"success": bool(r),
+    g.audit_object.log({"success": True,
                         "info": realm})
     return send_result(r)
 
