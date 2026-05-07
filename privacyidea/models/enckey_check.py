@@ -19,9 +19,10 @@ from sqlalchemy import Unicode, Integer, Sequence
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models.db import db
+from privacyidea.models.utils import MethodsMixin
 
 
-class EncKeyCheck(db.Model):
+class EncKeyCheck(MethodsMixin, db.Model):
     """
     This table stores an encrypted check value that is used to verify
     at server startup that the correct encryption key is being used.
