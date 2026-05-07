@@ -21,27 +21,22 @@
   @if (authService.actionAllowed("userlist")) {
     @if (contentService.onUserDetailsSelfService()) {
       <div class="username-button disabled">
-        <span class="username">{{ userData().username || "-" }} &#64; {{ userService.selectedUserRealm() || "-" }}</span>
+        <span class="username">{{ userData().username || "-" }}
+          &#64; {{ userService.selectedUserRealm() || "-" }}</span>
       </div>
     } @else {
       <a
         [routerLink]="ROUTE_PATHS.USERS_DETAILS"
         class="username-button"
         mat-ripple>
-        <span class="username">{{ userData().username || "-" }} &#64; {{ userService.selectedUserRealm() || "-" }}</span>
+        <span class="username">{{ userData().username || "-" }}
+          &#64; {{ userService.selectedUserRealm() || "-" }}</span>
       </a>
     }
   }
 
   <app-user-utils-panel-self-service></app-user-utils-panel-self-service>
 
-  @if (contentService.onUserDetailsSelfService()) {
-    <app-navigation-self-service-button
-      i18n-title
-      key="{{ this.ROUTE_PATHS.USERS_DETAILS }}"
-      matIconName="account_circle"
-      title="User Details" />
-  }
   @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button
       i18n-title
@@ -70,6 +65,13 @@
         matIconName="admin_panel_settings"
         matIconSize="tile-icon-large"
         title="Assign Token" />
+    }
+    @if (authService.actionAllowed("userlist")) {
+      <app-navigation-self-service-button
+        i18n-title
+        key="{{ this.ROUTE_PATHS.USERS_DETAILS }}"
+        matIconName="account_circle"
+        title="User Details" />
     }
     @if (authService.rights().includes("container_list")) {
       <app-navigation-self-service-button
