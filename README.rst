@@ -2,8 +2,13 @@
 ..     :alt: CircleCI
 ..     :target: https://circleci.com/gh/privacyidea/privacyidea
 
-.. image:: https://codecov.io/gh/privacyidea/privacyidea/coverage.svg?branch=master
-    :target: https://codecov.io/gh/privacyidea/privacyidea?branch=master
+.. image:: https://codecov.io/gh/privacyidea/privacyidea/branch/master/graph/badge.svg?flag=backend
+    :alt: Backend coverage
+    :target: https://codecov.io/gh/privacyidea/privacyidea?branch=master&flags[0]=backend
+
+.. image:: https://codecov.io/gh/privacyidea/privacyidea/branch/master/graph/badge.svg?flag=frontend
+    :alt: Frontend coverage
+    :target: https://codecov.io/gh/privacyidea/privacyidea?branch=master&flags[0]=frontend
 
 .. .. image:: https://img.shields.io/pypi/dm/privacyidea.svg
 ..    :alt: Downloads
