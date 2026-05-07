@@ -264,7 +264,9 @@ def single_page_application_locale(locale, subpath=None):
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     canonical = _canonical_locale(locale, pi_lang_list)
     if not canonical:
-        return _serve_locale("en") or abort(404)
+        if request.accept_mimetypes.accept_html:
+            return _serve_locale("en") or abort(404)
+        abort(404)
     if canonical != locale or subpath is None:
         path = f"/app/v2/{canonical}/" + (subpath or "")
         qs = request.query_string.decode()

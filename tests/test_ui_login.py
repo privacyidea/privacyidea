@@ -278,7 +278,8 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_root_does_not_redirect_when_build_missing(self):
         """GET / with German Accept-Language falls back to old UI when no build."""
-        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False):
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False), \
+             mock.patch("privacyidea.webui.login.render_template", return_value="<html></html>"):
             with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
@@ -294,7 +295,8 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_root_falls_back_to_old_ui_when_no_build(self):
         """GET / falls back to old Jinja2 UI when no Angular build exists."""
-        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False):
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=False), \
+             mock.patch("privacyidea.webui.login.render_template", return_value="<html></html>"):
             with self.app.test_request_context("/", method="GET"):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
