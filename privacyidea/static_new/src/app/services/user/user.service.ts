@@ -320,9 +320,11 @@ export class UserService implements UserServiceInterface {
   user: WritableSignal<UserData> = linkedSignal({
     source: () => ({
       userRes: this.userResource.hasValue() ? this.userResource.value() : undefined,
+      isLoading: this.userResource.isLoading(),
+      error: this.userResource.error(),
       detailsUsername: this.detailsUsername()
     }),
-    computation: (source) => {
+    computation: (source, previous) => {
       const emptyDetails: UserData = {
         description: "",
         editable: false,
@@ -335,7 +337,10 @@ export class UserService implements UserServiceInterface {
         userid: "",
         username: ""
       };
-      return source.userRes?.result?.value?.[0] ?? emptyDetails;
+      if (source.error) return emptyDetails;
+      const value = source.userRes?.result?.value?.[0];
+      if (!value) return source.isLoading ? (previous?.value ?? emptyDetails) : emptyDetails;
+      return value;
     }
   });
 
@@ -382,15 +387,19 @@ export class UserService implements UserServiceInterface {
   users: WritableSignal<UserData[]> = linkedSignal({
     source: () => ({
       userRes: this.usersResource.hasValue() ? this.usersResource.value() : undefined,
+      isLoading: this.usersResource.isLoading(),
+      error: this.usersResource.error(),
       realm: this.selectedUserRealm()
     }),
     computation: (source, previous) => {
+      if (source.error) return [];
       const users = source.userRes?.result?.value;
-      if (!users && source.realm !== previous?.source.realm) {
-        // If the realm changed we do not fall back on the previous user list
-        return [];
-      }
-      return users ?? previous?.value ?? [];
+      if (users) return users;
+      // No value: distinguish loading vs settled-without-data
+      if (!source.isLoading) return [];
+      // Loading: keep previous only if the realm did not change
+      if (source.realm !== previous?.source.realm) return [];
+      return previous?.value ?? [];
     }
   });
 
