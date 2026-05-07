@@ -5,8 +5,15 @@
   width: calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
 }
 
-@media (max-width: 1302px) {
-  .type-select {
+@media (max-width: 1252px) {
+  :host(:not(.is-admin)) .type-select {
+    flex: 0 0 calc(308px + 2 * var(--three-quarters-global-padding));
+    width: calc(308px + 2 * var(--three-quarters-global-padding));
+  }
+}
+
+@media (max-width: 1000px) {
+  :host(.is-admin) .type-select {
     flex: 0 0 calc(308px + 2 * var(--three-quarters-global-padding));
     width: calc(308px + 2 * var(--three-quarters-global-padding));
   }

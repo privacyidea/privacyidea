@@ -21,6 +21,7 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
+  HostBinding,
   inject,
   input,
   OnDestroy,
@@ -35,6 +36,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
@@ -57,7 +59,12 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 })
 export class TokenEnrollmentTypeSelectorComponent implements AfterViewInit, OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly renderer: Renderer2 = inject(Renderer2);
+
+  @HostBinding("class.is-admin") get isAdmin(): boolean {
+    return this.authService.role() === "admin";
+  }
 
   scrollContainer = input.required<HTMLElement>();
   formInvalid = input<boolean>(false);
