@@ -20,17 +20,20 @@
 import base64
 import pathlib
 import sys
-import click
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-from flask.cli import AppGroup
-from flask import current_app
-from flask_migrate import stamp as fm_stamp
-import gnupg
 
-from privacyidea.models import db
+import click
+import gnupg
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from flask import current_app
+from flask.cli import AppGroup
+from flask_migrate import stamp as fm_stamp
+
+from privacyidea.lib.crypto import create_enckey_check_value
 from privacyidea.lib.security.default import DefaultSecurityModule
+from privacyidea.models import db
+from privacyidea.models.enckey_check import EncKeyCheck
 
 setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
                      help="Commands to set up the privacyIDEA server for production")
@@ -98,6 +101,20 @@ def create_enckey(ctx, enckey_b64):
     enc_file.chmod(0o400)
     click.secho(f"The file permission of {enc_file} was set to 400!", fg="yellow")
     click.secho("Please ensure, that it is owned by the right user.", fg="yellow")
+
+    # Store the encryption key check value in the database
+    try:
+        check_value = create_enckey_check_value()
+        # Remove any existing check values and store the new one
+        db.session.query(EncKeyCheck).delete()
+        db.session.add(EncKeyCheck(check_value=check_value))
+        db.session.commit()
+        click.secho("Encryption key check value stored in database.", fg="green")
+    except Exception as e:
+        click.secho(f"Warning: Could not store encryption key check value in database: {e}",
+                    fg="yellow")
+        click.secho("The enckey_check table may not exist yet. Run 'create_tables' first, "
+                    "then re-run 'create_enckey' or manually store the check value.", fg="yellow")
 
 
 @setup_cli.command("create_pgp_keys")

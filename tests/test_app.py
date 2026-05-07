@@ -1,15 +1,20 @@
 """
 This testfile tests the basic app functionality of the privacyIDEA app
 """
-import os
-import unittest
-import flask
 import inspect
 import logging
+import os
+import unittest
+
+import flask
 import mock
 from testfixtures import Comparison, compare, OutputCapture
+
 from privacyidea.app import create_app
 from privacyidea.config import config, TestingConfig
+from privacyidea.lib.crypto import create_enckey_check_value
+from privacyidea.models import db
+from privacyidea.models.enckey_check import EncKeyCheck
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -29,12 +34,12 @@ class AppTestCase(unittest.TestCase):
         # This will create the app with the 'development' configuration
         app = create_app()
         self.assertIsInstance(app, flask.app.Flask, app)
-#        self.assertEqual(app.env, 'production', app)
+        #        self.assertEqual(app.env, 'production', app)
         self.assertTrue(app.debug, app)
         self.assertFalse(app.testing, app)
         self.assertEqual(app.import_name, 'privacyidea.app', app)
         self.assertEqual(app.name, 'privacyidea.app', app)
-#        self.assertTrue(app.response_class == PiResponseClass, app)
+        #        self.assertTrue(app.response_class == PiResponseClass, app)
         # TODO: additional blueprints will not be checked here
         blueprints = ['validate_blueprint', 'token_blueprint', 'system_blueprint',
                       'resolver_blueprint', 'realm_blueprint', 'defaultrealm_blueprint',
@@ -84,6 +89,7 @@ class AppTestCase(unittest.TestCase):
     def test_03_logging_config_file(self):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging.cfg"
+
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
             create_app(config_name='testing')
             # check the correct initialization of the logging from config file
@@ -119,6 +125,7 @@ class AppTestCase(unittest.TestCase):
     def test_04_logging_config_yaml(self):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging.yml"
+
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
             create_app(config_name='testing')
             # check the correct initialization of the logging from config file
@@ -151,6 +158,7 @@ class AppTestCase(unittest.TestCase):
     def test_05_logging_config_broken_yaml(self):
         class Config(TestingConfig):
             PI_LOGCONFIG = "tests/testdata/logging_broken.yaml"
+
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
             with OutputCapture() as output:
                 create_app(config_name='testing')
@@ -172,3 +180,55 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+    def test_06_enckey_verification_succeeds_with_correct_key(self):
+        """App starts successfully when the enckey check value in DB matches the current key."""
+        app = create_app(config_name='testing', initialize_hsm=True)
+        with app.app_context():
+            db.create_all()
+            # Store a valid check value
+            check_value = create_enckey_check_value()
+            db.session.query(EncKeyCheck).delete()
+            db.session.add(EncKeyCheck(check_value=check_value))
+            db.session.commit()
+
+        # Creating the app again with initialize_hsm should not exit
+        app2 = create_app(config_name='testing', initialize_hsm=True)
+        self.assertIsInstance(app2, flask.app.Flask)
+
+        # Cleanup
+        with app2.app_context():
+            db.session.query(EncKeyCheck).delete()
+            db.session.commit()
+
+    def test_07_enckey_verification_fails_with_wrong_check_value(self):
+        """App exits when the enckey check value in DB does not match the current key."""
+        app = create_app(config_name='testing', initialize_hsm=True)
+        with app.app_context():
+            db.create_all()
+            # Store an invalid check value (simulating a different encryption key)
+            db.session.query(EncKeyCheck).delete()
+            db.session.add(EncKeyCheck(check_value="deadbeef:cafebabe"))
+            db.session.commit()
+
+        with self.assertRaises(SystemExit) as cm:
+            create_app(config_name='testing', initialize_hsm=True)
+        self.assertEqual(cm.exception.code, 1)
+
+        # Cleanup
+        app3 = create_app(config_name='testing', initialize_hsm=False)
+        with app3.app_context():
+            db.session.query(EncKeyCheck).delete()
+            db.session.commit()
+
+    def test_08_enckey_verification_skipped_when_no_check_value(self):
+        """App starts normally when no check value is stored in the database."""
+        app = create_app(config_name='testing', initialize_hsm=True)
+        with app.app_context():
+            db.create_all()
+            db.session.query(EncKeyCheck).delete()
+            db.session.commit()
+
+        # Should start fine without any check value
+        app2 = create_app(config_name='testing', initialize_hsm=True)
+        self.assertIsInstance(app2, flask.app.Flask)
