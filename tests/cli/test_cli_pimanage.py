@@ -249,9 +249,7 @@ class PIManageBackupTestCase(CliTestCase):
             defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
             # urlparse keeps percent-encoding raw, so the value entering
             # ConfigParser literally contains '%'.
-            parsed = urlparse(
-                "mysql+pymysql://privacyidea:ab%25cd@127.0.0.1/privacyidea_test"
-            )
+            parsed = urlparse("mysql+pymysql://privacyidea:ab%25cd@127.0.0.1/privacyidea_test")
             self.assertEqual(parsed.password, "ab%25cd")
 
             _write_mysql_defaults(defaults_file, parsed)
