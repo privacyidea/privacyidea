@@ -77,7 +77,7 @@ from .lib.utils import (getParam,
                         optional,
                         required,
                         send_result, send_file)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, check_admin_base_action
 from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
@@ -152,7 +152,7 @@ def get_gpg_keys():
 
 @system_blueprint.route('/<key>', methods=['GET'])
 @system_blueprint.route('/', methods=['GET'])
-@prepolicy(check_base_action, request, PolicyAction.SYSTEMREAD)
+@prepolicy(check_admin_base_action, request, PolicyAction.SYSTEMREAD)
 def get_config(key=None):
     """
     Return system configuration.
