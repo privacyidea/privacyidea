@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
+import { ReactiveFormsModule } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { Component, input, output } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
 
 class MockMatDialogRef {
   close = jest.fn();

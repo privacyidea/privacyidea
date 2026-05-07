@@ -18,8 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { PolicyService } from "@services/policies/policies.service";
 import { ViewActionColumnComponent } from "./view-action-column.component";
-import { PolicyService } from "../../../../services/policies/policies.service";
 
 describe("ViewActionColumnComponent", () => {
   let component: ViewActionColumnComponent;

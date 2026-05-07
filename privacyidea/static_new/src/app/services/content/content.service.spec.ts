@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,8 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { TestBed } from "@angular/core/testing";
 import { NavigationEnd, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { Subject } from "rxjs";
-import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService } from "./content.service";
 
 describe("ContentService", () => {

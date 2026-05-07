@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpResourceRef } from "@angular/common/http";
-import { computed, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { Observable, of } from "rxjs";
-import { PiResponse } from "../../app/app.component";
-import { UserAttributePolicy, UserData, UserServiceInterface } from "../../app/services/user/user.service";
+import { linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { UserAttributePolicy, UserData, UserServiceInterface } from "@services/user/user.service";
+import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export class MockUserService implements UserServiceInterface {
   userAttributes: Signal<Record<string, string>> = signal({});

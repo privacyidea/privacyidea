@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditActionTabComponent } from "./edit-action-tab.component";
-import { DialogService } from "../../../../../../services/dialog/dialog.service";
-import { PolicyDetail } from "../../../../../../services/policies/policies.service";
 import { Component, input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyDetail } from "@services/policies/policies.service";
+import { EditActionTabComponent } from "./edit-action-tab.component";
 
 @Component({
   selector: "app-added-actions-list",

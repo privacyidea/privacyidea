@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineDetailsDialogComponent } from "./machine-details-dialog.component";
-import { MachineService } from "../../../../services/machine/machine.service";
-import { ApplicationService } from "../../../../services/application/application.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { of } from "rxjs";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { computed, signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ContentService } from "../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { TokenService } from "../../../../services/token/token.service";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ApplicationService } from "@services/application/application.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MachineService } from "@services/machine/machine.service";
+import { TokenService } from "@services/token/token.service";
+import { of } from "rxjs";
+import { MachineDetailsDialogComponent } from "./machine-details-dialog.component";
 
 describe("MachineDetailsDialogComponent", () => {
   let component: MachineDetailsDialogComponent;
@@ -47,18 +47,22 @@ describe("MachineDetailsDialogComponent", () => {
     window.history.pushState({ machine: mockMachine }, "");
 
     machineServiceMock = {
-      getMachineTokens: jest.fn().mockReturnValue(of({
-        result: {
-          value: [{
-            id: 10,
-            serial: "S1",
-            application: "ssh",
-            type: "sshkey",
-            hostname: "host1",
-            options: { user: "alice", service_id: "svc1" }
-          }]
-        }
-      })),
+      getMachineTokens: jest.fn().mockReturnValue(
+        of({
+          result: {
+            value: [
+              {
+                id: 10,
+                serial: "S1",
+                application: "ssh",
+                type: "sshkey",
+                hostname: "host1",
+                options: { user: "alice", service_id: "svc1" }
+              }
+            ]
+          }
+        })
+      ),
       machines: signal([mockMachine]),
       deleteTokenById: jest.fn().mockReturnValue(of({})),
       postAssignMachineToToken: jest.fn().mockReturnValue(of({})),
@@ -135,9 +139,11 @@ describe("MachineDetailsDialogComponent", () => {
   it("should detach token after confirmation", async () => {
     const token = component.dataSource.data[0];
     component.detachToken(token);
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(expect.objectContaining({
-      component: SimpleConfirmationDialogComponent
-    }));
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: SimpleConfirmationDialogComponent
+      })
+    );
     await Promise.resolve();
     expect(machineServiceMock.deleteTokenById).toHaveBeenCalledWith("S1", "ssh", "10");
   });

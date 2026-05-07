@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
-import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../../services/periodic-task/periodic-task.service";
 import { provideHttpClient } from "@angular/common/http";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { MockPeriodicTaskService } from "../../../../../testing/mock-services/mock-periodic-task-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
+import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
 
 describe("PeriodicTaskPanelComponent", () => {
   let component: PeriodicTaskPanelComponent;
@@ -49,8 +49,7 @@ describe("PeriodicTaskPanelComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(PeriodicTaskPanelComponent);
     component = fixture.componentInstance;

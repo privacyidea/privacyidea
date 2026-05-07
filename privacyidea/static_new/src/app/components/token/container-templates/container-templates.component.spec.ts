@@ -23,11 +23,11 @@ import { MatCheckboxChange } from "@angular/material/checkbox";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
-import { ContainerTemplate } from "../../../services/container/container.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
 
 describe("ContainerTemplatesComponent", () => {

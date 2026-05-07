@@ -17,13 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
 import { Component, computed } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "src/app/models/dialog";
-import { ContainerTemplate } from "../../../../../services/container/container.service";
+import { DialogAction } from "@models/dialog";
+import { ContainerTemplate } from "@services/container/container.service";
 
 @Component({
   selector: "app-container-template-delete-dialog",

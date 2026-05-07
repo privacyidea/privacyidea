@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,21 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { RealmService } from "./realm.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { environment } from "../../../environments/environment";
-import {
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse
-} from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService, MockLocalService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { RealmService } from "./realm.service";
 
 describe("RealmService", () => {
   let realmService: RealmService;
@@ -67,17 +62,11 @@ describe("RealmService", () => {
 
   it("createRealm for global realm sends resolver names and only priorities that are set", () => {
     const realmName = "my realm";
-    const resolvers = [
-      { name: "res1", priority: 10 },
-      { name: "res2", priority: null },
-      { name: "res3" } as any
-    ];
+    const resolvers = [{ name: "res1", priority: 10 }, { name: "res2", priority: null }, { name: "res3" } as any];
 
     realmService.createRealm(realmName, "", resolvers).subscribe();
 
-    const req = httpMock.expectOne(
-      `${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`
-    );
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`);
     expect(req.request.method).toBe("POST");
     expect(req.request.body).toEqual({
       resolvers: ["res1", "res2", "res3"],
@@ -91,15 +80,11 @@ describe("RealmService", () => {
 
   it("createRealm for global realm ignores non-numeric priority values", () => {
     const realmName = "realm";
-    const resolvers = [
-      { name: "res1", priority: "not-a-number" as any }
-    ];
+    const resolvers = [{ name: "res1", priority: "not-a-number" as any }];
 
     realmService.createRealm(realmName, "", resolvers).subscribe();
 
-    const req = httpMock.expectOne(
-      `${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`
-    );
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`);
     expect(req.request.method).toBe("POST");
     expect(req.request.body).toEqual({
       resolvers: ["res1"]
@@ -112,24 +97,14 @@ describe("RealmService", () => {
   it("createRealm for node-specific realm sends resolver objects with optional priority", () => {
     const realmName = "node realm";
     const nodeId = "node-1";
-    const resolvers = [
-      { name: "res1", priority: null },
-      { name: "res2", priority: 5 },
-      { name: "res3" } as any
-    ];
+    const resolvers = [{ name: "res1", priority: null }, { name: "res2", priority: 5 }, { name: "res3" } as any];
 
     realmService.createRealm(realmName, nodeId, resolvers).subscribe();
 
-    const req = httpMock.expectOne(
-      `${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}/node/${nodeId}`
-    );
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}/node/${nodeId}`);
     expect(req.request.method).toBe("POST");
     expect(req.request.body).toEqual({
-      resolver: [
-        { name: "res1" },
-        { name: "res2", priority: 5 },
-        { name: "res3" }
-      ]
+      resolver: [{ name: "res1" }, { name: "res2", priority: 5 }, { name: "res3" }]
     });
 
     req.flush({ result: "ok" });
@@ -145,15 +120,10 @@ describe("RealmService", () => {
 
     realmService.createRealm(realmName, nodeId, resolvers).subscribe();
 
-    const req = httpMock.expectOne(
-      `${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}/node/${nodeId}`
-    );
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}/node/${nodeId}`);
     expect(req.request.method).toBe("POST");
     expect(req.request.body).toEqual({
-      resolver: [
-        { name: "res1", priority: 7 },
-        { name: "res2" }
-      ]
+      resolver: [{ name: "res1", priority: 7 }, { name: "res2" }]
     });
 
     req.flush({ result: "ok" });
@@ -163,9 +133,7 @@ describe("RealmService", () => {
     const realmName = "realm with space/ä";
     realmService.deleteRealm(realmName).subscribe();
 
-    const req = httpMock.expectOne(
-      `${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`
-    );
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`);
     expect(req.request.method).toBe("DELETE");
 
     req.flush({ result: 1 });
@@ -175,18 +143,14 @@ describe("RealmService", () => {
     const realmName = "default realm/ä";
     realmService.setDefaultRealm(realmName).subscribe();
 
-    const req = httpMock.expectOne(
-      `${environment.proxyUrl}/defaultrealm/${encodeURIComponent(realmName)}`
-    );
+    const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm/${encodeURIComponent(realmName)}`);
     expect(req.request.method).toBe("POST");
     expect(req.request.body).toEqual({});
 
     req.flush({ result: 1 });
   });
 
-
   describe("realms and realmOptions", () => {
-
     it("should default to empty object if resource is empty", () => {
       expect(realmService.realms()).toEqual({});
       expect(realmService.realmOptions()).toEqual([]);
@@ -200,7 +164,7 @@ describe("RealmService", () => {
       const realms = {
         realmA: { default: true, id: 1, option: "optA", resolver: [] },
         realmB: { default: false, id: 2, option: "optB", resolver: [] }
-      }
+      };
       req.flush(MockPiResponse.fromValue(realms));
       await Promise.resolve();
 
@@ -217,7 +181,8 @@ describe("RealmService", () => {
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -229,9 +194,7 @@ describe("RealmService", () => {
     });
   });
 
-
   describe("adminRealmOptions", () => {
-
     it("should default to empty array if resource is empty", () => {
       expect(realmService.adminRealmOptions()).toEqual([]);
     });
@@ -241,7 +204,7 @@ describe("RealmService", () => {
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
-      const realms = ["realmA", "realmB"]
+      const realms = ["realmA", "realmB"];
       req.flush(MockPiResponse.fromValue(realms));
       await Promise.resolve();
 
@@ -257,7 +220,8 @@ describe("RealmService", () => {
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -269,7 +233,6 @@ describe("RealmService", () => {
   });
 
   describe("defaultRealm", () => {
-
     it("should default to empty string if resource is empty", () => {
       expect(realmService.defaultRealm()).toBe("");
     });
@@ -279,7 +242,7 @@ describe("RealmService", () => {
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
-      const realms = { realmA: { default: true, id: 1, option: "optA", resolver: [] } }
+      const realms = { realmA: { default: true, id: 1, option: "optA", resolver: [] } };
       req.flush(MockPiResponse.fromValue(realms));
       await Promise.resolve();
 
@@ -290,13 +253,13 @@ describe("RealmService", () => {
     });
 
     it("should fallback to empty string on error", async () => {
-
       contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
       const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

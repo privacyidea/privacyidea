@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,7 +18,7 @@
  **/
 import { Component, inject } from "@angular/core";
 import { MatCardContent, MatCardModule } from "@angular/material/card";
-import { UserService, UserServiceInterface } from "../../services/user/user.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-self-service",

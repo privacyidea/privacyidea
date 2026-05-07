@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,8 +18,8 @@
  **/
 
 import { signal } from "@angular/core";
-import { MachineResolverServiceInterface } from "../../app/services/machine-resolver/machine-resolver.service";
-import { MockHttpResourceRef } from "../mock-services";
+import { MachineResolverServiceInterface } from "@services/machine-resolver/machine-resolver.service";
+import { MockHttpResourceRef } from "@testing/mock-services";
 
 export class MockMachineResolverService implements MachineResolverServiceInterface {
   allMachineResolverTypes = ["hosts", "ldap"];

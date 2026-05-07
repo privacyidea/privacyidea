@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,9 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SubscriptionExpiryDialogComponent, SubscriptionExpiryDialogData } from "./subscription-expiry-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogModule } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
+import {
+    SubscriptionExpiryDialogComponent,
+    SubscriptionExpiryDialogData
+} from "./subscription-expiry-dialog.component";
 
 const dialogData: SubscriptionExpiryDialogData = {
   items: [

@@ -21,12 +21,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { MockContainerTemplateService, MockDialogService } from "src/testing/mock-services";
-import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
-import { ContainerTemplateCopyDialogComponent } from "../dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
-import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerTemplateCopyDialogComponent } from "@components/token/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
+import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockContainerTemplateService, MockDialogService } from "@testing/mock-services";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
 
 describe("ContainerTemplatesTableActionsComponent", () => {

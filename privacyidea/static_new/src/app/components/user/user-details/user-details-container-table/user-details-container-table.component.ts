@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -38,17 +38,17 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerService,
   ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-details-container-table",

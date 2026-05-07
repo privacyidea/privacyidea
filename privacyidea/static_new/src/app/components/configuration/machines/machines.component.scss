@@ -1,8 +1,10 @@
 @use "styles";
+@use "table";
+@use "@angular/material" as mat;
 
 .machines-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
 }
 
 .machines-layout {

@@ -25,21 +25,21 @@ import {
   MachineResolverData,
   MachineResolverService,
   MachineResolverServiceInterface
-} from "../../../services/machine-resolver/machine-resolver.service";
+} from "@services/machine-resolver/machine-resolver.service";
 
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
-import { deepCopy } from "../../../utils/deep-copy.utils";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
+import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 import { lastValueFrom } from "rxjs";
 
 @Component({

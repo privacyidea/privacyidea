@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
 import { HttpClient, HttpHeaders, provideHttpClient } from "@angular/common/http";
+import { TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
 
+import { AuthResponse, AuthService } from "@services/auth/auth.service";
+import { Base64Service } from "@services/base64/base64.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockBase64Service, MockLocalService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ValidateCheckResponse, ValidateService } from "./validate.service";
-import { NotificationService } from "../notification/notification.service";
-import { Base64Service } from "../base64/base64.service";
-import { AuthResponse, AuthService } from "../auth/auth.service";
-import { MockBase64Service, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("ValidateService", () => {
   let validateService: ValidateService;

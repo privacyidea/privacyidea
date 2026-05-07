@@ -19,22 +19,22 @@
 import { HttpClient, HttpErrorResponse, HttpParams, provideHttpClient } from "@angular/common/http";
 import { lastValueFrom, of, throwError } from "rxjs";
 
-import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
-import { PiResponse } from "../../app.component";
-import { TestBed } from "@angular/core/testing";
-import { TokenService } from "./token.service";
-import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { ROUTE_PATHS } from "../../route_paths";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { environment } from "../../../environments/environment";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { DialogService } from "../dialog/dialog.service";
-import { MockDialogService } from "../../../testing/mock-services/mock-dialog-service";
-import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { TokenService } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn(); error = jest.fn(); warning = jest.fn(); handleResourceError = jest.fn();
@@ -883,7 +883,6 @@ describe("TokenService", () => {
   });
 
   describe("tokenSerialResource / tokenOptions", () => {
-
     it("tokenOptions falls back to default when resource empty", () => {
       expect(tokenService.tokenOptions()).toEqual([]);
     });
@@ -909,7 +908,8 @@ describe("TokenService", () => {
       const req = mockBackend.expectOne((r) => r.url === "/token/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -919,7 +919,6 @@ describe("TokenService", () => {
   });
 
   describe("tokenTypesResource / tokenTypeOptions", () => {
-
     it("tokenTypeOptions falls back to default when resource empty", () => {
       expect(tokenService.tokenTypeOptions()).toEqual([]);
     });
@@ -936,13 +935,16 @@ describe("TokenService", () => {
 
       expect(tokenService.tokenTypesResource.hasValue()).toBe(true);
       expect(tokenService.tokenTypeOptions()).toHaveLength(1);
-      expect(tokenService.tokenTypeOptions()).toEqual([{
-        key: "hotp",
-        name: "HOTP",
-        info: "text",
-        text: "The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator" +
-          " you can turn your smartphone into an authentication device."
-      }]);
+      expect(tokenService.tokenTypeOptions()).toEqual([
+        {
+          key: "hotp",
+          name: "HOTP",
+          info: "text",
+          text:
+            "The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator" +
+            " you can turn your smartphone into an authentication device."
+        }
+      ]);
     });
 
     it("should handle error state from tokenTypesResource", async () => {
@@ -952,7 +954,8 @@ describe("TokenService", () => {
       const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -962,7 +965,6 @@ describe("TokenService", () => {
   });
 
   describe("tokenResource / tokenResourceValue", () => {
-
     it("tokenResourceValue falls back to default when resource empty", () => {
       expect(tokenService.tokenResourceValue()).toBeNull();
     });
@@ -988,7 +990,8 @@ describe("TokenService", () => {
       const req = mockBackend.expectOne((r) => r.url === "/token/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

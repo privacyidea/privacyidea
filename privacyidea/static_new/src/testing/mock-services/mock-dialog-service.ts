@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { DialogServiceInterface } from "../../app/services/dialog/dialog.service";
-import { MockMatDialogRef } from "../mock-mat-dialog-ref";
+import { DialogServiceInterface } from "@services/dialog/dialog.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 export class MockDialogService implements DialogServiceInterface {
   private lastDialogRef: any = null;

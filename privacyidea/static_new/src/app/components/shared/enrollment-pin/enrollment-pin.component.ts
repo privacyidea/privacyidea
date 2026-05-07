@@ -24,13 +24,7 @@ import { MatInput } from "@angular/material/input";
 @Component({
   selector: "app-enrollment-pin",
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatError
-  ],
+  imports: [ReactiveFormsModule, MatFormField, MatLabel, MatInput, MatError],
   templateUrl: "./enrollment-pin.component.html"
 })
 export class EnrollmentPinComponent {
@@ -38,4 +32,3 @@ export class EnrollmentPinComponent {
   @Input({ required: true }) repeatPinControl!: FormControl<string>;
   @Input({ required: true }) formGroup!: FormGroup;
 }
-

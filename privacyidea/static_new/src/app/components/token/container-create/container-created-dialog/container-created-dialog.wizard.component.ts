@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,11 +22,11 @@ import { Component, computed, inject, SecurityContext } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { StringUtils } from "@utils/string.utils";
 import { catchError, map, of } from "rxjs";
-import { environment } from "../../../../../environments/environment";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { StringUtils } from "../../../../utils/string.utils";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 
 @Component({

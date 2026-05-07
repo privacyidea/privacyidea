@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,11 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ThemeSwitcherComponent } from "./theme-switcher.component";
 import { signal } from "@angular/core";
-import { ThemeService } from "../../../services/theme/theme.service";
-
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ThemeService } from "@services/theme/theme.service";
+import { ThemeSwitcherComponent } from "./theme-switcher.component";
 
 describe("ThemeSwitcherComponent", () => {
   let mockThemeService: {
@@ -48,8 +47,7 @@ describe("ThemeSwitcherComponent", () => {
     setMatchMedia(systemPrefersDark);
     mockThemeService.currentTheme.set(theme);
 
-    const fixture: ComponentFixture<ThemeSwitcherComponent> =
-      TestBed.createComponent(ThemeSwitcherComponent);
+    const fixture: ComponentFixture<ThemeSwitcherComponent> = TestBed.createComponent(ThemeSwitcherComponent);
     const component = fixture.componentInstance;
     fixture.detectChanges();
     return { fixture, component };

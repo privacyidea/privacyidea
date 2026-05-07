@@ -17,25 +17,41 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { Component, computed, DestroyRef, inject, linkedSignal, OnDestroy, OnInit, signal, Signal, WritableSignal } from "@angular/core";
-import { EditUserData, UserService } from "../../../services/user/user.service";
-import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MatFormField, MatHint, MatLabel, MatError } from "@angular/material/form-field";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { RealmService } from "../../../services/realm/realm.service";
-import { MatInput } from "@angular/material/input";
+import {
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  OnInit,
+  signal,
+  Signal,
+  WritableSignal
+} from "@angular/core";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { Router } from "@angular/router";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { EditUserData, UserService } from "@services/user/user.service";
+
+export interface CreateUserDialogData {
+  resolver?: string;
+  realm?: string;
+}
 
 @Component({
   selector: "app-create-user-dialog",

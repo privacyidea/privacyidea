@@ -25,8 +25,17 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
-import { of } from "rxjs";
-import { environment } from "../../../../environments/environment";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { LocalService } from "@services/local/local.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
   MockContentService,
@@ -36,19 +45,10 @@ import {
   MockTokenService,
   MockUserService,
   MockVersioningService
-} from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ContentService } from "../../../services/content/content.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { LocalService } from "../../../services/local/local.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { TokenService } from "../../../services/token/token.service";
-import { UserService } from "../../../services/user/user.service";
-import { VersioningService } from "../../../services/version/version.service";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
   NO_QR_CODE_TOKEN_TYPES,

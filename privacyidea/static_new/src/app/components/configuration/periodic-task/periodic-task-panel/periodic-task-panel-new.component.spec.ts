@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,19 +19,19 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
+import { provideHttpClient } from "@angular/common/http";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
 import { PeriodicTaskPanelNewComponent } from "./periodic-task-panel-new.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
-import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../../services/periodic-task/periodic-task.service";
-import { provideHttpClient } from "@angular/common/http";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { MockPeriodicTaskService } from "../../../../../testing/mock-services/mock-periodic-task-service";
 
 describe("PeriodicTaskPanelNewComponent", () => {
   let component: PeriodicTaskPanelNewComponent;
   let fixture: ComponentFixture<PeriodicTaskPanelNewComponent>;
   let periodicTaskServiceMock: MockPeriodicTaskService;
-  let task = {...EMPTY_PERIODIC_TASK};
+  let task = { ...EMPTY_PERIODIC_TASK };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -41,8 +41,7 @@ describe("PeriodicTaskPanelNewComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(PeriodicTaskPanelNewComponent);
     component = fixture.componentInstance;
@@ -50,7 +49,6 @@ describe("PeriodicTaskPanelNewComponent", () => {
     periodicTaskServiceMock = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
     fixture.detectChanges();
   });
-
 
   it("should create", () => {
     expect(component).toBeTruthy();

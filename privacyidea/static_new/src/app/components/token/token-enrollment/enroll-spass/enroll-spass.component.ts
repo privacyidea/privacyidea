@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   SpassApiPayloadMapper,
   SpassEnrollmentData
-} from "../../../../mappers/token-api-payload/spass-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+} from "@app/mappers/token-api-payload/spass-token-api-payload.mapper";
 
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   type: "spass";

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,14 +19,17 @@
 import { TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
-import { RealmTableComponent } from "./realm-table.component";
-import { Realms, RealmService } from "../../../services/realm/realm.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { ContentService } from "../../../services/content/content.service";
-import { SystemService } from "../../../services/system/system.service";
-import { NotificationService } from "../../../services/notification/notification.service";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService, Realms } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { SystemService } from "@services/system/system.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
   MockContentService,
   MockHttpResourceRef,
@@ -36,12 +39,9 @@ import {
   MockRouter,
   MockSystemService,
   MockTableUtilsService
-} from "../../../../testing/mock-services";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { ROUTE_PATHS } from "../../../route_paths";
+} from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { RealmTableComponent } from "./realm-table.component";
 
 class LocalMockMatDialog {
   result$ = of(true);

@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } from "@angular/router";
-import { BehaviorSubject } from "rxjs";
-import { PrivacyideaServerService } from "../../../../services/privacyidea-server/privacyidea-server.service";
-import { MockPrivacyideaServerService } from "../../../../../testing/mock-services/mock-privacyidea-server-service";
-import { MockDialogService } from "../../../../../testing/mock-services";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { MockDialogService, MockPrivacyideaServerService } from "@testing/mock-services";
+import { BehaviorSubject } from "rxjs";
+import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
@@ -72,9 +72,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should initialize form for edit mode", () => {
-    privacyideaServerServiceMock.remoteServerOptions = signal([
-      { identifier: "test", url: "http://test", tls: true }
-    ]);
+    privacyideaServerServiceMock.remoteServerOptions = signal([{ identifier: "test", url: "http://test", tls: true }]);
 
     paramMapSubject.next(convertToParamMap({ identifier: "test" }));
 

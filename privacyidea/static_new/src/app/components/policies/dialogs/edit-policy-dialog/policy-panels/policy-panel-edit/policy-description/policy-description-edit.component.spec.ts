@@ -18,11 +18,11 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
 import { FormsModule } from "@angular/forms";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { DocumentationService } from "../../../../../../../services/documentation/documentation.service";
-import { MockDocumentationService } from "src/testing/mock-services/mock-documentation-service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { MockDocumentationService } from "@testing/mock-services/mock-documentation-service";
+import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
 
 describe("PolicyDescriptionEditComponent", () => {
   let component: PolicyDescriptionEditComponent;

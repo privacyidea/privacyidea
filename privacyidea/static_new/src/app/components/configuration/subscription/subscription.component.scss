@@ -1,12 +1,13 @@
-@use "../../../../styles" as styles;
+@use "styles";
+@use "table";
 
 .subscription-layout {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
 }
 
 .application-color {
-  color: var(--mat-sys-primary)
+  color: var(--mat-sys-primary);
 }
 
 .subscription-details {

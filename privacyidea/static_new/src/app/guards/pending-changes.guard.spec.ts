@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { pendingChangesGuard } from "./pending-changes.guard";
 import { TestBed } from "@angular/core/testing";
-import { PendingChangesService } from "../services/pending-changes/pending-changes.service";
-import { MockDialogService, MockPendingChangesService } from "../../testing/mock-services";
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from "@angular/router";
-import { DialogService } from "../services/dialog/dialog.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { isObservable, of } from "rxjs";
-
+import { pendingChangesGuard } from "./pending-changes.guard";
 
 describe("pendingChangesGuard", () => {
   let pendingChangesService: MockPendingChangesService;
@@ -40,7 +39,8 @@ describe("pendingChangesGuard", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        { provide: DialogService, useClass: MockDialogService }]
+        { provide: DialogService, useClass: MockDialogService }
+      ]
     });
 
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
@@ -54,13 +54,13 @@ describe("pendingChangesGuard", () => {
     expect(isObservable(result)).toBe(true);
     if (isObservable(result)) {
       result.subscribe({
-        next: res => {
+        next: (res) => {
           expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
           expect(pendingChangesService.save).not.toHaveBeenCalled();
           expect(res).toBe(true);
           done();
         },
-        error: err => done.fail(err)
+        error: (err) => done.fail(err)
       });
     }
   });
@@ -80,13 +80,13 @@ describe("pendingChangesGuard", () => {
     expect(isObservable(result)).toBe(true);
     if (isObservable(result)) {
       result.subscribe({
-        next: res => {
+        next: (res) => {
           expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
           expect(pendingChangesService.save).not.toHaveBeenCalled();
           expect(res).toBe(true);
           done();
         },
-        error: err => done.fail(err)
+        error: (err) => done.fail(err)
       });
     }
   });
@@ -108,13 +108,13 @@ describe("pendingChangesGuard", () => {
     expect(isObservable(result)).toBe(true);
     if (isObservable(result)) {
       result.subscribe({
-        next: res => {
+        next: (res) => {
           expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
           expect(pendingChangesService.save).toHaveBeenCalled();
           expect(res).toBe(true);
           done();
         },
-        error: err => done.fail(err)
+        error: (err) => done.fail(err)
       });
     }
   });
@@ -135,13 +135,13 @@ describe("pendingChangesGuard", () => {
     expect(isObservable(result)).toBe(true);
     if (isObservable(result)) {
       result.subscribe({
-        next: res => {
+        next: (res) => {
           expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
           expect(pendingChangesService.save).toHaveBeenCalled();
           expect(res).toBe(false);
           done();
         },
-        error: err => done.fail(err)
+        error: (err) => done.fail(err)
       });
     }
   });
@@ -163,13 +163,13 @@ describe("pendingChangesGuard", () => {
     expect(isObservable(result)).toBe(true);
     if (isObservable(result)) {
       result.subscribe({
-        next: res => {
+        next: (res) => {
           expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
           expect(pendingChangesService.save).not.toHaveBeenCalled();
           expect(res).toBe(false);
           done();
         },
-        error: err => done.fail(err)
+        error: (err) => done.fail(err)
       });
     }
   });

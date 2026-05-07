@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable } from "@angular/core";
-import { ROUTE_PATHS } from "../../route_paths";
-import { VersioningService } from "../version/version.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { VersioningService } from "@services/version/version.service";
 
 export type ActionDocumentation = {
   info: string[];

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,16 +18,10 @@
  **/
 import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-  U2fApiPayloadMapper,
-  U2fEnrollmentData
-} from "../../../../mappers/token-api-payload/u2f-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { U2fApiPayloadMapper, U2fEnrollmentData } from "@app/mappers/token-api-payload/u2f-token-api-payload.mapper";
 
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   type: "u2f";

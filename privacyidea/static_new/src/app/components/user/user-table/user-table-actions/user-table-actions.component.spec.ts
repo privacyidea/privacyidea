@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { provideRouter, Router } from "@angular/router";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Router, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogService } from "@services/dialog/dialog.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { UserService } from "@services/user/user.service";
+import { MockDialogService, MockUserService } from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { UserTableActionsComponent } from "./user-table-actions.component";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { UserService } from "../../../../services/user/user.service";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
-import { MockDialogService, MockUserService } from "../../../../../testing/mock-services";
-import { ROUTE_PATHS } from "../../../../route_paths";
 
 describe("UserTableActionsComponent", () => {
   let component: UserTableActionsComponent;

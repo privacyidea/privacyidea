@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
-import { ServiceId, ServiceIdServiceInterface } from "../../app/services/service-id/service-id.service";
+import { signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { ServiceId, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 
 export class MockServiceIdService implements ServiceIdServiceInterface {
   serviceIdResource: HttpResourceRef<PiResponse<any> | undefined> = {

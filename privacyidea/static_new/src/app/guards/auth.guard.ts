@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,8 +18,8 @@
  **/
 import { inject, Injectable } from "@angular/core";
 import { CanActivate, CanActivateChild, CanMatchFn, Router } from "@angular/router";
-import { AuthService, AuthServiceInterface } from "../services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "../services/notification/notification.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
 export const adminMatch: CanMatchFn = () => inject(AuthService).role() === "admin";
 export const selfServiceMatch: CanMatchFn = () => inject(AuthService).role() === "user";

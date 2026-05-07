@@ -16,46 +16,38 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, input, Input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Input, input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import {
-  TokenDetails,
-  TokenService,
-  TokenServiceInterface,
-  TokenTypeKey
-} from "../../../../services/token/token.service";
-import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
-import {
-  SshMachineAssignDialogData,
-  TokenSshMachineAssignDialogComponent
-} from "../token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
-import { ResyncTokenActionComponent } from "./resync-token-action/resync-token-action.component";
-import { SetPinActionComponent } from "./set-pin-action/set-pin-action.component";
-import { TestOtpPinActionComponent } from "./test-otp-pin-action/test-otp-pin-action.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { LostTokenComponent } from "@components/token/token-details/token-details-actions/lost-token/lost-token.component";
+import { ResyncTokenActionComponent } from "@components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component";
+import { SetPinActionComponent } from "@components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component";
+import { TestOtpPinActionComponent } from "@components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component";
+import { TokenRolloverComponent } from "@components/token/token-details/token-details-actions/token-rollover/token-rollover.component";
+import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
 import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
-} from "../token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
+} from "@components/token/token-details/token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
+import {
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
+} from "@components/token/token-details/token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
+import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
+import { tokenTypes } from "@utils/token.utils";
 import { lastValueFrom, switchMap } from "rxjs";
-import { LostTokenComponent } from "./lost-token/lost-token.component";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { TokenRolloverComponent } from "./token-rollover/token-rollover.component";
-import { tokenTypes } from "../../../../utils/token.utils";
-import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
-
 
 @Component({
   selector: "app-token-details-actions",
@@ -267,7 +259,5 @@ export class TokenDetailsActionsComponent {
     });
   }
 
-  readonly rolloverTokenTypes = computed(() =>
-    tokenTypes.filter(t => t.rollover === true).map(t => t.key)
-  );
+  readonly rolloverTokenTypes = computed(() => tokenTypes.filter((t) => t.rollover === true).map((t) => t.key));
 }

@@ -18,7 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { SaveAndExitDialogComponent, SaveAndExitDialogData } from "./save-and-exit-dialog.component";
 
 describe("SaveAndExitDialogComponent", () => {

@@ -18,10 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditAdditionalConditionsComponent } from "./edit-additional-conditions.component";
-import { PolicyService, AdditionalCondition } from "../../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { AdditionalCondition, PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { EditAdditionalConditionsComponent } from "./edit-additional-conditions.component";
 
 describe("EditAdditionalConditionsComponent", () => {
   let component: EditAdditionalConditionsComponent;

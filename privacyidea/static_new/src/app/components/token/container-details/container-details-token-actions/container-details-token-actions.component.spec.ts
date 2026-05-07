@@ -21,18 +21,18 @@ import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { MatTableDataSource } from "@angular/material/table";
-import { of } from "rxjs";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerDetailToken, ContainerService } from "@services/container/container.service";
+import { TokenService } from "@services/token/token.service";
 import {
   MockContainerService,
   MockLocalService,
   MockNotificationService,
   MockTokenService
-} from "../../../../../testing/mock-services";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
 
 describe("ContainerDetailsTokenActionsComponent", () => {

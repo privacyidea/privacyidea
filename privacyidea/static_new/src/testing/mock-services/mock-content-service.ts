@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal, signal } from "@angular/core";
+
+import { computed, signal, Signal } from "@angular/core";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../app/route_paths";
-import { ContentServiceInterface } from "../../app/services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContentServiceInterface } from "@services/content/content.service";
 
 export class MockContentService implements ContentServiceInterface {
   detailsUsername = signal("");

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,15 +18,15 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollTotpComponent } from "./enroll-totp.component";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { MockSystemService } from "../../../../../testing/mock-services";
-import { SystemService } from "../../../../services/system/system.service";
-import { HOTP_HASHLIB, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "../../../../constants/token.constants";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { HOTP_HASHLIB, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import { AuthService } from "@services/auth/auth.service";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { EnrollTotpComponent } from "./enroll-totp.component";
 
 describe("EnrollTotpComponent", () => {
   let component: EnrollTotpComponent;
@@ -37,9 +37,12 @@ describe("EnrollTotpComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollTotpComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: SystemService, useClass: MockSystemService }]
+        { provide: SystemService, useClass: MockSystemService }
+      ]
     }).compileComponents();
 
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
@@ -227,7 +230,9 @@ describe("EnrollTotpComponent", () => {
     component.ngOnInit();
 
     // 2-step checkbox should be present
-    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector("mat-checkbox[formcontrolname=\"twoStepControl\"]");
+    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector(
+      'mat-checkbox[formcontrolname="twoStepControl"]'
+    );
     expect(twoStepCheckbox).toBeDefined();
 
     expect(component.twoStepControl.value).toBe(true);
@@ -262,7 +267,9 @@ describe("EnrollTotpComponent", () => {
     component.ngOnInit();
 
     // 2-step checkbox should be present
-    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector("mat-checkbox[formcontrolname=\"twoStepControl\"]");
+    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector(
+      'mat-checkbox[formcontrolname="twoStepControl"]'
+    );
     expect(twoStepCheckbox).toBeDefined();
 
     expect(component.twoStepControl.value).toBe(false);
@@ -325,7 +332,9 @@ describe("EnrollTotpComponent", () => {
     component.ngOnInit();
 
     // 2-step checkbox should NOT be present
-    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector("mat-checkbox[formcontrolname=\"twoStepControl\"]");
+    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector(
+      'mat-checkbox[formcontrolname="twoStepControl"]'
+    );
     expect(twoStepCheckbox).toBeNull();
 
     expect(component.twoStepControl.value).toBe(false);

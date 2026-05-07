@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,19 +22,19 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
-import { of } from "rxjs";
-import { AuditService } from "src/app/services/audit/audit.service";
-import { AuthService } from "src/app/services/auth/auth.service";
-import { ContentService } from "src/app/services/content/content.service";
-import { TableUtilsService } from "src/app/services/table-utils/table-utils.service";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
-  MockAuditService,
-  MockContentService,
-  MockLocalService,
-  MockNotificationService
-} from "src/testing/mock-services";
-import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
-import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
+    MockAuditService,
+    MockContentService,
+    MockLocalService,
+    MockNotificationService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
+import { of } from "rxjs";
 import { AuditComponent } from "./audit.component";
 import { AuditSelfServiceComponent } from "./audit.self-service.component";
 

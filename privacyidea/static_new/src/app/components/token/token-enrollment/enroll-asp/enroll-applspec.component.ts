@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,14 +24,14 @@ import { ErrorStateMatcher, MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { ServiceIdService, ServiceIdServiceInterface } from "../../../../services/service-id/service-id.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   ApplspecApiPayloadMapper,
   ApplspecEnrollmentData
-} from "../../../../mappers/token-api-payload/applspec-token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+} from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";

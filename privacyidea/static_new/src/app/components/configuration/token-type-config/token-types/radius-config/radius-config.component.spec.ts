@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
-import { provideRouter } from "@angular/router";
 import { provideAnimations } from "@angular/platform-browser/animations";
-import { RADIUS_SERVER } from "../../../../../constants/token.constants";
+import { provideRouter } from "@angular/router";
+import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
+import { RADIUS_SERVER } from "@constants/token.constants";
 
 const mockRadiusServers = ["radius-server-1", "radius-server-2", "radius-server-3"];
 
@@ -101,4 +101,3 @@ describe("RadiusConfigComponent", () => {
     expect(component.updateFormData).toHaveBeenCalledWith(RADIUS_SERVER, "");
   });
 });
-

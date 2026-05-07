@@ -21,11 +21,11 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "../../../../models/dialog";
+import { MatInputModule } from "@angular/material/input";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
 
 @Component({
   selector: "app-user-details-pin-dialog",

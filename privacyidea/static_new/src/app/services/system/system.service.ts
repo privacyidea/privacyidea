@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,15 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { CaConnectors } from "../ca-connector/ca-connector.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { PiResponse } from "@app/app.component";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { Observable } from "rxjs";
+
+import { environment } from "@env/environment";
+import { CaConnectors } from "@services/ca-connector/ca-connector.service";
 
 export interface NodeInfo {
   name: string;
@@ -116,7 +117,7 @@ export class SystemService implements SystemServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: () => this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+    source: () => (this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined),
     computation: (caConnectorResource, previous) => {
       const caConnectors = caConnectorResource?.result?.value;
       return caConnectors ?? previous?.value ?? [];
@@ -160,7 +161,9 @@ export class SystemService implements SystemServiceInterface {
   }
 
   deleteSystemConfig(key: string): Observable<PiResponse<any>> {
-    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${encodeURIComponent(key)}`, { headers: this.authService.getHeaders() });
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${encodeURIComponent(key)}`, {
+      headers: this.authService.getHeaders()
+    });
   }
 
   deleteUserCache(): Observable<PiResponse<any>> {

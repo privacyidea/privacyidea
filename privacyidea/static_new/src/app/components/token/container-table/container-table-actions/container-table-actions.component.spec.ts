@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,11 +18,11 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ContainerTableActionsComponent } from "./container-table-actions.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
+import { ContainerTableActionsComponent } from "./container-table-actions.component";
 
 describe("ContainerTableActionsComponent", () => {
   let component: ContainerTableActionsComponent;
