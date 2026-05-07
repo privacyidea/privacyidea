@@ -215,6 +215,9 @@ def get_render_context():
 
 
 def _serve_locale(locale):
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    if locale not in pi_lang_list:
+        return None
     dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
     if not os.path.isfile(os.path.join(dist, "index.html")):
         return None
@@ -242,10 +245,7 @@ def single_page_application():
 @login_blueprint.route('/app/v2/<locale>/', defaults={'subpath': ''}, methods=['GET'])
 @login_blueprint.route('/app/v2/<locale>/<path:subpath>', methods=['GET'])
 def single_page_application_locale(locale, subpath):
-    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
-    if not os.path.isdir(dist):
-        abort(404)
-    return _serve_locale(locale)
+    return _serve_locale(locale) or abort(404)
 
 
 @login_blueprint.route('/config', methods=['GET'])
