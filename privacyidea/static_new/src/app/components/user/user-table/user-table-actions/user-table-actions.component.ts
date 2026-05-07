@@ -27,8 +27,7 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 import { MatIcon } from "@angular/material/icon";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { CreateUserDialogComponent } from "@components/user/create-user-dialog/create-user-dialog.component";
+import { Router } from "@angular/router";
 import { ResolverService, ResolverServiceInterface } from "../../../../services/resolver/resolver.service";
 
 @Component({
@@ -42,18 +41,13 @@ export class UserTableActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly dialogService = inject(DialogService);
+  private readonly router = inject(Router);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   anyEditableResolver = computed(() => this.resolverService.editableResolvers().length > 0);
 
-  openCreateUserDialog() {
-    this.dialogService.openDialog({
-      component: CreateUserDialogComponent,
-      data: {
-        realm: this.userService.selectedUserRealm()
-      }
-    });
+  navigateToCreateUser() {
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_NEW);
   }
 }

@@ -20,10 +20,14 @@ import { Routes } from "@angular/router";
 import { ContainerTemplatesComponent } from "@components/token/container-templates/container-templates.component";
 import { TokenFindSerialComponent } from "@components/token/token-find-serial/token-find-serial.component";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
-import { ContainerTemplateEditDialogComponent } from "src/app/components/token/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
+import {
+  ContainerTemplateEditDialogComponent
+} from "src/app/components/token/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { AuditComponent } from "./components/audit/audit.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
-import { MachineDetailsDialogComponent } from "./components/configuration/machines/machine-details-dialog/machine-details-dialog.component";
+import {
+  MachineDetailsDialogComponent
+} from "./components/configuration/machines/machine-details-dialog/machine-details-dialog.component";
 import { MachinesComponent } from "./components/configuration/machines/machines.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
@@ -32,21 +36,39 @@ import { TokenTypeConfigComponent } from "./components/configuration/token-type-
 import { EventPanelComponent } from "./components/event/event-panel/event-panel.component";
 import { EventComponent } from "./components/event/event.component";
 import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
-import { NewCaConnectorComponent } from "./components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component";
-import { NewPrivacyideaServerComponent } from "./components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
-import { PrivacyideaServersComponent } from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
-import { NewRadiusServerComponent } from "./components/external-services/radius-servers/new-radius-server/new-radius-server.component";
+import {
+  NewCaConnectorComponent
+} from "./components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component";
+import {
+  NewPrivacyideaServerComponent
+} from "./components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
+import {
+  PrivacyideaServersComponent
+} from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
+import {
+  NewRadiusServerComponent
+} from "./components/external-services/radius-servers/new-radius-server/new-radius-server.component";
 import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
-import { NewServiceIdComponent } from "./components/external-services/service-ids/new-service-id/new-service-id.component";
+import {
+  NewServiceIdComponent
+} from "./components/external-services/service-ids/new-service-id/new-service-id.component";
 import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
-import { NewSmsGatewayComponent } from "./components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component";
+import {
+  NewSmsGatewayComponent
+} from "./components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component";
 import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
-import { NewSmtpServerComponent } from "./components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component";
+import {
+  NewSmtpServerComponent
+} from "./components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component";
 import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
-import { NewTokengroupComponent } from "./components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
+import {
+  NewTokengroupComponent
+} from "./components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
 import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
-import { EditPolicyDialogComponent } from "./components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import {
+  EditPolicyDialogComponent
+} from "./components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "./components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "./components/token/container-create/container-create.component";
@@ -62,6 +84,7 @@ import { UserDetailsComponent } from "./components/user/user-details/user-detail
 import { UserResolversComponent } from "./components/user/user-resolver/user-resolver.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
+import { CreateUserDialogComponent } from "@components/user/create-user-dialog/create-user-dialog.component";
 
 export const routes: Routes = [
   {
@@ -99,7 +122,8 @@ export const routes: Routes = [
   {
     path: "users",
     children: [
-      { path: "", component: UserTableComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "", component: UserTableComponent },
+      { path: "new", component: CreateUserDialogComponent, canDeactivate: [pendingChangesGuard] },
       { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "realms", component: RealmTableComponent },
       { path: "resolvers", component: UserResolversComponent },

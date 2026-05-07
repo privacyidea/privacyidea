@@ -19,25 +19,28 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideRouter, Router } from "@angular/router";
 import { UserTableActionsComponent } from "./user-table-actions.component";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { UserService } from "../../../../services/user/user.service";
 import { ResolverService } from "../../../../services/resolver/resolver.service";
 import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
 import { MockDialogService, MockUserService } from "../../../../../testing/mock-services";
+import { ROUTE_PATHS } from "../../../../route_paths";
 
 describe("UserTableActionsComponent", () => {
   let component: UserTableActionsComponent;
   let fixture: ComponentFixture<UserTableActionsComponent>;
   let resolverService: MockResolverService;
   let userService: MockUserService;
-  let dialogService: MockDialogService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: ResolverService, useClass: MockResolverService },
         { provide: UserService, useClass: MockUserService },
         { provide: DialogService, useClass: MockDialogService }
@@ -47,7 +50,8 @@ describe("UserTableActionsComponent", () => {
 
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     userService = TestBed.inject(UserService) as unknown as MockUserService;
-    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
     fixture = TestBed.createComponent(UserTableActionsComponent);
     component = fixture.componentInstance;
@@ -68,14 +72,9 @@ describe("UserTableActionsComponent", () => {
     expect(component.anyEditableResolver()).toBe(false);
   });
 
-  it("openCreateUserDialog calls dialogService.openDialog with correct data", () => {
+  it("navigateToCreateUser navigates to user new page", () => {
     userService.selectedUserRealm.set("testRealm");
-    component.openCreateUserDialog();
-    expect(dialogService.openDialog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        component: expect.anything(),
-        data: { realm: "testRealm" }
-      })
-    );
+    component.navigateToCreateUser();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_NEW);
   });
 });

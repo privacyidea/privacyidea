@@ -22,7 +22,12 @@ const GAP = 8;
 const PADDING = 16;
 const EXTRA_MARGIN = 40;
 const MAT_ICON_CLASSES = ["mat-icon", "notranslate", "material-icons", "mat-ligature-font"];
-const MAT_INTERNAL_SPANS = ["mat-mdc-button-touch-target", "mdc-button__label", "mat-mdc-focus-indicator", "mat-ripple"];
+const MAT_INTERNAL_SPANS = [
+  "mat-mdc-button-touch-target",
+  "mdc-button__label",
+  "mat-mdc-focus-indicator",
+  "mat-ripple"
+];
 
 function isActive(el: HTMLElement): boolean {
   return el.classList.contains("sub-nav-active") || el.classList.contains("nav-active");
@@ -71,7 +76,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.mutationObserver?.disconnect();
-    [...this.unlisteners, ...this.menuItemUnlisteners].forEach(fn => fn());
+    [...this.unlisteners, ...this.menuItemUnlisteners].forEach((fn) => fn());
     this.menuContainer?.parentNode?.removeChild(this.menuContainer);
   }
 
@@ -141,7 +146,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
     this.mutationObserver = new MutationObserver((mutations) => {
       if (this.isCalculating) return;
-      const hasRelevantChange = mutations.some(m => {
+      const hasRelevantChange = mutations.some((m) => {
         if (m.type === "childList" && (m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
           return true;
         }
@@ -183,7 +188,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       }
 
       this.renderer.setStyle(this.container, "overflow", "visible");
-      buttons.forEach(btn => {
+      buttons.forEach((btn) => {
         this.renderer.removeStyle(btn, "display");
         this.renderer.removeClass(btn, "sub-overflow-hidden");
       });
@@ -213,7 +218,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
       if (hiddenButtons.length > 0) {
         this.renderer.addClass(this.container, "is-overflowing");
-        hiddenButtons.forEach(btn => {
+        hiddenButtons.forEach((btn) => {
           this.renderer.addClass(btn, "sub-overflow-hidden");
           this.renderer.setStyle(btn, "display", "none");
         });
@@ -255,6 +260,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private determineVisibleButtons(buttons: HTMLElement[], maxWidth: number): boolean[] {
     const visible = new Array(buttons.length).fill(false);
     let usedWidth = 0;
+    const priorityIndices = new Set<number>();
 
     const activeIndex = buttons.findIndex(isActive);
     if (activeIndex >= 0) {
@@ -262,11 +268,22 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       if (w <= maxWidth) {
         usedWidth += w;
         visible[activeIndex] = true;
+        priorityIndices.add(activeIndex);
+      }
+      // Keep parents of contextual child items (detail/create pages) marked with data-overflow-child visible too
+      if (activeIndex > 0 && buttons[activeIndex].hasAttribute("data-overflow-child")) {
+        const parentIndex = activeIndex - 1;
+        const pw = buttons[parentIndex].offsetWidth + GAP;
+        if (usedWidth + pw <= maxWidth) {
+          usedWidth += pw;
+          visible[parentIndex] = true;
+          priorityIndices.add(parentIndex);
+        }
       }
     }
 
     for (let i = 0; i < buttons.length; i++) {
-      if (i === activeIndex) continue;
+      if (priorityIndices.has(i)) continue;
       const w = buttons[i].offsetWidth + GAP;
       if (usedWidth + w <= maxWidth) {
         usedWidth += w;
@@ -289,17 +306,18 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
   private getNavButtons(): HTMLElement[] {
     const spacer = this.spacer;
-    return (Array.from(this.container.children) as HTMLElement[]).filter(el =>
-      el !== this.moreButton &&
-      (el.tagName === "BUTTON" || el.tagName === "A") &&
-      !el.classList.contains("overflow-more-btn") &&
-      !el.closest(".spacer") &&
-      (!spacer || !(spacer.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING))
+    return (Array.from(this.container.children) as HTMLElement[]).filter(
+      (el) =>
+        el !== this.moreButton &&
+        (el.tagName === "BUTTON" || el.tagName === "A") &&
+        !el.classList.contains("overflow-more-btn") &&
+        !el.closest(".spacer") &&
+        (!spacer || !(spacer.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING))
     );
   }
 
   private updateMenuContent(hiddenButtons: HTMLElement[]): void {
-    this.menuItemUnlisteners.forEach(fn => fn());
+    this.menuItemUnlisteners.forEach((fn) => fn());
     this.menuItemUnlisteners = [];
     this.menuContainer.innerHTML = "";
 
@@ -341,7 +359,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
   private extractButtonText(btn: HTMLElement): string {
     for (const span of Array.from(btn.querySelectorAll("span"))) {
-      if (MAT_INTERNAL_SPANS.some(cls => span.classList.contains(cls))) continue;
+      if (MAT_INTERNAL_SPANS.some((cls) => span.classList.contains(cls))) continue;
       const text = span.textContent?.trim();
       if (text) return text;
     }
