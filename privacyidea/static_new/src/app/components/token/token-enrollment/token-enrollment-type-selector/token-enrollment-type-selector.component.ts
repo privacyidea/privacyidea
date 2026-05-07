@@ -34,7 +34,7 @@ import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
-import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.component";
+import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 @Component({

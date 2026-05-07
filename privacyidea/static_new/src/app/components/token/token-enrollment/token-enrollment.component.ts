@@ -56,7 +56,7 @@ import {
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
+import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import {
   TokenCompleteEnrollmentComponent
 } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
@@ -98,6 +98,7 @@ import {
   TokenEnrollmentLastStepDialogData
 } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment/token-verify-enrollment.component";
+import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -112,14 +113,6 @@ export type OnEnrollmentResponseFn = (
   enrollmentResponse: EnrollmentResponse,
   enrollmentData: TokenEnrollmentData
 ) => Promise<EnrollmentResponse | null>;
-
-export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
-  showDelay: 500,
-  touchLongPressShowDelay: 500,
-  hideDelay: 0,
-  touchendHideDelay: 0,
-  disableTooltipInteractivity: true
-};
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },

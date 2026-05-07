@@ -32,26 +32,12 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
 
   let mockObserver: { observe: jest.Mock; disconnect: jest.Mock };
   let intersectionCallback: (entries: Partial<IntersectionObserverEntry>[]) => void;
-
-  beforeAll(() => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: (q: string) => ({
-        matches: false,
-        media: q,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn()
-      })
-    });
-  });
+  let originalIntersectionObserver: any;
 
   beforeEach(async () => {
+    originalIntersectionObserver = (global as any).IntersectionObserver;
     mockObserver = { observe: jest.fn(), disconnect: jest.fn() };
-    (global as any).IntersectionObserver = jest.fn().mockImplementation((cb: any, opts: any) => {
+    (global as any).IntersectionObserver = jest.fn().mockImplementation((cb: any) => {
       intersectionCallback = cb;
       return mockObserver;
     });
@@ -71,6 +57,7 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
   });
 
   afterEach(() => {
+    (global as any).IntersectionObserver = originalIntersectionObserver;
     jest.clearAllMocks();
   });
 
