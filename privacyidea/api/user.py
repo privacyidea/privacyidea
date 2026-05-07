@@ -116,7 +116,8 @@ def get_users():
         requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
         del search_parameters['attributes']
 
-    include_custom_attributes = is_true(request.all_data.get("include_custom_attributes", True)) and is_attribute_at_all()
+    include_custom_attributes = (is_true(request.all_data.get("include_custom_attributes", True))
+                                 and is_attribute_at_all())
     if "include_custom_attributes" in search_parameters:
         del search_parameters["include_custom_attributes"]
     users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
