@@ -129,7 +129,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   versionPrefix = computed(() => {
     if (this.customLogo()) {
-      return $localize`privacyIDEA `;
+      return $localize`privacyIDEA` + " ";
     }
     return "";
   });
