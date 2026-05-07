@@ -17,21 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NgClass } from "@angular/common";
 import {
-  AfterViewInit,
   Component,
-  ElementRef,
-  Injectable,
-  OnDestroy,
-  Renderer2,
-  ViewChild,
-  WritableSignal,
   computed,
   effect,
   inject,
+  Injectable,
   linkedSignal,
-  signal
+  OnDestroy,
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import {
   AbstractControl,
@@ -44,7 +40,6 @@ import {
   Validators
 } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatButton, MatIconButton } from "@angular/material/button";
 import {
   DateAdapter,
   MAT_DATE_FORMATS,
@@ -59,10 +54,10 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatSuffix } from "@angular/material/select";
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -70,12 +65,22 @@ import {
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import {
+  EnrollTokenTypeSwitchComponent
+} from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
-import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import {
+  TokenCompleteEnrollmentComponent
+} from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import {
+  TokenEnrollmentLastStepDialogComponent
+} from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import {
+  TokenEnrollmentLastStepDialogData
+} from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import {
+  TokenVerifyEnrollmentComponent
+} from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
@@ -92,7 +97,11 @@ import {
 } from "@services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
-import { Observable, lastValueFrom } from "rxjs";
+import { lastValueFrom, Observable } from "rxjs";
+import {
+  TokenEnrollmentTypeSelectorComponent
+} from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
+import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -107,14 +116,6 @@ export type OnEnrollmentResponseFn = (
   enrollmentResponse: EnrollmentResponse,
   enrollmentData: TokenEnrollmentData
 ) => Promise<EnrollmentResponse | null>;
-
-export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
-  showDelay: 500,
-  touchLongPressShowDelay: 500,
-  hideDelay: 0,
-  touchendHideDelay: 0,
-  disableTooltipInteractivity: true
-};
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -179,16 +180,14 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatNativeDateModule,
     MatDatepickerModule,
     MatSuffix,
-    MatButton,
-    MatIcon,
-    MatIconButton,
-    NgClass,
     MatTooltipModule,
     ClearableInputComponent,
     ScrollToTopDirective,
     UserAssignmentComponent,
     EnrollTokenTypeSwitchComponent,
-    EnrollmentPinComponent
+    EnrollmentPinComponent,
+    MatError,
+    TokenEnrollmentTypeSelectorComponent
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -200,7 +199,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
   styleUrls: ["./token-enrollment.component.scss"],
   standalone: true
 })
-export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
+export class TokenEnrollmentComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -210,9 +209,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -225,9 +222,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   });
   serial = signal<string | null>(null);
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
   enrollmentArgsGetter?: enrollmentArgsGetterFn;
@@ -392,36 +386,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     );
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.containerService.compatibleWithSelectedTokenType.set(null);
-    if (this.observer) {
-      this.observer.disconnect();
-    }
   }
 
   formatDateTimeOffset(date: Date, time: string, offset: string): string {

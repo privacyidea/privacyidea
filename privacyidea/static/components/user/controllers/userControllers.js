@@ -451,6 +451,7 @@ angular.module("privacyideaApp")
                         params.email = "*" + $scope.params.emailFilter + "*";
                     }
                     params.attributes = "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
+                    params.include_custom_attributes = false;
                     UserFactory.getUsers(params,
                         function (data) {
                             //debug: console.log("success");
