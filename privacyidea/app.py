@@ -380,22 +380,20 @@ def create_app(config_name="development",
     except (PackageNotFoundError, IndexError):
         pass
     migrate.init_app(app, db, directory=migration_dir)
-    app.cli.commands['db'].help += (
-        "\n\nNote: For relative revision arguments (e.g. -3), use '--' to separate "
-        "them from options:\n"
-        "  pi-manage db downgrade -- -3\n"
-        "  pi-manage db upgrade -- +2"
-    )
-    app.cli.commands['db'].commands['downgrade'].help += (
-        "\n\nNote: For relative revisions, use '--' to prevent the argument from "
-        "being parsed as an option:\n"
-        "  pi-manage db downgrade -- -3"
-    )
-    app.cli.commands['db'].commands['upgrade'].help += (
-        "\n\nNote: For relative revisions, use '--' to prevent the argument from "
-        "being parsed as an option:\n"
-        "  pi-manage db upgrade -- +2"
-    )
+    db_command = app.cli.commands.get('db')
+    if db_command is not None:
+        app.cli.commands['db'].help += (
+            "\n\nNote: For relative revision arguments (e.g. -3), use '--' to separate "
+            "them from options:\n"
+            "  pi-manage db downgrade -- -3\n"
+        )
+        downgrade_command = db_command.commands.get('downgrade')
+        if downgrade_command is not None:
+            app.cli.commands['db'].commands['downgrade'].help += (
+                "\n\nNote: For relative revisions, use '--' to prevent the argument from "
+                "being parsed as an option:\n"
+                "  pi-manage db downgrade -- -3"
+            )
 
     Versioned(app, format='%(path)s?v=%(version)s')
 

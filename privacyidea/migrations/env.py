@@ -112,13 +112,15 @@ def run_migrations_online():
 
         with context.begin_transaction():
             ctx = context.get_context()
-            current_rev = ctx.get_current_revision()
+            current_heads = ctx.get_current_heads()
+            current_rev = ", ".join(current_heads) if current_heads else "base"
             log.info(f"Current revision (before migration): {current_rev}")
 
             context.run_migrations()
 
-            # After migrations, get the new revision
-            new_rev = ctx.get_current_revision()
+            # After migrations, get the new revision(s)
+            new_heads = ctx.get_current_heads()
+            new_rev = ", ".join(new_heads) if new_heads else "base"
             log.info(f"New revision (after migration): {new_rev}")
 
 
