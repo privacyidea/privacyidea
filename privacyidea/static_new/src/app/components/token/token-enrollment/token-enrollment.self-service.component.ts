@@ -20,6 +20,7 @@ import { Component, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAdapter } from "@angular/material/core";
+import { MAT_TOOLTIP_DEFAULT_OPTIONS } from "@angular/material/tooltip";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -47,6 +48,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
 import {
   TokenEnrollmentTypeSelectorComponent
 } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
@@ -76,7 +78,8 @@ import {
   providers: [
     provideNativeDateAdapter(),
     { provide: DateAdapter, useFactory: () => new CustomDateAdapter("+00:00") },
-    { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS }
+    { provide: MAT_DATE_FORMATS, useValue: CUSTOM_DATE_FORMATS },
+    { provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }
   ]
 })
 export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponent {
