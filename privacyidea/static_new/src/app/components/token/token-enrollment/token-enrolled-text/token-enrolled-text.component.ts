@@ -35,13 +35,13 @@ export class TokenEnrolledTextComponent {
   userRealm = input<string>();
   onlyAddToRealm = input<boolean>();
   rollover = input<boolean>(false);
-  onSwitchRoute = output();
+  switchRoute = output();
 
   tokenSelected() {
     if (!this.serial()) {
       return;
     }
-    this.onSwitchRoute.emit();
+    this.switchRoute.emit();
     this.contentService.tokenSelected(this.serial() ?? "");
   }
 
@@ -49,7 +49,7 @@ export class TokenEnrolledTextComponent {
     if (!this.containerSerial()) {
       return;
     }
-    this.onSwitchRoute.emit();
+    this.switchRoute.emit();
     this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
   }
 }
