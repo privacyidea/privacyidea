@@ -751,7 +751,7 @@ class APIUsersTestCase(MyApiTestCase):
             user = result.get("value")[0]
             # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
             expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
-                                   "description", "resolver", "editable"}
+                                   "description", "resolver", "editable", "realm"}
             self.assertSetEqual(expected_attributes, set(user.keys()))
             self.assertEqual("1000", user.get("userid"))
             self.assertEqual("cornelius", user.get("username"))
