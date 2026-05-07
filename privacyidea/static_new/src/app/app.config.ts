@@ -21,6 +21,7 @@ import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import {
   ApplicationConfig,
   inject,
+  LOCALE_ID,
   provideAppInitializer,
   provideZonelessChangeDetection
 } from "@angular/core";
@@ -28,10 +29,10 @@ import { provideAnimationsAsync } from "@angular/platform-browser/animations/asy
 import { provideRouter } from "@angular/router";
 import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
-import { AuthService } from "./services/auth/auth.service";
-import { ThemeService } from "./services/theme/theme.service";
-import { ConfigService } from "./services/config/config.service";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
+import { AuthService } from "./services/auth/auth.service";
+import { ConfigService } from "./services/config/config.service";
+import { ThemeService } from "./services/theme/theme.service";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -45,8 +46,8 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_BASE_HREF,
       useFactory: () => {
-        const localeMatch = window.location.pathname.match(/^\/(de|fr)\//);
-        return localeMatch ? `/${localeMatch[1]}/` : "/";
+        const locale = inject(LOCALE_ID);
+        return locale === "en" ? "/app/v2/" : `/app/v2/${locale}/`;
       }
     },
     AuthService,

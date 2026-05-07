@@ -30,7 +30,7 @@ __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 import os
 from flask import (Blueprint, render_template, request,
-                   current_app, g, send_from_directory, redirect)
+                   current_app, g, send_from_directory, redirect, abort)
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import send_html, send_result
@@ -230,7 +230,7 @@ def single_page_application():
     if locale and locale != "en":
         dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
         if os.path.isdir(dist):
-            return redirect(f"/{locale}/")
+            return redirect(f"/app/v2/{locale}/")
     new_ui = _serve_locale("en")
     if new_ui:
         return new_ui
@@ -239,12 +239,11 @@ def single_page_application():
     return send_html(render_template(index_page, **render_context))
 
 
-@login_blueprint.route('/<locale>/', defaults={'subpath': ''}, methods=['GET'])
-@login_blueprint.route('/<locale>/<path:subpath>', methods=['GET'])
+@login_blueprint.route('/app/v2/<locale>/', defaults={'subpath': ''}, methods=['GET'])
+@login_blueprint.route('/app/v2/<locale>/<path:subpath>', methods=['GET'])
 def single_page_application_locale(locale, subpath):
     dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
     if not os.path.isdir(dist):
-        from flask import abort
         abort(404)
     return _serve_locale(locale)
 

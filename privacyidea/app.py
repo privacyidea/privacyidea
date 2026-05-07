@@ -30,6 +30,7 @@ import logging
 import logging.config
 import os
 import os.path
+import re
 import secrets
 import sys
 import uuid
@@ -39,7 +40,7 @@ from pathlib import Path
 
 import sqlalchemy as sa
 import yaml
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, jsonify, request, redirect
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
@@ -83,10 +84,11 @@ from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.lib import queue
 from privacyidea.lib.crypto import init_hsm
+from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
-from privacyidea.webui.login import login_blueprint, get_accepted_language
+from privacyidea.webui.login import DEFAULT_LANGUAGE_LIST, login_blueprint, get_accepted_language
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
 
@@ -305,20 +307,29 @@ def create_app(config_name="development",
 
     # Routed apps must fall back to index.html
     @app.errorhandler(404)
-    def fallback(error):
+    def fallback(_):
+        lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+        locale_pattern = "|".join(re.escape(lang) for lang in lang_list)
         if request.path.startswith("/static/public/customize"):
             return send_html("")
-        elif request.path.startswith("/app/v2/"):
-            index_html = app.config.get("PI_INDEX_HTML") or "index.html"
-            return send_html(
-                render_template(
-                    index_html))
-        if request.method == "GET" and not request.path.startswith("/static/"):
+        elif re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path):
             from privacyidea.webui.login import _serve_locale
-            new_ui = _serve_locale("en")
+            locale_match = re.match(rf'^/app/v2/({locale_pattern})/', request.path)
+            locale = locale_match.group(1) if locale_match else "en"
+            new_ui = _serve_locale(locale) or _serve_locale("en")
             if new_ui:
                 return new_ui
+            return redirect("/")
+        if request.method == "GET" and not request.path.startswith("/static/"):
+            from privacyidea.webui.login import _serve_locale
+            locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
+            locale = locale_prefix_match.group(1) if locale_prefix_match else "en"
+            new_ui = _serve_locale(locale) or _serve_locale("en")
+            if new_ui:
+                return new_ui
+            return redirect("/")
         return jsonify(error="Not found"), 404
+
 
     # Overwrite default config with environment setting
     config_name = os.environ.get(ConfigKey.CONFIG_NAME, config_name)
