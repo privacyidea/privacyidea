@@ -36,13 +36,13 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
 
 @Component({
   selector: "app-edit-policy-dialog",
@@ -74,8 +74,11 @@ export class EditPolicyDialogComponent implements AfterViewInit, OnDestroy {
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   readonly isDirty = this.isPolicyEdited;
-  readonly canSave = computed(() => this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name));
-  readonly title = computed(() => this.mode() === "edit" ? $localize`Edit Policy` : $localize`Create Policy`);
+  readonly canSave = computed(
+    () =>
+      this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name)
+  );
+  readonly title = computed(() => (this.mode() === "edit" ? $localize`Edit Policy` : $localize`Create Policy`));
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {

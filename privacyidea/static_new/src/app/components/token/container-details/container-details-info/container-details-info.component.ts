@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
@@ -25,11 +26,10 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { forkJoin, Observable, switchMap } from "rxjs";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { NgClass } from "@angular/common";
 
 export interface ContainerInfoDetail<T = any> {
   value: T;
@@ -91,7 +91,7 @@ export class ContainerDetailsInfoComponent {
     forkJoin(requests).subscribe({
       next: () => {
         this.newInfo.set({ key: "", value: "" });
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       }
     });
     this.isEditingInfo.set(false);
@@ -114,7 +114,7 @@ export class ContainerDetailsInfoComponent {
       )
       .subscribe({
         next: () => {
-          this.containerService.containerDetailResource.reload();
+          this.containerService.containerDetailsResource.reload();
         }
       });
   }

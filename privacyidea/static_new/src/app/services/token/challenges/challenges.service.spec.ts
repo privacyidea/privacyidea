@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,9 +18,9 @@
  **/
 import { TestBed } from "@angular/core/testing";
 
-import { ChallengesService } from "./challenges.service";
 import { provideHttpClient } from "@angular/common/http";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ChallengesService } from "./challenges.service";
 
 describe("ChallengesService", () => {
   let challengesService: ChallengesService;

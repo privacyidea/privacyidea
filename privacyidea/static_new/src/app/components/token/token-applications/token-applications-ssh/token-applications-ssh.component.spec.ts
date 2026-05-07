@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatTabsModule } from "@angular/material/tabs";
-import { MockLocalService, MockMachineService, MockNotificationService } from "../../../../../testing/mock-services";
-import { MachineService, TokenApplication } from "../../../../services/machine/machine.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { TokenApplicationsComponent } from "@components/token/token-applications/token-applications.component";
+import { MachineService, TokenApplication } from "@services/machine/machine.service";
+import { TokenService } from "@services/token/token.service";
+import { MockLocalService, MockMachineService, MockNotificationService } from "@testing/mock-services";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { TokenApplicationsComponent } from "../token-applications.component";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;

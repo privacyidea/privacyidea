@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
 import { Subscription, timer } from "rxjs";
-import { HttpErrorResponse } from "@angular/common/http";
 
 export interface NotificationServiceInterface {
   remainingTime: number;

@@ -17,23 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { ContainerTemplateService } from "./container-template.service";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { ContainerService, ContainerTemplate } from "../container/container.service";
-import { ContentService } from "../content/content.service";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { ROUTE_PATHS } from "../../route_paths";
-import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService, ContainerTemplate } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
 import {
-  MockContainerService,
-  MockContentService,
-  MockNotificationService,
-  MockPiResponse
-} from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+    MockContainerService,
+    MockContentService,
+    MockNotificationService,
+    MockPiResponse
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { ContainerTemplateService } from "./container-template.service";
 
 describe("ContainerTemplateService", () => {
   let service: ContainerTemplateService;
@@ -126,7 +126,8 @@ describe("ContainerTemplateService", () => {
 
       const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -167,12 +168,35 @@ describe("ContainerTemplateService", () => {
 
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
       tokenTypesReq.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       TestBed.tick();
       await Promise.resolve();
 
       expect(service.templateTokenTypes()).toEqual({});
+    });
+
+    it("availableContainerTypes returns keys of templateTokenTypes", async () => {
+      TestBed.tick();
+
+      const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
+      tokenTypesReq.flush({ result: { value: { generic: { token_types: ["hotp"] }, smartphone: { token_types: ["push"] } } } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      expect(service.availableContainerTypes()).toEqual(["generic", "smartphone"]);
+    });
+
+    it("availableContainerTypes is empty when templateTokenTypes has no values", async () => {
+      TestBed.tick();
+
+      const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
+      tokenTypesReq.flush({ result: { value: {} } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      expect(service.availableContainerTypes()).toEqual([]);
     });
 
     it("should not fetch token types if not on the correct route", async () => {
@@ -258,8 +282,7 @@ describe("ContainerTemplateService", () => {
 
     it("should throw error on delete", async () => {
       const templateName = "template-to-fail";
-      const deletePromise = service.deleteTemplate(templateName).catch(() => {
-      });
+      const deletePromise = service.deleteTemplate(templateName).catch(() => {});
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateName}`));
 
       req.flush("Error", { status: 500, statusText: "Server Error" });
@@ -312,8 +335,7 @@ describe("ContainerTemplateService", () => {
       const spy = jest.spyOn(service.templatesResource, "reload");
       const templateNames = ["template-1", "template-2"];
 
-      const deletePromise = service.deleteTemplates(templateNames).catch(() => {
-      });
+      const deletePromise = service.deleteTemplates(templateNames).catch(() => {});
 
       const req1 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[0]}`));
       req1.flush(
@@ -420,8 +442,7 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should show a generic error notification on delete if error response contains no message", async () => {
-      const deletePromise = service.deleteTemplate("some-template").catch(() => {
-      });
+      const deletePromise = service.deleteTemplate("some-template").catch(() => {});
 
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/some-template`));
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });
@@ -429,6 +450,66 @@ describe("ContainerTemplateService", () => {
       await deletePromise;
 
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete template. ");
+    });
+
+    it("copyTemplate creates a copy with the new name and default false", async () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
+      const source: ContainerTemplate = {
+        name: "Original",
+        container_type: "generic",
+        default: true,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      const promise = service.copyTemplate(source, "Copy");
+
+      const req = httpMock.expectOne(`/container/generic/template/Copy`);
+      expect(req.request.method).toBe("POST");
+      expect(req.request.body.name).toBe("Copy");
+      expect(req.request.body.default).toBe(false);
+      req.flush(MockPiResponse.fromValue(true));
+
+      const result = await promise;
+      expect(result).toBe(true);
+    });
+
+    it("canSaveTemplate returns false for names with special characters", () => {
+      const template: ContainerTemplate = {
+        name: "bad name!",
+        container_type: "generic",
+        default: false,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
+    });
+
+    it("canSaveTemplate returns false when name is empty", () => {
+      const template: ContainerTemplate = {
+        name: "",
+        container_type: "generic",
+        default: false,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
+    });
+
+    it("canSaveTemplate returns false when container_type is empty", () => {
+      const template: ContainerTemplate = {
+        name: "valid",
+        container_type: "",
+        default: false,
+        template_options: { tokens: [{ type: "hotp" } as any] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
+    });
+
+    it("canSaveTemplate returns false when tokens list is empty", () => {
+      const template: ContainerTemplate = {
+        name: "valid",
+        container_type: "generic",
+        default: false,
+        template_options: { tokens: [] }
+      };
+      expect(service.canSaveTemplate(template)).toBe(false);
     });
 
     it("should show a generic error notification on post if error response contains no message", async () => {

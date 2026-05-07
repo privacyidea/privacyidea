@@ -18,11 +18,7 @@
  **/
 
 import { Component, inject, input, output } from "@angular/core";
-import {
-  PolicyServiceInterface,
-  PolicyService,
-  PolicyDetail
-} from "../../../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { EditAdditionalConditionsComponent } from "./edit-additional-conditions/edit-additional-conditions.component";
 import { EditAdminConditionsComponent } from "./edit-admin-conditions/edit-admin-conditions.component";
 import { EditEnvironmentConditionsComponent } from "./edit-environment-conditions/edit-environment-conditions.component";

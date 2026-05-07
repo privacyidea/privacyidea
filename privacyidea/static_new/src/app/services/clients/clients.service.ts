@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app.component";
 import { effect, inject, Injectable } from "@angular/core";
-import { ROUTE_PATHS } from "../../route_paths";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { environment } from "../../../environments/environment";
-import { NotificationService } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
 
 export interface ClientData {
   hostname?: string;
@@ -64,5 +64,4 @@ export class ClientsService implements ClientsServiceInterface {
       params: {}
     };
   });
-
 }

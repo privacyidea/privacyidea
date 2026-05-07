@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { BreakpointObserver } from "@angular/cdk/layout";
+import { NgClass } from "@angular/common";
 import {
   Component,
   computed,
@@ -29,35 +31,33 @@ import {
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { BreakpointObserver } from "@angular/cdk/layout";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MatButtonModule } from "@angular/material/button";
-import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { NgClass } from "@angular/common";
-import { MatIcon } from "@angular/material/icon";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { MatTableDataSource } from "@angular/material/table";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
-import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
-import { filter, map } from "rxjs";
 import { FormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { MatTableDataSource } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { filter, map } from "rxjs";
+import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
+import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
 
 @Component({
   selector: "app-user-details",

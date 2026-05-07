@@ -19,12 +19,12 @@
 import { Component, computed, input, output } from "@angular/core";
 
 import { FormsModule } from "@angular/forms";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
-import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "../../../../../constants/token.constants";
+import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "@constants/token.constants";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 @Component({
   selector: "app-remote-config",

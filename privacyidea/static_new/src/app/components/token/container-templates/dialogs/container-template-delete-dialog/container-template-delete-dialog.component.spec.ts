@@ -18,13 +18,13 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { ContainerTemplateDeleteDialogComponent } from "./container-template-delete-dialog.component";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { ContainerTemplate } from "../../../../../services/container/container.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { ContainerTemplateDeleteDialogComponent } from "./container-template-delete-dialog.component";
 
 describe("ContainerTemplateDeleteDialogComponent", () => {
   let component: ContainerTemplateDeleteDialogComponent;

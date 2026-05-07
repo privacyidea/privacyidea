@@ -1,5 +1,5 @@
-import { VersioningServiceInterface } from "../../app/services/version/version.service";
 import { signal } from "@angular/core";
+import { VersioningServiceInterface } from "@services/version/version.service";
 
 /**
  * (c) NetKnights GmbH 2026,  https://netknights.it

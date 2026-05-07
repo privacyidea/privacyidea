@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { ContentService } from "@services/content/content.service";
+import { MachineService } from "@services/machine/machine.service";
+import { MockContainerService, MockMachineService } from "@testing/mock-services";
 import { TokenDetailsMachineComponent } from "./token-details-machine.component";
-import { MockContainerService, MockMachineService } from "../../../../../testing/mock-services";
-import { MachineService } from "../../../../services/machine/machine.service";
-import { ContentService } from "../../../../services/content/content.service";
 
 describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsMachineComponent;

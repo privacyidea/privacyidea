@@ -18,23 +18,24 @@
  **/
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
-import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ROUTE_PATHS } from "../../../route_paths";
 import { Router } from "@angular/router";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-smtp",

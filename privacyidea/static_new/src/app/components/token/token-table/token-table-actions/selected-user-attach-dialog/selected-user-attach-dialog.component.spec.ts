@@ -18,11 +18,11 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { UserData } from "../../../../../services/user/user.service";
+import { UserData } from "@services/user/user.service";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;

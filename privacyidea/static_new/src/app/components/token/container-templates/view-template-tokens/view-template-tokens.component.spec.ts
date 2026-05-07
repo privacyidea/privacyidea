@@ -18,8 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ViewTemplateTokensComponent } from "./view-template-tokens.component";
 import { By } from "@angular/platform-browser";
+import { ViewTemplateTokensComponent } from "./view-template-tokens.component";
 
 describe("ViewTemplateTokensComponent", () => {
   let component: ViewTemplateTokensComponent;

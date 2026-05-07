@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
 
 describe("ContainerRegistrationInitDialogComponent", () => {
   let component: ContainerRegistrationInitDialogComponent;

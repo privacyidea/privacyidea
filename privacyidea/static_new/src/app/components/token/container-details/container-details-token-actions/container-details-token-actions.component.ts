@@ -17,19 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, Input, WritableSignal } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { MatButton } from "@angular/material/button";
+import { MatDivider } from "@angular/material/divider";
+import { MatIcon } from "@angular/material/icon";
+import { MatTableDataSource } from "@angular/material/table";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailToken,
   ContainerService,
   ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { MatIcon } from "@angular/material/icon";
-import { MatButton } from "@angular/material/button";
-import { MatDivider } from "@angular/material/divider";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { MatTableDataSource } from "@angular/material/table";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+} from "@services/container/container.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-container-details-token-actions",
@@ -66,15 +66,8 @@ export class ContainerDetailsTokenActionsComponent {
     return tokens.some((token) => token.username && token.username !== "");
   });
 
-  anyActiveTokens = computed(() => {
-    return this.tokenData().data.some((token) => token.active);
-  });
-
-  anyDisabledTokens = computed(() => {
-    // explicitly check to be false to exclude undefined states
-    return this.tokenData().data.some((token) => token.active === false);
-  });
-
+  anyActiveTokens = computed(() => this.tokenData().data.some((token) => token.active));
+  anyDisabledTokens = computed(() => this.tokenData().data.some((token) => token.active === false));
   unassignFromAllToken() {
     const tokenToUnassign = this.tokenData().data.filter((token) => token.username !== "");
     if (tokenToUnassign.length === 0) {
@@ -97,7 +90,7 @@ export class ContainerDetailsTokenActionsComponent {
           if (result) {
             this.tokenService.unassignUserFromAll(tokenSerials).subscribe({
               next: () => {
-                this.containerService.containerDetailResource.reload();
+                this.containerService.containerDetailsResource.reload();
               },
               error: (error) => {
                 console.error("Error unassigning user from token:", error);
@@ -129,7 +122,7 @@ export class ContainerDetailsTokenActionsComponent {
             realm: realm
           })
           .subscribe({
-            next: () => this.containerService.containerDetailResource.reload(),
+            next: () => this.containerService.containerDetailsResource.reload(),
             error: (error) => console.error("Error assigning user to all tokens:", error)
           });
       }
@@ -139,7 +132,7 @@ export class ContainerDetailsTokenActionsComponent {
   toggleAll(action: "activate" | "deactivate") {
     this.containerService.toggleAll(action).subscribe({
       next: () => {
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       }
     });
   }
@@ -164,7 +157,7 @@ export class ContainerDetailsTokenActionsComponent {
           if (result) {
             this.containerService.removeAll(this.containerSerial).subscribe({
               next: () => {
-                this.containerService.containerDetailResource.reload();
+                this.containerService.containerDetailsResource.reload();
               }
             });
           }
@@ -175,7 +168,7 @@ export class ContainerDetailsTokenActionsComponent {
   deleteAllTokens() {
     const serialList = this.tokenData().data.map((token) => token.serial);
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, () =>
-      this.containerService.containerDetailResource.reload()
+      this.containerService.containerDetailsResource.reload()
     );
   }
 }

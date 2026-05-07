@@ -16,29 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, computed, effect, inject, Input, signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { Router } from "@angular/router";
-import { PiResponse } from "../../../../app.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ContainerRegistrationFinalizeDialogComponent } from "@components/token/container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
+import { ContainerRegistrationInitDialogComponent } from "@components/token/container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
   ContainerUnregisterData
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ContainerRegistrationFinalizeDialogComponent } from "../../container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
-import { ContainerRegistrationInitDialogComponent } from "../../container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
 export type ContainerRegisterFinalizeData = {
   response: PiResponse<ContainerRegisterData>;
@@ -74,24 +72,21 @@ export class ContainerDetailsActionsComponent {
   passphraseResponse: string = "";
   userStorePW: boolean = false;
   dialogData = signal<ContainerRegisterFinalizeData | undefined>(undefined);
-  registrationState = computed(() => {
-    return this.containerService.containerDetail()?.containers[0]?.info?.registration_state ?? "";
-  });
+  registrationState = computed(
+    () => this.containerService.containerDetails()?.containers[0]?.info?.registration_state ?? ""
+  );
 
-  registrationAllowed = computed(() => {
-    return (
-      ["client_wait", ""].includes(this.registrationState()) && this.authService.actionAllowed("container_register")
-    );
-  });
-  rolloverAllowed = computed(() => {
-    return (
+  registrationAllowed = computed(
+    () => ["client_wait", ""].includes(this.registrationState()) && this.authService.actionAllowed("container_register")
+  );
+  rolloverAllowed = computed(
+    () =>
       ["registered", "rollover", "rollover_completed"].includes(this.registrationState()) &&
       this.authService.actionAllowed("container_rollover")
-    );
-  });
-  unregisterAllowed = computed(() => {
-    return this.registrationState() !== "" && this.authService.actionAllowed("container_unregister");
-  });
+  );
+  unregisterAllowed = computed(
+    () => this.registrationState() !== "" && this.authService.actionAllowed("container_unregister")
+  );
   anyActionsAllowed = computed(() => {
     const container_delete_allowed = this.authService.actionAllowed("container_delete");
     return (
@@ -106,7 +101,6 @@ export class ContainerDetailsActionsComponent {
   }
 
   constructor() {
-    // Effect to close dialog when polling stops
     effect(() => {
       if (!this.containerService.isPollingActive()) {
         this.dialogService.closeAllDialogs();
@@ -115,7 +109,7 @@ export class ContainerDetailsActionsComponent {
   }
 
   enrollTokenInContainer() {
-    this.containerService.selectedContainer.set(this.containerSerial);
+    this.containerService.selectedContainerSerial.set(this.containerSerial);
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT);
   }
 
@@ -151,8 +145,8 @@ export class ContainerDetailsActionsComponent {
   }
 
   openRegisterInitDialog(rollover: boolean) {
-    const container = this.containerService.containerDetailResource.hasValue()
-      ? this.containerService.containerDetailResource.value()?.result?.value?.containers?.[0]
+    const container = this.containerService.containerDetailsResource.hasValue()
+      ? this.containerService.containerDetailsResource.value()?.result?.value?.containers?.[0]
       : undefined;
     this.dialogService.openDialog({
       component: ContainerRegistrationInitDialogComponent,
@@ -204,7 +198,7 @@ export class ContainerDetailsActionsComponent {
         } else {
           this.notificationService.error("Failed to unregister container.");
         }
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       });
   }
 

@@ -121,7 +121,7 @@
                       @if (authService.actionAllowed("container_list")) {
                         <div class="flex-row flex-nowrap ali-center">
                           <a
-                            (click)="contentService.containerSelected(element[column.key])"
+                            (click)="contentService.navigateContainerDetails(element[column.key])"
                             attr.aria-label="{{ column.label }} Link">
                             {{ element[column.key] }}
                           </a>

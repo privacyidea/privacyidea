@@ -1,4 +1,4 @@
-@use "../../../../../../styles/index" as styles;
+@use "styles";
 
 // override hover style for read only view to not change on hover
 .added-actions-container .action-card:hover {

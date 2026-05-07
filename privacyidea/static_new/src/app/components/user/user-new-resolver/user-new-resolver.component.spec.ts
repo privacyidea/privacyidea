@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserNewResolverComponent } from "./user-new-resolver.component";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ActivatedRoute, Router } from "@angular/router";
-import { of, throwError } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { MockDialogService, MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../testing/mock-services/mock-pending-changes-service";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { of, throwError } from "rxjs";
+import { UserNewResolverComponent } from "./user-new-resolver.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -142,7 +142,7 @@ describe("UserNewResolverComponent", () => {
     expect(component.resolverType).toBe("passwdresolver");
     expect(component.formData["fileName"]).toBe("/tmp/test");
 
-    const inputElement = fixture.nativeElement.querySelector("input[placeholder=\"/etc/passwd\"]");
+    const inputElement = fixture.nativeElement.querySelector('input[placeholder="/etc/passwd"]');
     expect(inputElement?.value).toBe("/tmp/test");
   });
 
@@ -179,7 +179,7 @@ describe("UserNewResolverComponent", () => {
     expect(component.isEditMode).toBeTruthy();
     expect(component.resolverType).toBe("sqlresolver");
 
-    const dbInput = fixture.nativeElement.querySelector("input[placeholder=\"YourDatabase\"]");
+    const dbInput = fixture.nativeElement.querySelector('input[placeholder="YourDatabase"]');
     expect(dbInput?.value).toBe("testdb");
   });
 
@@ -295,6 +295,7 @@ describe("UserNewResolverComponent", () => {
 
     expect(success).toBe(true);
     expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("created"));
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
@@ -324,6 +325,7 @@ describe("UserNewResolverComponent", () => {
 
     expect(success).toBe(true);
     expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("updated"));
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
@@ -576,7 +578,6 @@ describe("UserNewResolverComponent", () => {
 
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
-
 
     component.testUsername = "test";
     await detectChangesStable();

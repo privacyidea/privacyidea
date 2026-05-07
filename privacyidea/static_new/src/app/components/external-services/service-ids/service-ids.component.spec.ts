@@ -23,13 +23,13 @@ import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ServiceIdsComponent } from "@components/external-services/service-ids/service-ids.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { ServiceIdService } from "@services/service-id/service-id.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { MockDialogService } from "../../../../testing/mock-services";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { ServiceIdService } from "../../../services/service-id/service-id.service";
-import { ServiceIdsComponent } from "./service-ids.component";
-import { ROUTE_PATHS } from "../../../route_paths";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
@@ -88,7 +88,9 @@ describe("ServiceIdsComponent", () => {
   it("should navigate to edit page when editing a service ID", () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
     component.onEditServiceId(serviceId);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename
+    );
   });
 
   it("should navigate to create page", () => {

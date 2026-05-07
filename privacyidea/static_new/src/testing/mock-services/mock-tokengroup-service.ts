@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
-import { Tokengroup, TokengroupServiceInterface } from "../../app/services/tokengroup/tokengroup.service";
+import { signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { Tokengroup, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
 export class MockTokengroupService implements TokengroupServiceInterface {
   tokengroupResource: HttpResourceRef<PiResponse<any> | undefined> = {

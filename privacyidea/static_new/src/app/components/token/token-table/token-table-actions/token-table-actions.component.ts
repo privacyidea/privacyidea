@@ -16,36 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, DOCUMENT } from "@angular/core";
+import { Component, DOCUMENT, inject } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { PiResponse } from "../../../../app.component";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { BulkResult, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
-import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
 import { tap } from "rxjs/operators";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { MatDialog } from "@angular/material/dialog";
-import { AuditService, AuditServiceInterface } from "../../../../services/audit/audit.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
 
-import {
-  DocumentationService,
-  DocumentationServiceInterface
-} from "../../../../services/documentation/documentation.service";
-import { Router, RouterLink } from "@angular/router";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { MatMenuModule } from "@angular/material/menu";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
+import { Router, RouterLink } from "@angular/router";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-token-table-actions",

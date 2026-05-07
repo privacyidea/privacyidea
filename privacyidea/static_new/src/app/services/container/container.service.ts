@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,32 +16,51 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { StringUtils } from "../../utils/string.utils";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { UserService, UserServiceInterface } from "../user/user.service";
+import { PiResponse } from "@app/app.component";
+import {
+  EnrollmentResponseDetail,
+  EnrollmentUrl,
+  TokenEnrollmentPayload
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { StringUtils } from "@utils/string.utils";
+import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];
+
+export interface TemplateComparisonResult {
+  [containerSerial: string]: {
+    tokens: {
+      additional: string[];
+      equal: boolean;
+      missing: string[];
+    };
+  };
+}
 
 export interface ContainerDetails {
   count?: number;
   containers: Array<ContainerDetailData>;
 }
+type ContainerRegistrationState = "registered" | "client_wait";
 
 export interface ContainerDetailData {
   description?: string;
-  info?: any;
+  info?: {
+    [key: string]: any;
+    registration_state?: ContainerRegistrationState;
+  };
   internal_info_keys?: any[];
   last_authentication?: any;
   last_synchronization?: any;
@@ -107,11 +126,12 @@ export interface ContainerType {
 }
 
 export interface ContainerCreateData {
-  container_type: string;
+  type: string;
   description?: string;
   user?: string;
   realm?: string;
-  template_name?: string;
+  name?: string;
+  template?: ContainerTemplate;
 }
 
 export interface ContainerTemplate {
@@ -121,6 +141,11 @@ export interface ContainerTemplate {
   template_options: {
     tokens: Array<TokenEnrollmentPayload>;
   };
+}
+
+export interface ContainerCreateResult {
+  container_serial: string;
+  tokens?: Record<string, EnrollmentResponseDetail & { type: string }>;
 }
 
 export interface ContainerRegisterData {
@@ -150,7 +175,8 @@ export interface ContainerServiceInterface {
   eventPageSize: number;
   states: WritableSignal<string[]>;
   containerSerial: WritableSignal<string>;
-  selectedContainer: WritableSignal<string | null>;
+  containerDetail: Signal<ContainerDetailData | null>;
+  selectedContainerSerial: WritableSignal<string | null>;
   sort: WritableSignal<Sort>;
   containerFilter: WritableSignal<FilterValue>;
   filterParams: Signal<Record<string, string>>;
@@ -165,8 +191,9 @@ export interface ContainerServiceInterface {
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
   selectedContainerType: Signal<ContainerType | undefined>;
-  containerDetailResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
-  containerDetail: WritableSignal<ContainerDetails>;
+  containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  containerDetails: WritableSignal<ContainerDetails>;
+  templateComparison: WritableSignal<TemplateComparisonResult | null>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
@@ -176,12 +203,8 @@ export interface ContainerServiceInterface {
     states: string[]
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
-  assignUser: (args: {
-    containerSerial: string;
-    username: string;
-
-    userRealm: string;
-  }) => Observable<any>;
+  assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
+  compareWithTemplate: () => Promise<void>;
   setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<any>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
@@ -197,6 +220,7 @@ export interface ContainerServiceInterface {
     passphrase_response: string;
     rollover?: boolean;
   }) => Observable<PiResponse<ContainerRegisterData>>;
+
   unregister: (containerSerial: string) => Observable<PiResponse<any>>;
   containerBelongsToUser: (containerSerial: string) => false | true | undefined;
 
@@ -206,7 +230,7 @@ export interface ContainerServiceInterface {
 
   stopPolling(): void;
 
-  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>>;
+  createContainer(param: ContainerCreateData): Observable<PiResponse<ContainerCreateResult>>;
 
   startPolling(containerSerial: string): void;
 }
@@ -233,14 +257,25 @@ export class ContainerService implements ContainerServiceInterface {
 
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   eventPageSize = 10;
 
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
+  containerDetail = computed(() => {
+    const details = this.containerDetails();
+    const serial = this.containerSerial();
+    if (!details || !serial) {
+      return null;
+    }
+    return details.containers.find((container) => container.serial === serial) ?? null;
+  });
 
-  selectedContainer: WritableSignal<string | null> = linkedSignal({
-    source: () => this.contentService.routeUrl(),
-    computation: (routeUrl, previous) => (this.contentService.onTokensEnrollment() ? (previous?.value ?? "") : "")
+  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+    source: () => this.contentService.onTokensEnrollment(),
+    computation: (onTokensEnrollment, previous) => {
+      return onTokensEnrollment ? (previous?.value ?? "") : "";
+    }
   });
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
@@ -395,7 +430,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || "").toLowerCase();
+    const filter = (this.selectedContainerSerial() || "").toLowerCase();
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 
@@ -429,7 +464,6 @@ export class ContainerService implements ContainerServiceInterface {
       this.contentService.onTokensContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
-
     if (!onAllowedRoute) {
       return undefined;
     }
@@ -476,14 +510,10 @@ export class ContainerService implements ContainerServiceInterface {
     }
   });
 
-  containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
+  containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
     this.pollingTrigger();
-    this.isPollingActive();
-
-    if (serial === "") {
-      return undefined;
-    }
+    if (serial === "") return undefined;
     return {
       url: this.containerBaseUrl,
       method: "GET",
@@ -494,13 +524,11 @@ export class ContainerService implements ContainerServiceInterface {
     };
   });
 
-  containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
+  containerDetails: WritableSignal<ContainerDetails> = linkedSignal({
+    source: () => (this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
-      if (containerDetail) {
-        return containerDetail;
-      }
+      if (containerDetail) return containerDetail;
       return (
         previous?.value ?? {
           containers: [],
@@ -713,7 +741,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   toggleAll(action: "activate" | "deactivate"): Observable<(PiResponse<boolean> | null)[] | null> {
-    const data = this.containerDetail();
+    const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       this.notificationService.warning("No valid tokens array found in data.");
@@ -744,7 +772,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   removeAll(containerSerial: string): Observable<PiResponse<boolean> | null> {
-    const data = this.containerDetail();
+    const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error("No valid tokens array found in data.", data);
@@ -868,20 +896,10 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling$.next();
   }
 
-  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>> {
+  createContainer(createData: ContainerCreateData): Observable<PiResponse<ContainerCreateResult>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<{ container_serial: string }>>(
-        `${this.containerBaseUrl}init`,
-        {
-          type: param.container_type,
-          description: param.description,
-          user: param.user,
-          realm: param.realm,
-          template_name: param.template_name
-        },
-        { headers }
-      )
+      .post<PiResponse<ContainerCreateResult>>(`${this.containerBaseUrl}init`, createData, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to create container.", error);
@@ -906,12 +924,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   constructor() {
     effect(() => {
-      if (this.containerDetailResource.error()) {
-        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
-        console.error("Failed to get container details.", containerDetailError.message);
-        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
-        this.notificationService.error("Failed to get container details." + message);
-      }
+      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
     });
     effect(() => {
       if (this.containerResource.error()) {
@@ -929,11 +942,11 @@ export class ContainerService implements ContainerServiceInterface {
       const onAllowedRoute =
         this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
 
-      if (!active || !serial || !this.containerDetailResource.hasValue() || !onAllowedRoute) {
+      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
         return;
       }
 
-      const resourceValue = this.containerDetailResource.value();
+      const resourceValue = this.containerDetailsResource.value();
       if (!resourceValue?.result?.value) {
         return;
       }
@@ -957,4 +970,38 @@ export class ContainerService implements ContainerServiceInterface {
       }
     });
   }
+
+  async compareWithTemplate() {
+    const serial = this.containerSerial();
+    const details = this.containerDetails();
+
+    const container = details?.containers.find((c) => c.serial === serial);
+    const templateName = container?.template;
+
+    if (!serial || !templateName) {
+      console.warn("Missing serial or template for comparison");
+      return;
+    }
+
+    const headers = this.authService.getHeaders();
+    const observable = this.http
+      .get<
+        PiResponse<TemplateComparisonResult>
+      >(`${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`, { headers })
+      .pipe(
+        catchError((error) => {
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to compare: " + message);
+          return of(null);
+        })
+      );
+
+    const result = await lastValueFrom(observable);
+    this.templateComparison.set(result?.result?.value ?? null);
+  }
+
+  readonly templateComparison = linkedSignal<string, TemplateComparisonResult | null>({
+    source: () => this.containerSerial(),
+    computation: () => null
+  });
 }

@@ -1,8 +1,8 @@
-@use "../../../../../../styles";
+@use "styles";
 
 .hint {
   font-size: var(--mat-sys-body-small-size);
-  color: var(--mat-sys-primary)
+  color: var(--mat-sys-primary);
 }
 
 .toggle-width {

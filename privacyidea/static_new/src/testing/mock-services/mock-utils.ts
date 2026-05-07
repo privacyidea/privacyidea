@@ -63,7 +63,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 
   snapshot: Signal<ResourceSnapshot<T>> = computed(() => {
     const status = this.status();
-    if (status === 'error') {
+    if (status === "error") {
       return { status, error: this.error()! } as ResourceSnapshot<T>;
     }
     return { status, value: this.value() } as ResourceSnapshot<T>;
@@ -77,6 +77,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   constructor(initial: T) {
     this.value = signal(initial) as WritableSignal<T>;
   }
+  snapshot: Signal<ResourceSnapshot<T>>;
 }
 
 export class MockBase64Service {
@@ -108,7 +109,7 @@ export class MockPiResponse<Value, Detail = unknown> {
       status: boolean;
       value?: Value;
       init?: any;
-      error?: { code: number; message: string }
+      error?: { code: number; message: string };
     };
     error?: { code: number; message: string };
     id?: number;
@@ -118,7 +119,7 @@ export class MockPiResponse<Value, Detail = unknown> {
     version?: string;
     versionnumber?: string;
   }) {
-    this.detail = (args.detail ?? ({} as Detail));
+    this.detail = args.detail ?? ({} as Detail);
     this.result = args.result;
     this.error = args.error;
     this.id = args.id ?? 0;
@@ -129,19 +130,25 @@ export class MockPiResponse<Value, Detail = unknown> {
     this.versionnumber = args.versionnumber ?? "1.0";
   }
 
-  static fromValue<Value, Detail = unknown>(value: Value, detail: Detail = {} as Detail, init: any = {}): MockPiResponse<Value, Detail> {
+  static fromValue<Value, Detail = unknown>(
+    value: Value,
+    detail: Detail = {} as Detail,
+    init: any = {}
+  ): MockPiResponse<Value, Detail> {
     return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value, init } });
   }
 
-  static fromError<Value = unknown, Detail = unknown>(error: {
-    code?: number;
-    message: string
-  }, detail: Detail = {} as Detail): MockPiResponse<Value, Detail> {
+  static fromError<Value = unknown, Detail = unknown>(
+    error: {
+      code?: number;
+      message: string;
+    },
+    detail: Detail = {} as Detail
+  ): MockPiResponse<Value, Detail> {
     const errorWithCode = { code: error.code ?? 0, message: error.message };
     return new MockPiResponse<Value, Detail>({ detail, result: { status: false, error: errorWithCode } });
   }
 }
-
 
 export class MockRouter {
   navigate = jest.fn();

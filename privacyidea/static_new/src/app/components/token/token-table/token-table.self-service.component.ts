@@ -27,12 +27,12 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { TokenTableComponent } from "./token-table.component";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { TokenTableComponent } from "./token-table.component";
 
 @Component({
   selector: "app-token-table-self-service",

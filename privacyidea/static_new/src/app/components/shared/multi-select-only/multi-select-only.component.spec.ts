@@ -18,8 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MultiSelectOnlyComponent } from "./multi-select-only.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { MultiSelectOnlyComponent } from "./multi-select-only.component";
 
 describe("MultiSelectOnlyComponent", () => {
   let component: MultiSelectOnlyComponent;

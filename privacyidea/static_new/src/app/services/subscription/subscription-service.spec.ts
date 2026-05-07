@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { SubscriptionService } from "./subscription.service";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SubscriptionService } from "./subscription.service";
 
 describe("SubscriptionService", () => {
   let service: SubscriptionService;

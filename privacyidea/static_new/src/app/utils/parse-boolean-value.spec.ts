@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { isChecked, parseBooleanValue } from "./parse-boolean-value";
 import { assert } from "./assert";
+import { isChecked, parseBooleanValue } from "./parse-boolean-value";
 
 jest.mock("./assert", () => ({
   assert: jest.fn((condition: boolean, message?: string) => {

@@ -16,23 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 
-import { TokenDetailsComponent } from "./token-details.component";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ValidateService } from "../../../services/validate/validate.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContentService } from "../../../services/content/content.service";
-import { MachineService } from "../../../services/machine/machine.service";
+import { MatDialog } from "@angular/material/dialog";
+import { ActivatedRoute } from "@angular/router";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { MachineService } from "@services/machine/machine.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
+  MockAuditService,
   MockContainerService,
   MockContentService,
   MockLocalService,
@@ -42,10 +45,9 @@ import {
   MockTableUtilsService,
   MockTokenService,
   MockValidateService
-} from "../../../../testing/mock-services";
-import { MatDialog } from "@angular/material/dialog";
-import { ActivatedRoute } from "@angular/router";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { TokenDetailsComponent } from "./token-details.component";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -75,6 +77,7 @@ describe("TokenDetailsComponent", () => {
             params: of({ id: "123" })
           }
         },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
@@ -137,7 +140,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("saveContainer assigns when a container is selected", () => {
-    containerSvc.selectedContainer.set("container1");
+    containerSvc.selectedContainerSerial.set("container1");
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
@@ -148,7 +151,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("saveContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainer.set("");
+    containerSvc.selectedContainerSerial.set("");
     (containerSvc.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
@@ -243,10 +246,10 @@ describe("TokenDetailsComponent", () => {
       isEditing: signal(true)
     } as any;
 
-    containerSvc.selectedContainer.set("X");
+    containerSvc.selectedContainerSerial.set("X");
     component.cancelTokenEdit(el);
 
-    expect(containerSvc.selectedContainer()).toBe("");
+    expect(containerSvc.selectedContainerSerial()).toBe("");
     expect(el.isEditing()).toBe(false);
   });
 

@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokengroupsComponent } from "./tokengroups.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { TokengroupService } from "../../../services/tokengroup/tokengroup.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { Router, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { TokengroupService } from "@services/tokengroup/tokengroup.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { provideRouter, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { TokengroupsComponent } from "./tokengroups.component";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;
@@ -93,7 +93,9 @@ describe("TokengroupsComponent", () => {
   it("should navigate to edit page when editing a group", () => {
     const group = tokengroupServiceMock.tokengroups()[0];
     component.onEditTokengroup(group);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname
+    );
   });
 
   it("should delete group after confirmation", () => {

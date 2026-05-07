@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
+import { TokenDetails } from "@services/token/token.service";
 import {
   BaseApiPayloadMapper,
   TokenApiPayloadMapper,
   TokenEnrollmentData,
   TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
-import { TokenDetails } from "../../services/token/token.service";
 
 export interface MotpEnrollmentData extends TokenEnrollmentData {
   type: "motp";

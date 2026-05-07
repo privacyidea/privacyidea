@@ -86,7 +86,7 @@
                 @case ("serial") {
                   <div class="flex-row flex-nowrap ali-center">
                     <a
-                      (click)="contentService.containerSelected(element.serial)"
+                      (click)="contentService.navigateContainerDetails(element.serial)"
                       attr.aria-label="{{ column.label }} Link">
                       {{ element.serial }}
                     </a>

@@ -60,5 +60,8 @@
     @if (enrolledData()?.["otps"]) {
       <app-otp-values [otpValues]="enrolledData()?.['otps']" />
     }
+    @if (!hasEnrollmentData()) {
+      <p i18n>Token <strong>{{ serial() }}</strong> successfully enrolled.</p>
+    }
   </div>
 </div>

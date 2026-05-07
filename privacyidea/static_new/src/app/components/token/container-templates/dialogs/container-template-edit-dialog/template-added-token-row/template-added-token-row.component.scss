@@ -18,6 +18,8 @@
 .token-actions {
   display: flex;
   align-items: center;
+  gap: var(--global-gap);
+  margin-right: 8px;
 
   button {
     background: transparent;

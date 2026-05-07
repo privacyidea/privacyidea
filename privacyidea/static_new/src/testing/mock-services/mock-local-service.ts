@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { LocalServiceInterface } from "../../app/services/local/local.service";
+import { LocalServiceInterface } from "@services/local/local.service";
 
 export class MockLocalService implements LocalServiceInterface {
   private data: Record<string, string> = {};

@@ -17,13 +17,32 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<app-dialog-wrapper
-  (close)="close()"
-  (onAction)="create()"
-  [showCancelButton]="true"
-  [handleCloseExternally]="true"
-  [title]="title"
-  [actions]="dialogActions()">
+<div
+  appScrollToTop
+  class="create-user-layout"
+  aria-label="Create New User"
+  i18n-aria-label>
+  <h3
+    class="heading"
+    i18n>Create New User
+  </h3>
+  <div class="flex-row gap-8">
+    <button
+      (click)="onCancel()"
+      class="action-button-secondary button-width-s"
+      mat-stroked-button>
+      <span i18n>Cancel</span>
+    </button>
+    <button
+      (click)="onSave()"
+      [disabled]="!canSave()"
+      class="action-button-primary button-width-s"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      <span i18n>Create</span>
+    </button>
+  </div>
+
   <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
     <mat-form-field class="input-width-l">
       <mat-label i18n>Resolver</mat-label>
@@ -40,8 +59,7 @@
       </mat-hint>
       @if (resolverControl.hasError("required")) {
         <mat-error i18n>
-          Resolver is
-          <strong>required</strong>
+          Resolver is <strong>required</strong>
         </mat-error>
       }
     </mat-form-field>
@@ -54,8 +72,7 @@
         required />
       @if (username.hasError("required")) {
         <mat-error i18n>
-          Username is
-          <strong>required</strong>
+          Username is <strong>required</strong>
         </mat-error>
       }
     </mat-form-field>
@@ -64,4 +81,4 @@
   <app-user-details-edit
     [resolver]="resolverControl.value"
     (updateData)="editedUserData.set($event)"></app-user-details-edit>
-</app-dialog-wrapper>
+</div>

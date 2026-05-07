@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, Signal } from "@angular/core";
-import { MatDialogContent } from "@angular/material/dialog";
 import { MatButtonModule } from "@angular/material/button";
+import { MatDialogContent } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { ContainerRegisterFinalizeData } from "../../container-details/container-details-actions/container-details-actions.component";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { ContainerRegisterFinalizeData } from "@components/token/container-details/container-details-actions/container-details-actions.component";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 
 @Component({
   selector: "app-container-registration-finalize-dialog",

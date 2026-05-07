@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  PeriodicTaskOption,
-  PeriodicTaskServiceInterface
-} from "../../app/services/periodic-task/periodic-task.service";
-import { of } from "rxjs";
-import { PiResponse } from "../../app/app.component";
 import { signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { PeriodicTaskOption, PeriodicTaskServiceInterface } from "@services/periodic-task/periodic-task.service";
+import { of } from "rxjs";
 
 export class MockPeriodicTaskService implements PeriodicTaskServiceInterface {
   periodicTasksResource: any = {

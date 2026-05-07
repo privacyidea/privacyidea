@@ -22,8 +22,8 @@ import { Component, input, output, signal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter-value-generic";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 
 @Component({
   selector: "app-keyword-filter-generic",

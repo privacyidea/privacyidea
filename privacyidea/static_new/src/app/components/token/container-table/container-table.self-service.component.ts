@@ -19,22 +19,25 @@
 import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatIconButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
-import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ContainerTableComponent } from "./container-table.component";
 
 @Component({
@@ -50,7 +53,7 @@ import { ContainerTableComponent } from "./container-table.component";
     MatCheckboxModule,
     FormsModule,
     MatIcon,
-    MatIconButton,
+    MatButtonModule,
     ScrollToTopDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
@@ -63,6 +66,13 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected override readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly router = inject(Router);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  navigateToCreate(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+  }
 
   readonly columnKeysMapSelfService = [
     { key: "serial", label: "Serial" },

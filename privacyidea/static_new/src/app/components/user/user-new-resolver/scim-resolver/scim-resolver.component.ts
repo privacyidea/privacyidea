@@ -18,10 +18,10 @@
  **/
 import { Component, computed, effect, input } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
-import { SCIMResolverData } from "../../../../services/resolver/resolver.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { MatInput } from "@angular/material/input";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SCIMResolverData } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-scim-resolver",

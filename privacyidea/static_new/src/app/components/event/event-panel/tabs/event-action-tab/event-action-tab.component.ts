@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, output } from "@angular/core";
-import { ActionOptions, EventService } from "../../../../../services/event/event.service";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatInput } from "@angular/material/input";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { toSignal } from "@angular/core/rxjs-interop";
 import { NgClass } from "@angular/common";
+import { Component, computed, effect, inject, input, output } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { ActionOptions, EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-action-tab",
@@ -73,7 +73,7 @@ export class EventActionTabComponent {
     });
 
     // Rebuild options form when selectedAction changes
-    this.selectedAction.valueChanges.subscribe(actionValue => {
+    this.selectedAction.valueChanges.subscribe((actionValue) => {
       const options = this.eventService.moduleActions()[actionValue] || {};
       this.rebuildOptionsForm(options);
       // Emit after rebuilding, as structure/values may have changed
@@ -83,7 +83,7 @@ export class EventActionTabComponent {
 
   rebuildOptionsForm(options: Record<string, any>, emitEvent: boolean = true) {
     // Remove controls that are not in the new options
-    Object.keys(this.selectedOptions.controls).forEach(key => {
+    Object.keys(this.selectedOptions.controls).forEach((key) => {
       if (!(key in options)) {
         this.selectedOptions.removeControl(key, { emitEvent: emitEvent });
       }

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { ENTER } from "@angular/cdk/keycodes";
 import {
   Component,
   effect,
@@ -28,21 +29,20 @@ import {
   ViewChild,
   ViewEncapsulation
 } from "@angular/core";
-import { EventService } from "../../../../services/event/event.service";
-import { ENTER } from "@angular/cdk/keycodes";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   MatAutocomplete,
   MatAutocompleteSelectedEvent,
   MatAutocompleteTrigger,
   MatOption
 } from "@angular/material/autocomplete";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-selection",
@@ -125,9 +125,8 @@ export class EventSelectionComponent {
       search: this.searchTerm()
     }),
     computation: ({ available, selected, search }) =>
-      available.filter(event =>
-        !selected.includes(event) &&
-        (!search || event.toLowerCase().includes(search.toLowerCase()))
+      available.filter(
+        (event) => !selected.includes(event) && (!search || event.toLowerCase().includes(search.toLowerCase()))
       )
   });
 

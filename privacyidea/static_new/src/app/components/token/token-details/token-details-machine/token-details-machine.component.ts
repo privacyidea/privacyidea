@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { CdkTableDataSourceInput } from "@angular/cdk/table";
 import { Component, computed, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
@@ -23,14 +24,13 @@ import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import {
   MachineService,
   MachineServiceInterface,
   TokenApplication,
   TokenApplications
-} from "../../../../services/machine/machine.service";
-import { CdkTableDataSourceInput } from "@angular/cdk/table";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+} from "@services/machine/machine.service";
 
 @Component({
   selector: "app-token-details-machine",

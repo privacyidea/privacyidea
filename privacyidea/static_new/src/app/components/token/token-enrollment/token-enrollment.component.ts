@@ -16,21 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgClass } from "@angular/common";
 import {
   AfterViewInit,
   Component,
-  computed,
-  effect,
   ElementRef,
-  inject,
   Injectable,
-  linkedSignal,
   OnDestroy,
   Renderer2,
-  signal,
   ViewChild,
-  WritableSignal
+  WritableSignal,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  signal
 } from "@angular/core";
 import {
   AbstractControl,
@@ -58,41 +59,40 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatSuffix } from "@angular/material/select";
+import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
   TokenServiceInterface,
   TokenType
-} from "../../../services/token/token.service";
-import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { EnrollTokenTypeSwitchComponent } from "../../shared/enroll-token-type-switch/enroll-token-type-switch.component";
-import { EnrollmentPinComponent } from "../../shared/enrollment-pin/enrollment-pin.component";
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
-import { lastValueFrom, Observable } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
-import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment/token-verify-enrollment.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+} from "@services/token/token.service";
+import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { Observable, lastValueFrom } from "rxjs";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -258,7 +258,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
-  selectedContainerControl = new FormControl(this.containerService.selectedContainer(), { nonNullable: true });
+  selectedContainerControl = new FormControl(this.containerService.selectedContainerSerial(), { nonNullable: true });
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
@@ -388,7 +388,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
-      this.containerService.selectedContainer.set(value ?? "")
+      this.containerService.selectedContainerSerial.set(value ?? "")
     );
   }
 
@@ -569,7 +569,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       component: TokenCompleteEnrollmentComponent,
       data: this.enrolledDialogData()
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.enrollResponse.set(result);
         this.enrolledDialogData.set({
@@ -600,7 +600,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       component: TokenVerifyEnrollmentComponent,
       data: this.enrolledDialogData()
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.enrollResponse.set(result);
         this._handleEnrollmentResponse(result);

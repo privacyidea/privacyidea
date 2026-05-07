@@ -18,9 +18,9 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SimpleConfirmationDialogComponent, SimpleConfirmationDialogData } from "./confirmation-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { SimpleConfirmationDialogComponent, SimpleConfirmationDialogData } from "./confirmation-dialog.component";
 
 describe("ConfirmationDialogComponent", () => {
   let component: SimpleConfirmationDialogComponent;

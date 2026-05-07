@@ -20,12 +20,12 @@
 import { Component, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
 import { PendingChangesDialogComponent } from "./pending-changes-dialog.component";
-import { MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 @Component({
   template: "",

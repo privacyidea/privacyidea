@@ -18,9 +18,9 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog.component";
-import { By } from "@angular/platform-browser";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { By } from "@angular/platform-browser";
+import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog.component";
 
 describe("UserDetailsPinDialogComponent", () => {
   let component: UserDetailsPinDialogComponent;

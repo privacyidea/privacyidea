@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { DocumentationService } from "./documentation.service";
-import { VersioningService } from "../version/version.service";
-import { PolicyService } from "../policies/policies.service";
-import { signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockVersioningService } from "../../../testing/mock-services";
+import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { PolicyService } from "@services/policies/policies.service";
+import { VersioningService } from "@services/version/version.service";
+import { MockVersioningService } from "@testing/mock-services";
+import { DocumentationService } from "./documentation.service";
 
 class MockPolicyService {
   selectedAction = signal<{ name: string } | null>(null);

@@ -19,10 +19,10 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
+import { ResolverService } from "@services/resolver/resolver.service";
+import { EditUserData, UserData } from "@services/user/user.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { UserDetailsEditComponent } from "./user-details-edit.component";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { EditUserData, UserData } from "../../../services/user/user.service";
 
 describe("UserDetailsEditComponent", () => {
   let component: UserDetailsEditComponent;

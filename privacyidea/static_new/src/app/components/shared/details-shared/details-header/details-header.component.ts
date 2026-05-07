@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { CopyButtonComponent } from "../../copy-button/copy-button.component";
-import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-details-header",
@@ -38,4 +38,3 @@ export class DetailsHeaderComponent {
 
   @Output() auditClick = new EventEmitter<void>();
 }
-

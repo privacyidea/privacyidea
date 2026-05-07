@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,8 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { CommonModule, NgClass } from "@angular/common";
 import { Component, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
 import {
   MatCell,
   MatCellDef,
@@ -32,27 +34,21 @@ import {
   MatTableDataSource,
   MatTableModule
 } from "@angular/material/table";
-import {
-  ClientData,
-  ClientsDict,
-  ClientsService,
-  ClientsServiceInterface
-} from "../../../services/clients/clients.service";
-import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
-import { CommonModule, NgClass } from "@angular/common";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { AuthService } from "../../../services/auth/auth.service";
-import { AuditService } from "../../../services/audit/audit.service";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { RouterLink } from "@angular/router";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ClientData, ClientsDict, ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
+
 import { MatIconButton } from "@angular/material/button";
-import { MatTooltip } from "@angular/material/tooltip";
 import { MatIcon } from "@angular/material/icon";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
-import { StringUtils } from "../../../utils/string.utils";
 
 const columnKeysMap: { key: keyof ClientData; label: string }[] = [
   { key: "application", label: "Application" },
@@ -153,7 +149,8 @@ export class ClientsComponent {
   };
 
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
-    source: () => this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
+    source: () =>
+      this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
     computation: (clientResource, previous) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);

@@ -136,7 +136,9 @@
             *matCellDef="let tokenDetails"
             class="max-width-300"
             [ngClass]="{
-              'table-checkbox': column.key === 'select'
+              'table-checkbox': column.key === 'select',
+              'width-300': column.key === 'description',
+              'container_serial-width': column.key === 'container_serial'
             }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
@@ -191,7 +193,7 @@
                 @case ("container_serial") {
                   <div class="flex-row flex-nowrap ali-center">
                     <a
-                      (click)="contentService.containerSelected(tokenDetails.container_serial)"
+                      (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       attr.aria-label="{{ column.label }} Link">
                       {{ tokenDetails[column.key] }}
                     </a>

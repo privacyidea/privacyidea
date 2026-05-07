@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
-import { MockContentService, MockPiResponse } from "src/testing/mock-services";
-import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
-import { MockNotificationService } from "src/testing/mock-services/mock-notification-service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
+import { PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
 
 describe("PolicyService", () => {
   let service: PolicyService;
@@ -175,9 +175,7 @@ describe("PolicyService", () => {
 
       const result = await savePromise;
       expect(result).toBe(true);
-      expect(notificationService.success).toHaveBeenCalledWith(
-        expect.stringContaining("Policy created successfully")
-      );
+      expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Policy created successfully"));
       expect(reloadSpy).toHaveBeenCalled();
     });
 
@@ -243,9 +241,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.error).toHaveBeenCalledWith(
-        expect.stringContaining("Creating policy failed")
-      );
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Creating policy failed"));
     });
   });
 
@@ -299,13 +295,16 @@ describe("PolicyService", () => {
 
         // Simulate POST failure
         const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
-        postReq.flush({
-          result: {
-            error: {
-              message: errorMessage
+        postReq.flush(
+          {
+            result: {
+              error: {
+                message: errorMessage
+              }
             }
-          }
-        }, { status: 400, statusText: "Bad Request" });
+          },
+          { status: 400, statusText: "Bad Request" }
+        );
 
         const result = await savePromise;
 
@@ -343,7 +342,7 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Give patch request time to be sent after successful POST
-        await new Promise(resolve => process.nextTick(resolve));
+        await new Promise((resolve) => process.nextTick(resolve));
 
         // Handle PATCH request for rename
         let patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
@@ -368,13 +367,16 @@ describe("PolicyService", () => {
 
         // Simulate POST failure
         const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
-        postReq.flush({
-          result: {
-            error: {
-              message: errorMessage
+        postReq.flush(
+          {
+            result: {
+              error: {
+                message: errorMessage
+              }
             }
-          }
-        }, { status: 400, statusText: "Bad Request" });
+          },
+          { status: 400, statusText: "Bad Request" }
+        );
 
         const result = await savePromise;
         expect(result).toBe(false);
@@ -395,17 +397,22 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Wait for microtasks to complete
-        await new Promise(resolve => process.nextTick(resolve));
+        await new Promise((resolve) => process.nextTick(resolve));
 
         // Handle failed PATCH request
-        const patchReq = httpTestingController.expectOne(req => req.method === "PATCH" && req.url === `${service.policyBaseUrl}${originalPolicy.name}`);
-        patchReq.flush({
-          result: {
-            error: {
-              message: errorMessage
+        const patchReq = httpTestingController.expectOne(
+          (req) => req.method === "PATCH" && req.url === `${service.policyBaseUrl}${originalPolicy.name}`
+        );
+        patchReq.flush(
+          {
+            result: {
+              error: {
+                message: errorMessage
+              }
             }
-          }
-        }, { status: 409, statusText: "Conflict" });
+          },
+          { status: 409, statusText: "Conflict" }
+        );
 
         const result = await savePromise;
         expect(result).toBe(false);
@@ -430,9 +437,7 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         // Verify rollback
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.error).toHaveBeenCalledWith(
-          expect.stringContaining("Saving policy failed")
-        );
+        expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Saving policy failed"));
       });
 
       it("should handle error without message gracefully", async () => {
@@ -449,7 +454,6 @@ describe("PolicyService", () => {
   });
 
   describe("allPolicies", () => {
-
     it("Default should be an empty list", () => {
       expect(service.allPolicies()).toEqual([]);
     });
@@ -461,25 +465,27 @@ describe("PolicyService", () => {
 
       const req = httpTestingController.expectOne((r) => r.url === "/policy/");
       expect(req.request.method).toBe("GET");
-      const policies = [{
-        action: {},
-        active: true,
-        adminrealm: [],
-        adminuser: [],
-        check_all_resolvers: false,
-        client: [],
-        conditions: [],
-        description: "Test description",
-        name: "Test",
-        pinode: [],
-        realm: [],
-        resolver: [],
-        scope: "user",
-        time: "",
-        user: [],
-        user_agents: [],
-        user_case_insensitive: false
-      }];
+      const policies = [
+        {
+          action: {},
+          active: true,
+          adminrealm: [],
+          adminuser: [],
+          check_all_resolvers: false,
+          client: [],
+          conditions: [],
+          description: "Test description",
+          name: "Test",
+          pinode: [],
+          realm: [],
+          resolver: [],
+          scope: "user",
+          time: "",
+          user: [],
+          user_agents: [],
+          user_case_insensitive: false
+        }
+      ];
       req.flush(MockPiResponse.fromValue(policies));
       await Promise.resolve();
 
@@ -496,7 +502,8 @@ describe("PolicyService", () => {
       const req = httpTestingController.expectOne((r) => r.url === "/policy/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -507,7 +514,6 @@ describe("PolicyService", () => {
   });
 
   describe("policyActions", () => {
-
     it("Default should be an empty dict", () => {
       expect(service.policyActions()).toEqual({});
     });
@@ -518,7 +524,7 @@ describe("PolicyService", () => {
 
       const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
       expect(req.request.method).toBe("GET");
-      const policyActions = {admin: {}, user: {}};
+      const policyActions = { admin: {}, user: {} };
       req.flush(MockPiResponse.fromValue(policyActions));
       await Promise.resolve();
 
@@ -532,7 +538,8 @@ describe("PolicyService", () => {
       const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

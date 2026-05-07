@@ -28,6 +28,7 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -36,19 +37,18 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { ActivatedRoute, Router } from "@angular/router";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   PrivacyideaServer,
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
-} from "src/app/services/privacyidea-server/privacyidea-server.service";
-import { ScrollToTopDirective } from "../../../shared/directives/app-scroll-to-top.directive";
+} from "@services/privacyidea-server/privacyidea-server.service";
 
 @Component({
   selector: "app-privacyidea-edit-dialog",
@@ -98,9 +98,7 @@ export class NewPrivacyideaServerComponent implements AfterViewInit, OnDestroy {
       if (identifier) {
         this.isEditMode = true;
         this.editIdentifier = identifier;
-        const server = this.privacyideaServerService.remoteServerOptions().find(
-          (s) => s.identifier === identifier
-        );
+        const server = this.privacyideaServerService.remoteServerOptions().find((s) => s.identifier === identifier);
         this.initForm(server ?? null);
       } else {
         this.isEditMode = false;

@@ -28,10 +28,10 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { EditUserData, UserData } from "../../../services/user/user.service";
-import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
-import { MatInput } from "@angular/material/input";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { EditUserData, UserData } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-details-edit",

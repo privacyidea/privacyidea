@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,20 +18,21 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockSystemService } from "../../../../../testing/mock-services";
-import { SystemService } from "../../../../services/system/system.service";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../../../services/auth/auth.service";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import {
-  DAYPASSWORD_HASHLIB, DAYPASSWORD_OTP_LENGTH,
-  DAYPASSWORD_TIME_STEP,
-  TOTP_HASHLIB,
-  TOTP_TIME_STEP
-} from "../../../../constants/token.constants";
+    DAYPASSWORD_HASHLIB,
+    DAYPASSWORD_OTP_LENGTH,
+    DAYPASSWORD_TIME_STEP,
+    TOTP_HASHLIB,
+    TOTP_TIME_STEP
+} from "@constants/token.constants";
+import { AuthService } from "@services/auth/auth.service";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
 
 describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
@@ -42,9 +43,12 @@ describe("EnrollDaypasswordComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollDaypasswordComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
-        { provide: AuthService, useClass: MockAuthService }]
+        { provide: AuthService, useClass: MockAuthService }
+      ]
     }).compileComponents();
 
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
