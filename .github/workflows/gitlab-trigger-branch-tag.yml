@@ -40,7 +40,7 @@ jobs:
         if: steps.check.outputs.match == 'true'
         env:
           GITLAB_TRIGGER_URL: https://lucan.netknights.it/api/v4/projects/7/trigger/pipeline
-          GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN_MASTER }}
+          GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN_BRANCH }}
           GITHUB_TAG: ${{ github.ref_name }}
           GITHUB_BRANCH: ${{ steps.check.outputs.source_branch }}
           GITHUB_SHA: ${{ github.sha }}
