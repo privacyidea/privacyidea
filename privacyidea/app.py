@@ -309,7 +309,8 @@ def create_app(config_name="development",
     @app.errorhandler(404)
     def fallback(_):
         lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
-        locale_pattern = "|".join(re.escape(lang) for lang in lang_list)
+        all_locales = list(lang_list) + [lang.replace("_", "-") for lang in lang_list if "_" in lang]
+        locale_pattern = "|".join(re.escape(lang) for lang in all_locales)
         if request.path.startswith("/static/public/customize"):
             return send_html("")
         elif re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path):

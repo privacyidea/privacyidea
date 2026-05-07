@@ -5,7 +5,9 @@ implementation is contained webui/login.py
 """
 import pathlib
 import re
+import unittest.mock as mock
 
+from flask import Response
 from flask_babel import refresh
 
 from privacyidea.app import create_app
@@ -211,3 +213,100 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual("templates/baseline.html", config["customization_baseline_file"])
             self.assertEqual("Please log in", config["login_text"])
             self.assertEqual("hide", config["passkey_login"])
+
+
+class NewUIRoutingTestCase(MyTestCase):
+    """Tests for the new Angular i18n routing logic."""
+
+    _mock_response = Response(b"<html>index</html>", mimetype="text/html")
+
+    def test_root_redirects_to_locale_when_build_exists(self):
+        """GET / with German Accept-Language redirects to /app/v2/de/ when build exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isdir", return_value=True):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/app/v2/de/", res.location)
+
+    def test_root_does_not_redirect_when_build_missing(self):
+        """GET / with German Accept-Language falls back to English UI when no build."""
+        with mock.patch("privacyidea.webui.login.os.path.isdir", return_value=False), \
+             mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_root_serves_new_ui_for_english(self):
+        """GET / with English serves new UI when build exists."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "en"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_root_falls_back_to_old_ui_when_no_build(self):
+        """GET / falls back to old Jinja2 UI when no Angular build exists."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.mimetype, "text/html")
+
+    def test_locale_route_serves_index(self):
+        """GET /app/v2/de/ serves the German index.html."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/de/", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_locale_route_with_subpath_serves_index(self):
+        """GET /app/v2/de/tokens serves the German index.html (SPA fallback)."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/de/tokens", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_english_spa_fallback_serves_index(self):
+        """GET /app/v2/some-route/ serves English index.html via 404 fallback."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/tokens/", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_locale_route_without_trailing_slash_redirects(self):
+        """GET /app/v2/de (no trailing slash) redirects to /app/v2/de/."""
+        with self.app.test_request_context("/app/v2/de", method="GET"):
+            res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [301, 302, 308])
+        self.assertIn("/app/v2/de/", res.location)
+
+    def test_unknown_locale_falls_back_to_english(self):
+        """GET /app/v2/invalid/ falls back to English when locale not in list."""
+        def serve_side_effect(locale):
+            return self._mock_response if locale == "en" else None
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
+            with self.app.test_request_context("/app/v2/invalid/", method="GET"):
+                res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [200, 302])
+
+    def test_zh_hant_underscore_mapper_uses_hyphen_directory(self):
+        """_serve_locale maps zh_Hant (ICU) to zh-Hant (BCP 47) build directory."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:
+            mock_isfile.return_value = False
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                _serve_locale("zh_Hant")
+                checked_path = mock_isfile.call_args[0][0]
+                self.assertIn("zh-Hant", checked_path)
+                self.assertNotIn("zh_Hant", checked_path)
+
+    def test_zh_hant_hyphen_accepted_by_serve_locale(self):
+        """_serve_locale also accepts zh-Hant (BCP 47 URL form) and serves zh-Hant build."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:
+            mock_isfile.return_value = False
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                _serve_locale("zh-Hant")
+                # returns None (no build found) but did NOT reject due to whitelist
+                checked_path = mock_isfile.call_args[0][0]
+                self.assertIn("zh-Hant", checked_path)

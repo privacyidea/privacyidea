@@ -7,12 +7,18 @@
       "i18n": {
         "sourceLocale": "en",
         "locales": {
-          "de": {
-            "translation": "src/locale/messages.de.xlf"
-          },
-          "fr": {
-            "translation": "src/locale/messages.fr.xlf"
-          }
+          "de": { "translation": "src/locale/messages.de.xlf" },
+          "nl": { "translation": "src/locale/messages.nl.xlf" },
+          "zh-Hant": { "translation": "src/locale/messages.zh-Hant.xlf" },
+          "fr": { "translation": "src/locale/messages.fr.xlf" },
+          "es": { "translation": "src/locale/messages.es.xlf" },
+          "tr": { "translation": "src/locale/messages.tr.xlf" },
+          "cs": { "translation": "src/locale/messages.cs.xlf" },
+          "it": { "translation": "src/locale/messages.it.xlf" },
+          "ta": { "translation": "src/locale/messages.ta.xlf" },
+          "pt": { "translation": "src/locale/messages.pt.xlf" },
+          "ru": { "translation": "src/locale/messages.ru.xlf" },
+          "uk": { "translation": "src/locale/messages.uk.xlf" }
         }
       },
       "projectType": "application",
@@ -76,7 +82,7 @@
               "optimization": false,
               "sourceMap": true,
               "localize": ["de"],
-              "baseHref": "/de/",
+              "baseHref": "/app/v2/de/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -88,13 +94,83 @@
               "optimization": false,
               "sourceMap": true,
               "localize": ["fr"],
-              "baseHref": "/fr/",
+              "baseHref": "/app/v2/fr/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.development.ts"
                 }
               ]
+            },
+            "nl": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["nl"],
+              "baseHref": "/app/v2/nl/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "zh-Hant": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["zh-Hant"],
+              "baseHref": "/app/v2/zh-Hant/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "es": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["es"],
+              "baseHref": "/app/v2/es/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "tr": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["tr"],
+              "baseHref": "/app/v2/tr/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "cs": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["cs"],
+              "baseHref": "/app/v2/cs/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "it": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["it"],
+              "baseHref": "/app/v2/it/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "ta": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["ta"],
+              "baseHref": "/app/v2/ta/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "pt": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["pt"],
+              "baseHref": "/app/v2/pt/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "ru": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["ru"],
+              "baseHref": "/app/v2/ru/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
+            },
+            "uk": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["uk"],
+              "baseHref": "/app/v2/uk/",
+              "fileReplacements": [{ "replace": "src/environments/environment.ts", "with": "src/environments/environment.development.ts" }]
             }
           },
           "defaultConfiguration": "production"
@@ -111,12 +187,18 @@
             "development": {
               "buildTarget": "privacyidea-webui:build:development"
             },
-            "de": {
-              "buildTarget": "privacyidea-webui:build:de"
-            },
-            "fr": {
-              "buildTarget": "privacyidea-webui:build:fr"
-            }
+            "de": { "buildTarget": "privacyidea-webui:build:de" },
+            "nl": { "buildTarget": "privacyidea-webui:build:nl" },
+            "zh-Hant": { "buildTarget": "privacyidea-webui:build:zh-Hant" },
+            "fr": { "buildTarget": "privacyidea-webui:build:fr" },
+            "es": { "buildTarget": "privacyidea-webui:build:es" },
+            "tr": { "buildTarget": "privacyidea-webui:build:tr" },
+            "cs": { "buildTarget": "privacyidea-webui:build:cs" },
+            "it": { "buildTarget": "privacyidea-webui:build:it" },
+            "ta": { "buildTarget": "privacyidea-webui:build:ta" },
+            "pt": { "buildTarget": "privacyidea-webui:build:pt" },
+            "ru": { "buildTarget": "privacyidea-webui:build:ru" },
+            "uk": { "buildTarget": "privacyidea-webui:build:uk" }
           },
           "defaultConfiguration": "development"
         },

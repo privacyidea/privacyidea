@@ -50,6 +50,18 @@ DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs',
                          'it', 'ta', 'pt', 'ru', 'uk']  #:
 
+# Case-insensitive, separator-insensitive lookup: normalized key → canonical BCP 47 locale
+_LOCALE_CANONICAL = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in DEFAULT_LANGUAGE_LIST}
+
+
+def _canonical_locale(locale, lang_list=None):
+    """Return the canonical BCP 47 locale for a given input, or None if unknown."""
+    lookup = _LOCALE_CANONICAL
+    if lang_list is not None:
+        lookup = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in lang_list}
+    return lookup.get(locale.replace("_", "-").lower())
+
+
 login_blueprint = Blueprint('login_blueprint', __name__)
 
 
@@ -128,7 +140,7 @@ def get_render_context():
                 .action_values(unique=False, write_to_audit_log=False)
             # Use the realms from the policy.
             realms = ",".join(realm_dropdown_values)
-        except AttributeError as _e:
+        except AttributeError:
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
             realms = ",".join(get_realms())
@@ -216,9 +228,10 @@ def get_render_context():
 
 def _serve_locale(locale):
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
-    if locale not in pi_lang_list:
+    canonical = _canonical_locale(locale, pi_lang_list)
+    if not canonical:
         return None
-    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
+    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", canonical)
     if not os.path.isfile(os.path.join(dist, "index.html")):
         return None
     return send_from_directory(dist, "index.html")
@@ -231,9 +244,10 @@ def single_page_application():
         return send_html(render_template("deactivated.html"))
     locale = get_accepted_language()
     if locale and locale != "en":
-        dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
+        url_locale = locale.replace("_", "-")
+        dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
         if os.path.isdir(dist):
-            return redirect(f"/app/v2/{locale}/")
+            return redirect(f"/app/v2/{url_locale}/")
     new_ui = _serve_locale("en")
     if new_ui:
         return new_ui
@@ -242,9 +256,17 @@ def single_page_application():
     return send_html(render_template(index_page, **render_context))
 
 
+@login_blueprint.route('/app/v2/<locale>', methods=['GET'])
 @login_blueprint.route('/app/v2/<locale>/', defaults={'subpath': ''}, methods=['GET'])
 @login_blueprint.route('/app/v2/<locale>/<path:subpath>', methods=['GET'])
-def single_page_application_locale(locale, subpath):
+def single_page_application_locale(locale, subpath=None):
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    canonical = _canonical_locale(locale, pi_lang_list)
+    if not canonical:
+        abort(404)
+    if canonical != locale or subpath is None:
+        path = f"/app/v2/{canonical}/" + (subpath or "")
+        return redirect(path)
     return _serve_locale(locale) or abort(404)
 
 
