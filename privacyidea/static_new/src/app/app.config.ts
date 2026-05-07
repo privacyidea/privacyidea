@@ -47,7 +47,9 @@ export const appConfig: ApplicationConfig = {
       provide: APP_BASE_HREF,
       useFactory: () => {
         const locale = inject(LOCALE_ID);
-        return locale === "en" ? "/app/v2/" : `/app/v2/${locale}/`;
+        return locale === "en" || locale.toLowerCase().startsWith("en-")
+          ? "/app/v2/"
+          : `/app/v2/${locale}/`;
       }
     },
     AuthService,

@@ -23,7 +23,9 @@ import { TestBed } from "@angular/core/testing";
 
 const baseHrefFactory = () => {
   const locale = inject(LOCALE_ID);
-  return locale === "en" ? "/app/v2/" : `/app/v2/${locale}/`;
+  return locale === "en" || locale.toLowerCase().startsWith("en-")
+    ? "/app/v2/"
+    : `/app/v2/${locale}/`;
 };
 
 describe("APP_BASE_HREF factory", () => {
@@ -57,5 +59,35 @@ describe("APP_BASE_HREF factory", () => {
       ]
     });
     expect(TestBed.inject(APP_BASE_HREF)).toBe("/app/v2/fr/");
+  });
+
+  it("returns /app/v2/ for en-US (English region variant)", () => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: LOCALE_ID, useValue: "en-US" },
+        { provide: APP_BASE_HREF, useFactory: baseHrefFactory }
+      ]
+    });
+    expect(TestBed.inject(APP_BASE_HREF)).toBe("/app/v2/");
+  });
+
+  it("returns /app/v2/ for en-GB (English region variant)", () => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: LOCALE_ID, useValue: "en-GB" },
+        { provide: APP_BASE_HREF, useFactory: baseHrefFactory }
+      ]
+    });
+    expect(TestBed.inject(APP_BASE_HREF)).toBe("/app/v2/");
+  });
+
+  it("returns /app/v2/zh-Hant/ for Traditional Chinese", () => {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: LOCALE_ID, useValue: "zh-Hant" },
+        { provide: APP_BASE_HREF, useFactory: baseHrefFactory }
+      ]
+    });
+    expect(TestBed.inject(APP_BASE_HREF)).toBe("/app/v2/zh-Hant/");
   });
 });

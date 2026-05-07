@@ -125,6 +125,7 @@ def get_render_context():
     page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
+    force_remote_user = False
     password_reset = False
     if not hasattr(request, "all_data"):
         request.all_data = {}
@@ -246,7 +247,7 @@ def single_page_application():
     if locale and locale != "en":
         url_locale = locale.replace("_", "-")
         dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
-        if os.path.isdir(dist):
+        if os.path.isfile(os.path.join(dist, "index.html")):
             return redirect(f"/app/v2/{url_locale}/")
     if _serve_locale("en"):
         return redirect("/app/v2/")

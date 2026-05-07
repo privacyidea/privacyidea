@@ -126,6 +126,45 @@ class LoginUITestCase(MyTestCase):
             self.assertTrue(res.status_code == 200, res)
             self.assertTrue(b"https://privacyidea.org/" in res.data)
 
+    def test_08_script_root_slash(self):
+        """Covers instance='' branch when SCRIPT_NAME is '/'."""
+        with self.app.test_request_context('/', method='GET',
+                                           environ_base={'SCRIPT_NAME': '/'}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_09_realm_dropdown_attribute_error(self):
+        """Covers AttributeError fallback when realm_dropdown has no action values."""
+        def patched_action_only(*_args, **kwargs):
+            m = mock.MagicMock()
+            if kwargs.get("action") == PolicyAction.REALMDROPDOWN:
+                m.policies.return_value = [{"name": "realmdrop"}]
+                m.action_values.side_effect = AttributeError
+            else:
+                m.policies.return_value = []
+                m.action_values.return_value = []
+            return m
+
+        def patched_generic(*_args, **_kwargs):
+            m = mock.MagicMock()
+            m.any.return_value = False
+            return m
+
+        with mock.patch("privacyidea.webui.login.Match.action_only", side_effect=patched_action_only), \
+             mock.patch("privacyidea.webui.login.Match.generic", side_effect=patched_generic):
+            with self.app.test_request_context('/', method='GET'):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_10_hsm_exception(self):
+        """Covers HSMException handler: renders with hsm_ready=False."""
+        from privacyidea.lib.error import HSMException
+        with mock.patch("privacyidea.webui.login.is_remote_user_allowed",
+                        side_effect=HSMException("HSM not ready")):
+            with self.app.test_request_context('/', method='GET'):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
 
 class LanguageTestCase(MyApiTestCase):
 
@@ -214,6 +253,15 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual("Please log in", config["login_text"])
             self.assertEqual("hide", config["passkey_login"])
 
+    def test_03_get_ui_config_deactivated(self):
+        """When PI_UI_DEACTIVATED, get_render_context returns {} (only logo is appended by endpoint)."""
+        self.app.config['PI_UI_DEACTIVATED'] = True
+        with self.app.test_request_context("/config", method="GET"):
+            res = self.app.full_dispatch_request()
+        self.app.config['PI_UI_DEACTIVATED'] = False
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn("instance", res.json["result"]["value"])
+
 
 class NewUIRoutingTestCase(MyTestCase):
     """Tests for the new Angular i18n routing logic."""
@@ -222,7 +270,7 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_root_redirects_to_locale_when_build_exists(self):
         """GET / with German Accept-Language redirects to /app/v2/de/ when build exists."""
-        with mock.patch("privacyidea.webui.login.os.path.isdir", return_value=True):
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
             with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 302)
@@ -366,3 +414,20 @@ class NewUIRoutingTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 302)
         self.assertIn("/", res.location)
+
+    def test_serve_locale_returns_none_for_unknown_locale(self):
+        """_serve_locale returns None for a locale not in the allowed list."""
+        with self.app.test_request_context("/"):
+            from privacyidea.webui.login import _serve_locale
+            result = _serve_locale("totally-unknown-xyz")
+        self.assertIsNone(result)
+
+    def test_serve_locale_serves_index_when_file_exists(self):
+        """_serve_locale returns a response when index.html exists."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+            with mock.patch("privacyidea.webui.login.send_from_directory",
+                            return_value=self._mock_response):
+                with self.app.test_request_context("/"):
+                    from privacyidea.webui.login import _serve_locale
+                    result = _serve_locale("de")
+        self.assertIsNotNone(result)
