@@ -28,6 +28,7 @@ import { TokenDetailsSelfServiceComponent } from "./components/token/token-detai
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
 import { TokenTableSelfServiceComponent } from "./components/token/token-table/token-table.self-service.component";
+import { UserDetailsSelfServiceComponent } from "./components/user/user-details/user-details.self-service.component";
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
 
 export const routes: Routes = [
@@ -59,7 +60,10 @@ export const routes: Routes = [
   },
   {
     path: "users",
-    component: UserSelfServiceComponent
+    children: [
+      { path: "", pathMatch: "full", component: UserSelfServiceComponent },
+      { path: "details", component: UserDetailsSelfServiceComponent }
+    ]
   },
   {
     path: "audit",
