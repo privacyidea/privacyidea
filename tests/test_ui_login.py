@@ -270,7 +270,8 @@ class NewUIRoutingTestCase(MyTestCase):
     def test_english_spa_fallback_serves_index(self):
         """GET /app/v2/some-route/ serves English index.html via 404 fallback."""
         with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
-            with self.app.test_request_context("/app/v2/tokens/", method="GET"):
+            with self.app.test_request_context("/app/v2/tokens/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
 
@@ -287,7 +288,8 @@ class NewUIRoutingTestCase(MyTestCase):
             return self._mock_response if locale == "en" else None
 
         with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
-            with self.app.test_request_context("/app/v2/invalid/", method="GET"):
+            with self.app.test_request_context("/app/v2/invalid/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
                 res = self.app.full_dispatch_request()
         self.assertIn(res.status_code, [200, 302])
 
@@ -312,3 +314,55 @@ class NewUIRoutingTestCase(MyTestCase):
                 # returns None (no build found) but did NOT reject due to whitelist
                 checked_path = mock_isfile.call_args[0][0]
                 self.assertIn("zh-Hant", checked_path)
+
+    # --- app.py fallback handler coverage ---
+
+    def test_fallback_app_v2_serves_spa_for_browser(self):
+        """404 on /app/v2/unknown-route/ serves English SPA for browser requests."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+
+    def test_fallback_app_v2_returns_404_for_api_client(self):
+        """404 on /app/v2/unknown-route/ returns JSON 404 for API clients."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "application/json"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 404)
+
+    def test_fallback_app_v2_redirects_to_root_when_no_build(self):
+        """404 on /app/v2/ with no Angular build redirects to /."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/app/v2/unknown-route/", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/", res.location)
+
+    def test_fallback_general_serves_spa_for_browser(self):
+        """404 on arbitrary path serves English SPA for browser requests."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertIn(res.status_code, [200, 302])
+
+    def test_fallback_general_returns_404_for_api_client(self):
+        """404 on arbitrary path returns JSON 404 for API clients."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "application/json"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 404)
+
+    def test_fallback_general_redirects_to_root_when_no_build(self):
+        """404 on arbitrary path with no Angular build redirects to /."""
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/some-unknown-path", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/", res.location)
