@@ -49,7 +49,7 @@ describe("TokenEnrolledTextComponent", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("serial", "SERIAL123");
     fixture.detectChanges();
-    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.switchRoute.subscribe(switchRouteSpy);
     component.tokenSelected();
     expect(switchRouteSpy).toHaveBeenCalled();
     expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
@@ -57,7 +57,7 @@ describe("TokenEnrolledTextComponent", () => {
 
   it("should do nothing if serial is not set", () => {
     const switchRouteSpy = jest.fn();
-    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.switchRoute.subscribe(switchRouteSpy);
     component.tokenSelected();
     expect(switchRouteSpy).not.toHaveBeenCalled();
     expect(mockContentService.tokenSelected).not.toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe("TokenEnrolledTextComponent", () => {
   it("natigateContainerDetails emits switchRoute and calls contentService.navigateContainerDetails if containerSerial is set", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("containerSerial", "CONT123");
-    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.switchRoute.subscribe(switchRouteSpy);
     component.natigateContainerDetails();
     expect(switchRouteSpy).toHaveBeenCalled();
     expect(mockContentService.navigateContainerDetails).toHaveBeenCalledWith("CONT123");
@@ -74,7 +74,7 @@ describe("TokenEnrolledTextComponent", () => {
 
   it("natigateContainerDetails does nothing if containerSerial is not set", () => {
     const switchRouteSpy = jest.fn();
-    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.switchRoute.subscribe(switchRouteSpy);
     component.natigateContainerDetails();
     expect(switchRouteSpy).not.toHaveBeenCalled();
     expect(mockContentService.navigateContainerDetails).not.toHaveBeenCalled();
