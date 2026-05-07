@@ -61,6 +61,11 @@
             Description is <strong>required</strong>.
           </mat-error>
         }
+        @if (descriptionControl.hasError("maxlength")) {
+          <mat-error i18n>
+            Description must not exceed {{ tokenService.maxDescriptionLength }} characters.
+          </mat-error>
+        }
       </mat-form-field>
 
       <div class="flex-row gap-16">

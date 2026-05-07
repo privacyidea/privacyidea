@@ -55,7 +55,8 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatInput } from "@angular/material/input";
-import { MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatSuffix } from "@angular/material/select";
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import {
   EnrollmentResponse,
@@ -101,7 +102,6 @@ import {
   TokenEnrollmentTypeSelectorComponent
 } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
-import { MatError } from "@angular/material/form-field";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
