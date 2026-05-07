@@ -229,19 +229,21 @@ class NewUIRoutingTestCase(MyTestCase):
         self.assertIn("/app/v2/de/", res.location)
 
     def test_root_does_not_redirect_when_build_missing(self):
-        """GET / with German Accept-Language falls back to English UI when no build."""
+        """GET / with German Accept-Language falls back to old UI when no build."""
         with mock.patch("privacyidea.webui.login.os.path.isdir", return_value=False), \
-             mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
+             mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
             with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "de"}):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.mimetype, "text/html")
 
-    def test_root_serves_new_ui_for_english(self):
-        """GET / with English serves new UI when build exists."""
+    def test_root_redirects_to_app_v2_for_english(self):
+        """GET / with English redirects to /app/v2/ when build exists."""
         with mock.patch("privacyidea.webui.login._serve_locale", return_value=self._mock_response):
             with self.app.test_request_context("/", method="GET", headers={"Accept-Language": "en"}):
                 res = self.app.full_dispatch_request()
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/app/v2/", res.location)
 
     def test_root_falls_back_to_old_ui_when_no_build(self):
         """GET / falls back to old Jinja2 UI when no Angular build exists."""

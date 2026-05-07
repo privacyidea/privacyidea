@@ -313,7 +313,8 @@ def create_app(config_name="development",
         locale_pattern = "|".join(re.escape(lang) for lang in all_locales)
         if request.path.startswith("/static/public/customize"):
             return send_html("")
-        elif re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path):
+        elif (re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path)
+              and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
             from privacyidea.webui.login import _serve_locale
             locale_match = re.match(rf'^/app/v2/({locale_pattern})/', request.path)
             locale = locale_match.group(1) if locale_match else "en"
@@ -321,7 +322,9 @@ def create_app(config_name="development",
             if new_ui:
                 return new_ui
             return redirect("/")
-        if request.method == "GET" and not request.path.startswith("/static/"):
+        if (request.method == "GET"
+                and not request.path.startswith("/static/")
+                and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
             from privacyidea.webui.login import _serve_locale
             locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
             locale = locale_prefix_match.group(1) if locale_prefix_match else "en"

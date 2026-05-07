@@ -248,9 +248,8 @@ def single_page_application():
         dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
         if os.path.isdir(dist):
             return redirect(f"/app/v2/{url_locale}/")
-    new_ui = _serve_locale("en")
-    if new_ui:
-        return new_ui
+    if _serve_locale("en"):
+        return redirect("/app/v2/")
     render_context = get_render_context()
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
