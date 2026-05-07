@@ -69,6 +69,7 @@ export class TokenEnrollmentDataComponent {
   protected readonly qrCode = computed(
     () =>
       this.enrolledData()?.googleurl?.img ??
+      this.enrolledData()?.pushurl?.img ??
       this.enrolledData()?.motpurl?.img ??
       this.enrolledData()?.otpkey?.img ??
       this.enrolledData()?.tiqrenroll?.img ??
@@ -77,6 +78,7 @@ export class TokenEnrollmentDataComponent {
   protected readonly url = computed(
     () =>
       this.enrolledData()?.googleurl?.value ??
+      this.enrolledData()?.pushurl?.value ??
       this.enrolledData()?.motpurl?.value ??
       this.enrolledData()?.otpkey?.value ??
       this.enrolledData()?.tiqrenroll?.value ??
