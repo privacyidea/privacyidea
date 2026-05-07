@@ -4,9 +4,8 @@
 import logging
 from logging.config import fileConfig
 
-from flask import current_app
-
 from alembic import context
+from flask import current_app
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -41,6 +40,7 @@ def get_engine_url():
 # target_metadata = mymodel.Base.metadata
 config.set_main_option('sqlalchemy.url', get_engine_url())
 target_db = current_app.extensions['migrate'].db
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -111,7 +111,15 @@ def run_migrations_online():
         )
 
         with context.begin_transaction():
+            ctx = context.get_context()
+            current_rev = ctx.get_current_revision()
+            log.info(f"Current revision (before migration): {current_rev}")
+
             context.run_migrations()
+
+            # After migrations, get the new revision
+            new_rev = ctx.get_current_revision()
+            log.info(f"New revision (after migration): {new_rev}")
 
 
 if context.is_offline_mode():
