@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TitleCasePipe } from "@angular/common";
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,14 +25,13 @@ import {
   input,
   linkedSignal,
   output,
-  signal
+  signal,
+  WritableSignal
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatCardModule } from "@angular/material/card";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EventService } from "@services/event/event.service";
 import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
@@ -42,18 +40,12 @@ import { EventConditionListComponent } from "./event-condition-list/event-condit
   selector: "app-event-conditions-tab",
   imports: [
     ClearableInputComponent,
-    MatFormField,
-    MatInput,
-    MatLabel,
     ReactiveFormsModule,
     FormsModule,
-    TitleCasePipe,
-    MatTabGroup,
-    MatTab,
-    MatTabLabel,
     EventConditionListComponent,
-    MatCardModule,
-    MatIcon
+    MatExpansionModule,
+    MatButtonModule,
+    SelectorButtonsComponent
   ],
   templateUrl: "./event-conditions-tab.component.html",
   styleUrl: "./event-conditions-tab.component.scss",
@@ -66,7 +58,6 @@ export class EventConditionsTabComponent {
 
   selectedConditions = linkedSignal(() => this.conditions());
   conditionsToBeAdded: Record<string, any> = {};
-  selectedGroupIndex = 0;
   protected readonly Object = Object;
 
   addToolTip = $localize`Add Condition`;
@@ -76,6 +67,25 @@ export class EventConditionsTabComponent {
   searchTerm = signal("");
 
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
+
+  availableNonEmptyGroups = computed(() =>
+    this.availableGroups().filter(
+      g => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0
+    )
+  );
+
+  selectedGroup: WritableSignal<string> = linkedSignal({
+    source: () => this.availableNonEmptyGroups(),
+    computation: (groups, previous) => {
+      const prev = previous?.value;
+      if (prev && groups.includes(prev)) return prev;
+      return groups[0] ?? "";
+    }
+  });
+
+  remainingConditionsInSelectedGroup = computed(() =>
+    this.remainingConditionsByGroup()[this.selectedGroup()] ?? {}
+  );
 
   remainingConditionsByGroup = linkedSignal({
     source: () => ({
