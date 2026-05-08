@@ -150,7 +150,7 @@ def register_post():
         .action_values(unique=True)
     if not realm:
         # No policy for realm, so we use the default realm
-        realm = get_default_realm
+        realm = get_default_realm()
     else:
         # we use the first realm in the list
         realm = list(realm)[0]

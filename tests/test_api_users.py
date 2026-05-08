@@ -624,6 +624,24 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual("You are not allowed to set the custom user attribute newattr!",
                              error.get("message"))
 
+        # Even with a user-scope delete policy, a regular user must not be
+        # able to delete custom attributes from a *different* user via the
+        # path-component overload.
+        set_policy("user_can_delete", scope=SCOPE.USER,
+                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+        User("cornelius", "realm1").set_attribute("foo", "bar")
+        with self.app.test_request_context('/user/attribute/foo/cornelius/realm1',
+                                           method='DELETE',
+                                           headers={'Authorization': self.wordy_auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+        # The attribute must still be present on cornelius.
+        self.assertEqual("bar", User("cornelius", "realm1").attributes.get("foo"))
+        User("cornelius", "realm1").delete_attribute("foo")
+        delete_policy("user_can_delete")
+
         delete_policy("custom_attr")
         delete_policy("custom_attr2")
         delete_policy("custom_attr3")

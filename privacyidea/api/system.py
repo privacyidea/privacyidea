@@ -77,7 +77,7 @@ from .lib.utils import (getParam,
                         optional,
                         required,
                         send_result, send_file)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, check_admin_base_action
 from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
@@ -152,6 +152,7 @@ def get_gpg_keys():
 
 @system_blueprint.route('/<key>', methods=['GET'])
 @system_blueprint.route('/', methods=['GET'])
+@prepolicy(check_admin_base_action, request, PolicyAction.SYSTEMREAD)
 def get_config(key=None):
     """
     Return system configuration.
@@ -163,7 +164,9 @@ def get_config(key=None):
     Both admins and authenticated users may call this endpoint, but
     non-admins only see configuration entries that are flagged as
     ``public``. Querying a non-public key as a regular user returns
-    ``null``.
+    ``null``. Admin access is gated by the policy action
+    :ref:`policy_configread` when at least one ``configread`` policy
+    is defined.
 
     :param key: optional path component, the configuration key to fetch.
     :reqheader PI-Authorization: authentication token.
@@ -366,8 +369,6 @@ def delete_config(key=None):
     :param key: path component, the configuration key to delete.
     :status 200: ``True`` on success in ``result.value``.
     """
-    if not key:
-        raise ParameterError(_("You need to provide the config key to delete."))
     res = delete_privacyidea_config(key)
     g.audit_object.log({'success': res,
                         'info': key})
@@ -395,7 +396,7 @@ def set_security_module():
     password = getParam(request.all_data, "password", required)
     is_ready = set_hsm_password(password)
     res = {"is_ready": is_ready}
-    g.audit_object.log({'success': res})
+    g.audit_object.log({'success': is_ready})
     return send_result(res)
 
 
@@ -414,7 +415,7 @@ def get_security_module():
     hsm = get_hsm(require_ready=False)
     is_ready = hsm.is_ready
     res = {"is_ready": is_ready}
-    g.audit_object.log({'success': res})
+    g.audit_object.log({'success': is_ready})
     return send_result(res)
 
 
@@ -447,7 +448,7 @@ def rand():
     else:
         res = hexlify_and_unicode(r)
 
-    g.audit_object.log({'success': res})
+    g.audit_object.log({'success': True, 'info': f"len={length}"})
     return send_result(res)
 
 

@@ -452,6 +452,16 @@ This action allows the users to create new containers.
 
 .. versionadded:: 3.10
 
+container_list
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+This action allows the users to list their own containers and read the
+properties of containers assigned to them.
+
+.. versionadded:: 3.10
+
 container_delete
 ~~~~~~~~~~~~~~~~
 

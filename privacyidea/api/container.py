@@ -91,6 +91,18 @@ The endpoints fall in three audiences:
 """
 
 
+def _split_csv_or_list(value):
+    """
+    Accept either a JSON list or a comma-separated string and return a
+    list of stripped string entries. Used by endpoints that historically
+    only accepted the comma-separated form so that JSON callers can pass
+    a native list without a 500.
+    """
+    if isinstance(value, list):
+        return [str(item).strip() for item in value]
+    return [item.strip() for item in str(value).split(",")]
+
+
 @container_blueprint.route('/', methods=['GET'])
 @prepolicy(check_base_action, request, action=PolicyAction.CONTAINER_LIST)
 @prepolicy(check_admin_tokenlist, request, PolicyAction.CONTAINER_LIST)
@@ -626,9 +638,8 @@ def set_states(container_serial):
     :status 200: dict mapping each requested state to whether it was
         set, in ``result.value``.
     """
-    states_string = getParam(request.all_data, "states", required, allow_empty=False)
-    states_string = states_string.replace(" ", "")
-    states = states_string.split(",")
+    states_value = getParam(request.all_data, "states", required, allow_empty=False)
+    states = _split_csv_or_list(states_value)
     res = set_container_states(container_serial, states)
 
     # Audit log
@@ -698,7 +709,7 @@ def set_realms(container_serial):
     """
     # Get parameters
     container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
-    realm_list = [r.strip() for r in container_realms.split(",")]
+    realm_list = _split_csv_or_list(container_realms)
     allowed_realms = getattr(request, "pi_allowed_realms", None)
 
     # Set realms

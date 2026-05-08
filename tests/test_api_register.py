@@ -1,5 +1,5 @@
 from privacyidea.lib.resolver import delete_resolver, save_resolver
-from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
 from .base import MyApiTestCase
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
@@ -143,6 +143,38 @@ class RegisterTestCase(MyApiTestCase):
             self.assertEqual(data.get("result").get("value"), True)
 
     @smtpmock.activate
+    def test_01b_register_falls_back_to_default_realm(self):
+        # Without a SCOPE.REGISTER realm policy, the user must be created in
+        # the configured default realm.
+        smtpmock.setdata(response={"another@privacyidea.org": (200, "OK")})
+        # Drop the realm part of pol2; keep the resolver mapping.
+        set_policy(name="pol2", scope=SCOPE.REGISTER,
+                   action="{0!s}={1!s}".format(PolicyAction.RESOLVER, "register"))
+        set_default_realm("register")
+        try:
+            with self.app.test_request_context('/register',
+                                               method='POST',
+                                               data={"username": "corneliusRegDefault",
+                                                     "surname": "Kölbel",
+                                                     "givenname": "Cornelius",
+                                                     "password": "cammerah",
+                                                     "email": "another@privacyidea.org"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.data)
+                self.assertTrue(res.json["result"]["value"], res.json)
+        finally:
+            # Restore the realm policy used by the remaining tests.
+            set_policy(name="pol2", scope=SCOPE.REGISTER,
+                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
+                                                                PolicyAction.RESOLVER, "register"))
+            # Clean up the user we just created so test_99 stays idempotent.
+            y = SQLResolver()
+            y.loadConfig(self.parameters)
+            uid = y.getUserId("corneliusRegDefault")
+            if uid:
+                y.delete_user(uid)
+
+    @smtpmock.activate
     def test_02_reset_password(self):
         smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
         set_privacyidea_config("recovery.identifier", "myserver")
@@ -189,6 +221,10 @@ class RegisterTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res.data)
             data = res.json
             self.assertEqual(data.get("result").get("value"), False)
+
+        # The failed reset attempt is recorded in the audit log.
+        audit_entry = self.find_most_recent_audit_entry(action='POST /recover/reset')
+        self.assertEqual(0, audit_entry['success'], audit_entry)
 
         # test the new password
 

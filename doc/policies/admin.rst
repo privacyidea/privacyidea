@@ -1276,6 +1276,19 @@ The administrator is allowed to delete container templates.
 
 .. versionadded:: 3.11
 
+.. _policy_container_list:
+
+container_list
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to list containers, see their properties, and
+read the assigned tokens and users. This is the read counterpart to the
+container_* write actions and gates the :http:get:`/container/` endpoint.
+
+.. versionadded:: 3.10
+
 .. _policy_container_template_list:
 
 container_template_list

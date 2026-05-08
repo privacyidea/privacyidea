@@ -306,7 +306,7 @@ def set_default_realm_api(realm=None):
     """
     realm = realm.lower().strip()
     r = set_default_realm(realm)
-    g.audit_object.log({"success": r,
+    g.audit_object.log({"success": True,
                         "info": realm})
     return send_result(r)
 
@@ -541,7 +541,7 @@ def set_realm_node_api(realm, nodeid):
         log.warning(f"Node with UUID {nodeid} does not exist in the database!")
         raise ParameterError(_("The given node does not exist!"))
 
-    data = request.json
+    data = request.get_json(silent=True) or {}
     resolvers = []
     if "resolver" not in data:
         log.warning("Missing resolver data in request")

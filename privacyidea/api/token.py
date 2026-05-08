@@ -389,10 +389,10 @@ def init():
                     log.warning(f"Container with serial {container_serial} not found while enrolling token "
                                 f"{token.get_serial()}.")
 
-    g.audit_object.log({"user": user.login,
-                        "realm": user.realm,
-                        "serial": token.token.serial,
-                        "token_type": token.token.tokentype})
+        g.audit_object.log({"user": user.login,
+                            "realm": user.realm,
+                            "serial": token.token.serial,
+                            "token_type": token.token.tokentype})
 
     return send_result(True, details=response_details)
 
@@ -1027,7 +1027,7 @@ def setrandompin_api(serial=None):
         raise TokenAdminError(
             "We have an empty PIN. Please check your policy 'otp_pin_set_random'.")
 
-    g.audit_object.add_to_log({'action_detail': "otppin, "})
+    g.audit_object.add_to_log({'action_detail': "otppin (random), "})
     res = set_pin(serial, pin, user=user, encrypt_pin=encrypt_pin_param)
     g.audit_object.log({"success": True})
     return send_result(res, details={"pin": pin})
@@ -1214,6 +1214,7 @@ def tokenrealm_api(serial=None):
     allowed_realms = getattr(request, "pi_allowed_realms", None)
 
     set_realms(serial, realms=realm_list, allowed_realms=allowed_realms)
+    g.audit_object.add_to_log({'action_detail': f"realms={realm_list}, "})
     g.audit_object.log({"success": True})
     return send_result(True)
 

@@ -964,6 +964,31 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
         self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm2"}, self.at)
         delete_policy("policy")
 
+    def test_19b_admin_container_state_realms_accept_json_list(self):
+        # set_states and set_realms accept a JSON list as well as the
+        # comma-separated string form.
+        set_policy("policy_state", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_STATE)
+        set_policy("policy_realm", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_REALMS)
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        with self.app.test_request_context(f"/container/{container_serial}/states",
+                                           method='POST',
+                                           json={"states": ["active", "damaged"]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"], res.json)
+        self.clear_flask_g()
+        with self.app.test_request_context(f"/container/{container_serial}/realms",
+                                           method='POST',
+                                           json={"realms": ["realm2"]},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"], res.json)
+        self.clear_flask_g()
+        delete_policy("policy_state")
+        delete_policy("policy_realm")
+
     def test_20_admin_container_realms_denied(self):
         set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
         container_serial = self.create_container_for_user()
