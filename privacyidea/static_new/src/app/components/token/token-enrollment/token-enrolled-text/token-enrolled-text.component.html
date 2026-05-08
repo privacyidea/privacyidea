@@ -35,15 +35,27 @@
     @if (username() && userRealm() != "" && !onlyAddToRealm()) {
       <div i18n>
         The user
-        <span>{{ username() }}</span>
+        @if (authService.actionAllowed("userlist")) {
+          <a (click)="navigateUserDetails()">{{ username() }}</a>
+        } @else {
+          <span>{{ username() }}</span>
+        }
         in the realm
-        <span>{{ userRealm() }}</span>
+        @if (authService.role() === "admin") {
+          <a (click)="navigateRealms()">{{ userRealm() }}</a>
+        } @else {
+          <span>{{ userRealm() }}</span>
+        }
         was assigned to the token.
       </div>
     } @else if (userRealm() && onlyAddToRealm()) {
       <div i18n>
         The token was assigned to the realm
-        <span>{{ userRealm() }}</span>
+        @if (authService.role() === "admin") {
+          <a (click)="navigateRealms()">{{ userRealm() }}</a>
+        } @else {
+          <span>{{ userRealm() }}</span>
+        }
         .
       </div>
     }

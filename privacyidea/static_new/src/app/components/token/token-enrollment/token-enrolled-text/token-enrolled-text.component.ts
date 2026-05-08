@@ -18,6 +18,8 @@
  **/
 
 import { Component, inject, input, output } from "@angular/core";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 @Component({
@@ -28,6 +30,8 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 })
 export class TokenEnrolledTextComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   serial = input<string>();
   containerSerial = input<string>();
@@ -51,5 +55,18 @@ export class TokenEnrolledTextComponent {
     }
     this.switchRoute.emit();
     this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
+  }
+
+  navigateUserDetails() {
+    if (!this.username() || !this.userRealm()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.userSelected(this.username() ?? "", this.userRealm() ?? "");
+  }
+
+  navigateRealms() {
+    this.switchRoute.emit();
+    this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS);
   }
 }
