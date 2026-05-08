@@ -39,6 +39,7 @@ import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
   catchError,
+  firstValueFrom,
   forkJoin,
   Observable,
   shareReplay,
@@ -296,7 +297,7 @@ export interface TokenServiceInterface {
 
   setRandomPin(tokenSerial: string): Observable<any>; // TODO: Specify return type
 
-  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Observable<Object>;
+  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Promise<PiResponse<boolean>>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
@@ -979,10 +980,10 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object> {
+  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Promise<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    return this.http
-      .post(
+    const request = this.http
+      .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}resync`,
         {
           serial: tokenSerial,
@@ -999,6 +1000,7 @@ export class TokenService implements TokenServiceInterface {
           return throwError(() => error);
         })
       );
+    return firstValueFrom(request);
   }
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
