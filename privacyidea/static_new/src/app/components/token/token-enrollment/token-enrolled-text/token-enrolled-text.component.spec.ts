@@ -20,7 +20,7 @@
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { AuthService } from "@services/auth/auth.service";
+import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
@@ -154,36 +154,49 @@ describe("TokenEnrolledTextComponent", () => {
       fixture.componentRef.setInput("onlyAddToRealm", false);
     });
 
-    it("renders username and realm as links when userlist right is granted", () => {
+    it("renders username as links when userlist right is granted", () => {
       mockAuthService.actionAllowed.mockReturnValue(true);
       fixture.detectChanges();
       const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
       expect(links.some((a) => a.textContent?.trim() === "alice")).toBe(true);
+    });
+
+    it("renders realm as links when user is admin", () => {
+      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "admin" } as AuthData);
+      fixture.detectChanges();
+      const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
       expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(true);
     });
 
-    it("renders username and realm as plain text when userlist right is not granted", () => {
+    it("renders username as plain text when userlist right is not granted", () => {
       mockAuthService.actionAllowed.mockReturnValue(false);
       fixture.detectChanges();
       const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
       expect(links.some((a) => a.textContent?.trim() === "alice")).toBe(false);
-      expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(false);
       const spans: HTMLSpanElement[] = Array.from(fixture.nativeElement.querySelectorAll("span"));
       expect(spans.some((s) => s.textContent?.trim() === "alice")).toBe(true);
+    });
+
+    it("renders realm as plain text when user has role user", () => {
+      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
+      fixture.detectChanges();
+      const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
+      expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(false);
+      const spans: HTMLSpanElement[] = Array.from(fixture.nativeElement.querySelectorAll("span"));
       expect(spans.some((s) => s.textContent?.trim() === "realm1")).toBe(true);
     });
 
-    it("renders realm as a link in onlyAddToRealm mode when userlist right is granted", () => {
+    it("renders realm as a link in onlyAddToRealm mode when user is admin", () => {
       fixture.componentRef.setInput("onlyAddToRealm", true);
-      mockAuthService.actionAllowed.mockReturnValue(true);
+      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "admin" } as AuthData);
       fixture.detectChanges();
       const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
       expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(true);
     });
 
-    it("renders realm as plain text in onlyAddToRealm mode when userlist right is not granted", () => {
+    it("renders realm as plain text in onlyAddToRealm mode when user has only user role", () => {
       fixture.componentRef.setInput("onlyAddToRealm", true);
-      mockAuthService.actionAllowed.mockReturnValue(false);
+      mockAuthService.authData.set({ ...mockAuthService.authData(), role: "user" } as AuthData);
       fixture.detectChanges();
       const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll("a"));
       expect(links.some((a) => a.textContent?.trim() === "realm1")).toBe(false);
