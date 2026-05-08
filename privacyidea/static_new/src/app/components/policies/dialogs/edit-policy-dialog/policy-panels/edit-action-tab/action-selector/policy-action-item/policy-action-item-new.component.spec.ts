@@ -161,4 +161,69 @@ describe("PolicyActionItemComponent", () => {
     const select = fixture.debugElement.query(By.css("mat-select"));
     expect(select).toBeTruthy();
   });
+
+  describe("selectedItems", () => {
+    it("should split a space-separated string value into an array", () => {
+      component.updateSelectedActionValue("val1 val2 val3");
+      expect(component.selectedItems()).toEqual(["val1", "val2", "val3"]);
+    });
+
+    it("should wrap a non-string value in an array", () => {
+      component.updateSelectedActionValue(42);
+      expect(component.selectedItems()).toEqual([42]);
+    });
+  });
+
+  describe("updateSelectedActionValue", () => {
+    it("should join array values with space and set currentAction", () => {
+      component.updateSelectedActionValue(["val1", "val2", "val3"]);
+      expect(component.currentAction()).toEqual({ name: "testAction", value: "val1 val2 val3" });
+    });
+
+    it("should set currentAction directly for scalar values", () => {
+      component.updateSelectedActionValue("singleVal");
+      expect(component.currentAction()).toEqual({ name: "testAction", value: "singleVal" });
+    });
+
+    it("should set currentAction directly for numeric values", () => {
+      component.updateSelectedActionValue(42);
+      expect(component.currentAction()).toEqual({ name: "testAction", value: 42 });
+    });
+  });
+
+  describe("focusFirstInput", () => {
+    it("should focus the input element when present", async () => {
+      const mockInput = { focus: jest.fn() };
+      jest.spyOn(component, "inputElementRef").mockReturnValue({ nativeElement: mockInput } as any);
+
+      component.focusFirstInput();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockInput.focus).toHaveBeenCalled();
+    });
+
+    it("should focus the select element when no input is present", async () => {
+      const mockSelect = { focus: jest.fn() };
+      jest.spyOn(component, "selectElementRef").mockReturnValue(mockSelect as any);
+      jest.spyOn(component, "inputElementRef").mockReturnValue(undefined);
+
+      component.focusFirstInput();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockSelect.focus).toHaveBeenCalled();
+    });
+
+    it("should focus the button element when no input or select is present", async () => {
+      const mockButton = { focus: jest.fn() };
+      jest.spyOn(component, "buttonElementRef").mockReturnValue({ nativeElement: mockButton } as any);
+      jest.spyOn(component, "inputElementRef").mockReturnValue(undefined);
+      jest.spyOn(component, "selectElementRef").mockReturnValue(undefined);
+      jest.spyOn(component, "selectorComponent").mockReturnValue(undefined);
+
+      component.focusFirstInput();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockButton.focus).toHaveBeenCalled();
+    });
+  });
 });

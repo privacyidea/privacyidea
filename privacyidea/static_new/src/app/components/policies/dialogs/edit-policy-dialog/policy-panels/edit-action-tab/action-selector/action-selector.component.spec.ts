@@ -120,6 +120,16 @@ describe("ActionSelectorComponent", () => {
     expect(component.selectedActionGroup()).toBe("");
   });
 
+  it("should return group names when filteredPolicyActionGroups has groups for the current scope", () => {
+    (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
+      admin: { tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } } }
+    });
+    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+    fixture.detectChanges();
+
+    expect(component.actionGroupNamesFiltered()).toContain("tokenGroup");
+  });
+
   it("should handle scope change", () => {
     const spy = jest.spyOn(component.scopeChange, "emit");
     component.selectActionScope("admin");
@@ -201,6 +211,58 @@ describe("ActionSelectorComponent", () => {
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({ action: { name: "container_add_token", value: undefined }, newScope: "user" })
       );
+    });
+
+    it("should emit action without newScope when policy already has a scope", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+      fixture.detectChanges();
+      const spy = jest.spyOn(component.actionAdd, "emit");
+
+      component.addPolicyAction({ name: "configread", value: true }, "admin");
+
+      expect(spy).toHaveBeenCalledWith({ action: { name: "configread", value: true } });
+    });
+
+    it("should fall back to getScopeOfAction when itemScope is not provided", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
+      fixture.detectChanges();
+      (hostComponent.component["policyService"].getScopeOfAction as jest.Mock).mockReturnValue("admin");
+      const spy = jest.spyOn(component.actionAdd, "emit");
+
+      component.addPolicyAction({ name: "configread", value: true });
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({ newScope: "admin" })
+      );
+    });
+  });
+
+  describe("focusNextActionItem", () => {
+    it("should focus the item at currentIndex + 1 after action is added", async () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
+      fixture.detectChanges();
+
+      const mockItem = { focusFirstInput: jest.fn() };
+      jest.spyOn(component, "actionItems").mockReturnValue([mockItem as any]);
+      jest.spyOn(component, "actionsFiltered").mockReturnValue([
+        { actionName: "container_add_token", scope: "admin", label: "container_add_token", detail: { type: "bool" as const, desc: "Admin can do this." } }
+      ]);
+
+      component.focusNextActionItem("container_add_token", "admin");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockItem.focusFirstInput).toHaveBeenCalled();
+    });
+
+    it("should not throw when no items are available", async () => {
+      jest.spyOn(component, "actionItems").mockReturnValue([]);
+      jest.spyOn(component, "actionsFiltered").mockReturnValue([]);
+
+      expect(() => {
+        component.focusNextActionItem("nonexistent", "admin");
+      }).not.toThrow();
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
   });
 });
