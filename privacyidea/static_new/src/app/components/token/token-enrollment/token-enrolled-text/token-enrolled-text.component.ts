@@ -31,7 +31,6 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 export class TokenEnrolledTextComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   serial = input<string>();
   containerSerial = input<string>();

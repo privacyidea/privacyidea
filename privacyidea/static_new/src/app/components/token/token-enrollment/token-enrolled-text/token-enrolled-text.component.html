@@ -36,13 +36,25 @@
       <div i18n>
         The user
         @if (authService.actionAllowed("userlist")) {
-          <a (click)="navigateUserDetails()">{{ username() }}</a>
+          <a
+            role="button"
+            tabindex="0"
+            (click)="navigateUserDetails()"
+            (keydown.enter)="navigateUserDetails()"
+            (keydown.space)="$event.preventDefault(); navigateUserDetails()"
+            class="text-link-button cursor-pointer">{{ username() }}</a>
         } @else {
           <span>{{ username() }}</span>
         }
         in the realm
         @if (authService.role() === "admin") {
-          <a (click)="navigateRealms()">{{ userRealm() }}</a>
+          <a
+            role="button"
+            tabindex="0"
+            (click)="navigateRealms()"
+            (keydown.enter)="navigateRealms()"
+            (keydown.space)="$event.preventDefault(); navigateRealms()"
+            class="text-link-button cursor-pointer">{{ userRealm() }}</a>
         } @else {
           <span>{{ userRealm() }}</span>
         }
@@ -52,7 +64,13 @@
       <div i18n>
         The token was assigned to the realm
         @if (authService.role() === "admin") {
-          <a (click)="navigateRealms()">{{ userRealm() }}</a>
+          <a
+            role="button"
+            tabindex="0"
+            (click)="navigateRealms()"
+            (keydown.enter)="navigateRealms()"
+            (keydown.space)="$event.preventDefault(); navigateRealms()"
+            class="text-link-button cursor-pointer">{{ userRealm() }}</a>
         } @else {
           <span>{{ userRealm() }}</span>
         }
