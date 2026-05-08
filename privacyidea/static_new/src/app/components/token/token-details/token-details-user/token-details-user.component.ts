@@ -26,6 +26,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
+import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -55,7 +56,8 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatIcon,
     EditButtonsComponent,
     NgClass,
-    ClearableInputComponent
+    ClearableInputComponent,
+    AutofocusDirective
   ],
   templateUrl: "./token-details-user.component.html",
   styleUrl: "./token-details-user.component.scss"

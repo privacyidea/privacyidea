@@ -292,6 +292,38 @@ th:nth-child(even) {
   z-index: 1;
 }
 
+.details-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-lowest);
+  padding: 8px 12px 12px;
+
+  .details-card-title {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.details-cards-column {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.details-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
 .details-container {
   .details-table {
     border-collapse: collapse;

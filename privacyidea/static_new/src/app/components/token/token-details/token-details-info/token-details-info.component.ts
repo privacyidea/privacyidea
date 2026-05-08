@@ -16,46 +16,49 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatList, MatListItem } from "@angular/material/list";
-import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
+import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
 
 @Component({
   selector: "app-token-details-info",
   standalone: true,
   imports: [
-    MatTableModule,
-    MatColumnDef,
-    MatCell,
-    MatList,
-    MatListItem,
     MatFormField,
     MatInput,
     FormsModule,
     MatIconButton,
-    MatLabel,
     MatIcon,
     MatDivider,
-    MatRow,
-    EditButtonsComponent,
-    NgClass
+    EditButtonsComponent
   ],
   templateUrl: "./token-details-info.component.html",
   styleUrl: "./token-details-info.component.scss"
 })
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
+  protected readonly hiddenInfoKeys: readonly string[] = TIMESTAMP_INFO_KEYS;
+
+  visibleInfoKeys(value: Record<string, unknown>): string[] {
+    return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
+  }
+
+  asInfoMap(value: unknown): Record<string, string> {
+    return (value ?? {}) as Record<string, string>;
+  }
+
+  asInfoElement(element: EditableElement): EditableElement<Record<string, string>> {
+    return element as EditableElement<Record<string, string>>;
+  }
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;

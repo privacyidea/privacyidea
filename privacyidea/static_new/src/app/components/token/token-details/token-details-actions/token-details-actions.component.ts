@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NgClass } from "@angular/common";
 import { Component, computed, inject, Input, input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
@@ -56,7 +55,6 @@ import { lastValueFrom, switchMap } from "rxjs";
     FormsModule,
     MatIcon,
     MatDivider,
-    NgClass,
     SetPinActionComponent,
     ResyncTokenActionComponent,
     TestOtpPinActionComponent,

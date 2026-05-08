@@ -1,10 +1,115 @@
 @use "styles";
 @use "table";
 
-.info-container {
-  padding: 0 var(--global-padding);
+:host {
+  display: block;
+  width: 100%;
 }
 
-.width-192 {
-  width: 192px;
+.token-info-panel {
+  display: block;
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+  overflow: hidden;
+
+  &[open] .token-info-chevron {
+    transform: rotate(180deg);
+  }
+}
+
+.token-info-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  background: var(--mat-sys-surface-container);
+
+  &::-webkit-details-marker,
+  &::marker {
+    display: none;
+    content: "";
+  }
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -2px;
+  }
+}
+
+.token-info-title {
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--mat-sys-on-surface);
+}
+
+.token-info-chevron {
+  transition: transform 200ms ease;
+}
+
+.token-info-body {
+  padding: 12px 20px 20px;
+  text-align: left;
+}
+
+.info-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) 1fr;
+  column-gap: 16px;
+  row-gap: 4px;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+
+  .info-key {
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant);
+    align-self: center;
+    text-align: left;
+  }
+
+  .info-value {
+    margin: 0;
+    overflow-wrap: anywhere;
+    align-self: center;
+    text-align: left;
+    min-width: 0;
+  }
+}
+
+.info-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .info-edit-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.info-add-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }

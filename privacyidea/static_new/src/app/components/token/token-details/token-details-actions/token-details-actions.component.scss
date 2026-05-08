@@ -3,23 +3,98 @@
 
 $padding-horizontal: 16px;
 
+:host {
+  display: block;
+  width: 100%;
+}
+
 .actions-otp-container {
   display: flex;
   flex-direction: column;
-  padding: 0 $padding-horizontal;
+  gap: 12px;
+  padding: 0;
 
-  .actions-pin-input,
-  .actions-otp-pin-input {
+  .actions-status-row {
     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 14px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: var(--border-radius);
+    background: var(--mat-sys-surface-container-low);
   }
 
-  .actions-pin-input-button,
-  .actions-visibility-button {
+  .actions-sections-row {
     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px;
   }
 
-  .actions-pin-button {
+  .actions-section {
     display: flex;
     flex-direction: column;
+    gap: 8px;
+    min-width: 200px;
+    flex: 0 1 420px;
+    max-width: 480px;
+  }
+
+  .actions-section--wide {
+    flex: 0 1 480px;
+    max-width: 520px;
+  }
+
+  .actions-section-title {
+    margin: 4px 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .test-sync-section {
+    app-resync-token-action,
+    app-test-otp-pin-action {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: var(--border-radius);
+      box-sizing: border-box;
+
+      .actions-pin-input,
+      .actions-otp-pin-input {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .actions-pin-input-button,
+      .actions-pin-button {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+    }
+  }
+
+  .lifecycle-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 }

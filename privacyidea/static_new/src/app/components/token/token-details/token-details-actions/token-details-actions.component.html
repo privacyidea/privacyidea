@@ -16,138 +16,35 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<br class="responsive-br-1580" />
-<div
-  class="actions-otp-container responsive-ali-center-1580">
-  <h4 class="margin-8">Token Actions</h4>
+<div class="actions-otp-container">
   @if (token()?.rollout_state === "verify") {
     <app-verify-enrollment></app-verify-enrollment>
     <mat-divider class="margin-top-8 margin-bottom-8" />
   }
-  @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
-    <div class="flex-column">
-      <app-set-pin-action
-        [repeatPinValue]="repeatPinValue"
-        [setPinValue]="setPinValue" />
-      <mat-divider class="margin-top-8 margin-bottom-8" />
-    </div>
-  }
-  @if (tokenType() !== "passkey" && authService.actionAllowed("resync")) {
-    <app-resync-token-action />
-    <mat-divider class="margin-top-8 margin-bottom-8" />
-  }
-  @if (tokenType() !== "passkey") {
-    <app-test-otp-pin-action />
-    <mat-divider class="margin-top-8 margin-bottom-8" />
-  }
-  <div class="flex-column ali-center gap-8">
-    @if (tokenType() === "passkey") {
-      <button
-        (click)="testPasskey()"
-        class="action-button-secondary button-width-m"
-        i18n
-        mat-stroked-button>
-        <mat-icon>key</mat-icon>
-        Test Passkey
-      </button>
+
+  <div class="actions-sections-row">
+    @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
+      <section class="actions-section actions-section--wide">
+        <h5 class="actions-section-title" i18n>PIN Setup</h5>
+        <app-set-pin-action
+          [repeatPinValue]="repeatPinValue"
+          [setPinValue]="setPinValue" />
+      </section>
     }
-    @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
-      @if (tokenType() === "sshkey") {
-        <button
-          (click)="attachSshToMachineDialog()"
-          class="action-button-secondary button-width-m"
-          i18n
-          mat-stroked-button>
-          <mat-icon>computer</mat-icon>
-          Attach to Machine
-        </button>
-      } @else if (tokenType() === "passkey") {
-        @if (isAttachedToMachine()) {
-          <button
-            (click)="removePasskeyFromMachine()"
-            class="action-button-secondary button-width-m"
-            i18n
-            mat-stroked-button>
-            <mat-icon>computer</mat-icon>
-            Disable Offline
-          </button>
-        } @else {
-          <button
-            (click)="attachPasskeyToMachine()"
-            class="action-button-secondary button-width-m"
-            i18n
-            mat-stroked-button>
-            <mat-icon>computer</mat-icon>
-            Use Offline
-          </button>
-        }
-      } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
-        <button
-          (click)="attachHotpToMachineDialog()"
-          class="action-button-secondary button-width-m"
-          i18n
-          mat-stroked-button>
-          <mat-icon>computer</mat-icon>
-          Use Offline
-        </button>
-      }
+
+    @if (tokenType() !== "passkey" && tokenType() !== "webauthn" && authService.actionAllowed("resync")) {
+      <section class="actions-section actions-section--wide test-sync-section">
+        <h5 class="actions-section-title" i18n>Sync</h5>
+        <app-resync-token-action />
+      </section>
     }
-    @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
-    (!tokenIsActive() && authService.actionAllowed("enable"))) {
-      <button
-        (click)="toggleActive()"
-        [disabled]="tokenIsRevoked()"
-        [ngClass]="[tokenIsActive()
-                      ? 'action-button-delete-primary button-width-m'
-                      : 'action-button-primary button-width-m'
-                ]"
-        i18n
-        mat-stroked-button>
-        <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-        {{ tokenIsActive() ? "Deactivate" : "Activate" }}
-      </button>
+
+    @if (tokenType() !== "passkey" && tokenType() !== "webauthn") {
+      <section class="actions-section actions-section--wide test-sync-section">
+        <h5 class="actions-section-title" i18n>Test</h5>
+        <app-test-otp-pin-action />
+      </section>
     }
-    @if (authService.actionAllowed("delete")) {
-      <button
-        (click)="deleteToken()"
-        class="action-button-delete-secondary button-width-m"
-        i18n
-        mat-stroked-button>
-        <mat-icon> delete</mat-icon>
-        Delete
-      </button>
-    }
-    @if (authService.actionAllowed("revoke")) {
-      <button
-        (click)="revokeToken()"
-        [disabled]="tokenIsRevoked()"
-        class="action-button-delete-secondary button-width-m"
-        i18n
-        mat-stroked-button>
-        <mat-icon>undo</mat-icon>
-        Revoke
-      </button>
-    }
-    @if (authService.tokenRollover().indexOf(tokenType()) >= 0 &&
-    rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
-      <button
-        (click)="rolloverToken()"
-        class="action-button-secondary button-width-m"
-        i18n
-        mat-stroked-button>
-        <mat-icon>sync</mat-icon>
-        Rollover
-      </button>
-    }
-    @if (authService.actionAllowed("losttoken")) {
-      <button
-        (click)="openLostTokenDialog()"
-        class="action-button-secondary button-width-m"
-        i18n
-        mat-stroked-button>
-        <mat-icon>remove_red_eye</mat-icon>
-        Lost Token
-      </button>
-    }
+
   </div>
 </div>

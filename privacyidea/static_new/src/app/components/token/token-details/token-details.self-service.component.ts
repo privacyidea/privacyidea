@@ -69,10 +69,4 @@ import { TokenDetailsComponent } from "./token-details.component";
   templateUrl: "./token-details.self-service.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
-export class TokenDetailsSelfServiceComponent extends TokenDetailsComponent {
-  toggleActive(active: boolean): void {
-    this.tokenService.toggleActive(this.tokenSerial(), active).subscribe(() => {
-      this.tokenService.tokenDetailResource.reload();
-    });
-  }
-}
+export class TokenDetailsSelfServiceComponent extends TokenDetailsComponent {}

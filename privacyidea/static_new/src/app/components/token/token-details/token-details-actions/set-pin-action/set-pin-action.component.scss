@@ -1,2 +1,46 @@
 @use "styles";
 @use "table";
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.set-pin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+}
+
+.set-pin-fields {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+
+  mat-form-field {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none !important;
+    width: auto !important;
+  }
+}
+
+.set-pin-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+
+  button {
+    flex: 1 1 0;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+}

@@ -17,13 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="actions-pin-input">
-  <mat-form-field class="input-width-s">
+  <mat-form-field class="input-width-s" subscriptSizing="dynamic">
     <mat-label>OTP</mat-label>
     <input
       [(ngModel)]="fristOTPValue"
       matInput />
   </mat-form-field>
-  <mat-form-field class="input-width-s">
+  <mat-form-field class="input-width-s" subscriptSizing="dynamic">
     <mat-label i18n>Repeat OTP</mat-label>
     <input
       [(ngModel)]="secondOTPValue"
@@ -33,7 +33,7 @@
 <div class="actions-pin-input-button">
   <button
     (click)="resyncOTPToken()"
-    class="action-button-secondary button-width-m"
+    class="action-button-secondary button-width-l"
     i18n
     mat-stroked-button>
     <mat-icon>sync</mat-icon>
