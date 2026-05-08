@@ -33,9 +33,8 @@ import { ActionSelectorComponent } from "./action-selector.component";
   standalone: true
 })
 class MockPolicyActionItemComponent {
-  actionName = input.required<string>();
-  actionDetail = input.required<any>();
-  actionValue = input.required<any>();
+  selectableAction = input.required<any>();
+  actionValue = input<any>();
   focusFirstInput = jest.fn();
 }
 
@@ -128,5 +127,80 @@ describe("ActionSelectorComponent", () => {
     fixture.detectChanges();
 
     expect(spy).toHaveBeenCalledWith("admin");
+  });
+
+  describe("actionsFiltered", () => {
+    const adminAction = { type: "bool" as const, desc: "Admin can do this." };
+    const userAction = { type: "str" as const, desc: "User can do this." };
+
+    beforeEach(() => {
+      (hostComponent.component["policyService"].policyActions as any).set({
+        admin: { container_add_token: adminAction, configread: { type: "bool" as const, desc: "Read config." } },
+        user: { container_add_token: userAction }
+      });
+    });
+
+    it("should return items from all scopes with scope labels when no scope is selected", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
+      fixture.detectChanges();
+
+      const items = component.actionsFiltered();
+      const adminItem = items.find((i) => i.actionName === "container_add_token" && i.scope === "admin");
+      const userItem = items.find((i) => i.actionName === "container_add_token" && i.scope === "user");
+
+      expect(adminItem).toBeDefined();
+      expect(userItem).toBeDefined();
+      expect(adminItem?.label).toBe("[admin] container_add_token");
+      expect(userItem?.label).toBe("[user] container_add_token");
+    });
+
+    it("should show a duplicate action name twice when it exists in multiple scopes", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
+      fixture.detectChanges();
+
+      const duplicates = component.actionsFiltered().filter((i) => i.actionName === "container_add_token");
+      expect(duplicates.length).toBe(2);
+    });
+
+    it("should return items from the selected scope only without scope labels", () => {
+      (hostComponent.component["policyService"].getActionsOf as jest.Mock).mockReturnValue({
+        container_add_token: adminAction,
+        configread: { type: "bool" as const, desc: "Read config." }
+      });
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+      fixture.detectChanges();
+
+      const items = component.actionsFiltered();
+      expect(items.length).toBeGreaterThan(0);
+      expect(items.every((i) => i.label === i.actionName)).toBe(true);
+      expect(items.every((i) => i.scope === "admin")).toBe(true);
+    });
+
+    it("should use scope-specific detail in each item when no scope is selected", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
+      fixture.detectChanges();
+
+      const adminItem = component.actionsFiltered().find(
+        (i) => i.actionName === "container_add_token" && i.scope === "admin"
+      );
+      const userItem = component.actionsFiltered().find(
+        (i) => i.actionName === "container_add_token" && i.scope === "user"
+      );
+
+      expect(adminItem?.detail).toEqual(adminAction);
+      expect(userItem?.detail).toEqual(userAction);
+    });
+
+    it("should emit the correct scope as newScope when adding an action with no policy scope", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
+      fixture.detectChanges();
+      const spy = jest.spyOn(component.actionAdd, "emit");
+
+      component.addPolicyAction({ name: "container_add_token", value: undefined }, "user");
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({ action: { name: "container_add_token", value: undefined }, newScope: "user" })
+      );
+    });
   });
 });

@@ -24,7 +24,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
-import { PolicyActionItemComponent } from "./policy-action-item-new.component";
+import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
 
 @Component({
   selector: "app-selector-buttons",
@@ -49,6 +49,13 @@ describe("PolicyActionItemComponent", () => {
     value: ["val1", "val2"]
   };
 
+  const defaultAction: SelectableAction = {
+    actionName: "testAction",
+    label: "testAction",
+    scope: "admin",
+    detail: mockActionDetail
+  };
+
   beforeEach(async () => {
     policyServiceMock = {
       actionValueIsValid: jest.fn().mockReturnValue(true)
@@ -68,9 +75,8 @@ describe("PolicyActionItemComponent", () => {
     fixture = TestBed.createComponent(PolicyActionItemComponent);
     component = fixture.componentInstance;
 
-    fixture.componentRef.setInput("actionName", "testAction");
+    fixture.componentRef.setInput("selectableAction", defaultAction);
     fixture.componentRef.setInput("actionValue", "defaultVal");
-    fixture.componentRef.setInput("actionDetail", mockActionDetail);
 
     fixture.detectChanges();
   });
@@ -82,14 +88,17 @@ describe("PolicyActionItemComponent", () => {
     expect(desc).toBeTruthy();
   });
 
-  it("should update currentAction when actionDetail changes via linkedSignal", () => {
-    fixture.componentRef.setInput("actionDetail", { type: "int", desc: "new", value: undefined });
+  it("should update currentAction when selectableAction changes via linkedSignal", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "int", desc: "new" } });
     fixture.detectChanges();
     expect(component.currentAction().name).toBe("testAction");
   });
 
   it("should emit actionAdd with current value when add button is clicked", async () => {
-    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "desc", value: undefined });
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "desc" }
+    });
     fixture.detectChanges();
 
     const spy = jest.spyOn(component.actionAdd, "emit");
@@ -101,7 +110,10 @@ describe("PolicyActionItemComponent", () => {
   });
 
   it("should call addAction on Enter key if input is valid", () => {
-    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "desc", value: undefined });
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "desc" }
+    });
     fixture.detectChanges();
 
     const spy = jest.spyOn(component, "addAction");
@@ -114,7 +126,10 @@ describe("PolicyActionItemComponent", () => {
 
   it("should not call addAction on Enter key if input is invalid", () => {
     policyServiceMock.actionValueIsValid.mockReturnValue(false);
-    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "desc", value: undefined });
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "desc" }
+    });
     fixture.detectChanges();
 
     const spy = jest.spyOn(component, "addAction");
@@ -137,10 +152,9 @@ describe("PolicyActionItemComponent", () => {
   });
 
   it("should handle multi-value actions with mat-select if > 3 values", () => {
-    fixture.componentRef.setInput("actionDetail", {
-      type: "str",
-      desc: "large list",
-      value: ["1", "2", "3", "4", "5"]
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "large list", value: ["1", "2", "3", "4", "5"] }
     });
     fixture.detectChanges();
 

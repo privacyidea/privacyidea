@@ -186,7 +186,7 @@ export interface PolicyServiceInterface {
 
   canSavePolicy(policy: PolicyDetail): boolean;
 
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null;
+  getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null;
 
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
 
@@ -402,12 +402,12 @@ export class PolicyService implements PolicyServiceInterface {
     return true;
   }
 
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
-    const actions = this.allPolicyActionsFlat();
-    if (actionName && actions) {
-      return actions[actionName] ?? null;
+  getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null {
+    if (!actionName) return null;
+    if (scope) {
+      return this.policyActions()[scope]?.[actionName] ?? null;
     }
-    return null;
+    return this.allPolicyActionsFlat()[actionName] ?? null;
   }
 
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {

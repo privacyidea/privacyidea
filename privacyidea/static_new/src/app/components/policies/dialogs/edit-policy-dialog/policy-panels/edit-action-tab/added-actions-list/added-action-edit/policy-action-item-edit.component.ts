@@ -71,8 +71,8 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
     return valueList as T[];
   });
 
-  isBooleanAction(actionName: string): boolean {
-    return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
+  isBooleanAction(_actionName: string): boolean {
+    return this.actionDetail()?.type === "bool";
   }
 
   removeAction() {

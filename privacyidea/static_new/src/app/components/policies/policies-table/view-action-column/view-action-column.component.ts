@@ -33,6 +33,7 @@ export class ViewActionColumnComponent {
    * Input received from the policy table row.
    */
   readonly actions = input.required<{ [actionName: string]: any }>();
+  readonly scope = input<string | undefined>(undefined);
 
   /**
    * Pre-calculates the display list including the boolean check
@@ -42,7 +43,7 @@ export class ViewActionColumnComponent {
     Object.entries(this.actions()).map(([name, value]) => ({
       name,
       value,
-      isBoolean: this.policyService.getDetailsOfAction(name)?.type === "bool"
+      isBoolean: this.policyService.getDetailsOfAction(name, this.scope())?.type === "bool"
     }))
   );
 }
