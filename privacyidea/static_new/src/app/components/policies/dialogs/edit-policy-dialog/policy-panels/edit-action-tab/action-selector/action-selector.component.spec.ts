@@ -186,6 +186,28 @@ describe("ActionSelectorComponent", () => {
       expect(items.every((i) => i.scope === "admin")).toBe(true);
     });
 
+    it("should exclude already-added actions when a scope is selected", () => {
+      (hostComponent.component["policyService"].getActionsOf as jest.Mock).mockReturnValue({
+        container_add_token: adminAction,
+        configread: { type: "bool" as const, desc: "Read config." }
+      });
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin", action: { container_add_token: true } });
+      fixture.detectChanges();
+
+      const items = component.actionsFiltered();
+      expect(items.find((i) => i.actionName === "container_add_token")).toBeUndefined();
+      expect(items.find((i) => i.actionName === "configread")).toBeDefined();
+    });
+
+    it("should exclude already-added actions when no scope is selected", () => {
+      hostComponent.policy.set({ ...hostComponent.policy(), scope: "", action: { container_add_token: true } });
+      fixture.detectChanges();
+
+      const items = component.actionsFiltered();
+      expect(items.find((i) => i.actionName === "container_add_token")).toBeUndefined();
+      expect(items.find((i) => i.actionName === "configread")).toBeDefined();
+    });
+
     it("should use scope-specific detail in each item when no scope is selected", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
       fixture.detectChanges();

@@ -94,6 +94,19 @@ describe("PolicyActionItemComponent", () => {
     expect(component.currentAction().name).toBe("testAction");
   });
 
+  it("should default currentAction value to 'true' for bool actions", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "bool", desc: "A toggle" } });
+    fixture.detectChanges();
+    expect(component.currentAction().value).toBe("true");
+    expect(component.isBooleanAction()).toBe(true);
+  });
+
+  it("should emit actionAdd with explicit value when addAction is called with a value", () => {
+    const spy = jest.spyOn(component.actionAdd, "emit");
+    component.addAction("explicitValue");
+    expect(spy).toHaveBeenCalledWith({ name: "testAction", value: "explicitValue" });
+  });
+
   it("should emit actionAdd with current value when add button is clicked", async () => {
     fixture.componentRef.setInput("selectableAction", {
       ...defaultAction,
