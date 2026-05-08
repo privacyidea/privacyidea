@@ -101,10 +101,24 @@ describe("PolicyActionItemComponent", () => {
     expect(component.isBooleanAction()).toBe(true);
   });
 
+  it("should use the actionValue input as the default for non-bool actions", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "A string" } });
+    fixture.componentRef.setInput("actionValue", "myDefault");
+    fixture.detectChanges();
+    expect(component.currentAction().value).toBe("myDefault");
+  });
+
   it("should emit actionAdd with explicit value when addAction is called with a value", () => {
     const spy = jest.spyOn(component.actionAdd, "emit");
     component.addAction("explicitValue");
     expect(spy).toHaveBeenCalledWith({ name: "testAction", value: "explicitValue" });
+  });
+
+  it("should emit actionAdd with currentAction value when addAction is called without a value", () => {
+    component.updateSelectedActionValue("currentVal");
+    const spy = jest.spyOn(component.actionAdd, "emit");
+    component.addAction();
+    expect(spy).toHaveBeenCalledWith({ name: "testAction", value: "currentVal" });
   });
 
   it("should emit actionAdd with current value when add button is clicked", async () => {
@@ -135,6 +149,20 @@ describe("PolicyActionItemComponent", () => {
     input.triggerEventHandler("keydown.enter", {});
 
     expect(spy).toHaveBeenCalled();
+  });
+
+  describe("inputIsValid", () => {
+    it("should return false when actionValue is undefined", () => {
+      fixture.componentRef.setInput("actionValue", undefined);
+      fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "desc" } });
+      fixture.detectChanges();
+      expect(component.inputIsValid()).toBe(false);
+    });
+
+    it("should return false when detail is falsy", () => {
+      jest.spyOn(component, "selectableAction").mockReturnValue({ ...defaultAction, detail: null as any });
+      expect(component.inputIsValid()).toBe(false);
+    });
   });
 
   it("should not call addAction on Enter key if input is invalid", () => {
