@@ -219,11 +219,50 @@ class PIManageBackupTestCase(CliTestCase):
             # The operator must also be told the backup URI is being used.
             self.assertIn("Using database URI from backup", result.output, result.output)
 
-    def test_04_pimanage_backup_create(self):
+    def test_04_write_mysql_defaults_handles_missing_password(self):
+        """
+        A SQLALCHEMY_DATABASE_URI without a password yields
+        parsed.password is None. _write_mysql_defaults must still produce a
+        valid mysql defaults file (Python 3.12+ ConfigParser requires string
+        values).
+        """
+        import configparser
+        from urllib.parse import urlparse
+        from privacyidea.cli.pimanage.backup import _write_mysql_defaults
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
+            # URI without password — parsed.password is None
+            parsed = urlparse("mysql+pymysql://privacyidea@127.0.0.1/privacyidea_test")
+            self.assertIsNone(parsed.password)
+
+            _write_mysql_defaults(defaults_file, parsed)
+
+            cp = configparser.ConfigParser(interpolation=None)
+            cp.read(defaults_file)
+            self.assertEqual(cp["client"]["user"], "privacyidea")
+            self.assertEqual(cp["client"]["password"], "")
+
+        # Passwords containing '%' must be written verbatim — the default
+        # ConfigParser BasicInterpolation would otherwise reject them.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
+            # urlparse keeps percent-encoding raw, so the value entering
+            # ConfigParser literally contains '%'.
+            parsed = urlparse("mysql+pymysql://privacyidea:ab%25cd@127.0.0.1/privacyidea_test")
+            self.assertEqual(parsed.password, "ab%25cd")
+
+            _write_mysql_defaults(defaults_file, parsed)
+
+            cp = configparser.ConfigParser(interpolation=None)
+            cp.read(defaults_file)
+            self.assertEqual(cp["client"]["password"], "ab%25cd")
+
+    def test_05_pimanage_backup_create(self):
         # TODO: create backup from an SQLite based configuration
         pass
 
-    def test_05_pimanage_backup_restore(self):
+    def test_06_pimanage_backup_restore(self):
         # TODO: restore backup from a backup file and check consistency
         pass
 
