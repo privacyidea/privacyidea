@@ -43,10 +43,9 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ContainerTableActionsComponent } from "@components/token/container-table/container-table-actions/container-table-actions.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
-
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -104,6 +103,13 @@ export class ContainerTableComponent {
   pageIndex = this.containerService.pageIndex;
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
+
+  readonly containerStateOptions = [
+    { value: "active", label: $localize`active` },
+    { value: "disabled", label: $localize`deactivated` },
+    { value: "lost", label: $localize`lost` },
+    { value: "damaged", label: $localize`damaged` }
+  ];
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,

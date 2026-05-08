@@ -252,6 +252,18 @@ export class ContainerDetailsComponent implements OnDestroy {
     source: this.containerDetails,
     computation: (containerDetails) => containerDetails?.realms || []
   });
+
+  selectedStates = linkedSignal({
+    source: this.containerDetails,
+    computation: (containerDetails) => containerDetails?.states || []
+  });
+
+  readonly containerStateOptions = [
+    { value: "active", label: $localize`active` },
+    { value: "disabled", label: $localize`deactivated` },
+    { value: "lost", label: $localize`lost` },
+    { value: "damaged", label: $localize`damaged` }
+  ];
   rawUserData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
@@ -319,6 +331,8 @@ export class ContainerDetailsComponent implements OnDestroy {
       return true;
     } else if (key === "realms" && this.authService.actionAllowed("container_realms")) {
       return true;
+    } else if (key === "states" && this.authService.actionAllowed("container_state")) {
+      return true;
     }
     return false;
   }
@@ -327,6 +341,9 @@ export class ContainerDetailsComponent implements OnDestroy {
     switch (element.keyMap.key) {
       case "realms":
         this.selectedRealms.set([]);
+        break;
+      case "states":
+        this.selectedStates.set(this.containerDetails()?.states || []);
         break;
       case "user_name":
         this.isEditingUser.update((b) => !b);
@@ -342,6 +359,9 @@ export class ContainerDetailsComponent implements OnDestroy {
         break;
       case "description":
         this.saveDescription();
+        break;
+      case "states":
+        this.saveStates();
         break;
       case "user_name":
         this.saveUser();
@@ -404,6 +424,26 @@ export class ContainerDetailsComponent implements OnDestroy {
       next: () => {
         this.containerDetailResource.reload();
         this.tokenService.tokenResource.reload();
+      }
+    });
+  }
+
+  onStatesChange(newStates: string[]) {
+    const prev = this.selectedStates();
+    const added = newStates.find((s) => !prev.includes(s));
+    if (added === "active") {
+      this.selectedStates.set(newStates.filter((s) => s !== "disabled"));
+    } else if (added === "disabled") {
+      this.selectedStates.set(newStates.filter((s) => s !== "active"));
+    } else {
+      this.selectedStates.set(newStates);
+    }
+  }
+
+  saveStates() {
+    this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({
+      next: () => {
+        this.containerDetailResource.reload();
       }
     });
   }

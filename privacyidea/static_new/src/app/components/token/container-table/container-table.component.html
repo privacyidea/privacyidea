@@ -93,6 +93,17 @@
                         type="button">
                         <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                       </button>
+                    } @else if (apiFilterKeyMap[column.key] === "state") {
+                      <button
+                        [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                        [matMenuTriggerFor]="statesMenu"
+                        class="filter-button"
+                        i18n-matTooltip
+                        mat-icon-button
+                        matTooltip="Filter by state"
+                        type="button">
+                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                      </button>
                     } @else {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
@@ -162,11 +173,15 @@
                   </div>
                 }
                 @case ("states") {
-                  <span
+                  <div
                     (click)="handleStateClick(element)"
-                    [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
-                    {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
-                  </span>
+                    class="flex-row gap-4 flex-wrap cursor-pointer">
+                    @for (state of element[column.key]; track state) {
+                      <span [ngClass]="tableUtilsService.getSpanClassForState(state, state === 'active' || state === 'disabled')">
+                        {{ tableUtilsService.getDisplayTextForState(state) }}
+                      </span>
+                    }
+                  </div>
                 }
                 @case ("user_name") {
                   <a
@@ -246,6 +261,27 @@
     <div i18n>You do not have the permission to view the container list.</div>
   }
 </div>
+
+<mat-menu #statesMenu="matMenu">
+  <ng-template
+    let-keyword="keyword"
+    matMenuContent>
+    <button
+      (click)="onItemSelected(keyword, undefined)"
+      mat-menu-item>
+      <mat-icon>filter_alt_off</mat-icon>
+      <span i18n>Clear Filter</span>
+    </button>
+    <mat-divider />
+    @for (option of containerStateOptions; track option.value) {
+      <button
+        (click)="onItemSelected(keyword, option.value)"
+        mat-menu-item>
+        {{ option.label }}
+      </button>
+    }
+  </ng-template>
+</mat-menu>
 
 <mat-menu #typeMenu="matMenu">
   <ng-template

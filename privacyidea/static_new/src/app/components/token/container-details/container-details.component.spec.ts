@@ -27,6 +27,7 @@ import { ContainerDetailsComponent } from "@components/token/container-details/c
 import { ContainerDetailsSelfServiceComponent } from "@components/token/container-details/container-details.self-service.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
@@ -222,6 +223,68 @@ describe("ContainerDetailsComponent", () => {
     component.cancelContainerEdit(element);
 
     expect(component.selectedRealms()).toEqual([]);
+  });
+
+  it("isEditableElement returns true for states when action is allowed", () => {
+    const authService = TestBed.inject(AuthService);
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    expect(component.isEditableElement("states")).toBe(true);
+  });
+
+  describe("#onStatesChange", () => {
+    it("keeps other states when a non-conflicting state is added", () => {
+      component.selectedStates.set(["active"]);
+      component.onStatesChange(["active", "lost"]);
+      expect(component.selectedStates()).toEqual(["active", "lost"]);
+    });
+
+    it("removes disabled when active is added", () => {
+      component.selectedStates.set(["disabled"]);
+      component.onStatesChange(["disabled", "active"]);
+      expect(component.selectedStates()).not.toContain("disabled");
+      expect(component.selectedStates()).toContain("active");
+    });
+
+    it("removes active when disabled is added", () => {
+      component.selectedStates.set(["active"]);
+      component.onStatesChange(["active", "disabled"]);
+      expect(component.selectedStates()).not.toContain("active");
+      expect(component.selectedStates()).toContain("disabled");
+    });
+  });
+
+  it("saveContainerEdit for states calls setStates with selectedStates", () => {
+    jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+    component.selectedStates.set(["active", "lost"]);
+
+    component.containerDetailData.set([
+      {
+        keyMap: { label: "Status", key: "states" },
+        value: ["active"],
+        isEditing: signal(true)
+      }
+    ]);
+    const element = component.containerDetailData()[0];
+    component.saveContainerEdit(element);
+
+    expect(containerService.setStates).toHaveBeenCalledWith("Mock serial", ["active", "lost"]);
+    expect(element.isEditing()).toBe(false);
+  });
+
+  it("cancelContainerEdit for states resets selectedStates from containerDetails", () => {
+    component.containerDetailData.set([
+      {
+        keyMap: { label: "Status", key: "states" },
+        value: ["active"],
+        isEditing: signal(true)
+      }
+    ]);
+    component.selectedStates.set(["disabled", "lost"]);
+    const element = component.containerDetailData()[0];
+    component.cancelContainerEdit(element);
+
+    expect(component.selectedStates()).toEqual([]);
+    expect(element.isEditing()).toBe(false);
   });
 
   it("unassignUser triggers service and refresh", () => {

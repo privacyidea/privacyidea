@@ -28,7 +28,6 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { of, Subject } from "rxjs";
 
-import { ContainerTableComponent } from "./container-table.component";
 import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
 
 import { AuthService } from "@services/auth/auth.service";
@@ -37,15 +36,16 @@ import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
+import { ContainerTableComponent } from "@components/token/container-table/container-table.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-    MockContainerService,
-    MockContentService,
-    MockDialogService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService
+  MockContainerService,
+  MockContentService,
+  MockDialogService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 

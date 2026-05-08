@@ -36,7 +36,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm"];
+const apiFilter = ["container_serial", "type", "description", "container_realm", "state", "template", "assigned"];
 const advancedApiFilter = ["token_serial"];
 
 export interface TemplateComparisonResult {
@@ -202,6 +202,7 @@ export interface ContainerServiceInterface {
     containerSerial: string,
     states: string[]
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
+  setStates: (containerSerial: string, states: string[]) => Observable<any>;
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
   assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
   compareWithTemplate: () => Promise<void>;
@@ -287,7 +288,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type"]);
+    const plainKeys = new Set(["user", "type", "state", "assigned"]);
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
@@ -635,6 +636,24 @@ export class ContainerService implements ContainerServiceInterface {
           console.error("Failed to toggle active.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error("Failed to toggle active. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  setStates(containerSerial: string, states: string[]): Observable<any> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`,
+        { states: states.join(",") },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to set container states.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to set container states. " + message);
           return throwError(() => error);
         })
       );
