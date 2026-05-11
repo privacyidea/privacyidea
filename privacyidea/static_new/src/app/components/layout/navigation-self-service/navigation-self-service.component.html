@@ -21,6 +21,7 @@
   @if (authService.actionAllowed("userlist")) {
     @if (contentService.onUserDetailsSelfService()) {
       <div class="username-button disabled">
+        <mat-icon>account_circle</mat-icon>
         <span class="username">{{ userData().username || "-" }}
           &#64; {{ userService.selectedUserRealm() || "-" }}</span>
       </div>
@@ -29,6 +30,7 @@
         [routerLink]="ROUTE_PATHS.USERS_DETAILS"
         class="username-button"
         mat-ripple>
+        <mat-icon>account_circle</mat-icon>
         <span class="username">{{ userData().username || "-" }}
           &#64; {{ userService.selectedUserRealm() || "-" }}</span>
       </a>
@@ -70,7 +72,7 @@
       <app-navigation-self-service-button
         i18n-title
         key="{{ this.ROUTE_PATHS.USERS_DETAILS }}"
-        matIconName="account_circle"
+        matIconName="manage_accounts"
         title="User Details" />
     }
     @if (authService.rights().includes("container_list")) {
