@@ -382,14 +382,14 @@ def create_app(config_name="development",
     migrate.init_app(app, db, directory=migration_dir)
     db_command = app.cli.commands.get('db')
     if db_command is not None:
-        app.cli.commands['db'].help += (
+        db_command.help = (db_command.help or "") + (
             "\n\nNote: For relative revision arguments (e.g. -3), use '--' to separate "
             "them from options:\n"
-            "  pi-manage db downgrade -- -3\n"
+            "  pi-manage db downgrade -- -3"
         )
         downgrade_command = db_command.commands.get('downgrade')
         if downgrade_command is not None:
-            app.cli.commands['db'].commands['downgrade'].help += (
+            downgrade_command.help = (downgrade_command.help or "") + (
                 "\n\nNote: For relative revisions, use '--' to prevent the argument from "
                 "being parsed as an option:\n"
                 "  pi-manage db downgrade -- -3"
