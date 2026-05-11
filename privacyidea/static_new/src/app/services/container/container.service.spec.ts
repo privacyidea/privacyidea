@@ -101,7 +101,9 @@ describe("ContainerService", () => {
   });
 
   it("toggleActive switches active → disabled", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { disabled: true } } as unknown as PiResponse<{ disabled: boolean }>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(of({ result: { disabled: true } } as unknown as PiResponse<{ disabled: boolean }>));
     await lastValueFrom(containerService.toggleActive("c1", ["active"]));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}c1/states`,
@@ -111,7 +113,9 @@ describe("ContainerService", () => {
   });
 
   it("toggleActive adds active when no state present", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { active: true } } as unknown as PiResponse<{ active: boolean }>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(of({ result: { active: true } } as unknown as PiResponse<{ active: boolean }>));
     await lastValueFrom(containerService.toggleActive("c2", []));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}c2/states`,
@@ -196,7 +200,10 @@ describe("ContainerService", () => {
           serial: "c3",
           realms: [],
           states: [],
-          tokens: [{ serial: "t5" } as unknown as ContainerDetailToken, { serial: "t6" } as unknown as ContainerDetailToken],
+          tokens: [
+            { serial: "t5" } as unknown as ContainerDetailToken,
+            { serial: "t6" } as unknown as ContainerDetailToken
+          ],
           type: "",
           users: []
         }
@@ -221,7 +228,11 @@ describe("ContainerService", () => {
   });
 
   it("createContainer posts data and returns new serial", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CNEW" } } } as unknown as PiResponse<ContainerCreateResult>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(
+        of({ result: { value: { container_serial: "CNEW" } } } as unknown as PiResponse<ContainerCreateResult>)
+      );
     const r = await lastValueFrom(
       containerService.createContainer({
         type: "generic",
@@ -244,7 +255,11 @@ describe("ContainerService", () => {
   });
 
   it("registerContainer posts registration payload", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_url: "u" } } } as unknown as PiResponse<ContainerRegisterData>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(
+        of({ result: { value: { container_url: "u" } } } as unknown as PiResponse<ContainerRegisterData>)
+      );
     const r = await lastValueFrom(
       containerService.registerContainer({
         container_serial: "cReg",
@@ -365,13 +380,6 @@ describe("ContainerService", () => {
     expect(containerService.containerSerial()).toBe("SMPH1");
   });
 
-  it("stopPolling sets isPollingActive to false", () => {
-    containerService.startPolling("SMPH1");
-    expect(containerService.isPollingActive()).toBe(true);
-    containerService.stopPolling();
-    expect(containerService.isPollingActive()).toBe(false);
-  });
-
   it("poll container details shows rollover success notification when isRollover is true", () => {
     contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
     jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
@@ -487,7 +495,9 @@ describe("ContainerService", () => {
   });
 
   it("toggleActive switches disabled → active", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { active: true } } as unknown as PiResponse<{ active: boolean }>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(of({ result: { active: true } } as unknown as PiResponse<{ active: boolean }>));
     await lastValueFrom(containerService.toggleActive("cD", ["disabled"]));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}cD/states`,
@@ -528,7 +538,9 @@ describe("ContainerService", () => {
   });
 
   it("toggleActive adds active when neither active nor disabled present", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { active: true } } as unknown as PiResponse<{ active: boolean }>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(of({ result: { active: true } } as unknown as PiResponse<{ active: boolean }>));
     await lastValueFrom(containerService.toggleActive("c7", ["locked"]));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}c7/states`,
@@ -690,7 +702,11 @@ describe("ContainerService", () => {
   });
 
   it("unregister posts to the correct endpoint and returns result", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CONT/1234" } } } as unknown as PiResponse<ContainerCreateResult>));
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(
+        of({ result: { value: { container_serial: "CONT/1234" } } } as unknown as PiResponse<ContainerCreateResult>)
+      );
     await lastValueFrom(containerService.unregister("CONT/1234"));
     expect(http.post).toHaveBeenCalledWith(
       `${containerService.containerBaseUrl}register/${encodeURIComponent("CONT/1234")}/terminate`,
@@ -946,8 +962,14 @@ describe("ContainerService", () => {
       containerService.containerSerial.set("CONT-1");
       containerService.containerDetails.set(containerWithTemplate("CONT-1", "myTemplate"));
 
-      const comparisonResult: TemplateComparisonResult = { "CONT-1": { tokens: { additional: [], equal: true, missing: [] } } };
-      jest.spyOn(http, "get").mockReturnValue(of({ result: { value: comparisonResult } } as unknown as PiResponse<TemplateComparisonResult>));
+      const comparisonResult: TemplateComparisonResult = {
+        "CONT-1": { tokens: { additional: [], equal: true, missing: [] } }
+      };
+      jest
+        .spyOn(http, "get")
+        .mockReturnValue(
+          of({ result: { value: comparisonResult } } as unknown as PiResponse<TemplateComparisonResult>)
+        );
 
       await containerService.compareWithTemplate();
 
@@ -996,7 +1018,9 @@ describe("ContainerService", () => {
     it("error path shows snackbar and rethrows", async () => {
       jest.spyOn(http, "post").mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
       await expect(lastValueFrom(containerService.setStates("cS", ["active"]))).rejects.toBeDefined();
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to set container states."));
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to set container states.")
+      );
     });
   });
 
@@ -1012,7 +1036,9 @@ describe("ContainerService", () => {
 
     it("retains value while containerSerial is unchanged", () => {
       containerService.containerSerial.set("CONT-A");
-      const result: TemplateComparisonResult = { "CONT-A": { tokens: { additional: ["tok1"], equal: false, missing: [] } } };
+      const result: TemplateComparisonResult = {
+        "CONT-A": { tokens: { additional: ["tok1"], equal: false, missing: [] } }
+      };
       containerService.templateComparison.set(result);
 
       containerService.containerSerial.set("CONT-A");

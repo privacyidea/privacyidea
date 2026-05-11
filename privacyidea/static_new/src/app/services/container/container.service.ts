@@ -46,13 +46,16 @@ export const CONTAINER_STATE_OPTIONS = [
   { value: "damaged", label: $localize`damaged` }
 ] as const;
 
-export type TemplateComparisonResult = Record<string, {
+export type TemplateComparisonResult = Record<
+  string,
+  {
     tokens: {
       additional: string[];
       equal: boolean;
       missing: string[];
     };
-  }>;
+  }
+>;
 
 export interface ContainerDetails {
   count?: number;
@@ -646,14 +649,16 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setStates(containerSerial: string, states: string[]): Observable<unknown> {
+  setStates(containerSerial: string, states: string[]) {
+    if (states.length === 0) {
+      this.notificationService.error("Cannot save container states: at least one state must be selected.");
+      return throwError(() => new Error("setStates called with empty states array"));
+    }
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`,
-        { states: states.join(",") },
-        { headers }
-      )
+      .post<
+        PiResponse<Record<string, boolean>>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: states.join(",") }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to set container states.", error);

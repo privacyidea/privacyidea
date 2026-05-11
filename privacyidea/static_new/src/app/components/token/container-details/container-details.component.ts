@@ -431,6 +431,9 @@ export class ContainerDetailsComponent implements OnDestroy {
   }
 
   saveStates() {
+    if (this.selectedStates().length === 0) {
+      return;
+    }
     this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({
       next: () => {
         this.containerDetailResource.reload();
