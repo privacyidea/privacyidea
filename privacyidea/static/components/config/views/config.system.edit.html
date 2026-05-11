@@ -118,9 +118,11 @@
         </label>
 
         <div class="col-sm-8">
-            <input name="OverrideAuthorizationClient" class="form-control"
-                   ng-model="params.OverrideAuthorizationClient"
-                   placeholder="127.0.0.1, 10.0.0.8"/>
+            <pi-client-ip-input name="OverrideAuthorizationClient"
+                                input-id="OverrideAuthorizationClient"
+                                ng-model="params.OverrideAuthorizationClient"
+                                placeholder="127.0.0.1, 10.0.0.8">
+            </pi-client-ip-input>
 
             <p class="help-block" translate>
                 These client IP addresses or subnets are

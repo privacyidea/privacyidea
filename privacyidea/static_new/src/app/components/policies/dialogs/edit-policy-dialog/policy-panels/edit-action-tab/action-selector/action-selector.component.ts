@@ -37,13 +37,9 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import {
-  PolicyActionDetail,
-  PolicyDetail,
-  PolicyService,
-  PolicyServiceInterface
-} from "@services/policies/policies.service";
-import { PolicyActionItemComponent } from "./policy-action-item/policy-action-item-new.component";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
+
 
 @Component({
   selector: "app-action-selector",
@@ -106,19 +102,36 @@ export class ActionSelectorComponent {
     return Object.keys(actionGroups);
   });
 
-  readonly actionsFiltered = computed<Record<string, PolicyActionDetail>>(() => {
+  readonly actionsFiltered = computed<SelectableAction[]>(() => {
     const group = this.selectedActionGroup();
     const scope = this.policyScope();
-    const actions = this.policyService.getActionsOf(scope, group);
     const filterText = this.actionFilter().toLowerCase().trim();
-    const filteredActions: Record<string, PolicyActionDetail> = {};
+    const result: SelectableAction[] = [];
 
-    for (const actionName in actions) {
-      if (!this.addedActionNames().includes(actionName) && actionName.toLowerCase().includes(filterText)) {
-        filteredActions[actionName] = actions[actionName];
+    if (scope) {
+      const actions = this.policyService.getActionsOf(scope, group);
+      for (const actionName in actions) {
+        if (!this.addedActionNames().includes(actionName) && actionName.toLowerCase().includes(filterText)) {
+          result.push({ label: actionName, actionName, scope: scope, detail: actions[actionName] });
+        }
+      }
+      return result;
+    }
+    const policyActions = this.policyService.policyActions();
+    for (const scopeName in policyActions) {
+      const actions = policyActions[scopeName];
+      for (const actionName in actions) {
+        if (!this.addedActionNames().includes(actionName) && actionName.toLowerCase().includes(filterText)) {
+          result.push({
+            label: `[${scopeName}] ${actionName}`,
+            actionName,
+            scope: scopeName,
+            detail: actions[actionName]
+          });
+        }
       }
     }
-    return filteredActions;
+    return result;
   });
 
   actionItems = viewChildren(PolicyActionItemComponent);
@@ -127,18 +140,20 @@ export class ActionSelectorComponent {
     this.selectedActionGroup.set(group ?? "");
   }
 
-  addPolicyAction(action: { name: string; value: any }) {
+  addPolicyAction(action: { name: string; value: any }, itemScope?: string | null) {
     if (this.policy().scope) {
       this.actionAdd.emit({ action });
     } else {
-      const scope = this.policy().scope || this.policyService.getScopeOfAction(action.name);
+      const scope = itemScope || this.policyService.getScopeOfAction(action.name);
       this.actionAdd.emit({ action, newScope: scope });
     }
-    this.focusNextActionItem(action.name);
+    this.focusNextActionItem(action.name, itemScope);
   }
 
-  focusNextActionItem(currentActionName: string) {
-    const currentIndex = Object.keys(this.actionsFiltered()).indexOf(currentActionName);
+  focusNextActionItem(currentActionName: string, itemScope?: string | null) {
+    const currentIndex = this.actionsFiltered().findIndex(
+      (item) => item.actionName === currentActionName && item.scope === itemScope
+    );
     setTimeout(() => {
       const items = this.actionItems();
       const nextItem = items[currentIndex] || items[currentIndex - 1];

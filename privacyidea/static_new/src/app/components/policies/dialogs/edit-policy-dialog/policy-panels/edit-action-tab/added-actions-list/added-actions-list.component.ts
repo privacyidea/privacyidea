@@ -37,13 +37,14 @@ export class AddedActionsListComponent {
   readonly actions = input.required<{ name: string; value: any }[]>();
   readonly actionsChange = output<{ name: string; value: any }[]>();
   readonly isEditMode = input.required<boolean>();
+  readonly scope = input<string | undefined>(undefined);
 
   private policyService = inject(PolicyService);
 
   parseBooleanValue = parseBooleanValue;
 
   isBooleanAction(actionName: string): boolean {
-    return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
+    return this.policyService.getDetailsOfAction(actionName, this.scope())?.type === "bool";
   }
 
   onToggleChange(actionName: string, newValue: boolean): void {
@@ -58,7 +59,7 @@ export class AddedActionsListComponent {
   }
 
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
-    return this.policyService.getDetailsOfAction(actionName);
+    return this.policyService.getDetailsOfAction(actionName, this.scope());
   }
 
   updateActionInSelectedPolicy(actionName: string, newValue: string | number) {

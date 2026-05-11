@@ -34,6 +34,7 @@
     mode="determinate"
     class="progress-bar" />
   <div class="enrollment-data">
+    <p i18n>Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p>
     <app-token-enrollment-data
       [enrolledInputData]="currentToken()"
       [tokenType]="currentToken().type" />

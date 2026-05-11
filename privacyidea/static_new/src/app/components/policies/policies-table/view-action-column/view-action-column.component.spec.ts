@@ -107,4 +107,37 @@ describe("ViewActionColumnComponent", () => {
     expect(component.actionsList().length).toBe(2);
     expect(component.actionsList()[0].name).toBe("new1");
   });
+
+  it("should pass scope to getDetailsOfAction", () => {
+    fixture.componentRef.setInput("actions", { container_add_token: true });
+    fixture.componentRef.setInput("scope", "admin");
+    fixture.detectChanges();
+
+    expect(mockPolicyService.getDetailsOfAction).toHaveBeenCalledWith("container_add_token", "admin");
+  });
+
+  it("should pass undefined scope to getDetailsOfAction when no scope is set", () => {
+    fixture.componentRef.setInput("actions", { container_add_token: true });
+    fixture.detectChanges();
+
+    expect(mockPolicyService.getDetailsOfAction).toHaveBeenCalledWith("container_add_token", undefined);
+  });
+
+  it("should resolve correct isBoolean per scope", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string, scope: string) => {
+      if (scope === "admin" && name === "container_add_token") return { type: "bool" };
+      if (scope === "user" && name === "container_add_token") return { type: "str" };
+      return null;
+    });
+
+    fixture.componentRef.setInput("actions", { container_add_token: true });
+
+    fixture.componentRef.setInput("scope", "admin");
+    fixture.detectChanges();
+    expect(component.actionsList()[0].isBoolean).toBe(true);
+
+    fixture.componentRef.setInput("scope", "user");
+    fixture.detectChanges();
+    expect(component.actionsList()[0].isBoolean).toBe(false);
+  });
 });
