@@ -1,4 +1,4 @@
-"""empty message
+"""version 3.14 adding table pi_internal
 
 Revision ID: dbee40db26ba
 Revises: b1a2c3d4e5f6
@@ -16,16 +16,17 @@ depends_on = None
 
 
 def upgrade():
-    enckey_check_seq = sa.Sequence('enckey_check_seq')
-    op.execute(sa.schema.CreateSequence(enckey_check_seq))
-    op.create_table('enckey_check',
-                    sa.Column('id', sa.Integer(), server_default=enckey_check_seq.next_value(), nullable=False),
+    pi_internal_seq = sa.Sequence('pi_internal_seq')
+    op.execute(sa.schema.CreateSequence(pi_internal_seq))
+    op.create_table('pi_internal',
+                    sa.Column('id', sa.Integer(), server_default=pi_internal_seq.next_value(), nullable=False),
+                    sa.Column('name', sa.Unicode(length=255), nullable=False),
                     sa.Column('check_value', sa.Unicode(length=2000), nullable=False),
                     sa.PrimaryKeyConstraint('id')
                     )
 
 
 def downgrade():
-    enckey_check_seq = sa.Sequence('enckey_check_seq')
-    op.drop_table('enckey_check')
-    op.execute(sa.schema.DropSequence(enckey_check_seq))
+    pi_internal_seq = sa.Sequence('pi_internal_seq')
+    op.drop_table('pi_internal')
+    op.execute(sa.schema.DropSequence(pi_internal_seq))

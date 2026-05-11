@@ -30,10 +30,10 @@ from flask import current_app
 from flask.cli import AppGroup
 from flask_migrate import stamp as fm_stamp
 
-from privacyidea.lib.crypto import create_enckey_check_value
+from privacyidea.lib.crypto import encryptPassword, ENCKEY_CHECK_PLAINTEXT
 from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.models import db
-from privacyidea.models.enckey_check import EncKeyCheck
+from privacyidea.models.pi_internal import PiInternal
 
 setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
                      help="Commands to set up the privacyIDEA server for production")
@@ -104,10 +104,10 @@ def create_enckey(ctx, enckey_b64):
 
     # Store the encryption key check value in the database
     try:
-        check_value = create_enckey_check_value()
+        check_value = encryptPassword(ENCKEY_CHECK_PLAINTEXT)
         # Remove any existing check values and store the new one
-        db.session.query(EncKeyCheck).delete()
-        db.session.add(EncKeyCheck(check_value=check_value))
+        db.session.query(PiInternal).filter_by(name="enckey_check").delete()
+        db.session.add(PiInternal(name="enckey_check", check_value=check_value))
         db.session.commit()
         click.secho("Encryption key check value stored in database.", fg="green")
     except Exception as e:

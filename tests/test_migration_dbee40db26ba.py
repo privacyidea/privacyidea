@@ -1,10 +1,10 @@
 """
 Data transformation test for migration dbee40db26ba
-Create the enckey_check table and enckey_check_seq sequence.
+Create the pi_internal table and pi_internal_seq sequence.
 
-upgrade()   — creates the 'enckey_check_seq' sequence and the 'enckey_check' table
-              with columns 'id' (server_default from sequence) and 'check_value'
-downgrade() — drops the 'enckey_check' table and the 'enckey_check_seq' sequence
+upgrade()   — creates the 'pi_internal_seq' sequence and the 'pi_internal' table
+              with columns 'id' (server_default from sequence), 'name', and 'check_value'
+downgrade() — drops the 'pi_internal' table and the 'pi_internal_seq' sequence
 """
 
 import os
@@ -53,38 +53,38 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         from sqlalchemy import inspect as sa_inspect
         return table_name in sa_inspect(engine).get_table_names()
 
-    def test_upgrade_creates_enckey_check_table(self, flask_app):
-        """upgrade() must create the 'enckey_check' table."""
+    def test_upgrade_creates_pi_internal_table(self, flask_app):
+        """upgrade() must create the 'pi_internal' table."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
-        assert not self._table_exists(engine, "enckey_check")
+        assert not self._table_exists(engine, "pi_internal")
         engine.dispose()
 
         self._upgrade()
 
         engine = self._engine()
-        assert self._table_exists(engine, "enckey_check"), (
-            "upgrade() must create the 'enckey_check' table"
+        assert self._table_exists(engine, "pi_internal"), (
+            "upgrade() must create the 'pi_internal' table"
         )
         engine.dispose()
 
     def test_upgrade_creates_sequence(self, flask_app):
-        """upgrade() must create the 'enckey_check_seq' sequence."""
+        """upgrade() must create the 'pi_internal_seq' sequence."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
-        assert not _sequence_exists(engine, "enckey_check_seq")
+        assert not _sequence_exists(engine, "pi_internal_seq")
         engine.dispose()
 
         self._upgrade()
 
         engine = self._engine()
-        assert _sequence_exists(engine, "enckey_check_seq"), (
-            "upgrade() must create the 'enckey_check_seq' sequence"
+        assert _sequence_exists(engine, "pi_internal_seq"), (
+            "upgrade() must create the 'pi_internal_seq' sequence"
         )
         engine.dispose()
 
     def test_upgrade_table_has_correct_columns(self, flask_app):
-        """upgrade() must create the table with 'id' and 'check_value' columns."""
+        """upgrade() must create the table with 'id', 'name', and 'check_value' columns."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         engine.dispose()
@@ -93,8 +93,9 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
 
         engine = self._engine()
         from sqlalchemy import inspect as sa_inspect
-        columns = {c["name"] for c in sa_inspect(engine).get_columns("enckey_check")}
+        columns = {c["name"] for c in sa_inspect(engine).get_columns("pi_internal")}
         assert "id" in columns, "Table must have an 'id' column"
+        assert "name" in columns, "Table must have a 'name' column"
         assert "check_value" in columns, "Table must have a 'check_value' column"
         engine.dispose()
 
@@ -110,17 +111,17 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         from sqlalchemy import text
         with engine.connect() as conn:
             conn.execute(text(
-                "INSERT INTO enckey_check (check_value) VALUES ('test_value')"
+                "INSERT INTO pi_internal (name, check_value) VALUES ('test_name', 'test_value')"
             ))
             conn.commit()
             row_id = conn.execute(text(
-                "SELECT id FROM enckey_check WHERE check_value = 'test_value'"
+                "SELECT id FROM pi_internal WHERE name = 'test_name'"
             )).scalar()
         assert row_id is not None, "id must be auto-generated via server_default from sequence"
         engine.dispose()
 
     def test_upgrade_allows_insert(self, flask_app):
-        """After upgrade(), it should be possible to insert a row into enckey_check."""
+        """After upgrade(), it should be possible to insert a row into pi_internal."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         engine.dispose()
@@ -128,15 +129,16 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         self._upgrade()
 
         engine = self._engine()
-        self._insert_rows(engine, "enckey_check", [
-            {"id": 1, "check_value": "abc123:def456"}
+        self._insert_rows(engine, "pi_internal", [
+            {"id": 1, "name": "enckey_check", "check_value": "abc123:def456"}
         ])
-        result = self._fetch_scalar(engine, "SELECT check_value FROM enckey_check WHERE id = 1")
+        result = self._fetch_scalar(
+            engine, "SELECT check_value FROM pi_internal WHERE name = 'enckey_check'")
         assert result == "abc123:def456"
         engine.dispose()
 
-    def test_downgrade_drops_enckey_check_table(self, flask_app):
-        """downgrade() must drop the 'enckey_check' table."""
+    def test_downgrade_drops_pi_internal_table(self, flask_app):
+        """downgrade() must drop the 'pi_internal' table."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         engine.dispose()
@@ -144,19 +146,19 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         self._upgrade()
 
         engine = self._engine()
-        assert self._table_exists(engine, "enckey_check")
+        assert self._table_exists(engine, "pi_internal")
         engine.dispose()
 
         self._downgrade()
 
         engine = self._engine()
-        assert not self._table_exists(engine, "enckey_check"), (
-            "downgrade() must drop the 'enckey_check' table"
+        assert not self._table_exists(engine, "pi_internal"), (
+            "downgrade() must drop the 'pi_internal' table"
         )
         engine.dispose()
 
     def test_downgrade_drops_sequence(self, flask_app):
-        """downgrade() must drop the 'enckey_check_seq' sequence."""
+        """downgrade() must drop the 'pi_internal_seq' sequence."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         engine.dispose()
@@ -164,14 +166,14 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         self._upgrade()
 
         engine = self._engine()
-        assert _sequence_exists(engine, "enckey_check_seq")
+        assert _sequence_exists(engine, "pi_internal_seq")
         engine.dispose()
 
         self._downgrade()
 
         engine = self._engine()
-        assert not _sequence_exists(engine, "enckey_check_seq"), (
-            "downgrade() must drop the 'enckey_check_seq' sequence"
+        assert not _sequence_exists(engine, "pi_internal_seq"), (
+            "downgrade() must drop the 'pi_internal_seq' sequence"
         )
         engine.dispose()
 
@@ -185,10 +187,10 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert not self._table_exists(engine, "enckey_check"), (
-            "After round-trip, enckey_check table should not exist"
+        assert not self._table_exists(engine, "pi_internal"), (
+            "After round-trip, pi_internal table should not exist"
         )
-        assert not _sequence_exists(engine, "enckey_check_seq"), (
-            "After round-trip, enckey_check_seq sequence should not exist"
+        assert not _sequence_exists(engine, "pi_internal_seq"), (
+            "After round-trip, pi_internal_seq sequence should not exist"
         )
         engine.dispose()

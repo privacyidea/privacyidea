@@ -393,10 +393,10 @@ def create_app(config_name="development",
             # Verify the encryption key using the check value from the database
             try:
                 from privacyidea.lib.crypto import verify_encryption_key
-                from privacyidea.models.enckey_check import EncKeyCheck
+                from privacyidea.models.pi_internal import PiInternal
                 inspect = sa.inspect(db.engine)
-                if inspect.has_table(EncKeyCheck.__tablename__):
-                    check_row = db.session.query(EncKeyCheck).first()
+                if inspect.has_table(PiInternal.__tablename__):
+                    check_row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
                     if check_row:
                         try:
                             verify_encryption_key(check_row.check_value)

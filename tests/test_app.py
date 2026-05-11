@@ -12,9 +12,10 @@ from testfixtures import Comparison, compare, OutputCapture
 
 from privacyidea.app import create_app
 from privacyidea.config import config, TestingConfig
-from privacyidea.lib.crypto import create_enckey_check_value
+from privacyidea.lib.crypto import ENCKEY_CHECK_PLAINTEXT
+from privacyidea.lib.crypto import encryptPassword
 from privacyidea.models import db
-from privacyidea.models.enckey_check import EncKeyCheck
+from privacyidea.models.pi_internal import PiInternal
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -187,9 +188,9 @@ class AppTestCase(unittest.TestCase):
         with app.app_context():
             db.create_all()
             # Store a valid check value
-            check_value = create_enckey_check_value()
-            db.session.query(EncKeyCheck).delete()
-            db.session.add(EncKeyCheck(check_value=check_value))
+            check_value = encryptPassword(ENCKEY_CHECK_PLAINTEXT)
+            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
+            db.session.add(PiInternal(name="enckey_check", check_value=check_value))
             db.session.commit()
 
         # Creating the app again with initialize_hsm should not exit
@@ -198,7 +199,7 @@ class AppTestCase(unittest.TestCase):
 
         # Cleanup
         with app2.app_context():
-            db.session.query(EncKeyCheck).delete()
+            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
             db.session.commit()
 
     def test_07_enckey_verification_fails_with_wrong_check_value(self):
@@ -207,8 +208,8 @@ class AppTestCase(unittest.TestCase):
         with app.app_context():
             db.create_all()
             # Store an invalid check value (simulating a different encryption key)
-            db.session.query(EncKeyCheck).delete()
-            db.session.add(EncKeyCheck(check_value="deadbeef:cafebabe"))
+            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
+            db.session.add(PiInternal(name="enckey_check", check_value="deadbeef:cafebabe"))
             db.session.commit()
 
         with self.assertRaises(SystemExit) as cm:
@@ -218,7 +219,7 @@ class AppTestCase(unittest.TestCase):
         # Cleanup
         app3 = create_app(config_name='testing', initialize_hsm=False)
         with app3.app_context():
-            db.session.query(EncKeyCheck).delete()
+            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
             db.session.commit()
 
     def test_08_enckey_verification_skipped_when_no_check_value(self):
@@ -226,7 +227,7 @@ class AppTestCase(unittest.TestCase):
         app = create_app(config_name='testing', initialize_hsm=True)
         with app.app_context():
             db.create_all()
-            db.session.query(EncKeyCheck).delete()
+            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
             db.session.commit()
 
         # Should start fine without any check value

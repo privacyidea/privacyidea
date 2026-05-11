@@ -22,12 +22,13 @@ from privacyidea.models.db import db
 from privacyidea.models.utils import MethodsMixin
 
 
-class EncKeyCheck(MethodsMixin, db.Model):
+class PiInternal(MethodsMixin, db.Model):
     """
     This table stores an encrypted check value that is used to verify
     at server startup that the correct encryption key is being used.
     The check value is a known plaintext encrypted with the encryption key.
     """
-    __tablename__ = "enckey_check"
-    id: Mapped[int] = mapped_column(Integer, Sequence("enckey_check_seq"), primary_key=True, nullable=False)
+    __tablename__ = "pi_internal"
+    id: Mapped[int] = mapped_column(Integer, Sequence("pi_internal_seq"), primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     check_value: Mapped[str] = mapped_column(Unicode(2000), nullable=False)

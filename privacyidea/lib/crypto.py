@@ -93,6 +93,8 @@ DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
 
+ENCKEY_CHECK_PLAINTEXT = "privacyIDEA enckey check value"
+
 log = logging.getLogger(__name__)
 
 
@@ -1193,23 +1195,6 @@ def decrypt_aes(secret: bytes, shared_key: bytes, params: dict) -> bytes:
     return message
 
 
-# Known plaintext used to verify the encryption key at startup
-ENCKEY_CHECK_PLAINTEXT = "privacyIDEA enckey check value"
-
-
-def create_enckey_check_value() -> str:
-    """
-    Encrypt a known plaintext with the current encryption key and return the
-    encrypted value. This is used to verify that the correct encryption key
-    is being used.
-
-    :return: The encrypted check value
-    :rtype: str
-    """
-    hsm = get_hsm()
-    return hsm.encrypt_password(to_bytes(ENCKEY_CHECK_PLAINTEXT))
-
-
 def verify_encryption_key(check_value: str) -> bool:
     """
     Verify that the current encryption key can correctly decrypt the given
@@ -1221,14 +1206,7 @@ def verify_encryption_key(check_value: str) -> bool:
     :rtype: bool
     :raises HSMException: if the encryption key does not match
     """
-    hsm = get_hsm()
-    try:
-        decrypted = to_unicode(hsm.decrypt_password(check_value))
-    except Exception as e:
-        raise HSMException(
-            "Encryption key verification failed! The encryption key does not "
-            "match the one used to encrypt the data. "
-            f"Decryption error: {e}")
+    decrypted = to_unicode(decryptPassword(check_value))
     if decrypted != ENCKEY_CHECK_PLAINTEXT:
         raise HSMException(
             "Encryption key verification failed! The encryption key does not "

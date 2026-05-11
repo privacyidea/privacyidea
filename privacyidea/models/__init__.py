@@ -34,7 +34,6 @@
 #             Add revocation of token
 # Nov 11, 2014 Cornelius Kölbel, info@privacyidea.org
 
-from .db import db
 from .audit import Audit, audit_column_length
 from .cache import AuthCache, UserCache
 from .caconnector import CAConnector, CAConnectorConfig
@@ -42,7 +41,7 @@ from .challenge import Challenge, cleanup_challenges
 from .config import (Config, NodeName, Admin, PasswordReset,
                      save_config_timestamp, PRIVACYIDEA_TIMESTAMP)
 from .customuserattribute import CustomUserAttribute
-from .enckey_check import EncKeyCheck
+from .db import db
 from .event import EventHandler, EventHandlerOption, EventHandlerCondition
 from .eventcounter import EventCounter
 from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
@@ -50,6 +49,7 @@ from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
                       get_machinetoken_ids)
 from .monitoringstats import MonitoringStats
 from .periodictask import PeriodicTask, PeriodicTaskOption, PeriodicTaskLastRun
+from .pi_internal import PiInternal
 from .policy import Policy, PolicyDescription, PolicyCondition
 from .realm import Realm, ResolverRealm
 from .resolver import Resolver, ResolverConfig
@@ -69,7 +69,7 @@ from .tokengroup import Tokengroup, TokenTokengroup
 __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
            "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
-           "PRIVACYIDEA_TIMESTAMP", "EncKeyCheck", "CustomUserAttribute",
+           "PRIVACYIDEA_TIMESTAMP", "PiInternal", "CustomUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",
