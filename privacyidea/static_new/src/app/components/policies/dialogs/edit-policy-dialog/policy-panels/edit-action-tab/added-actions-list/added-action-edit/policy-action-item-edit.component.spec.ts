@@ -85,7 +85,8 @@ describe("PolicyActionItemEditComponent", () => {
   });
 
   it("should identify boolean actions correctly", () => {
-    jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "bool", desc: "" });
+    fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "" });
+    fixture.detectChanges();
     expect(component.isBooleanAction("test_action")).toBe(true);
   });
 

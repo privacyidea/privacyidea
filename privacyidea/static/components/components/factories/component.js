@@ -37,6 +37,67 @@ myApp.factory("ComponentFactory", ["AuthFactory", "$http", "$state",
     }]);
 
 
+// Caches the known clients list. The /client/ endpoint is called at most once
+// per page load; consumers (typeaheads on IP-input fields) get a flat array of
+// {ip, hostname, apptype, label} entries.
+myApp.factory("ClientTypeFactory", ["ComponentFactory",
+        function (ComponentFactory) {
+    let cached = null;
+    let inflight = null;
+    const subscribers = [];
+
+    const flatten = function (clientdata) {
+        const flat = [];
+        const seen = {};
+        angular.forEach(clientdata || {}, function (clients, apptype) {
+            angular.forEach(clients, function (client) {
+                const key = client.ip + "|" + (client.hostname || "") + "|" + apptype;
+                if (seen[key]) {
+                    return;
+                }
+                seen[key] = true;
+                const parts = [client.ip];
+                if (client.hostname) {
+                    parts.push("[" + client.hostname + "]");
+                }
+                parts.push("— " + apptype);
+                flat.push({
+                    ip: client.ip,
+                    hostname: client.hostname,
+                    apptype: apptype,
+                    label: parts.join(" ")
+                });
+            });
+        });
+        return flat;
+    };
+
+    return {
+        // Lazy-load. callback is invoked with the flat list once available.
+        load: function (callback) {
+            if (cached) {
+                callback(cached);
+                return;
+            }
+            if (callback) {
+                subscribers.push(callback);
+            }
+            if (inflight) {
+                return;
+            }
+            inflight = true;
+            ComponentFactory.getClientType(function (data) {
+                cached = flatten(data && data.result && data.result.value);
+                inflight = false;
+                while (subscribers.length) {
+                    subscribers.shift()(cached);
+                }
+            });
+        }
+    };
+}]);
+
+
 myApp.factory("SubscriptionFactory", ["AuthFactory", "$http", "$state",
                                       "$rootScope", "subscriptionsUrl", "inform",
                                       function (AuthFactory, $http, $state,

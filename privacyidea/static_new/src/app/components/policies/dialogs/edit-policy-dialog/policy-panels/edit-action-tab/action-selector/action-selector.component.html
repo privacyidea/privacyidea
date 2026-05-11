@@ -71,14 +71,13 @@
           class="search-input" />
       </app-clearable-input>
 
-      @if ((actionsFiltered() | keyvalue).length > 0) {
+      @if (actionsFiltered().length > 0) {
         <div class="add-action-details">
           <div class="policy-action-items">
-            @for (action of actionsFiltered() | keyvalue; track action.key) {
+            @for (action of actionsFiltered(); track action.label) {
               <app-policy-action-item-new
-                [actionName]="action.key"
-                [actionDetail]="action.value"
-                (actionAdd)="addPolicyAction($event)" />
+                [selectableAction]="action"
+                (actionAdd)="addPolicyAction($event, action.scope)" />
             }
           </div>
         </div>
