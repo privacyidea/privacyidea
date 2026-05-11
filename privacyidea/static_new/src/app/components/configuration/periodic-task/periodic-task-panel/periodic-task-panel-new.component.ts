@@ -18,6 +18,7 @@
  **/
 
 import { Component, EventEmitter, Output, ViewChild } from "@angular/core";
+import { firstValueFrom } from "rxjs";
 import { MatIconButton } from "@angular/material/button";
 import {
   MatExpansionPanel,
@@ -58,21 +59,22 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent {
     this.panel.close();
   }
 
-  override savePeriodicTask(): void {
-    this.isEditMode.set(false);
-    // Get the edited task from the edit component
+  override async savePeriodicTask(): Promise<boolean> {
     const editedTask = this.editComponent?.editTask();
-    if (editedTask && this.canSave) {
-      this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
-        next: (response) => {
-          if (response?.result?.value !== undefined) {
-            this.periodicTaskService.periodicTasksResource.reload();
-            this.panel.close();
-            this.taskSaved.emit();
-            this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
-          }
-        }
-      });
+    if (!editedTask || !this.canSave) return false;
+    try {
+      const response = await firstValueFrom(this.periodicTaskService.savePeriodicTask(editedTask));
+      if (response?.result?.value !== undefined) {
+        this.isEditMode.set(false);
+        this.periodicTaskService.periodicTasksResource.reload();
+        this.panel.close();
+        this.taskSaved.emit();
+        this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
   }
 }

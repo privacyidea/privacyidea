@@ -138,7 +138,7 @@ export const routes: Routes = [
           { path: "details/:id", component: MachineDetailsDialogComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
-      { path: "periodic-tasks", component: PeriodicTaskComponent },
+      { path: "periodic-tasks", component: PeriodicTaskComponent, canDeactivate: [pendingChangesGuard] },
       { path: "subscription", component: SubscriptionComponent },
       { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }

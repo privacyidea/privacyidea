@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, signal, ViewChild } from "@angular/core";
+import { Component, effect, inject, input, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
@@ -33,6 +33,8 @@ import {
   PeriodicTaskModule,
   PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { firstValueFrom } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
 
@@ -58,8 +60,19 @@ export class PeriodicTaskPanelComponent {
   periodicTaskService = inject(PeriodicTaskService);
   authService = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
   isEditMode = signal(false);
+
+  constructor() {
+    effect(() => {
+      if (this.isEditMode()) {
+        this.pendingChangesService.registerHasChanges(() => this.isEditMode());
+        this.pendingChangesService.registerValidChanges(() => this.canSave);
+        this.pendingChangesService.registerSave(() => this.savePeriodicTask());
+      }
+    });
+  }
 
   async deleteTask(): Promise<void> {
     await this.periodicTaskService.deleteWithConfirmDialog(this.task());
@@ -114,18 +127,19 @@ export class PeriodicTaskPanelComponent {
 
   canSave = false;
 
-  savePeriodicTask(): void {
-    // Get the edited task from the edit component
+  async savePeriodicTask(): Promise<boolean> {
     const editedTask = this.editComponent?.editTask();
-    if (editedTask && this.canSave) {
-      this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
-        next: (response) => {
-          if (response?.result?.value !== undefined) {
-            this.periodicTaskService.periodicTasksResource.reload();
-            this.isEditMode.set(false);
-          }
-        }
-      });
+    if (!editedTask || !this.canSave) return false;
+    try {
+      const response = await firstValueFrom(this.periodicTaskService.savePeriodicTask(editedTask));
+      if (response?.result?.value !== undefined) {
+        this.periodicTaskService.periodicTasksResource.reload();
+        this.isEditMode.set(false);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
   }
 
