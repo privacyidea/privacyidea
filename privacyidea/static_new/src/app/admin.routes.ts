@@ -70,7 +70,7 @@ export const routes: Routes = [
     path: "tokens",
     children: [
       { path: "", component: TokenTableComponent },
-      { path: "enrollment", component: TokenEnrollmentComponent },
+      { path: "enrollment", component: TokenEnrollmentComponent, canDeactivate: [pendingChangesGuard] },
       { path: "challenges", component: ChallengesTableComponent },
       { path: "applications", component: TokenApplicationsComponent },
       { path: "get-serial", component: TokenFindSerialComponent },
@@ -78,7 +78,7 @@ export const routes: Routes = [
         path: "containers",
         children: [
           { path: "", component: ContainerTableComponent },
-          { path: "create", component: ContainerCreateComponent },
+          { path: "create", component: ContainerCreateComponent, canDeactivate: [pendingChangesGuard] },
           { path: "details/:serial", component: ContainerDetailsComponent },
           {
             path: "templates",
@@ -95,7 +95,7 @@ export const routes: Routes = [
         ]
       },
       { path: "details/:serial", component: TokenDetailsComponent },
-      { path: "import", component: TokenImportComponent }
+      { path: "import", component: TokenImportComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
@@ -104,7 +104,7 @@ export const routes: Routes = [
       { path: "", component: UserTableComponent },
       { path: "new", component: CreateUserDialogComponent, canDeactivate: [pendingChangesGuard] },
       { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "realms", component: RealmTableComponent },
+      { path: "realms", component: RealmTableComponent, canDeactivate: [pendingChangesGuard] },
       { path: "resolvers", component: UserResolversComponent },
       { path: "resolvers/new", component: UserNewResolverComponent, canDeactivate: [pendingChangesGuard] },
       { path: "resolvers/details/:name", component: UserNewResolverComponent, canDeactivate: [pendingChangesGuard] }
@@ -135,12 +135,12 @@ export const routes: Routes = [
         path: "machines",
         children: [
           { path: "", component: MachinesComponent },
-          { path: "details/:id", component: MachineDetailsDialogComponent }
+          { path: "details/:id", component: MachineDetailsDialogComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
       { path: "periodic-tasks", component: PeriodicTaskComponent },
       { path: "subscription", component: SubscriptionComponent },
-      { path: "system", component: SystemConfigComponent },
+      { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },

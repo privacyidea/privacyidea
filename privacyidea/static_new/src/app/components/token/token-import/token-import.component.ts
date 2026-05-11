@@ -34,6 +34,7 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
@@ -64,6 +65,7 @@ export class TokenImportComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly Object = Object;
   private observer!: IntersectionObserver;
   fileTypes: Record<string, string> = {
@@ -97,6 +99,10 @@ export class TokenImportComponent {
       const validLength = [0, 32].includes(control.value.length);
       return validLength ? null : { invalidLength: { value: control.value } };
     };
+  }
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.inputForm.dirty);
   }
 
   ngAfterViewInit(): void {

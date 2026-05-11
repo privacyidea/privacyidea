@@ -19,7 +19,6 @@
 import { Component, inject, input, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
@@ -32,6 +31,8 @@ import {
   PeriodicTaskModule,
   PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
 
@@ -56,7 +57,7 @@ import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-re
 export class PeriodicTaskPanelComponent {
   periodicTaskService = inject(PeriodicTaskService);
   authService = inject(AuthService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
   isEditMode = signal(false);
 
@@ -84,7 +85,29 @@ export class PeriodicTaskPanelComponent {
   }
 
   cancelEdit(): void {
-    this.isEditMode.set(false);
+    const isEdited = JSON.stringify(this.editComponent?.editTask()) !== JSON.stringify(this.task());
+    if (!isEdited) {
+      this.isEditMode.set(false);
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          items: [this.task().name],
+          itemType: "periodic task",
+          confirmAction: { label: $localize`Discard`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.isEditMode.set(false);
+          }
+        }
+      });
   }
 
   @ViewChild(PeriodicTaskEditComponent) editComponent?: PeriodicTaskEditComponent;

@@ -68,6 +68,7 @@ import {
 } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 
@@ -101,6 +102,7 @@ export class ContainerCreateComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly router = inject(Router);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -169,6 +171,12 @@ export class ContainerCreateComponent {
         this.openRegistrationCompletedDialog(serial);
       }
     });
+  }
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () => this.description() !== "" || this.selectedTemplate().name !== "" || this.selectedUser() !== ""
+    );
   }
 
   ngAfterViewInit(): void {

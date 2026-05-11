@@ -64,6 +64,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmRow, Realms, RealmService, RealmServiceInterface, ResolverGroup } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "@services/system/system.service";
@@ -129,6 +130,7 @@ export class RealmTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly _notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly router = inject(Router);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   // View Children
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
@@ -269,6 +271,12 @@ export class RealmTableComponent {
   });
 
   constructor() {}
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () => this.editingRealmName() !== null || this.newRealmName() !== ""
+    );
+  }
 
   // --- Filter Handlers ---
   onFilterInput(value: string): void {

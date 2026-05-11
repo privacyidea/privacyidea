@@ -87,6 +87,7 @@ import { ContainerService, ContainerServiceInterface } from "@services/container
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
   EnrollTokenArguments,
@@ -208,6 +209,7 @@ export class TokenEnrollmentComponent implements OnDestroy {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
@@ -384,6 +386,7 @@ export class TokenEnrollmentComponent implements OnDestroy {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainerSerial.set(value ?? "")
     );
+    this.pendingChangesService.registerHasChanges(() => this.formGroupSignal().dirty);
   }
 
   ngOnDestroy(): void {

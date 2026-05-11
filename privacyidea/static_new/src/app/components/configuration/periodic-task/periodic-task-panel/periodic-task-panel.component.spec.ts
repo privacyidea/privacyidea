@@ -20,9 +20,13 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
+import { of } from "rxjs";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
 
 describe("PeriodicTaskPanelComponent", () => {
@@ -40,6 +44,7 @@ describe("PeriodicTaskPanelComponent", () => {
     ordering: 0
   };
   let periodicTaskServiceMock: MockPeriodicTaskService;
+  let dialogServiceMock: MockDialogService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -47,7 +52,8 @@ describe("PeriodicTaskPanelComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService }
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -55,6 +61,7 @@ describe("PeriodicTaskPanelComponent", () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput("task", task);
     periodicTaskServiceMock = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -86,9 +93,37 @@ describe("PeriodicTaskPanelComponent", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("cancelEdit should set isEditMode to false", () => {
+  it("cancelEdit should set isEditMode to false when task is not edited", () => {
     component.isEditMode.set(true);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task }) } as any;
     component.cancelEdit();
+    expect(component.isEditMode()).toBe(false);
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+  });
+
+  it("cancelEdit should open confirmation dialog when task has been edited", () => {
+    component.isEditMode.set(true);
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+
+    component.cancelEdit();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(true);
+  });
+
+  it("cancelEdit should set isEditMode to false after user confirms discard in dialog", () => {
+    component.isEditMode.set(true);
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(true));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+
+    component.cancelEdit();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(component.isEditMode()).toBe(false);
   });
 

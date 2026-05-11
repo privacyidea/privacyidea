@@ -40,6 +40,8 @@ import {
   MockSystemService,
   MockTableUtilsService
 } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { RealmTableComponent } from "./realm-table.component";
 
@@ -59,6 +61,7 @@ describe("RealmTableComponent", () => {
   let dialog: LocalMockMatDialog;
   let resolverService: MockResolverService;
   let router: Router;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -73,7 +76,8 @@ describe("RealmTableComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useClass: LocalMockMatDialog },
         { provide: ResolverService, useClass: MockResolverService },
-        { provide: Router, useClass: MockRouter }
+        { provide: Router, useClass: MockRouter },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -86,6 +90,7 @@ describe("RealmTableComponent", () => {
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     router = TestBed.inject(Router);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.detectChanges();
   });
@@ -528,5 +533,22 @@ describe("RealmTableComponent", () => {
     resolverService.setResolvers([]);
     component.onClickResolver("non-existing");
     expect(dialog.open).not.toHaveBeenCalled();
+  });
+
+  it("should register hasChanges based on editing state in ngOnInit", () => {
+    expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+    expect(fn()).toBe(false);
+
+    component.editingRealmName.set("someRealm");
+    expect(fn()).toBe(true);
+
+    component.editingRealmName.set(null);
+    component.newRealmName.set("newRealm");
+    expect(fn()).toBe(true);
+
+    component.newRealmName.set("");
+    expect(fn()).toBe(false);
   });
 });

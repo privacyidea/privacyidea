@@ -19,25 +19,35 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { DialogService } from "@services/dialog/dialog.service";
 import { AdditionalCondition, PolicyService } from "@services/policies/policies.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { of } from "rxjs";
 import { EditAdditionalConditionsComponent } from "./edit-additional-conditions.component";
 
 describe("EditAdditionalConditionsComponent", () => {
   let component: EditAdditionalConditionsComponent;
   let fixture: ComponentFixture<EditAdditionalConditionsComponent>;
+  let dialogServiceMock: MockDialogService;
 
   const mockCondition: AdditionalCondition = ["token", "serial", "equals", "12345", false, "condition_is_false"];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditAdditionalConditionsComponent],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+      providers: [
+        { provide: PolicyService, useClass: MockPolicyService },
+        { provide: DialogService, useClass: MockDialogService },
+        provideNoopAnimations()
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditAdditionalConditionsComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("policy", { name: "test", conditions: [mockCondition] });
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -124,16 +134,80 @@ describe("EditAdditionalConditionsComponent", () => {
     );
   });
 
-  it("should cancel editing and reset form signals", () => {
+  it("should cancel editing and reset form signals without dialog when form is not dirty", () => {
     component.startEditCondition(mockCondition, 0);
     expect(component.showAddConditionForm()).toBe(true);
 
     component.cancelEdit();
 
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     expect(component.showAddConditionForm()).toBe(false);
     expect(component.editIndex()).toBeNull();
     expect(component.conditionKey()).toBe("");
     expect(component.conditionSection()).toBe("");
+  });
+
+  describe("isFormDirty", () => {
+    it("should return false when form is not shown", () => {
+      expect(component.isFormDirty()).toBe(false);
+    });
+
+    it("should return false when add form is shown but all fields are empty", () => {
+      component.showAddConditionForm.set(true);
+      expect(component.isFormDirty()).toBe(false);
+    });
+
+    it("should return true when a new condition has non-empty fields", () => {
+      component.showAddConditionForm.set(true);
+      component.conditionSection.set("token");
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return false when editing a condition with unchanged values", () => {
+      component.startEditCondition(mockCondition, 0);
+      expect(component.isFormDirty()).toBe(false);
+    });
+
+    it("should return true when editing and value has changed", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("99999");
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return true when editing and active state has changed", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionActive.set(false);
+      expect(component.isFormDirty()).toBe(true);
+    });
+  });
+
+  describe("cancelEdit with dirty form", () => {
+    it("should open confirmation dialog when form is dirty", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("changed");
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+      expect(component.showAddConditionForm()).toBe(true);
+    });
+
+    it("should reset form after user confirms discard in dialog", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("changed");
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(true));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(component.showAddConditionForm()).toBe(false);
+      expect(component.editIndex()).toBeNull();
+      expect(component.conditionValue()).toBe("");
+    });
   });
 
   it("should not save or emit if required fields are missing", () => {

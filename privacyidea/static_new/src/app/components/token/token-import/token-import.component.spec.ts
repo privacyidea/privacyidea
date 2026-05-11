@@ -30,6 +30,8 @@ import {
     MockTokenService,
     MockUserService
 } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { of } from "rxjs";
 import { TokenImportComponent } from "./token-import.component";
 
@@ -38,6 +40,7 @@ describe("TokenImportComponent", () => {
   let fixture: ComponentFixture<TokenImportComponent>;
   let tokenService: MockTokenService;
   let notificationService: MockNotificationService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -75,7 +78,8 @@ describe("TokenImportComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: UserService, useClass: MockUserService }
+        { provide: UserService, useClass: MockUserService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -83,6 +87,7 @@ describe("TokenImportComponent", () => {
     component = fixture.componentInstance;
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();
   });
 
@@ -210,5 +215,14 @@ describe("TokenImportComponent", () => {
     expect(formDataArg.get("pskcValidateMAC")).toBe("check_fail_hard");
     expect(formDataArg.has("psk")).toBe(false);
     expect(formDataArg.has("password")).toBe(false);
+  });
+
+  it("should register hasChanges based on form dirty state in ngOnInit", () => {
+    expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+    expect(fn()).toBe(false);
+    component.inputForm.markAsDirty();
+    expect(fn()).toBe(true);
   });
 });
