@@ -29,6 +29,7 @@ import { TokenDetailsComponent } from "@components/token/token-details/token-det
 import { AuditService } from "@services/audit/audit.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
@@ -39,6 +40,7 @@ import {
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
 
 class MockValidateService {
@@ -52,6 +54,7 @@ describe("ContainerDetailsComponent", () => {
   let selfFixture: ComponentFixture<ContainerDetailsSelfServiceComponent>;
   let containerService: ContainerServiceInterface;
   let userService: UserServiceInterface;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -71,7 +74,8 @@ describe("ContainerDetailsComponent", () => {
         { provide: ValidateService, useClass: MockValidateService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: UserService, useClass: MockUserService }
+        { provide: UserService, useClass: MockUserService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -99,6 +103,7 @@ describe("ContainerDetailsComponent", () => {
 
     containerService = TestBed.inject(ContainerService);
     userService = TestBed.inject(UserService);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.detectChanges();
   });
@@ -243,5 +248,28 @@ describe("ContainerDetailsComponent", () => {
     component.unassignUser();
 
     expect(containerService.unassignUser).toHaveBeenCalledWith("Mock serial", "bob", "realmUser");
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects editing state of inline fields", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.isEditingUser.set(true);
+      expect(fn()).toBe(true);
+      component.isEditingUser.set(false);
+
+      component.isEditingInfo.set(true);
+      expect(fn()).toBe(true);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

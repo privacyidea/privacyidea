@@ -30,10 +30,12 @@ import {
     MachineResolverService
 } from "@services/machine-resolver/machine-resolver.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockNotificationService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 
@@ -58,6 +60,7 @@ describe("MachineResolverPanelEditComponent", () => {
   let dialogServiceMock: MockDialogService;
   let notificationServiceMock: MockNotificationService;
   let contentServiceMock: MockContentService;
+  let pendingChangesService: MockPendingChangesService;
 
   const machineResolver: HostsMachineResolver = {
     resolvername: "test",
@@ -78,7 +81,8 @@ describe("MachineResolverPanelEditComponent", () => {
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     })
       .overrideComponent(MachineResolverPanelEditComponent, {
@@ -94,6 +98,7 @@ describe("MachineResolverPanelEditComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.componentRef.setInput("originalMachineResolver", machineResolver);
     fixture.detectChanges();
@@ -285,6 +290,50 @@ describe("MachineResolverPanelEditComponent", () => {
       contentServiceMock.machineResolver.set("test");
       component.handleCollapse({} as any);
       expect(contentServiceMock.machineResolver()).toBe("");
+    });
+  });
+
+  describe("pending changes", () => {
+    it("does not register before entering edit mode with diff", () => {
+      expect(pendingChangesService.registerHasChanges).not.toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).not.toHaveBeenCalled();
+    });
+
+    it("registers hasChanges, validChanges, and save once editing with diff", () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.update((mr) => ({ ...mr, data: { ...mr.data, filename: "changed" } }));
+      fixture.detectChanges();
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("saveMachineResolver resolves true on successful post", async () => {
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockResolvedValue(undefined as any);
+      jest.spyOn(machineResolverServiceMock, "postMachineResolver").mockResolvedValue(undefined as any);
+      component.isEditMode.set(true);
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(true);
+      expect(component.isEditMode()).toBe(false);
+    });
+
+    it("saveMachineResolver resolves false when test fails and user does not confirm", async () => {
+      jest
+        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
+        .mockRejectedValue(new Error("post-failed"));
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
+    });
+
+    it("saveMachineResolver resolves false when test fails with non post-failed error", async () => {
+      jest
+        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
+        .mockRejectedValue(new Error("other-error"));
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
     });
   });
 });

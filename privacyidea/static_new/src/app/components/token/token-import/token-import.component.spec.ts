@@ -217,12 +217,30 @@ describe("TokenImportComponent", () => {
     expect(formDataArg.has("password")).toBe(false);
   });
 
-  it("should register hasChanges based on form dirty state in ngOnInit", () => {
+  it("should register hasChanges based on relevant signals in ngOnInit", () => {
     expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
     const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
 
     expect(fn()).toBe(false);
-    component.inputForm.markAsDirty();
+
+    component.fileName.set("token.csv");
     expect(fn()).toBe(true);
+    component.fileName.set("");
+
+    component.pskPassword.set("secret");
+    expect(fn()).toBe(true);
+    component.pskPassword.set("");
+
+    component.fileType.set("pskc");
+    expect(fn()).toBe(true);
+    component.fileType.set("OATH CSV");
+
+    component.pskValidation.set("check_fail_soft");
+    expect(fn()).toBe(true);
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

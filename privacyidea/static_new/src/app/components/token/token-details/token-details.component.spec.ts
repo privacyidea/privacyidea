@@ -30,6 +30,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MachineService } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
@@ -47,6 +48,7 @@ import {
   MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { TokenDetailsComponent } from "./token-details.component";
 
 describe("TokenDetailsComponent", () => {
@@ -58,6 +60,7 @@ describe("TokenDetailsComponent", () => {
   let realmSvc: MockRealmService;
   let contentSvc: MockContentService;
   let machineSvc: MockMachineService;
+  let pendingChangesService: MockPendingChangesService;
 
   const matDialogOpen = jest.fn();
   const matDialogMock = { open: matDialogOpen };
@@ -87,6 +90,7 @@ describe("TokenDetailsComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: MatDialog, useValue: matDialogMock },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         MockLocalService,
         MockNotificationService
       ]
@@ -97,6 +101,7 @@ describe("TokenDetailsComponent", () => {
     realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
     contentSvc = TestBed.inject(ContentService) as unknown as MockContentService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     // Monkey-patch unimplemented service methods we’ll hit via the component.
     (tokenSvc.getTokengroups as any) = jest
@@ -308,5 +313,34 @@ describe("TokenDetailsComponent", () => {
 
     machineSvc.tokenApplications.set([{ id: 1 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects editing state of inline fields", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.isEditingUser.set(true);
+      expect(fn()).toBe(true);
+      component.isEditingUser.set(false);
+
+      component.isEditingInfo.set(true);
+      expect(fn()).toBe(true);
+    });
+
+    it("hasChanges ignores tokenIsRevoked (only edit state matters)", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.tokenIsRevoked.set(true);
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

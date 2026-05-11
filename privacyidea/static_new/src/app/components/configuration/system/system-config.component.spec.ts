@@ -208,4 +208,17 @@ describe("SystemConfigComponent", () => {
     expect(notificationService.error).toHaveBeenCalledWith("Error saving system configuration.");
     expect(result).toBe(false);
   });
+
+  it("validChanges combines permission and form validity", () => {
+    const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    expect(fn()).toBe(true);
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+    expect(fn()).toBe(false);
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+  });
 });

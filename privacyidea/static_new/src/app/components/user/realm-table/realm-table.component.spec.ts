@@ -315,16 +315,17 @@ describe("RealmTableComponent", () => {
     expect(component.newRealmNodeResolvers()).toEqual({});
   });
 
-  it("onCreateRealm should do nothing when cannot submit", () => {
+  it("onCreateRealm should resolve false when cannot submit", async () => {
     component.newRealmName.set("");
     component.isCreatingRealm.set(false);
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(false);
     expect(realmService.createRealm).not.toHaveBeenCalled();
   });
 
-  it("onCreateRealm should create realm with global resolvers and optional priorities", () => {
+  it("onCreateRealm should create realm with global resolvers and optional priorities", async () => {
     component.newRealmName.set("realmA");
     component.newRealmNodeResolvers.set({
       "": [
@@ -337,8 +338,9 @@ describe("RealmTableComponent", () => {
       ]
     });
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(true);
     expect(realmService.createRealm).toHaveBeenCalledTimes(2);
 
     const callGlobal = (realmService.createRealm as jest.Mock).mock.calls[0];
@@ -358,12 +360,13 @@ describe("RealmTableComponent", () => {
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
-  it("onCreateRealm should create realm with empty resolver list when none configured", () => {
+  it("onCreateRealm should create realm with empty resolver list when none configured", async () => {
     component.newRealmName.set("realmEmpty");
     component.newRealmNodeResolvers.set({});
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(true);
     expect(realmService.createRealm).toHaveBeenCalledTimes(1);
     const call = (realmService.createRealm as jest.Mock).mock.calls[0];
     expect(call[0]).toBe("realmEmpty");
@@ -535,20 +538,49 @@ describe("RealmTableComponent", () => {
     expect(dialog.open).not.toHaveBeenCalled();
   });
 
-  it("should register hasChanges based on editing state in ngOnInit", () => {
-    expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
-    const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
 
-    expect(fn()).toBe(false);
+    it("hasChanges reflects newRealmName, newRealmNodeResolvers, and edit diff", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
 
-    component.editingRealmName.set("someRealm");
-    expect(fn()).toBe(true);
+      expect(fn()).toBe(false);
 
-    component.editingRealmName.set(null);
-    component.newRealmName.set("newRealm");
-    expect(fn()).toBe(true);
+      component.newRealmName.set("newRealm");
+      expect(fn()).toBe(true);
+      component.newRealmName.set("");
 
-    component.newRealmName.set("");
-    expect(fn()).toBe(false);
+      component.newRealmNodeResolvers.set({ node1: [{ name: "res", priority: null }] });
+      expect(fn()).toBe(true);
+      component.newRealmNodeResolvers.set({});
+
+      // Entering edit mode alone (no diff) should NOT trigger hasChanges
+      component.editingRealmName.set("someRealm");
+      expect(fn()).toBe(false);
+
+      // Edit diff triggers hasChanges
+      component.editNodeResolvers.set({ node1: [{ name: "res", priority: 1 }] });
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges reflects canSubmitNewRealm", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.newRealmName.set("validName");
+      expect(fn()).toBe(true);
+
+      component.newRealmName.set("invalid name with spaces");
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

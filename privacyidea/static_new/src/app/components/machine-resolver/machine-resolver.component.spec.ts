@@ -25,8 +25,10 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MachineResolverComponent } from "./machine-resolver.component";
 
 @Component({
@@ -48,6 +50,7 @@ describe("MachineResolverComponent", () => {
   let fixture: ComponentFixture<MachineResolverComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let authServiceMock: MockAuthService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -56,7 +59,8 @@ describe("MachineResolverComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineResolverService, useClass: MockMachineResolverService },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     })
       .overrideComponent(MachineResolverComponent, {
@@ -70,6 +74,7 @@ describe("MachineResolverComponent", () => {
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
   });
 
   it("should create", () => {
@@ -122,5 +127,10 @@ describe("MachineResolverComponent", () => {
 
       expect(editPanels.length).toBe(3);
     });
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

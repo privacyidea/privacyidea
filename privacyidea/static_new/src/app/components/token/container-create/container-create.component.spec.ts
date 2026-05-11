@@ -18,7 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 
 import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { Renderer2, signal } from "@angular/core";
@@ -457,6 +457,64 @@ describe("ContainerCreateComponent", () => {
     it("returns true when a user is selected", () => {
       userSvc.selectionUsernameFilter.set("testuser");
       expect(hasChangesFn()).toBe(true);
+    });
+  });
+
+  describe("registerSave / registerValidChanges", () => {
+    it("registers validChanges and save callbacks in ngOnInit", () => {
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("validChanges reflects component.validInput", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.validInput = true;
+      expect(fn()).toBe(true);
+      component.validInput = false;
+      expect(fn()).toBe(false);
+    });
+
+    it("save returns false when container type is not selected", async () => {
+      containerServiceMock.selectedContainerType.set(null as any);
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("save returns false when validInput is false", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = false;
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("save creates container and returns true on success", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      component.description.set("desc");
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(true);
+      expect(containerServiceMock.createContainer).toHaveBeenCalled();
+    });
+
+    it("save returns false when createContainer throws", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(throwError(() => new Error("fail")));
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("ngOnDestroy", () => {
+    it("clears pending-changes registrations on destroy", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
   });
 

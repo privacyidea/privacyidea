@@ -202,4 +202,9 @@ describe("MachineDetailsDialogComponent", () => {
     component.startEdit(token);
     expect(fn()).toBe(true);
   });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+  });
 });
