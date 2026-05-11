@@ -32,7 +32,7 @@ import { MockContentService, MockNotificationService, MockPiResponse } from "@te
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 import { SystemConfigComponent } from "./system-config.component";
 
 describe("SystemConfigComponent", () => {
@@ -196,6 +196,16 @@ describe("SystemConfigComponent", () => {
     const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
     const result = await saveFn();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save system configuration.");
+    expect(result).toBe(false);
+  });
+
+  it("_saveAndReturn should resolve false on HTTP error", async () => {
+    jest
+      .spyOn(systemService, "saveSystemConfig")
+      .mockReturnValueOnce(throwError(() => new Error("Network error")));
+    const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+    const result = await saveFn();
+    expect(notificationService.error).toHaveBeenCalledWith("Error saving system configuration.");
     expect(result).toBe(false);
   });
 });
