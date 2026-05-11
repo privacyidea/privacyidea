@@ -390,7 +390,6 @@ $button-low-contrast-variant: linear-gradient(
 
   .icon-badge-overlay {
     position: absolute;
-    right: -2px;
     bottom: -1px;
     font-size: 14px;
     width: 14px;
@@ -409,8 +408,13 @@ $button-low-contrast-variant: linear-gradient(
       font-size: 14px !important;
     }
 
+    &.icon-badge-add {
+      font-weight: bold;
+      right: -3px;
+    }
+
     &.icon-badge-gear {
-      right: 0;
+      right: -1px;
     }
   }
 }
