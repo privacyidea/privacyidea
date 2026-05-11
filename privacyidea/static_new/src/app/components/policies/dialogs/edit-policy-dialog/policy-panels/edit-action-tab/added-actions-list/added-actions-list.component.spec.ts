@@ -95,7 +95,7 @@ describe("AddedActionsListComponent", () => {
   it("should identify boolean actions via policyService", () => {
     const spy = jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "bool", desc: "" });
     const result = component.isBooleanAction("action2");
-    expect(spy).toHaveBeenCalledWith("action2");
+    expect(spy).toHaveBeenCalledWith("action2", undefined);
     expect(result).toBe(true);
   });
 
@@ -106,5 +106,33 @@ describe("AddedActionsListComponent", () => {
       { name: "action1", value: "val1" },
       { name: "action2", value: false }
     ]);
+  });
+
+  it("should pass scope to getDetailsOfAction when scope input is set", () => {
+    fixture.componentRef.setInput("scope", "admin");
+    fixture.detectChanges();
+
+    const spy = jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "str", desc: "" });
+    component.getDetailsOfAction("action1");
+
+    expect(spy).toHaveBeenCalledWith("action1", "admin");
+  });
+
+  it("should pass scope to isBooleanAction when scope input is set", () => {
+    fixture.componentRef.setInput("scope", "user");
+    fixture.detectChanges();
+
+    const spy = jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "bool", desc: "" });
+    const result = component.isBooleanAction("action1");
+
+    expect(spy).toHaveBeenCalledWith("action1", "user");
+    expect(result).toBe(true);
+  });
+
+  it("should pass undefined scope when no scope input is set", () => {
+    const spy = jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "str", desc: "" });
+    component.getDetailsOfAction("action1");
+
+    expect(spy).toHaveBeenCalledWith("action1", undefined);
   });
 });

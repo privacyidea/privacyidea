@@ -126,7 +126,7 @@
                 }
                 @case ("actions") {
                   @if (policy.action) {
-                    <app-view-action-column [actions]="policy.action" />
+                    <app-view-action-column [actions]="policy.action" [scope]="policy.scope" />
                   }
                 }
                 @case ("conditions") {

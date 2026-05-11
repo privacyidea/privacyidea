@@ -549,4 +549,54 @@ describe("PolicyService", () => {
       expect(service.policyActionsByGroup()).toEqual({});
     });
   });
+
+  describe("getDetailsOfAction", () => {
+    const adminDetail: PolicyActionDetail = { type: "bool", desc: "Admin is allowed." };
+    const userDetail: PolicyActionDetail = { type: "str", desc: "User is allowed." };
+
+    async function loadPolicyActions(actions: object) {
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
+      req.flush(MockPiResponse.fromValue(actions));
+      await Promise.resolve();
+    }
+
+    it("should return null for empty actionName", () => {
+      expect(service.getDetailsOfAction("")).toBeNull();
+    });
+
+    it("should return null when action does not exist", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("nonexistent")).toBeNull();
+    });
+
+    it("should return action detail from flat map when no scope provided", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("configread")).toEqual(adminDetail);
+    });
+
+    it("should return scope-specific detail when scope is provided", async () => {
+      await loadPolicyActions({
+        admin: { container_add_token: adminDetail },
+        user: { container_add_token: userDetail }
+      });
+      expect(service.getDetailsOfAction("container_add_token", "admin")).toEqual(adminDetail);
+      expect(service.getDetailsOfAction("container_add_token", "user")).toEqual(userDetail);
+    });
+
+    it("should return null when action does not exist in the given scope", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("configread", "user")).toBeNull();
+    });
+
+    it("allPolicyActionsFlat should only contain one entry for duplicate action names across scopes", async () => {
+      await loadPolicyActions({
+        admin: { container_add_token: adminDetail },
+        user: { container_add_token: userDetail }
+      });
+      const flat = service.allPolicyActionsFlat();
+      expect(Object.keys(flat).filter((k) => k === "container_add_token").length).toBe(1);
+    });
+  });
 });
