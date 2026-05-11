@@ -29,7 +29,7 @@
 .custom-user-details-column {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 16px;
+  gap: 0 16px;
   margin-bottom: auto;
 
   &:not(:last-of-type) {
@@ -41,8 +41,7 @@
 .user-details-grid,
 .user-details-column {
   display: grid;
-  grid-template-columns: auto auto;
-  gap: 16px;
+  gap: 10px 16px;
   padding-right: 16px;
   border: 0;
   margin-bottom: auto;
@@ -59,6 +58,7 @@
   display: block;
   margin-block: auto;
   max-width: 240px;
+  height: 28px;
 }
 
 .value {
@@ -68,6 +68,12 @@
   display: block;
   margin-block: auto;
   max-width: 240px;
+  height: 28px;
+}
+
+.label-value-row {
+  display: grid;
+  grid-template-columns: auto auto;
 }
 
 .return-button {
@@ -142,5 +148,4 @@
 
 .username-header {
   color: var(--mat-sys-primary);
-  margin-right: -8px;
 }

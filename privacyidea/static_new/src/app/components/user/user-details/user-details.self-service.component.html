@@ -29,18 +29,20 @@
     @for (col of detailsColumns(); track $index) {
       <div class="user-details-column">
         @for (item of col; track item.key) {
-          <div class="label">{{ item.label }}:</div>
-          @if (Array.isArray(item.value) && item.value.length > 1) {
-            <div class="value">
-              <ul class="no-indention margin-0">
-                @for (val of item.value; track val) {
-                  <li>{{ val }}</li>
-                }
-              </ul>
-            </div>
-          } @else {
-            <div class="value">{{ item.value }}</div>
-          }
+          <div class="flex-row label-value-row gap-16">
+            <div class="label">{{ item.label }}:</div>
+            @if (Array.isArray(item.value) && item.value.length > 1) {
+              <div class="value">
+                <ul class="no-indention margin-0">
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
+                  }
+                </ul>
+              </div>
+            } @else {
+              <div class="value">{{ item.value }}</div>
+            }
+          </div>
         }
       </div>
     }

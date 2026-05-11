@@ -18,23 +18,19 @@
 -->
 <div class="navigation-self-service-column">
 
-  @if (authService.actionAllowed("userlist")) {
-    @if (contentService.onUserDetailsSelfService()) {
-      <div class="username-button disabled">
-        <mat-icon>account_circle</mat-icon>
-        <span class="username">{{ userData().username || "-" }}
-          &#64; {{ userService.selectedUserRealm() || "-" }}</span>
-      </div>
-    } @else {
-      <a
-        [routerLink]="ROUTE_PATHS.USERS_DETAILS"
-        class="username-button"
-        mat-ripple>
-        <mat-icon>account_circle</mat-icon>
-        <span class="username">{{ userData().username || "-" }}
-          &#64; {{ userService.selectedUserRealm() || "-" }}</span>
-      </a>
-    }
+  @if (contentService.onUserDetailsSelfService() || !authService.actionAllowed("userlist")) {
+    <div class="username-button disabled">
+      <mat-icon>account_circle</mat-icon>
+      <span class="username">{{ userData().username || "-" }} &#64; {{ userService.selectedUserRealm() || "-" }}</span>
+    </div>
+  } @else {
+    <a
+      [routerLink]="ROUTE_PATHS.USERS_DETAILS"
+      class="username-button"
+      mat-ripple>
+      <mat-icon>account_circle</mat-icon>
+      <span class="username">{{ userData().username || "-" }} &#64; {{ userService.selectedUserRealm() || "-" }}</span>
+    </a>
   }
 
   <app-user-utils-panel-self-service></app-user-utils-panel-self-service>
