@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-13 11:14+0100\n"
+"POT-Creation-Date: 2026-05-11 15:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,190 +17,186 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: api/auth.py:260
+#: api/auth.py:290
 msgid "Authentication with passkey disabled."
 msgstr ""
 
-#: api/auth.py:265
+#: api/auth.py:295
 msgid "Authentication failure. The passkey is not registered."
 msgstr ""
 
-#: api/auth.py:277
+#: api/auth.py:307
 msgid "Authentication failure. Token has no user."
 msgstr ""
 
-#: api/auth.py:281
+#: api/auth.py:311
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
 msgstr ""
 
-#: api/auth.py:287
+#: api/auth.py:317
 #, python-brace-format
 msgid ""
 "Authentication failure. Last authentication policy check failed for token"
 " {serial}"
 msgstr ""
 
-#: api/auth.py:300
+#: api/auth.py:330
 msgid "Authentication failure using passkey."
 msgstr ""
 
-#: api/auth.py:305
+#: api/auth.py:335
 msgid "Authentication failure. Unknown realm:"
 msgstr ""
 
-#: api/auth.py:309
+#: api/auth.py:339
 msgid "Authentication failure. Missing Username"
 msgstr ""
 
-#: api/auth.py:443
+#: api/auth.py:481
 msgid "Authentication failure. Wrong credentials"
 msgstr ""
 
-#: api/before_after.py:518 api/lib/postpolicy.py:977 api/validate.py:606
+#: api/before_after.py:518 api/lib/postpolicy.py:977 api/validate.py:664
 msgid "Authentication failed."
 msgstr ""
 
-#: api/container.py:203
+#: api/container.py:275
 msgid "Missing parameter 'realm', 'resolver', and/or 'user_id'"
 msgstr ""
 
-#: api/container.py:1148
+#: api/container.py:1412
 msgid "'template_options' must be a dictionary!"
 msgstr ""
 
-#: api/periodictask.py:152
+#: api/periodictask.py:204
 msgid "nodes: expected at least one node"
 msgstr ""
 
-#: api/periodictask.py:155
+#: api/periodictask.py:207
 #, python-brace-format
 msgid "Unknown task module: {!r}"
 msgstr ""
 
-#: api/periodictask.py:163
+#: api/periodictask.py:215
 #, python-brace-format
 msgid "options: expected dictionary, got {!r}"
 msgstr ""
 
-#: api/policy.py:438 api/token.py:1136
+#: api/policy.py:480 api/token.py:1294
 msgid "Unable to convert file contents. Binary data is not supported"
 msgstr ""
 
-#: api/policy.py:443
+#: api/policy.py:485
 msgid "Error loading policy. File empty!"
 msgstr ""
 
-#: api/realm.py:530
+#: api/realm.py:542
 msgid "The given node does not exist!"
 msgstr ""
 
-#: api/realm.py:536 api/realm.py:546
+#: api/realm.py:548 api/realm.py:558
 msgid "Could not verify data in request!"
 msgstr ""
 
-#: api/register.py:124
+#: api/register.py:146
 msgid "No SMTP server configuration specified!"
 msgstr ""
 
-#: api/register.py:138
+#: api/register.py:160
 msgid "No resolver specified to register in!"
 msgstr ""
 
-#: api/register.py:145
+#: api/register.py:167
 msgid "The username is already registered!"
 msgstr ""
 
-#: api/register.py:176
+#: api/register.py:198
 msgid "Failed to send email!"
 msgstr ""
 
-#: api/system.py:325
+#: api/system.py:354
 #, python-brace-format
 msgid "Usage: {0!s}"
 msgstr ""
 
-#: api/system.py:343
-msgid "You need to provide the config key to delete."
-msgstr ""
-
-#: api/token.py:1115
+#: api/token.py:1273
 msgid ""
 "The Pre Shared Key must be 128 Bit hex encoded. It must be 32 characters "
 "long!"
 msgstr ""
 
-#: api/token.py:1140
+#: api/token.py:1298
 msgid "Error loading token file. File empty!"
 msgstr ""
 
-#: api/token.py:1146
+#: api/token.py:1304
 #, python-brace-format
 msgid "Unknown file type: '{file_type}'. Supported file types are: {known_types}"
 msgstr ""
 
-#: api/token.py:1258
+#: api/token.py:1425
 #, python-brace-format
 msgid "The user {0!r} does not own the token {1!s}"
 msgstr ""
 
-#: api/user.py:154
+#: api/user.py:205
 #, python-brace-format
 msgid ""
 "Invalid attribute name! The name shall not start with {prefix}. This is "
 "an internally used prefix."
 msgstr ""
 
-#: api/validate.py:219
+#: api/validate.py:260
 msgid "The token does not exist"
 msgstr ""
 
-#: api/validate.py:226
+#: api/validate.py:267
 msgid "The token is not valid."
 msgstr ""
 
-#: api/validate.py:239
+#: api/validate.py:280
 msgid "Machine can not be identified by user agent!"
 msgstr ""
 
-#: api/validate.py:255
+#: api/validate.py:296
 msgid "Token is not an offline token or refill token is incorrect"
 msgstr ""
 
-#: api/validate.py:495
+#: api/validate.py:553
 msgid "Cancelled enrollment via multichallenge"
 msgstr ""
 
-#: api/validate.py:496
+#: api/validate.py:554
 msgid "Cancelled enrollment via multichallenge for transaction_id "
 msgstr ""
 
-#: api/validate.py:498
+#: api/validate.py:556
 msgid "Failed to cancel enrollment via multichallenge"
 msgstr ""
 
-#: api/validate.py:499
+#: api/validate.py:557
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
 msgstr ""
 
-#: api/validate.py:536 api/validate.py:996
+#: api/validate.py:594 api/validate.py:1091
 msgid "The authentication method is not available."
 msgstr ""
 
-#: api/validate.py:577
+#: api/validate.py:635
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
 msgstr ""
 
-#: api/validate.py:601 lib/token.py:2678
+#: api/validate.py:659 lib/token.py:2678
 msgid "Found matching challenge"
 msgstr ""
 
-#: api/validate.py:622 api/validate.py:624
+#: api/validate.py:680 api/validate.py:682
 msgid "Given serial does not belong to given user!"
 msgstr ""
 
-#: api/validate.py:1013
+#: api/validate.py:1108
 #, python-brace-format
 msgid "Unsupported token type '{token_type}' for authentication initialization!"
 msgstr ""
@@ -222,12 +218,12 @@ msgstr ""
 msgid "Please scan the QR code to register the container."
 msgstr ""
 
-#: api/lib/prepolicy.py:2608 api/lib/prepolicy.py:2644
+#: api/lib/prepolicy.py:2637 api/lib/prepolicy.py:2673
 #, python-brace-format
 msgid "Description required for {type_value} token."
 msgstr ""
 
-#: api/lib/prepolicy.py:2877
+#: api/lib/prepolicy.py:2906
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
@@ -2548,25 +2544,25 @@ msgid ""
 "false. Hence, the policy is not applied."
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:1284
+#: lib/resolvers/LDAPIdResolver.py:1285
 #, python-brace-format
 msgid ""
 "Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} "
 "with the specified uidtype."
 msgstr ""
 
-#: lib/resolvers/LDAPIdResolver.py:1288
+#: lib/resolvers/LDAPIdResolver.py:1289
 #, python-brace-format
 msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:204
+#: lib/smsprovider/FirebaseProvider.py:214
 msgid ""
 "The filename of the JSON config file, that allows privacyIDEA to talk to "
 "the Firebase REST API."
 msgstr ""
 
-#: lib/smsprovider/FirebaseProvider.py:209
+#: lib/smsprovider/FirebaseProvider.py:219
 msgid "Proxy setting for HTTPS connections to googleapis.com."
 msgstr ""
 
@@ -2796,7 +2792,7 @@ msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
 msgstr ""
 
 #: lib/tokens/daypasswordtoken.py:129 lib/tokens/hotptoken.py:181
-#: lib/tokens/pushtoken.py:423 lib/tokens/totptoken.py:170
+#: lib/tokens/pushtoken.py:424 lib/tokens/totptoken.py:170
 msgid ""
 "Enforces the privacyIDEA Authenticator App that the token has to be "
 "unlocked with pin or biometric. This needs the privacyIDEA Authenticator "
@@ -2813,15 +2809,15 @@ msgid ""
 "assigned."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:157
+#: lib/tokens/emailtoken.py:158
 msgid "EMail Token"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:159
+#: lib/tokens/emailtoken.py:160
 msgid "EMail: Send a One Time Password to the users email address."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:167
+#: lib/tokens/emailtoken.py:168
 #, python-brace-format
 msgid ""
 "The text that will be sent via EMail for an EMail-token. Several tags "
@@ -2829,49 +2825,49 @@ msgid ""
 " filename as email template starting with \"file:\"."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:176
+#: lib/tokens/emailtoken.py:177
 #, python-brace-format
 msgid ""
 "The subject of the EMail for an EMail token. Use tags like {otp} and "
 "{serial} as parameters."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:181
+#: lib/tokens/emailtoken.py:182
 msgid ""
 "If set, a new EMail OTP will be sent after successful authentication with"
 " one EMail OTP."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:186
+#: lib/tokens/emailtoken.py:187
 msgid ""
 "Use an alternative challenge text for telling the user to enter the code "
 "from the e-mail. You can also use tags for automated replacement. Check "
 "out the documentation for more details."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:196
+#: lib/tokens/emailtoken.py:197
 msgid "The user may only have this maximum number of email tokens assigned."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:201
+#: lib/tokens/emailtoken.py:202
 msgid ""
 "The user may only have this maximum number of active email tokens "
 "assigned."
 msgstr ""
 
-#: lib/tokens/emailtoken.py:283
+#: lib/tokens/emailtoken.py:286
 msgid "Enter the OTP from the Email"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:325
+#: lib/tokens/emailtoken.py:328
 msgid "The PIN was correct, but the EMail could not be sent!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:563
+#: lib/tokens/emailtoken.py:567
 msgid "Please enter your new email address!"
 msgstr ""
 
-#: lib/tokens/emailtoken.py:603
+#: lib/tokens/emailtoken.py:607
 msgid "The email address is not valid!"
 msgstr ""
 
@@ -3087,101 +3083,107 @@ msgid ""
 "assigned."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:78
+#: lib/tokens/pushtoken.py:79
 msgid "Please confirm the authentication on your mobile device!"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:79
+#: lib/tokens/pushtoken.py:80
 msgid ""
 "Use the polling feature of your privacyIDEA Authenticator App to check "
 "for a new Login request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:81
+#: lib/tokens/pushtoken.py:82
 msgid "Do you want to confirm the login?"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:82
+#: lib/tokens/pushtoken.py:83
 msgid "Enter the code to log in"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:369
+#: lib/tokens/pushtoken.py:370
 msgid "PUSH Token"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:371
+#: lib/tokens/pushtoken.py:372
 msgid "PUSH: Send a push notification to a smartphone."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:380
+#: lib/tokens/pushtoken.py:381
 msgid "The configuration of your Firebase application."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:388
+#: lib/tokens/pushtoken.py:389
 msgid ""
 "The URL the Push App should contact in the second enrollment step. "
 "Usually it is the endpoint /ttype/push of the privacyIDEA server."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:394
+#: lib/tokens/pushtoken.py:395
 msgid ""
 "The second enrollment step must be completed within this time (in "
 "minutes)."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:398
+#: lib/tokens/pushtoken.py:399
 msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:404
+#: lib/tokens/pushtoken.py:405
 msgid "The user may only have this maximum number of Push tokens assigned."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:409
+#: lib/tokens/pushtoken.py:410
 msgid "The user may only have this maximum number of active Push tokens assigned."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:415
+#: lib/tokens/pushtoken.py:416
 msgid "Require to unlock the Smartphone before Push requests can be accepted"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:428
+#: lib/tokens/pushtoken.py:429
 msgid ""
 "Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push "
 "tokens to open the privacyIDEA app."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:437
+#: lib/tokens/pushtoken.py:438
 #, python-brace-format
 msgid ""
 "The question the user sees on his mobile phone. Several tags like "
 "{serial} and {client_ip} can be used as parameters."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:443
+#: lib/tokens/pushtoken.py:444
 msgid "The title of the notification, the user sees on his mobile phone."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:448
+#: lib/tokens/pushtoken.py:449
 msgid "The smartphone needs to verify SSL during authentication. (default 1)"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:454
+#: lib/tokens/pushtoken.py:455
 msgid "Require the user to confirm the login with a presence check."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:459
+#: lib/tokens/pushtoken.py:460
 msgid ""
 "Require the user to confirm the login with an OTP that is received in the"
 " smartphone app. push_require_presence has precedence over this. It is "
 "not compatible with push_wait."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:466
+#: lib/tokens/pushtoken.py:467
 msgid "The message that is shown above the code on the smartphone."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:471
+#: lib/tokens/pushtoken.py:472
+msgid ""
+"Use an alternative challenge text for telling the user to confirm the "
+"authentication on his mobile device."
+msgstr ""
+
+#: lib/tokens/pushtoken.py:479
 #, python-brace-format
 msgid ""
 "The options that can be presented to the user to confirm the login. "
@@ -3190,7 +3192,7 @@ msgid ""
 "set."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:481
+#: lib/tokens/pushtoken.py:489
 #, python-brace-format
 msgid ""
 "Custom options that can be presented to the user to confirm the login. "
@@ -3200,32 +3202,32 @@ msgid ""
 "to <code>CUSTOM</code>."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:491
+#: lib/tokens/pushtoken.py:499
 #, python-brace-format
 msgid ""
 "The number of options the user is presented with to confirm the login. "
 "Does only apply if <em>{0!s}</em> is set."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:499
+#: lib/tokens/pushtoken.py:507
 msgid ""
 "Wait for number of seconds for the user to confirm the challenge in the "
 "first request."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:505
+#: lib/tokens/pushtoken.py:513
 msgid "Configure whether to allow push tokens to poll for challenges"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:649
+#: lib/tokens/pushtoken.py:657
 msgid "URL for privacyIDEA Push Token"
 msgstr ""
 
-#: lib/tokens/pushtoken.py:1156
+#: lib/tokens/pushtoken.py:1162
 msgid "Please enter the code displayed on your smartphone."
 msgstr ""
 
-#: lib/tokens/pushtoken.py:1394
+#: lib/tokens/pushtoken.py:1408
 msgid "Please scan the QR code!"
 msgstr ""
 
@@ -3300,59 +3302,59 @@ msgid ""
 "assigned."
 msgstr ""
 
-#: lib/tokens/smstoken.py:196
+#: lib/tokens/smstoken.py:197
 msgid "SMS Token"
 msgstr ""
 
-#: lib/tokens/smstoken.py:198
+#: lib/tokens/smstoken.py:199
 msgid "SMS: Send a One Time Password to the users mobile phone."
 msgstr ""
 
-#: lib/tokens/smstoken.py:207
+#: lib/tokens/smstoken.py:208
 #, python-brace-format
 msgid ""
 "The text that will be send via SMS for an SMS token. Use tags like {otp} "
 "and {serial} as parameters."
 msgstr ""
 
-#: lib/tokens/smstoken.py:214
+#: lib/tokens/smstoken.py:215
 msgid ""
 "If set, a new SMS OTP will be sent after successful authentication with "
 "one SMS OTP."
 msgstr ""
 
-#: lib/tokens/smstoken.py:219
+#: lib/tokens/smstoken.py:220
 msgid ""
 "Use an alternative challenge text for telling the user to enter the code "
 "from the SMS. You can also use tags for automated replacement. Check out "
 "the documentation for more details."
 msgstr ""
 
-#: lib/tokens/smstoken.py:230
+#: lib/tokens/smstoken.py:231
 msgid "Choose the gateways the administrator is allowed to set."
 msgstr ""
 
-#: lib/tokens/smstoken.py:238
+#: lib/tokens/smstoken.py:239
 msgid "Choose the gateways the user is allowed to set."
 msgstr ""
 
-#: lib/tokens/smstoken.py:245
+#: lib/tokens/smstoken.py:246
 msgid "The user may only have this maximum number of SMS tokens assigned."
 msgstr ""
 
-#: lib/tokens/smstoken.py:251
+#: lib/tokens/smstoken.py:252
 msgid "The user may only have this maximum number of active SMS tokens assigned."
 msgstr ""
 
-#: lib/tokens/smstoken.py:327
+#: lib/tokens/smstoken.py:330
 msgid "Enter the OTP from the SMS:"
 msgstr ""
 
-#: lib/tokens/smstoken.py:361
+#: lib/tokens/smstoken.py:364
 msgid "The PIN was correct, but the SMS could not be sent!"
 msgstr ""
 
-#: lib/tokens/smstoken.py:612
+#: lib/tokens/smstoken.py:615
 msgid "Please enter your new phone number!"
 msgstr ""
 
@@ -3631,111 +3633,111 @@ msgid ""
 "assigned."
 msgstr ""
 
-#: lib/tokens/yubikeytoken.py:168
+#: lib/tokens/yubikeytoken.py:174
 msgid "Yubikey AES mode: One Time Passwords with Yubikey."
 msgstr ""
 
-#: lib/tokens/yubikeytoken.py:177
+#: lib/tokens/yubikeytoken.py:183
 msgid "The user may only have this maximum number of Yubikey tokens assigned."
 msgstr ""
 
-#: lib/tokens/yubikeytoken.py:183
+#: lib/tokens/yubikeytoken.py:189
 msgid ""
 "The user may only have this maximum number of active Yubikey tokens "
 "assigned."
 msgstr ""
 
-#: lib/tokens/yubikeytoken.py:188
+#: lib/tokens/yubikeytoken.py:194
 msgid ""
 "The Yubikey access code can be read by an enrollment client to initialize"
 " Yubikeys."
 msgstr ""
 
-#: lib/utils/compare.py:373
+#: lib/utils/compare.py:375
 msgid "True if the value of the left attribute is equal to the right value"
 msgstr ""
 
-#: lib/utils/compare.py:375
+#: lib/utils/compare.py:377
 msgid "False if the value of the left attribute is equal to the right value"
 msgstr ""
 
-#: lib/utils/compare.py:377
+#: lib/utils/compare.py:379
 msgid "True if the list of the left attribute contains the right value"
 msgstr ""
 
-#: lib/utils/compare.py:379
+#: lib/utils/compare.py:381
 msgid "False if the list of the left attribute contains the right value"
 msgstr ""
 
-#: lib/utils/compare.py:381
+#: lib/utils/compare.py:383
 msgid ""
 "True if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr ""
 
-#: lib/utils/compare.py:384
+#: lib/utils/compare.py:386
 msgid ""
 "False if the value of the left attribute completely matches the given "
 "regular expression pattern on the right"
 msgstr ""
 
-#: lib/utils/compare.py:387
+#: lib/utils/compare.py:389
 msgid ""
 "True if the value of the left attribute is contained in the comma-"
 "separated list on the right"
 msgstr ""
 
-#: lib/utils/compare.py:390
+#: lib/utils/compare.py:392
 msgid ""
 "False if the value of the left attribute is contained in the comma-"
 "separated list on the right"
 msgstr ""
 
-#: lib/utils/compare.py:393
+#: lib/utils/compare.py:395
 msgid ""
 "True if the integer value of the left attribute is smaller than the right"
 " integer value"
 msgstr ""
 
-#: lib/utils/compare.py:398
+#: lib/utils/compare.py:400
 msgid ""
 "True if the integer value of the left attribute is bigger than the right "
 "integer value"
 msgstr ""
 
-#: lib/utils/compare.py:402
+#: lib/utils/compare.py:404
 msgid ""
 "True if the date and time of the left attribute is before the date and "
 "time of the right attribute"
 msgstr ""
 
-#: lib/utils/compare.py:405
+#: lib/utils/compare.py:407
 msgid ""
 "True if the date and time of the left attribute is after the date and "
 "time of the right attribute"
 msgstr ""
 
-#: lib/utils/compare.py:408
+#: lib/utils/compare.py:410
 msgid ""
 "True if the date and time of the left attribute is within the past "
 "duration of the right attribute. The right attribute should be a duration"
 " such as '1y', '7d', '6h', '15m'."
 msgstr ""
 
-#: lib/utils/compare.py:412
+#: lib/utils/compare.py:414
 msgid ""
 "False if the date and time of the left attribute is within the past "
 "duration of the right attribute. The right attribute should be a duration"
 " such as '1y', '7d', '6h', '15m'."
 msgstr ""
 
-#: lib/utils/compare.py:416
+#: lib/utils/compare.py:418
 msgid ""
 "True if the value of the left attribute contains the right value (case-"
 "insensitive)"
 msgstr ""
 
-#: lib/utils/compare.py:419
+#: lib/utils/compare.py:421
 msgid ""
 "False if the value of the left attribute contains the right value (case-"
 "insensitive)"
