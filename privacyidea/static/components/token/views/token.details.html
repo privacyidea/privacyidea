@@ -523,12 +523,10 @@
                 </button>
                 <div ng-show="loggedinUsername">
                     <p ng-hide="passkeyMismatch" translate>You will be logged in as: {{ loggedinUsername }}</p>
-                    <p ng-show="passkeyMismatch && loggedInUser.role === 'admin'"
-                       style="color: darkorange;">
-                        <span translate>Authentication successful, but the passkey that was used is not this, but</span>
-                        <a ui-sref="token.details({tokenSerial: passkeyMismatch.serial})">{{ passkeyMismatch.serial }}</a>
-                        <span ng-show="passkeyMismatch.username">
-                            <span translate>of</span>
+                    <p ng-show="passkeyMismatch" style="color: darkorange;">
+                        <span translate>Authentication succeeded with a different passkey:</span>
+                        <a ui-sref="token.details({tokenSerial: passkeyMismatch.serial})">{{ passkeyMismatch.serial }}</a><span ng-if="passkeyMismatch.username">
+                            <span translate>belonging to</span>
                             <a ui-sref="user.details({username: passkeyMismatch.username,
                                                       realmname: passkeyMismatch.realm,
                                                       resolvername: passkeyMismatch.resolver})">{{ passkeyMismatch.username }}@{{ passkeyMismatch.realm }}</a></span>.

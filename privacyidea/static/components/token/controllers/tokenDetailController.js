@@ -141,14 +141,14 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                                 if ($scope.loggedInUser.role === "admin"
                                     && data.detail.serial
                                     && data.detail.serial !== $scope.tokenSerial) {
+                                    $scope.passkeyMismatch = {serial: data.detail.serial};
                                     TokenFactory.getTokenForSerial(data.detail.serial, function (tokData) {
-                                        const tokens = tokData.result.value.tokens;
-                                        const matched = tokens && tokens.length ? tokens[0] : null;
+                                        const matched = tokData?.result?.value?.tokens?.[0];
                                         $scope.passkeyMismatch = {
                                             serial: data.detail.serial,
-                                            username: matched ? matched.username : "",
-                                            realm: matched ? matched.user_realm : "",
-                                            resolver: matched ? matched.resolver : ""
+                                            username: matched?.username || "",
+                                            realm: matched?.user_realm || "",
+                                            resolver: matched?.resolver || ""
                                         };
                                     });
                                 }
