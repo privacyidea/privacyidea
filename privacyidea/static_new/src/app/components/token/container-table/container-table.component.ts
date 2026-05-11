@@ -22,6 +22,7 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import {
+  CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerService,
   ContainerServiceInterface
@@ -104,12 +105,7 @@ export class ContainerTableComponent {
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
 
-  readonly containerStateOptions = [
-    { value: "active", label: $localize`active` },
-    { value: "disabled", label: $localize`deactivated` },
-    { value: "lost", label: $localize`lost` },
-    { value: "damaged", label: $localize`damaged` }
-  ];
+  readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
@@ -146,6 +142,7 @@ export class ContainerTableComponent {
   readonly apiFilterKeyMap: Record<string, string> = {
     serial: "container_serial",
     type: "type",
+    states: "state",
     description: "description",
     user_name: "user",
     realms: "container_realm"

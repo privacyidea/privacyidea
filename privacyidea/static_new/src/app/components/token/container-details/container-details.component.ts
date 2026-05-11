@@ -56,6 +56,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
+  CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerDetailToken,
   ContainerService,
@@ -81,12 +82,6 @@ const containerUserDetailsKeyMap = [
   { key: "user_resolver", label: "Resolver" },
   { key: "user_id", label: "User ID" }
 ];
-
-const allowedTokenTypesMap = new Map<string, string | string[]>([
-  ["yubikey", ["certificate", "hotp", "passkey", "webauthn", "yubico", "yubikey"]],
-  ["smartphone", ["daypassword", "hotp", "push", "sms", "totp"]],
-  ["generic", "all"]
-]);
 
 interface TokenOption {
   serial: string;
@@ -214,7 +209,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       return containerDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: (containerDetails as any)[detail.key],
+          value: containerDetails[detail.key as keyof ContainerDetailData],
           isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
@@ -233,7 +228,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       return infoDetailsKeyMap
         .map((detail) => ({
           keyMap: detail,
-          value: (containerDetails as any)[detail.key],
+          value: containerDetails[detail.key as keyof ContainerDetailData],
           isEditing: signal(false)
         }))
         .filter((detail) => detail.value !== undefined);
@@ -258,12 +253,7 @@ export class ContainerDetailsComponent implements OnDestroy {
     computation: (containerDetails) => containerDetails?.states || []
   });
 
-  readonly containerStateOptions = [
-    { value: "active", label: $localize`active` },
-    { value: "disabled", label: $localize`deactivated` },
-    { value: "lost", label: $localize`lost` },
-    { value: "damaged", label: $localize`damaged` }
-  ];
+  readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
   rawUserData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {

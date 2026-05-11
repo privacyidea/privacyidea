@@ -39,19 +39,24 @@ import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwErro
 const apiFilter = ["container_serial", "type", "description", "container_realm", "state", "template", "assigned"];
 const advancedApiFilter = ["token_serial"];
 
-export interface TemplateComparisonResult {
-  [containerSerial: string]: {
+export const CONTAINER_STATE_OPTIONS = [
+  { value: "active", label: $localize`active` },
+  { value: "disabled", label: $localize`deactivated` },
+  { value: "lost", label: $localize`lost` },
+  { value: "damaged", label: $localize`damaged` }
+] as const;
+
+export type TemplateComparisonResult = Record<string, {
     tokens: {
       additional: string[];
       equal: boolean;
       missing: string[];
     };
-  };
-}
+  }>;
 
 export interface ContainerDetails {
   count?: number;
-  containers: Array<ContainerDetailData>;
+  containers: ContainerDetailData[];
 }
 type ContainerRegistrationState = "registered" | "client_wait";
 
@@ -139,7 +144,7 @@ export interface ContainerTemplate {
   default: boolean;
   name: string;
   template_options: {
-    tokens: Array<TokenEnrollmentPayload>;
+    tokens: TokenEnrollmentPayload[];
   };
 }
 
@@ -206,7 +211,7 @@ export interface ContainerServiceInterface {
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
   assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
   compareWithTemplate: () => Promise<void>;
-  setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
+  setContainerInfos: (containerSerial: string, infos: any) => Observable<object>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<any>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
   removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
@@ -641,7 +646,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setStates(containerSerial: string, states: string[]): Observable<any> {
+  setStates(containerSerial: string, states: string[]): Observable<unknown> {
     const headers = this.authService.getHeaders();
     return this.http
       .post(
@@ -695,7 +700,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerInfos(containerSerial: string, infos: any): Observable<Object>[] {
+  setContainerInfos(containerSerial: string, infos: any): Observable<object>[] {
     const headers = this.authService.getHeaders();
     const info_url = `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info`;
     return Object.keys(infos).map((info) => {
@@ -929,7 +934,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  startPolling(containerSerial: string, isRollover: boolean = false): void {
+  startPolling(containerSerial: string, isRollover = false): void {
     if (this.isPollingActive()) {
       return;
     }

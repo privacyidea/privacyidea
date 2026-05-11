@@ -868,6 +868,34 @@ describe("ContainerService", () => {
     });
   });
 
+  describe("setStates", () => {
+    it("posts states as comma-separated string to the correct URL", async () => {
+      const post = jest.spyOn(http, "post").mockReturnValue(of({}) as any);
+      await lastValueFrom(containerService.setStates("cS", ["active", "lost"]));
+      expect(post).toHaveBeenCalledWith(
+        `${containerService.containerBaseUrl}cS/states`,
+        { states: "active,lost" },
+        expect.objectContaining({ headers: expect.anything() })
+      );
+    });
+
+    it("posts a single state without trailing comma", async () => {
+      const post = jest.spyOn(http, "post").mockReturnValue(of({}) as any);
+      await lastValueFrom(containerService.setStates("cS", ["disabled"]));
+      expect(post).toHaveBeenCalledWith(
+        `${containerService.containerBaseUrl}cS/states`,
+        { states: "disabled" },
+        expect.objectContaining({ headers: expect.anything() })
+      );
+    });
+
+    it("error path shows snackbar and rethrows", async () => {
+      jest.spyOn(http, "post").mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      await expect(lastValueFrom(containerService.setStates("cS", ["active"]))).rejects.toBeDefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to set container states."));
+    });
+  });
+
   describe("templateComparison", () => {
     it("resets to null when containerSerial changes", () => {
       containerService.containerSerial.set("CONT-A");

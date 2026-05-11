@@ -271,7 +271,15 @@ describe("ContainerDetailsComponent", () => {
     expect(element.isEditing()).toBe(false);
   });
 
-  it("cancelContainerEdit for states resets selectedStates from containerDetails", () => {
+  it("cancelContainerEdit for states resets selectedStates to the original states from containerDetails", () => {
+    component.containerDetails.set({
+      serial: "Mock serial",
+      states: ["active"],
+      realms: [],
+      tokens: [],
+      type: "generic",
+      users: []
+    });
     component.containerDetailData.set([
       {
         keyMap: { label: "Status", key: "states" },
@@ -283,7 +291,7 @@ describe("ContainerDetailsComponent", () => {
     const element = component.containerDetailData()[0];
     component.cancelContainerEdit(element);
 
-    expect(component.selectedStates()).toEqual([]);
+    expect(component.selectedStates()).toEqual(["active"]);
     expect(element.isEditing()).toBe(false);
   });
 
