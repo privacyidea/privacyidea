@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
 # Paul Lettich <paul.lettich@netknights.it>, 2026.
+# Francisco Serrador <fserrador@gmail.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-03-13 11:14+0100\n"
-"PO-Revision-Date: 2026-03-03 16:09+0000\n"
-"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
+"PO-Revision-Date: 2026-05-07 11:24+0000\n"
+"Last-Translator: Francisco Serrador <fserrador@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/es/>\n"
 "Language: es\n"
@@ -17,28 +18,28 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.17.1\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: api/auth.py:260
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Autenticación con clave de acceso inhabilitada."
 
 # | msgid "Authentication failure. Missing Username"
 #: api/auth.py:265
-#, fuzzy
 msgid "Authentication failure. The passkey is not registered."
-msgstr "Fallo la autenticación. Usuario no encontrado"
+msgstr "Fallo de autenticación. La clave de acceso no está registrada."
 
 # | msgid "Authentication failure. Your token has expired: {0!s}"
 #: api/auth.py:277
-#, fuzzy
 msgid "Authentication failure. Token has no user."
-msgstr "Fallo la autenticación. El token ha expirado: {0!s}"
+msgstr "Fallo de autenticación. El token no tiene usuario."
 
 #: api/auth.py:281
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
 msgstr ""
+"Error de autenticación. El tipo de token {token_type} está inhabilitado."
 
 #: api/auth.py:287
 #, python-brace-format
@@ -46,12 +47,13 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token "
 "{serial}"
 msgstr ""
+"Error de autenticación. La última comprobación de la normativa de "
+"autenticación falló para el token {serial}"
 
 # | msgid "Authentication failure. Missing Username"
 #: api/auth.py:300
-#, fuzzy
 msgid "Authentication failure using passkey."
-msgstr "Fallo la autenticación. Usuario no encontrado"
+msgstr "Error de autenticación mediante clave de acceso."
 
 #: api/auth.py:305
 msgid "Authentication failure. Unknown realm:"
@@ -67,13 +69,12 @@ msgstr "Fallo la autenticación. Credenciales incorrectas"
 
 # | msgid "Authentication failure. Missing Username"
 #: api/before_after.py:518 api/lib/postpolicy.py:977 api/validate.py:606
-#, fuzzy
 msgid "Authentication failed."
-msgstr "Fallo la autenticación. Usuario no encontrado"
+msgstr "Falló la autenticación."
 
 #: api/container.py:203
 msgid "Missing parameter 'realm', 'resolver', and/or 'user_id'"
-msgstr ""
+msgstr "Faltan los parámetros 'realm', 'resolver' y/o 'user_id'"
 
 #: api/container.py:1148
 msgid "'template_options' must be a dictionary!"
