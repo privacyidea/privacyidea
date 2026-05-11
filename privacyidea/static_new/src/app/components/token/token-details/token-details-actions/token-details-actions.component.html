@@ -32,6 +32,29 @@
       </section>
     }
 
+    @if (tokenType() === "passkey") {
+      <section class="actions-section actions-section--wide">
+        <h5 class="actions-section-title" i18n>Test</h5>
+        <div class="passkey-test-panel">
+          <button
+            (click)="testPasskey.emit()"
+            class="action-button-secondary button-width-l"
+            i18n
+            mat-stroked-button>
+            <mat-icon>key</mat-icon>
+            Test Passkey
+          </button>
+          @if (passkeyTestResult(); as result) {
+            <p class="passkey-test-result"
+              [class.passkey-test-result--success]="result.kind === 'success'"
+              [class.passkey-test-result--warning]="result.kind === 'warning'">
+              {{ result.message }}
+            </p>
+          }
+        </div>
+      </section>
+    }
+
     @if (tokenType() !== "passkey" && tokenType() !== "webauthn" && authService.actionAllowed("resync")) {
       <section class="actions-section actions-section--wide test-sync-section">
         <h5 class="actions-section-title" i18n>Sync</h5>

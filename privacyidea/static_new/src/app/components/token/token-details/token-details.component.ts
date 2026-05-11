@@ -56,6 +56,7 @@ import { AutofocusDirective } from "@components/shared/directives/app-autofocus.
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
@@ -173,6 +174,7 @@ export class TokenDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected isLost = signal(false);
@@ -187,6 +189,7 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal("");
   repeatPinValue = signal("");
+  passkeyTestResult = signal<{ kind: "success" | "warning"; message: string } | null>(null);
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
     if (!tokenApplications) return false;
@@ -412,17 +415,54 @@ export class TokenDetailsComponent {
   }
 
   testPasskey(): void {
-    this.validateService.authenticatePasskey({ isTest: true }).subscribe({
-      next: (checkResponse) => {
-        if (checkResponse.result?.value) {
-          this.notificationService.success(
-            "Test successful. You would have been logged in as: " + (checkResponse.detail?.username ?? "Unknown User")
-          );
-        } else {
-          this.notificationService.warning("No user found.");
+    this.passkeyTestResult.set(null);
+    const expectedHash = (this.tokenDetails()?.info as Record<string, string> | undefined)?.["credential_id_hash"];
+    let usedCredentialId: string | null = null;
+    this.validateService
+      .authenticatePasskey({
+        isTest: true,
+        onCredentialId: (id) => (usedCredentialId = id)
+      })
+      .subscribe({
+        next: async (checkResponse) => {
+          if (!checkResponse.result?.value) {
+            this.passkeyTestResult.set({ kind: "warning", message: "No user found." });
+            return;
+          }
+          const username = checkResponse.detail?.username ?? "Unknown User";
+          const authenticatedSerial = checkResponse.detail?.serial;
+          let mismatch = false;
+          if (expectedHash && usedCredentialId) {
+            const actualHash = await this.sha256HexFromBase64Url(usedCredentialId);
+            mismatch = actualHash.toLowerCase() !== expectedHash.toLowerCase();
+          }
+          if (mismatch) {
+            const matchedSerial = authenticatedSerial && authenticatedSerial !== this.tokenSerial()
+              ? ` (it matched ${authenticatedSerial})`
+              : "";
+            this.passkeyTestResult.set({
+              kind: "warning",
+              message:
+                `You authenticated with a different passkey than the one shown on this page${matchedSerial}. ` +
+                `The user would be: ${username}.`
+            });
+          } else {
+            this.passkeyTestResult.set({
+              kind: "success",
+              message: "Authentication successful. You would have been logged in as: " + username
+            });
+          }
         }
-      }
-    });
+      });
+  }
+
+  private async sha256HexFromBase64Url(base64Url: string): Promise<string> {
+    const bytes = this.base64Service.webAuthnBase64DecToArr(base64Url);
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const digest = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   attachSshToMachineDialog(): void {

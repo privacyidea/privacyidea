@@ -30,7 +30,7 @@ $padding-horizontal: 16px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 16px;
   }
 
@@ -89,6 +89,43 @@ $padding-horizontal: 16px;
         flex-wrap: wrap;
       }
     }
+  }
+
+  .actions-section {
+    app-set-pin-action,
+    app-resync-token-action,
+    app-test-otp-pin-action,
+    .passkey-test-panel {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+  }
+
+  .passkey-test-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: var(--border-radius);
+    box-sizing: border-box;
+  }
+
+  .passkey-test-result {
+    margin: 0;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .passkey-test-result--success {
+    color: var(--mat-sys-primary);
+  }
+
+  .passkey-test-result--warning {
+    color: var(--mat-sys-error);
   }
 
   .lifecycle-buttons {
