@@ -127,11 +127,11 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     }
     return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
   });
-  versionText = computed(() => {
+  versionPrefix = computed(() => {
     if (this.customLogo()) {
-      return $localize`privacyIDEA Version ` + this.versioningService.version();
+      return $localize`privacyIDEA` + " ";
     }
-    return $localize`Version ` + this.versioningService.version();
+    return "";
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();

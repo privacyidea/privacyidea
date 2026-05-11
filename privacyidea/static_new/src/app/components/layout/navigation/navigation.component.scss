@@ -34,6 +34,18 @@ $breakpoint-compact: 1822px;
   z-index: 100;
 }
 
+.margin-right-5 {
+  margin-right: 5px;
+}
+
+.margin-right-3 {
+  margin-right: 3px;
+}
+
+.margin-right-2 {
+  margin-right: 2px;
+}
+
 .primary-toolbar {
   @include flex-center;
   gap: 8px;
@@ -205,6 +217,12 @@ $breakpoint-compact: 1822px;
   flex-shrink: 0;
 }
 
+.version-text {
+  font-size: 14px;
+  color: var(--mat-sys-surface-container-highest);
+  white-space: nowrap;
+}
+
 .docs-button-icon {
   display: none !important;
 }
@@ -265,6 +283,10 @@ $breakpoint-compact: 1822px;
     .docs-button-icon {
       display: inline-flex !important;
     }
+  }
+
+  .version-prefix {
+    display: none;
   }
 
   :host.has-custom-logo .secondary-toolbar {
