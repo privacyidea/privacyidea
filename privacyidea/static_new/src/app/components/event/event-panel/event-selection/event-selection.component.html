@@ -16,16 +16,16 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<form>
+<div class="event-selection-container">
   <mat-form-field
-    class="input-width-xl height-unset"
+    class="event-chips-field height-unset"
     floatLabel="always">
-    <mat-label>Events</mat-label>
+    <mat-label i18n>Events</mat-label>
     <mat-chip-grid
       #chipGrid
-      required
       [formControl]="selectedEvents"
-      aria-label="Event selection">
+      required
+      aria-label="Selected events">
       @for (event of selectedEvents.value; track $index) {
         <mat-chip-row (removed)="removeEvent(event)">
           {{ event }}
@@ -36,40 +36,50 @@
           </button>
         </mat-chip-row>
       }
+      <input
+        [matChipInputFor]="chipGrid"
+        style="display: none" />
     </mat-chip-grid>
-    <input
-      matInput
-      placeholder="New Event..."
-      [value]="searchTerm()"
-      (input)="onSearchInputChanges($event)"
-      [matChipInputFor]="chipGrid"
-      [matAutocomplete]="auto"
-      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-      (matChipInputTokenEnd)="addEvent($event.value)"
-      #autocompleteTrigger="matAutocompleteTrigger"
-      matAutocompleteTrigger
-      (focus)="autocompleteTrigger.openPanel()" />
-    @if (searchTerm() !== "") {
-      <app-clear-button
-        class="suffix-bottom"
-        matSuffix
-        [toolTipText]="toolTipClearSearch"
-        (onClick)="clearSearchTerm()"></app-clear-button>
-    }
-    <mat-autocomplete
-      #auto="matAutocomplete"
-      (optionSelected)="selected($event)">
-      @for (event of remainingEvents(); track event) {
-        <mat-option [value]="event">
-          {{ event }}
-        </mat-option>
-      }
-    </mat-autocomplete>
-    <mat-hint i18n>
-      Events that should trigger this event handler.
-    </mat-hint>
-    <mat-error i18n>
-      At least one event must be selected.
-    </mat-error>
+    <mat-error i18n>At least one event must be selected.</mat-error>
   </mat-form-field>
-</form>
+
+  <div class="add-events-container">
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Add Events</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="panel-content">
+        <app-clearable-input
+          (onClick)="searchTerm.set('')"
+          [showClearButton]="searchTerm() !== ''">
+          <input
+            clearableInput
+            type="text"
+            placeholder="Search events..."
+            i18n-placeholder
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+            class="search-input" />
+        </app-clearable-input>
+
+        @if (remainingEvents().length > 0) {
+          <div class="event-items">
+            @for (event of remainingEvents(); track event) {
+              <div
+                class="event-item"
+                (click)="addEvent(event)">
+                <span class="event-name">{{ event }}</span>
+                <button class="add-event-button">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+          <p i18n>No events available.</p>
+        }
+      </div>
+    </mat-expansion-panel>
+  </div>
+</div>

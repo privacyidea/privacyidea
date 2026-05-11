@@ -9,6 +9,7 @@
   @include styles.main-component-style;
   display: grid;
   position: relative;
+  width: 100%;
 }
 
 .header-row {
@@ -69,4 +70,10 @@
 
 .tab-container {
   margin: 16px 8px 16px 8px;
+}
+
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--global-gap);
 }
