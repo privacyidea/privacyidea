@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, inject, Renderer2, signal, ViewChild } from "@angular/core";
+import { Component, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -59,7 +59,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     ReactiveFormsModule
   ]
 })
-export class TokenImportComponent {
+export class TokenImportComponent implements OnDestroy {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -102,7 +102,17 @@ export class TokenImportComponent {
   }
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(() => this.inputForm.dirty);
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        this.fileName() !== "" ||
+        this.pskPassword() !== "" ||
+        this.fileType() !== "OATH CSV" ||
+        this.pskValidation() !== "check_fail_hard",
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   ngAfterViewInit(): void {

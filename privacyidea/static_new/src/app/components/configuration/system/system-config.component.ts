@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnInit, ViewChild } from "@angular/core";
+import { Component, effect, inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { FormsModule, NgForm } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -55,7 +55,7 @@ import { SystemDocumentationDialogComponent } from "./system-documentation-dialo
   ],
   styleUrls: ["./system-config.component.scss"]
 })
-export class SystemConfigComponent implements OnInit {
+export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly authService: AuthService = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -103,7 +103,9 @@ export class SystemConfigComponent implements OnInit {
     this.loadSystemConfig();
     this.smtpService.smtpServerResource.reload();
     this.pendingChangesService.registerHasChanges(() => this.systemConfigForm?.dirty ?? false);
-    this.pendingChangesService.registerValidChanges(() => this.hasConfigWritePermission());
+    this.pendingChangesService.registerValidChanges(
+      () => this.hasConfigWritePermission() && (this.systemConfigForm?.valid ?? false),
+    );
     this.pendingChangesService.registerSave(() => this._saveAndReturn());
   }
 
@@ -183,5 +185,9 @@ export class SystemConfigComponent implements OnInit {
         this.notificationService.error("Error loading system documentation.");
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 }

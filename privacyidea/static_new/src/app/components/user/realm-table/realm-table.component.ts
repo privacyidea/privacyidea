@@ -25,6 +25,7 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   signal,
   ViewChild,
   WritableSignal
@@ -69,7 +70,7 @@ import { RealmRow, Realms, RealmService, RealmServiceInterface, ResolverGroup } 
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { concat, last, take } from "rxjs";
+import { concat, last, lastValueFrom, take } from "rxjs";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -118,7 +119,7 @@ const columnKeysMap = [
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
 })
-export class RealmTableComponent {
+export class RealmTableComponent implements OnDestroy {
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -274,8 +275,14 @@ export class RealmTableComponent {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () => this.editingRealmName() !== null || this.newRealmName() !== ""
+      () =>
+        this.newRealmName() !== "" ||
+        Object.keys(this.newRealmNodeResolvers()).length > 0 ||
+        (this.editingRealmName() !== null &&
+          JSON.stringify(this.editNodeResolvers()) !== JSON.stringify(this.editOriginalNodeResolvers())),
     );
+    this.pendingChangesService.registerValidChanges(() => this.canSubmitNewRealm());
+    this.pendingChangesService.registerSave(() => this.onCreateRealm());
   }
 
   // --- Filter Handlers ---
@@ -353,8 +360,8 @@ export class RealmTableComponent {
     this.newRealmNodeResolvers.set(current);
   }
 
-  onCreateRealm(): void {
-    if (!this.canSubmitNewRealm()) return;
+  async onCreateRealm(): Promise<boolean> {
+    if (!this.canSubmitNewRealm()) return false;
 
     this.isCreatingRealm.set(true);
     const realmName = this.newRealmName().trim();
@@ -385,20 +392,20 @@ export class RealmTableComponent {
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
 
-    concat(...requests)
-      .pipe(last())
-      .subscribe({
-        next: () => {
-          this._notificationService.success($localize`Realm created.`);
-          this.resetCreateForm();
-          this.realmService.realmResource.reload?.();
-        },
-        error: (err: HttpErrorResponse) => {
-          const message = err.error?.result?.error?.message || err.message;
-          this._notificationService.error($localize`Failed to create realm. ${message}`);
-        }
-      })
-      .add(() => this.isCreatingRealm.set(false));
+    try {
+      await lastValueFrom(concat(...requests).pipe(last()));
+      this._notificationService.success($localize`Realm created.`);
+      this.resetCreateForm();
+      this.realmService.realmResource.reload?.();
+      return true;
+    } catch (err) {
+      const httpErr = err as HttpErrorResponse;
+      const message = httpErr.error?.result?.error?.message || httpErr.message;
+      this._notificationService.error($localize`Failed to create realm. ${message}`);
+      return false;
+    } finally {
+      this.isCreatingRealm.set(false);
+    }
   }
 
   // --- Edit Handlers ---
@@ -598,5 +605,9 @@ export class RealmTableComponent {
       if (va > vb) return 1 * dir;
       return 0;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 }

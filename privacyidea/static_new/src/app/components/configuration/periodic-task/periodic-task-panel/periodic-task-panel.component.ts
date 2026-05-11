@@ -23,7 +23,9 @@ import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@
 import { MatIcon } from "@angular/material/icon";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
   EMPTY_PERIODIC_TASK,
   PERIODIC_TASK_MODULE_MAPPING,
@@ -31,8 +33,6 @@ import {
   PeriodicTaskModule,
   PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
 

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/core";
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -66,7 +66,7 @@ import { lastValueFrom } from "rxjs";
   templateUrl: "./machine-details-dialog.component.html",
   styleUrl: "./machine-details-dialog.component.scss"
 })
-export class MachineDetailsDialogComponent implements OnInit {
+export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
@@ -211,6 +211,10 @@ export class MachineDetailsDialogComponent implements OnInit {
         this.selectedApplication = "offline";
         this.loadTokenApplications();
       });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   onTokenClick(serial: string): void {

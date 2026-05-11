@@ -71,6 +71,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   selector: "app-container-create",
@@ -177,6 +178,34 @@ export class ContainerCreateComponent {
     this.pendingChangesService.registerHasChanges(
       () => this.description() !== "" || this.selectedTemplate().name !== "" || this.selectedUser() !== ""
     );
+    this.pendingChangesService.registerValidChanges(() => this.validInput);
+    this.pendingChangesService.registerSave(() => this._saveForPendingChanges());
+  }
+
+  private async _saveForPendingChanges(): Promise<boolean> {
+    const containerType = this.containerService.selectedContainerType()?.containerType;
+    if (!containerType || !this.validInput) return false;
+
+    const createData: ContainerCreateData = {
+      type: containerType,
+      description: this.description(),
+      user: this.userService.selectionUsernameFilter()
+    };
+    if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
+      createData.realm = this.selectedUserRealm();
+    }
+    const template = this.selectedTemplate();
+    if (template && template.template_options.tokens.length > 0) {
+      createData.name = template.name;
+      createData.template = template;
+    }
+
+    try {
+      await firstValueFrom(this.containerService.createContainer(createData));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   ngAfterViewInit(): void {
@@ -203,6 +232,7 @@ export class ContainerCreateComponent {
   ngOnDestroy(): void {
     if (this.observer) this.observer.disconnect();
     this.containerService.stopPolling();
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   protected onValidInputChange(isValid: boolean) {
