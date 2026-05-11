@@ -41,7 +41,6 @@ def get_engine_url():
 config.set_main_option('sqlalchemy.url', get_engine_url())
 target_db = current_app.extensions['migrate'].db
 
-
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -117,13 +116,13 @@ def run_migrations_online():
 
             context.run_migrations()
 
-            # After migrations, get the new revision(s)
-            new_heads = ctx.get_current_heads()
-            new_rev = ", ".join(new_heads) if new_heads else "base"
-            if current_rev != new_rev:
-                log.info(f'Revision changed from {current_rev} to {new_rev}')
-            else:
-                log.info(f'Revision remains at {current_rev}')
+            if not getattr(config.cmd_opts, 'autogenerate', False):
+                new_heads = ctx.get_current_heads()
+                new_rev = ", ".join(new_heads) if new_heads else "base"
+                if current_rev != new_rev:
+                    log.info(f'Migrated from revision {current_rev} to revision {new_rev}')
+                else:
+                    log.info(f'Revision remains at {current_rev}')
 
 
 if context.is_offline_mode():
