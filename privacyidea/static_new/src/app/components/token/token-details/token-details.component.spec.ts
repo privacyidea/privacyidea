@@ -21,10 +21,15 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { webcrypto } from "node:crypto";
 import { of } from "rxjs";
 
+if (!(globalThis as any).crypto?.subtle) {
+  Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
+}
+
 import { MatDialog } from "@angular/material/dialog";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
@@ -32,7 +37,7 @@ import { ContentService } from "@services/content/content.service";
 import { MachineService } from "@services/machine/machine.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
   MockAuditService,
@@ -58,6 +63,8 @@ describe("TokenDetailsComponent", () => {
   let realmSvc: MockRealmService;
   let contentSvc: MockContentService;
   let machineSvc: MockMachineService;
+  let validateSvc: MockValidateService;
+  let router: { navigateByUrl: jest.Mock };
 
   const matDialogOpen = jest.fn();
   const matDialogMock = { open: matDialogOpen };
@@ -65,6 +72,11 @@ describe("TokenDetailsComponent", () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     TestBed.resetTestingModule();
+
+    router = { navigateByUrl: jest.fn().mockResolvedValue(true) };
+
+    // Default: any dialog opened resolves with a truthy result (so "confirm" branches run).
+    matDialogOpen.mockReturnValue({ afterClosed: () => of(of({})) });
 
     await TestBed.configureTestingModule({
       imports: [TokenDetailsComponent, BrowserAnimationsModule],
@@ -87,6 +99,7 @@ describe("TokenDetailsComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: MatDialog, useValue: matDialogMock },
+        { provide: Router, useValue: router },
         MockLocalService,
         MockNotificationService
       ]
@@ -97,6 +110,7 @@ describe("TokenDetailsComponent", () => {
     realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
     contentSvc = TestBed.inject(ContentService) as unknown as MockContentService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
+    validateSvc = TestBed.inject(ValidateService) as unknown as MockValidateService;
 
     // Monkey-patch unimplemented service methods we’ll hit via the component.
     (tokenSvc.getTokengroups as any) = jest
@@ -309,4 +323,237 @@ describe("TokenDetailsComponent", () => {
     machineSvc.tokenApplications.set([{ id: 1 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
+
+  it("toggleActive calls service and reloads the resource", () => {
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+    component.tokenIsActive.set(true);
+
+    component.toggleActive();
+
+    expect(tokenSvc.toggleActive).toHaveBeenCalledWith("Mock serial", true);
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("deleteToken confirms, deletes and navigates to TOKENS route", () => {
+    component.deleteToken();
+
+    expect(matDialogOpen).toHaveBeenCalledTimes(1);
+    expect(tokenSvc.deleteToken).toHaveBeenCalledWith("Mock serial");
+    expect(router.navigateByUrl).toHaveBeenCalled();
+    expect(component.tokenSerial()).toBe("");
+  });
+
+  it("deleteToken does nothing when dialog is dismissed", () => {
+    matDialogOpen.mockReturnValueOnce({ afterClosed: () => of(null) });
+    (tokenSvc.deleteToken as jest.Mock).mockClear();
+
+    component.deleteToken();
+
+    expect(tokenSvc.deleteToken).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("revokeToken revokes, refetches details, and reloads", () => {
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.revokeToken();
+
+    expect(tokenSvc.revokeToken).toHaveBeenCalledWith("Mock serial");
+    expect(tokenSvc.getTokenDetails).toHaveBeenCalledWith("Mock serial");
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("revokeToken does nothing when dialog is dismissed", () => {
+    matDialogOpen.mockReturnValueOnce({ afterClosed: () => of(null) });
+    (tokenSvc.revokeToken as jest.Mock).mockClear();
+
+    component.revokeToken();
+
+    expect(tokenSvc.revokeToken).not.toHaveBeenCalled();
+  });
+
+  it("attachSshToMachineDialog opens dialog and reloads applications on close", async () => {
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachSshToMachineDialog();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(matDialogOpen).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("attachHotpToMachineDialog opens dialog and reloads applications on close", async () => {
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachHotpToMachineDialog();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(matDialogOpen).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("attachHotpToMachineDialog does not reload when dialog returns falsy", () => {
+    matDialogOpen.mockReturnValueOnce({ afterClosed: () => of(null) });
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachHotpToMachineDialog();
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it("attachPasskeyToMachine posts assignment and reloads", () => {
+    const postSpy = jest.spyOn(machineSvc, "postAssignMachineToToken");
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachPasskeyToMachine();
+
+    expect(postSpy).toHaveBeenCalledWith({
+      serial: "Mock serial",
+      application: "offline",
+      machineid: 0,
+      resolver: ""
+    });
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("removePasskeyFromMachine deletes assignment and reloads", () => {
+    machineSvc.tokenApplications.set([{ id: 77 } as any]);
+    const delSpy = jest.spyOn(machineSvc, "deleteAssignMachineToToken");
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.removePasskeyFromMachine();
+
+    expect(delSpy).toHaveBeenCalledWith({
+      serial: "Mock serial",
+      application: "offline",
+      mtid: "77"
+    });
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("openLostTokenDialog opens the LostToken dialog", () => {
+    matDialogOpen.mockClear();
+    component.openLostTokenDialog();
+    expect(matDialogOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolloverToken opens the rollover dialog when a token is present", () => {
+    matDialogOpen.mockClear();
+    component.rolloverToken();
+    expect(matDialogOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolloverToken is a no-op when tokenDetails is falsy", () => {
+    matDialogOpen.mockClear();
+    component.tokenDetails.set(undefined as any);
+    component.rolloverToken();
+    expect(matDialogOpen).not.toHaveBeenCalled();
+  });
+
+  it("rolloverTokenTypes contains the expected token types", () => {
+    const types = (component as any).rolloverTokenTypes() as string[];
+    expect(types).toContain("totp");
+    expect(types).toContain("hotp");
+  });
+
+  it("tokenTypeKey reflects the current tokenType signal", () => {
+    component.tokenType.set("yubikey");
+    expect((component as any).tokenTypeKey()).toBe("yubikey" as TokenTypeKey);
+    component.tokenType.set("daypassword");
+    expect((component as any).tokenTypeKey()).toBe("daypassword" as TokenTypeKey);
+  });
+
+  describe("testPasskey", () => {
+    it("reports success when the credential_id hash matches the current token", async () => {
+      const credentialId = "AAA"; // any base64url string
+      const expectedHash = await sha256HexFromBase64Url(credentialId);
+      component.tokenDetails.set({
+        ...component.tokenDetails(),
+        info: { credential_id_hash: expectedHash } as any
+      });
+
+      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args: any) => {
+        args?.onCredentialId?.(credentialId);
+        return of({
+          result: { value: true, status: true } as any,
+          detail: { username: "alice", serial: "Mock serial" } as any
+        } as any);
+      });
+
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("success");
+      expect(result?.message).toMatch(/alice/);
+    });
+
+    it("reports a mismatch when the credential_id hash differs", async () => {
+      component.tokenDetails.set({
+        ...component.tokenDetails(),
+        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as any
+      });
+
+      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args: any) => {
+        args?.onCredentialId?.("AAA");
+        return of({
+          result: { value: true, status: true } as any,
+          detail: { username: "bob", serial: "OTHER-SERIAL" } as any
+        } as any);
+      });
+
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("warning");
+      expect(result?.message).toMatch(/different passkey/);
+      expect(result?.message).toMatch(/OTHER-SERIAL/);
+      expect(result?.message).toMatch(/bob/);
+    });
+
+    it("reports 'No user found' when the validate response is falsy", async () => {
+      jest.spyOn(validateSvc, "authenticatePasskey").mockReturnValue(
+        of({ result: { value: false, status: true } as any, detail: {} as any } as any)
+      );
+
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("warning");
+      expect(result?.message).toMatch(/No user found/);
+    });
+  });
 });
+
+// Helper: drain microtasks AND a macrotask (crypto.subtle.digest may settle on next tick).
+async function flushAsync(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  for (let i = 0; i < 5; i++) {
+    await Promise.resolve();
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+// Mirror of the component's private SHA-256 helper, used only by the matching-hash test.
+async function sha256HexFromBase64Url(b64url: string): Promise<string> {
+  const pad = b64url.padEnd((b64url.length | 3) + 1, "=").replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(pad);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}

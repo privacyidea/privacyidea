@@ -78,7 +78,10 @@ export class MockValidateService implements ValidateServiceInterface {
     });
   }
 
-  authenticatePasskey(_args?: { isTest?: boolean }): Observable<AuthResponse> {
+  authenticatePasskey(_args?: {
+    isTest?: boolean;
+    onCredentialId?: (id: string) => void;
+  }): Observable<AuthResponse> {
     return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as any);
   }
 
