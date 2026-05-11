@@ -161,9 +161,9 @@ def backup_restore(backup_file, keep_db_uri):
             for member in tf:
                 member_name = member.name
                 if re.search(r"/pi.cfg$", member_name):
-                    config_file = f"/{member_name.strip()}"
+                    config_file = f"/{member_name}"
                 elif re.search(r"dbdump-\d{8}-\d{4}\.sql", member_name):
-                    sqlfile = f"/{member_name.strip()}"
+                    sqlfile = f"/{member_name}"
                 elif re.search(r"/enc[kK]ey", member_name):
                     enckey_contained = True
     except (tarfile.TarError, OSError) as e:
@@ -172,8 +172,10 @@ def backup_restore(backup_file, keep_db_uri):
 
     if not config_file:
         click.secho("Missing config file pi.cfg in backup file.", fg="red")
+        sys.exit(2)
     if not sqlfile:
         click.secho("Missing database dump in backup file.", fg="red")
+        sys.exit(2)
 
     config_file = pathlib.Path(config_file)
     sqlfile = pathlib.Path(sqlfile)
@@ -209,7 +211,7 @@ def backup_restore(backup_file, keep_db_uri):
 
     with tarfile.open(backup_file, "r:gz") as tf:
         if sys.version_info >= (3, 12):
-            tf.extractall(path="/", filter='data')
+            tf.extractall(path="/", filter="data")
         else:
             tf.extractall(path="/", members=_safe_members(tf, "/"))
     click.echo(60 * "=")
@@ -271,19 +273,27 @@ def backup_restore(backup_file, keep_db_uri):
 
 
 def _safe_members(tf, dest):
-    """Filter tarfile members to prevent path traversal and reject dangerous entry types (pre-3.12)."""
+    """Fallback member filter for Python < 3.12, which lacks ``tarfile``'s
+    ``filter='data'`` option.
+
+    Skips special files (devices, fifos, character/block specials) so a
+    malicious or corrupted archive can't create them on extraction. Only
+    regular files, directories, symlinks and hardlinks are yielded.
+
+    The path-traversal and link-target checks below are no-ops when ``dest``
+    is ``/`` (every resolved absolute path is contained in ``/``), but are
+    kept so the helper stays correct if a non-root extraction target is
+    introduced later (see TODOs in ``backup_restore``).
+    """
     dest = pathlib.Path(dest).resolve()
     for member in tf.getmembers():
         member_path = (dest / member.name).resolve()
-        # Block path traversal
         if not str(member_path).startswith(str(dest)):
             click.secho(f"Skipping unsafe path: {member.name}", fg="yellow")
             continue
-        # Block special files (devices, fifos, etc.) – only allow regular files, dirs, symlinks, hardlinks
         if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
             click.secho(f"Skipping special file: {member.name}", fg="yellow")
             continue
-        # For symlinks/hardlinks, ensure the target doesn't escape the destination
         if member.issym() or member.islnk():
             link_target = pathlib.Path(member.linkname)
             if not link_target.is_absolute():
