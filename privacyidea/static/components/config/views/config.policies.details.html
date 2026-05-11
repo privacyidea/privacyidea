@@ -296,11 +296,10 @@
                        translate>Client</label>
 
                 <div class="col-sm-6">
-                    <input name="client" class="form-control"
-                           id="client"
-                           type="text"
-                           ng-model="params.client"
-                           placeholder="10.0.0.0/8, !10.0.0.124"/>
+                    <pi-client-ip-input name="client" input-id="client"
+                                        ng-model="params.client"
+                                        placeholder="10.0.0.0/8, !10.0.0.124">
+                    </pi-client-ip-input>
                 </div>
             </div>
 
