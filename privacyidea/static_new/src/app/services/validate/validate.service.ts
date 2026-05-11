@@ -116,7 +116,8 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       switchMap((initResponse: any) => {
         const data = initResponse.detail.passkey;
-        let userVerification: UserVerificationRequirement = "required";
+        const userVerification: UserVerificationRequirement =
+          (data.user_verification as UserVerificationRequirement) ?? "preferred";
         return from(
           navigator.credentials.get({
             publicKey: {

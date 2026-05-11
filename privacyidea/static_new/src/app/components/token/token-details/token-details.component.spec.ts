@@ -497,7 +497,7 @@ describe("TokenDetailsComponent", () => {
       expect(result?.message).toMatch(/alice/);
     });
 
-    it("reports a mismatch when the credential_id hash differs", async () => {
+    it("reports a mismatch with matched serial/user/realm when the hash differs", async () => {
       component.tokenDetails.set({
         ...component.tokenDetails(),
         info: { credential_id_hash: "deadbeef-not-a-real-hash" } as any
@@ -510,6 +510,9 @@ describe("TokenDetailsComponent", () => {
           detail: { username: "bob", serial: "OTHER-SERIAL" } as any
         } as any);
       });
+      (tokenSvc.getTokenDetails as jest.Mock).mockReturnValueOnce(
+        of({ result: { value: { tokens: [{ user_realm: "themis" }] } } } as any)
+      );
 
       component.testPasskey();
       await flushAsync();
@@ -517,8 +520,37 @@ describe("TokenDetailsComponent", () => {
       const result = component.passkeyTestResult();
       expect(result?.kind).toBe("warning");
       expect(result?.message).toMatch(/different passkey/);
-      expect(result?.message).toMatch(/OTHER-SERIAL/);
-      expect(result?.message).toMatch(/bob/);
+      expect(result?.mismatch?.serial).toBe("OTHER-SERIAL");
+      expect(result?.mismatch?.username).toBe("bob");
+      expect(result?.mismatch?.realm).toBe("themis");
+    });
+
+    it("skips mismatch detection for self-service users (non-admin)", async () => {
+      const authSvc = TestBed.inject(AuthService) as any;
+      authSvc.role.set("user");
+
+      component.tokenDetails.set({
+        ...component.tokenDetails(),
+        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as any
+      });
+
+      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args: any) => {
+        args?.onCredentialId?.("AAA");
+        return of({
+          result: { value: true, status: true } as any,
+          detail: { username: "carol", serial: "OTHER-SERIAL" } as any
+        } as any);
+      });
+      const getDetailsSpy = tokenSvc.getTokenDetails as jest.Mock;
+      getDetailsSpy.mockClear();
+
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("success");
+      expect(result?.mismatch).toBeUndefined();
+      expect(getDetailsSpy).not.toHaveBeenCalled();
     });
 
     it("reports 'No user found' when the validate response is falsy", async () => {

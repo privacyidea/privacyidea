@@ -49,6 +49,22 @@
               [class.passkey-test-result--success]="result.kind === 'success'"
               [class.passkey-test-result--warning]="result.kind === 'warning'">
               {{ result.message }}
+              @if (result.mismatch; as mismatch) {
+                <br />
+                <span i18n>Matched token: </span>
+                <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, mismatch.serial]">{{ mismatch.serial }}</a>
+                @if (mismatch.username) {
+                  <span i18n>, user: </span>
+                  @if (mismatch.realm) {
+                    <a [routerLink]="[ROUTE_PATHS.USERS_DETAILS, mismatch.username]"
+                      [queryParams]="{ realm: mismatch.realm }">
+                      {{ mismatch.username }}@{{ mismatch.realm }}
+                    </a>
+                  } @else {
+                    <span>{{ mismatch.username }}</span>
+                  }
+                }
+              }
             </p>
           }
         </div>

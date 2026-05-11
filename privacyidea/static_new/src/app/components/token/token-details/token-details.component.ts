@@ -189,7 +189,11 @@ export class TokenDetailsComponent {
   isEditingInfo = signal(false);
   setPinValue = signal("");
   repeatPinValue = signal("");
-  passkeyTestResult = signal<{ kind: "success" | "warning"; message: string } | null>(null);
+  passkeyTestResult = signal<{
+    kind: "success" | "warning";
+    message: string;
+    mismatch?: { serial: string; username: string; realm?: string };
+  } | null>(null);
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
     if (!tokenApplications) return false;
@@ -431,21 +435,33 @@ export class TokenDetailsComponent {
           }
           const username = checkResponse.detail?.username ?? "Unknown User";
           const authenticatedSerial = checkResponse.detail?.serial;
+          const isAdmin = this.authService.role() === "admin";
           let mismatch = false;
-          if (expectedHash && usedCredentialId) {
+          if (isAdmin && expectedHash && usedCredentialId) {
             const actualHash = await this.sha256HexFromBase64Url(usedCredentialId);
             mismatch = actualHash.toLowerCase() !== expectedHash.toLowerCase();
           }
           if (mismatch) {
-            const matchedSerial = authenticatedSerial && authenticatedSerial !== this.tokenSerial()
-              ? ` (it matched ${authenticatedSerial})`
-              : "";
+            const matchedSerial = authenticatedSerial ?? "";
             this.passkeyTestResult.set({
               kind: "warning",
-              message:
-                `You authenticated with a different passkey than the one shown on this page${matchedSerial}. ` +
-                `The user would be: ${username}.`
+              message: "You authenticated with a different passkey than the one shown on this page.",
+              mismatch: { serial: matchedSerial, username }
             });
+            if (matchedSerial) {
+              this.tokenService.getTokenDetails(matchedSerial).subscribe({
+                next: (response) => {
+                  const realm = response?.result?.value?.tokens?.[0]?.user_realm;
+                  const current = this.passkeyTestResult();
+                  if (current?.mismatch && current.mismatch.serial === matchedSerial && realm) {
+                    this.passkeyTestResult.set({
+                      ...current,
+                      mismatch: { ...current.mismatch, realm }
+                    });
+                  }
+                }
+              });
+            }
           } else {
             this.passkeyTestResult.set({
               kind: "success",
