@@ -106,6 +106,8 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
         }
 
         $scope.testPasskey = function () {
+            $scope.passkeyMismatch = null;
+            $scope.loggedinUsername = "";
             $http.post(validateUrl + "/initialize", {"type": "passkey"}).then(function (response) {
                     let data = response.data.detail.passkey;
                     let userVerification = "preferred";
@@ -136,6 +138,20 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                             //console.log(data);
                             if (data.result.value) {
                                 $scope.loggedinUsername = data.detail.username;
+                                if ($scope.loggedInUser.role === "admin"
+                                    && data.detail.serial
+                                    && data.detail.serial !== $scope.tokenSerial) {
+                                    TokenFactory.getTokenForSerial(data.detail.serial, function (tokData) {
+                                        const tokens = tokData.result.value.tokens;
+                                        const matched = tokens && tokens.length ? tokens[0] : null;
+                                        $scope.passkeyMismatch = {
+                                            serial: data.detail.serial,
+                                            username: matched ? matched.username : "",
+                                            realm: matched ? matched.user_realm : "",
+                                            resolver: matched ? matched.resolver : ""
+                                        };
+                                    });
+                                }
                             } else {
                                 $scope.loggedinUsername = "failure";
                             }
