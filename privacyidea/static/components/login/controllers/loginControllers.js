@@ -283,7 +283,12 @@ angular.module("privacyideaApp")
                                 AuthFactory.authError(error.data);
                             });
                         }, function (error) {
-                            AuthFactory.authError(error.data);
+                            if (error && (error.name === "NotAllowedError" || error.name === "AbortError")) {
+                                inform.add(gettextCatalog.getString("Passkey login cancelled."),
+                                    {type: "info", ttl: 5000});
+                            } else {
+                                AuthFactory.authError(error && error.data);
+                            }
                         });
                     }
                 );
