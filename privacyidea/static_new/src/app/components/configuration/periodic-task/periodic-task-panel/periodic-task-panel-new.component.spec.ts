@@ -54,7 +54,7 @@ describe("PeriodicTaskPanelNewComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should call savePeriodicTask, reload resource, close panel, and emit taskSaved if allowed", () => {
+  it("should call savePeriodicTask, reload resource, close panel, and emit taskSaved if allowed", async () => {
     const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" }) };
     component.editComponent = editComponentMock as any;
     component.canSave = true;
@@ -62,7 +62,7 @@ describe("PeriodicTaskPanelNewComponent", () => {
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
     const emitSpy = jest.spyOn(component.taskSaved, "emit");
     const panelCloseSpy = jest.spyOn(component.panel, "close");
-    component.savePeriodicTask();
+    await component.savePeriodicTask();
     expect(editComponentMock.editTask).toHaveBeenCalled();
     expect(saveSpy).toHaveBeenCalledWith({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" });
     expect(reloadSpy).toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe("PeriodicTaskPanelNewComponent", () => {
     expect(emitSpy).toHaveBeenCalled();
   });
 
-  it("should not call savePeriodicTask, reload resource, close panel, and emit taskSaved if not allowed", () => {
+  it("should not call savePeriodicTask, reload resource, close panel, and emit taskSaved if not allowed", async () => {
     const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "EditedNew" }) };
     component.editComponent = editComponentMock as any;
     component.canSave = false;
@@ -78,7 +78,7 @@ describe("PeriodicTaskPanelNewComponent", () => {
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
     const emitSpy = jest.spyOn(component.taskSaved, "emit");
     const panelCloseSpy = jest.spyOn(component.panel, "close");
-    component.savePeriodicTask();
+    await component.savePeriodicTask();
     expect(editComponentMock.editTask).toHaveBeenCalled();
     expect(saveSpy).not.toHaveBeenCalled();
     expect(reloadSpy).not.toHaveBeenCalled();
