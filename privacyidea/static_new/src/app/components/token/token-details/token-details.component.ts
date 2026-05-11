@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal, OnDestroy, OnInit, signal, WritableSignal } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
@@ -42,6 +42,7 @@ import { DetailsHeaderComponent } from "@components/shared/details-shared/detail
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
@@ -122,7 +123,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
-export class TokenDetailsComponent {
+export class TokenDetailsComponent implements OnInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
@@ -132,6 +133,7 @@ export class TokenDetailsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -263,6 +265,19 @@ export class TokenDetailsComponent {
       this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
     });
+  }
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        this.tokenDetailData().some((element) => element.isEditing()) ||
+        this.isEditingUser() ||
+        this.isEditingInfo(),
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   resetFailCount(): void {

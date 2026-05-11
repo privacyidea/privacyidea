@@ -79,7 +79,7 @@ export const routes: Routes = [
         children: [
           { path: "", component: ContainerTableComponent },
           { path: "create", component: ContainerCreateComponent, canDeactivate: [pendingChangesGuard] },
-          { path: "details/:serial", component: ContainerDetailsComponent },
+          { path: "details/:serial", component: ContainerDetailsComponent, canDeactivate: [pendingChangesGuard] },
           {
             path: "templates",
             children: [
@@ -94,7 +94,7 @@ export const routes: Routes = [
           }
         ]
       },
-      { path: "details/:serial", component: TokenDetailsComponent },
+      { path: "details/:serial", component: TokenDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "import", component: TokenImportComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
@@ -130,7 +130,7 @@ export const routes: Routes = [
     path: "configuration",
     children: [
       // { path: "", component: SystemComponent },
-      { path: "machine_resolver", component: MachineResolverComponent },
+      { path: "machine_resolver", component: MachineResolverComponent, canDeactivate: [pendingChangesGuard] },
       {
         path: "machines",
         children: [

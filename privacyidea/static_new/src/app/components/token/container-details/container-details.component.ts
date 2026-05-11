@@ -22,6 +22,7 @@ import {
   Component,
   ElementRef,
   OnDestroy,
+  OnInit,
   ViewChild,
   WritableSignal,
   computed,
@@ -54,6 +55,7 @@ import { ContainerDetailsTokenTableComponent } from "@components/token/container
 import { infoDetailsKeyMap } from "@components/token/token-details/token-details.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -127,7 +129,7 @@ interface TokenOption {
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
-export class ContainerDetailsComponent implements OnDestroy {
+export class ContainerDetailsComponent implements OnInit, OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -136,6 +138,7 @@ export class ContainerDetailsComponent implements OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private previousPageSize = 10;
   private router = inject(Router);
@@ -425,8 +428,13 @@ export class ContainerDetailsComponent implements OnDestroy {
     });
   }
 
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.isAnyEditing());
+  }
+
   ngOnDestroy(): void {
     this.tokenService.pageSize.set(this.previousPageSize);
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   protected showContainerAuditLog() {

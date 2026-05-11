@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
@@ -39,6 +39,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { lastValueFrom } from "rxjs";
 
@@ -65,6 +66,17 @@ export class MachineResolverPanelEditComponent {
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly pendingChangesService = inject(PendingChangesService);
+
+  constructor() {
+    effect(() => {
+      if (this.isEditMode() && this.isEdited()) {
+        this.pendingChangesService.registerHasChanges(() => this.isEditMode() && this.isEdited());
+        this.pendingChangesService.registerValidChanges(() => this.canSaveMachineResolver());
+        this.pendingChangesService.registerSave(() => this.saveMachineResolver());
+      }
+    });
+  }
 
   readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
   readonly machineResolvers = this.machineResolverService.machineResolvers();
@@ -129,7 +141,7 @@ export class MachineResolverPanelEditComponent {
     });
   }
 
-  async saveMachineResolver() {
+  async saveMachineResolver(): Promise<boolean> {
     const current = this.currentMachineResolver();
     try {
       await this.machineResolverService.postTestMachineResolver(current);
@@ -149,17 +161,18 @@ export class MachineResolverPanelEditComponent {
             })
             .afterClosed()
         );
-        if (!result) return;
+        if (!result) return false;
       } else {
-        return;
+        return false;
       }
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
     } catch (error) {
-      return;
+      return false;
     }
     this.isEditMode.set(false);
+    return true;
   }
 
   async deleteMachineResolver() {
