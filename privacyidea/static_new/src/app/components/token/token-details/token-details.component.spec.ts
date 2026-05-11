@@ -566,6 +566,194 @@ describe("TokenDetailsComponent", () => {
       expect(result?.message).toMatch(/No user found/);
     });
   });
+
+  it("attachPasskeyToMachine logs an error when the request fails", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(machineSvc, "postAssignMachineToToken").mockReturnValueOnce(
+      (require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom"))
+    );
+
+    component.attachPasskeyToMachine();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("removePasskeyFromMachine logs an error when the request fails", () => {
+    machineSvc.tokenApplications.set([{ id: 5 } as any]);
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(machineSvc, "deleteAssignMachineToToken").mockReturnValueOnce(
+      (require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom"))
+    );
+
+    component.removePasskeyFromMachine();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("saveTokenEdit('container_serial') trims selection and calls saveContainer", () => {
+    containerSvc.selectedContainerSerial.set("  trimmed  ");
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.saveTokenEdit({
+      keyMap: { key: "container_serial" },
+      value: "",
+      isEditing: signal(true)
+    } as any);
+
+    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "trimmed");
+  });
+
+  it("saveTokenEdit('realms') calls setTokenRealm and reloads", () => {
+    realmSvc.selectedRealms.set(["realmA"]);
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.saveTokenEdit({
+      keyMap: { key: "realms" },
+      value: [],
+      isEditing: signal(true)
+    } as any);
+
+    expect(tokenSvc.setTokenRealm as any).toHaveBeenCalledWith("Mock serial", ["realmA"]);
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("cancelTokenEdit('tokengroup') restores selection from token detail data", () => {
+    component.tokenDetailData.set([
+      { keyMap: { key: "tokengroup", label: "Token Groups" }, value: ["g1"], isEditing: signal(true) }
+    ] as any);
+
+    component.cancelTokenEdit({
+      keyMap: { key: "tokengroup" },
+      isEditing: signal(true)
+    } as any);
+
+    expect(component.selectedTokengroup()).toEqual(["g1"]);
+  });
+
+  it("cancelTokenEdit('realms') restores selection from token detail data", () => {
+    component.tokenDetailData.set([
+      { keyMap: { key: "realms", label: "Realms" }, value: ["realmZ"], isEditing: signal(true) }
+    ] as any);
+
+    component.cancelTokenEdit({
+      keyMap: { key: "realms" },
+      isEditing: signal(true)
+    } as any);
+
+    expect(realmSvc.selectedRealms()).toEqual(["realmZ"]);
+  });
+
+  it("cancelTokenEdit on a generic key reloads the resource", () => {
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.cancelTokenEdit({
+      keyMap: { key: "description" },
+      isEditing: signal(true)
+    } as any);
+
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("showTokenAuditLog sets the audit filter with the token serial", () => {
+    const auditSvc = TestBed.inject(AuditService) as any;
+    (component as any).showTokenAuditLog();
+    expect(auditSvc.auditFilter().value).toBe("serial: Mock serial");
+  });
+
+});
+
+describe("TokenDetailsComponent linkedSignal computations", () => {
+  let component: TokenDetailsComponent;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    TestBed.resetTestingModule();
+
+    await TestBed.configureTestingModule({
+      imports: [TokenDetailsComponent, BrowserAnimationsModule],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: ValidateService, useClass: MockValidateService },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: MachineService, useClass: MockMachineService },
+        { provide: MatDialog, useValue: { open: jest.fn() } },
+        { provide: Router, useValue: { navigateByUrl: jest.fn().mockResolvedValue(true) } },
+        MockLocalService,
+        MockNotificationService
+      ]
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(TokenDetailsComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it("recomputes empty rows when tokenDetails is cleared", () => {
+    component.tokenDetails.set(undefined as any);
+    const data = component.tokenDetailData();
+    expect(data.length).toBeGreaterThan(0);
+    expect(data.every((d: any) => d.value === "")).toBe(true);
+
+    const info = component.infoData();
+    expect(info.length).toBeGreaterThan(0);
+    expect(info.every((d: any) => d.value === "")).toBe(true);
+
+    const user = component.userData();
+    expect(user.length).toBeGreaterThan(0);
+    expect(user.every((d: any) => d.value === "")).toBe(true);
+  });
+
+  it("formats timestamp info fields from tokenDetails.info", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      info: { creation_date: "2026-01-15T10:00:00Z" } as any
+    });
+
+    const created = component
+      .tokenDetailData()
+      .find((d: any) => d.keyMap.key === "creation_date");
+    expect(created).toBeDefined();
+    expect(typeof created!.value).toBe("string");
+    expect(created!.value).not.toBe("");
+    expect(created!.value).not.toBe("2026-01-15T10:00:00Z");
+  });
+
+  it("keeps the raw value when the timestamp string is unparseable", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      info: { creation_date: "not-a-date" } as any
+    });
+
+    const created = component
+      .tokenDetailData()
+      .find((d: any) => d.keyMap.key === "creation_date");
+    expect(created?.value).toBe("not-a-date");
+  });
+
+  it("omits timestamp fields entirely when info value is empty string", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      info: { creation_date: "" } as any
+    });
+
+    const created = component
+      .tokenDetailData()
+      .find((d: any) => d.keyMap.key === "creation_date");
+    expect(created).toBeUndefined();
+  });
 });
 
 // Helper: drain microtasks AND a macrotask (crypto.subtle.digest may settle on next tick).
