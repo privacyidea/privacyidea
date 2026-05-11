@@ -394,23 +394,26 @@ def create_app(config_name="development",
             try:
                 from privacyidea.lib.crypto import verify_encryption_key
                 from privacyidea.models.enckey_check import EncKeyCheck
-                import sqlalchemy as _sa
-                inspect = _sa.inspect(db.engine)
+                inspect = sa.inspect(db.engine)
                 if inspect.has_table(EncKeyCheck.__tablename__):
                     check_row = db.session.query(EncKeyCheck).first()
                     if check_row:
-                        verify_encryption_key(check_row.check_value)
-            except Exception as e:
-                log.error(f"Encryption key verification failed: {e}")
-                sys.stderr.write(
-                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                    "  ERROR: Encryption key verification failed!\n"
-                    "  The configured encryption key does not match the\n"
-                    "  one used to encrypt existing data.\n"
-                    "  This will lead to failed decryption of secrets!\n"
-                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                )
-                sys.exit(1)
+                        try:
+                            verify_encryption_key(check_row.check_value)
+                        except Exception as e:
+                            log.error(f"Encryption key verification failed: {e}")
+                            sys.stderr.write(
+                                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                                "  ERROR: Encryption key verification failed!\n"
+                                "  The configured encryption key does not match the\n"
+                                "  one used to encrypt existing data.\n"
+                                "  This will lead to failed decryption of secrets!\n"
+                                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                            )
+                            sys.exit(1)
+            except (ImportError, sa.exc.SQLAlchemyError):
+                log.exception("Failed to initialize encryption key verification.")
+                raise
 
     _setup_node_configuration(app)
 

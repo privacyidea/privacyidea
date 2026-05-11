@@ -16,12 +16,16 @@ depends_on = None
 
 
 def upgrade():
+    enckey_check_seq = sa.Sequence('enckey_check_seq')
+    op.execute(sa.schema.CreateSequence(enckey_check_seq))
     op.create_table('enckey_check',
-                    sa.Column('id', sa.Integer(), nullable=False),
+                    sa.Column('id', sa.Integer(), server_default=enckey_check_seq.next_value(), nullable=False),
                     sa.Column('check_value', sa.Unicode(length=2000), nullable=False),
                     sa.PrimaryKeyConstraint('id')
                     )
 
 
 def downgrade():
+    enckey_check_seq = sa.Sequence('enckey_check_seq')
     op.drop_table('enckey_check')
+    op.execute(sa.schema.DropSequence(enckey_check_seq))
