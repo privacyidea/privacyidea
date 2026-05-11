@@ -170,10 +170,18 @@
     class="docs-button-icon">
     <mat-icon>info_outline</mat-icon>
   </button>
+  <span class="version-text">
+    <span class="version-prefix">
+      {{ versionPrefix() }}
+    </span>
+    {{
+      this.versioningService.version()
+    }}
+  </span>
   <span
     class="beta-badge margin-right-16"
     i18n>Beta
-    </span>
+  </span>
 </ng-template>
 
 @if (activeSection() === 'token') {
