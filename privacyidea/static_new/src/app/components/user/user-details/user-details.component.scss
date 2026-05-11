@@ -29,7 +29,7 @@
 .custom-user-details-column {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 0 16px;
+  gap: 16px;
   margin-bottom: auto;
 
   &:not(:last-of-type) {
