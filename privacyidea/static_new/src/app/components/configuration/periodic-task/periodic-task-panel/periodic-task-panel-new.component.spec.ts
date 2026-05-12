@@ -161,4 +161,24 @@ describe("PeriodicTaskPanelNewComponent", () => {
 
     expect(saveSpy).toHaveBeenCalled();
   });
+
+  it("cancelEdit does not save on save-exit when canSave is false", async () => {
+    component.editComponent = {
+      editTask: Object.assign(jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Changed" }), {
+        set: jest.fn()
+      })
+    } as any;
+    component.canSave = false;
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    const saveSpy = jest.spyOn(component, "savePeriodicTask").mockResolvedValue(true);
+    const panelCloseSpy = jest.spyOn(component.panel, "close");
+
+    component.cancelEdit();
+    await Promise.resolve();
+
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(panelCloseSpy).not.toHaveBeenCalled();
+  });
 });

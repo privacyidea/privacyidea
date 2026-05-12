@@ -324,5 +324,40 @@ describe("ContainerDetailsComponent", () => {
 
       expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
     });
+
+    it("validChanges always reports true so save button stays enabled", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(true);
+    });
+
+    it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
+      (component as any).containerDetailData = () => [];
+      (component as any).infoData = () => [];
+      component.isEditingUser.set(false);
+      component.isEditingInfo.set(false);
+      const editSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
+      const userSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+      component.infoChild = { saveInfo: jest.fn() } as any;
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(true);
+      expect(editSpy).not.toHaveBeenCalled();
+      expect(userSpy).not.toHaveBeenCalled();
+      expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
+      (component as any).containerDetailData = () => [];
+      (component as any).infoData = () => [];
+      component.isEditingInfo.set(true);
+      const infoSaveSpy = jest.fn();
+      component.infoChild = { saveInfo: infoSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(infoSaveSpy).not.toHaveBeenCalled();
+      expect(component.isEditingInfo()).toBe(false);
+    });
   });
 });

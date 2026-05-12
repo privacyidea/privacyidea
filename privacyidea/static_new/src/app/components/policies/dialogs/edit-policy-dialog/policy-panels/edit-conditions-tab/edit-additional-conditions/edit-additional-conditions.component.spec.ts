@@ -234,6 +234,48 @@ describe("EditAdditionalConditionsComponent", () => {
       expect(emitSpy).toHaveBeenCalled();
       expect(component.showAddConditionForm()).toBe(false);
     });
+
+    it("should not save when save-exit is picked but the condition is invalid", () => {
+      const emitSpy = jest.spyOn(component.policyEdit, "emit");
+      component.showAddConditionForm.set(true);
+      // Fill in just enough to be dirty but invalid (no section / key)
+      component.conditionValue.set("something");
+      expect(component.canSaveCondition()).toBe(false);
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(emitSpy).not.toHaveBeenCalled();
+      expect(component.showAddConditionForm()).toBe(true);
+    });
+  });
+
+  describe("canSaveCondition", () => {
+    it("is true when section, comparator, missingData, and key (trimmed) are all set", () => {
+      component.conditionSection.set("token");
+      component.conditionComparator.set("equals");
+      component.conditionHandleMissingData.set("condition_is_false");
+      component.conditionKey.set("serial");
+      expect(component.canSaveCondition()).toBe(true);
+    });
+
+    it("is false when key is only whitespace", () => {
+      component.conditionSection.set("token");
+      component.conditionComparator.set("equals");
+      component.conditionHandleMissingData.set("condition_is_false");
+      component.conditionKey.set("   ");
+      expect(component.canSaveCondition()).toBe(false);
+    });
+
+    it("is false when section is missing", () => {
+      component.conditionSection.set("");
+      component.conditionComparator.set("equals");
+      component.conditionHandleMissingData.set("condition_is_false");
+      component.conditionKey.set("serial");
+      expect(component.canSaveCondition()).toBe(false);
+    });
   });
 
   it("should not save or emit if required fields are missing", () => {
