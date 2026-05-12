@@ -111,6 +111,27 @@ describe("SystemService", () => {
     expect(service.caConnectors()).toEqual([]);
   });
 
+  it("caConnectors should reset to empty when resource errors after successful load", async () => {
+    authService.actionAllowed.mockImplementation((action) => action === "enrollCERTIFICATE");
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+
+    TestBed.tick();
+    let req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
+    const caConnectorResponse = { service1: {}, service2: {} };
+    req.flush(MockPiResponse.fromValue(caConnectorResponse));
+    await lastValueFrom(of({}));
+    expect(service.caConnectors()).toEqual(caConnectorResponse);
+
+    service.caConnectorResource.reload();
+    TestBed.tick();
+    req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
+    req.flush("Error", { status: 500, statusText: "Server Error" });
+    await lastValueFrom(of({}));
+
+    expect(service.caConnectors()).toEqual([]);
+  });
+
   describe("systemConfigResource", () => {
     it("systemConfig and systemConfigInit fall back to default when resource empty", () => {
       expect(service.systemConfig()).toEqual({});
