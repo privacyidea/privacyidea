@@ -243,6 +243,7 @@ export class UserDetailsComponent {
     this.userService.setUserAttribute(key, value).subscribe({
       next: () => {
         this.userService.userAttributesResource.reload();
+        this.userService.userResource.reload();
         this.addKeyInput.set("");
         this.addValueInput.set("");
         this.selectedKey.set(null);
@@ -253,7 +254,10 @@ export class UserDetailsComponent {
 
   deleteCustomAttribute(key: string) {
     this.userService.deleteUserAttribute(key).subscribe({
-      next: () => this.userService.userAttributesResource.reload()
+      next: () => {
+        this.userService.userAttributesResource.reload();
+        this.userService.userResource.reload();
+      }
     });
   }
 
