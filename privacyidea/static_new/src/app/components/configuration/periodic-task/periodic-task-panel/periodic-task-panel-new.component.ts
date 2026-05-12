@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Output, ViewChild } from "@angular/core";
-import { firstValueFrom } from "rxjs";
+import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import {
   MatExpansionPanel,
@@ -31,6 +30,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { EMPTY_PERIODIC_TASK } from "@services/periodic-task/periodic-task.service";
+import { firstValueFrom } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
 
@@ -50,9 +50,25 @@ import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
   templateUrl: "./periodic-task-panel-new.component.html",
   styleUrl: "./periodic-task-panel.component.scss"
 })
-export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent {
+export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent implements OnInit, OnDestroy {
   @ViewChild("panel") panel!: MatExpansionPanel;
   @Output() taskSaved = new EventEmitter<void>();
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.isEdited());
+    this.pendingChangesService.registerValidChanges(() => this.canSave);
+    this.pendingChangesService.registerSave(() => this.savePeriodicTask());
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
+  override isEdited(): boolean {
+    const editTask = this.editComponent?.editTask();
+    if (!editTask) return false;
+    return JSON.stringify(editTask) !== JSON.stringify(EMPTY_PERIODIC_TASK);
+  }
 
   override cancelEdit(): void {
     if (!this.isEdited()) {

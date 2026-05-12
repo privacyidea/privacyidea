@@ -26,6 +26,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   EMPTY_PERIODIC_TASK,
   PERIODIC_TASK_MODULE_MAPPING,
@@ -33,7 +34,6 @@ import {
   PeriodicTaskModule,
   PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { firstValueFrom } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
@@ -60,7 +60,7 @@ export class PeriodicTaskPanelComponent {
   periodicTaskService = inject(PeriodicTaskService);
   authService = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly pendingChangesService = inject(PendingChangesService);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
   isEditMode = signal(false);
 
