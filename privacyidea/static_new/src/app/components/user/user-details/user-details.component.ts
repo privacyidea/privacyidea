@@ -269,6 +269,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     try {
       await firstValueFrom(this.userService.setUserAttribute(key, value));
       this.userService.userAttributesResource.reload();
+      this.userService.userResource.reload();
       this.addKeyInput.set("");
       this.addValueInput.set("");
       this.selectedKey.set(null);
@@ -281,7 +282,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   deleteCustomAttribute(key: string) {
     this.userService.deleteUserAttribute(key).subscribe({
-      next: () => this.userService.userAttributesResource.reload()
+      next: () => {
+        this.userService.userAttributesResource.reload();
+        this.userService.userResource.reload();
+      }
     });
   }
 
