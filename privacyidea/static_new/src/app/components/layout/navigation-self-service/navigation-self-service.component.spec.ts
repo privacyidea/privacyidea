@@ -135,12 +135,14 @@ describe("NavigationSelfServiceComponent", () => {
     expect(anchor.textContent).toContain("-");
   });
 
-  it("hides the entire username block when 'userlist' is not allowed", () => {
-    (authServiceMock.actionAllowed as jest.Mock).mockImplementation(() => false);
+  it("renders the username block as disabled (no anchor) when 'userlist' is not allowed", () => {
+    (authServiceMock.actionAllowed as jest.Mock).mockImplementation((action) => action !== "userlist");
+    contentServiceMock.routeUrl.set("/tokens");
 
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector(".username-button")).toBeNull();
+    expect(fixture.nativeElement.querySelector("a.username-button")).toBeNull();
+    expect(fixture.nativeElement.querySelector("div.username-button.disabled")).toBeTruthy();
   });
 
   it("hides navigation buttons when token wizard is active", () => {
