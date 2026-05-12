@@ -65,7 +65,9 @@ def downgrade():
         # database imported cross-dialect may carry it under another name.
         fk_name = next(
             (fk['name'] for fk in insp.get_foreign_keys('tokencontainer')
-             if fk['referred_table'] == 'tokencontainertemplate' and fk['name']),
+             if fk['referred_table'] == 'tokencontainertemplate'
+             and fk['constrained_columns'] == ['template_id']
+             and fk['name']),
             'tokencontainertemplate_id',
         )
         if migration_context.dialect.name in ['sqlite']:

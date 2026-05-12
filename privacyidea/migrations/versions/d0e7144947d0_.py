@@ -115,9 +115,11 @@ def downgrade():
             )
         # now we can drop the unique constraint
         with op.batch_alter_table('resolverrealm') as batch_op:
+            batch_op.drop_constraint(uq_name, type_='unique')
+            # The backing index is not auto-dropped on Oracle; drop it after
+            # the constraint, otherwise Oracle rejects with ORA-02429.
             if oracle_idx_name:
                 batch_op.drop_index(oracle_idx_name)
-            batch_op.drop_constraint(uq_name, type_='unique')
             if migration_context.dialect.name in ['mysql', 'mariadb']:
                 # we have to re-create the foreign key constraints
                 for ref_table in ['resolver', 'realm']:
