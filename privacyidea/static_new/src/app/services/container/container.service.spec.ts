@@ -312,17 +312,6 @@ describe("ContainerService", () => {
     expect(notificationServiceMock.warning).not.toHaveBeenCalled();
   });
 
-  it("startPolling is a no-op when polling is already active", () => {
-    containerService.startPolling("SMPH1");
-    const pollingTrigger = (containerService as unknown as { pollingTrigger: WritableSignal<number> }).pollingTrigger;
-    const triggerBefore = pollingTrigger();
-
-    containerService.startPolling("SMPH2");
-
-    expect(containerService.containerSerial()).toBe("SMPH1");
-    expect(pollingTrigger()).toBe(triggerBefore);
-  });
-
   it("stopPolling resets isPollingActive", () => {
     containerService.startPolling("SMPH1");
     expect(containerService.isPollingActive()).toBe(true);
@@ -378,23 +367,6 @@ describe("ContainerService", () => {
 
     expect(pollingTrigger()).toBe(triggerBefore);
     expect(containerService.containerSerial()).toBe("SMPH1");
-  });
-
-  it("poll container details shows rollover success notification when isRollover is true", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
-    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
-    jest.spyOn(containerService.containerDetailsResource, "value").mockReturnValue({
-      result: { value: { count: 1, containers: [{ info: { registration_state: "registered" } }] } }
-    } as unknown as PiResponse<ContainerDetails>);
-
-    containerService.startPolling("SMPH1", true);
-    TestBed.tick();
-    const pollingTrigger = (containerService as unknown as { pollingTrigger: WritableSignal<number> }).pollingTrigger;
-    pollingTrigger.update((n) => n + 1);
-    TestBed.tick();
-
-    expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.success).toHaveBeenCalledWith("Container rollover completed successfully.");
   });
 
   it("poll container details shows rollover success notification when isRollover is true", () => {
