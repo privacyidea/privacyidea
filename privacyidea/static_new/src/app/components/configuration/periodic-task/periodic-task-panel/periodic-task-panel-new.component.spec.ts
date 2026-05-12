@@ -99,7 +99,10 @@ describe("PeriodicTaskPanelNewComponent", () => {
   });
 
   it("cancelEdit closes silently when not edited", () => {
-    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK }) } as any;
+    component.editComponent = {
+      editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK }),
+      resetFormState: jest.fn()
+    } as any;
     const editTaskSetSpy = jest.fn();
     (component.editComponent as any).editTask.set = editTaskSetSpy;
     const panelCloseSpy = jest.spyOn(component.panel, "close");
@@ -116,7 +119,8 @@ describe("PeriodicTaskPanelNewComponent", () => {
     component.editComponent = {
       editTask: Object.assign(jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Changed" }), {
         set: jest.fn()
-      })
+      }),
+      resetFormState: jest.fn()
     } as any;
     const dialogRef = new MockMatDialogRef();
     jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("discard"));

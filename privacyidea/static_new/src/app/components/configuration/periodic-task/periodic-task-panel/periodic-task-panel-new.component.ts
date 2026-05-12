@@ -30,6 +30,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { EMPTY_PERIODIC_TASK } from "@services/periodic-task/periodic-task.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 import { firstValueFrom } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
@@ -73,7 +74,8 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent im
   override cancelEdit(): void {
     if (!this.isEdited()) {
       this.isEditMode.set(false);
-      this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+      this.editComponent?.editTask.set(deepCopy(EMPTY_PERIODIC_TASK));
+      this.editComponent?.resetFormState();
       this.panel.close();
       return;
     }
@@ -94,7 +96,8 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent im
             this.savePeriodicTask();
           } else if (result === "discard") {
             this.isEditMode.set(false);
-            this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+            this.editComponent?.editTask.set(deepCopy(EMPTY_PERIODIC_TASK));
+            this.editComponent?.resetFormState();
             this.panel.close();
           }
         }
@@ -111,7 +114,8 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent im
         this.periodicTaskService.periodicTasksResource.reload();
         this.panel.close();
         this.taskSaved.emit();
-        this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+        this.editComponent?.editTask.set(deepCopy(EMPTY_PERIODIC_TASK));
+        this.editComponent?.resetFormState();
         return true;
       }
       return false;
