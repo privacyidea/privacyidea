@@ -271,5 +271,58 @@ describe("ContainerDetailsComponent", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
+
+    it("registers validChanges and save in ngOnInit", () => {
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
+      const editingRow = {
+        keyMap: { key: "description", label: "Description" },
+        value: "new",
+        isEditing: signal(true)
+      } as any;
+      const idleRow = {
+        keyMap: { key: "type", label: "Type" },
+        value: "generic",
+        isEditing: signal(false)
+      } as any;
+      (component as any).containerDetailData = () => [editingRow, idleRow];
+      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(true);
+      expect(saveSpy).toHaveBeenCalledTimes(1);
+      expect(saveSpy).toHaveBeenCalledWith(editingRow);
+    });
+
+    it("saveAllInlineEdits calls saveUser when isEditingUser", async () => {
+      (component as any).containerDetailData = () => [];
+      component.isEditingUser.set(true);
+      const userSaveSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+
+      await component.saveAllInlineEdits();
+
+      expect(userSaveSpy).toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
+      (component as any).containerDetailData = () => [];
+      const infoEl = {
+        keyMap: { key: "info", label: "Information" },
+        value: { foo: "bar" },
+        isEditing: signal(true)
+      } as any;
+      (component as any).infoData = () => [infoEl];
+      component.isEditingInfo.set(true);
+      const infoSaveSpy = jest.fn();
+      component.infoChild = { saveInfo: infoSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
+    });
   });
 });

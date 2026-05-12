@@ -23,7 +23,7 @@ import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@
 import { MatIcon } from "@angular/material/icon";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
@@ -75,7 +75,11 @@ export class PeriodicTaskPanelComponent {
   }
 
   isEdited(): boolean {
-    return JSON.stringify(this.editComponent?.editTask()) !== JSON.stringify(this.task());
+    const editTask = this.editComponent?.editTask();
+    if (!editTask) {
+      return false;
+    }
+    return JSON.stringify(editTask) !== JSON.stringify(this.task());
   }
 
   async deleteTask(): Promise<void> {
@@ -108,18 +112,20 @@ export class PeriodicTaskPanelComponent {
     }
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
           title: $localize`Discard changes`,
-          items: [this.task().name],
-          itemType: "periodic task",
-          confirmAction: { label: $localize`Discard`, value: true, type: "destruct" }
+          allowSaveExit: this.canSave,
+          saveExitDisabled: !this.canSave
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result === "save-exit") {
+            if (!this.canSave) return;
+            this.savePeriodicTask();
+          } else if (result === "discard") {
             this.isEditMode.set(false);
           }
         }

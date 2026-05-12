@@ -16,7 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, linkedSignal, OnDestroy, OnInit, signal, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
@@ -267,6 +278,9 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
+  @ViewChild(TokenDetailsUserComponent) userChild?: TokenDetailsUserComponent;
+  @ViewChild(TokenDetailsInfoComponent) infoChild?: TokenDetailsInfoComponent;
+
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
@@ -274,6 +288,28 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
         this.isEditingUser() ||
         this.isEditingInfo(),
     );
+    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
+  }
+
+  async saveAllInlineEdits(): Promise<boolean> {
+    for (const row of this.tokenDetailData()) {
+      if (row.isEditing()) {
+        this.saveTokenEdit(row);
+      }
+    }
+    if (this.isEditingUser()) {
+      this.userChild?.saveUser();
+    }
+    if (this.isEditingInfo()) {
+      const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
+      if (infoElement) {
+        this.infoChild?.saveInfo(infoElement as any);
+      } else {
+        this.isEditingInfo.set(false);
+      }
+    }
+    return true;
   }
 
   ngOnDestroy(): void {

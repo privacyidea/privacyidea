@@ -28,6 +28,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
   MachineResolver,
@@ -162,18 +163,23 @@ export class MachineResolverPanelNewComponent {
     }
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
-          title: "Discard changes",
-          confirmAction: { label: "Discard", value: true, type: "destruct" },
-          items: [this.newMachineResolver().resolvername || "New Machine Resolver"],
-          itemType: "machine resolver"
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveMachineResolver(),
+          saveExitDisabled: !this.canSaveMachineResolver()
         }
       })
       .afterClosed()
       .subscribe({
-        next: (result) => {
-          if (result) {
+        next: async (result) => {
+          if (result === "save-exit") {
+            if (!this.canSaveMachineResolver()) {
+              $panel.open();
+              return;
+            }
+            await this.saveMachineResolver($panel);
+          } else if (result === "discard") {
             this.resetMachineResolver();
             $panel.close();
           } else {

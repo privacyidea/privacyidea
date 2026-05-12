@@ -198,7 +198,7 @@ describe("EditAdditionalConditionsComponent", () => {
       component.startEditCondition(mockCondition, 0);
       component.conditionValue.set("changed");
       const dialogRef = new MockMatDialogRef();
-      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(null));
       dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
 
       component.cancelEdit();
@@ -211,7 +211,7 @@ describe("EditAdditionalConditionsComponent", () => {
       component.startEditCondition(mockCondition, 0);
       component.conditionValue.set("changed");
       const dialogRef = new MockMatDialogRef();
-      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(true));
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("discard"));
       dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
 
       component.cancelEdit();
@@ -219,6 +219,20 @@ describe("EditAdditionalConditionsComponent", () => {
       expect(component.showAddConditionForm()).toBe(false);
       expect(component.editIndex()).toBeNull();
       expect(component.conditionValue()).toBe("");
+    });
+
+    it("should save and emit when user picks save-exit", () => {
+      const emitSpy = jest.spyOn(component.policyEdit, "emit");
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("changed");
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(emitSpy).toHaveBeenCalled();
+      expect(component.showAddConditionForm()).toBe(false);
     });
   });
 

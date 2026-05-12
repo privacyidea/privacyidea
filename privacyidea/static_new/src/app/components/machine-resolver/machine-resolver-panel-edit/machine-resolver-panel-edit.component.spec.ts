@@ -221,7 +221,7 @@ describe("MachineResolverPanelEditComponent", () => {
     TestBed.tick();
     expect(component.isEdited()).toBeTruthy();
     const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogRefMock.afterClosed.mockReturnValue(of("discard"));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
     await Promise.resolve();
@@ -236,12 +236,100 @@ describe("MachineResolverPanelEditComponent", () => {
     TestBed.tick();
     expect(component.isEdited()).toBeTruthy();
     const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogRefMock.afterClosed.mockReturnValue(of(null));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy();
     expect(component.editedMachineResolver().type).toBe("ldap");
+  });
+
+  it("should save and exit when cancelEditMode dialog returns save-exit", async () => {
+    component.isEditMode.set(true);
+    component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+    component.dataValidatorSignal.set(() => true);
+    TestBed.tick();
+    expect(component.canSaveMachineResolver()).toBeTruthy();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(true);
+    component.cancelEditMode();
+    await Promise.resolve();
+    expect(saveSpy).toHaveBeenCalled();
+  });
+
+  describe("handleCollapse", () => {
+    it("just closes when not edited", () => {
+      component.isEditMode.set(true);
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      component.handleCollapse(panel);
+      expect(component.isEditMode()).toBeFalsy();
+      expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("opens panel back when dialog is cancelled", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of(null));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      expect(panel.open).toHaveBeenCalled();
+      expect(panel.close).not.toHaveBeenCalled();
+      expect(component.isEditMode()).toBeTruthy();
+    });
+
+    it("closes panel and discards on discard", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("discard"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      expect(panel.close).toHaveBeenCalled();
+      expect(component.isEditMode()).toBeFalsy();
+    });
+
+    it("saves and closes panel when save-exit succeeds", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      component.dataValidatorSignal.set(() => true);
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(true);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(saveSpy).toHaveBeenCalled();
+      expect(panel.close).toHaveBeenCalled();
+    });
+
+    it("reopens panel when save-exit save fails", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      component.dataValidatorSignal.set(() => true);
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      jest.spyOn(component, "saveMachineResolver").mockResolvedValue(false);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(panel.open).toHaveBeenCalled();
+      expect(panel.close).not.toHaveBeenCalled();
+    });
   });
 
   describe("check if machineResolver can be saved", () => {

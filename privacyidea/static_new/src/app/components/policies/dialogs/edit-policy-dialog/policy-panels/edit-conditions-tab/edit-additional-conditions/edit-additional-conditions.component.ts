@@ -30,7 +30,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
   AdditionalCondition,
@@ -144,6 +144,14 @@ export class EditAdditionalConditionsComponent {
 
   readonly additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);
 
+  readonly canSaveCondition = computed(
+    () =>
+      !!this.conditionSection() &&
+      !!this.conditionComparator() &&
+      !!this.conditionHandleMissingData() &&
+      !!this.conditionKey().trim()
+  );
+
   readonly isFormDirty = computed(() => {
     if (!this.showAddConditionForm()) return false;
     const index = this.editIndex();
@@ -218,18 +226,20 @@ export class EditAdditionalConditionsComponent {
     }
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
           title: $localize`Discard changes`,
-          items: [],
-          itemType: "condition",
-          confirmAction: { label: $localize`Discard`, value: true, type: "destruct" }
+          allowSaveExit: this.canSaveCondition(),
+          saveExitDisabled: !this.canSaveCondition()
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result === "save-exit") {
+            if (!this.canSaveCondition()) return;
+            this.saveCondition();
+          } else if (result === "discard") {
             this._resetForm();
           }
         }

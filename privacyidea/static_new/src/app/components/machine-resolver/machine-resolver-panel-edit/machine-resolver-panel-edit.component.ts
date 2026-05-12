@@ -35,6 +35,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -212,18 +213,20 @@ export class MachineResolverPanelEditComponent {
 
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
-          title: "Discard changes",
-          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
-          itemType: "machine resolver",
-          confirmAction: { label: "Discard", value: true, type: "destruct" }
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveMachineResolver(),
+          saveExitDisabled: !this.canSaveMachineResolver()
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result === "save-exit") {
+            if (!this.canSaveMachineResolver()) return;
+            this.saveMachineResolver();
+          } else if (result === "discard") {
             this.isEditMode.set(false);
           }
         },
@@ -244,18 +247,28 @@ export class MachineResolverPanelEditComponent {
     }
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
-          title: "Discard changes",
-          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
-          itemType: "machine resolver",
-          confirmAction: { label: "Discard", value: true, type: "destruct" }
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveMachineResolver(),
+          saveExitDisabled: !this.canSaveMachineResolver()
         }
       })
       .afterClosed()
       .subscribe({
-        next: (result) => {
-          if (result) {
+        next: async (result) => {
+          if (result === "save-exit") {
+            if (!this.canSaveMachineResolver()) {
+              $panel.open();
+              return;
+            }
+            const saved = await this.saveMachineResolver();
+            if (saved) {
+              $panel.close();
+            } else {
+              $panel.open();
+            }
+          } else if (result === "discard") {
             this.isEditMode.set(false);
             $panel.close();
           } else {

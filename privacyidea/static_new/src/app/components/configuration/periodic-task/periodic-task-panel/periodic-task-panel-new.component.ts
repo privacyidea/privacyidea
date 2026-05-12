@@ -29,6 +29,7 @@ import {
 import { MatIcon } from "@angular/material/icon";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { EMPTY_PERIODIC_TASK } from "@services/periodic-task/periodic-task.service";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
@@ -54,9 +55,34 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent {
   @Output() taskSaved = new EventEmitter<void>();
 
   override cancelEdit(): void {
-    this.isEditMode.set(false);
-    this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
-    this.panel.close();
+    if (!this.isEdited()) {
+      this.isEditMode.set(false);
+      this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+      this.panel.close();
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSave,
+          saveExitDisabled: !this.canSave
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result === "save-exit") {
+            if (!this.canSave) return;
+            this.savePeriodicTask();
+          } else if (result === "discard") {
+            this.isEditMode.set(false);
+            this.editComponent?.editTask.set(EMPTY_PERIODIC_TASK);
+            this.panel.close();
+          }
+        }
+      });
   }
 
   override async savePeriodicTask(): Promise<boolean> {

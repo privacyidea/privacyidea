@@ -428,8 +428,32 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
+  @ViewChild(ContainerDetailsInfoComponent) infoChild?: ContainerDetailsInfoComponent;
+
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(() => this.isAnyEditing());
+    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
+  }
+
+  async saveAllInlineEdits(): Promise<boolean> {
+    for (const row of this.containerDetailData()) {
+      if (row.isEditing()) {
+        this.saveContainerEdit(row);
+      }
+    }
+    if (this.isEditingUser()) {
+      this.saveUser();
+    }
+    if (this.isEditingInfo()) {
+      const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
+      if (infoElement) {
+        this.infoChild?.saveInfo(infoElement as any);
+      } else {
+        this.isEditingInfo.set(false);
+      }
+    }
+    return true;
   }
 
   ngOnDestroy(): void {

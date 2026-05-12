@@ -88,16 +88,57 @@ describe("MachineResolverPanelNewComponent", () => {
     expect(panel.close).toHaveBeenCalled();
   });
 
-  it("should handle collapse", () => {
+  it("should handle collapse and discard on confirm", async () => {
     const panel = { close: () => {}, open: () => {} } as any;
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
     const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogRefMock.afterClosed.mockReturnValue(of("discard"));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.handleCollapse(panel);
+    await Promise.resolve();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(panel.close).toHaveBeenCalled();
+  });
+
+  it("should re-open panel when collapse dialog is cancelled", async () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(null));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    component.handleCollapse(panel);
+    await Promise.resolve();
+    expect(panel.open).toHaveBeenCalled();
+    expect(panel.close).not.toHaveBeenCalled();
+  });
+
+  it("should save and exit when collapse dialog returns save-exit", async () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    component.dataValidatorSignal.set(() => true);
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(undefined);
+    component.handleCollapse(panel);
+    await Promise.resolve();
+    expect(saveSpy).toHaveBeenCalledWith(panel);
+  });
+
+  it("should re-open panel on save-exit when canSave is false", async () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    component.dataValidatorSignal.set(() => false);
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver");
+    component.handleCollapse(panel);
+    await Promise.resolve();
+    expect(panel.open).toHaveBeenCalled();
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it("should check if machineResolver can be saved", () => {

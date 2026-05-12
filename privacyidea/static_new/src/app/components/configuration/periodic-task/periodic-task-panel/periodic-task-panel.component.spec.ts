@@ -109,10 +109,10 @@ describe("PeriodicTaskPanelComponent", () => {
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });
 
-  it("cancelEdit should open confirmation dialog when task has been edited", () => {
+  it("cancelEdit should open save-and-exit dialog when task has been edited and stay in edit mode on close", () => {
     component.isEditMode.set(true);
     const dialogRef = new MockMatDialogRef();
-    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(null));
     dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
     component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
 
@@ -125,7 +125,7 @@ describe("PeriodicTaskPanelComponent", () => {
   it("cancelEdit should set isEditMode to false after user confirms discard in dialog", () => {
     component.isEditMode.set(true);
     const dialogRef = new MockMatDialogRef();
-    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(true));
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("discard"));
     dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
     component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
 
@@ -133,6 +133,38 @@ describe("PeriodicTaskPanelComponent", () => {
 
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(component.isEditMode()).toBe(false);
+  });
+
+  it("cancelEdit should save when user picks save-exit and canSave is true", async () => {
+    component.isEditMode.set(true);
+    component.canSave = true;
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+    const saveSpy = jest.spyOn(component, "savePeriodicTask").mockResolvedValue(true);
+
+    component.cancelEdit();
+    await Promise.resolve();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(saveSpy).toHaveBeenCalled();
+  });
+
+  it("cancelEdit should not save when user picks save-exit but canSave is false", async () => {
+    component.isEditMode.set(true);
+    component.canSave = false;
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+    const saveSpy = jest.spyOn(component, "savePeriodicTask");
+
+    component.cancelEdit();
+    await Promise.resolve();
+
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(true);
   });
 
   it("toggleActive should call enablePeriodicTask if activate is true", () => {
