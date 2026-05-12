@@ -18,7 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 
 import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { Renderer2, signal } from "@angular/core";
@@ -47,6 +47,8 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
@@ -117,6 +119,7 @@ describe("ContainerCreateComponent", () => {
   let authService: MockAuthService;
   let httpClientMock: any;
   let dialogServiceMock: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
 
   let contentService: MockContentService;
 
@@ -142,6 +145,7 @@ describe("ContainerCreateComponent", () => {
         { provide: HttpClient, useValue: httpClientMock },
         { provide: VersioningService, useClass: DummyVersioningService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         MockLocalService,
         MockNotificationService
       ]
@@ -160,6 +164,7 @@ describe("ContainerCreateComponent", () => {
     authService.actionAllowed.mockReturnValue(true);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     jest
       .spyOn(containerServiceMock, "createContainer")
@@ -426,6 +431,91 @@ describe("ContainerCreateComponent", () => {
 
     expect(stopPollingSpy).toHaveBeenCalled();
     expect(registerSpy).not.toHaveBeenCalled();
+  });
+
+  describe("registerHasChanges", () => {
+    let hasChangesFn: () => boolean;
+
+    beforeEach(() => {
+      hasChangesFn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+    });
+
+    it("returns false when all fields are empty", () => {
+      expect(hasChangesFn()).toBe(false);
+    });
+
+    it("returns true when description is set", () => {
+      component.description.set("my description");
+      expect(hasChangesFn()).toBe(true);
+    });
+
+    it("returns true when a template is selected", () => {
+      component.selectedTemplate.set({ name: "my-template", container_type: "generic", template_options: {} } as any);
+      expect(hasChangesFn()).toBe(true);
+    });
+
+    it("returns true when a user is selected", () => {
+      userSvc.selectionUsernameFilter.set("testuser");
+      expect(hasChangesFn()).toBe(true);
+    });
+  });
+
+  describe("registerSave / registerValidChanges", () => {
+    it("registers validChanges and save callbacks in ngOnInit", () => {
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("validChanges reflects component.validInput", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.validInput = true;
+      expect(fn()).toBe(true);
+      component.validInput = false;
+      expect(fn()).toBe(false);
+    });
+
+    it("save returns false when container type is not selected", async () => {
+      containerServiceMock.selectedContainerType.set(null as any);
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("save returns false when validInput is false", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = false;
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("save creates container and returns true on success", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      component.description.set("desc");
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(true);
+      expect(containerServiceMock.createContainer).toHaveBeenCalled();
+    });
+
+    it("save returns false when createContainer throws", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(throwError(() => new Error("fail")));
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("ngOnDestroy", () => {
+    it("clears pending-changes registrations on destroy", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 
   describe("wizard", () => {

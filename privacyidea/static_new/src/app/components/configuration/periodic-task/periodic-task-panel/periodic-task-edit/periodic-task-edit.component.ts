@@ -25,12 +25,14 @@ import {
   input,
   linkedSignal,
   Output,
+  QueryList,
   Signal,
   signal,
   ViewChild,
+  ViewChildren,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { FormsModule, NgModel } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
@@ -49,6 +51,7 @@ import {
   PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
 import { SystemService } from "@services/system/system.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail/periodic-task-option-detail.component";
 
@@ -89,8 +92,16 @@ export class PeriodicTaskEditComponent {
   }
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
+  @ViewChildren(NgModel) ngModelControls?: QueryList<NgModel>;
 
-  editTask = linkedSignal(() => this.task());
+  resetFormState(): void {
+    this.ngModelControls?.forEach((m) => {
+      m.control.markAsPristine();
+      m.control.markAsUntouched();
+    });
+  }
+
+  editTask = linkedSignal(() => deepCopy(this.task()));
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
 

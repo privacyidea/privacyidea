@@ -16,12 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, OnDestroy, WritableSignal } from "@angular/core";
 import { MatDivider } from "@angular/material/divider";
 import { MatAccordion } from "@angular/material/expansion";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTask, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskPanelNewComponent } from "./periodic-task-panel/periodic-task-panel-new.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel/periodic-task-panel.component";
 
@@ -32,9 +33,10 @@ import { PeriodicTaskPanelComponent } from "./periodic-task-panel/periodic-task-
   imports: [ScrollToTopDirective, MatAccordion, PeriodicTaskPanelComponent, PeriodicTaskPanelNewComponent, MatDivider],
   styleUrls: ["./periodic-task.component.scss"]
 })
-export class PeriodicTaskComponent {
+export class PeriodicTaskComponent implements OnDestroy {
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly authService = inject(AuthService);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   periodicTasks: WritableSignal<PeriodicTask[] | undefined> = linkedSignal({
     source: () =>
@@ -51,6 +53,10 @@ export class PeriodicTaskComponent {
 
   ngOnInit() {
     this.periodicTaskService.fetchAllModuleOptions();
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   resetNewTask() {

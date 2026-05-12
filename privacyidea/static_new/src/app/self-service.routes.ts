@@ -18,6 +18,7 @@
  **/
 import { Routes } from "@angular/router";
 
+import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 import { AssignTokenSelfServiceComponent } from "./components/token/assign-token-self-service/assign-token-self-service.component";
 import { ContainerCreateSelfServiceComponent } from "./components/token/container-create/container-create.self-service.component";
@@ -40,22 +41,22 @@ export const routes: Routes = [
         pathMatch: "full",
         component: TokenTableSelfServiceComponent
       },
-      { path: "enrollment", component: TokenEnrollmentSelfServiceComponent },
+      { path: "enrollment", component: TokenEnrollmentSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
       { path: "assign-token", component: AssignTokenSelfServiceComponent },
       {
         path: "containers",
         children: [
           { path: "", component: ContainerTableSelfServiceComponent },
-          { path: "create", component: ContainerCreateSelfServiceComponent },
+          { path: "create", component: ContainerCreateSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
           {
             path: "details/:serial",
             component: ContainerDetailsSelfServiceComponent
           },
-          { path: "wizard", component: ContainerCreateWizardComponent }
+          { path: "wizard", component: ContainerCreateWizardComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
       { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
-      { path: "wizard", component: TokenEnrollmentWizardComponent }
+      { path: "wizard", component: TokenEnrollmentWizardComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {

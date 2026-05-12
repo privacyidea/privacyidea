@@ -32,6 +32,7 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
@@ -48,6 +49,7 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
@@ -69,6 +71,7 @@ describe("TokenEnrollmentComponent", () => {
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
   let authServiceMock: MockAuthService;
+  let pendingChangesService: MockPendingChangesService;
   let httpTestingController: HttpTestingController;
 
   beforeAll(() => {
@@ -116,7 +119,8 @@ describe("TokenEnrollmentComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -131,6 +135,7 @@ describe("TokenEnrollmentComponent", () => {
     mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     httpTestingController = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
@@ -865,6 +870,32 @@ describe("TokenEnrollmentComponent", () => {
         wizardFixture.detectChanges();
         expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).toBeNull();
       });
+    });
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects the form's dirty state", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+      component.formGroupSignal().markAsDirty();
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges is false when no token type is selected", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      tokenService.selectedTokenType.set({ key: "" } as any);
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
   });
 });

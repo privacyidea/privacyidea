@@ -54,8 +54,8 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatInput } from "@angular/material/input";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import {
@@ -65,28 +65,19 @@ import {
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import {
-  EnrollTokenTypeSwitchComponent
-} from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
-import {
-  TokenCompleteEnrollmentComponent
-} from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import {
-  TokenEnrollmentLastStepDialogComponent
-} from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import {
-  TokenEnrollmentLastStepDialogData
-} from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
-import {
-  TokenVerifyEnrollmentComponent
-} from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
   EnrollTokenArguments,
@@ -98,9 +89,7 @@ import {
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { lastValueFrom, Observable } from "rxjs";
-import {
-  TokenEnrollmentTypeSelectorComponent
-} from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
+import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
@@ -208,6 +197,7 @@ export class TokenEnrollmentComponent implements OnDestroy {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
@@ -384,10 +374,19 @@ export class TokenEnrollmentComponent implements OnDestroy {
     this.selectedContainerControl.valueChanges.subscribe((value) =>
       this.containerService.selectedContainerSerial.set(value ?? "")
     );
+    this.pendingChangesService.registerHasChanges(() => this.formGroupSignal().dirty);
+    this.pendingChangesService.registerValidChanges(
+      () =>
+        !!this.tokenService.selectedTokenType()?.key &&
+        !this.formGroupSignal().invalid &&
+        (!this.isUserRequired() || !!this.userService.selectedUser()),
+    );
+    this.pendingChangesService.registerSave(() => this.enrollToken());
   }
 
   ngOnDestroy(): void {
     this.containerService.compatibleWithSelectedTokenType.set(null);
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   formatDateTimeOffset(date: Date, time: string, offset: string): string {
@@ -428,12 +427,12 @@ export class TokenEnrollmentComponent implements OnDestroy {
     }
   }
 
-  async enrollToken(): Promise<void> {
+  async enrollToken(): Promise<boolean> {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
       this.notificationService.warning("Please select a token type.");
-      return;
+      return false;
     }
 
     const user = this.userService.selectedUser();
@@ -448,12 +447,12 @@ export class TokenEnrollmentComponent implements OnDestroy {
 
     if (!everythingIsValid) {
       this.notificationService.warning("Please fill in all required fields or correct invalid entries.");
-      return;
+      return false;
     }
 
     if (!this.enrollmentArgsGetter) {
       this.notificationService.warning("Enrollment action is not available for the selected token type.");
-      return;
+      return false;
     }
 
     let validityPeriodStart = "";
@@ -487,7 +486,7 @@ export class TokenEnrollmentComponent implements OnDestroy {
     };
 
     const enrollmentArgs: EnrollTokenArguments | null = this.enrollmentArgsGetter(basicOptions);
-    if (!enrollmentArgs) return;
+    if (!enrollmentArgs) return false;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
     let enrollPromise = this._toPromise(enrollResponse);
@@ -516,6 +515,7 @@ export class TokenEnrollmentComponent implements OnDestroy {
     }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
+    return true;
   }
 
   handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
