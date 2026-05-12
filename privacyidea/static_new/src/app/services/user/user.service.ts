@@ -339,7 +339,11 @@ export class UserService implements UserServiceInterface {
       };
       if (source.error) return emptyDetails;
       const value = source.userRes?.result?.value?.[0];
-      if (!value) return source.isLoading ? (previous?.value ?? emptyDetails) : emptyDetails;
+      if (!value) {
+        if (!source.isLoading) return emptyDetails;
+        if (source.detailsUsername !== previous?.source.detailsUsername) return emptyDetails;
+        return previous?.value ?? emptyDetails;
+      }
       return value;
     }
   });
