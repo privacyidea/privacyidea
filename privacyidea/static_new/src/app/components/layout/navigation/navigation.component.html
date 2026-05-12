@@ -369,7 +369,10 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
       <a class="sub-nav-active">
-        <mat-icon>gavel</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
