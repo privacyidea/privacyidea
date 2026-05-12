@@ -244,6 +244,22 @@ describe("MachineResolverPanelEditComponent", () => {
     expect(component.editedMachineResolver().type).toBe("ldap");
   });
 
+  it("should not save when cancelEditMode save-exit is picked but canSave is false", async () => {
+    component.isEditMode.set(true);
+    component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+    component.dataValidatorSignal.set(() => false);
+    TestBed.tick();
+    expect(component.canSaveMachineResolver()).toBeFalsy();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver");
+    component.cancelEditMode();
+    await Promise.resolve();
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(component.isEditMode()).toBeTruthy();
+  });
+
   it("should save and exit when cancelEditMode dialog returns save-exit", async () => {
     component.isEditMode.set(true);
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
@@ -312,6 +328,22 @@ describe("MachineResolverPanelEditComponent", () => {
       await Promise.resolve();
       expect(saveSpy).toHaveBeenCalled();
       expect(panel.close).toHaveBeenCalled();
+    });
+
+    it("reopens panel when save-exit is picked but canSave is false", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      component.dataValidatorSignal.set(() => false);
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      const saveSpy = jest.spyOn(component, "saveMachineResolver");
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      expect(panel.open).toHaveBeenCalled();
+      expect(saveSpy).not.toHaveBeenCalled();
     });
 
     it("reopens panel when save-exit save fails", async () => {
