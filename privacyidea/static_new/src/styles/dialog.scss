@@ -36,3 +36,7 @@
 .mat-mdc-dialog-content {
   max-height: 82vh;
 }
+
+.cdk-overlay-pane {
+  max-width: unset !important;
+}
