@@ -163,6 +163,18 @@ describe("EditAdditionalConditionsComponent", () => {
       expect(component.isFormDirty()).toBe(true);
     });
 
+    it("should return true when a new condition has conditionActive flipped from default", () => {
+      component.showAddConditionForm.set(true);
+      component.conditionActive.set(false);
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return true when a new condition has conditionHandleMissingData changed from default", () => {
+      component.showAddConditionForm.set(true);
+      component.conditionHandleMissingData.set("condition_is_true");
+      expect(component.isFormDirty()).toBe(true);
+    });
+
     it("should return false when editing a condition with unchanged values", () => {
       component.startEditCondition(mockCondition, 0);
       expect(component.isFormDirty()).toBe(false);

@@ -163,7 +163,9 @@ export class EditAdditionalConditionsComponent {
       this.conditionSection() !== "" ||
       this.conditionKey() !== "" ||
       this.conditionComparator() !== "" ||
-      this.conditionValue() !== ""
+      this.conditionValue() !== "" ||
+      this.conditionActive() !== true ||
+      this.conditionHandleMissingData() !== "condition_is_false"
     );
   });
 

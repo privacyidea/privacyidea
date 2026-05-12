@@ -175,11 +175,17 @@ describe("PeriodicTaskPanelComponent", () => {
       expect(pendingChangesService.registerSave).toHaveBeenCalled();
     });
 
-    it("hasChanges callback reflects isEditMode", () => {
+    it("hasChanges callback reflects dirty edit state, not just edit mode", () => {
       component.isEditMode.set(true);
       fixture.detectChanges();
       const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+      component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task }) } as any;
+      expect(fn()).toBe(false);
+
+      component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed" }) } as any;
       expect(fn()).toBe(true);
+
       component.isEditMode.set(false);
       expect(fn()).toBe(false);
     });

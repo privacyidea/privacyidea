@@ -67,11 +67,15 @@ export class PeriodicTaskPanelComponent {
   constructor() {
     effect(() => {
       if (this.isEditMode()) {
-        this.pendingChangesService.registerHasChanges(() => this.isEditMode());
+        this.pendingChangesService.registerHasChanges(() => this.isEditMode() && this.isEdited());
         this.pendingChangesService.registerValidChanges(() => this.canSave);
         this.pendingChangesService.registerSave(() => this.savePeriodicTask());
       }
     });
+  }
+
+  isEdited(): boolean {
+    return JSON.stringify(this.editComponent?.editTask()) !== JSON.stringify(this.task());
   }
 
   async deleteTask(): Promise<void> {
@@ -98,8 +102,7 @@ export class PeriodicTaskPanelComponent {
   }
 
   cancelEdit(): void {
-    const isEdited = JSON.stringify(this.editComponent?.editTask()) !== JSON.stringify(this.task());
-    if (!isEdited) {
+    if (!this.isEdited()) {
       this.isEditMode.set(false);
       return;
     }
