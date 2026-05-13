@@ -205,7 +205,7 @@ describe("ContainerCreateComponent", () => {
       })
     );
     expect(regSpy).not.toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/tokens/containers/details/C-001"));
+    expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/containers/details/C-001"));
     expect(containerServiceMock.containerSerial()).toBe("C-001");
   });
 
