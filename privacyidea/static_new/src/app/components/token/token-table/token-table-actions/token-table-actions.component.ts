@@ -40,7 +40,7 @@ import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { OverflowNavDirective } from "@components/shared/directives/overflow-nav.directive";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-token-table-actions",

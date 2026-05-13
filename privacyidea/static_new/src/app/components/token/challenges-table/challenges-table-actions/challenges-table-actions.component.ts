@@ -26,7 +26,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { ChallengesService, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
-import { OverflowNavDirective } from "@components/shared/directives/overflow-nav.directive";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-challenges-table-actions",

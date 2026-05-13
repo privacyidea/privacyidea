@@ -29,7 +29,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { lastValueFrom } from "rxjs";
-import { OverflowNavDirective } from "@components/shared/directives/overflow-nav.directive";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-policies-table-actions",

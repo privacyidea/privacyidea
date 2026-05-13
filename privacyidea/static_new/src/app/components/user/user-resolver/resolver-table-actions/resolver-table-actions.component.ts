@@ -23,7 +23,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { OverflowNavDirective } from "@components/shared/directives/overflow-nav.directive";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-resolver-table-actions",
