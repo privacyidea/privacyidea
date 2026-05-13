@@ -30,8 +30,8 @@ import {
   untracked,
   ViewChild
 } from "@angular/core";
-import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatOptionModule } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -54,12 +54,23 @@ import {
 
 type KeyValueRow = { key: string; value: string };
 
+interface SmsFormModel {
+  name: string;
+  providermodule: string;
+  description: string;
+}
+
+const EMPTY_SMS_FORM: SmsFormModel = {
+  name: "",
+  providermodule: "",
+  description: ""
+};
+
 @Component({
   selector: "app-sms-edit-dialog",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
-    FormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -74,7 +85,6 @@ type KeyValueRow = { key: string; value: string };
   styleUrl: "./new-sms-gateway.component.scss"
 })
 export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
@@ -85,21 +95,39 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   protected data: SmsGateway | null = null;
   private gatewayName: string | null = null;
 
-  smsForm: FormGroup = this.formBuilder.group({
-    name: ["", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-    providermodule: ["", [Validators.required]],
-    description: [""]
+  isEditMode = signal(false);
+
+  smsModel = signal<SmsFormModel>({ ...EMPTY_SMS_FORM });
+
+  smsForm = form(this.smsModel, (f) => {
+    required(f.name);
+    pattern(f.name, /^[a-zA-Z0-9._-]*$/);
+    required(f.providermodule);
+    disabled(f.name, () => this.isEditMode());
   });
-  parametersForm: FormGroup = this.formBuilder.group({});
-  isEditMode = false;
+
+  /** Parameters for the selected provider: signal<Record<string, string>> */
+  parametersModel = signal<Record<string, string>>({});
+  /** Tracks which parameter keys are required */
+  private requiredParams = signal<Set<string>>(new Set());
+  /** Whether all required params are filled */
+  parametersValid = computed(() => {
+    const model = this.parametersModel();
+    for (const key of this.requiredParams()) {
+      if (!model[key]) return false;
+    }
+    return true;
+  });
+  /** Whether the parameters have been touched/dirtied */
+  parametersDirty = signal(false);
 
   customOptions: Record<string, string> = {};
   customHeaders: Record<string, string> = {};
 
-  newOptionKey = "";
-  newOptionValue = "";
-  newHeaderKey = "";
-  newHeaderValue = "";
+  newOptionKey = signal("");
+  newOptionValue = signal("");
+  newHeaderKey = signal("");
+  newHeaderValue = signal("");
 
   optionDisplayedColumns: string[] = ["key", "value", "actions"];
   optionFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
@@ -114,10 +142,6 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
   selectedProvider = signal<SmsProvider | undefined>(undefined);
 
-  providermoduleSignal = toSignal(this.smsForm.get("providermodule")!.valueChanges, {
-    initialValue: this.data?.providermodule || ""
-  });
-
   private _observer!: IntersectionObserver;
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
@@ -131,10 +155,10 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.gatewayName = params.get("name");
-      this.isEditMode = !!this.gatewayName;
+      this.isEditMode.set(!!this.gatewayName);
 
       // Load data for editing existing gateway
-      if (this.isEditMode && this.gatewayName) {
+      if (this.isEditMode() && this.gatewayName) {
         const gateways = this.smsGatewayService.smsGateways();
         const gatewayData = gateways.find((g) => g.name === this.gatewayName);
         if (gatewayData) {
@@ -146,7 +170,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
     effect(() => {
       const providers = this.providers();
-      const module = this.providermoduleSignal();
+      const module = this.smsModel().providermodule;
       if (providers && module) {
         untracked(() => this.onProviderChange(module));
       }
@@ -155,7 +179,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const gateways = this.smsGatewayService.smsGateways();
-      if (this.isEditMode && this.gatewayName && this.smsForm?.pristine) {
+      if (this.isEditMode() && this.gatewayName && untracked(() => !this.smsForm().dirty())) {
         const found = gateways.find((g) => g.name === this.gatewayName);
         if (found) {
           this.data = found;
@@ -166,17 +190,12 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   private initForm(): void {
-    this.smsForm.patchValue({
+    this.smsModel.set({
       name: this.data?.name || "",
       providermodule: this.data?.providermodule || "",
       description: this.data?.description || ""
     });
-    if (this.isEditMode) {
-      this.smsForm.get("name")?.disable();
-    } else {
-      this.smsForm.get("name")?.enable();
-    }
-    this.smsForm.markAsPristine();
+    this.smsForm().reset();
   }
 
   get optionRows(): KeyValueRow[] {
@@ -193,8 +212,8 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
   get hasChanges(): boolean {
     return (
-      !this.smsForm.pristine ||
-      !this.parametersForm?.pristine ||
+      this.smsForm().dirty() ||
+      this.parametersDirty() ||
       Object.keys(this.customOptions).length > 0 ||
       Object.keys(this.customHeaders).length > 0
     );
@@ -211,7 +230,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    return this.smsForm.valid;
+    return this.smsForm().valid() && this.parametersValid();
   }
 
   onProviderChange(module: string): void {
@@ -221,27 +240,29 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     const provider = providers[module];
     this.selectedProvider.set(provider);
 
-    const group: Record<string, any> = {};
+    const newParams: Record<string, string> = {};
+    const newRequired = new Set<string>();
 
     if (provider && provider.parameters) {
       Object.entries(provider.parameters).forEach(([name, param]) => {
-        const validators = [];
         if ((param as any).required) {
-          validators.push(Validators.required);
+          newRequired.add(name);
         }
 
         let initialValue = "";
-        if (this.isEditMode && this.data?.options) {
+        if (this.isEditMode() && this.data?.options) {
           initialValue = this.data.options[name] || "";
         }
 
-        group[name] = [initialValue, validators];
+        newParams[name] = initialValue;
       });
     }
 
-    this.parametersForm = this.formBuilder.group(group);
+    this.parametersModel.set(newParams);
+    this.requiredParams.set(newRequired);
+    this.parametersDirty.set(false);
 
-    if (this.isEditMode && this.data) {
+    if (this.isEditMode() && this.data) {
       const paramKeys = provider ? Object.keys(provider.parameters) : [];
 
       const nextCustomOptions: Record<string, string> = {};
@@ -279,11 +300,11 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   async save(): Promise<boolean> {
-    if (this.smsForm.invalid || this.parametersForm.invalid) {
+    if (!this.smsForm().valid() || !this.parametersValid()) {
       return false;
     }
-    const formValue = this.smsForm.getRawValue();
-    const paramValue = this.parametersForm.getRawValue();
+    const formValue = this.smsModel();
+    const paramValue = this.parametersModel();
 
     const payload: any = {
       name: formValue.name,
@@ -291,7 +312,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
       module: formValue.providermodule
     };
 
-    if (this.isEditMode) {
+    if (this.isEditMode()) {
       payload.id = this.data?.id;
     }
 
@@ -347,14 +368,14 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   addOption(): void {
-    if (this.newOptionKey) {
+    if (this.newOptionKey()) {
       this.customOptions = {
         ...this.customOptions,
-        [this.newOptionKey]: this.newOptionValue
+        [this.newOptionKey()]: this.newOptionValue()
       };
 
-      this.newOptionKey = "";
-      this.newOptionValue = "";
+      this.newOptionKey.set("");
+      this.newOptionValue.set("");
     }
   }
 
@@ -364,14 +385,14 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   addHeader(): void {
-    if (this.newHeaderKey) {
+    if (this.newHeaderKey()) {
       this.customHeaders = {
         ...this.customHeaders,
-        [this.newHeaderKey]: this.newHeaderValue
+        [this.newHeaderKey()]: this.newHeaderValue()
       };
 
-      this.newHeaderKey = "";
-      this.newHeaderValue = "";
+      this.newHeaderKey.set("");
+      this.newHeaderValue.set("");
     }
   }
 

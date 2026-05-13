@@ -22,8 +22,8 @@
     subscriptSizing="dynamic">
     <mat-label>Select Realm</mat-label>
     <mat-select
-      [(ngModel)]="userService.selectedUserRealm"
-      [value]="userService.selectedUserRealm()">
+      [value]="userService.selectedUserRealm()"
+      (selectionChange)="userService.selectedUserRealm.set($event.value)">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }

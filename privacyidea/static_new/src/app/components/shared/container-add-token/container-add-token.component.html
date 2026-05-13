@@ -22,7 +22,8 @@
     <div class="flex-row filter-paginator-container">
       <section>
         <mat-checkbox
-          [(ngModel)]="showOnlyTokenNotInContainer">
+          [checked]="showOnlyTokenNotInContainer()"
+          (change)="showOnlyTokenNotInContainer.set($event.checked)">
           <span i18n> Only display tokens that are not in a container </span>
         </mat-checkbox>
       </section>

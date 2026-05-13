@@ -30,7 +30,7 @@ import {
   ViewEncapsulation
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   MatAutocomplete,
   MatAutocompleteSelectedEvent,
@@ -47,7 +47,6 @@ import { EventService } from "@services/event/event.service";
 @Component({
   selector: "app-event-selection",
   imports: [
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatChipsModule,

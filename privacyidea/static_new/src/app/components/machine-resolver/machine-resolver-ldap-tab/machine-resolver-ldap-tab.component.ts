@@ -18,7 +18,6 @@
  **/
 
 import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -31,7 +30,7 @@ import { MatButton } from "@angular/material/button";
   selector: "app-machine-resolver-ldap-tab",
   templateUrl: "./machine-resolver-ldap-tab.component.html",
   styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton],
+  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton],
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })

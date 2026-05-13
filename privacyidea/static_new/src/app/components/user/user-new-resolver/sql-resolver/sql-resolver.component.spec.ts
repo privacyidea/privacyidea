@@ -44,17 +44,12 @@ describe("SqlResolverComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should expose controls via signal", () => {
-    const controls = component.controls();
-    expect(controls).toEqual(
-      expect.objectContaining({
-        Driver: component.driverControl,
-        Server: component.serverControl
-      })
-    );
+  it("should expose isValid and getValue", () => {
+    expect(typeof component.isValid).toBe("function");
+    expect(typeof component.getValue).toBe("function");
   });
 
-  it("should update controls when data input changes", () => {
+  it("should update model when data input changes", () => {
     componentRef.setInput("data", {
       Driver: "mysql",
       Server: "localhost",
@@ -65,11 +60,11 @@ describe("SqlResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.driverControl.value).toBe("mysql");
-    expect(component.serverControl.value).toBe("localhost");
-    expect(component.tableControl.value).toBe("users");
-    expect(component.limitControl.value).toBe(100);
-    expect(component.mapControl.value).toBe("{}");
+    expect(component.model().Driver).toBe("mysql");
+    expect(component.model().Server).toBe("localhost");
+    expect(component.model().Table).toBe("users");
+    expect(component.model().Limit).toBe("100");
+    expect(component.model().Map).toBe("{}");
   });
 
   it("should parse boolean and numeric strings from data input", () => {
@@ -81,9 +76,9 @@ describe("SqlResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.editableControl.value).toBe(false);
-    expect(component.portControl.value).toBe(3306);
-    expect(component.poolSizeControl.value).toBe(10);
+    expect(component.model().Editable).toBe(false);
+    expect(component.model().Port).toBe("3306");
+    expect(component.model().poolSize).toBe("10");
   });
 
   it("should parse '1' and '0' strings as booleans from data input", () => {
@@ -93,16 +88,16 @@ describe("SqlResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.editableControl.value).toBe(true);
+    expect(component.model().Editable).toBe(true);
   });
 
   it("should apply SQL presets", () => {
     const preset = component.sqlPresets[0];
     component.applySqlPreset(preset);
-    expect(component.tableControl.value).toBe(preset.table);
-    expect(component.mapControl.value).toBe(preset.map);
-    expect(component.poolSizeControl.value).toBe(5);
-    expect(component.poolTimeoutControl.value).toBe(10);
-    expect(component.poolRecycleControl.value).toBe(7200);
+    expect(component.model().Table).toBe(preset.table);
+    expect(component.model().Map).toBe(preset.map);
+    expect(component.model().poolSize).toBe("5");
+    expect(component.model().poolTimeout).toBe("10");
+    expect(component.model().poolRecycle).toBe("7200");
   });
 });

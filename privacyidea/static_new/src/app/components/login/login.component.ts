@@ -29,7 +29,7 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
@@ -55,7 +55,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   templateUrl: "./login.component.html",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatFormField,
     MatInput,
     MatLabel,
@@ -84,6 +84,10 @@ export class LoginComponent implements OnDestroy {
   password = signal<string>("");
   hidePassword = signal<boolean>(true);
   otp = signal<string>("");
+
+  usernameField = form(this.username, (f) => { required(f); });
+  passwordField = form(this.password, (f) => { required(f); });
+  otpField = form(this.otp, (f) => { required(f); });
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 

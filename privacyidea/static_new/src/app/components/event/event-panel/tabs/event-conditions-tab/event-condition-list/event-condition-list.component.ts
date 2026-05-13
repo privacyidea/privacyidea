@@ -29,7 +29,6 @@ import {
   QueryList,
   ViewChildren
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatError, MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -47,10 +46,6 @@ import { EventService } from "@services/event/event.service";
     MatInput,
     MatOption,
     MatSelect,
-    ReactiveFormsModule,
-    MatIconButton,
-    MatIcon,
-    FormsModule,
     MatTooltip,
     MatError
   ],

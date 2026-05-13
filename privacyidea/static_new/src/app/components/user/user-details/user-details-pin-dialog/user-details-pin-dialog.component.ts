@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -36,7 +35,6 @@ import { DialogAction } from "@models/dialog";
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    FormsModule,
     MatDialogModule,
     MatIconModule,
     DialogWrapperComponent

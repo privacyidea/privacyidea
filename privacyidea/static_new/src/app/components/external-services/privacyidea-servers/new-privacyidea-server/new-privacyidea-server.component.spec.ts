@@ -67,8 +67,8 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should initialize form for create mode", () => {
-    expect(component.isEditMode).toBe(false);
-    expect(component.privacyideaForm.get("identifier")?.value).toBe("");
+    expect(component.isEditMode()).toBe(false);
+    expect(component.privacyideaModel().identifier).toBe("");
   });
 
   it("should initialize form for edit mode", () => {
@@ -81,19 +81,19 @@ describe("NewPrivacyideaServerComponent", () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(component.isEditMode).toBe(true);
-    expect(component.privacyideaForm.get("identifier")?.value).toBe("test");
-    expect(component.privacyideaForm.get("identifier")?.disabled).toBe(true);
+    expect(component.isEditMode()).toBe(true);
+    expect(component.privacyideaModel().identifier).toBe("test");
+    expect(component.privacyideaForm.identifier().disabled()).toBe(true);
   });
 
   it("should be invalid when required fields are missing", () => {
-    component.privacyideaForm.patchValue({ identifier: "", url: "" });
-    expect(component.privacyideaForm.valid).toBe(false);
+    component.privacyideaModel.update(m => ({ ...m, identifier: "", url: "" }));
+    expect(component.privacyideaForm().valid()).toBe(false);
   });
 
   it("should call save when form is valid", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
+    component.privacyideaModel.update(m => ({ ...m, identifier: "test", url: "http://test" }));
     const success = await component.save();
     expect(success).toBe(true);
     expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("save should return false on error", async () => {
-    component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
+    component.privacyideaModel.update(m => ({ ...m, identifier: "test", url: "http://test" }));
     privacyideaServerServiceMock.postPrivacyideaServer = jest.fn().mockRejectedValue(new Error("post-failed"));
 
     const success = await component.save();
@@ -110,7 +110,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should call test when form is valid", async () => {
-    component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
+    component.privacyideaModel.update(m => ({ ...m, identifier: "test", url: "http://test" }));
     component.test();
     expect(privacyideaServerServiceMock.testPrivacyideaServer).toHaveBeenCalled();
   });
@@ -122,7 +122,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should show confirmation dialog on cancel with changes", () => {
-    component.privacyideaForm.get("description")?.markAsDirty();
+    component.privacyideaForm.description().markAsDirty();
     component.onCancel();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });

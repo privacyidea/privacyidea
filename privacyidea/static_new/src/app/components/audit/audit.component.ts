@@ -39,7 +39,6 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -85,7 +84,6 @@ const columnKeysMap = [
     MatCardModule,
     MatCell,
     MatFormField,
-    FormsModule,
     MatInput,
     MatPaginator,
     MatHeaderCellDef,

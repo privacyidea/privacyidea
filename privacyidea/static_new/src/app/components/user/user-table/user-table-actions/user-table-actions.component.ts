@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -32,7 +31,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-table-actions",
-  imports: [MatButtonModule, MatFormField, MatLabel, MatOption, MatSelect, FormsModule, MatIcon],
+  imports: [MatButtonModule, MatFormField, MatLabel, MatOption, MatSelect, MatIcon],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
 })

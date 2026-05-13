@@ -17,34 +17,32 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { HttpGroupsAttributeComponent } from "./http-groups-attribute.component";
+import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute.component";
 
 describe("HttpGroupsAttributeComponent", () => {
   let component: HttpGroupsAttributeComponent;
   let fixture: ComponentFixture<HttpGroupsAttributeComponent>;
-  let userGroupsControl: FormGroup;
+  let modelSignal: ReturnType<typeof signal<UserGroupsModel>>;
 
   beforeEach(async () => {
-    userGroupsControl = new FormGroup({
-      active: new FormControl(false),
-      pi_user_groups_key: new FormControl("groups"),
-      user_groups_attribute: new FormControl(""),
-      method: new FormControl("GET"),
-      endpoint: new FormControl("")
+    modelSignal = signal<UserGroupsModel>({
+      active: false,
+      pi_user_groups_key: "groups",
+      user_groups_attribute: "",
+      method: "GET",
+      endpoint: ""
     });
 
     await TestBed.configureTestingModule({
-      imports: [HttpGroupsAttributeComponent, ReactiveFormsModule]
+      imports: [HttpGroupsAttributeComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(HttpGroupsAttributeComponent);
     component = fixture.componentInstance;
-    component.userGroupsControl = userGroupsControl;
+    component.model = modelSignal;
     component.resolverType = "default";
-    fixture.detectChanges();
-    await Promise.resolve();
     fixture.detectChanges();
   });
 
@@ -52,43 +50,30 @@ describe("HttpGroupsAttributeComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should enable controls when active is true", () => {
-    // Check previous state due to initial values
-    expect(userGroupsControl.get("pi_user_groups_key")!.enabled).toBe(false);
-    expect(userGroupsControl.get("user_groups_attribute")!.enabled).toBe(false);
-    expect(userGroupsControl.get("method")!.enabled).toBe(false);
-    expect(userGroupsControl.get("endpoint")!.enabled).toBe(false);
+  it("should reflect active state from model", () => {
+    expect(component.model().active).toBe(false);
 
-    // Change value to true
-    userGroupsControl.get("active")!.setValue(true);
+    modelSignal.update(m => ({ ...m, active: true }));
     fixture.detectChanges();
-    expect(userGroupsControl.get("pi_user_groups_key")!.enabled).toBe(true);
-    expect(userGroupsControl.get("user_groups_attribute")!.enabled).toBe(true);
-    expect(userGroupsControl.get("method")!.enabled).toBe(true);
-    expect(userGroupsControl.get("endpoint")!.enabled).toBe(true);
+
+    expect(component.model().active).toBe(true);
   });
 
-  it("should disable controls when active is false", async () => {
-    component.userGroupsControl.get("active")!.setValue(false, { emitEvent: true });
+  it("should update model when active changes", () => {
+    modelSignal.update(m => ({ ...m, active: true }));
     fixture.detectChanges();
-    expect(userGroupsControl.get("pi_user_groups_key")!.disabled).toBe(true);
-    expect(component.userGroupsControl.get("user_groups_attribute")!.disabled).toBe(true);
-    expect(component.userGroupsControl.get("method")!.disabled).toBe(true);
-    expect(component.userGroupsControl.get("endpoint")!.disabled).toBe(true);
+    expect(component.model().active).toBe(true);
+
+    modelSignal.update(m => ({ ...m, active: false }));
+    fixture.detectChanges();
+    expect(component.model().active).toBe(false);
   });
 
-  it("should handle updates with emitEvent: true", async () => {
-    userGroupsControl.get("active")!.setValue(true, { emitEvent: true });
-    fixture.detectChanges();
-    expect(userGroupsControl.get("user_groups_attribute")!.enabled).toBe(true);
-  });
+  it("should show correct tooltip based on active state", () => {
+    expect(component.slideToggleTooltipSignal()).toContain("Enable");
 
-  it("should normalize method value to uppercase", () => {
-    userGroupsControl.get("method")!.setValue("get");
+    modelSignal.update(m => ({ ...m, active: true }));
     fixture.detectChanges();
-    expect(userGroupsControl.get("method")!.value).toBe("GET");
-    userGroupsControl.get("method")!.setValue("PoSt");
-    fixture.detectChanges();
-    expect(userGroupsControl.get("method")!.value).toBe("POST");
+    expect(component.slideToggleTooltipSignal()).toContain("Disable");
   });
 });

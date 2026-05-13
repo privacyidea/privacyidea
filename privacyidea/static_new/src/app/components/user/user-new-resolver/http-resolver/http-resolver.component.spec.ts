@@ -60,27 +60,20 @@ describe("HttpResolverComponent", () => {
     };
     mockResolverService.getDefaultResolverConfig.mockReturnValue(of(MockPiResponse.fromValue(defaults)));
 
-    // Trigger effect by changing type or just re-initializing if possible
-    // Since it's already initialized in beforeEach, let's manually call or trigger
     componentRef.setInput("data", {}); // Ensure it's empty
     fixture.detectChanges();
 
-    expect(component.endpointControl.value).toBe("http://default-endpoint");
-    expect(component.methodControl.value).toBe("POST");
-    expect(component.verifyTlsControl.value).toBe(false);
+    expect(component.model().endpoint).toBe("http://default-endpoint");
+    expect(component.model().method).toBe("POST");
+    expect(component.model().verify_tls).toBe(false);
   });
 
-  it("should expose controls via signal", () => {
-    const controls = component.controls();
-    expect(controls).toEqual(
-      expect.objectContaining({
-        endpoint: component.endpointControl,
-        method: component.methodControl
-      })
-    );
+  it("should expose isValid and getValue", () => {
+    expect(typeof component.isValid).toBe("function");
+    expect(typeof component.getValue).toBe("function");
   });
 
-  it("should update controls when data input changes", () => {
+  it("should update model when data input changes", () => {
     componentRef.setInput("data", {
       endpoint: "http://test",
       method: "POST",
@@ -89,8 +82,8 @@ describe("HttpResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.endpointControl.value).toBe("http://test");
-    expect(component.methodControl.value).toBe("POST");
+    expect(component.model().endpoint).toBe("http://test");
+    expect(component.model().method).toBe("POST");
     expect(component["mappingRows"]()).toContainEqual({
       privacyideaAttr: "username",
       userStoreAttr: "user",
@@ -111,9 +104,9 @@ describe("HttpResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.editableControl.value).toBe(true);
-    expect(component.verifyTlsControl.value).toBe(false);
-    expect(component.timeoutControl.value).toBe(30);
+    expect(component.model().Editable).toBe(true);
+    expect(component.model().verify_tls).toBe(false);
+    expect(component.model().timeout).toBe(30);
   });
 
   it("should add and remove mapping rows", () => {
@@ -174,24 +167,24 @@ describe("HttpResolverComponent", () => {
   it("should preset responseMapping only when switching to Advanced mode and it is empty", () => {
     // Initially in Basic mode
     expect(component["basicSettings"]()).toBe(true);
-    expect(component.responseMappingControl.value).toBe("");
+    expect(component.model().responseMapping).toBe("");
 
     // Switch to Advanced mode
     component["basicSettings"].set(false);
     fixture.detectChanges();
 
-    expect(component.responseMappingControl.value).toBe('{"username":"{username}", "userid":"{userid}"}');
+    expect(component.model().responseMapping).toBe('{"username":"{username}", "userid":"{userid}"}');
   });
 
   it("should NOT overwrite responseMapping when switching to Advanced mode if it is already set", () => {
     // Initially in Basic mode
     expect(component["basicSettings"]()).toBe(true);
-    component.responseMappingControl.setValue('{"custom":"mapping"}');
+    component.model.update(m => ({ ...m, responseMapping: '{"custom":"mapping"}' }));
 
     // Switch to Advanced mode
     component["basicSettings"].set(false);
     fixture.detectChanges();
 
-    expect(component.responseMappingControl.value).toBe('{"custom":"mapping"}');
+    expect(component.model().responseMapping).toBe('{"custom":"mapping"}');
   });
 });

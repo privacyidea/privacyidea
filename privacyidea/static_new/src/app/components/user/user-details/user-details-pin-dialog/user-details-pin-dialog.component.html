@@ -27,7 +27,8 @@
     class="pin-field">
     <mat-label i18n>PIN (optional)</mat-label>
     <input
-      [(ngModel)]="pin"
+      [value]="pin()"
+      (input)="pin.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
       matInput />
@@ -60,7 +61,8 @@
     class="pin-field">
     <mat-label i18n>PIN (repeat)</mat-label>
     <input
-      [(ngModel)]="pinRepeat"
+      [value]="pinRepeat()"
+      (input)="pinRepeat.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
       matInput />

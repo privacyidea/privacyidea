@@ -27,8 +27,8 @@
 
   @if (!isAdvanced) {
     <mat-button-toggle-group
-      (ngModelChange)="basicSettings.set($event)"
-      [ngModel]="basicSettings()"
+      (change)="basicSettings.set($event.value)"
+      [value]="basicSettings()"
       class="mode-toggle">
       <mat-button-toggle
         [value]="true"
@@ -51,15 +51,15 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Endpoint (URL)</mat-label>
           <app-clearable-input
-            (onClick)="endpointControl.setValue('')"
-            [showClearButton]="!!endpointControl.value">
+            (onClick)="model.update(m => ({ ...m, endpoint: '' }))"
+            [showClearButton]="!!model().endpoint">
             <input
-              [formControl]="endpointControl"
+              [formField]="httpForm.endpoint"
               matInput
               placeholder="https://example.com/path/to/users/:userid"
               required />
           </app-clearable-input>
-          @if (endpointControl.hasError("required") && endpointControl.touched) {
+          @if (httpForm.endpoint().errors().some(e => e.kind === 'required') && httpForm.endpoint().touched()) {
             <mat-error i18n>
               Endpoint is
               <strong>required</strong>
@@ -71,29 +71,23 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Method</mat-label>
           <mat-select
-            [formControl]="methodControl"
+            [value]="model().method"
+            (selectionChange)="model.update(m => ({ ...m, method: $event.value }))"
             required>
             <mat-option value="GET">GET</mat-option>
             <mat-option value="POST">POST</mat-option>
           </mat-select>
-          @if (methodControl.hasError("required") && methodControl.touched) {
-            <mat-error i18n>
-              Method is
-              <strong>required</strong>
-              .
-            </mat-error>
-          }
         </mat-form-field>
       </div>
 
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Request Mapping (JSON Format)</mat-label>
         <textarea
-          [formControl]="requestMappingControl"
+          [formField]="httpForm.requestMapping"
           matInput
           placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'
           required></textarea>
-        @if (requestMappingControl.hasError("required") && requestMappingControl.touched) {
+        @if (httpForm.requestMapping().errors().some(e => e.kind === 'required') && httpForm.requestMapping().touched()) {
           <mat-error i18n>
             Request mapping is
             <strong>required</strong>
@@ -105,11 +99,11 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
-          [formControl]="headersControl"
+          [formField]="httpForm.headers"
           matInput
           placeholder='{"Content-Type":"application/json; charset=UTF-8"}'
           required></textarea>
-        @if (headersControl.hasError("required") && headersControl.touched) {
+        @if (httpForm.headers().errors().some(e => e.kind === 'required') && httpForm.headers().touched()) {
           <mat-error i18n>
             Headers are
             <strong>required</strong>
@@ -121,11 +115,11 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Response Mapping (JSON Format)</mat-label>
         <textarea
-          [formControl]="responseMappingControl"
+          [formField]="httpForm.responseMapping"
           matInput
           placeholder='{"username":"{Username}","email":"{Email}"}'
           required></textarea>
-        @if (responseMappingControl.hasError("required") && responseMappingControl.touched) {
+        @if (httpForm.responseMapping().errors().some(e => e.kind === 'required') && httpForm.responseMapping().touched()) {
           <mat-error i18n>
             Response mapping is
             <strong>required</strong>
@@ -136,21 +130,22 @@
     </div>
 
     <mat-checkbox
-      [formControl]="editableControl"
+      [checked]="model().Editable"
+      (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
       class="checkbox-inline"
       i18n>
       Special Error Handling
     </mat-checkbox>
 
-    @if (editable()) {
+    @if (model().Editable) {
       <mat-form-field class="auth-wide input-width-xl margin-bottom-16">
         <mat-label i18n>Response contains (JSON Format)</mat-label>
         <textarea
-          [formControl]="errorResponseControl"
+          [formField]="httpForm.errorResponse"
           matInput
           placeholder='{"success": false, "message": "An error occurred!"}'
           required></textarea>
-        @if (errorResponseControl.hasError("required") && errorResponseControl.touched) {
+        @if (httpForm.errorResponse().errors().some(e => e.kind === 'required') && httpForm.errorResponse().touched()) {
           <mat-error i18n>
             Response contains is
             <strong>required</strong>
@@ -165,10 +160,10 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Realm</mat-label>
           <app-clearable-input
-            (onClick)="realmControl.setValue('')"
-            [showClearButton]="!!realmControl.value">
+            (onClick)="model.update(m => ({ ...m, realm: '' }))"
+            [showClearButton]="!!model().realm">
             <input
-              [formControl]="realmControl"
+              [formField]="httpForm.realm"
               matInput
               placeholder="master" />
           </app-clearable-input>
@@ -180,10 +175,10 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Base URL</mat-label>
         <app-clearable-input
-          (onClick)="baseUrlControl.setValue('')"
-          [showClearButton]="!!baseUrlControl.value">
+          (onClick)="model.update(m => ({ ...m, base_url: '' }))"
+          [showClearButton]="!!model().base_url">
           <input
-            [formControl]="baseUrlControl"
+            [formField]="httpForm.base_url"
             matInput
             placeholder="https://example.com/path/to/users"
             required />
@@ -191,7 +186,7 @@
         <mat-hint i18n>
           The base URL of the API of the user store which will be concatenated with the user endpoints defined below.
         </mat-hint>
-        @if (baseUrlControl.hasError("required") && baseUrlControl.touched) {
+        @if (httpForm.base_url().errors().some(e => e.kind === 'required') && httpForm.base_url().touched()) {
           <mat-error i18n>
             Base URL is
             <strong>required</strong>
@@ -256,8 +251,8 @@
                 (onClick)="setCustomAttr(i, '')"
                 [showClearButton]="!!row.privacyideaAttr">
                 <input
-                  (ngModelChange)="setCustomAttr(i, $event)"
-                  [ngModel]="row.privacyideaAttr"
+                  (input)="setCustomAttr(i, $any($event.target).value)"
+                  [value]="row.privacyideaAttr"
                   i18n-placeholder
                   matInput
                   placeholder="Enter custom attribute" />
@@ -285,8 +280,8 @@
               (onClick)="row.userStoreAttr = ''; onMappingChanged()"
               [showClearButton]="!!row.userStoreAttr">
               <input
-                (ngModelChange)="onMappingChanged()"
-                [(ngModel)]="row.userStoreAttr"
+                (input)="row.userStoreAttr = $any($event.target).value; onMappingChanged()"
+                [value]="row.userStoreAttr"
                 i18n-placeholder
                 matInput
                 placeholder="e.g. givenname" />
@@ -338,13 +333,13 @@
 
     <app-http-groups-attribute
       [resolverType]="type()"
-      [userGroupsControl]="userGroupsControl"></app-http-groups-attribute>
+      [model]="userGroupsModel"></app-http-groups-attribute>
 
     <div class="flex-column margin-top-16">
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
-          [formControl]="globalHeadersControl"
+          [formField]="httpForm.global_headers"
           matInput
           placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
         <mat-hint i18n>If no custom headers are defined this header is used for all endpoints.</mat-hint>
@@ -353,7 +348,8 @@
       <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
         <div class="flex-column input-width-l">
           <mat-checkbox
-            [formControl]="editableControl"
+            [checked]="model().Editable"
+            (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
             i18n>
             Edit User Store
           </mat-checkbox>
@@ -368,7 +364,7 @@
           <mat-form-field class="input-width-s">
             <mat-label i18n>Timeout</mat-label>
             <input
-              [formControl]="timeoutControl"
+              [formField]="httpForm.timeout"
               matInput
               placeholder="60" />
           </mat-form-field>
@@ -385,7 +381,8 @@
       <div class="flex-row gap-16 margin-bottom-16">
         <mat-checkbox
           class="input-width-l"
-          [formControl]="verifyTlsControl"
+          [checked]="model().verify_tls"
+          (change)="model.update(m => ({ ...m, verify_tls: $event.checked }))"
           i18n>
           Verify TLS certificate of the server.
         </mat-checkbox>
@@ -396,11 +393,12 @@
             The file containing the CA certificate which signed the TLS certificate of the server.
           </mat-hint>
           <app-clearable-input
-            (onClick)="tlsCaPathControl.setValue('')"
-            [disabled]="!verifyTls()"
-            [showClearButton]="!!tlsCaPathControl.value">
+            (onClick)="model.update(m => ({ ...m, tls_ca_path: '' }))"
+            [disabled]="!model().verify_tls"
+            [showClearButton]="!!model().tls_ca_path">
             <input
-              [formControl]="tlsCaPathControl"
+              [formField]="httpForm.tls_ca_path"
+              [disabled]="!model().verify_tls"
               matInput
               placeholder="/etc/privacyidea/ldap-ca.crt" />
           </app-clearable-input>
@@ -428,10 +426,10 @@
                 <mat-form-field class="input-width-xl">
                   <mat-label i18n>Authority</mat-label>
                   <app-clearable-input
-                    (onClick)="authorityControl.setValue('')"
-                    [showClearButton]="!!authorityControl.value">
+                    (onClick)="model.update(m => ({ ...m, authority: '' }))"
+                    [showClearButton]="!!model().authority">
                     <input
-                      [formControl]="authorityControl"
+                      [formField]="httpForm.authority"
                       matInput
                       placeholder="https://login.microsoftonline.com/{tenant}" />
                   </app-clearable-input>
@@ -441,15 +439,15 @@
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Tenant ID</mat-label>
                     <app-clearable-input
-                      (onClick)="tenantControl.setValue('')"
-                      [showClearButton]="!!tenantControl.value">
+                      (onClick)="model.update(m => ({ ...m, tenant: '' }))"
+                      [showClearButton]="!!model().tenant">
                       <input
-                        [formControl]="tenantControl"
+                        [formField]="httpForm.tenant"
                         matInput
                         placeholder="e.g. 12345678-1234-1234-1234-123456789012"
                         required />
                     </app-clearable-input>
-                    @if (tenantControl.hasError("required") && tenantControl.touched) {
+                    @if (httpForm.tenant().errors().some(e => e.kind === 'required') && httpForm.tenant().touched()) {
                       <mat-error i18n>
                         Tenant ID is
                         <strong>required</strong>
@@ -461,15 +459,15 @@
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Client ID</mat-label>
                     <app-clearable-input
-                      (onClick)="clientIdControl.setValue('')"
-                      [showClearButton]="!!clientIdControl.value">
+                      (onClick)="model.update(m => ({ ...m, client_id: '' }))"
+                      [showClearButton]="!!model().client_id">
                       <input
-                        [formControl]="clientIdControl"
+                        [formField]="httpForm.client_id"
                         matInput
                         placeholder="e.g. 87654321-4321-4321-4321-210987654321"
                         required />
                     </app-clearable-input>
-                    @if (clientIdControl.hasError("required") && clientIdControl.touched) {
+                    @if (httpForm.client_id().errors().some(e => e.kind === 'required') && httpForm.client_id().touched()) {
                       <mat-error i18n>
                         Client ID is
                         <strong>required</strong>
@@ -482,25 +480,27 @@
                 <div class="flex-row gap-16">
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Client Credential Type</mat-label>
-                    <mat-select [formControl]="clientCredentialTypeControl">
+                    <mat-select
+                      [value]="model().client_credential_type"
+                      (selectionChange)="model.update(m => ({ ...m, client_credential_type: $event.value }))">
                       <mat-option value="secret">Secret</mat-option>
                       <mat-option value="certificate">Certificate</mat-option>
                     </mat-select>
                   </mat-form-field>
 
-                  @if (clientCredentialType() === "secret") {
+                  @if (model().client_credential_type === "secret") {
                     <mat-form-field class="input-width-l">
                       <mat-label i18n>Client Secret</mat-label>
                       <app-clearable-input
-                        (onClick)="clientSecretControl.setValue('')"
-                        [showClearButton]="!!clientSecretControl.value">
+                        (onClick)="model.update(m => ({ ...m, client_secret: '' }))"
+                        [showClearButton]="!!model().client_secret">
                         <input
-                          [formControl]="clientSecretControl"
+                          [formField]="httpForm.client_secret"
                           matInput
                           required
                           type="password" />
                       </app-clearable-input>
-                      @if (clientSecretControl.hasError("required") && clientSecretControl.touched) {
+                      @if (httpForm.client_secret().errors().some(e => e.kind === 'required') && httpForm.client_secret().touched()) {
                         <mat-error i18n>
                           Client secret is
                           <strong>required</strong>
@@ -510,7 +510,7 @@
                     </mat-form-field>
                   }
                 </div>
-                @if (clientCredentialType() === "certificate") {
+                @if (model().client_credential_type === "certificate") {
                   <p
                     class="auth-description"
                     i18n>
@@ -522,17 +522,16 @@
                     Entra's app registration as client credential.
                   </p>
 
-                  <div
-                    [formGroup]="clientCertificateGroup"
-                    class="flex-column input-width-l">
+                  <div class="flex-column input-width-l">
                     <div class="flex-row gap-16">
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Path to the Private Key File</mat-label>
                         <app-clearable-input
-                          (onClick)="clientCertificateGroup.get('private_key_file')?.setValue('')"
-                          [showClearButton]="!!clientCertificateGroup.get('private_key_file')?.value">
+                          (onClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_file: '' } }))"
+                          [showClearButton]="!!model().client_certificate.private_key_file">
                           <input
-                            formControlName="private_key_file"
+                            [value]="model().client_certificate.private_key_file"
+                            (input)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_file: $any($event.target).value } }))"
                             matInput
                             placeholder="/etc/privacyidea/entra.key" />
                         </app-clearable-input>
@@ -541,10 +540,11 @@
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Password for the Private Key</mat-label>
                         <app-clearable-input
-                          (onClick)="clientCertificateGroup.get('private_key_password')?.setValue('')"
-                          [showClearButton]="!!clientCertificateGroup.get('private_key_password')?.value">
+                          (onClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_password: '' } }))"
+                          [showClearButton]="!!model().client_certificate.private_key_password">
                           <input
-                            formControlName="private_key_password"
+                            [value]="model().client_certificate.private_key_password"
+                            (input)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_password: $any($event.target).value } }))"
                             matInput
                             type="password" />
                         </app-clearable-input>
@@ -554,10 +554,11 @@
                     <mat-form-field class="input-width-l">
                       <mat-label i18n>Thumbprint of the Certificate</mat-label>
                       <app-clearable-input
-                        (onClick)="clientCertificateGroup.get('certificate_fingerprint')?.setValue('')"
-                        [showClearButton]="!!clientCertificateGroup.get('certificate_fingerprint')?.value">
+                        (onClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, certificate_fingerprint: '' } }))"
+                        [showClearButton]="!!model().client_certificate.certificate_fingerprint">
                         <input
-                          formControlName="certificate_fingerprint"
+                          [value]="model().client_certificate.certificate_fingerprint"
+                          (input)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, certificate_fingerprint: $any($event.target).value } }))"
                           matInput
                           placeholder="e.g. 1234567890ABCDEF1234567890ABCDEF12345678" />
                       </app-clearable-input>
@@ -577,10 +578,10 @@
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Username</mat-label>
                   <app-clearable-input
-                    (onClick)="usernameControl.setValue('')"
-                    [showClearButton]="!!usernameControl.value">
+                    (onClick)="model.update(m => ({ ...m, username: '' }))"
+                    [showClearButton]="!!model().username">
                     <input
-                      [formControl]="usernameControl"
+                      [formField]="httpForm.username"
                       matInput
                       placeholder="privacyIDEA" />
                   </app-clearable-input>
@@ -589,10 +590,10 @@
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Password</mat-label>
                   <app-clearable-input
-                    (onClick)="passwordControl.setValue('')"
-                    [showClearButton]="!!passwordControl.value">
+                    (onClick)="model.update(m => ({ ...m, password: '' }))"
+                    [showClearButton]="!!model().password">
                     <input
-                      [formControl]="passwordControl"
+                      [formField]="httpForm.password"
                       matInput
                       placeholder="t0p_SeCr3t!"
                       type="password" />
@@ -601,13 +602,13 @@
               </div>
 
               <app-http-config
-                [formGroup]="configAuthorizationGroup"
+                [model]="configAuthModel"
                 [title]="'Authorization'" />
             }
           </div>
         </mat-expansion-panel>
 
-        @if (clientCredentialType() !== "certificate") {
+        @if (model().client_credential_type !== "certificate") {
           <mat-expansion-panel>
             <mat-expansion-panel-header>
               <mat-panel-title i18n>Check User Password</mat-panel-title>
@@ -617,7 +618,7 @@
               <app-http-config
                 [description]="'Configure the endpoint to authenticate the user with its username/userid and password.'"
                 [endpointHint]="checkUserPasswordHint()"
-                [formGroup]="configUserAuthGroup"
+                [model]="configUserAuthModel"
                 [title]="'Check User Password'" />
             </div>
           </mat-expansion-panel>
@@ -634,7 +635,7 @@
                 'Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are added to the request as search parameters if they are available in the request.'
               "
               [endpointHint]="'Possible tags: {userid} {username} {password} {givenname}'"
-              [formGroup]="configGetUserListGroup"
+              [model]="configGetUserListModel"
               [title]="'User List'" />
           </div>
         </mat-expansion-panel>
@@ -650,7 +651,7 @@
                 'Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token owner. To resolve the complete user, this endpoint is used.'
               "
               [endpointHint]="'Possible tags: {userid}'"
-              [formGroup]="configGetUserByIdGroup"
+              [model]="configGetUserByIdModel"
               [title]="'Get User by ID'" />
           </div>
         </mat-expansion-panel>
@@ -666,12 +667,12 @@
                 'Configure the endpoint to retrieve a single user for the username. For example, when a user tries to authenticate against privacyIDEA, only the username is provided. To resolve the complete user and evaluate if the user exists, this endpoint is used.'
               "
               [endpointHint]="'Possible tags: {username}'"
-              [formGroup]="configGetUserByNameGroup"
+              [model]="configGetUserByNameModel"
               [title]="'Get User by Name'" />
           </div>
         </mat-expansion-panel>
 
-        @if (editable()) {
+        @if (model().Editable) {
           <mat-expansion-panel>
             <mat-expansion-panel-header>
               <mat-panel-title i18n>Create User</mat-panel-title>
@@ -685,7 +686,7 @@
                 [endpointHint]="
                   'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'
                 "
-                [formGroup]="configCreateUserGroup"
+                [model]="configCreateUserModel"
                 [title]="'Create User'" />
             </div>
           </mat-expansion-panel>
@@ -703,7 +704,7 @@
                 [endpointHint]="
                   'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'
                 "
-                [formGroup]="configEditUserGroup"
+                [model]="configEditUserModel"
                 [title]="'Edit User'" />
             </div>
           </mat-expansion-panel>
@@ -717,7 +718,7 @@
               <app-http-config
                 [description]="'Configure the endpoint to delete an existing user from the user store.'"
                 [endpointHint]="'Possible tags: {userid}'"
-                [formGroup]="configDeleteUserGroup"
+                [model]="configDeleteUserModel"
                 [title]="'Delete User'" />
             </div>
           </mat-expansion-panel>

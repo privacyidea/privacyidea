@@ -104,7 +104,7 @@
       }
 
       <form
-        (ngSubmit)="onSubmit()"
+        (submit)="$event.preventDefault(); onSubmit()"
         aria-label="Login Form"
         class="login-form gap-16"
         i18n-aria-label>
@@ -125,8 +125,7 @@
           <mat-form-field>
             <mat-label>Realm</mat-label>
             <mat-select
-              [(ngModel)]="realm"
-              [ngModelOptions]="{ standalone: true }"
+              (selectionChange)="realm.set($event.value)"
               [value]="realm()">
               @for (realmOption of realms(); track realmOption) {
                 <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
@@ -146,11 +145,10 @@
             subscriptSizing="dynamic">
             <mat-label i18n="Login username label">Username</mat-label>
             <input
-              [(ngModel)]="username"
+              [formField]="usernameField"
               id="username"
               matInput
               name="username"
-              required
               type="text" />
           </mat-form-field>
         }
@@ -161,11 +159,10 @@
             subscriptSizing="dynamic">
             <mat-label i18n="Login password label">Password</mat-label>
             <input
-              [(ngModel)]="password"
+              [formField]="passwordField"
               id="password"
               matInput
               name="password"
-              required
               [type]="hidePassword() ? 'password' : 'text'" />
             <button
               (click)="hidePassword.set(!hidePassword())"
@@ -184,12 +181,11 @@
             <mat-label i18n="Login OTP label">One-Time-Password</mat-label>
             <input
               #otpInput
-              [(ngModel)]="otp"
+              [formField]="otpField"
               autocomplete="one-time-code"
               id="otp"
               matInput
               name="otp"
-              required
               type="text" />
           </mat-form-field>
         }

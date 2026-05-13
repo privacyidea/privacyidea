@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import type { FormControl } from "@angular/forms";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -32,7 +32,7 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-tiqr",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-tiqr.component.html",
   styleUrl: "./enroll-tiqr.component.scss"
 })

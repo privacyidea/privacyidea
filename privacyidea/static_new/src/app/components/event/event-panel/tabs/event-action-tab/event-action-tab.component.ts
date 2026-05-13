@@ -20,7 +20,7 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, effect, inject, input, output } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -36,7 +36,6 @@ import { ActionOptions, EventService } from "@services/event/event.service";
     MatLabel,
     MatOption,
     MatSelect,
-    FormsModule,
     MatInput,
     MatCheckbox,
     ReactiveFormsModule,

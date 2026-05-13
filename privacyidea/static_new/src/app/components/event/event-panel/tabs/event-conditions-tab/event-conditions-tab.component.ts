@@ -28,7 +28,6 @@ import {
   output,
   signal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -45,8 +44,6 @@ import { EventConditionListComponent } from "./event-condition-list/event-condit
     MatFormField,
     MatInput,
     MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
     TitleCasePipe,
     MatTabGroup,
     MatTab,

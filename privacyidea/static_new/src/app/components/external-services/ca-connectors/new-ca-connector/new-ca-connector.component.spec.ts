@@ -60,19 +60,21 @@ describe("NewCaConnectorComponent", () => {
   });
 
   it("should initialize form with local type by default", () => {
-    expect(component.caConnectorForm.get("type")?.value).toBe("local");
-    expect(component.caConnectorForm.get("cacert")?.validator).toBeDefined();
+    expect(component.caConnectorModel().type).toBe("local");
+    // cacert is required when type is local
+    expect(component.caConnectorForm.cacert().errors().some(e => e.kind === "required")).toBe(true);
   });
 
   it("should update validators when type changes", () => {
-    component.caConnectorForm.get("type")?.setValue("microsoft");
-    expect(component.caConnectorForm.get("cacert")?.validator).toBeNull();
-    expect(component.caConnectorForm.get("hostname")?.validator).toBeDefined();
+    component.caConnectorModel.update(m => ({ ...m, type: "microsoft" }));
+    // cacert should no longer be required for microsoft type
+    expect(component.caConnectorForm.cacert().errors().some(e => e.kind === "required")).toBe(false);
+    // hostname should be required for microsoft type
+    expect(component.caConnectorForm.hostname().errors().some(e => e.kind === "required")).toBe(true);
   });
 
   it("should load available CAs for microsoft type", async () => {
-    component.caConnectorForm.get("type")?.setValue("microsoft");
-    component.caConnectorForm.patchValue({ hostname: "test", port: "123" });
+    component.caConnectorModel.update(m => ({ ...m, type: "microsoft", hostname: "test", port: "123" }));
 
     component.loadAvailableCas();
     await caConnectorServiceMock.getCaSpecificOptions.mock.results[0].value;
@@ -86,13 +88,14 @@ describe("NewCaConnectorComponent", () => {
 
   it("should call save when form is valid", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.caConnectorForm.patchValue({
+    component.caConnectorModel.update(m => ({
+      ...m,
       connectorname: "test",
       type: "local",
       cacert: "cert",
       cakey: "key",
       "openssl.cnf": "cnf"
-    });
+    }));
 
     const success = await component.save();
 
@@ -103,13 +106,14 @@ describe("NewCaConnectorComponent", () => {
 
   it("save should return false on error", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.caConnectorForm.patchValue({
+    component.caConnectorModel.update(m => ({
+      ...m,
       connectorname: "test",
       type: "local",
       cacert: "cert",
       cakey: "key",
       "openssl.cnf": "cnf"
-    });
+    }));
     caConnectorServiceMock.postCaConnector = jest.fn().mockRejectedValue(new Error("Save failed"));
 
     const success = await component.save();

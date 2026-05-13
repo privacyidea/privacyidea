@@ -78,8 +78,8 @@ describe("NewRadiusServerComponent", () => {
   });
 
   it("should initialize form for create mode", () => {
-    expect(component.isEditMode).toBe(false);
-    expect(component.radiusForm.get("identifier")?.value).toBe("");
+    expect(component.isEditMode()).toBe(false);
+    expect(component.radiusModel().identifier).toBe("");
   });
 
   it("should initialize form for edit mode", () => {
@@ -94,20 +94,21 @@ describe("NewRadiusServerComponent", () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(component.isEditMode).toBe(true);
-    expect(component.radiusForm.get("identifier")?.value).toBe("test");
-    expect(component.radiusForm.get("identifier")?.disabled).toBe(true);
+    expect(component.isEditMode()).toBe(true);
+    expect(component.radiusModel().identifier).toBe("test");
+    expect(component.radiusForm.identifier().disabled()).toBe(true);
   });
 
   it("should call save when form is valid", async () => {
-    component.radiusForm.patchValue({
+    component.radiusModel.update(m => ({
+      ...m,
       identifier: "test",
       server: "1.2.3.4",
       secret: "secret",
       port: 1812,
       timeout: 5,
       retries: 3
-    });
+    }));
 
     const success = await component.save();
 
@@ -117,14 +118,15 @@ describe("NewRadiusServerComponent", () => {
   });
 
   it("should handle error on save", async () => {
-    component.radiusForm.patchValue({
+    component.radiusModel.update(m => ({
+      ...m,
       identifier: "test",
       server: "1.2.3.4",
       secret: "secret",
       port: 1812,
       timeout: 5,
       retries: 3
-    });
+    }));
     radiusServiceMock.postRadiusServer.mockRejectedValue(new Error("Save failed"));
 
     const success = await component.save();
@@ -134,14 +136,15 @@ describe("NewRadiusServerComponent", () => {
   });
 
   it("should call test when form is valid", async () => {
-    component.radiusForm.patchValue({
+    component.radiusModel.update(m => ({
+      ...m,
       identifier: "test",
       server: "1.2.3.4",
       secret: "secret",
       port: 1812,
       timeout: 5,
       retries: 3
-    });
+    }));
     await component.test();
     expect(radiusServiceMock.testRadiusServer).toHaveBeenCalled();
   });
@@ -167,13 +170,14 @@ describe("NewRadiusServerComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("discard").asObservable());
-      component.radiusForm.patchValue({
+      component.radiusModel.update(m => ({
+        ...m,
         identifier: "test",
         server: "1.2.3.4",
         secret: "secret",
         port: 1812
-      });
-      component.radiusForm.markAsDirty();
+      }));
+      component.radiusForm().markAsDirty();
 
       component.onCancel();
 
@@ -189,13 +193,14 @@ describe("NewRadiusServerComponent", () => {
 
     it("should navigate back when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("discard").asObservable());
-      component.radiusForm.patchValue({
+      component.radiusModel.update(m => ({
+        ...m,
         identifier: "test",
         server: "1.2.3.4",
         secret: "secret",
         port: 1812
-      });
-      component.radiusForm.markAsDirty();
+      }));
+      component.radiusForm().markAsDirty();
 
       component.onCancel();
 
@@ -206,13 +211,14 @@ describe("NewRadiusServerComponent", () => {
     });
 
     it("should navigate back when user selects 'save-exit' and save succeeds", async () => {
-      component.radiusForm.patchValue({
+      component.radiusModel.update(m => ({
+        ...m,
         identifier: "test",
         server: "1.2.3.4",
         secret: "secret",
         port: 1812
-      });
-      component.radiusForm.markAsDirty();
+      }));
+      component.radiusForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("save-exit").asObservable());
       pendingChangesService.save.mockReturnValue(Promise.resolve(true));
 
@@ -225,13 +231,14 @@ describe("NewRadiusServerComponent", () => {
     });
 
     it("should NOT navigate when user selects 'save-exit' but save fails", async () => {
-      component.radiusForm.patchValue({
+      component.radiusModel.update(m => ({
+        ...m,
         identifier: "test",
         server: "1.2.3.4",
         secret: "secret",
         port: 1812
-      });
-      component.radiusForm.markAsDirty();
+      }));
+      component.radiusForm().markAsDirty();
       radiusServiceMock.postRadiusServer.mockRejectedValue(new Error("Save failed"));
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("save-exit").asObservable());
       pendingChangesService.save.mockReturnValue(Promise.resolve(false));
@@ -245,8 +252,8 @@ describe("NewRadiusServerComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.radiusForm.patchValue({ identifier: "" });
-      component.radiusForm.markAsDirty();
+      component.radiusModel.update(m => ({ ...m, identifier: "" }));
+      component.radiusForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("save-exit").asObservable());
 
       component.onCancel();
@@ -260,13 +267,14 @@ describe("NewRadiusServerComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject(undefined).asObservable());
-      component.radiusForm.patchValue({
+      component.radiusModel.update(m => ({
+        ...m,
         identifier: "test",
         server: "1.2.3.4",
         secret: "secret",
         port: 1812
-      });
-      component.radiusForm.markAsDirty();
+      }));
+      component.radiusForm().markAsDirty();
 
       component.onCancel();
 

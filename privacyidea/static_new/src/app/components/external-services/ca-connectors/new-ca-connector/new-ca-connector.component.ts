@@ -25,10 +25,11 @@ import {
   OnDestroy,
   Renderer2,
   signal,
+  untracked,
   ViewChild
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -49,11 +50,61 @@ import {
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
+interface CaConnectorFormModel {
+  connectorname: string;
+  type: string;
+  // Local CA fields
+  cacert: string;
+  cakey: string;
+  "openssl.cnf": string;
+  templates: string;
+  WorkingDir: string;
+  CSRDir: string;
+  CertificateDir: string;
+  CRL: string;
+  CRL_Validity_Period: string;
+  CRL_Overlap_Period: string;
+  // Microsoft CA fields
+  hostname: string;
+  port: string;
+  http_proxy: boolean;
+  use_ssl: boolean;
+  ssl_ca_cert: string;
+  ssl_client_cert: string;
+  ssl_client_key: string;
+  ssl_client_key_password: string;
+  ca: string;
+}
+
+const EMPTY_CA_CONNECTOR_FORM: CaConnectorFormModel = {
+  connectorname: "",
+  type: "local",
+  cacert: "",
+  cakey: "",
+  "openssl.cnf": "",
+  templates: "",
+  WorkingDir: "",
+  CSRDir: "",
+  CertificateDir: "",
+  CRL: "",
+  CRL_Validity_Period: "",
+  CRL_Overlap_Period: "",
+  hostname: "",
+  port: "",
+  http_proxy: false,
+  use_ssl: false,
+  ssl_ca_cert: "",
+  ssl_client_cert: "",
+  ssl_client_key: "",
+  ssl_client_key_password: "",
+  ca: ""
+};
+
 @Component({
   selector: "app-ca-connector-edit-dialog",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
@@ -68,7 +119,6 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
   styleUrl: "./new-ca-connector.component.scss"
 })
 export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
   protected readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
@@ -82,11 +132,28 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
 
   private observer!: IntersectionObserver;
 
-  caConnectorForm!: FormGroup;
-  isEditMode = false;
+  isEditMode = signal(false);
   availableCas = signal<string[]>([]);
   isLoadingCas = signal(false);
   private editConnectorName: string | null = null;
+
+  caConnectorModel = signal<CaConnectorFormModel>({ ...EMPTY_CA_CONNECTOR_FORM });
+
+  caConnectorForm = form(this.caConnectorModel, (f) => {
+    required(f.connectorname);
+    pattern(f.connectorname, /^[a-zA-Z0-9._-]*$/);
+    required(f.type);
+    // Local CA required fields (conditional)
+    required(f.cacert, { when: () => this.caConnectorModel().type === "local" });
+    required(f.cakey, { when: () => this.caConnectorModel().type === "local" });
+    required(f["openssl.cnf"], { when: () => this.caConnectorModel().type === "local" });
+    // Microsoft CA required fields (conditional)
+    required(f.hostname, { when: () => this.caConnectorModel().type === "microsoft" });
+    required(f.port, { when: () => this.caConnectorModel().type === "microsoft" });
+    required(f.ca, { when: () => this.caConnectorModel().type === "microsoft" && this.availableCas().length > 0 });
+    disabled(f.connectorname, () => this.isEditMode());
+    disabled(f.type, () => this.isEditMode());
+  });
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -96,107 +163,68 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const connectorName = params.get("name");
       if (connectorName) {
-        this.isEditMode = true;
+        this.isEditMode.set(true);
         this.editConnectorName = connectorName;
         const connector = this.caConnectorService.caConnectors().find((c) => c.connectorname === connectorName);
         if (connector) {
-          this.initForm(connector);
+          this.loadData(connector);
+          if (connector.type === "microsoft") {
+            this.loadAvailableCas();
+          }
         }
       } else {
-        this.isEditMode = false;
+        this.isEditMode.set(false);
         this.editConnectorName = null;
-        this.initForm(null);
+        this.loadData(null);
       }
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const connectors = this.caConnectorService.caConnectors();
-      if (this.isEditMode && this.editConnectorName && this.caConnectorForm?.pristine) {
+      if (this.isEditMode() && this.editConnectorName && untracked(() => !this.caConnectorForm().dirty())) {
         const found = connectors.find((c) => c.connectorname === this.editConnectorName);
         if (found) {
-          this.initForm(found);
+          this.loadData(found);
         }
       }
     });
   }
 
   get hasChanges(): boolean {
-    return !this.caConnectorForm.pristine;
+    return this.caConnectorForm().dirty();
   }
 
   get canSave(): boolean {
-    return this.caConnectorForm.valid;
+    return this.caConnectorForm().valid();
   }
 
-  private initForm(connector: CaConnector | null): void {
+  private loadData(connector: CaConnector | null): void {
     const connectorData = connector?.data || {};
-
-    this.caConnectorForm = this.formBuilder.group({
-      connectorname: [connector?.connectorname || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-      type: [connector?.type || "local", [Validators.required]],
-      // Local CA fields
-      cacert: [connectorData["cacert"] || ""],
-      cakey: [connectorData["cakey"] || ""],
-      "openssl.cnf": [connectorData["openssl.cnf"] || ""],
-      templates: [connectorData["templates"] || ""],
-      WorkingDir: [connectorData["WorkingDir"] || ""],
-      CSRDir: [connectorData["CSRDir"] || ""],
-      CertificateDir: [connectorData["CertificateDir"] || ""],
-      CRL: [connectorData["CRL"] || ""],
-      CRL_Validity_Period: [connectorData["CRL_Validity_Period"] || ""],
-      CRL_Overlap_Period: [connectorData["CRL_Overlap_Period"] || ""],
-      // Microsoft CA fields
-      hostname: [connectorData["hostname"] || ""],
-      port: [connectorData["port"] || ""],
-      http_proxy: [connectorData["http_proxy"] || false],
-      use_ssl: [connectorData["use_ssl"] || false],
-      ssl_ca_cert: [connectorData["ssl_ca_cert"] || ""],
-      ssl_client_cert: [connectorData["ssl_client_cert"] || ""],
-      ssl_client_key: [connectorData["ssl_client_key"] || ""],
-      ssl_client_key_password: [connectorData["ssl_client_key_password"] || ""],
-      ca: [connectorData["ca"] || ""]
+    this.caConnectorModel.set({
+      connectorname: connector?.connectorname || "",
+      type: connector?.type || "local",
+      cacert: connectorData["cacert"] || "",
+      cakey: connectorData["cakey"] || "",
+      "openssl.cnf": connectorData["openssl.cnf"] || "",
+      templates: connectorData["templates"] || "",
+      WorkingDir: connectorData["WorkingDir"] || "",
+      CSRDir: connectorData["CSRDir"] || "",
+      CertificateDir: connectorData["CertificateDir"] || "",
+      CRL: connectorData["CRL"] || "",
+      CRL_Validity_Period: connectorData["CRL_Validity_Period"] || "",
+      CRL_Overlap_Period: connectorData["CRL_Overlap_Period"] || "",
+      hostname: connectorData["hostname"] || "",
+      port: connectorData["port"] || "",
+      http_proxy: connectorData["http_proxy"] || false,
+      use_ssl: connectorData["use_ssl"] || false,
+      ssl_ca_cert: connectorData["ssl_ca_cert"] || "",
+      ssl_client_cert: connectorData["ssl_client_cert"] || "",
+      ssl_client_key: connectorData["ssl_client_key"] || "",
+      ssl_client_key_password: connectorData["ssl_client_key_password"] || "",
+      ca: connectorData["ca"] || ""
     });
-
-    if (this.isEditMode) {
-      this.caConnectorForm.get("connectorname")?.disable();
-      this.caConnectorForm.get("type")?.disable();
-      if (connector?.type === "microsoft") {
-        this.loadAvailableCas();
-      }
-    }
-
-    this.updateValidators(this.caConnectorForm.get("type")?.value);
-
-    this.caConnectorForm.get("type")?.valueChanges.subscribe((type) => {
-      this.updateValidators(type);
-    });
-  }
-
-  updateValidators(type: string): void {
-    const localFields = ["cacert", "cakey", "openssl.cnf"];
-    const microsoftFields = ["hostname", "port"];
-
-    if (type === "local") {
-      localFields.forEach((localField) => this.caConnectorForm.get(localField)?.setValidators([Validators.required]));
-      microsoftFields.forEach((microsoftField) => this.caConnectorForm.get(microsoftField)?.clearValidators());
-      this.caConnectorForm.get("ca")?.clearValidators();
-    } else {
-      microsoftFields.forEach((microsoftField) =>
-        this.caConnectorForm.get(microsoftField)?.setValidators([Validators.required])
-      );
-      localFields.forEach((localField) => this.caConnectorForm.get(localField)?.clearValidators());
-      if (this.availableCas().length > 0) {
-        this.caConnectorForm.get("ca")?.setValidators([Validators.required]);
-      } else {
-        this.caConnectorForm.get("ca")?.clearValidators();
-      }
-    }
-
-    localFields
-      .concat(microsoftFields)
-      .concat(["ca"])
-      .forEach((f) => this.caConnectorForm.get(f)?.updateValueAndValidity());
+    this.caConnectorForm().reset();
   }
 
   ngOnDestroy(): void {
@@ -226,15 +254,16 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
   }
 
   loadAvailableCas(): void {
+    const m = this.caConnectorModel();
     const params = {
-      hostname: this.caConnectorForm.get("hostname")?.value,
-      port: this.caConnectorForm.get("port")?.value,
-      use_ssl: this.caConnectorForm.get("use_ssl")?.value,
-      ssl_ca_cert: this.caConnectorForm.get("ssl_ca_cert")?.value,
-      ssl_client_cert: this.caConnectorForm.get("ssl_client_cert")?.value,
-      ssl_client_key: this.caConnectorForm.get("ssl_client_key")?.value,
-      ssl_client_key_password: this.caConnectorForm.get("ssl_client_key_password")?.value,
-      http_proxy: this.caConnectorForm.get("http_proxy")?.value
+      hostname: m.hostname,
+      port: m.port,
+      use_ssl: m.use_ssl,
+      ssl_ca_cert: m.ssl_ca_cert,
+      ssl_client_cert: m.ssl_client_cert,
+      ssl_client_key: m.ssl_client_key,
+      ssl_client_key_password: m.ssl_client_key_password,
+      http_proxy: m.http_proxy
     };
 
     if (params.hostname && params.port) {
@@ -244,7 +273,6 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
         .then((res) => {
           this.availableCas.set(res.available_cas || []);
           this.isLoadingCas.set(false);
-          this.updateValidators(this.caConnectorForm.get("type")?.value);
         })
         .catch(() => {
           this.isLoadingCas.set(false);
@@ -253,12 +281,12 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
   }
 
   async save(): Promise<boolean> {
-    if (this.caConnectorForm.invalid) {
+    if (!this.caConnectorForm().valid()) {
       return false;
     }
-    const formValue = this.caConnectorForm.getRawValue();
-    const type = formValue.type;
-    const connectorname = formValue.connectorname;
+    const m = this.caConnectorModel();
+    const type = m.type;
+    const connectorname = m.connectorname;
 
     const data: Record<string, any> = { type };
 
@@ -274,10 +302,11 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
         "CRL",
         "CRL_Validity_Period",
         "CRL_Overlap_Period"
-      ];
+      ] as const;
       localFields.forEach((f) => {
-        if (formValue[f] !== undefined && formValue[f] !== "") {
-          data[f] = formValue[f];
+        const val = m[f];
+        if (val !== undefined && val !== "") {
+          data[f] = val;
         }
       });
     } else if (type === "microsoft") {
@@ -291,10 +320,11 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
         "ssl_client_key",
         "ssl_client_key_password",
         "ca"
-      ];
+      ] as const;
       microsoftFields.forEach((f) => {
-        if (formValue[f] !== undefined && formValue[f] !== "") {
-          data[f] = formValue[f];
+        const val = m[f];
+        if (val !== undefined && val !== "") {
+          data[f] = val;
         }
       });
     }

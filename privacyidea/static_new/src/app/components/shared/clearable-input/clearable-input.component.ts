@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -25,7 +24,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 @Component({
   selector: "app-clearable-input",
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, MatIconButton, MatTooltipModule],
+  imports: [MatIconModule, MatIconButton, MatTooltipModule],
   templateUrl: "./clearable-input.component.html",
   styleUrl: "./clearable-input.component.scss"
 })

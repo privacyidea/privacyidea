@@ -81,21 +81,22 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   it("should initialize form for create mode", () => {
-    expect(component.isEditMode).toBe(false);
-    expect(component.smsForm.get("name")?.value).toBe("");
+    expect(component.isEditMode()).toBe(false);
+    expect(component.smsModel().name).toBe("");
   });
 
-  it("should update form when provider changes", async () => {
-    component.smsForm.get("providermodule")?.setValue("mod1");
+  it("should update parameters when provider changes", async () => {
+    component.smsModel.update(m => ({ ...m, providermodule: "mod1" }));
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(component.parametersForm.get("p1")).toBeDefined();
+    expect(component.parametersModel()["p1"]).toBeDefined();
   });
 
   it("should call save when form is valid", async () => {
-    component.smsForm.patchValue({
+    component.smsModel.set({
       name: "test",
-      providermodule: "mod1"
+      providermodule: "mod1",
+      description: ""
     });
 
     const success = await component.save();
@@ -106,9 +107,10 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   it("Save should handle error", async () => {
-    component.smsForm.patchValue({
+    component.smsModel.set({
       name: "test",
-      providermodule: "mod1"
+      providermodule: "mod1",
+      description: ""
     });
     smsGatewayServiceMock.postSmsGateway = jest.fn().mockRejectedValue(new Error("Save failed"));
 
@@ -138,11 +140,13 @@ describe("NewSmsGatewayComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.smsForm.patchValue({
+      component.smsModel.set({
         name: "test",
-        providermodule: "mod1"
+        providermodule: "mod1",
+        description: ""
       });
-      component.smsForm.markAsDirty();
+      // Simulate dirty state by triggering form interaction
+      component.smsForm().markAsTouched();
 
       component.onCancel();
 
@@ -158,11 +162,12 @@ describe("NewSmsGatewayComponent", () => {
 
     it("should navigate back when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.smsForm.patchValue({
+      component.smsModel.set({
         name: "test",
-        providermodule: "mod1"
+        providermodule: "mod1",
+        description: ""
       });
-      component.smsForm.markAsDirty();
+      component.parametersDirty.set(true);
 
       component.onCancel();
 
@@ -173,11 +178,12 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("should navigate back when user selects 'save-exit' and save succeeds", async () => {
-      component.smsForm.patchValue({
+      component.smsModel.set({
         name: "test",
-        providermodule: "mod1"
+        providermodule: "mod1",
+        description: ""
       });
-      component.smsForm.markAsDirty();
+      component.parametersDirty.set(true);
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
       pendingChangesService.save.mockReturnValue(Promise.resolve(true));
 
@@ -190,11 +196,12 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("should NOT navigate back when user selects 'save-exit' but save fails", async () => {
-      component.smsForm.patchValue({
+      component.smsModel.set({
         name: "test",
-        providermodule: "mod1"
+        providermodule: "mod1",
+        description: ""
       });
-      component.smsForm.markAsDirty();
+      component.parametersDirty.set(true);
       smsGatewayServiceMock.postSmsGateway = jest.fn().mockRejectedValue(new Error("Save failed"));
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
       pendingChangesService.save.mockReturnValue(Promise.resolve(false));
@@ -208,8 +215,8 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.smsForm.patchValue({ name: "" });
-      component.smsForm.markAsDirty();
+      component.smsModel.update(m => ({ ...m, name: "" }));
+      component.parametersDirty.set(true);
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
       component.onCancel();
@@ -223,11 +230,12 @@ describe("NewSmsGatewayComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
-      component.smsForm.patchValue({
+      component.smsModel.set({
         name: "test",
-        providermodule: "mod1"
+        providermodule: "mod1",
+        description: ""
       });
-      component.smsForm.markAsDirty();
+      component.parametersDirty.set(true);
 
       component.onCancel();
 

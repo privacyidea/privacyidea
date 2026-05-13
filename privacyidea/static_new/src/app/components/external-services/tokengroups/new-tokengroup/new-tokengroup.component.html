@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="tokengroup-page-container">
-  @if (isEditMode) {
+  @if (isEditMode()) {
     <h3
       class="margin-8"
       i18n>
@@ -40,7 +40,7 @@
     </button>
     <button
       (click)="save()"
-      [disabled]="tokengroupForm.invalid"
+      [disabled]="!tokengroupForm().valid()"
       class="action-button-primary button-width-s"
       mat-stroked-button>
       <mat-icon>save</mat-icon>
@@ -49,9 +49,7 @@
   </div>
 
   <div class="tokengroup-content">
-    <form
-      [formGroup]="tokengroupForm"
-      class="tokengroup-form">
+    <div class="tokengroup-form">
 
       <div class="flex-column gap-16">
         <mat-form-field
@@ -59,19 +57,19 @@
           class="input-width-l margin-bottom-16">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (onClick)="tokengroupForm.get('groupname')?.setValue('')"
-            [showClearButton]="!isEditMode && !!tokengroupForm.get('groupname')?.value">
+            (onClick)="tokengroupModel.update(m => ({...m, groupname: ''}))"
+            [showClearButton]="!isEditMode() && !!tokengroupModel().groupname">
             <input
-              formControlName="groupname"
+              [formField]="tokengroupForm.groupname"
               matInput
               placeholder="myNewGroup"
               required />
           </app-clearable-input>
           <mat-hint i18n>This is the unique identifying name for this group definition.</mat-hint>
-          @if (tokengroupForm.get('groupname')?.hasError('required')) {
+          @if (tokengroupForm.groupname().errors().some(e => e.kind === 'required')) {
             <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
           }
-          @if (tokengroupForm.get('groupname')?.hasError('pattern')) {
+          @if (tokengroupForm.groupname().errors().some(e => e.kind === 'pattern')) {
             <mat-error
               i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
             </mat-error>
@@ -83,15 +81,15 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="tokengroupForm.get('description')?.setValue('')"
-            [showClearButton]="!!tokengroupForm.get('description')?.value">
+            (onClick)="tokengroupModel.update(m => ({...m, description: ''}))"
+            [showClearButton]="!!tokengroupModel().description">
             <input
-              formControlName="description"
+              [formField]="tokengroupForm.description"
               matInput
               placeholder="some wise words" />
           </app-clearable-input>
         </mat-form-field>
       </div>
-    </form>
+    </div>
   </div>
 </div>

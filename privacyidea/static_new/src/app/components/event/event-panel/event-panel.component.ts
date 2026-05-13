@@ -32,7 +32,6 @@ import {
   ViewChild
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
 import { MatChipsModule } from "@angular/material/chips";
@@ -68,8 +67,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatHint,
     MatInput,
     MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
     MatSelect,
     MatOption,
     MatAutocompleteModule,
@@ -77,8 +74,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatChipsModule,
     MatSelectModule,
     MatIconModule,
-    FormsModule,
-    ReactiveFormsModule,
     EventSelectionComponent,
     MatTabGroup,
     MatTab,
