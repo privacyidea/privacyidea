@@ -19,6 +19,7 @@
 
 import { NgOptimizedImage } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
@@ -69,7 +70,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   ],
   styleUrl: "./login.component.scss"
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router: Router = inject(Router);
   private readonly localService: LocalServiceInterface = inject(LocalService);
@@ -80,6 +81,7 @@ export class LoginComponent implements OnDestroy {
   private transactionId = "";
   private pollingSubscription: Subscription | null = null;
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("usernameInput") usernameInput?: ElementRef<HTMLInputElement>;
   username = signal<string>("");
   password = signal<string>("");
   hidePassword = signal<boolean>(true);
@@ -230,6 +232,10 @@ export class LoginComponent implements OnDestroy {
     this.otp.set("");
     this.password.set("");
     this.hidePassword.set(true);
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => this.usernameInput?.nativeElement.focus(), 0);
   }
 
   ngOnDestroy(): void {
