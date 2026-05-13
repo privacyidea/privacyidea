@@ -135,10 +135,35 @@
               }
               @case ("policies") {
                 @for (policy of element[column.key]?.split(","); track policy) {
-                  <span>
-                    {{ policy }}
-                  </span>
+                  <app-copyable [copyText]="policy">
+                    <span>{{ policy }}</span>
+                  </app-copyable>
                 }
+              }
+              @case ("action") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("action_detail") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("info") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("user_agent") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("privacyidea_server") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
               }
               @case ("user") {
                 <app-copyable [copyText]="element[column.key]">
