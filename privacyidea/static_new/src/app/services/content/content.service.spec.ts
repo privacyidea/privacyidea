@@ -94,6 +94,18 @@ describe("ContentService", () => {
     expect(service.onTokenEnrollmentLikely()).toBe(false);
   });
 
+  describe("container route signals", () => {
+    it("onContainersCreate is true for CONTAINERS_CREATE and CONTAINERS_WIZARD paths", () => {
+      expect(service.onContainersCreate()).toBe(false);
+      emitNav(ROUTE_PATHS.CONTAINERS_CREATE);
+      expect(service.onContainersCreate()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS_WIZARD);
+      expect(service.onContainersCreate()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS);
+      expect(service.onContainersCreate()).toBe(false);
+    });
+  });
+
   describe("template route signals", () => {
     it("onContainersTemplates is true only for exact CONTAINERS_TEMPLATES path", () => {
       expect(service.onContainersTemplates()).toBe(false);
