@@ -33,6 +33,7 @@ import { VersioningService, VersioningServiceInterface } from "@services/version
 import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { tap } from "rxjs/operators";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
+import { ToggleActiveAction, ToggleActiveDialogComponent } from "./toggle-active-dialog/toggle-active-dialog.component";
 
 import { MatMenuModule } from "@angular/material/menu";
 import { Router, RouterLink } from "@angular/router";
@@ -132,6 +133,100 @@ export class TokenTableActionsComponent {
     this.tokenService.bulkDeleteWithConfirmDialog(serialList, () => this.tokenService.tokenResource.reload());
   }
 
+  toggleActiveSelectedTokens(): void {
+    const selectedTokens = this.tokenSelection();
+    if (selectedTokens.length === 0) return;
+    this.dialogService
+      .openDialog({
+        component: ToggleActiveDialogComponent,
+        data: {
+          items: selectedTokens.map((token) => ({ serial: token.serial, active: token.active }))
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (action: ToggleActiveAction | undefined) => {
+          if (!action) return;
+          const tokensToProcess =
+            action === "activate"
+              ? selectedTokens.filter((t) => !t.active)
+              : action === "deactivate"
+                ? selectedTokens.filter((t) => t.active)
+                : selectedTokens;
+          if (tokensToProcess.length === 0) {
+            this.notificationService.success("No tokens to process.");
+            return;
+          }
+          from(tokensToProcess)
+            .pipe(
+              concatMap((token) => {
+                const shouldDisable = action === "deactivate" ? true : action === "activate" ? false : token.active;
+                return this.tokenService.toggleActive(token.serial, shouldDisable);
+              }),
+              reduce(() => null, null)
+            )
+            .subscribe({
+              next: () => {
+                const actionLabel = action === "activate" ? "activated" : action === "deactivate" ? "deactivated" : "toggled";
+                this.notificationService.success(`Successfully ${actionLabel} ${tokensToProcess.length} token(s).`);
+                this.tokenService.tokenResource.reload();
+                this.tokenService.tokenDetailResource.reload();
+              },
+              error: (err) => {
+                let message = "An error occurred while toggling tokens.";
+                if (err.error?.result?.error?.message) {
+                  message = err.error.result.error.message;
+                }
+                this.notificationService.error(message);
+                this.tokenService.tokenResource.reload();
+              }
+            });
+        }
+      });
+  }
+
+  resetFailcounterSelectedTokens(): void {
+    const selectedTokens = this.tokenSelection();
+    if (selectedTokens.length === 0) return;
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Reset Failcounter for Selected Tokens",
+          items: selectedTokens.map((token) => token.serial),
+          itemType: "token",
+          confirmAction: { label: "Reset", value: true, type: "confirm" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            from(selectedTokens)
+              .pipe(
+                concatMap((token) => this.tokenService.resetFailCount(token.serial)),
+                reduce(() => null, null)
+              )
+              .subscribe({
+                next: () => {
+                  this.notificationService.success(`Successfully reset failcounter for ${selectedTokens.length} token(s).`);
+                  this.tokenService.tokenResource.reload();
+                  this.tokenService.tokenDetailResource.reload();
+                },
+                error: (err) => {
+                  let message = "An error occurred while resetting failcounters.";
+                  if (err.error?.result?.error?.message) {
+                    message = err.error.result.error.message;
+                  }
+                  this.notificationService.error(message);
+                  this.tokenService.tokenResource.reload();
+                }
+              });
+          }
+        }
+      });
+  }
+
   assignSelectedTokens() {
     this.dialogService
       .openDialog({ component: SelectedUserAssignDialogComponent })
@@ -184,7 +279,7 @@ export class TokenTableActionsComponent {
         next: (result) => {
           if (result) {
             this.tokenService.bulkUnassignTokens(selectedTokens).subscribe({
-              next: (response: PiResponse<BulkResult, any>) => {
+              next: (response: PiResponse<BulkResult, boolean>) => {
                 const failedTokens = response.result?.value?.failed || [];
                 const unauthorizedTokens = response.result?.value?.unauthorized || [];
                 const count_success = response.result?.value?.count_success || 0;

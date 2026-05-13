@@ -57,6 +57,26 @@
         Unassign Selected
       </button>
     }
+    @if (authService.actionAllowed("enable") || authService.actionAllowed("disable")) {
+      <button
+        (click)="toggleActiveSelectedTokens()"
+        [disabled]="tokenSelection().length === 0"
+        class="action-button-secondary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon> toggle_on</mat-icon>
+        (De)activate Selected
+      </button>
+    }
+    <button
+      (click)="resetFailcounterSelectedTokens()"
+      [disabled]="tokenSelection().length === 0"
+      class="action-button-secondary button-width-m"
+      i18n
+      mat-stroked-button>
+      <mat-icon> restart_alt</mat-icon>
+      Reset Failcounters
+    </button>
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-secondary button-width-m"
