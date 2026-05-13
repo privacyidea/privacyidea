@@ -9,7 +9,11 @@
   @include styles.main-component-style;
   display: grid;
   position: relative;
-  width: 100%;
+  box-sizing: border-box;
+  width: min(
+    calc(2 * 616px + var(--global-gap) + 2 * var(--global-padding)),
+    calc(100vw - 4 * var(--global-padding))
+  );
 }
 
 .header-row {

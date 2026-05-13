@@ -17,31 +17,38 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="event-selection-container">
-  <mat-form-field
-    class="event-chips-field height-unset"
-    floatLabel="always">
-    <mat-label i18n>Events</mat-label>
-    <mat-chip-grid
-      #chipGrid
-      [formControl]="selectedEvents"
-      required
-      aria-label="Selected events">
-      @for (event of selectedEvents.value; track $index) {
-        <mat-chip-row (removed)="removeEvent(event)">
-          {{ event }}
-          <button
-            matChipRemove
-            [attr.aria-label]="'remove ' + event">
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip-row>
-      }
-      <input
-        [matChipInputFor]="chipGrid"
-        style="display: none" />
-    </mat-chip-grid>
-    <mat-error i18n>At least one event must be selected.</mat-error>
-  </mat-form-field>
+  <div class="selected-events-container">
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Selected Events</mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="panel-content">
+        @if (selectedEvents.value.length > 0) {
+          <mat-chip-set
+            aria-label="Selected events"
+            i18n-aria-label>
+            @for (event of selectedEvents.value; track $index) {
+              <mat-chip (removed)="removeEvent(event)">
+                {{ event }}
+                <button
+                  matChipRemove
+                  [attr.aria-label]="'remove ' + event">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </mat-chip>
+            }
+          </mat-chip-set>
+        } @else {
+          <p
+            class="selected-events-empty"
+            i18n>
+            At least one event must be selected.
+          </p>
+        }
+      </div>
+    </mat-expansion-panel>
+  </div>
 
   <div class="add-events-container">
     <mat-expansion-panel [expanded]="true">

@@ -22,7 +22,6 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { MatFormFieldModule, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EventService } from "@services/event/event.service";
@@ -33,9 +32,7 @@ import { EventService } from "@services/event/event.service";
     FormsModule,
     MatChipsModule,
     MatExpansionModule,
-    MatFormFieldModule,
     MatIcon,
-    MatLabel,
     ReactiveFormsModule,
     ClearableInputComponent
   ],

@@ -6,19 +6,17 @@
   gap: var(--global-gap);
 }
 
-.event-chips-field {
-  width: 100%;
-}
-
-.height-unset {
-  height: unset !important;
-}
-
+.selected-events-container,
 .add-events-container {
   --mat-expansion-container-background-color: transparent;
   --mat-expansion-container-elevation-shadow: none;
   --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
   --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.selected-events-empty {
+  color: var(--mat-sys-error);
+  margin: 0;
 }
 
 .panel-content {
