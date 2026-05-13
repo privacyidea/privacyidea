@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EntraidResolverComponent } from "./entraid-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ComponentRef } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { ComponentRef } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { EntraidResolverComponent } from "./entraid-resolver.component";
 
 describe("EntraidResolverComponent", () => {
   let component: EntraidResolverComponent;

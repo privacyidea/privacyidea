@@ -18,10 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { KeywordFilterGenericComponent } from "./keyword-filter-generic.component";
-import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter-value-generic";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { KeywordFilterGenericComponent } from "./keyword-filter-generic.component";
 
 describe("KeywordFilterGenericComponent", () => {
   let component: KeywordFilterGenericComponent<any>;

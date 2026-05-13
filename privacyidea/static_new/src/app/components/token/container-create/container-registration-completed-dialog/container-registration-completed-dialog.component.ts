@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,15 +18,10 @@
  **/
 
 import { Component, inject } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions, MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { MatButton } from "@angular/material/button";
+import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 export type ContainerRegistrationCompletedDialogData = {
   containerSerial: string;
@@ -36,21 +31,16 @@ export type ContainerRegistrationCompletedDialogData = {
   selector: "app-container-registration-completed-dialog",
   templateUrl: "./container-registration-completed-dialog.component.html",
   styleUrls: ["./container-registration-completed-dialog.component.scss"],
-  imports: [
-    MatDialogContent,
-    MatDialogTitle,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose
-  ]
+  imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose]
 })
-export class ContainerRegistrationCompletedDialogComponent {
-  public readonly data: ContainerRegistrationCompletedDialogData = inject(MAT_DIALOG_DATA);
-  protected readonly dialogRef: MatDialogRef<ContainerRegistrationCompletedDialogComponent> = inject(MatDialogRef);
+export class ContainerRegistrationCompletedDialogComponent extends AbstractDialogComponent<
+  ContainerRegistrationCompletedDialogData,
+  void
+> {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 }

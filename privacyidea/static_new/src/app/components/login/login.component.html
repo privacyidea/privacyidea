@@ -26,13 +26,12 @@
         alt="logo"
         aria-label="Logo"
         class="custom-logo"
-        height="200"
+        height="307"
         i18n-alt
         i18n-aria-label
-        ngSrc="{{customLogo()}}"
+        ngSrc="{{ customLogo() }}"
         ngSrcset="1x"
-        sizes="(max-width: 300px) 100vw, 300px"
-        width="200" />
+        width="307" />
     } @else {
       <img
         alt="logo"
@@ -95,12 +94,9 @@
             mat-fab>
             <span i18n>Login with Credentials</span>
           </button>
-
         }
       </div>
-
     } @else {
-
       @if (loginText()) {
         <div class="margin-top-64">
           {{ loginText() }}
@@ -170,7 +166,16 @@
               matInput
               name="password"
               required
-              type="password" />
+              [type]="hidePassword() ? 'password' : 'text'" />
+            <button
+              (click)="hidePassword.set(!hidePassword())"
+              [aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+              i18n-aria-label
+              mat-icon-button
+              matSuffix
+              type="button">
+              <mat-icon>{{ hidePassword() ? "visibility" : "visibility_off" }}</mat-icon>
+            </button>
           </mat-form-field>
         }
 

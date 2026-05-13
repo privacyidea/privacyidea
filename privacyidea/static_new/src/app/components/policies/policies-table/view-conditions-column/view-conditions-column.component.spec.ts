@@ -18,11 +18,11 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
 import { MatIconModule } from "@angular/material/icon";
-import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { PolicyDetail } from "src/app/services/policies/policies.service";
+import { PolicyDetail } from "@services/policies/policies.service";
+import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
+import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
 
 describe("ConditionsTabComponent", () => {
   let component: ViewConditionsColumnComponent;

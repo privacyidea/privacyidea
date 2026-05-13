@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,17 +18,19 @@
  **/
 import { Routes } from "@angular/router";
 
+import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
+import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 import { AssignTokenSelfServiceComponent } from "./components/token/assign-token-self-service/assign-token-self-service.component";
 import { ContainerCreateSelfServiceComponent } from "./components/token/container-create/container-create.self-service.component";
+import { ContainerCreateWizardComponent } from "./components/token/container-create/container-create.wizard.component";
 import { ContainerDetailsSelfServiceComponent } from "./components/token/container-details/container-details.self-service.component";
 import { ContainerTableSelfServiceComponent } from "./components/token/container-table/container-table.self-service.component";
 import { TokenDetailsSelfServiceComponent } from "./components/token/token-details/token-details.self-service.component";
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
-import { TokenTableSelfServiceComponent } from "./components/token/token-table/token-table.self-service.component";
-import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
-import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
-import { ContainerCreateWizardComponent } from "./components/token/container-create/container-create.wizard.component";
+import { TokenTableSelfServiceComponent } from "./components/token/token-table/token-table.self-service.component";
+import { UserDetailsSelfServiceComponent } from "./components/user/user-details/user-details.self-service.component";
+import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
 
 export const routes: Routes = [
   {
@@ -39,27 +41,30 @@ export const routes: Routes = [
         pathMatch: "full",
         component: TokenTableSelfServiceComponent
       },
-      { path: "enrollment", component: TokenEnrollmentSelfServiceComponent },
+      { path: "enrollment", component: TokenEnrollmentSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
       { path: "assign-token", component: AssignTokenSelfServiceComponent },
       {
         path: "containers",
         children: [
           { path: "", component: ContainerTableSelfServiceComponent },
-          { path: "create", component: ContainerCreateSelfServiceComponent },
+          { path: "create", component: ContainerCreateSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
           {
             path: "details/:serial",
             component: ContainerDetailsSelfServiceComponent
           },
-          { path: "wizard", component: ContainerCreateWizardComponent }
+          { path: "wizard", component: ContainerCreateWizardComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
       { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
-      { path: "wizard", component: TokenEnrollmentWizardComponent }
+      { path: "wizard", component: TokenEnrollmentWizardComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
     path: "users",
-    component: UserSelfServiceComponent
+    children: [
+      { path: "", pathMatch: "full", component: UserSelfServiceComponent },
+      { path: "details", component: UserDetailsSelfServiceComponent }
+    ]
   },
   {
     path: "audit",

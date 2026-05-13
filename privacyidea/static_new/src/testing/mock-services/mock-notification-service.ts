@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NotificationServiceInterface } from "../../app/services/notification/notification.service";
+import { NotificationServiceInterface } from "@services/notification/notification.service";
 import { Subscription } from "rxjs";
 
 export class MockNotificationService implements NotificationServiceInterface {
+  success = jest.fn();
+  error = jest.fn();
+  warning = jest.fn();
   remainingTime: number = 0;
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  openSnackBar = jest.fn();
+  handleResourceError = jest.fn();
 }

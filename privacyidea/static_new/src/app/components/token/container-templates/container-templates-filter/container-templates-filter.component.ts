@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input, output, viewChild, ElementRef, signal } from "@angular/core";
+import { Component, ElementRef, Input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { ContainerTemplate } from "src/app/services/container/container.service";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { ContainerTemplate } from "@services/container/container.service";
 
 @Component({
   selector: "app-container-templates-filter",

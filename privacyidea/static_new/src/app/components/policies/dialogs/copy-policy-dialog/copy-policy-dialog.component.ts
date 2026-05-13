@@ -18,10 +18,9 @@
  **/
 
 import { Component, computed } from "@angular/core";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { CommonModule } from "@angular/common";
-import { DialogAction } from "../../../../models/dialog";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+
+import { toSignal } from "@angular/core/rxjs-interop";
 import {
   AbstractControl,
   FormControl,
@@ -32,9 +31,10 @@ import {
 } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogAction } from "@models/dialog";
 import { map } from "rxjs";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -51,7 +51,7 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
   host: {
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
-  imports: [DialogWrapperComponent, CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
+  imports: [DialogWrapperComponent, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
 })
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
   readonly nameControl = new FormControl(this.data, [Validators.required, mustBeDifferentValidator(this.data)]);

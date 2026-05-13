@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,11 +25,22 @@ import {
   input,
   linkedSignal,
   Output,
+  QueryList,
   Signal,
   signal,
   ViewChild,
+  ViewChildren,
   WritableSignal
 } from "@angular/core";
+import { FormsModule, NgModel } from "@angular/forms";
+import { MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatError, MatOption, MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
 import {
   EMPTY_PERIODIC_TASK,
   EMPTY_PERIODIC_TASK_OPTION,
@@ -38,19 +49,11 @@ import {
   PeriodicTaskModule,
   PeriodicTaskOption,
   PeriodicTaskService
-} from "../../../../../services/periodic-task/periodic-task.service";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
-import { FormsModule } from "@angular/forms";
-import { SystemService } from "../../../../../services/system/system.service";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
+} from "@services/periodic-task/periodic-task.service";
+import { SystemService } from "@services/system/system.service";
+import { deepCopy } from "@utils/deep-copy.utils";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail/periodic-task-option-detail.component";
-import { MatTooltip } from "@angular/material/tooltip";
-import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
 
 @Component({
   selector: "app-periodic-task-edit",
@@ -69,7 +72,8 @@ import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } fr
     MatTooltip,
     MatExpansionPanel,
     MatExpansionPanelTitle,
-    MatExpansionPanelHeader
+    MatExpansionPanelHeader,
+    MatError
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
@@ -88,8 +92,16 @@ export class PeriodicTaskEditComponent {
   }
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
+  @ViewChildren(NgModel) ngModelControls?: QueryList<NgModel>;
 
-  editTask = linkedSignal(() => this.task());
+  resetFormState(): void {
+    this.ngModelControls?.forEach((m) => {
+      m.control.markAsPristine();
+      m.control.markAsUntouched();
+    });
+  }
+
+  editTask = linkedSignal(() => deepCopy(this.task()));
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
 
@@ -99,13 +111,11 @@ export class PeriodicTaskEditComponent {
   // Add this computed signal for required options
   requiredOptions = computed(() => {
     const options = this.taskModuleOptions() || {};
-    return Object.fromEntries(
-      Object.entries(options).filter(([_, opt]) => opt.required)
-    );
+    return Object.fromEntries(Object.entries(options).filter(([_, opt]) => opt.required));
   });
 
   get allowSave() {
-    if (this.editTask().name === "") return false;
+    if (this.editTask().name === "" || !/^[a-zA-Z0-9._-]*$/.test(this.editTask().name)) return false;
     if (this.editTask().taskmodule === "") return false;
     if (this.editTask().interval === "") return false;
     if (this.editTask().nodes.length === 0) return false;
@@ -124,13 +134,10 @@ export class PeriodicTaskEditComponent {
   }
 
   notUsedOptions: Signal<Record<string, PeriodicTaskOption>> = computed(() => {
-      const allOptions = this.taskModuleOptions() || {};
-      const usedOptionKeys = Object.keys(this.editTask().options || {});
-      return Object.fromEntries(
-        Object.entries(allOptions)
-          .filter(([key]) => !usedOptionKeys.includes(key)));
-    }
-  );
+    const allOptions = this.taskModuleOptions() || {};
+    const usedOptionKeys = Object.keys(this.editTask().options || {});
+    return Object.fromEntries(Object.entries(allOptions).filter(([key]) => !usedOptionKeys.includes(key)));
+  });
 
   selectedOption = linkedSignal(() => {
     if (Object.keys(this.editTask().options).length > 0) {

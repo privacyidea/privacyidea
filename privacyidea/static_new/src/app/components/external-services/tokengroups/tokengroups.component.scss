@@ -1,17 +1,9 @@
-@use "../../../../styles";
-@use "@angular/material" as mat;
+@use "styles";
+@use "table";
 
 .tokengroups-container {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(".tokengroups-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-}
-
-.tokengroups-layout {
-  padding: 24px;
+  @include styles.main-component-style;
+  @include table.base-table-structure(".tokengroups-table", ".tokengroups-table-filter", ".table-scroll-container");
 }
 
 .actions-container {

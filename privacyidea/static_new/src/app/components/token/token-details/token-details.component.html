@@ -22,26 +22,21 @@
   class="details-container"
   i18n-aria-label>
   <div class="details-flex-layout flex-column">
-    <div class="details-header">
-      <h3 i18n>Details for Token:</h3>
-      <h3 class="token-serial">{{ tokenSerial() }}</h3>
-      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-        <h3 i18n>{{ " (Offline)" }}</h3>
-      }
-      <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
-      @if (authService.actionAllowed("auditlog")) {
-        <button
-          (click)="showTokenAuditLog()"
-          [routerLink]="[ROUTE_PATHS.AUDIT]"
-          mat-icon-button
-          matTooltip="Show token in audit log">
-          <mat-icon>receipt_long</mat-icon>
-        </button>
-      }
-    </div>
+    <app-details-header
+      [serial]="tokenSerial()"
+      entityLabel="Token"
+      [showAuditButton]="authService.actionAllowed('auditlog')"
+      [auditRoute]="ROUTE_PATHS.AUDIT"
+      auditTooltip="Show token in audit log"
+      (auditClick)="showTokenAuditLog()">
+      <ng-container headerExtra>
+        @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+          <h3 i18n>{{ " (Offline)" }}</h3>
+        }
+      </ng-container>
+    </app-details-header>
     <div
-      [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
-      class="details-flex-layout">
+      class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="tokenDetailData()"
@@ -60,8 +55,9 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
-              .concat(element.isEditing() ? ['padding-0'] : [])"
+              [ngClass]="
+                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
+              "
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
@@ -71,10 +67,10 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
-                        (onClick)="containerService.selectedContainer.set(null)"
-                        [showClearButton]="containerService.selectedContainer() !== ''">
+                        (onClick)="containerService.selectedContainerSerial.set(null)"
+                        [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
-                          [(ngModel)]="containerService.selectedContainer"
+                          [(ngModel)]="containerService.selectedContainerSerial"
                           [matAutocomplete]="containerAuto"
                           matInput />
                       </app-clearable-input>
@@ -85,14 +81,16 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <a
-                      (click)="contentService.containerSelected(element.value)"
-                      attr.aria-label="{{ element.keyMap.label }} Link">
-                      {{ element.value }}
-                    </a>
-                    @if (element.value !== "") {
-                      <app-copy-button [copyText]="element.value"></app-copy-button>
-                    }
+                    <div class="flex-row flex-nowrap ali-center">
+                      <a
+                        (click)="contentService.navigateContainerDetails(element.value)"
+                        attr.aria-label="{{ element.keyMap.label }} Link">
+                        {{ element.value }}
+                      </a>
+                      @if (element.value !== "") {
+                        <app-copy-button [copyText]="element.value"></app-copy-button>
+                      }
+                    </div>
                   }
                 }
                 @case ("realms") {
@@ -170,7 +168,7 @@
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field
-                      class="input-width-m description height-126"
+                      class="input-width-m description height-136"
                       subscriptSizing="dynamic">
                       <textarea
                         [(ngModel)]="element.value"
@@ -179,9 +177,12 @@
                         matInput
                         placeholder="Enter description"
                         rows="4"></textarea>
+                      <mat-hint align="end"
+                        >{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+                      </mat-hint>
                     </mat-form-field>
                   } @else {
-                    <div class="details-description-div">
+                    <div class="details-description-div height-136">
                       <span class="details-table-item">
                         {{ element.value }}
                       </span>
@@ -237,7 +238,9 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
+                @if (
+                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
+                ) {
                   <div class="edit-button-container">
                     <button
                       (click)="resetFailCount()"
@@ -246,10 +249,12 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" &&
-                !isAnyEditingOrRevoked() &&
-                element.value &&
-                authService.actionAllowed("container_remove_token")) {
+                } @else if (
+                  element.keyMap.key === "container_serial" &&
+                  !isAnyEditingOrRevoked() &&
+                  element.value &&
+                  authService.actionAllowed("container_remove_token")
+                ) {
                   <div class="edit-button-container">
                     <button
                       (click)="removeFromContainer()"
@@ -278,7 +283,7 @@
             mat-row></tr>
         </table>
       </div>
-      <div [ngClass]="[overflowService.isWidthOverflowing('.token-layout', 1580) ? 'flex-column' : 'flex-row']">
+      <div class="responsive-flex-row-1580">
         <div class="flex-column">
           <app-token-details-user
             [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"

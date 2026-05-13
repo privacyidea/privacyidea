@@ -17,25 +17,24 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatDividerModule } from "@angular/material/divider";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatDividerModule } from "@angular/material/divider";
-import { MatCardModule } from "@angular/material/card";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { SubscriptionService } from "../../../services/subscription/subscription.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
 
 @Component({
   selector: "app-subscription",
   standalone: true,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatExpansionModule,
     MatIconModule,
@@ -53,6 +52,7 @@ export class SubscriptionComponent {
   private dialogService = inject(DialogService);
   subscriptionsResource = this.subscriptionService.subscriptionsResource;
   subscriptions = computed(() => {
+    if (!this.subscriptionsResource.hasValue()) return [];
     const value = this.subscriptionsResource.value()?.result?.value;
     return value ? Object.values(value) : [];
   });
@@ -63,28 +63,31 @@ export class SubscriptionComponent {
     let fileList: FileList | null = element.files;
     if (fileList && fileList.length > 0) {
       this.subscriptionService.uploadSubscriptionFile(fileList[0]).subscribe(() => {
-        this.notificationService.openSnackBar("File uploaded successfully.");
+        this.notificationService.success("File uploaded successfully.");
         this.subscriptionService.reload();
       });
     }
   }
 
   deleteSubscription(application: string): void {
-    this.dialogService.openDialog({
-      component: SimpleConfirmationDialogComponent,
-      data: {
-        title: "Delete Subscription",
-        items: [application],
-        itemType: "subscription",
-        confirmAction: { label: "Delete", value: true, type: "destruct" }
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.subscriptionService.deleteSubscription(application).subscribe(() => {
-          this.notificationService.openSnackBar("Subscription deleted successfully.");
-          this.subscriptionService.reload();
-        });
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Delete Subscription",
+          items: [application],
+          itemType: "subscription",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.subscriptionService.deleteSubscription(application).subscribe(() => {
+            this.notificationService.success("Subscription deleted successfully.");
+            this.subscriptionService.reload();
+          });
+        }
+      });
   }
 }

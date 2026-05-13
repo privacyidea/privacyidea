@@ -19,9 +19,9 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EventService } from "@services/event/event.service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventSelectionComponent } from "./event-selection.component";
-import { EventService } from "../../../../services/event/event.service";
-import { MockEventService } from "../../../../../testing/mock-services/mock-event-service";
 
 describe("EventsSelectionComponent", () => {
   let component: EventSelectionComponent;
@@ -30,10 +30,7 @@ describe("EventsSelectionComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventSelectionComponent],
-      providers: [
-        provideHttpClient(),
-        { provide: EventService, useClass: MockEventService }
-      ]
+      providers: [provideHttpClient(), { provide: EventService, useClass: MockEventService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventSelectionComponent);

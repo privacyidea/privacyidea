@@ -1,5 +1,4 @@
 @use "styles";
-@use "table";
 
 .user-new-resolver-layout {
   display: flex;
@@ -7,15 +6,19 @@
 }
 
 .user-new-resolver-container {
-  @include table.table-container-styles;
-  @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  max-height: 90vh;
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-  position: relative;
+  @include styles.main-component-style;
+  min-width: 632px;
+
+  @media (max-width: 1000px) {
+    min-width: unset;
+  }
 }
 
-:host ::ng-deep .mat-mdc-form-field-infix {
-  width: unset;
+.resolver-type-select {
+  margin-left: 16px;
+
+  @media (max-width: 1000px) {
+    margin-left: 0;
+    margin-top: 16px;
+  }
 }

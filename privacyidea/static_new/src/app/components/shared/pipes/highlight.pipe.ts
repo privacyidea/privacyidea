@@ -18,10 +18,10 @@
  **/
 
 import { Pipe, PipeTransform, SecurityContext } from "@angular/core";
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer } from "@angular/platform-browser";
 
 @Pipe({
-  name: 'highlight',
+  name: "highlight",
   standalone: true
 })
 export class HighlightPipe implements PipeTransform {
@@ -29,17 +29,17 @@ export class HighlightPipe implements PipeTransform {
 
   transform(value: string, searchTerm: string): string | null {
     if (!searchTerm || !value) return this.escapeHtml(value);
-    const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     // g - global (all occurrences), i - case-insensitive
-    const regex = new RegExp(escapedSearch, 'gi');
-    const highlighted = this.escapeHtml(value).replace(regex, match => `<span class="highlight">${match}</span>`);
+    const regex = new RegExp(escapedSearch, "gi");
+    const highlighted = this.escapeHtml(value).replace(regex, (match) => `<span class="highlight">${match}</span>`);
     return this.sanitizer.sanitize(SecurityContext.HTML, highlighted);
   }
 
   escapeHtml(text: string): string {
-    if (!text) return '';
+    if (!text) return "";
     return text.replace(/[&<>"']/g, function (c) {
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] || c;
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] || c;
     });
   }
 }

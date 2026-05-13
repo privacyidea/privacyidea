@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,27 +18,25 @@
  **/
 
 import {
-  Component,
-  signal,
-  ChangeDetectionStrategy,
-  HostListener,
-  Output,
-  EventEmitter,
-  ElementRef,
-  AfterViewInit,
-  viewChildren,
-  Input,
-  WritableSignal,
-  Signal,
-  effect,
-  linkedSignal
+    AfterViewInit,
+    ChangeDetectionStrategy,
+    Component,
+    ElementRef,
+    EventEmitter,
+    HostListener,
+    Input,
+    Output,
+    Signal,
+    WritableSignal,
+    effect,
+    linkedSignal,
+    viewChildren
 } from "@angular/core";
-import { CommonModule } from "@angular/common";
 
 @Component({
   selector: "app-horizontal-wheel",
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: "./horizontal-wheel.component.html",
   styleUrl: "./horizontal-wheel.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush

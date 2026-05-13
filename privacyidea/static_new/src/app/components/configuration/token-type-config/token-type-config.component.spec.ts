@@ -1,16 +1,16 @@
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenTypeConfigComponent } from "./token-type-config.component";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { SystemService } from "../../../services/system/system.service";
-import { SmsGatewayService } from "../../../services/sms-gateway/sms-gateway.service";
-import { SmtpService } from "../../../services/smtp/smtp.service";
-import { MockSystemService } from "../../../../testing/mock-services";
 import { signal } from "@angular/core";
-import { NotificationService } from "../../../services/notification/notification.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
+import { NotificationService } from "@services/notification/notification.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService } from "@testing/mock-services";
 import { Observable, of } from "rxjs";
+import { TokenTypeConfigComponent } from "./token-type-config.component";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -45,7 +45,7 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } }
+        { provide: NotificationService, useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() } }
       ]
     }).compileComponents();
 
@@ -71,7 +71,7 @@ describe("TokenTypeConfigComponent", () => {
     component.formData.set({
       "question.question.1": "Q1",
       "question.question.2": "Q2",
-      "other": "val"
+      other: "val"
     });
     expect(component.questionKeys).toEqual(["question.question.1", "question.question.2"]);
   });
@@ -80,45 +80,53 @@ describe("TokenTypeConfigComponent", () => {
     component.formData.set({
       "yubikey.apiid.ID1": "KEY1",
       "yubikey.apiid.ID2": "KEY2",
-      "other": "val"
+      other: "val"
     });
     expect(component.yubikeyApiIds).toEqual(["yubikey.apiid.ID1", "yubikey.apiid.ID2"]);
   });
 
-  it("should call saveSystemConfig on save", () => {
+  it("should call saveSystemConfig on save", async () => {
     const systemService = TestBed.inject(SystemService);
     const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
-    component.save();
+    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
+
+    await component.save();
+
     expect(saveSpy).toHaveBeenCalledWith(component.formData());
+    expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("should add new question to formData and increment nextQuestion without saving", () => {
     const saveSpy = jest.spyOn(component, "save");
-    const initialNext = component.nextQuestion();
+    const initialNext = component.nextQuestionIndex();
     const newQuestion = "My new question?";
 
     component.addQuestion(newQuestion);
 
     expect(component.formData()[`question.question.${initialNext}`]).toBe(newQuestion);
-    expect(component.nextQuestion()).toBe(initialNext + 1);
+    expect(component.nextQuestionIndex()).toBe(initialNext + 1);
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it("should call deleteSystemConfig but not reload on deleteSystemEntry", () => {
+  it("should update formData and pendingDeletes but not call service on deleteSystemEntry", () => {
     const systemService = TestBed.inject(SystemService);
     const deleteSpy = jest.spyOn(systemService as any, "deleteSystemConfig");
     const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
 
     const entryToDelete = "yubikey.apiid.123";
     const entryToKeep = "yubikey.apiid.456";
-    component.formData.set({ [entryToDelete]: "123", [entryToKeep]: "456" });
+
+    // Set initial config so it's tracked for deferred deletion
+    (systemService as any).systemConfig.set({ [entryToDelete]: "123", [entryToKeep]: "456" });
+    fixture.detectChanges();
 
     component.deleteSystemEntry(entryToDelete);
 
-    expect(deleteSpy).toHaveBeenCalledWith(entryToDelete);
+    expect(deleteSpy).not.toHaveBeenCalled();
     expect(reloadSpy).not.toHaveBeenCalled();
     expect(component.formData()).not.toHaveProperty(entryToDelete);
     expect(component.formData()[entryToKeep]).toEqual("456");
+    expect(component.pendingDeletes().has(entryToDelete)).toBe(true);
   });
 
   it("should update formData on onCheckboxChange", () => {
@@ -131,7 +139,7 @@ describe("TokenTypeConfigComponent", () => {
   it("should create new yubikey key", async () => {
     const promise = component.yubikeyAddNewKey({ apiId: "myID", apiKey: "", generateKey: true });
 
-    const req = httpMock.expectOne(req => req.url.endsWith("/system/random?len=20&encode=b64"));
+    const req = httpMock.expectOne((req) => req.url.endsWith("/system/random?len=20&encode=b64"));
     expect(req.request.method).toBe("GET");
     req.flush({ result: { status: true, value: "new-random-key" } });
 
@@ -142,7 +150,7 @@ describe("TokenTypeConfigComponent", () => {
   it("should only add, but not generate api key", async () => {
     const promise = component.yubikeyAddNewKey({ apiId: "myID", apiKey: "123", generateKey: false });
 
-    httpMock.expectNone(req => req.url.endsWith("/system/random?len=20&encode=b64"));
+    httpMock.expectNone((req) => req.url.endsWith("/system/random?len=20&encode=b64"));
 
     await promise;
     expect(component.formData()["yubikey.apiid.myID"]).toBe("123");
@@ -151,7 +159,7 @@ describe("TokenTypeConfigComponent", () => {
   it("generateKey wins over apiKey if both are provided", async () => {
     const promise = component.yubikeyAddNewKey({ apiId: "myID", apiKey: "123", generateKey: true });
 
-    const req = httpMock.expectOne(req => req.url.endsWith("/system/random?len=20&encode=b64"));
+    const req = httpMock.expectOne((req) => req.url.endsWith("/system/random?len=20&encode=b64"));
     expect(req.request.method).toBe("GET");
     req.flush({ result: { status: true, value: "new-random-key" } });
 
@@ -161,17 +169,17 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should show error if yubikeyCreateNewKey called without apiId", () => {
     const notificationService = component.notificationService;
-    const snackBarSpy = jest.spyOn(notificationService, "openSnackBar");
+    const snackBarSpy = jest.spyOn(notificationService, "warning");
     component.yubikeyAddNewKey({ apiId: "", apiKey: "", generateKey: true });
     expect(snackBarSpy).toHaveBeenCalledWith(expect.stringContaining("Please enter a Client ID"));
   });
 
   it("should handle error in yubikeyCreateNewKey", async () => {
     const notificationService = component.notificationService;
-    const snackBarSpy = jest.spyOn(notificationService, "openSnackBar");
+    const snackBarSpy = jest.spyOn(notificationService, "error");
     const promise = component.yubikeyAddNewKey({ apiId: "myID", apiKey: "", generateKey: true });
 
-    const req = httpMock.expectOne(req => req.url.endsWith("/system/random?len=20&encode=b64"));
+    const req = httpMock.expectOne((req) => req.url.endsWith("/system/random?len=20&encode=b64"));
     req.error(new ProgressEvent("error"));
 
     await promise;
@@ -186,7 +194,6 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   describe("Fragment handling and panel expansion", () => {
-
     it("expandedPanel should be null if no fragment is defined", () => {
       expect(component.expandedPanel).toBeNull();
     });

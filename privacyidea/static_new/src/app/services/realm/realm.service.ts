@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { Observable } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { catchError, Observable, throwError } from "rxjs";
 
 export type AdminRealms = string[];
 export type Realms = { [key: string]: Realm };
@@ -97,7 +97,7 @@ export class RealmService implements RealmServiceInterface {
       this.contentService.onTokenDetails() ||
       this.contentService.onTokensContainersDetails() ||
       this.contentService.onTokens() ||
-      this.contentService.onUsers() ||
+      this.contentService.onAnyUsersRoute() ||
       this.contentService.onTokensContainersCreate() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensImport() ||
@@ -127,12 +127,13 @@ export class RealmService implements RealmServiceInterface {
   });
 
   realms = computed(() => {
+    if (!this.realmResource.hasValue()) return {};
     const data = this.realmResource.value();
     return data?.result?.value || {};
   });
 
   realmOptions = computed(() => {
-    const realms = this.realmResource.value()?.result?.value;
+    const realms = this.realms();
     return realms ? Object.keys(realms) : [];
   });
 
@@ -154,6 +155,7 @@ export class RealmService implements RealmServiceInterface {
     };
   });
   adminRealmOptions: Signal<string[]> = computed(() => {
+    if (!this.adminRealmResource.hasValue()) return [];
     const realms = this.adminRealmResource.value()?.result?.value;
     return realms ? realms : [];
   });
@@ -176,11 +178,14 @@ export class RealmService implements RealmServiceInterface {
   });
 
   defaultRealm = computed<string>(() => {
-    const data = this.defaultRealmResource.value();
-    if (data?.result?.value) {
-      return Object.keys(data.result?.value)[0] ?? "";
+    let defaultRealm = "";
+    if (this.defaultRealmResource.hasValue()) {
+      const data = this.defaultRealmResource.value();
+      if (data?.result?.value) {
+        defaultRealm = Object.keys(data.result?.value)[0] ?? "";
+      }
     }
-    return "";
+    return defaultRealm;
   });
 
   createRealm(
@@ -219,44 +224,63 @@ export class RealmService implements RealmServiceInterface {
       };
     }
 
-    return this.http.post<PiResponse<any>>(url, body, {
-      headers: this.authService.getHeaders()
-    });
+    return this.http
+      .post<PiResponse<any>>(url, body, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to create realm.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to create realm. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   deleteRealm(realm: string): Observable<PiResponse<number | any>> {
     const encodedRealm = encodeURIComponent(realm);
     const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
 
-    return this.http.delete<PiResponse<number | any>>(url, {
-      headers: this.authService.getHeaders()
-    });
+    return this.http
+      .delete<PiResponse<number | any>>(url, {
+        headers: this.authService.getHeaders()
+      })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete realm.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to delete realm. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   setDefaultRealm(realm: string): Observable<PiResponse<number | any>> {
     const encodedRealm = encodeURIComponent(realm);
     const url = `${environment.proxyUrl}/defaultrealm/${encodedRealm}`;
 
-    return this.http.post<PiResponse<number | any>>(url, {}, { headers: this.authService.getHeaders() });
+    return this.http.post<PiResponse<number | any>>(url, {}, { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error("Failed to set default realm.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error("Failed to set default realm. " + message);
+        return throwError(() => error);
+      })
+    );
   }
 
   constructor() {
     effect(() => {
-      if (this.realmResource.error()) {
-        const realmError = this.realmResource.error() as HttpErrorResponse;
-        console.error("Failed to get realms.", realmError.message);
-        const message = realmError.error?.result?.error?.message || realmError.message;
-        this.notificationService.openSnackBar("Failed to get realms. " + message);
-      }
+      this.notificationService.handleResourceError(this.realmResource.error(), "realms");
     });
 
     effect(() => {
-      if (this.defaultRealmResource.error()) {
-        const defaultRealmError = this.defaultRealmResource.error() as HttpErrorResponse;
-        console.error("Failed to get default realm.", defaultRealmError.message);
-        const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
-        this.notificationService.openSnackBar("Failed to get default realm. " + message);
-      }
+      this.notificationService.handleResourceError(this.defaultRealmResource.error(), "default realm");
+    });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.adminRealmResource.error(), "admin realms");
     });
   }
 }

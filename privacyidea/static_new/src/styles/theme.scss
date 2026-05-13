@@ -62,11 +62,12 @@ html {
     --mat-sys-shadow: light-dark(#cccccc, #000000);
 
     --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 40%));
+    --nav-item-border: light-dark(#d0d0d0, #333333);
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
     --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
-    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
-    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+    --mat-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   &.light {
@@ -128,11 +129,12 @@ html {
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
     --mat-sys-shadow: #cccccc;
     --mat-sys-outline: hsl(246, 4%, 48%);
+    --nav-item-border: #d0d0d0;
 
     --inline-hint-bg: hsl(200, 65%, 91%);
     --inline-warning-bg: hsl(0, 83%, 95%);
-    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
-    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+    --mat-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   &.dark {
@@ -194,11 +196,12 @@ html {
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
     --mat-sys-shadow: #000000;
     --mat-sys-outline: hsl(0, 0%, 40%);
+    --nav-item-border: #363636;
 
     --inline-hint-bg: hsl(200, 65%, 20%);
     --inline-warning-bg: hsl(0, 83%, 18%);
-    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
-    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+    --mat-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   @include mat.theme(

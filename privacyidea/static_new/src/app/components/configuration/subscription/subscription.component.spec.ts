@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,19 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SubscriptionComponent } from "./subscription.component";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { SubscriptionService } from "../../../services/subscription/subscription.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { of } from "rxjs";
 import { By } from "@angular/platform-browser";
-import { MockSubscriptionService } from "../../../../testing/mock-services/mock-subscription-serivce";
-import { MockDialogService, MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
+import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { of } from "rxjs";
+import { SubscriptionComponent } from "./subscription.component";
 
 describe("SubscriptionComponent", () => {
   let component: SubscriptionComponent;
@@ -40,7 +40,7 @@ describe("SubscriptionComponent", () => {
   let dialogService: MockDialogService;
 
   const mockSubscriptions = {
-    "app1": {
+    app1: {
       application: "app1",
       timedelta: -20,
       level: "Gold",
@@ -72,19 +72,14 @@ describe("SubscriptionComponent", () => {
     dialogService = new MockDialogService();
 
     await TestBed.configureTestingModule({
-      imports: [
-        SubscriptionComponent,
-        MatSnackBarModule,
-        BrowserAnimationsModule
-      ],
+      imports: [SubscriptionComponent, MatSnackBarModule, BrowserAnimationsModule],
       providers: [
         { provide: SubscriptionService, useValue: subscriptionService },
         { provide: NotificationService, useValue: notificationService },
         { provide: AuthService, useValue: authService },
         { provide: DialogService, useValue: dialogService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SubscriptionComponent);
     component = fixture.componentInstance;
@@ -116,7 +111,7 @@ describe("SubscriptionComponent", () => {
 
   it("should show warning alert when -14 <= timedelta < 0", () => {
     const subscriptions = {
-      "app1": { ...mockSubscriptions.app1, timedelta: -5 }
+      app1: { ...mockSubscriptions.app1, timedelta: -5 }
     };
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(subscriptions));
     fixture.detectChanges();
@@ -128,7 +123,7 @@ describe("SubscriptionComponent", () => {
 
   it("should show danger alert when timedelta >= 0", () => {
     const subscriptions = {
-      "app1": { ...mockSubscriptions.app1, timedelta: 5 }
+      app1: { ...mockSubscriptions.app1, timedelta: 5 }
     };
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(subscriptions));
     fixture.detectChanges();
@@ -148,11 +143,11 @@ describe("SubscriptionComponent", () => {
     } as unknown as Event;
 
     subscriptionService.uploadSubscriptionFile.mockReturnValue(of(MockPiResponse.fromValue({})));
-    
+
     component.upload(event);
 
     expect(subscriptionService.uploadSubscriptionFile).toHaveBeenCalledWith(file);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("File uploaded successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("File uploaded successfully.");
     expect(subscriptionService.reload).toHaveBeenCalled();
   });
 
@@ -175,7 +170,7 @@ describe("SubscriptionComponent", () => {
       }
     });
     expect(subscriptionService.deleteSubscription).toHaveBeenCalledWith("app1");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Subscription deleted successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("Subscription deleted successfully.");
     expect(subscriptionService.reload).toHaveBeenCalled();
   });
 
@@ -189,7 +184,7 @@ describe("SubscriptionComponent", () => {
 
     expect(dialogService.openDialog).toHaveBeenCalled();
     expect(subscriptionService.deleteSubscription).not.toHaveBeenCalled();
-    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+    expect(notificationService.warning).not.toHaveBeenCalled();
     expect(subscriptionService.reload).not.toHaveBeenCalled();
   });
 

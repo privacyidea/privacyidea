@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { Resolver, Resolvers, ResolverService } from "./resolver.service";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { HttpHeaders, provideHttpClient } from "@angular/common/http";
-import { MockPiResponse } from "../../../testing/mock-services";
-import { AuthService } from "../auth/auth.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { MockContentService } from "../../../testing/mock-services/mock-content-service";
-import { ContentService } from "../content/content.service";
-import { ROUTE_PATHS } from "../../route_paths";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { lastValueFrom, of } from "rxjs";
+import { Resolver, Resolvers, ResolverService } from "./resolver.service";
 
 describe("ResolverService", () => {
   let resolverService: ResolverService;
@@ -50,6 +50,7 @@ describe("ResolverService", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders({ Authorization: "test-token" }));
+    (authService.actionAllowed as jest.Mock).mockImplementation((action: string) => action === "resolverread");
     contentService.routeUrl.set(ROUTE_PATHS.USERS);
   });
 
@@ -106,12 +107,29 @@ describe("ResolverService", () => {
       resolver1,
       resolver2
     });
-    TestBed.flushEffects();
+    TestBed.tick();
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
     await lastValueFrom(of({})); // Wait for async updates
+    expect(resolverService.resolverResourceValue()).toEqual({ resolver1, resolver2 });
     expect(resolverService.resolvers()).toEqual([resolver1, resolver2]);
+  });
+
+  it("should handle http error of resolverResource", async () => {
+    TestBed.tick();
+    const req = httpMock.expectOne(resolverService.resolverBaseUrl);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+      status: 403,
+      statusText: "Permission denied"
+    });
+    await lastValueFrom(of({})); // Wait for async updates
+
+    expect(resolverService.resolverResourceValue()).toEqual({});
+    expect(resolverService.resolvers()).toEqual([]);
+    expect(resolverService.resolverOptions()).toEqual([]);
+    expect(resolverService.editableResolvers()).toEqual([]);
   });
 
   it("should get resolver options", async () => {
@@ -131,7 +149,7 @@ describe("ResolverService", () => {
       resolver1,
       resolver2
     });
-    TestBed.flushEffects();
+    TestBed.tick();
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
@@ -149,27 +167,27 @@ describe("ResolverService", () => {
       sql1: { data: {}, type: "sqlresolver" }
     };
     const mockResponse = MockPiResponse.fromValue(mockResolvers);
-    TestBed.flushEffects();
+    TestBed.tick();
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
     await lastValueFrom(of({})); // Wait for async updates
 
-    TestBed.flushEffects && TestBed.flushEffects();
+    TestBed.tick();
     expect(resolverService.editableResolvers()).toEqual(["ldap1", "ldap2", "ldap3"]);
   });
 
   describe("userAttributes signal", () => {
     it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
       const mockResolvers = {
-        ldap1: { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: '{ "surname": "sn", "givenname": "givenName" }' }, type: "ldapresolver" }
       };
-      (resolverService as any).selectedResolverName.set("ldap1");
+      (resolverService as any).selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
-      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + encodeURIComponent("ldap/1"));
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
       await lastValueFrom(of({})); // Wait for async updates
@@ -179,14 +197,14 @@ describe("ResolverService", () => {
 
     it("should return empty attributes list for invalid JSON string", async () => {
       const mockResolvers = {
-        ldap1: { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
       };
-      (resolverService as any).selectedResolverName.set("ldap1");
+      (resolverService as any).selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
-      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + encodeURIComponent("ldap/1"));
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
       await lastValueFrom(of({})); // Wait for async updates
@@ -196,14 +214,14 @@ describe("ResolverService", () => {
 
     it("should return attribute keys for sqlresolver", async () => {
       const mockResolvers = {
-        sql1: { data: { Map: { givenname: "displayname", email: "mail" } }, type: "sqlresolver" }
+        "sql/1": { data: { Map: { givenname: "displayname", email: "mail" } }, type: "sqlresolver" }
       };
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
-      (resolverService as any).selectedResolverName.set("sql1");
+      (resolverService as any).selectedResolverName.set("sql/1");
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
-      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "sql1");
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + encodeURIComponent("sql/1"));
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
       await lastValueFrom(of({})); // Wait for async updates
@@ -220,13 +238,14 @@ describe("ResolverService", () => {
               mobile: "mobilePhone",
               surname: "surname"
             }
-          }, type: "httpresolver"
+          },
+          type: "httpresolver"
         }
       };
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
       (resolverService as any).selectedResolverName.set("http1");
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
       const req = httpMock.expectOne(resolverService.resolverBaseUrl + "http1");
       expect(req.request.method).toBe("GET");

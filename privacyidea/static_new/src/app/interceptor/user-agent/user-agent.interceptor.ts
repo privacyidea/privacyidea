@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,8 +18,8 @@
  **/
 
 import { HttpInterceptorFn } from "@angular/common/http";
-import { VersioningService, VersioningServiceInterface } from "../../services/version/version.service";
 import { inject } from "@angular/core";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 
 export const userAgentInterceptor: HttpInterceptorFn = (req, next) => {
   const versioningService: VersioningServiceInterface = inject(VersioningService);

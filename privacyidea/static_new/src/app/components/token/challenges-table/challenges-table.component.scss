@@ -2,9 +2,6 @@
 @use "table";
 
 .challenges-table-container {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".challenges-table", ".challenges-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  overflow: auto;
-  display: grid;
 }

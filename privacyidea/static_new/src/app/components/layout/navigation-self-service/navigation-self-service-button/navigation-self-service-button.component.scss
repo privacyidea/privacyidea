@@ -1,31 +1,27 @@
 @use "sass:meta";
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .tile-size-scope {
   --tile-width: 12rem;
-  --tile-max-width: 12vw;
   --tile-height: calc(var(--tile-width) / 1.618); // Golden ratio
 }
 
 .tile-size-scope .tile-button {
   width: var(--tile-width);
-  max-width: var(--tile-max-width);
   height: var(--tile-height);
   border-radius: var(--border-radius);
   background-color: var(--mat-sys-surface-container-low);
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 
   &:hover {
-    @include mat.elevation(6);
+    box-shadow: var(--elevation-5);
     transform: translateY(-2px);
   }
 }
 
 .tile-size-scope .tile-button-content {
   width: var(--tile-width);
-  max-width: var(--tile-max-width);
   height: var(--tile-height);
   display: flex;
   flex-direction: column;
@@ -81,7 +77,7 @@
 .tile-size-scope .tile-button.selected {
   background-color: var(--mat-sys-primary);
   color: var(--mat-sys-on-primary);
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 
   .mat-icon {
     color: var(--mat-sys-on-primary);
@@ -94,7 +90,7 @@
 
   &:hover {
     background-color: var(--mat-sys-primary-light);
-    @include mat.elevation(6);
+    box-shadow: var(--elevation-5);
     transform: translateY(-5px);
   }
 }

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,10 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
 
 export type Applications = {
   luks: ApplicationLuks;
@@ -75,7 +76,15 @@ export interface ApplicationServiceInterface {
 })
 export class ApplicationService implements ApplicationServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
   readonly applicationBaseUrl = environment.proxyUrl + "/application/";
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.applicationResource.error(), "applications");
+    });
+  }
+
   applicationResource = httpResource<PiResponse<Applications>>(() => ({
     url: `${this.applicationBaseUrl}`,
     method: "GET",

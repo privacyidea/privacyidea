@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,15 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, Inject, inject, ViewChild, AfterViewInit } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { CdkTextareaAutosize } from "@angular/cdk/text-field";
+import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { MatButton } from "@angular/material/button";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatButton } from "@angular/material/button";
-import { CdkTextareaAutosize } from "@angular/cdk/text-field";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { SystemService } from "../../../../services/system/system.service";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-system-documentation-dialog",
@@ -59,8 +58,7 @@ export class SystemDocumentationDialogComponent implements AfterViewInit {
       if (element) {
         try {
           element.setSelectionRange(0, 0);
-        } catch {
-        }
+        } catch {}
         element.scrollTop = 0;
       }
     });

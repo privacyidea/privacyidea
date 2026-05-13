@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,12 +22,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput, MatSuffix } from "@angular/material/input";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
-import { ValidateService, ValidateServiceInterface } from "../../../../../services/validate/validate.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
 
 @Component({
   selector: "app-test-otp-pin-action",
@@ -46,9 +43,9 @@ export class TestOtpPinActionComponent {
     this.validateService.testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest).subscribe({
       next: (response) => {
         if (response.result?.authentication === "ACCEPT") {
-          this.notificationService.openSnackBar("OTP or Pin tested with token was accepted.");
+          this.notificationService.success("OTP or Pin tested with token was accepted.");
         } else {
-          this.notificationService.openSnackBar("OTP or Pin tested with token was rejected.");
+          this.notificationService.warning("OTP or Pin tested with token was rejected.");
         }
         this.tokenService.tokenDetailResource.reload();
       }

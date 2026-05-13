@@ -5,17 +5,10 @@
   background-color: transparent;
   box-shadow: none;
   padding: 0;
-
-  ::ng-deep mat-expansion-panel.mat-expansion-panel {
-    background-color: transparent !important;
-    border: 1px solid var(--mat-sys-outline-variant);
-    box-shadow: none !important;
-  }
-  ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
-    padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
-    height: 1rem;
-    background-color: transparent !important;
-  }
+  --mat-expansion-container-background-color: transparent;
+  --mat-expansion-container-elevation-shadow: none;
+  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
+  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
 .search-input {

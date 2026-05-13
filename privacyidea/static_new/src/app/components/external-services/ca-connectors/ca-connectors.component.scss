@@ -1,17 +1,10 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .ca-connectors-container {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(".ca-connectors-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-}
-
-.ca-connectors-layout {
-  padding: 24px;
+  @include styles.main-component-style;
+  @include table.base-table-structure(".ca-connectors-table", ".table-filter", ".table-scroll-container");
 }
 
 .actions-container {

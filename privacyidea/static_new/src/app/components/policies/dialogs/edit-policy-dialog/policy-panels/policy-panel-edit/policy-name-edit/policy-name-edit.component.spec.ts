@@ -18,9 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyNameEditComponent } from "./policy-name-edit.component";
 import { FormsModule } from "@angular/forms";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PolicyNameEditComponent } from "./policy-name-edit.component";
 
 describe("PolicyNameEditComponent", () => {
   let component: PolicyNameEditComponent;

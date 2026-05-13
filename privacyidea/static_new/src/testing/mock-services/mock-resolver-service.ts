@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ResourceStatus, signal, Signal, WritableSignal } from "@angular/core";
-import { Observable, of } from "rxjs";
-import { Resolver, ResolverServiceInterface } from "../../app/services/resolver/resolver.service";
-import { PiResponse } from "../../app/app.component";
+import { signal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { Resolver, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { of } from "rxjs";
 
 export class MockResolverService implements ResolverServiceInterface {
   private _resolversValue: WritableSignal<Resolver[]> = signal([]);
@@ -32,7 +32,7 @@ export class MockResolverService implements ResolverServiceInterface {
   selectedResolverName: WritableSignal<string> = signal("");
   selectedResolverResource: any = {
     value: signal(undefined),
-    status: signal(ResourceStatus.Resolved),
+    status: signal("resolved"),
     reload: jest.fn()
   };
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();

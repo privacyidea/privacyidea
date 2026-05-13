@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,26 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { signal, WritableSignal } from "@angular/core";
 
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsInfoComponent } from "./token-details-info.component";
-import { EditableElement } from "../../../shared/edit-buttons/edit-buttons.component";
 
-import { TokenService } from "../../../../services/token/token.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
-import { AuthService } from "../../../../services/auth/auth.service";
+import { AuthService } from "@services/auth/auth.service";
+import { TokenService } from "@services/token/token.service";
 
-import {
-  MockLocalService,
-  MockNotificationService,
-  MockOverflowService,
-  MockTokenService
-} from "../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { MockLocalService, MockNotificationService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsInfoComponent;
@@ -63,7 +57,6 @@ describe("TokenDetailsInfoComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         MockLocalService,
         MockNotificationService

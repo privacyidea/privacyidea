@@ -19,36 +19,41 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DialogService } from "@services/dialog/dialog.service";
 import {
-  HostsMachineResolverData,
-  LdapMachineResolverData,
-  MachineResolverService
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
-import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+    HostsMachineResolverData,
+    LdapMachineResolverData,
+    MachineResolverService
+} from "@services/machine-resolver/machine-resolver.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
+import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
 
 describe("MachineResolverPanelNewComponent", () => {
   let component: MachineResolverPanelNewComponent;
   let fixture: ComponentFixture<MachineResolverPanelNewComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let dialogServiceMock: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MachineResolverPanelNewComponent, NoopAnimationsModule],
       providers: [
         { provide: MachineResolverService, useClass: MockMachineResolverService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
     fixture = TestBed.createComponent(MachineResolverPanelNewComponent);
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();
   });
 
@@ -88,16 +93,65 @@ describe("MachineResolverPanelNewComponent", () => {
     expect(panel.close).toHaveBeenCalled();
   });
 
-  it("should handle collapse", () => {
+  it("handleCollapse without edits just resets to default without dialog", () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    // newMachineResolver is at default → isEdited() is false
+    component.handleCollapse(panel);
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    expect(component.newMachineResolver()).toEqual(component.machineResolverDefault);
+  });
+
+  it("should handle collapse and discard on confirm", async () => {
     const panel = { close: () => {}, open: () => {} } as any;
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
     const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogRefMock.afterClosed.mockReturnValue(of("discard"));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.handleCollapse(panel);
+    await Promise.resolve();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(panel.close).toHaveBeenCalled();
+  });
+
+  it("should re-open panel when collapse dialog is cancelled", async () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(null));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    component.handleCollapse(panel);
+    await Promise.resolve();
+    expect(panel.open).toHaveBeenCalled();
+    expect(panel.close).not.toHaveBeenCalled();
+  });
+
+  it("should save and exit when collapse dialog returns save-exit", async () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    component.dataValidatorSignal.set(() => true);
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(undefined);
+    component.handleCollapse(panel);
+    await Promise.resolve();
+    expect(saveSpy).toHaveBeenCalledWith(panel);
+  });
+
+  it("should re-open panel on save-exit when canSave is false", async () => {
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    component.dataValidatorSignal.set(() => false);
+    component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver");
+    component.handleCollapse(panel);
+    await Promise.resolve();
+    expect(panel.open).toHaveBeenCalled();
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 
   it("should check if machineResolver can be saved", () => {
@@ -139,5 +193,72 @@ describe("MachineResolverPanelNewComponent", () => {
     });
     component.resetMachineResolver();
     expect(component.newMachineResolver()).toEqual(component.machineResolverDefault);
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges fn mirrors isEdited()", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+      component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "x" });
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges fn mirrors canSaveMachineResolver()", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.dataValidatorSignal.set(() => true);
+      component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "valid" });
+      expect(fn()).toBe(true);
+      component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: " " });
+      expect(fn()).toBe(false);
+    });
+
+    it("save fn calls saveMachineResolver without panel and returns its boolean result", async () => {
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(true);
+      const result = await fn();
+      expect(saveSpy).toHaveBeenCalledWith();
+      expect(result).toBe(true);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
+
+    it("saveMachineResolver returns true on success without panel arg", async () => {
+      machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.resolve(null));
+      machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
+      component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "ok" });
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(true);
+    });
+
+    it("saveMachineResolver returns false when post fails", async () => {
+      machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.resolve(null));
+      machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.reject(new Error("boom")));
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
+    });
+
+    it("saveMachineResolver returns false when test fails with non post-failed error", async () => {
+      machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(new Error("other")));
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
+    });
+
+    it("saveMachineResolver returns false when test fails and user does not confirm", async () => {
+      machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(new Error("post-failed")));
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of(false));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
+    });
   });
 });

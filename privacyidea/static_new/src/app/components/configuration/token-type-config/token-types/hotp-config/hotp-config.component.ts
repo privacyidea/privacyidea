@@ -17,25 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "../../../../../constants/token.constants";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 
 @Component({
   selector: "app-hotp-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    ClearButtonComponent
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, ClearButtonComponent],
   templateUrl: "./hotp-config.component.html",
   styleUrl: "./hotp-config.component.scss"
 })

@@ -18,36 +18,38 @@
  **/
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatButtonModule } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  RadiusServer,
+  RadiusServerService,
+  RadiusServerServiceInterface
+} from "@services/radius-server/radius-server.service";
+
+import { MatIconModule } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { RadiusServer, RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
-import { NewRadiusServerComponent } from "./new-radius-server/new-radius-server.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-radius-servers",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -60,11 +62,11 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   styleUrl: "./radius-servers.component.scss"
 })
 export class RadiusServersComponent {
-  protected readonly radiusService: RadiusServiceInterface = inject(RadiusService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -86,12 +88,12 @@ export class RadiusServersComponent {
     return dataSource;
   });
 
-  openEditDialog(server?: RadiusServer): void {
-    this.dialog.open(NewRadiusServerComponent, {
-      data: server ? { ...server } : null,
-      width: "auto",
-      maxWidth: "100vw"
-    });
+  onCreateNewServer(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW);
+  }
+
+  onEditServer(server: RadiusServer): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
   }
 
   deleteServer(server: RadiusServer): void {

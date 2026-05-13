@@ -11,7 +11,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   flex-direction: column;
   gap: calc(var(--global-gap) / 2);
   min-width: 0;
-  overflow: scroll;
+  overflow: auto;
   padding: var(--three-quarters-global-padding);
 }
 
@@ -34,14 +34,14 @@ This file contains all styles for actions as used e.g. in policies, event handle
 .action-card:not(.no-hover):hover {
   background-color: var(--mat-sys-primary-light);
   color: var(--mat-sys-on-primary) !important;
-  --mdc-icon-button-icon-color: currentColor;
+  --mat-icon-button-icon-color: currentColor;
   cursor: pointer;
 }
 
 .action-card-selected {
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary) !important;
-  --mdc-icon-button-icon-color: currentColor;
+  --mat-icon-button-icon-color: currentColor;
 }
 
 // The row inside an action card showing label and value

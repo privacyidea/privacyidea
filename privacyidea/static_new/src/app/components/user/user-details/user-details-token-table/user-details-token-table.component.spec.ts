@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,27 +19,26 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
-import { UserDetailsTokenTableComponent } from "./user-details-token-table.component";
 import {
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockTableUtilsService,
-  MockTokenService,
-  MockUserService
-} from "../../../../../testing/mock-services";
+    MockContentService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService,
+    MockTokenService,
+    MockUserService
+} from "@testing/mock-services";
+import { UserDetailsTokenTableComponent } from "./user-details-token-table.component";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 
-import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { UserService } from "../../../../services/user/user.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("UserDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsTokenTableComponent>;
@@ -57,14 +56,6 @@ describe("UserDetailsTokenTableComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TableUtilsService, useClass: MockTableUtilsService },
-        {
-          provide: OverflowService,
-          useValue: {
-            isWidthOverflowing: () => false,
-            isHeightOverflowing: () => false,
-            getOverflowThreshold: () => 1920
-          }
-        },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },

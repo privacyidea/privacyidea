@@ -39,9 +39,7 @@
     <table class="table margin-bottom-16">
       <thead>
       <tr>
-        <th i18n>Client ID</th>
-        <th i18n>API Key</th>
-        <th></th>
+        <th i18n>Client ID API Key</th>
       </tr>
       </thead>
       <tbody>
@@ -77,10 +75,14 @@
           #apiIdInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput
+          pattern="^[a-zA-Z0-9._-]*$"
           placeholder="Client ID"
           required>
         @if (apiIdInput.errors?.['required']) {
           <mat-error i18n>Client ID is <strong>required</strong></mat-error>
+        }
+        @if (apiIdInput.errors?.['pattern']) {
+          <mat-error i18n>Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed.</mat-error>
         }
       </mat-form-field>
 
@@ -105,14 +107,14 @@
         i18n>
         Generate API Key
       </mat-checkbox>
-
-      <button
-        (click)="createNewKey()"
-        class="action-button-secondary button-width-s margin-bottom-16"
-        mat-stroked-button>
-        <mat-icon>add</mat-icon>
-        <span i18n>Add</span>
-      </button>
     </div>
+
+    <button
+      (click)="createNewKey()"
+      class="action-button-secondary button-width-s margin-top-16"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      <span i18n>Add</span>
+    </button>
   </div>
 </mat-expansion-panel>

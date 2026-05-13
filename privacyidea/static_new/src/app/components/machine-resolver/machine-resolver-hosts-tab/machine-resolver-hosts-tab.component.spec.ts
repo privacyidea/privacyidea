@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,9 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { HostsMachineResolverData } from "../../../services/machine-resolver/machine-resolver.service";
+import { HostsMachineResolverData } from "@services/machine-resolver/machine-resolver.service";
+import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
 
 describe("MachineResolverHostsTabComponent", () => {
   let component: MachineResolverHostsTabComponent;

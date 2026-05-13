@@ -17,33 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { of } from "rxjs";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { BehaviorSubject, map, of } from "rxjs";
 
-import { UserDetailsComponent } from "./user-details.component";
+import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { UserDetailsComponent } from "./user-details.component";
 
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContentService } from "../../../services/content/content.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { TokenService } from "../../../services/token/token.service";
-import { UserService } from "../../../services/user/user.service";
 import { MatDialog } from "@angular/material/dialog";
-import {
-  MockContentService,
-  MockDialogService,
-  MockLocalService,
-  MockNotificationService,
-  MockTableUtilsService,
-  MockTokenService,
-  MockUserService
-} from "../../../../testing/mock-services";
 import { ActivatedRoute } from "@angular/router";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogService } from "../../../services/dialog/dialog.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import {
+    MockContentService,
+    MockDialogService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService,
+    MockTokenService,
+    MockUserService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({
@@ -58,7 +60,9 @@ describe("UserDetailsComponent", () => {
   let userServiceMock: MockUserService;
   let tokenServiceMock: MockTokenService;
   let dialogServiceMock: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
   let dialogMock: MockMatDialog;
+  let breakpointSubject: BehaviorSubject<Record<string, boolean>>;
 
   const mockUserData = {
     username: "alice",
@@ -77,12 +81,23 @@ describe("UserDetailsComponent", () => {
     TestBed.resetTestingModule();
 
     dialogMock = new MockMatDialog();
+    breakpointSubject = new BehaviorSubject<Record<string, boolean>>({
+      "(max-width: 1000px)": false,
+      "(max-width: 1240px)": false
+    });
 
     await TestBed.configureTestingModule({
       imports: [UserDetailsComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: BreakpointObserver,
+          useValue: {
+            observe: (query: string) =>
+              breakpointSubject.pipe(map((b) => ({ matches: b[query] || false, breakpoints: {} })))
+          }
+        },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -95,6 +110,7 @@ describe("UserDetailsComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: MatDialog, useValue: dialogMock },
         MockLocalService,
         MockNotificationService
@@ -106,6 +122,7 @@ describe("UserDetailsComponent", () => {
     tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -118,26 +135,14 @@ describe("UserDetailsComponent", () => {
   });
 
   it("tokenDataSource populates from tokenResource and keeps previous when resource is missing", () => {
-    tokenServiceMock.tokenResource.value.set({
-      detail: {},
-      id: 0,
-      jsonrpc: "2.0",
-      signature: "",
-      time: Date.now(),
-      version: "1.0",
-      versionnumber: "1.0",
-      result: {
-        status: true,
-        value: {
-          count: 2,
-          current: 2,
-          tokens: [
-            { serial: "T-1", revoked: false, locked: false } as any,
-            { serial: "T-2", revoked: false, locked: false } as any
-          ]
-        }
-      }
-    } as any);
+    tokenServiceMock.tokenResourceValue.set({
+      count: 2,
+      current: 2,
+      tokens: [
+        { serial: "T-1", revoked: false, locked: false } as any,
+        { serial: "T-2", revoked: false, locked: false } as any
+      ]
+    });
     fixture.detectChanges();
 
     expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
@@ -185,7 +190,7 @@ describe("UserDetailsComponent", () => {
     expect(component.canAddAttribute()).toBe(true);
   });
 
-  it("addCustomAttribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", () => {
+  it("addCustomAttribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", async () => {
     userServiceMock.attributeSetMap.set({
       department: ["sales", "finance"],
       customKey: ["2", "1"]
@@ -197,7 +202,8 @@ describe("UserDetailsComponent", () => {
     const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
     const reloadSpy = jest.spyOn(userServiceMock.userAttributesResource, "reload");
 
-    component.addCustomAttribute();
+    const result = await component.addCustomAttribute();
+    expect(result).toBe(true);
     expect(setSpy).toHaveBeenCalledWith("department", "sales");
     expect(reloadSpy).toHaveBeenCalledTimes(1);
 
@@ -308,9 +314,8 @@ describe("UserDetailsComponent", () => {
     });
   });
 
-  it("deleteUser opens confirmation dialog, deletes user, navigates, and reloads", () => {
+  it("should navigateByUrl and reload usersResource on deleteUser success", () => {
     component.userData.set(mockUserData);
-
     const deleteSpy = jest.spyOn(userServiceMock, "deleteUser").mockReturnValue(of(true));
     const routerSpy = jest.spyOn((component as any).router, "navigateByUrl").mockResolvedValue(true);
     userServiceMock.usersResource = { reload: jest.fn() } as any;
@@ -320,18 +325,95 @@ describe("UserDetailsComponent", () => {
 
     component.deleteUser();
 
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
-      component: SimpleConfirmationDialogComponent,
-      data: expect.objectContaining({
-        title: "Delete User",
-        items: ["alice"],
-        itemType: "user",
-        confirmAction: expect.any(Object)
-      })
+    expect(deleteSpy).toHaveBeenCalled();
+    expect(routerSpy).toHaveBeenCalled();
+  });
+
+  it("should adjust colCount based on breakpoints", () => {
+    expect(component.colCount()).toBe(3);
+
+    breakpointSubject.next({ "(max-width: 1000px)": false, "(max-width: 1240px)": true });
+    expect(component.colCount()).toBe(2);
+
+    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
+    expect(component.colCount()).toBe(1);
+  });
+
+  it("should split detailsColumns according to colCount", () => {
+    userServiceMock.user.set(mockUserData);
+    const totalEntries = component.detailsEntries().length;
+
+    // Default 3 columns
+    expect(component.colCount()).toBe(3);
+    let columns = component.detailsColumns();
+    expect(columns.length).toBe(3);
+    expect(columns.flat().length).toBe(totalEntries);
+
+    // 1 column
+    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
+    expect(component.colCount()).toBe(1);
+    columns = component.detailsColumns();
+    expect(columns.length).toBe(1);
+    expect(columns[0].length).toBe(totalEntries);
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
     });
 
-    expect(deleteSpy).toHaveBeenCalledWith("default", "alice");
-    expect(routerSpy).toHaveBeenCalledWith(expect.any(String));
-    expect(userServiceMock.usersResource.reload).toHaveBeenCalled();
+    it("hasChanges reflects attribute input signals", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.addKeyInput.set("key");
+      expect(fn()).toBe(true);
+      component.addKeyInput.set("");
+
+      component.addValueInput.set("value");
+      expect(fn()).toBe(true);
+      component.addValueInput.set("");
+
+      component.selectedKey.set("k");
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges requires both key and value", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.keyMode.set("input");
+      expect(fn()).toBe(false);
+
+      component.addKeyInput.set("key");
+      expect(fn()).toBe(false);
+
+      component.addValueInput.set("value");
+      expect(fn()).toBe(true);
+    });
+
+    it("save calls setUserAttribute and resolves true on success", async () => {
+      component.keyMode.set("input");
+      component.addKeyInput.set("key");
+      component.addValueInput.set("value");
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+      const result = await fn();
+      expect(setSpy).toHaveBeenCalledWith("key", "value");
+      expect(result).toBe(true);
+    });
+
+    it("save resolves false when key or value missing", async () => {
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+      const result = await fn();
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

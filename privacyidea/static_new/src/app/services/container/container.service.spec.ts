@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,28 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ContainerDetails, ContainerService } from "./container.service";
 import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal, WritableSignal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
 import {
   MockContentService,
   MockLocalService,
   MockNotificationService,
+  MockPiResponse,
   MockTokenService
-} from "../../../testing/mock-services";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { lastValueFrom, of, throwError } from "rxjs";
-import { NotificationService } from "../notification/notification.service";
-import { TestBed } from "@angular/core/testing";
-import { TokenService } from "../token/token.service";
-import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { ROUTE_PATHS } from "../../route_paths";
-import { ContentService } from "../content/content.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { signal, WritableSignal } from "@angular/core";
+import { ContainerDetails, ContainerService } from "./container.service";
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
   let http: HttpClient;
+  let httpMock: HttpTestingController;
   let authServiceMock: MockAuthService;
   let notificationServiceMock: MockNotificationService;
   let tokenServiceMock: MockTokenService;
@@ -48,6 +51,7 @@ describe("ContainerService", () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: TokenService, useClass: MockTokenService },
@@ -58,6 +62,7 @@ describe("ContainerService", () => {
     });
     containerService = TestBed.inject(ContainerService);
     http = TestBed.inject(HttpClient);
+    httpMock = TestBed.inject(HttpTestingController);
     authServiceMock = TestBed.inject(AuthService) as any;
     notificationServiceMock = TestBed.inject(NotificationService) as any;
     tokenServiceMock = TestBed.inject(TokenService) as any;
@@ -82,7 +87,7 @@ describe("ContainerService", () => {
   it("assignContainer propagates error and shows snackbar", async () => {
     jest.spyOn(http, "post").mockReturnValue(throwError(() => ({ status: 400, error: {} })));
     await expect(lastValueFrom(containerService.addToken("tokX", "contX"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalled();
+    expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
   it("toggleActive switches active → disabled", async () => {
@@ -139,7 +144,7 @@ describe("ContainerService", () => {
         }
       ]
     };
-    containerService.containerDetail.set(details);
+    containerService.containerDetails.set(details);
 
     const res = await lastValueFrom(containerService.toggleAll("activate"));
 
@@ -152,7 +157,7 @@ describe("ContainerService", () => {
   });
 
   it("toggleAll returns null when no token matches", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
+    notificationServiceMock.warning.mockClear();
     const details: ContainerDetails = {
       count: 1,
       containers: [
@@ -166,10 +171,10 @@ describe("ContainerService", () => {
         }
       ]
     };
-    containerService.containerDetail.set(details);
+    containerService.containerDetails.set(details);
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No tokens for action.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No tokens for action.");
   });
 
   it("removeAll posts combined serial list", async () => {
@@ -187,7 +192,7 @@ describe("ContainerService", () => {
         }
       ]
     };
-    containerService.containerDetail.set(details);
+    containerService.containerDetails.set(details);
     const r = await lastValueFrom(containerService.removeAll("c3"));
     expect(r?.result).toBeTruthy();
     expect(postSpy).toHaveBeenCalledWith(
@@ -209,7 +214,7 @@ describe("ContainerService", () => {
     jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CNEW" } } } as any));
     const r = await lastValueFrom(
       containerService.createContainer({
-        container_type: "generic",
+        type: "generic",
         description: "d"
       })
     );
@@ -251,12 +256,12 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_url).toBe("u");
   });
 
-  it("poll container details completes when state == registered for container create", () => {
+  it("poll container details completes when state == registered for container create", async () => {
     contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
     containerService.containerSerial.set("SMPH1");
 
     const valueSpy = jest
-      .spyOn(containerService.containerDetailResource, "value")
+      .spyOn(containerService.containerDetailsResource, "value")
       .mockReturnValueOnce(undefined as any)
       .mockReturnValue({
         result: {
@@ -266,18 +271,19 @@ describe("ContainerService", () => {
           }
         }
       } as any);
+    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
 
     containerService.startPolling("SMPH1");
-    TestBed.flushEffects();
+    TestBed.tick();
     (containerService as any)["pollingTrigger"].update((n: number) => n + 1);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(valueSpy).toHaveBeenCalled();
-    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state).toBe(
-      "registered"
-    );
+    expect(
+      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info?.registration_state
+    ).toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.openSnackBar).not.toHaveBeenCalled();
+    expect(notificationServiceMock.warning).not.toHaveBeenCalled();
   });
 
   it("poll container details completes when state == registered for container details", () => {
@@ -285,7 +291,7 @@ describe("ContainerService", () => {
     containerService.containerSerial.set("SMPH1");
 
     const valueSpy = jest
-      .spyOn(containerService.containerDetailResource, "value")
+      .spyOn(containerService.containerDetailsResource, "value")
       .mockReturnValueOnce(undefined as any)
       .mockReturnValue({
         result: {
@@ -295,18 +301,19 @@ describe("ContainerService", () => {
           }
         }
       } as any);
+    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
 
     containerService.startPolling("SMPH1");
-    TestBed.flushEffects();
+    TestBed.tick();
     (containerService as any)["pollingTrigger"].update((n: number) => n + 1);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(valueSpy).toHaveBeenCalled();
-    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state).toBe(
-      "registered"
-    );
+    expect(
+      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info?.registration_state
+    ).toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
+    expect(notificationServiceMock.success).toHaveBeenCalledWith("Container registered successfully.");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
@@ -336,53 +343,30 @@ describe("ContainerService", () => {
 
   it("filteredContainerOptions respects selectedContainer filter", () => {
     containerService.containerOptions.set(["Alpha", "Serial42", "Beta"]);
-    containerService.selectedContainer.set("se");
+    containerService.selectedContainerSerial.set("se");
     expect(containerService.filteredContainerOptions()).toEqual(["Serial42"]);
   });
 
-  it("containerTypeOptions maps API result", () => {
-    jest.spyOn(containerService.containerTypesResource, "value").mockReturnValue({
-      result: {
-        value: {
-          generic: { description: "Generic", token_types: ["hmac"] }
-        }
-      }
-    } as any);
-    const opt = containerService.containerTypeOptions();
-    expect(opt[0]).toEqual({
-      containerType: "generic",
-      description: "Generic",
-      token_types: ["hmac"]
-    });
-  });
-
-  it("containerDetail falls back to default when resource empty", () => {
-    expect(containerService.containerDetail()).toEqual({
-      containers: [],
-      count: 0
-    });
-  });
-
   it("removeAll returns null when no tokens array", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
-    containerService.containerDetail.set({
+    notificationServiceMock.warning.mockClear();
+    containerService.containerDetails.set({
       count: 1,
       containers: [{} as any]
     });
     const r = await lastValueFrom(containerService.removeAll("cX"));
     expect(r).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
-  it("toggleAll returns null when containerDetail invalid", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
-    containerService.containerDetail.set({
+  it("toggleAll returns null when containerDetails invalid", async () => {
+    notificationServiceMock.warning.mockClear();
+    containerService.containerDetails.set({
       count: 1,
       containers: [{} as any]
     });
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
   it("filterParams handles wildcards and converts blank values", () => {
@@ -423,7 +407,7 @@ describe("ContainerService", () => {
 
     jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => ({ status: 500, error: {} })));
     await expect(lastValueFrom(containerService.removeToken("tokX", "contX"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalled();
+    expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
   it('setContainerRealm joins array, blank array ⇒ ""', async () => {
@@ -454,7 +438,7 @@ describe("ContainerService", () => {
   });
 
   it("toggleAll deactivates active tokens", async () => {
-    containerService.containerDetail.set({
+    containerService.containerDetails.set({
       count: 1,
       containers: [
         {
@@ -475,14 +459,14 @@ describe("ContainerService", () => {
   });
 
   it("removeAll early-returns when tokens array empty", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
-    containerService.containerDetail.set({
+    notificationServiceMock.warning.mockClear();
+    containerService.containerDetails.set({
       count: 1,
       containers: [{ serial: "c9", tokens: [] } as any]
     });
     const res = await lastValueFrom(containerService.removeAll("c9"));
     expect(res).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No tokens to remove.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No tokens to remove.");
   });
 
   it("filterParams wildcards non-ID fields", () => {
@@ -501,11 +485,6 @@ describe("ContainerService", () => {
     containerService.eventPageSize = 15;
     containerService.containerFilter.set(new FilterValue());
     expect(containerService.pageSize()).toBe(15);
-  });
-
-  it("containerTypeOptions returns [] when API empty", () => {
-    jest.spyOn(containerService.containerTypesResource, "value").mockReturnValue(undefined as any);
-    expect(containerService.containerTypeOptions()).toEqual([]);
   });
 
   it("setContainerDescription posts payload (robust headers assertion)", async () => {
@@ -540,7 +519,7 @@ describe("ContainerService", () => {
     ).rejects.toBeDefined();
     await expect(lastValueFrom(containerService.unassignUser("c", "u", "r"))).rejects.toBeDefined();
 
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledTimes(4);
+    expect(notificationServiceMock.error).toHaveBeenCalledTimes(4);
   });
 
   it("deleteInfo / deleteAllTokens error paths surface snackbar", async () => {
@@ -552,7 +531,7 @@ describe("ContainerService", () => {
       lastValueFrom(containerService.deleteAllTokens({ containerSerial: "c", serialList: "a,b" }))
     ).rejects.toBeDefined();
 
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledTimes(2);
+    expect(notificationServiceMock.error).toHaveBeenCalledTimes(2);
   });
 
   it("registerContainer / toggleActive error paths surface snackbar", async () => {
@@ -574,7 +553,7 @@ describe("ContainerService", () => {
 
     await expect(lastValueFrom(containerService.toggleActive("c", ["active"]))).rejects.toBeDefined();
 
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledTimes(2);
+    expect(notificationServiceMock.error).toHaveBeenCalledTimes(2);
   });
 
   it("setContainerInfos: per-key error surfaces snackbar", async () => {
@@ -599,7 +578,7 @@ describe("ContainerService", () => {
       { value: "v2" },
       expect.objectContaining({ headers: expect.anything() })
     );
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to save container infos.")
     );
   });
@@ -607,16 +586,14 @@ describe("ContainerService", () => {
   it("deleteContainer error surfaces snackbar", async () => {
     jest.spyOn(http, "delete").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
     await expect(lastValueFrom(containerService.deleteContainer("cDelErr"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to delete container.")
-    );
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete container."));
   });
 
   it("unregister posts to the correct endpoint and returns result", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CONT1234" } } } as any));
-    const r = await lastValueFrom(containerService.unregister("CONT1234"));
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CONT/1234" } } } as any));
+    const r = await lastValueFrom(containerService.unregister("CONT/1234"));
     expect(http.post).toHaveBeenCalledWith(
-      `${containerService.containerBaseUrl}register/CONT1234/terminate`,
+      `${containerService.containerBaseUrl}register/${encodeURIComponent("CONT/1234")}/terminate`,
       {},
       expect.objectContaining({ headers: expect.anything() })
     );
@@ -625,7 +602,7 @@ describe("ContainerService", () => {
   it("unregister error surfaces snackbar", async () => {
     jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
     await expect(lastValueFrom(containerService.unregister("CONT1234"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to unregister container.")
     );
   });
@@ -647,6 +624,139 @@ describe("ContainerService", () => {
     expect(params).not.toHaveProperty("token_serial");
   });
 
+  describe("containerOptions", () => {
+    it("should update containerOptions from httpResource when not yet present", async () => {
+      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
+      contentServiceMock.onTokensContainers = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/container/");
+      expect(req.request.method).toBe("GET");
+      req.flush(
+        MockPiResponse.fromValue({
+          containers: [
+            { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
+            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] }
+          ]
+        })
+      );
+      await Promise.resolve();
+
+      expect(containerService.containerOptions()).toEqual(["c1", "c2"]);
+    });
+
+    it("should handle error state from containerResource", async () => {
+      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
+      contentServiceMock.onTokensContainers = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/container/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(containerService.containerOptions()).toEqual([]);
+    });
+  });
+
+  describe("containerTypeOptions", () => {
+    it("containerTypeOptions returns [] when API empty", () => {
+      jest.spyOn(containerService.containerTypesResource, "value").mockReturnValue(undefined as any);
+      expect(containerService.containerTypeOptions()).toEqual([]);
+    });
+
+    it("should update containerTypeOptions from containerTypesResource", async () => {
+      contentServiceMock.onTokensContainers = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/container/types");
+      expect(req.request.method).toBe("GET");
+      req.flush(
+        MockPiResponse.fromValue({
+          typeA: { description: "Type A", token_types: ["tt1", "tt2"] },
+          typeB: { description: "Type B", token_types: ["tt2", "tt3"] }
+        })
+      );
+      await Promise.resolve();
+
+      expect(containerService.containerTypeOptions()).toEqual([
+        { containerType: "typeA", description: "Type A", token_types: ["tt1", "tt2"] },
+        { containerType: "typeB", description: "Type B", token_types: ["tt2", "tt3"] }
+      ]);
+    });
+
+    it("containerTypeOptions should handle error state from containerTypesResource", async () => {
+      contentServiceMock.onTokensContainers = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/container/types");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(containerService.containerTypeOptions()).toEqual([]);
+    });
+  });
+
+  describe("containerDetails", () => {
+    it("containerDetail falls back to default when resource empty", () => {
+      expect(containerService.containerDetails()).toEqual({
+        containers: [],
+        count: 0
+      });
+    });
+
+    it("should update containerDetail from containerDetailResource when not yet present", async () => {
+      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
+      contentServiceMock.onTokensContainers = signal(true);
+      // Set the serial so the resource will be triggered
+      containerService.containerSerial.set("c1");
+      TestBed.tick();
+
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.has("container_serial") && r.params.get("container_serial") === "c1"
+      );
+      expect(req.request.method).toBe("GET");
+      req.flush(
+        MockPiResponse.fromValue({
+          count: 1,
+          containers: [{ serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] }]
+        })
+      );
+      await Promise.resolve();
+
+      expect(containerService.containerDetails()).toEqual({
+        count: 1,
+        containers: [{ serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] }]
+      });
+    });
+
+    it("should handle error state from containerDetailResource", async () => {
+      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
+      contentServiceMock.onTokensContainers = signal(true);
+      containerService.containerSerial.set("c2");
+      TestBed.tick();
+
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.has("container_serial") && r.params.get("container_serial") === "c2"
+      );
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(containerService.containerDetails()).toEqual({ containers: [], count: 0 });
+    });
+  });
+
   describe("compatibleTypes and containersForTokenType", () => {
     let containerTypeOptionsSignal: WritableSignal<any>;
     let compatibleWithSelectedTokenTypeSignal: WritableSignal<any>;
@@ -661,6 +771,9 @@ describe("ContainerService", () => {
       compatibleWithSelectedTokenTypeSignal = signal("tt2");
       (containerService as any).containerTypeOptions = containerTypeOptionsSignal;
       (containerService as any).compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
+
+      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
+      contentServiceMock.onTokensContainers = signal(true);
     });
 
     it("should compute compatibleTypes correctly", () => {
@@ -668,23 +781,110 @@ describe("ContainerService", () => {
       expect(compatibleTypes).toEqual(["typeA", "typeB"]);
     });
 
-    it("should filter containersForTokenType by compatibleTypes and return serials", () => {
-      // Set compatibleTypes signal value
-      (containerService as any)["compatibleTypes"] = signal(["typeA", "typeB"]);
-      // Mock containerResource
+    it("should filter containersForTokenType by compatibleTypes and return serials", async () => {
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/container/");
+      expect(req.request.method).toBe("GET");
       const mockContainers = [
         { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
         { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] },
         { serial: "c3", type: "typeC", realms: [], states: [], tokens: [], users: [] }
       ];
-      (containerService as any).containerResource.set({
-        result: {
-          value: {
-            containers: mockContainers
-          }
-        }
-      });
+      req.flush(
+        MockPiResponse.fromValue({
+          containers: mockContainers
+        })
+      );
+      await Promise.resolve();
+
       expect(containerService.containersForTokenType()).toEqual(["c1", "c2"]);
+    });
+
+    it("should handle containerResource error", async () => {
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/container/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }));
+      await Promise.resolve();
+
+      expect(containerService.containersForTokenType()).toEqual([]);
+    });
+  });
+
+  describe("compareWithTemplate", () => {
+    const containerWithTemplate = (serial: string, template: string | undefined) => ({
+      count: 1,
+      containers: [{ serial, type: "", tokens: [], users: [], realms: [], states: [], template } as any]
+    });
+
+    it("returns early when serial is empty", async () => {
+      containerService.containerSerial.set("");
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      await containerService.compareWithTemplate();
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(containerService.templateComparison()).toBeNull();
+      consoleSpy.mockRestore();
+    });
+
+    it("returns early when container has no template", async () => {
+      containerService.containerSerial.set("CONT-1");
+      containerService.containerDetails.set(containerWithTemplate("CONT-1", undefined));
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      await containerService.compareWithTemplate();
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(containerService.templateComparison()).toBeNull();
+      consoleSpy.mockRestore();
+    });
+
+    it("fetches comparison result and sets templateComparison", async () => {
+      containerService.containerSerial.set("CONT-1");
+      containerService.containerDetails.set(containerWithTemplate("CONT-1", "myTemplate"));
+
+      const comparisonResult = { "CONT-1": { tokens: { additional: [], equal: true, missing: [] } } };
+      jest.spyOn(http, "get").mockReturnValue(of({ result: { value: comparisonResult } } as any));
+
+      await containerService.compareWithTemplate();
+
+      expect(http.get).toHaveBeenCalledWith(
+        expect.stringContaining("myTemplate/compare?container_serial=CONT-1"),
+        expect.anything()
+      );
+      expect(containerService.templateComparison()).toEqual(comparisonResult);
+    });
+
+    it("shows snackbar on HTTP error", async () => {
+      containerService.containerSerial.set("CONT-1");
+      containerService.containerDetails.set(containerWithTemplate("CONT-1", "myTemplate"));
+
+      jest
+        .spyOn(http, "get")
+        .mockReturnValue(throwError(() => ({ error: { result: { error: { message: "Comparison failed" } } } })));
+
+      await containerService.compareWithTemplate();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to compare: Comparison failed");
+      expect(containerService.templateComparison()).toBeNull();
+    });
+  });
+
+  describe("templateComparison", () => {
+    it("resets to null when containerSerial changes", () => {
+      containerService.containerSerial.set("CONT-A");
+      containerService.templateComparison.set({ "CONT-A": { tokens: { additional: [], equal: true, missing: [] } } });
+      expect(containerService.templateComparison()).not.toBeNull();
+
+      containerService.containerSerial.set("CONT-B");
+      expect(containerService.templateComparison()).toBeNull();
+    });
+
+    it("retains value while containerSerial is unchanged", () => {
+      containerService.containerSerial.set("CONT-A");
+      const result = { "CONT-A": { tokens: { additional: ["tok1"], equal: false, missing: [] } } };
+      containerService.templateComparison.set(result);
+
+      containerService.containerSerial.set("CONT-A");
+      expect(containerService.templateComparison()).toEqual(result);
     });
   });
 });

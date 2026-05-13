@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,21 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ClientsService } from "./clients.service";
-import {
-  MockContentService,
-  MockLocalService,
-  MockNotificationService
-} from "../../../testing/mock-services";
-import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { ROUTE_PATHS } from "../../route_paths";
-import { environment } from "../../../environments/environment";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService, MockLocalService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { ClientsService } from "./clients.service";
 
 describe("ClientsService", () => {
   let clientService: ClientsService;
@@ -64,7 +59,7 @@ describe("ClientsService", () => {
   it("should return undefined if route is not CLIENTS", async () => {
     contentService.routeUrl.update(() => ROUTE_PATHS.TOKENS);
     const mockBackend = TestBed.inject(HttpTestingController);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     // Expect and flush the HTTP request
     mockBackend.expectNone(environment.proxyUrl + "/client/");
@@ -76,7 +71,7 @@ describe("ClientsService", () => {
   it("should return correct resource if route is CLIENTS", async () => {
     contentService.routeUrl.update(() => ROUTE_PATHS.CLIENTS);
     const mockBackend = TestBed.inject(HttpTestingController);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     // Expect and flush the HTTP request
     const req = mockBackend.expectOne(environment.proxyUrl + "/client/");

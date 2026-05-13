@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,8 +20,10 @@ import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { ResyncOTPTokenDialog } from "@components/token/resync-otp-token-dialog/resync-otp-token-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-resync-token-action",
@@ -31,16 +33,23 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 })
 export class ResyncTokenActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   fristOTPValue: string = "";
   secondOTPValue: string = "";
 
-  resyncOTPToken() {
-    this.tokenService
-      .resyncOTPToken(this.tokenService.tokenSerial(), this.fristOTPValue, this.secondOTPValue)
-      .subscribe({
-        next: () => {
-          this.tokenService.tokenDetailResource.reload();
-        }
-      });
+  async resyncOTPToken() {
+    const response = await this.tokenService.resyncOTPToken(
+      this.tokenService.tokenSerial(),
+      this.fristOTPValue,
+      this.secondOTPValue
+    );
+
+    console.log("Token resynced successfully response:", response);
+    this.dialogService.openDialog({
+      component: ResyncOTPTokenDialog,
+      data: response.result?.value || false
+    });
+
+    this.tokenService.tokenDetailResource.reload();
   }
 }

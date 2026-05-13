@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,38 +16,38 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { of, Subject } from "rxjs";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { signal, WritableSignal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { MatTableDataSource } from "@angular/material/table";
 import { Sort } from "@angular/material/sort";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MatTableDataSource } from "@angular/material/table";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
+import { of, Subject } from "rxjs";
 
 import { ContainerTableComponent } from "./container-table.component";
 import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
 
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContentService } from "../../../services/content/content.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { ContainerDetailData, ContainerService } from "../../../services/container/container.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerDetailData, ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-  MockContainerService,
-  MockContentService,
-  MockDialogService,
-  MockLocalService,
-  MockNotificationService,
-  MockTableUtilsService
-} from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { DialogService } from "../../../services/dialog/dialog.service";
+    MockContainerService,
+    MockContentService,
+    MockDialogService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 function makeResource<T>(initial: T) {
   return {

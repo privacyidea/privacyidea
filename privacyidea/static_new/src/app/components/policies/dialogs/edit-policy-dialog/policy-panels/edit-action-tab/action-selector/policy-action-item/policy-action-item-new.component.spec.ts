@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyActionItemComponent } from "./policy-action-item-new.component";
-import { PolicyService, PolicyActionDetail } from "../../../../../../../../services/policies/policies.service";
 import { Component, input, output } from "@angular/core";
-import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
 
 @Component({
   selector: "app-selector-buttons",
@@ -49,6 +49,13 @@ describe("PolicyActionItemComponent", () => {
     value: ["val1", "val2"]
   };
 
+  const defaultAction: SelectableAction = {
+    actionName: "testAction",
+    label: "testAction",
+    scope: "admin",
+    detail: mockActionDetail
+  };
+
   beforeEach(async () => {
     policyServiceMock = {
       actionValueIsValid: jest.fn().mockReturnValue(true)
@@ -68,9 +75,8 @@ describe("PolicyActionItemComponent", () => {
     fixture = TestBed.createComponent(PolicyActionItemComponent);
     component = fixture.componentInstance;
 
-    fixture.componentRef.setInput("actionName", "testAction");
+    fixture.componentRef.setInput("selectableAction", defaultAction);
     fixture.componentRef.setInput("actionValue", "defaultVal");
-    fixture.componentRef.setInput("actionDetail", mockActionDetail);
 
     fixture.detectChanges();
   });
@@ -82,14 +88,44 @@ describe("PolicyActionItemComponent", () => {
     expect(desc).toBeTruthy();
   });
 
-  it("should update currentAction when actionDetail changes via linkedSignal", () => {
-    fixture.componentRef.setInput("actionDetail", { type: "int", desc: "new", value: undefined });
+  it("should update currentAction when selectableAction changes via linkedSignal", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "int", desc: "new" } });
     fixture.detectChanges();
     expect(component.currentAction().name).toBe("testAction");
   });
 
+  it("should default currentAction value to 'true' for bool actions", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "bool", desc: "A toggle" } });
+    fixture.detectChanges();
+    expect(component.currentAction().value).toBe("true");
+    expect(component.isBooleanAction()).toBe(true);
+  });
+
+  it("should use the actionValue input as the default for non-bool actions", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "A string" } });
+    fixture.componentRef.setInput("actionValue", "myDefault");
+    fixture.detectChanges();
+    expect(component.currentAction().value).toBe("myDefault");
+  });
+
+  it("should emit actionAdd with explicit value when addAction is called with a value", () => {
+    const spy = jest.spyOn(component.actionAdd, "emit");
+    component.addAction("explicitValue");
+    expect(spy).toHaveBeenCalledWith({ name: "testAction", value: "explicitValue" });
+  });
+
+  it("should emit actionAdd with currentAction value when addAction is called without a value", () => {
+    component.updateSelectedActionValue("currentVal");
+    const spy = jest.spyOn(component.actionAdd, "emit");
+    component.addAction();
+    expect(spy).toHaveBeenCalledWith({ name: "testAction", value: "currentVal" });
+  });
+
   it("should emit actionAdd with current value when add button is clicked", async () => {
-    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "desc", value: undefined });
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "desc" }
+    });
     fixture.detectChanges();
 
     const spy = jest.spyOn(component.actionAdd, "emit");
@@ -101,7 +137,10 @@ describe("PolicyActionItemComponent", () => {
   });
 
   it("should call addAction on Enter key if input is valid", () => {
-    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "desc", value: undefined });
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "desc" }
+    });
     fixture.detectChanges();
 
     const spy = jest.spyOn(component, "addAction");
@@ -112,9 +151,26 @@ describe("PolicyActionItemComponent", () => {
     expect(spy).toHaveBeenCalled();
   });
 
+  describe("inputIsValid", () => {
+    it("should return false when actionValue is undefined", () => {
+      fixture.componentRef.setInput("actionValue", undefined);
+      fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "desc" } });
+      fixture.detectChanges();
+      expect(component.inputIsValid()).toBe(false);
+    });
+
+    it("should return false when detail is falsy", () => {
+      jest.spyOn(component, "selectableAction").mockReturnValue({ ...defaultAction, detail: null as any });
+      expect(component.inputIsValid()).toBe(false);
+    });
+  });
+
   it("should not call addAction on Enter key if input is invalid", () => {
     policyServiceMock.actionValueIsValid.mockReturnValue(false);
-    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "desc", value: undefined });
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "desc" }
+    });
     fixture.detectChanges();
 
     const spy = jest.spyOn(component, "addAction");
@@ -137,14 +193,78 @@ describe("PolicyActionItemComponent", () => {
   });
 
   it("should handle multi-value actions with mat-select if > 3 values", () => {
-    fixture.componentRef.setInput("actionDetail", {
-      type: "str",
-      desc: "large list",
-      value: ["1", "2", "3", "4", "5"]
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "large list", value: ["1", "2", "3", "4", "5"] }
     });
     fixture.detectChanges();
 
     const select = fixture.debugElement.query(By.css("mat-select"));
     expect(select).toBeTruthy();
+  });
+
+  describe("selectedItems", () => {
+    it("should split a space-separated string value into an array", () => {
+      component.updateSelectedActionValue("val1 val2 val3");
+      expect(component.selectedItems()).toEqual(["val1", "val2", "val3"]);
+    });
+
+    it("should wrap a non-string value in an array", () => {
+      component.updateSelectedActionValue(42);
+      expect(component.selectedItems()).toEqual([42]);
+    });
+  });
+
+  describe("updateSelectedActionValue", () => {
+    it("should join array values with space and set currentAction", () => {
+      component.updateSelectedActionValue(["val1", "val2", "val3"]);
+      expect(component.currentAction()).toEqual({ name: "testAction", value: "val1 val2 val3" });
+    });
+
+    it("should set currentAction directly for scalar values", () => {
+      component.updateSelectedActionValue("singleVal");
+      expect(component.currentAction()).toEqual({ name: "testAction", value: "singleVal" });
+    });
+
+    it("should set currentAction directly for numeric values", () => {
+      component.updateSelectedActionValue(42);
+      expect(component.currentAction()).toEqual({ name: "testAction", value: 42 });
+    });
+  });
+
+  describe("focusFirstInput", () => {
+    it("should focus the input element when present", async () => {
+      const mockInput = { focus: jest.fn() };
+      jest.spyOn(component, "inputElementRef").mockReturnValue({ nativeElement: mockInput } as any);
+
+      component.focusFirstInput();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockInput.focus).toHaveBeenCalled();
+    });
+
+    it("should focus the select element when no input is present", async () => {
+      const mockSelect = { focus: jest.fn() };
+      jest.spyOn(component, "selectElementRef").mockReturnValue(mockSelect as any);
+      jest.spyOn(component, "inputElementRef").mockReturnValue(undefined);
+
+      component.focusFirstInput();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockSelect.focus).toHaveBeenCalled();
+    });
+
+    it("should focus the button element when no input or select is present", async () => {
+      const mockButton = { focus: jest.fn() };
+      jest.spyOn(component, "buttonElementRef").mockReturnValue({ nativeElement: mockButton } as any);
+      jest.spyOn(component, "inputElementRef").mockReturnValue(undefined);
+      jest.spyOn(component, "selectElementRef").mockReturnValue(undefined);
+      jest.spyOn(component, "selectorComponent").mockReturnValue(undefined);
+
+      component.focusFirstInput();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(mockButton.focus).toHaveBeenCalled();
+    });
   });
 });

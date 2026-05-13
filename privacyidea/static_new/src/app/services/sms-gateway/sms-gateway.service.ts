@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, Signal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { computed, inject, Injectable, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface SmsProviderParameter {
@@ -92,6 +92,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   });
 
   readonly smsGateways = computed<SmsGateway[]>(() => {
+    if (!this.smsGatewayResource.hasValue()) return [];
     return this.smsGatewayResource.value()?.result?.value ?? [];
   });
 
@@ -99,28 +100,28 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
     const request = this.http.post<PiResponse<any>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved SMS gateway.`);
+        this.notificationService.success($localize`Successfully saved SMS gateway.`);
         this.smsGatewayResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save SMS gateway. ` + message);
+        this.notificationService.error($localize`Failed to save SMS gateway. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteSmsGateway(name: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${name}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted SMS gateway: ${name}.`);
+        this.notificationService.success($localize`Successfully deleted SMS gateway: ${name}.`);
         this.smsGatewayResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete SMS gateway. ` + message);
+        this.notificationService.error($localize`Failed to delete SMS gateway. ` + message);
         throw new Error("delete-failed");
       });
   }

@@ -1,16 +1,20 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .layout {
-  --max-height: calc(100vh - 64px - var(--global-padding) * 2);
-  --drawer-width: 298px;
+  &:has(.self-service-layout) {
+    --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  }
+
+  &:has(.admin-layout) {
+    --max-height: calc(100vh - 192px - var(--global-padding) * 2);
+  }
 }
 
 .progress-bar {
   position: fixed;
   top: calc(
-    100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
+    100% - max(var(--mat-progress-bar-track-height, 4px), var(--mat-progress-bar-active-indicator-height, 4px))
   );
   left: 0;
   width: 100%;
@@ -32,61 +36,37 @@
   opacity: 0.33;
 }
 
-.drawer-container {
-  height: 100vh;
-}
-
-.drawer {
-  @include mat.elevation(5);
-  border-radius: var(--border-radius);
-  background: var(--table-color);
-  width: fit-content;
-}
-
-.drawer-content {
-  justify-content: center;
+.admin-layout {
   display: flex;
-  height: calc(100% - 32px * 2);
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.admin-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
   align-items: baseline;
 }
 
-.drawer-button-div {
-  display: flex;
-  margin-top: 284px;
-  margin-left: var(--global-padding);
-  height: 100%;
-  position: fixed;
-}
 
-.drawer-content-div {
+.self-service-layout {
   display: flex;
-  flex-direction: row;
-  gap: 20px;
-}
-
-.selfservice-layout {
-  display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-start;
+  --drawer-width: var(--drawer-width-self-service);
+  > app-navigation-self-service,
+  > app-navigation-self-service-wizard {
+    flex: 0 0 var(--drawer-width-self-service);
+    width: var(--drawer-width-self-service);
+  }
 }
 
 .selfservice-content-container {
   display: grid;
   justify-items: center;
-  align-content: start;
+  align-content: center;
+  overflow-x: auto;
   height: calc(var(--main-height) - var(--global-padding) * 2);
   padding: calc(2 * var(--global-padding));
-}
-
-::ng-deep {
-  .mat-drawer-backdrop {
-    opacity: 0.5;
-  }
-
-  .mdc-list-item.mdc-list-item--with-one-line {
-    height: auto !important;
-    padding-left: 0;
-    padding-right: 0;
-    padding-bottom: 8px;
-  }
 }

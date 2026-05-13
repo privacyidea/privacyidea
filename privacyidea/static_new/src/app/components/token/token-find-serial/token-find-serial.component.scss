@@ -2,10 +2,7 @@
 @use "table";
 
 .find-token-serial {
-  @include table.table-container-styles;
-
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
   display: grid;
 }
 

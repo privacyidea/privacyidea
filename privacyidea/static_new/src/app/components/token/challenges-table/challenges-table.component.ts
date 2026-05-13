@@ -18,26 +18,26 @@
  **/
 
 import { NgClass } from "@angular/common";
-import { Component, inject, linkedSignal, WritableSignal, ViewChild, ElementRef } from "@angular/core";
+import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatPaginatorModule, MatPaginator, PageEvent } from "@angular/material/paginator";
-import { MatTableModule, MatTableDataSource } from "@angular/material/table";
+import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
-import { ContentServiceInterface, ContentService } from "src/app/services/content/content.service";
-import { NotificationServiceInterface, NotificationService } from "src/app/services/notification/notification.service";
-import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/table-utils/table-utils.service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import {
-  ChallengesServiceInterface,
+  Challenge,
   ChallengesService,
-  Challenge
-} from "src/app/services/token/challenges/challenges.service";
-import { TokenServiceInterface, TokenService } from "src/app/services/token/token.service";
+  ChallengesServiceInterface
+} from "@services/token/challenges/challenges.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
@@ -85,16 +85,19 @@ export class ChallengesTableComponent {
   pageIndex = this.challengesService.pageIndex;
   sort = this.challengesService.sort;
   length = linkedSignal({
-    source: this.challengesService.challengesResource.value,
-    computation: (res, prev) => {
-      if (res) {
-        return res.result?.value?.count;
-      }
-      return prev?.value ?? 0;
+    source: () =>
+      this.challengesService.challengesResource.hasValue()
+        ? this.challengesService.challengesResource.value()
+        : undefined,
+    computation: (challengesResource, prev) => {
+      return challengesResource?.result?.value?.count ?? prev?.value ?? 0;
     }
   });
   challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> = linkedSignal({
-    source: this.challengesService.challengesResource.value,
+    source: () =>
+      this.challengesService.challengesResource.hasValue()
+        ? this.challengesService.challengesResource.value()
+        : undefined,
     computation: (challengesResource, previous) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
@@ -137,7 +140,7 @@ export class ChallengesTableComponent {
 
   serialClicked(element: { data: { type: string }; serial: string }): void {
     if (element.data && element.data.type === "container") {
-      this.contentService.containerSelected(element.serial);
+      this.contentService.navigateContainerDetails(element.serial);
     } else {
       this.contentService.tokenSelected(element.serial);
     }

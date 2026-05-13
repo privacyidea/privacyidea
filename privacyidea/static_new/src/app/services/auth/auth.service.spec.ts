@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,22 +18,18 @@
  **/
 import { TestBed } from "@angular/core/testing";
 
-import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
-import { AppComponent } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { LocalService } from "../local/local.service";
-import { VersioningService } from "../version/version.service";
-import { MockLocalService, MockNotificationService, MockVersioningService } from "../../../testing/mock-services";
 import { Router } from "@angular/router";
-import { NotificationService } from "../notification/notification.service";
+import { AppComponent } from "@app/app.component";
+import { LocalService } from "@services/local/local.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { VersioningService } from "@services/version/version.service";
+import { MockLocalService, MockNotificationService, MockVersioningService } from "@testing/mock-services";
+import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
 const b64url = (obj: any) =>
-  Buffer.from(JSON.stringify(obj))
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  Buffer.from(JSON.stringify(obj)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 const ensureAtob = () => {
   if (!(global as any).atob) {
@@ -270,12 +266,12 @@ describe("AuthService", () => {
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await (routerMock.navigate as jest.Mock).mock.results[0].value;
-    expect(notifications.openSnackBar).toHaveBeenCalledWith("Logout successful.");
-    expect(notifications.openSnackBar).toHaveBeenCalledTimes(1);
+    expect(notifications.success).toHaveBeenCalledWith("Logout successful.");
+    expect(notifications.success).toHaveBeenCalledTimes(1);
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
     expect(authService.authtype()).toBe("none");
     expect(authService.jwtExpDate()).toBeNull();
@@ -299,7 +295,7 @@ describe("AuthService", () => {
   });
 
   it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
     expect(authService.jwtExpDate()).toBeNull();
     expect(authService.jwtLogoutTimeS()).toBeNull();
@@ -445,11 +441,7 @@ describe("AuthService", () => {
       role: "admin",
       authtype: "cookie",
       exp: 0,
-      rights: [
-        "foo=bar",
-        "baz=qux=quux",
-        "simple"
-      ]
+      rights: ["foo=bar", "baz=qux=quux", "simple"]
     };
     authService.authData.set(authData as unknown as AuthData);
     const result = authService.rightsWithValues();

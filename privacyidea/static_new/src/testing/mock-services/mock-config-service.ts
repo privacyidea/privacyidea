@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ConfigServiceInterface } from "../../app/services/config/config.service";
 import { signal } from "@angular/core";
+import { ConfigServiceInterface } from "@services/config/config.service";
 
 export class MockConfigService implements ConfigServiceInterface {
   config = signal({

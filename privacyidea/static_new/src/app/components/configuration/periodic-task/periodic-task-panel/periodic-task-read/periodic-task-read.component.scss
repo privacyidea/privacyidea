@@ -1,4 +1,4 @@
-@use "../../../../../../styles/index" as styles;
+@use "styles";
 
 // override hover style for read only view to not change on hover
 .added-actions-container .action-card:hover {
@@ -18,7 +18,7 @@
 
 .value {
   grid-column: 2;
-  overflow: scroll;
+  overflow: auto;
   display: block;
   margin-block: auto;
 }

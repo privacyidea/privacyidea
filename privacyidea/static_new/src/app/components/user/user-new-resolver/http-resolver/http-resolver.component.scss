@@ -18,17 +18,20 @@
   width: 100%;
   margin-bottom: 1rem;
 
-  th.mat-column-actions {
+  .mat-column-privacyideaAttr,
+  .mat-column-userStoreAttr {
+    width: 300px;
+  }
+
+  .mat-column-actions {
+    width: 80px;
     text-align: center;
   }
 
   td,
   th {
     background: var(--table-color);
-
-    ::ng-deep .mdc-text-field {
-      background-color: var(--table-color) !important;
-    }
+    --mat-form-field-filled-container-color: var(--table-color);
   }
 }
 

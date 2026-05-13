@@ -22,10 +22,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { ChallengesService, ChallengesServiceInterface } from "../../../../services/token/challenges/challenges.service";
-import { NotificationService, NotificationServiceInterface } from "../../../../services/notification/notification.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ChallengesService, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
 
 @Component({
   selector: "app-challenges-table-actions",
@@ -49,7 +49,7 @@ export class ChallengesTableActionsComponent {
       },
       error: (err) => {
         const message = err?.error?.result?.error?.message ?? "Failed to delete expired challenges.";
-        this.notificationService.openSnackBar(message);
+        this.notificationService.error(message);
       }
     });
   }

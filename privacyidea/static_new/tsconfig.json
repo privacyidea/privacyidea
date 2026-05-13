@@ -3,16 +3,21 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "paths": {
-      "@styles/*": ["src/styles/*"],
-      "@components/*": ["src/app/components/*"],
-      "@env/*": ["src/environments/*"]
+      "@styles/*": ["./src/styles/*"],
+      "@components/*": ["./src/app/components/*"],
+      "@env/*": ["./src/environments/*"],
+      "@testing/*": ["./src/testing/*"],
+      "@services/*": ["./src/app/services/*"],
+      "@utils/*": ["./src/app/utils/*"],
+      "@constants/*": ["./src/app/constants/*"],
+      "@models/*": ["./src/app/models/*"],
+      "@core/*": ["./src/app/core/*"],
+      "@app/*": ["./src/app/*"]
     },
     "outDir": "./dist/out-tsc",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "downlevelIteration": true,
     "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,
@@ -32,7 +37,8 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "ES2022",
-    "lib": ["ES2022", "dom"]
+    "lib": ["ES2022", "dom"],
+    "types": ["jest", "node"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

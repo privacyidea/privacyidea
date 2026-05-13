@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,9 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, inject, Renderer2, signal, ViewChild } from "@angular/core";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { Component, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -29,14 +27,17 @@ import {
   ValidatorFn,
   Validators
 } from "@angular/forms";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatInput } from "@angular/material/input";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-token-import",
@@ -58,18 +59,19 @@ import { MatIcon } from "@angular/material/icon";
     ReactiveFormsModule
   ]
 })
-export class TokenImportComponent {
+export class TokenImportComponent implements OnDestroy {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly Object = Object;
   private observer!: IntersectionObserver;
   fileTypes: Record<string, string> = {
     "OATH CSV": "CSV File for OATH Tokens",
     "Yubikey CSV": "CSV File for Yubikey Tokens",
-    "pskc": "PSKC File",
+    pskc: "PSKC File",
     "aladdin-xml": "XML File from Aladdin or SafeNet"
   };
   fileType = signal<string>("OATH CSV");
@@ -78,14 +80,12 @@ export class TokenImportComponent {
   preSharedKey = new FormControl("", this.preSharedKeyLength());
   pskPassword = signal("");
   pskValidationOptions: Record<string, string> = {
-    "no_check": "Do not verify the authenticity",
-    "check_fail_soft": "Skip tokens that can not be verified",
-    "check_fail_hard": "Abort operation on unverifiable token"
+    no_check: "Do not verify the authenticity",
+    check_fail_soft: "Skip tokens that can not be verified",
+    check_fail_hard: "Abort operation on unverifiable token"
   };
   pskValidation = signal("check_fail_hard");
-  selectedRealms = signal<string[]>(
-    this.realmService.defaultRealm() ? [this.realmService.defaultRealm()!] : []
-  );
+  selectedRealms = signal<string[]>(this.realmService.defaultRealm() ? [this.realmService.defaultRealm()!] : []);
   inputForm = new FormGroup({
     file: this.file,
     preSharedKey: this.preSharedKey
@@ -99,6 +99,20 @@ export class TokenImportComponent {
       const validLength = [0, 32].includes(control.value.length);
       return validLength ? null : { invalidLength: { value: control.value } };
     };
+  }
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        this.fileName() !== "" ||
+        this.pskPassword() !== "" ||
+        this.fileType() !== "OATH CSV" ||
+        this.pskValidation() !== "check_fail_hard",
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   ngAfterViewInit(): void {
@@ -160,7 +174,7 @@ export class TokenImportComponent {
           const success = result.result?.value?.n_imported || 0;
           const failed = result.result?.value?.n_not_imported || 0;
           const total = success + failed;
-          this.notificationService.openSnackBar(success + "/" + total + " tokens imported successfully.");
+          this.notificationService.success(success + "/" + total + " tokens imported successfully.");
         },
         error: (error) => {
           // error handled in the token service

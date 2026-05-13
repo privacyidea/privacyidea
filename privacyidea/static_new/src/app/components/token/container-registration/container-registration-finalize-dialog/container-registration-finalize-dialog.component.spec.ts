@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
+import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
 
 const detectChangesStable = async (fixture: ComponentFixture<any>) => {
   fixture.detectChanges();

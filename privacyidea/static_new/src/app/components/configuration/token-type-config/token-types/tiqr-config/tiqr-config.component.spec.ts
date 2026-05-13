@@ -17,15 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
-import { provideRouter } from "@angular/router";
 import { provideAnimations } from "@angular/platform-browser/animations";
+import { provideRouter } from "@angular/router";
+import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
 import {
-  TIQR_AUTH_SERVER, TIQR_INFO_URL, TIQR_LOGO_URL, TIQR_OCRASUITE,
-  TIQR_REG_SERVER,
-  TIQR_SERVICE_DISPLAYNAME,
-  TIQR_SERVICE_IDENTIFIER
-} from "../../../../../constants/token.constants";
+    TIQR_AUTH_SERVER,
+    TIQR_INFO_URL,
+    TIQR_LOGO_URL,
+    TIQR_OCRASUITE,
+    TIQR_REG_SERVER,
+    TIQR_SERVICE_DISPLAYNAME,
+    TIQR_SERVICE_IDENTIFIER
+} from "@constants/token.constants";
 
 describe("TiqrConfigComponent", () => {
   let fixture: ComponentFixture<TiqrConfigComponent>;
@@ -95,7 +98,7 @@ describe("TiqrConfigComponent", () => {
 
   it("should handle empty field values", () => {
     jest.spyOn(component.formDataChange, "emit");
-    
+
     component.updateFormData(TIQR_REG_SERVER, "");
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [TIQR_REG_SERVER]: "" });
 
@@ -103,4 +106,3 @@ describe("TiqrConfigComponent", () => {
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [TIQR_SERVICE_DISPLAYNAME]: "" });
   });
 });
-

@@ -1,12 +1,20 @@
-@use "../../../../../styles";
+@use "styles";
+@use "table";
 
-.machine-dialog-content {
-  min-width: 600px;
+.machine-details-layout {
+  @include styles.main-component-style();
+}
+
+.machine-title {
+  margin: 16px 0;
 }
 
 .machines-container {
-  @include styles.base-table-structure(".tokens-table");
-  margin-bottom: 16px;
+  @include table.base-table-structure(".tokens-table");
+
+  & {
+    margin-bottom: 16px;
+  }
 }
 
 .details-section {

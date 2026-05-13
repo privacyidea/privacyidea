@@ -18,9 +18,9 @@
  **/
 import { effect, inject, Injectable, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { SubscriptionService } from "./subscription.service";
-import { SubscriptionExpiryDialogComponent } from "../../components/shared/subscription-expiry-dialog/subscription-expiry-dialog.component";
+import { SubscriptionExpiryDialogComponent } from "@components/shared/subscription-expiry-dialog/subscription-expiry-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { Subscription, SubscriptionService } from "./subscription.service";
 
 @Injectable({ providedIn: "root" })
 export class SubscriptionExpiryService {
@@ -38,7 +38,10 @@ export class SubscriptionExpiryService {
         return;
       }
 
-      const value = this.subscriptions.subscriptionsResource.value()?.result?.value;
+      let value: Record<string, Subscription> | undefined = {};
+      if (this.subscriptions.subscriptionsResource.hasValue()) {
+        value = this.subscriptions.subscriptionsResource.value()?.result?.value;
+      }
       const items = value ? Object.values(value) : [];
 
       const expiring = items

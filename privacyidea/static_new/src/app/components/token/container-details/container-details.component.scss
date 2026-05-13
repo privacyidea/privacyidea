@@ -1,18 +1,11 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 $gap-small: 8px;
 
 .details-container {
+  @include styles.main-component-style;
   display: grid;
-  border-radius: var(--border-radius);
-  @include mat.elevation(5);
-  background-color: var(--table-color);
-  padding: var(--global-padding);
-  max-height: var(--max-height);
-  overflow-x: hidden;
-  overflow-y: auto;
 
   .mat-mdc-select-value-text {
     font-size: 14px;
@@ -35,12 +28,4 @@ $gap-small: 8px;
   max-width: fit-content;
   table-layout: auto;
   border-collapse: collapse;
-}
-
-::ng-deep .cdk-overlay-container div.mat-mdc-autocomplete-panel {
-  max-height: 265px;
-
-  &.user-selection-autocomplete {
-    max-height: 256px;
-  }
 }

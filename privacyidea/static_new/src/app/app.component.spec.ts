@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -23,6 +23,8 @@ import { TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
 
+import { MockNotificationService, MockSessionTimerService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { AppComponent } from "./app.component";
 import { appConfig } from "./app.config";
 import { routes } from "./app.routes";
@@ -30,8 +32,6 @@ import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
-import { MockAuthService } from "../testing/mock-services/mock-auth-service";
-import { MockNotificationService, MockSessionTimerService } from "../testing/mock-services";
 
 describe("AppComponent", () => {
   beforeEach(async () => {
@@ -52,8 +52,7 @@ describe("AppComponent", () => {
       ]
     }).compileComponents();
 
-    jest.spyOn(console, "warn").mockImplementation(() => {
-    });
+    jest.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   it("creates the app", () => {
@@ -61,7 +60,7 @@ describe("AppComponent", () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it("has title \"privacyidea-webui\"", () => {
+  it('has title "privacyidea-webui"', () => {
     const fixture = TestBed.createComponent(AppComponent);
     expect(fixture.componentInstance.title).toBe("privacyidea-webui");
   });
@@ -74,7 +73,7 @@ describe("AppComponent", () => {
 
     TestBed.createComponent(AppComponent).detectChanges();
 
-    expect(note.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
+    expect(note.warning).toHaveBeenCalledWith("User is already logged in.");
   });
 
   it("resets & restarts timer on user interaction", () => {

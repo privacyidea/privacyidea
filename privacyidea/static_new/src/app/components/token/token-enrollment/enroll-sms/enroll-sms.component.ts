@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -31,21 +31,15 @@ import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import {
-  SmsApiPayloadMapper,
-  SmsEnrollmentData
-} from "../../../../mappers/token-api-payload/sms-token-api-payload.mapper";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../../services/sms-gateway/sms-gateway.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { SMS_GATEWAY } from "../../../../constants/token.constants";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { SmsApiPayloadMapper, SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SMS_GATEWAY } from "@constants/token.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
@@ -127,7 +121,9 @@ export class EnrollSmsComponent implements OnInit {
   smsGatewayOptions = computed(() => {
     // Find the first right that starts with "sms_gateways="
     const right = this.authService.rights().find((r) => r.startsWith("sms_gateways="));
-    const defaultId = this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"];
+    const defaultId = this.systemService.systemConfigResource.hasValue()
+      ? this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"]
+      : undefined;
     let gateways: string[] = [];
 
     if (right) {
@@ -150,6 +146,7 @@ export class EnrollSmsComponent implements OnInit {
   });
 
   defaultSMSGatewayIsSet = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.[SMS_GATEWAY];
   });
@@ -159,19 +156,16 @@ export class EnrollSmsComponent implements OnInit {
   constructor() {
     effect(() => (this.disabled() ? this.smsForm.disable({ emitEvent: false }) : this._enableFormControls()));
     effect(() => {
+      if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[SMS_GATEWAY];
       if (id && this.smsGatewayControl.pristine) {
         this.smsGatewayControl.setValue(id);
       }
     });
-    effect(() => {
-      if (this.enrollmentData()) {
-        this._setInitialFormValues();
-      }
-    });
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       smsGateway: this.smsGatewayControl,
       phoneNumber: this.phoneNumberControl,
@@ -244,11 +238,11 @@ export class EnrollSmsComponent implements OnInit {
   }
 
   goToSmsConfig() {
-    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'sms' });
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "sms" });
   }
 
   onSmsConfigKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === "Enter" || event.key === " ") {
       this.goToSmsConfig();
     }
   }

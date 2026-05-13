@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,13 +18,10 @@
  **/
 
 import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
-import {
-  HostsMachineResolverData,
-  MachineResolverData
-} from "../../../services/machine-resolver/machine-resolver.service";
+import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { FormsModule } from "@angular/forms";
+import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 
 @Component({
   selector: "app-machine-resolver-hosts-tab",

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -118,7 +118,7 @@ export class AppComponent implements OnInit {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     }
 
     const _welcomeInit = inject(WelcomeDialogService);

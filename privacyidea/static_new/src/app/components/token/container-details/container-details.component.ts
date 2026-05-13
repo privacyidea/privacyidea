@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,66 +16,65 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+
+import { NgClass } from "@angular/common";
 import {
   Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  WritableSignal,
   computed,
   effect,
-  ElementRef,
   inject,
   linkedSignal,
-  OnDestroy,
-  signal,
-  ViewChild,
-  WritableSignal
+  signal
 } from "@angular/core";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
+import { MatIconButton } from "@angular/material/button";
+import { MatDivider } from "@angular/material/divider";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatListItem } from "@angular/material/list";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { MatFormField, MatSelectModule } from "@angular/material/select";
+import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
+import { ContainerDetailsActionsComponent } from "@components/token/container-details/container-details-actions/container-details-actions.component";
+import { ContainerDetailsInfoComponent } from "@components/token/container-details/container-details-info/container-details-info.component";
+import { ContainerDetailsTokenActionsComponent } from "@components/token/container-details/container-details-token-actions/container-details-token-actions.component";
+import { ContainerDetailsTokenTableComponent } from "@components/token/container-details/container-details-token-table/container-details-token-table.component";
+import { infoDetailsKeyMap } from "@components/token/token-details/token-details.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerDetailToken,
   ContainerService,
   ContainerServiceInterface
-} from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
-import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatDivider } from "@angular/material/divider";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
-import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { NgClass } from "@angular/common";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { Router, RouterLink } from "@angular/router";
-import { infoDetailsKeyMap } from "../token-details/token-details.component";
-import { MatTooltip } from "@angular/material/tooltip";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
   { key: "states", label: "Status" },
   { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" }
+  { key: "realms", label: "Realms" },
+  { key: "template", label: "Template" }
 ];
 
 const containerUserDetailsKeyMap = [
@@ -119,33 +118,28 @@ interface TokenOption {
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    MatPaginator,
     MatDivider,
-    MatCheckbox,
-    CopyButtonComponent,
-    ClearableInputComponent,
-    MatTooltip,
     ClearableInputComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,
-    RouterLink
+    DetailsHeaderComponent,
+    ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
-export class ContainerDetailsComponent implements OnDestroy {
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
-  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+export class ContainerDetailsComponent implements OnInit, OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  protected readonly notificationService = inject(NotificationService);
   private previousPageSize = 10;
   private router = inject(Router);
   states = this.containerService.states;
@@ -158,24 +152,24 @@ export class ContainerDetailsComponent implements OnDestroy {
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return new MatTableDataSource(tokenResource.result?.value.tokens);
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return new MatTableDataSource(tokenResourceValue.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
     }
   });
   total: WritableSignal<number> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return tokenResource.result?.value.count;
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return tokenResourceValue.count;
       }
       return previous?.value ?? 0;
     }
   });
-  containerDetailResource = this.containerService.containerDetailResource;
+  containerDetailResource = this.containerService.containerDetailsResource;
   containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResourceValue, previous) => {
@@ -313,6 +307,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       }
     });
     effect(() => {
+      if (!this.containerDetailResource.hasValue()) return;
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => {
@@ -433,8 +428,37 @@ export class ContainerDetailsComponent implements OnDestroy {
     });
   }
 
+  @ViewChild(ContainerDetailsInfoComponent) infoChild?: ContainerDetailsInfoComponent;
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.isAnyEditing());
+    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
+  }
+
+  async saveAllInlineEdits(): Promise<boolean> {
+    for (const row of this.containerDetailData()) {
+      if (row.isEditing()) {
+        this.saveContainerEdit(row);
+      }
+    }
+    if (this.isEditingUser()) {
+      this.saveUser();
+    }
+    if (this.isEditingInfo()) {
+      const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
+      if (infoElement) {
+        this.infoChild?.saveInfo(infoElement as any);
+      } else {
+        this.isEditingInfo.set(false);
+      }
+    }
+    return true;
+  }
+
   ngOnDestroy(): void {
     this.tokenService.pageSize.set(this.previousPageSize);
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   protected showContainerAuditLog() {

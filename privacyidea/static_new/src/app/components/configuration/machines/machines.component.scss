@@ -1,13 +1,10 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .machines-container {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
+  @include styles.main-component-style;
+  @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
 }
 
 .machines-layout {
@@ -18,8 +15,4 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-::ng-deep app-machine-details-dialog.mat-mdc-dialog-component-host mat-dialog-content.mat-mdc-dialog-content.mdc-dialog__content.machine-dialog-content {
-  max-height: 82vh;
 }

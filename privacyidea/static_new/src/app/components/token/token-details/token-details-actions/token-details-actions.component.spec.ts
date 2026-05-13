@@ -16,28 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { signal } from "@angular/core";
-import { of } from "rxjs";
-import { TokenDetailsActionsComponent } from "./token-details-actions.component";
-import { TokenService, TokenTypeKey } from "../../../../services/token/token.service";
-import { ValidateService } from "../../../../services/validate/validate.service";
-import { MachineService } from "../../../../services/machine/machine.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import {
-  MockLocalService,
-  MockMachineService,
-  MockNotificationService,
-  MockOverflowService,
-  MockTokenService,
-  MockValidateService
-} from "../../../../../testing/mock-services";
-import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
+import { MachineService } from "@services/machine/machine.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService, TokenTypeKey } from "@services/token/token.service";
+import { ValidateService } from "@services/validate/validate.service";
+import {
+    MockLocalService,
+    MockMachineService,
+    MockNotificationService,
+    MockTokenService,
+    MockValidateService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
+import { TokenDetailsActionsComponent } from "./token-details-actions.component";
 
 describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
@@ -66,7 +64,6 @@ describe("TokenDetailsActionsComponent", () => {
         { provide: ValidateService, useClass: MockValidateService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: MatDialog, useValue: matDialogMock },
         MockLocalService,
@@ -103,8 +100,8 @@ describe("TokenDetailsActionsComponent", () => {
 
   it("testPasskey notifies on success", () => {
     component.testPasskey();
-    expect(notifSvc.openSnackBar).toHaveBeenCalled();
-    const msg = (notifSvc.openSnackBar as jest.Mock).mock.calls[0][0] as string;
+    expect(notifSvc.success).toHaveBeenCalled();
+    const msg = (notifSvc.success as jest.Mock).mock.calls[0][0] as string;
     expect(msg).toMatch(/Test successful/i);
   });
 

@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 type Tokengroups = {
@@ -58,6 +58,12 @@ export class TokengroupService implements TokengroupServiceInterface {
 
   private readonly tokengroupBaseUrl = environment.proxyUrl + "/tokengroup/";
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.tokengroupResource.error(), "tokengroups");
+    });
+  }
+
   tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => {
     if (!this.contentService.onExternalTokenGroups()) {
       return undefined;
@@ -70,9 +76,9 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   tokengroups: WritableSignal<Tokengroup[]> = linkedSignal({
-    source: this.tokengroupResource.value,
-    computation: (source, previous) => {
-      const value = source?.result?.value;
+    source: () => (this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined),
+    computation: (tokengroupResource, previous) => {
+      const value = tokengroupResource?.result?.value;
       if (!value) {
         return previous?.value ?? [];
       }
@@ -85,33 +91,33 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   async postTokengroup(tokengroup: Tokengroup): Promise<void> {
-    const url = `${this.tokengroupBaseUrl}${tokengroup.groupname}`;
+    const url = `${this.tokengroupBaseUrl}${encodeURIComponent(tokengroup.groupname)}`;
     const request = this.http.post<PiResponse<any>>(url, tokengroup, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved tokengroup.`);
+        this.notificationService.success($localize`Successfully saved tokengroup.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to save tokengroup. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteTokengroup(groupname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${groupname}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${encodeURIComponent(groupname)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted tokengroup: ${groupname}.`);
+        this.notificationService.success($localize`Successfully deleted tokengroup: ${groupname}.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to delete tokengroup. ` + message);
         throw new Error("delete-failed");
       });
   }

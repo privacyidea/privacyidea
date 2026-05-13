@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
+import { MatDialog } from "@angular/material/dialog";
+import { MatTableDataSource } from "@angular/material/table";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerDetailToken, ContainerService } from "@services/container/container.service";
+import { TokenService } from "@services/token/token.service";
 import {
   MockContainerService,
   MockLocalService,
   MockNotificationService,
   MockTokenService
-} from "../../../../../testing/mock-services";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { MatDialog } from "@angular/material/dialog";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { MatTableDataSource } from "@angular/material/table";
-import { signal, WritableSignal } from "@angular/core";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
-import { provideHttpClient } from "@angular/common/http";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
 
 describe("ContainerDetailsTokenActionsComponent", () => {
   let component: ContainerDetailsTokenActionsComponent;
@@ -200,11 +200,11 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       hasBackdrop: true
     });
     expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+    expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 
   it("assignToAllToken early-returns when nothing to assign", () => {
-    mockContainerService.containerDetail.set({
+    mockContainerService.containerDetails.set({
       containers: [
         {
           serial: "CONT-1",
@@ -242,7 +242,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     ] as any;
     jest.spyOn(mockTokenService, "unassignUserFromAll");
     jest.spyOn(mockTokenService, "assignUserToAll");
-    jest.spyOn(mockContainerService.containerDetailResource, "reload");
+    jest.spyOn(mockContainerService.containerDetailsResource, "reload");
 
     component.assignToAllToken();
 
@@ -252,13 +252,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       username: "alice",
       realm: "realm1"
     });
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+    expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 
   it("toggleAll delegates to containerService.toggleAll and reloads", () => {
     component.toggleAll("activate");
     expect(mockContainerService.toggleAll).toHaveBeenCalledWith("activate");
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+    expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 
   it("removeAll opens confirm and removes when confirm=true", () => {
@@ -274,7 +274,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       hasBackdrop: true
     });
     expect(mockContainerService.removeAll).toHaveBeenCalledWith("CONT-1");
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+    expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 
   it("removeAll does nothing when confirm=false", () => {

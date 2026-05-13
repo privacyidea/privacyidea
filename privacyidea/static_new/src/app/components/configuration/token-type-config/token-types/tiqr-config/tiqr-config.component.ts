@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -30,18 +30,12 @@ import {
   TIQR_REG_SERVER,
   TIQR_SERVICE_DISPLAYNAME,
   TIQR_SERVICE_IDENTIFIER
-} from "../../../../../constants/token.constants";
+} from "@constants/token.constants";
 
 @Component({
   selector: "app-tiqr-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
   templateUrl: "./tiqr-config.component.html",
   styleUrl: "./tiqr-config.component.scss"
 })

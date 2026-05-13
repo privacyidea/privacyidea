@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,28 +16,32 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
-import { of } from "rxjs";
-
-import { ContainerDetailsComponent } from "./container-details.component";
-import { TokenDetailsComponent } from "../token-details/token-details.component";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ValidateService } from "../../../services/validate/validate.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute } from "@angular/router";
+import { ContainerDetailsComponent } from "@components/token/container-details/container-details.component";
+import { ContainerDetailsSelfServiceComponent } from "@components/token/container-details/container-details.self-service.component";
+import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
+import { AuditService } from "@services/audit/audit.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
+  MockAuditService,
   MockContainerService,
   MockNotificationService,
   MockTokenService,
   MockUserService
-} from "../../../../testing/mock-services";
-import { ContainerDetailsSelfServiceComponent } from "./container-details.self-service.component";
-import { ActivatedRoute } from "@angular/router";
+} from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { of } from "rxjs";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -50,6 +54,7 @@ describe("ContainerDetailsComponent", () => {
   let selfFixture: ComponentFixture<ContainerDetailsSelfServiceComponent>;
   let containerService: ContainerServiceInterface;
   let userService: UserServiceInterface;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -64,11 +69,13 @@ describe("ContainerDetailsComponent", () => {
             params: of({ id: "123" })
           }
         },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: UserService, useClass: MockUserService }
+        { provide: UserService, useClass: MockUserService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -96,6 +103,7 @@ describe("ContainerDetailsComponent", () => {
 
     containerService = TestBed.inject(ContainerService);
     userService = TestBed.inject(UserService);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.detectChanges();
   });
@@ -240,5 +248,116 @@ describe("ContainerDetailsComponent", () => {
     component.unassignUser();
 
     expect(containerService.unassignUser).toHaveBeenCalledWith("Mock serial", "bob", "realmUser");
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects editing state of inline fields", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.isEditingUser.set(true);
+      expect(fn()).toBe(true);
+      component.isEditingUser.set(false);
+
+      component.isEditingInfo.set(true);
+      expect(fn()).toBe(true);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
+
+    it("registers validChanges and save in ngOnInit", () => {
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
+      const editingRow = {
+        keyMap: { key: "description", label: "Description" },
+        value: "new",
+        isEditing: signal(true)
+      } as any;
+      const idleRow = {
+        keyMap: { key: "type", label: "Type" },
+        value: "generic",
+        isEditing: signal(false)
+      } as any;
+      (component as any).containerDetailData = () => [editingRow, idleRow];
+      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(true);
+      expect(saveSpy).toHaveBeenCalledTimes(1);
+      expect(saveSpy).toHaveBeenCalledWith(editingRow);
+    });
+
+    it("saveAllInlineEdits calls saveUser when isEditingUser", async () => {
+      (component as any).containerDetailData = () => [];
+      component.isEditingUser.set(true);
+      const userSaveSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+
+      await component.saveAllInlineEdits();
+
+      expect(userSaveSpy).toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
+      (component as any).containerDetailData = () => [];
+      const infoEl = {
+        keyMap: { key: "info", label: "Information" },
+        value: { foo: "bar" },
+        isEditing: signal(true)
+      } as any;
+      (component as any).infoData = () => [infoEl];
+      component.isEditingInfo.set(true);
+      const infoSaveSpy = jest.fn();
+      component.infoChild = { saveInfo: infoSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
+    });
+
+    it("validChanges always reports true so save button stays enabled", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(true);
+    });
+
+    it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
+      (component as any).containerDetailData = () => [];
+      (component as any).infoData = () => [];
+      component.isEditingUser.set(false);
+      component.isEditingInfo.set(false);
+      const editSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
+      const userSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+      component.infoChild = { saveInfo: jest.fn() } as any;
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(true);
+      expect(editSpy).not.toHaveBeenCalled();
+      expect(userSpy).not.toHaveBeenCalled();
+      expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
+      (component as any).containerDetailData = () => [];
+      (component as any).infoData = () => [];
+      component.isEditingInfo.set(true);
+      const infoSaveSpy = jest.fn();
+      component.infoChild = { saveInfo: infoSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(infoSaveSpy).not.toHaveBeenCalled();
+      expect(component.isEditingInfo()).toBe(false);
+    });
   });
 });

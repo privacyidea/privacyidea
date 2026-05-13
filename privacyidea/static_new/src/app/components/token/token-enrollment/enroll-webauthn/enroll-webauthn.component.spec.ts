@@ -17,25 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { provideHttpClient } from "@angular/common/http";
+import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideExperimentalZonelessChangeDetection } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { lastValueFrom, of, throwError } from "rxjs";
-import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnFinalizeApiPayloadMapper
-} from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { Base64Service } from "../../../../services/base64/base64.service";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { provideHttpClient } from "@angular/common/http";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
+} from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
+import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
+import { Base64Service } from "@services/base64/base64.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { lastValueFrom, of, throwError } from "rxjs";
 
 const makeEnrollInitResponse = () => ({
   detail: {
@@ -91,7 +88,7 @@ describe("EnrollWebauthnComponent", () => {
 
   beforeEach(async () => {
     tokenService = { enrollToken: jest.fn() } as any;
-    notification = { openSnackBar: jest.fn() } as any;
+    notification = { success: jest.fn(), error: jest.fn(), warning: jest.fn() } as any;
     base64 = {
       base64URLToBytes: jest.fn().mockReturnValue(new Uint8Array([1])),
       bytesToBase64: jest.fn().mockReturnValue("b64")
@@ -101,7 +98,7 @@ describe("EnrollWebauthnComponent", () => {
       imports: [EnrollWebauthnComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
-        provideExperimentalZonelessChangeDetection(),
+        provideZonelessChangeDetection(),
         { provide: TokenService, useValue: tokenService },
         { provide: NotificationService, useValue: notification },
         { provide: Base64Service, useValue: base64 },
@@ -145,7 +142,7 @@ describe("EnrollWebauthnComponent", () => {
     await detectChangesStable();
     const enrollemntData = component.enrollmentArgsGetter(BASIC);
     expect(enrollemntData).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
+    expect(notification.error).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
   });
 
   it("should notify when init response missing detail", async () => {
@@ -159,7 +156,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
+    expect(notification.error).toHaveBeenCalledWith(
       "Failed to initiate WebAuthn registration: Invalid server response or missing details."
     );
   });
@@ -177,7 +174,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
+    expect(notification.error).toHaveBeenCalledWith(
       "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
     );
   });
@@ -198,7 +195,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
+    expect(notification.warning).toHaveBeenCalledWith(
       "Invalid transaction ID or serial number in enrollment detail for finalization."
     );
   });
@@ -218,7 +215,7 @@ describe("EnrollWebauthnComponent", () => {
     );
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
+    expect(notification.error).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
   });
 
   it("should complete full happy path and return final response", async () => {
@@ -255,7 +252,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn finalization failed: finalize-fail");
+    expect(notification.error).toHaveBeenCalledWith("WebAuthn finalization failed: finalize-fail");
   });
 
   it("enrollmentArgsGetterChange should wrap enrollmentArgsGetter into an observable", async () => {

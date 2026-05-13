@@ -16,23 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserResolversComponent } from "./user-resolver.component";
-import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { MatDialog } from "@angular/material/dialog";
-import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
-import { ContentService } from "../../../services/content/content.service";
-import { MockContentService } from "../../../../testing/mock-services/mock-content-service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { Resolver, ResolverService } from "@services/resolver/resolver.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { of } from "rxjs";
+import { UserResolversComponent } from "./user-resolver.component";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -143,16 +144,7 @@ describe("UserSourcesComponent", () => {
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(dialog.open).toHaveBeenCalledWith(
-      expect.any(Function),
-      expect.objectContaining({
-        data: { resolver },
-        height: "auto",
-        maxHeight: "100vh",
-        maxWidth: "100vw",
-        width: "auto"
-      })
-    );
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
   });
 
   it("onDeleteResolver should delete after confirmation", () => {
@@ -163,7 +155,7 @@ describe("UserSourcesComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(resolverService.deleteResolver).toHaveBeenCalledWith("res1");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("deleted"));
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("deleted"));
   });
 
   it("onDeleteResolver should not delete if cancelled", () => {
@@ -185,7 +177,7 @@ describe("UserSourcesComponent", () => {
 
     component.onDeleteResolver(resolver);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Delete failed"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Delete failed"));
   });
 
   it("onDeleteResolver should show error message from response if delete fails", () => {
@@ -206,6 +198,6 @@ describe("UserSourcesComponent", () => {
 
     component.onDeleteResolver(resolver);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Server error message"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Server error message"));
   });
 });

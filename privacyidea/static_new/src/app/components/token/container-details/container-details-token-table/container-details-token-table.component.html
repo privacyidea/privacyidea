@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,8 +26,8 @@
       i18n>
       Tokens in Container
     </h3>
-    <div class="flex-row filter-paginator-container">
-      @if (dataSource.data.length > 1) {
+    <div class="flex-row filter-paginator-container ali-center">
+      @if (dataSource().data.length > 1) {
         <mat-form-field
           class="container-details-token-table-filter width-50"
           subscriptSizing="dynamic">
@@ -46,14 +46,18 @@
           </app-clearable-input>
         </mat-form-field>
       }
-      <mat-paginator
-        [hidePageSize]="true"
-        [pageSize]="pageSize" />
+
+      <div class="flex-row ali-center margin-left-auto">
+        <mat-paginator
+          [hidePageSize]="true"
+          [pageSize]="pageSize" />
+      </div>
     </div>
   </div>
-  <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
+
+  <div class="responsive-flex-row-1580">
     <table
-      [dataSource]="dataSource"
+      [dataSource]="dataSource()"
       aria-label="Token of Container Data Table"
       class="container-details-token-table"
       i18n-aria-label
@@ -81,53 +85,82 @@
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
-            <ng-container>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-                @switch (column.key) {
-                  @case ("serial") {
-                    @if (element.username === authService.username() || authService.role() === "admin") {
+            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              @switch (column.key) {
+                @case ("serial") {
+                  <div class="flex-row flex-nowrap ali-center">
+                    @if (
+                      element.status !== "missing" &&
+                      (element.token.username === authService.username() || authService.role() === "admin")
+                    ) {
                       <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        attr.aria-label="{{ column.label }} Link">
-                        {{ element[column.key] }}
+                        (click)="contentService.tokenSelected(element.token.serial)"
+                        attr.aria-label="{{ column.label }} Link"
+                        class="cursor-pointer">
+                        {{ element.token[column.key] }}
                       </a>
                     } @else {
-                      <span> {{ element[column.key] }} </span>
+                      <span> {{ element.token[column.key] }} </span>
                     }
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
-                  @case ("active") {
+                    @if (element.status !== "missing") {
+                      <app-copy-button [copyText]="element.token.serial"></app-copy-button>
+                    }
+                  </div>
+                }
+                @case ("active") {
+                  @if (element.status !== "missing") {
                     <span
-                      (click)="toggleActive(element)"
-                      [matTooltip]="tableUtilsService.getTooltipForColumn(column.key,element)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      (click)="toggleActive(element.token)"
+                      [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)">
+                      {{ tableUtilsService.getDisplayText(column.key, element.token) }}
                     </span>
                   }
-                  @case ("username") {
-                    <a
-                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      attr.aria-label="{{ column.label }} Link">
-                      {{ element[column.key] }}
-                    </a>
-                  }
-                  @default {
+                }
+                @case ("username") {
+                  <div class="flex-row ali-center">
+                    @if (element.status !== "missing") {
+                      @if (element.token[column.key]) {
+                        <a
+                          (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          attr.aria-label="{{ column.label }} Link"
+                          class="cursor-pointer">
+                          {{ element.token[column.key] }}
+                        </a>
+                      } @else if (containerService.containerDetails().containers[0]?.users?.length === 1) {
+                        <button
+                          mat-icon-button
+                          color="primary"
+                          (click)="assignUserToToken(element.token)"
+                          matTooltip="Assign Owner"
+                          i18n-matTooltip>
+                          <mat-icon>person_add</mat-icon>
+                        </button>
+                      }
+                    }
+                  </div>
+                }
+                @default {
+                  @if (element.status !== "missing") {
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
                         href="#">
-                        {{ element[column.key] }}
+                        {{ element.token[column.key] }}
                       </a>
                     } @else {
-                      <span> {{ element[column.key] }} </span>
+                      <span> {{ element.token[column.key] }} </span>
                     }
+                  } @else if (column.key === "tokentype") {
+                    <span> {{ element.token.tokentype }} </span>
                   }
                 }
-              </div>
-            </ng-container>
+              }
+            </div>
           </td>
         </ng-container>
       }
+
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
@@ -135,9 +168,7 @@
           i18n
           i18n-aria-label
           mat-header-cell>
-          <div class="flex just-center">
-            Actions
-          </div>
+          <div class="flex just-center">Actions</div>
         </th>
         <td
           *matCellDef="let element"
@@ -145,27 +176,30 @@
           i18n-aria-label
           mat-cell>
           <div class="flex-row just-center">
-            @if (authService.actionAllowed("container_remove_token")) {
-              <button
-                (click)="removeTokenFromContainer(containerSerial(), element.serial)"
-                i18n-matTooltip
-                mat-icon-button
-                matTooltip="Remove Token from Container">
-                <mat-icon> remove_circle_outline</mat-icon>
-              </button>
-            }
-            @if (authService.actionAllowed("delete")) {
-              <button
-                (click)="deleteTokenFromContainer(element.serial)"
-                i18n-matTooltip
-                mat-icon-button
-                matTooltip="Delete Token">
-                <mat-icon> delete</mat-icon>
-              </button>
+            @if (element.status !== "missing") {
+              @if (authService.actionAllowed("container_remove_token")) {
+                <button
+                  (click)="removeTokenFromContainer(containerSerial(), element.token.serial)"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Remove Token from Container">
+                  <mat-icon>remove_circle_outline</mat-icon>
+                </button>
+              }
+              @if (authService.actionAllowed("delete")) {
+                <button
+                  (click)="deleteTokenFromContainer(element.token.serial)"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Delete Token">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
             }
           </div>
         </td>
       </ng-container>
+
       <tr
         *matHeaderRowDef="displayedColumns"
         aria-label="Header Row"
@@ -173,6 +207,7 @@
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
+        [ngClass]="'comparison-status-' + row.status"
         aria-label="Data Row"
         i18n-aria-label
         mat-row></tr>

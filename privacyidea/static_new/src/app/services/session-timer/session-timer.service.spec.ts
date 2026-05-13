@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-import { SessionTimerService } from "./session-timer.service";
 import { Router } from "@angular/router";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { MockNotificationService } from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { SessionTimerService } from "./session-timer.service";
 
 describe("SessionTimerService", () => {
   let service: SessionTimerService;
@@ -32,7 +32,7 @@ describe("SessionTimerService", () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date("2025-01-01T00:00:00.000Z"));
+    jest.setSystemTime(Date.parse("2025-01-01T00:00:00.000Z"));
 
     router = { navigate: jest.fn() };
 
@@ -131,8 +131,9 @@ describe("SessionTimerService", () => {
     service.startTimer();
 
     jest.advanceTimersByTime(2000);
-    expect(notify.openSnackBar).toHaveBeenCalledWith(
-      "Your session has expired. You will be logged out and redirected to the login page.");
+    expect(notify.warning).toHaveBeenCalledWith(
+      "Your session has expired. You will be logged out and redirected to the login page."
+    );
     jest.advanceTimersByTime(1500);
     expect(authService.logout).toHaveBeenCalled();
     expect(clearIntervalSpy).toHaveBeenCalled();
@@ -164,12 +165,11 @@ describe("SessionTimerService", () => {
     expect(after3s).toBeGreaterThanOrEqual(6500);
   });
 
-
   it("shows a 30s warning when remainingTime enters the 30–31s window", async () => {
     authService.logoutTimeS.set(31);
     service.startTimer();
 
-    const snackSpy = jest.spyOn((service as any).notificationService, "openSnackBar");
+    const snackSpy = jest.spyOn((service as any).notificationService, "warning");
 
     const t = Date.now();
     (service as any).startTime.set(t);
@@ -180,7 +180,6 @@ describe("SessionTimerService", () => {
 
     expect(snackSpy).toHaveBeenCalledWith("Session will expire in 30 seconds.");
   });
-
 
   it("remainingTime counts down relative to startTime when timer restarted", () => {
     authService.logoutTimeS.set(5);

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,14 +19,14 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
-import { TokenService } from "../../../../services/token/token.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
-import { MockSystemService, MockTokenService } from "../../../../../testing/mock-services";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { SystemService } from "../../../../services/system/system.service";
-import { HOTP_HASHLIB, HOTP_OTP_LENGTH, TOTP_HASHLIB, TOTP_TIME_STEP } from "../../../../constants/token.constants";
+import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
+import { AuthService } from "@services/auth/auth.service";
+import { SystemService } from "@services/system/system.service";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
@@ -158,7 +158,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     expect(component.generateOnServerFormControl.disabled).toBe(true);
@@ -188,7 +188,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("force");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should be present
@@ -209,7 +209,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should be present
@@ -230,7 +230,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // Set OTP Key
@@ -259,7 +259,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("disabled");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should NOT be present

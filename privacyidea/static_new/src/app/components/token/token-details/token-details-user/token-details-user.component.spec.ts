@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,32 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenDetailsUserComponent } from "./token-details-user.component";
-import { Tokens, TokenService } from "../../../../services/token/token.service";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { UserService } from "../../../../services/user/user.service";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { Tokens, TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import {
   MockLocalService,
   MockNotificationService,
-  MockOverflowService,
   MockPiResponse,
   MockRealmService,
   MockTokenService,
   MockUserService
-} from "../../../../../testing/mock-services";
-import { RealmService } from "../../../../services/realm/realm.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { TokenTypeOption } from "../../token.component";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
-function makeTokenDetailResponse(tokentype: TokenTypeOption): MockPiResponse<Tokens> {
+function makeTokenDetailResponse(tokentype: any): MockPiResponse<Tokens> {
   return {
     id: 0,
     jsonrpc: "2.0",
@@ -110,7 +107,6 @@ describe("TokenDetailsUserComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         MockLocalService,
         MockNotificationService

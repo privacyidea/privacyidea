@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,9 +19,9 @@
 import { TestBed } from "@angular/core/testing";
 
 import { ThemeMode, ThemeService } from "./theme.service";
-import { DOCUMENT } from "@angular/common";
-import { Renderer2, RendererFactory2 } from "@angular/core";
-import { APP_THEME_STORAGE_KEY } from "../../core/constants";
+
+import { DOCUMENT, Renderer2, RendererFactory2 } from "@angular/core";
+import { APP_THEME_STORAGE_KEY } from "@core/constants";
 
 class DomRendererFactory implements RendererFactory2 {
   createRenderer(_: any, __: any): Renderer2 {
@@ -165,10 +165,7 @@ describe("ThemeService", () => {
     service.setTheme("system");
     service.setTheme("dark");
 
-    expect((mql as any).removeEventListener).toHaveBeenCalledWith(
-      "change",
-      expect.any(Function)
-    );
+    expect((mql as any).removeEventListener).toHaveBeenCalledWith("change", expect.any(Function));
   });
 
   it("always writes the theme to localStorage", () => {

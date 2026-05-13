@@ -17,26 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
-import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "../../../../../constants/token.constants";
+import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "@constants/token.constants";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 @Component({
   selector: "app-remote-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatCheckboxModule
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
   templateUrl: "./remote-config.component.html",
   styleUrl: "./remote-config.component.scss"
 })

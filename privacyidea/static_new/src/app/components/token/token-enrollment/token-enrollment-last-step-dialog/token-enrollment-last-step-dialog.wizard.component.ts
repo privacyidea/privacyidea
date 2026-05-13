@@ -19,29 +19,26 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
 import { MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
-import { map } from "rxjs";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
-import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
-import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
-import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { Router, RouterLink } from "@angular/router";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { StringUtils } from "../../../../utils/string.utils";
-import { environment } from "../../../../../environments/environment";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
-import { DialogAction } from "../../../../models/dialog";
-import { MatButtonModule } from "@angular/material/button";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
+import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
+import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
+import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
+import { environment } from "@env/environment";
+import { DialogAction } from "@models/dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { StringUtils } from "@utils/string.utils";
+import { map } from "rxjs";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
@@ -74,7 +71,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
       type: "auxiliary",
       label: "Logout",
       value: "logout",
-      primary: true,
+      primary: true
     });
     return actions;
   });

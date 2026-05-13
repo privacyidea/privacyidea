@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
@@ -25,21 +25,23 @@ import {
   MachineResolverData,
   MachineResolverService,
   MachineResolverServiceInterface
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { CommonModule } from "@angular/common";
+} from "@services/machine-resolver/machine-resolver.service";
+
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
-import { deepCopy } from "../../../utils/deep-copy.utils";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
+import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 import { lastValueFrom } from "rxjs";
 
 @Component({
@@ -47,7 +49,6 @@ import { lastValueFrom } from "rxjs";
   templateUrl: "./machine-resolver-panel-edit.component.html",
   styleUrls: ["./machine-resolver-panel-edit.component.scss"],
   imports: [
-    CommonModule,
     MatExpansionModule,
     MatIconModule,
     MatInputModule,
@@ -66,6 +67,17 @@ export class MachineResolverPanelEditComponent {
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly pendingChangesService = inject(PendingChangesService);
+
+  constructor() {
+    effect(() => {
+      if (this.isEditMode() && this.isEdited()) {
+        this.pendingChangesService.registerHasChanges(() => this.isEditMode() && this.isEdited());
+        this.pendingChangesService.registerValidChanges(() => this.canSaveMachineResolver());
+        this.pendingChangesService.registerSave(() => this.saveMachineResolver());
+      }
+    });
+  }
 
   readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
   readonly machineResolvers = this.machineResolverService.machineResolvers();
@@ -82,7 +94,9 @@ export class MachineResolverPanelEditComponent {
   readonly isEdited = computed(
     () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
   );
-  readonly expanded = computed(() => this.contentService.machineResolver() === this.originalMachineResolver().resolvername);
+  readonly expanded = computed(
+    () => this.contentService.machineResolver() === this.originalMachineResolver().resolvername
+  );
   readonly canSaveMachineResolver = computed(() => {
     const current = this.currentMachineResolver();
     if (!current.resolvername.trim()) return false;
@@ -128,7 +142,7 @@ export class MachineResolverPanelEditComponent {
     });
   }
 
-  async saveMachineResolver() {
+  async saveMachineResolver(): Promise<boolean> {
     const current = this.currentMachineResolver();
     try {
       await this.machineResolverService.postTestMachineResolver(current);
@@ -148,17 +162,18 @@ export class MachineResolverPanelEditComponent {
             })
             .afterClosed()
         );
-        if (!result) return;
+        if (!result) return false;
       } else {
-        return;
+        return false;
       }
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
     } catch (error) {
-      return;
+      return false;
     }
     this.isEditMode.set(false);
+    return true;
   }
 
   async deleteMachineResolver() {
@@ -198,18 +213,20 @@ export class MachineResolverPanelEditComponent {
 
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
-          title: "Discard changes",
-          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
-          itemType: "machine resolver",
-          confirmAction: { label: "Discard", value: true, type: "destruct" }
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveMachineResolver(),
+          saveExitDisabled: !this.canSaveMachineResolver()
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result === "save-exit") {
+            if (!this.canSaveMachineResolver()) return;
+            this.saveMachineResolver();
+          } else if (result === "discard") {
             this.isEditMode.set(false);
           }
         },
@@ -230,18 +247,28 @@ export class MachineResolverPanelEditComponent {
     }
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
-          title: "Discard changes",
-          items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
-          itemType: "machine resolver",
-          confirmAction: { label: "Discard", value: true, type: "destruct" }
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveMachineResolver(),
+          saveExitDisabled: !this.canSaveMachineResolver()
         }
       })
       .afterClosed()
       .subscribe({
-        next: (result) => {
-          if (result) {
+        next: async (result) => {
+          if (result === "save-exit") {
+            if (!this.canSaveMachineResolver()) {
+              $panel.open();
+              return;
+            }
+            const saved = await this.saveMachineResolver();
+            if (saved) {
+              $panel.close();
+            } else {
+              $panel.open();
+            }
+          } else if (result === "discard") {
             this.isEditMode.set(false);
             $panel.close();
           } else {

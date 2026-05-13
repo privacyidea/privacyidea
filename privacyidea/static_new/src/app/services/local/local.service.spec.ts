@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,10 +18,10 @@
  **/
 import { TestBed } from "@angular/core/testing";
 
-import { LocalService } from "./local.service";
-import { AppComponent } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { AppComponent } from "@app/app.component";
+import { LocalService } from "./local.service";
 
 describe("LocalService", () => {
   let localService: LocalService;

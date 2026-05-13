@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal } from "@angular/core";
 import { HttpClient, httpResource } from "@angular/common/http";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
+import { effect, inject, Injectable, signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { catchError, Observable, throwError } from "rxjs";
-import { NotificationService } from "../notification/notification.service";
 
 export interface Subscription {
   application: string;
@@ -59,12 +59,18 @@ export class SubscriptionService {
   private notificationService = inject(NotificationService);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
-  
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.subscriptionsResource.error(), "subscriptions");
+    });
+  }
+
   private reloadTrigger = signal(0);
 
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {
     this.reloadTrigger();
-    if (!this.contentService.onConfigurationSubscription()) {
+    if (!this.contentService.onSubscription()) {
       return undefined;
     }
     return {
@@ -75,19 +81,21 @@ export class SubscriptionService {
   });
 
   reload(): void {
-    this.reloadTrigger.update(v => v + 1);
+    this.reloadTrigger.update((v) => v + 1);
   }
 
   deleteSubscription(application: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    return this.http.delete<PiResponse<boolean>>(`${this.baseUrl}/${application}`, { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to delete subscription.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete subscription. " + message);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .delete<PiResponse<boolean>>(`${this.baseUrl}/${encodeURIComponent(application)}`, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete subscription.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to delete subscription. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   uploadSubscriptionFile(file: File): Observable<PiResponse<any>> {
@@ -99,7 +107,7 @@ export class SubscriptionService {
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to upload subscription file. " + message);
+        this.notificationService.error("Failed to upload subscription file. " + message);
         return throwError(() => error);
       })
     );

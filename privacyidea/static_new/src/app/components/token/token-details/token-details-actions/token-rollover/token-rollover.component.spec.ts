@@ -18,17 +18,17 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { FormControl, Validators } from "@angular/forms";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-import { TokenRolloverComponent } from "./token-rollover.component";
-import { MockDialogService, MockNotificationService, MockTokenService } from "../../../../../../testing/mock-services";
-import { TokenService } from "../../../../../services/token/token.service";
-import { NotificationService } from "../../../../../services/notification/notification.service";
-import { DialogService } from "../../../../../services/dialog/dialog.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockDialogService, MockNotificationService, MockTokenService } from "@testing/mock-services";
 import { of } from "rxjs";
+import { TokenRolloverComponent } from "./token-rollover.component";
 
 describe("TokenRolloverComponent", () => {
   let component: TokenRolloverComponent;
@@ -98,14 +98,14 @@ describe("TokenRolloverComponent", () => {
   it("should show snackbar if no token is set", async () => {
     component.token.set(null);
     await component.rolloverToken();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No token selected for rollover.");
+    expect(notificationService.warning).toHaveBeenCalledWith("No token selected for rollover.");
   });
 
   it("should show snackbar if enrollmentArgsGetter is missing", async () => {
     component.token.set({ type: "hotp", serial: "ABC123" });
     component.enrollmentArgsGetter = undefined;
     await component.rolloverToken();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.warning).toHaveBeenCalledWith(
       "Rollover action is not available for the selected token type."
     );
   });

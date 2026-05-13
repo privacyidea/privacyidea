@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,35 +17,41 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-export type RadiusServerConfigurations = {
-  [key: string]: any;
-};
-
-export interface RadiusServerConfiguration {
-  name: string;
-  description: string;
-  dictionary: string;
-  port: number;
-  retries: number;
+export interface RadiusServer {
+  identifier: string;
   server: string;
+  port: number;
   timeout: number;
+  retries: number;
+  secret: string;
+  dictionary?: string;
+  description?: string;
+  options?: {
+    message_authenticator?: boolean;
+  };
 }
 
+export type RadiusServers = {
+  [key: string]: RadiusServer;
+};
+
 export interface RadiusServerServiceInterface {
-  radiusServerConfigurationResource: HttpResourceRef<PiResponse<RadiusServerConfigurations> | undefined>;
-  radiusServerConfigurations: WritableSignal<RadiusServerConfiguration[]>;
+  radiusServerResource: HttpResourceRef<PiResponse<RadiusServers> | undefined>;
+  readonly radiusServers: Signal<RadiusServer[]>;
 
-  postRadiusServer(server: any): Promise<void>;
+  postRadiusServer(server: RadiusServer): Promise<void>;
 
-  deleteRadiusServer(name: string): Promise<void>;
+  testRadiusServer(params: any): Promise<boolean>;
+
+  deleteRadiusServer(identifier: string): Promise<void>;
 }
 
 @Injectable({
@@ -58,8 +64,13 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly radiusServerBaseUrl = environment.proxyUrl + "/radiusserver/";
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.radiusServerResource.error(), "RADIUS servers");
+    });
+  }
 
-  radiusServerConfigurationResource = httpResource<PiResponse<RadiusServerConfigurations>>(() => {
+  radiusServerResource = httpResource<PiResponse<RadiusServers>>(() => {
     if (!this.contentService.onExternalRadius()) {
       return undefined;
     }
@@ -70,42 +81,62 @@ export class RadiusServerService implements RadiusServerServiceInterface {
     };
   });
 
-  radiusServerConfigurations: WritableSignal<RadiusServerConfiguration[]> = linkedSignal({
-    source: this.radiusServerConfigurationResource.value,
+  radiusServers: WritableSignal<RadiusServer[]> = linkedSignal({
+    source: () => (this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined),
     computation: (source, previous) =>
-      Object.entries(source?.result?.value ?? {}).map(([name, properties]) => ({ name, ...properties })) ??
+      Object.entries(source?.result?.value ?? {}).map(([identifier, server]) => ({ ...server, identifier })) ??
       previous?.value ??
       []
   });
 
-  async postRadiusServer(server: any): Promise<void> {
-    const url = `${this.radiusServerBaseUrl}${server.identifier || server.name}`;
+  async postRadiusServer(server: RadiusServer): Promise<void> {
+    const url = `${this.radiusServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved RADIUS server.`);
-        this.radiusServerConfigurationResource.reload();
+        this.notificationService.success($localize`Successfully saved RADIUS server.`);
+        this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to save RADIUS server. ` + message);
         throw new Error("post-failed");
       });
   }
 
-  async deleteRadiusServer(name: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${name}`, {
+  async testRadiusServer(params: any): Promise<boolean> {
+    const url = `${this.radiusServerBaseUrl}test_request`;
+    const request = this.http.post<PiResponse<boolean>>(url, params, { headers: this.authService.getHeaders() });
+    return lastValueFrom(request)
+      .then((res) => {
+        if (res?.result?.value) {
+          this.notificationService.success($localize`RADIUS request successful.`);
+          return true;
+        } else {
+          this.notificationService.error($localize`RADIUS request failed!`);
+          return false;
+        }
+      })
+      .catch((error) => {
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
+        return false;
+      });
+  }
+
+  async deleteRadiusServer(identifier: string): Promise<void> {
+    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted RADIUS server: ${name}.`);
-        this.radiusServerConfigurationResource.reload();
+        this.notificationService.success($localize`Successfully deleted RADIUS server: ${identifier}.`);
+        this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to delete RADIUS server. ` + message);
         throw new Error("delete-failed");
       });
   }

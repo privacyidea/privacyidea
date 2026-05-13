@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,27 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenImportComponent } from "./token-import.component";
-import {
-  MockNotificationService,
-  MockRealmService,
-  MockTokenService,
-  MockUserService
-} from "../../../../testing/mock-services";
-import { TokenService } from "../../../services/token/token.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { UserService } from "../../../services/user/user.service";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import {
+    MockNotificationService,
+    MockRealmService,
+    MockTokenService,
+    MockUserService
+} from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { of } from "rxjs";
+import { TokenImportComponent } from "./token-import.component";
 
 describe("TokenImportComponent", () => {
   let component: TokenImportComponent;
   let fixture: ComponentFixture<TokenImportComponent>;
   let tokenService: MockTokenService;
   let notificationService: MockNotificationService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -75,7 +78,8 @@ describe("TokenImportComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: UserService, useClass: MockUserService }
+        { provide: UserService, useClass: MockUserService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -83,6 +87,7 @@ describe("TokenImportComponent", () => {
     component = fixture.componentInstance;
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();
   });
 
@@ -118,7 +123,7 @@ describe("TokenImportComponent", () => {
     );
     component.importTokens();
     expect(tokenService.importTokens).toHaveBeenCalled();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("2/3 tokens imported successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("2/3 tokens imported successfully.");
   });
 
   it("should not call importTokens if form is invalid", () => {
@@ -210,5 +215,32 @@ describe("TokenImportComponent", () => {
     expect(formDataArg.get("pskcValidateMAC")).toBe("check_fail_hard");
     expect(formDataArg.has("psk")).toBe(false);
     expect(formDataArg.has("password")).toBe(false);
+  });
+
+  it("should register hasChanges based on relevant signals in ngOnInit", () => {
+    expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+    expect(fn()).toBe(false);
+
+    component.fileName.set("token.csv");
+    expect(fn()).toBe(true);
+    component.fileName.set("");
+
+    component.pskPassword.set("secret");
+    expect(fn()).toBe(true);
+    component.pskPassword.set("");
+
+    component.fileType.set("pskc");
+    expect(fn()).toBe(true);
+    component.fileType.set("OATH CSV");
+
+    component.pskValidation.set("check_fail_soft");
+    expect(fn()).toBe(true);
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

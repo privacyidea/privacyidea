@@ -17,28 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { RADIUS_SERVER } from "../../../../../constants/token.constants";
+import { RADIUS_SERVER } from "@constants/token.constants";
 
 @Component({
   selector: "app-radius-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    RouterLink,
-    ClearButtonComponent
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./radius-config.component.html",
   styleUrl: "./radius-config.component.scss"
 })

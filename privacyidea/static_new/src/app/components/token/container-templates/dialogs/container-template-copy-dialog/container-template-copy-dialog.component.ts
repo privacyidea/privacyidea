@@ -17,35 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, computed, linkedSignal, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
+
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "src/app/models/dialog";
-import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import {
-  ContainerTemplateServiceInterface,
-  ContainerTemplateService
-} from "../../../../../services/container-template/container-template.service";
-import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 
 @Component({
   selector: "app-container-template-copy-dialog",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatInputModule,
-    MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
-    DialogWrapperComponent
-  ],
+  imports: [FormsModule, MatInputModule, MatButtonModule, MatCardModule, MatFormFieldModule, DialogWrapperComponent],
   templateUrl: "./container-template-copy-dialog.component.html",
   styleUrl: "./container-template-copy-dialog.component.scss"
 })
@@ -68,6 +60,8 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   });
 
   // --- Computed & Matchers ---
+  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
+
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`Copy Template`,
@@ -80,7 +74,7 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   readonly canSave = computed(() => {
     const newName = this.template().name.trim();
     const originalName = this.data;
-    return newName.length > 0 && !this.nameConflict() && newName !== originalName;
+    return newName.length > 0 && !this.nameConflict() && !this.nameInvalidPattern() && newName !== originalName;
   });
 
   readonly isDirty = computed(() => {
@@ -93,7 +87,8 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   });
 
   readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
+    isErrorState: () =>
+      this.nameConflict() || (this.isNameDirty() && this.template().name.length > 0 && this.nameInvalidPattern())
   };
 
   // --- Methods ---

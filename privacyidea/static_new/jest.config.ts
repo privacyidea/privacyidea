@@ -47,7 +47,7 @@ const config: Config = {
   coverageReporters: [
     //   "json",
     "text",
-    //   "lcov",
+    "lcov",
     //   "clover"
     "html"
   ],
@@ -100,9 +100,19 @@ const config: Config = {
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   moduleNameMapper: {
-    "^src/(.*)$": "<rootDir>/src/$1",
-    "^@styles/(.*)$": "<rootDir>/src/app/styles/$1",
-    "^@components/(.*)$": "<rootDir>/src/app/components/$1"
+    // 1. Specific aliases (order here is usually irrelevant since they don't overlap)
+    "^@styles/(.*)$": "<rootDir>/src/styles/$1",
+    "^@components/(.*)$": "<rootDir>/src/app/components/$1",
+    "^@env/(.*)$": "<rootDir>/src/environments/$1",
+    "^@testing/(.*)$": "<rootDir>/src/testing/$1",
+    "^@services/(.*)$": "<rootDir>/src/app/services/$1",
+    "^@utils/(.*)$": "<rootDir>/src/app/utils/$1",
+    "^@constants/(.*)$": "<rootDir>/src/app/constants/$1",
+    "^@models/(.*)$": "<rootDir>/src/app/models/$1",
+    "^@core/(.*)$": "<rootDir>/src/app/core/$1",
+
+    // 2. The catch-all alias for the rest of app (MUST come after the specific @-paths)
+    "^@app/(.*)$": "<rootDir>/src/app/$1"
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -159,7 +169,7 @@ const config: Config = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  testEnvironment: "jsdom"
+  testEnvironment: "jsdom",
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
@@ -197,6 +207,8 @@ const config: Config = {
   //   "/node_modules/",
   //   "\\.pnp\\.[^\\/]+$"
   // ],
+  // uuid v14 dropped its CommonJS build and is now ESM-only, so it must be transformed by Jest
+  transformIgnorePatterns: ["node_modules/(?!(.*\\.mjs$|@angular/common/locales/.*\\.js$|uuid))"],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

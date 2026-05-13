@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,17 +26,13 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
-import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-token-details-user-self-service",
@@ -67,8 +63,7 @@ export class TokenDetailsUserSelfServiceComponent extends TokenDetailsUserCompon
   protected override realmService: RealmServiceInterface = inject(RealmService);
   protected override userService: UserServiceInterface = inject(UserService);
   protected override notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected override overflowService: OverflowServiceInterface = inject(OverflowService);
-  protected  override authService: AuthServiceInterface = inject(AuthService);
+  protected override authService: AuthServiceInterface = inject(AuthService);
 
   constructor() {
     super();

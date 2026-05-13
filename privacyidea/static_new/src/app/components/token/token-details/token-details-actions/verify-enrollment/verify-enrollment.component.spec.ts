@@ -18,13 +18,13 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { VerifyEnrollmentComponent } from "./verify-enrollment.component";
-import { MockTokenService } from "src/testing/mock-services/mock-token-service";
-import { NotificationService } from "../../../../../services/notification/notification.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
-import { MockNotificationService } from "../../../../../../testing/mock-services";
-import { TokenService } from "../../../../../services/token/token.service";
+import { VerifyEnrollmentComponent } from "./verify-enrollment.component";
 
 describe("VerifyEnrollmentComponent", () => {
   let component: VerifyEnrollmentComponent;
@@ -61,15 +61,17 @@ describe("VerifyEnrollmentComponent", () => {
       verify: "123456"
     });
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Token verified successfully!"));
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Token verified successfully!"));
   });
 
-  it("should not call openSnackBar if rollout_state is not enrolled", () => {
-    jest.spyOn(tokenService, "verifyToken").mockReturnValue(of({
-      detail: { serial: "ABC123", rollout_state: "pending" },
-      result: { status: true }
-    }));
-    const snackSpy = jest.spyOn(notificationService, "openSnackBar");
+  it("should not call success if rollout_state is not enrolled", () => {
+    jest.spyOn(tokenService, "verifyToken").mockReturnValue(
+      of({
+        detail: { serial: "ABC123", rollout_state: "pending" },
+        result: { status: true }
+      })
+    );
+    const snackSpy = jest.spyOn(notificationService, "success");
     component.otpControl.setValue("654321");
     component.verifyOTP();
     expect(snackSpy).not.toHaveBeenCalled();

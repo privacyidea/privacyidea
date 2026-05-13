@@ -18,21 +18,21 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { UserTableComponent } from "./user-table.component";
 import { provideHttpClient } from "@angular/common/http";
-import { ActivatedRoute } from "@angular/router";
-import { of } from "rxjs";
-import { UserService } from "../../../services/user/user.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { ContentService } from "../../../services/content/content.service";
-import {
-  MockUserService,
-  MockTableUtilsService,
-  MockContentService,
-  MockLocalService,
-  MockNotificationService
-} from "../../../../testing/mock-services";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute } from "@angular/router";
+import { ContentService } from "@services/content/content.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { UserService } from "@services/user/user.service";
+import {
+    MockContentService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService,
+    MockUserService
+} from "@testing/mock-services";
+import { of } from "rxjs";
+import { UserTableComponent } from "./user-table.component";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;

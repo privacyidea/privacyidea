@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,16 +18,16 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
-import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef } from "@angular/material/dialog";
-import { DomSanitizer } from "@angular/platform-browser";
-import { catchError, map, of } from "rxjs";
+import { Component, computed, inject, SecurityContext } from "@angular/core";
 import { MatButton } from "@angular/material/button";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
+import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
+import { DomSanitizer } from "@angular/platform-browser";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { StringUtils } from "@utils/string.utils";
+import { catchError, map, of } from "rxjs";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { StringUtils } from "../../../../utils/string.utils";
-import { environment } from "../../../../../environments/environment";
 
 @Component({
   selector: "app-container-created-wizard-dialog",
@@ -37,15 +37,20 @@ import { environment } from "../../../../../environments/environment";
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected override readonly dialogRef: MatDialogRef<ContainerCreatedDialogWizardComponent> = inject(MatDialogRef);
   public readonly authService: AuthServiceInterface = inject(AuthService);
-  tagData: Signal<Record<string, string>> = computed(() => ({
-    containerSerial: this.data().containerSerial(),
-    containerRegistrationURL: this.data().response.result?.value?.container_url?.value || "",
-    containerRegistrationQR: this.data().response.result?.value?.container_url?.img || ""
-  }));
+  tagData = computed<Record<string, string>>(() => {
+    const data = this.data();
+    if (!data) {
+      const record = {};
+      return record;
+    }
+    return {
+      containerSerial: data.containerSerial(),
+      containerRegistrationURL: data.response.result?.value?.container_url?.value || "",
+      containerRegistrationQR: data.response.result?.value?.container_url?.img || ""
+    };
+  });
 
-  // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
 
   readonly postTopHtml$ = this.http
@@ -66,9 +71,8 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     })
     .pipe(
       catchError(() => of("")),
-      map((raw) => this.sanitizer.sanitize(SecurityContext.HTML,
-        StringUtils.replaceWithTags(raw, this.tagData()))
-      ));
+      map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData())))
+    );
 
   constructor(
     private http: HttpClient,

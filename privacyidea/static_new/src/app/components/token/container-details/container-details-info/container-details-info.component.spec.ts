@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,23 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal, WritableSignal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
-import { ContainerDetailsInfoComponent, ContainerInfoDetail } from "./container-details-info.component";
-import { ContainerService } from "../../../../services/container/container.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import {
-  MockContainerService,
-  MockLocalService,
-  MockNotificationService,
-  MockOverflowService
-} from "../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { MockContainerService, MockLocalService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { ContainerDetailsInfoComponent, ContainerInfoDetail } from "./container-details-info.component";
 
 describe("ContainerDetailsInfoComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsInfoComponent>;
@@ -60,7 +54,6 @@ describe("ContainerDetailsInfoComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         MockLocalService,
         MockNotificationService
@@ -107,7 +100,7 @@ describe("ContainerDetailsInfoComponent", () => {
     expect(containerSvc.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1", b: "2" });
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(containerSvc.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("saveInfo without new pair still calls setContainerInfos and reloads", () => {
@@ -122,7 +115,7 @@ describe("ContainerDetailsInfoComponent", () => {
     expect(el.value).toEqual({ a: "1" });
     expect(containerSvc.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(containerSvc.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("deleteInfo calls service, marks info section as editing, and reloads", () => {
@@ -132,6 +125,6 @@ describe("ContainerDetailsInfoComponent", () => {
 
     expect(containerSvc.deleteInfo).toHaveBeenCalledWith("CONT-7", "a");
     expect(component.isEditingInfo()).toBe(true);
-    expect(containerSvc.containerDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 });

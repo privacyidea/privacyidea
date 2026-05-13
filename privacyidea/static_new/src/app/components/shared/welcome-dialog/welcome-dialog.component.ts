@@ -18,15 +18,15 @@
  **/
 import { Component, inject, signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
-import { CommonModule } from "@angular/common";
+
 import { MatDialogRef } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { AuthService } from "../../../services/auth/auth.service";
+import { AuthService } from "@services/auth/auth.service";
 
 @Component({
   selector: "app-welcome-dialog",
   standalone: true,
-  imports: [CommonModule, MatButton, MatIcon],
+  imports: [MatButton, MatIcon],
   templateUrl: "./welcome-dialog.component.html",
   styleUrl: "./welcome-dialog.component.scss"
 })

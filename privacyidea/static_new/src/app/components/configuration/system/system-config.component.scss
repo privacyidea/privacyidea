@@ -1,15 +1,18 @@
-@use "../../../../styles" as styles;
+@use "styles";
+@use "table";
 
 .system-config-container {
-  @include styles.table-container-styles;
-  max-width: 100%;
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
   display: grid;
+  min-width: 616px;
 }
 
 .system-config-scroll-container {
-  @include styles.base-table-structure(".system-config-form", ".system-config-filter", ".system-config-scroll-container");
+  @include table.base-table-structure(
+    ".system-config-form",
+    ".system-config-filter",
+    ".system-config-scroll-container"
+  );
 }
 
 .well {
@@ -63,7 +66,7 @@
 
 .save-buttons {
   display: flex;
-  align-items: center;
-  margin: 12px 16px 16px auto;
+  width: 100%;
+  margin: 12px 0 16px 0;
   gap: 16px;
 }

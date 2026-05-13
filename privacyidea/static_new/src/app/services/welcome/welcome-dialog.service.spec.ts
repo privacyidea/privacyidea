@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { WelcomeDialogService } from "./welcome-dialog.service";
-import { MatDialog } from "@angular/material/dialog";
-import { AuthService } from "../auth/auth.service";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
+import { WelcomeDialogService } from "./welcome-dialog.service";
 
 describe("WelcomeDialogService", () => {
   let dialogMock: { open: jest.Mock };
@@ -48,7 +48,7 @@ describe("WelcomeDialogService", () => {
     (authMock.hideWelcome as any).set(false);
     (authMock.subscriptionStatus as any).set(2);
     const service = TestBed.inject(WelcomeDialogService);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(service.opened()).toBe(true);
   });
@@ -58,7 +58,7 @@ describe("WelcomeDialogService", () => {
     (authMock.hideWelcome as any).set(true);
     (authMock.subscriptionStatus as any).set(3);
     const service = TestBed.inject(WelcomeDialogService);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(service.opened()).toBe(false);
   });
@@ -66,7 +66,7 @@ describe("WelcomeDialogService", () => {
   it("does NOT open when not authenticated", () => {
     (authMock.isAuthenticated as any).set(false);
     const service = TestBed.inject(WelcomeDialogService);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(service.opened()).toBe(false);
   });

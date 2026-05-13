@@ -16,31 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenTableComponent } from "./token-table.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
-import {
-  MockContainerService,
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse,
-  MockTableUtilsService,
-  MockTokenService
-} from "../../../../testing/mock-services";
-import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
-import { TokenService } from "../../../services/token/token.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { ContentService } from "../../../services/content/content.service";
-import { AuthService, JwtData } from "../../../services/auth/auth.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { AuthService, JwtData } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import {
+    MockContainerService,
+    MockContentService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService,
+    MockTokenService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
+import { TokenTableComponent } from "./token-table.component";
+import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -122,13 +121,11 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
     const tokens = [{ serial: "T-1" } as any, { serial: "T-2" } as any];
-    tokenService.tokenResource.set(
-      MockPiResponse.fromValue({
-        tokens,
-        count: 2,
-        current: 1
-      })
-    );
+    tokenService.tokenResourceValue.set({
+      tokens,
+      count: 2,
+      current: 1
+    });
     tableFixture.detectChanges();
 
     expect(table.isAllSelected()).toBe(false);
@@ -252,7 +249,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(initial.length).toBe(table.pageSize());
 
     const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as any;
-    tokenService.tokenResource.set(MockPiResponse.fromValue({ tokens, count: 2, current: 1 }));
+    tokenService.tokenResourceValue.set({ tokens, count: 2, current: 1 });
     tableFixture.detectChanges();
 
     expect(table.tokenDataSource().data).toEqual(tokens);

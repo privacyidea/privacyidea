@@ -17,42 +17,37 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpErrorResponse } from "@angular/common/http";
 import {
-  Component,
   AfterViewInit,
-  OnDestroy,
-  inject,
-  Renderer2,
-  DestroyRef,
-  ViewChild,
-  ElementRef,
-  viewChild,
-  signal,
+  Component,
   computed,
   effect,
-  ResourceStatus
+  ElementRef,
+  inject,
+  OnDestroy,
+  Renderer2,
+  signal,
+  ViewChild,
+  viewChild
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormsModule, AbstractControl } from "@angular/forms";
+import { AbstractControl, FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
-import { MatSelectModule, MatSelect, MatOption } from "@angular/material/select";
-import { Router, ActivatedRoute } from "@angular/router";
+import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "src/app/constants/global.constants";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { ContentService } from "src/app/services/content/content.service";
-import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
-import { NotificationService } from "src/app/services/notification/notification.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { ResolverService, ResolverType } from "src/app/services/resolver/resolver.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ResolverService, ResolverType } from "@services/resolver/resolver.service";
+import { finalize } from "rxjs";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
@@ -60,14 +55,10 @@ import { LdapResolverComponent } from "./ldap-resolver/ldap-resolver.component";
 import { PasswdResolverComponent } from "./passwd-resolver/passwd-resolver.component";
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
-import { finalize } from "rxjs";
 
 @Component({
   selector: "app-user-new-resolver",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     FormsModule,
     MatFormField,
@@ -88,7 +79,6 @@ import { finalize } from "rxjs";
     HttpResolverComponent,
     EntraidResolverComponent,
     KeycloakResolverComponent,
-    MatDialogModule,
     ClearableInputComponent
   ],
   templateUrl: "./user-new-resolver.component.html",
@@ -99,18 +89,13 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly _notificationService = inject(NotificationService);
   private readonly _router = inject(Router);
   private readonly _route = inject(ActivatedRoute);
-  private readonly _contentService = inject(ContentService);
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
-  private readonly _destroyRef = inject(DestroyRef);
-  protected readonly _renderer: Renderer2 = inject(Renderer2);
 
-  public readonly dialogRef = inject(MatDialogRef<UserNewResolverComponent>, { optional: true });
-  public readonly data = inject(MAT_DIALOG_DATA, { optional: true });
+  protected readonly _renderer: Renderer2 = inject(Renderer2);
 
   private _observer!: IntersectionObserver;
   private _editInitialized = false;
-  private _initialRoute = this._contentService.routeUrl();
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -147,46 +132,13 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   });
 
   constructor() {
-    const dialogResolver = this.data?.resolver;
-    if (dialogResolver) {
-      this.resolverName = dialogResolver.resolvername;
-      this.resolverType = dialogResolver.type;
-      this.formData = { ...(dialogResolver.data || {}) };
-      this._editInitialized = true;
-      this._resolverService.selectedResolverName.set(dialogResolver.resolvername);
-    } else {
-      this._route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-        this._resolverService.selectedResolverName.set(params.get("name") || "");
-      });
-    }
-
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef
-        .backdropClick()
-        .pipe(takeUntilDestroyed(this._destroyRef))
-        .subscribe(() => {
-          this.onCancel();
-        });
-      this.dialogRef
-        .keydownEvents()
-        .pipe(takeUntilDestroyed(this._destroyRef))
-        .subscribe((event) => {
-          if (event.key === "Escape") {
-            this.onCancel();
-          }
-        });
-    }
+    this._route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      this._resolverService.selectedResolverName.set(params.get("name") || "");
+    });
 
     this._pendingChangesService.registerHasChanges(() => this.hasChanges);
     this._pendingChangesService.registerSave(() => this.onSave());
     this._pendingChangesService.registerValidChanges(() => this.canSave);
-
-    effect(() => {
-      if (this._contentService.routeUrl() !== this._initialRoute) {
-        this.dialogRef?.close(true);
-      }
-    });
 
     effect(() => {
       const selectedName = this._resolverService.selectedResolverName();
@@ -201,8 +153,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       }
 
       const status = resourceRef.status();
-      if (status === ResourceStatus.Loading || status === ResourceStatus.Reloading) {
-        if (status === ResourceStatus.Reloading) {
+      if (status === "loading" || status === "reloading" || !resourceRef.hasValue()) {
+        if (status === "reloading") {
           this._editInitialized = false;
         }
         return;
@@ -219,12 +171,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         }
       }
     });
-
-    effect(() => {
-      if (!this._contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)) {
-        this.dialogRef?.close(true);
-      }
-    });
   }
 
   get isEditMode(): boolean {
@@ -237,7 +183,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    const nameValid = this.resolverName.trim().length > 0;
+    const nameValid = this.resolverName.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.resolverName);
     return nameValid && !!this.resolverType && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 
@@ -312,15 +258,15 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   async onSave(): Promise<boolean> {
     const name = this.resolverName.trim();
     if (!name) {
-      this._notificationService.openSnackBar($localize`Please enter a resolver name.`);
+      this._notificationService.warning($localize`Please enter a resolver name.`);
       return false;
     }
     if (!this.resolverType) {
-      this._notificationService.openSnackBar($localize`Please select a resolver type.`);
+      this._notificationService.warning($localize`Please select a resolver type.`);
       return false;
     }
     if (this.isAdditionalFieldsInvalid) {
-      this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      this._notificationService.warning($localize`Please fill in all required fields.`);
       return false;
     }
 
@@ -338,7 +284,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-              this._notificationService.openSnackBar(
+              this._notificationService.success(
                 this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
               );
               this._resolverService.resolversResource.reload?.();
@@ -409,12 +355,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   private _runTest(quick: boolean): void {
     if (!this.resolverType) {
-      this._notificationService.openSnackBar($localize`Please select a resolver type.`);
+      this._notificationService.warning($localize`Please select a resolver type.`);
       return;
     }
 
     if (this.isAdditionalFieldsInvalid) {
-      this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      this._notificationService.warning($localize`Please fill in all required fields.`);
       return;
     }
 
@@ -443,7 +389,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         next: (res) => {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
             const detail = res.detail?.description || "";
-            this._notificationService.openSnackBar($localize`Resolver test executed: ${detail}`, 20000);
+            this._notificationService.success($localize`Resolver test executed: ${detail}`, { duration: 20000 });
           } else {
             this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
           }
@@ -462,13 +408,13 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       $localize`Unknown server error.`;
 
     if (detail.includes("Detailed error")) {
-      this._notificationService.openSnackBar(detail);
+      this._notificationService.error(detail);
     } else if (testFallback && detail.includes(testFallback)) {
-      this._notificationService.openSnackBar(detail);
+      this._notificationService.error(detail);
     } else if (testFallback && detail === $localize`Unknown server error.`) {
-      this._notificationService.openSnackBar(`${prefix} ${testFallback}`);
+      this._notificationService.error(`${prefix} ${testFallback}`);
     } else {
-      this._notificationService.openSnackBar(`${prefix} ${detail}`);
+      this._notificationService.error(`${prefix} ${detail}`);
     }
   }
 
@@ -481,20 +427,14 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   private _closeOrReset(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close(true);
-    } else if (!this.isEditMode) {
+    if (!this.isEditMode) {
       this._resetForm();
-      this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
     }
+    this._closeCurrent();
   }
 
   private _closeCurrent(): void {
     this._pendingChangesService.clearAllRegistrations();
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    } else {
-      this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
-    }
+    this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
   }
 }

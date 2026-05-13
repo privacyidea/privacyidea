@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,12 +19,12 @@
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ActionType = "bool" | "int" | "str" | "text";
 export type PolicyActionDetail<T extends string | number = string | number> = {
@@ -186,7 +186,7 @@ export interface PolicyServiceInterface {
 
   canSavePolicy(policy: PolicyDetail): boolean;
 
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null;
+  getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null;
 
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
 
@@ -252,11 +252,14 @@ export class PolicyService implements PolicyServiceInterface {
    * Filter policy actions by the actionFilter signal and already added actions.
    * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
    */
-    // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
-    //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
-    // });
+  // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+  //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
+  // });
 
-  _allPolicies = computed(() => this.allPoliciesResource.value()?.result?.value ?? []);
+  _allPolicies = computed(() => {
+    if (!this.allPoliciesResource.hasValue()) return [];
+    return this.allPoliciesResource.value()?.result?.value ?? [];
+  });
 
   getEmptyPolicy(): PolicyDetail {
     return {
@@ -286,11 +289,11 @@ export class PolicyService implements PolicyServiceInterface {
     computation: (_) => false
   });
   policyActions = computed(() => {
+    if (!this.policyActionResource.hasValue()) return {};
     return this.policyActionResource.value()?.result?.value ?? {};
   });
   allPolicyActionsFlat = computed(() => {
-    const policyActions = this.policyActionResource.value()?.result?.value;
-    if (!policyActions) return {};
+    const policyActions = this.policyActions();
     const flat: { [actionName: string]: PolicyActionDetail } = {};
     for (const scope in policyActions) {
       const actions = policyActions[scope];
@@ -301,13 +304,11 @@ export class PolicyService implements PolicyServiceInterface {
     return flat;
   });
   allPolicyScopes = computed(() => {
-    const policyActions = this.policyActionResource.value()?.result?.value;
-    if (!policyActions) return [];
+    const policyActions = this.policyActions();
     return Object.keys(policyActions);
   });
   policyActionsByGroup = computed<PolicyActionGroups>(() => {
-    const policyActions = this.policyActionResource.value()?.result?.value;
-    if (!policyActions) return {};
+    const policyActions = this.policyActions();
     const grouped: PolicyActionGroups = {};
     for (const scope in policyActions) {
       const actions = policyActions[scope];
@@ -329,6 +330,7 @@ export class PolicyService implements PolicyServiceInterface {
     if (!filterValue && alreadyAddedActionNames.length === 0) {
       return this.policyActionsByGroup();
     }
+    if (!this.policyActionResource.hasValue()) return {};
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return {};
     const grouped: PolicyActionGroups = {};
@@ -400,12 +402,12 @@ export class PolicyService implements PolicyServiceInterface {
     return true;
   }
 
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
-    const actions = this.allPolicyActionsFlat();
-    if (actionName && actions) {
-      return actions[actionName] ?? null;
+  getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null {
+    if (!actionName) return null;
+    if (scope) {
+      return this.policyActions()[scope]?.[actionName] ?? null;
     }
-    return null;
+    return this.allPolicyActionsFlat()[actionName] ?? null;
   }
 
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {
@@ -426,7 +428,9 @@ export class PolicyService implements PolicyServiceInterface {
 
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${encodeURIComponent(policyData.name)}`, policyData, {
+        headers
+      })
     );
   }
 
@@ -443,7 +447,7 @@ export class PolicyService implements PolicyServiceInterface {
     // Do request
     const headers = this.authService.getHeaders();
     const result = await lastValueFrom(
-      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
+      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${encodeURIComponent(name)}`, { headers })
     );
     // Reload policies to ensure state is correct
     if (result && !result.result?.error) {
@@ -457,12 +461,16 @@ export class PolicyService implements PolicyServiceInterface {
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${encodeURIComponent(name)}`, {}, { headers })
+    );
   }
 
   disablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${encodeURIComponent(name)}`, {}, { headers })
+    );
   }
 
   isScopeChangeable(policy: PolicyDetail): boolean {
@@ -544,18 +552,18 @@ export class PolicyService implements PolicyServiceInterface {
       .then((response) => {
         this.allPoliciesResource.reload();
         if (response && response.result?.status) {
-          this.notificationService.openSnackBar($localize`Policy created successfully.`);
+          this.notificationService.success($localize`Policy created successfully.`);
           return true;
         } else {
           const error = response.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Creating policy failed: ${error}`);
+          this.notificationService.error($localize`Creating policy failed: ${error}`);
           return false;
         }
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
         const errorMessage = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Creating policy failed: ${errorMessage}`);
+        this.notificationService.error($localize`Creating policy failed: ${errorMessage}`);
         this.allPoliciesResource.reload();
         return false;
       });
@@ -638,7 +646,9 @@ export class PolicyService implements PolicyServiceInterface {
     this.allPolicies.set(lastStableState.map((p) => (p.name === originalPolicyName ? { ...p, ...updatedPolicy } : p)));
 
     try {
-      await lastValueFrom(this.http.post(`${this.policyBaseUrl}${originalPolicyName}`, updatedPolicy, { headers }));
+      await lastValueFrom(
+        this.http.post(`${this.policyBaseUrl}${encodeURIComponent(originalPolicyName)}`, updatedPolicy, { headers })
+      );
 
       lastStableState = lastStableState.map((p) =>
         p.name === originalPolicyName ? { ...p, ...updatedPolicy, name: originalPolicyName } : p
@@ -646,18 +656,22 @@ export class PolicyService implements PolicyServiceInterface {
 
       if (hasNameChange) {
         await lastValueFrom(
-          this.http.patch(`${this.policyBaseUrl}${originalPolicyName}`, { name: updatedPolicy.name }, { headers })
+          this.http.patch(
+            `${this.policyBaseUrl}${encodeURIComponent(originalPolicyName)}`,
+            { name: updatedPolicy.name },
+            { headers }
+          )
         );
       }
 
       this.allPoliciesResource.reload();
-      this.notificationService.openSnackBar($localize`Policy updated successfully`);
+      this.notificationService.success($localize`Policy updated successfully`);
       return true;
     } catch (error: any) {
       this.allPolicies.set(lastStableState);
       let errorMessage = error?.error?.result?.error?.message || "";
       errorMessage = errorMessage ? `: ${errorMessage}` : "";
-      this.notificationService.openSnackBar($localize`Saving policy failed` + errorMessage);
+      this.notificationService.error($localize`Saving policy failed` + errorMessage);
       return false;
     }
   }

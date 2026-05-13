@@ -18,8 +18,25 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TokenEnrollmentComponent } from "./token-enrollment.component";
-import { UserService } from "../../../services/user/user.service";
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { LocalService } from "@services/local/local.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
   MockContentService,
@@ -29,34 +46,19 @@ import {
   MockTokenService,
   MockUserService,
   MockVersioningService
-} from "../../../../testing/mock-services";
-import { TokenService } from "../../../services/token/token.service";
-import { LocalService } from "../../../services/local/local.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { VersioningService } from "../../../services/version/version.service";
-import { ContentService } from "../../../services/content/content.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
-import { provideHttpClient } from "@angular/common/http";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
+import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
   NO_QR_CODE_TOKEN_TYPES,
   NO_REGENERATE_TOKEN_TYPES,
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
+import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { environment } from "../../../../environments/environment";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -69,6 +71,7 @@ describe("TokenEnrollmentComponent", () => {
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
   let authServiceMock: MockAuthService;
+  let pendingChangesService: MockPendingChangesService;
   let httpTestingController: HttpTestingController;
 
   beforeAll(() => {
@@ -116,7 +119,8 @@ describe("TokenEnrollmentComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -131,6 +135,7 @@ describe("TokenEnrollmentComponent", () => {
     mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     httpTestingController = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
@@ -234,7 +239,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Please select a token type.");
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith("Please select a token type.");
     });
 
     it("snacks when user is required but missing", async () => {
@@ -248,7 +253,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
       );
     });
@@ -262,7 +267,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
       );
     });
@@ -277,7 +282,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await component.enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Enrollment action is not available for the selected token type."
       );
     });
@@ -289,7 +294,7 @@ describe("TokenEnrollmentComponent", () => {
         user: null
       });
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "User is required for this token type, but no user was provided."
       );
     });
@@ -400,7 +405,7 @@ describe("TokenEnrollmentComponent", () => {
 
         await component.enrollToken().catch(() => undefined);
 
-        expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
+        expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to enroll token: nope");
       });
 
       it("Two step enrollment: complete dialog -> last step dialog", async () => {
@@ -607,14 +612,13 @@ describe("TokenEnrollmentComponent", () => {
           })
         );
       });
-
     });
   });
 
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
       (component as any).openLastStepDialog(null);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No enrollment response available.");
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith("No enrollment response available.");
     });
 
     it("openLastStepDialog: stores last-step data and opens dialog", () => {
@@ -674,7 +678,7 @@ describe("TokenEnrollmentComponent", () => {
       component.ngOnInit();
       component.selectedContainerControl.setValue("CONT-42");
 
-      expect(containers.selectedContainer()).toBe("CONT-42");
+      expect(containers.selectedContainerSerial()).toBe("CONT-42");
     });
   });
 
@@ -866,6 +870,32 @@ describe("TokenEnrollmentComponent", () => {
         wizardFixture.detectChanges();
         expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).toBeNull();
       });
+    });
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects the form's dirty state", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+      component.formGroupSignal().markAsDirty();
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges is false when no token type is selected", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      tokenService.selectedTokenType.set({ key: "" } as any);
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
   });
 });

@@ -34,6 +34,13 @@
       </h3>
       <div class="flex-row gap-16">
         <div class="save-buttons">
+          <button
+            (click)="openDocumentationDialog()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>document_scanner</mat-icon>
+            <span i18n>Get Documentation</span>
+          </button>
           @if (hasConfigWritePermission()) {
             <button
               [disabled]="!systemConfigForm.form.valid || !authService.actionAllowed('configwrite')"
@@ -44,13 +51,6 @@
               <span i18n>Save System Config</span>
             </button>
           }
-          <button
-            (click)="openDocumentationDialog()"
-            class="action-button-secondary button-width-l"
-            mat-stroked-button>
-            <mat-icon>document_scanner</mat-icon>
-            <span i18n>Get Documentation</span>
-          </button>
         </div>
       </div>
 
@@ -208,7 +208,7 @@
             i18n>Default Settings for New Enrolled Tokens
           </h4>
 
-          <div class="flex-row just-space-between">
+          <div class="flex-row gap-16">
             <mat-form-field class="input-width-s">
               <mat-label i18n>OTP Length</mat-label>
               <input

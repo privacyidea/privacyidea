@@ -17,26 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import {
-  HostsMachineResolver,
-  HostsMachineResolverData,
-  MachineResolverService
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
-import { Component } from "@angular/core";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { Component } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import {
+    HostsMachineResolver,
+    HostsMachineResolverData,
+    MachineResolverService
+} from "@services/machine-resolver/machine-resolver.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockNotificationService } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
-import { ContentService } from "../../../services/content/content.service";
-import { MockContentService } from "../../../../testing/mock-services";
+import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 
 @Component({
   standalone: true,
@@ -59,6 +60,7 @@ describe("MachineResolverPanelEditComponent", () => {
   let dialogServiceMock: MockDialogService;
   let notificationServiceMock: MockNotificationService;
   let contentServiceMock: MockContentService;
+  let pendingChangesService: MockPendingChangesService;
 
   const machineResolver: HostsMachineResolver = {
     resolvername: "test",
@@ -79,7 +81,8 @@ describe("MachineResolverPanelEditComponent", () => {
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     })
       .overrideComponent(MachineResolverPanelEditComponent, {
@@ -95,6 +98,7 @@ describe("MachineResolverPanelEditComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.componentRef.setInput("originalMachineResolver", machineResolver);
     fixture.detectChanges();
@@ -205,7 +209,7 @@ describe("MachineResolverPanelEditComponent", () => {
 
   it("should cancel edit mode if not edited", () => {
     component.isEditMode.set(true);
-    TestBed.flushEffects();
+    TestBed.tick();
     component.cancelEditMode();
     expect(component.isEditMode()).toBeFalsy();
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
@@ -214,10 +218,10 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should cancel edit mode if edited and dialog confirmed", async () => {
     component.isEditMode.set(true);
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
-    TestBed.flushEffects();
+    TestBed.tick();
     expect(component.isEdited()).toBeTruthy();
     const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogRefMock.afterClosed.mockReturnValue(of("discard"));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
     await Promise.resolve();
@@ -229,15 +233,135 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should not cancel edit mode if edited and dialog cancelled", () => {
     component.isEditMode.set(true);
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
-    TestBed.flushEffects();
+    TestBed.tick();
     expect(component.isEdited()).toBeTruthy();
     const dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogRefMock.afterClosed.mockReturnValue(of(null));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy();
     expect(component.editedMachineResolver().type).toBe("ldap");
+  });
+
+  it("should not save when cancelEditMode save-exit is picked but canSave is false", async () => {
+    component.isEditMode.set(true);
+    component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+    component.dataValidatorSignal.set(() => false);
+    TestBed.tick();
+    expect(component.canSaveMachineResolver()).toBeFalsy();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver");
+    component.cancelEditMode();
+    await Promise.resolve();
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(component.isEditMode()).toBeTruthy();
+  });
+
+  it("should save and exit when cancelEditMode dialog returns save-exit", async () => {
+    component.isEditMode.set(true);
+    component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+    component.dataValidatorSignal.set(() => true);
+    TestBed.tick();
+    expect(component.canSaveMachineResolver()).toBeTruthy();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(true);
+    component.cancelEditMode();
+    await Promise.resolve();
+    expect(saveSpy).toHaveBeenCalled();
+  });
+
+  describe("handleCollapse", () => {
+    it("just closes when not edited", () => {
+      component.isEditMode.set(true);
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      component.handleCollapse(panel);
+      expect(component.isEditMode()).toBeFalsy();
+      expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+    });
+
+    it("opens panel back when dialog is cancelled", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of(null));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      expect(panel.open).toHaveBeenCalled();
+      expect(panel.close).not.toHaveBeenCalled();
+      expect(component.isEditMode()).toBeTruthy();
+    });
+
+    it("closes panel and discards on discard", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("discard"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      expect(panel.close).toHaveBeenCalled();
+      expect(component.isEditMode()).toBeFalsy();
+    });
+
+    it("saves and closes panel when save-exit succeeds", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      component.dataValidatorSignal.set(() => true);
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(true);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(saveSpy).toHaveBeenCalled();
+      expect(panel.close).toHaveBeenCalled();
+    });
+
+    it("reopens panel when save-exit is picked but canSave is false", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      component.dataValidatorSignal.set(() => false);
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      const saveSpy = jest.spyOn(component, "saveMachineResolver");
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      expect(panel.open).toHaveBeenCalled();
+      expect(saveSpy).not.toHaveBeenCalled();
+    });
+
+    it("reopens panel when save-exit save fails", async () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
+      component.dataValidatorSignal.set(() => true);
+      TestBed.tick();
+      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+      jest.spyOn(component, "saveMachineResolver").mockResolvedValue(false);
+      component.handleCollapse(panel);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(panel.open).toHaveBeenCalled();
+      expect(panel.close).not.toHaveBeenCalled();
+    });
   });
 
   describe("check if machineResolver can be saved", () => {
@@ -272,13 +396,13 @@ describe("MachineResolverPanelEditComponent", () => {
   describe("expansion logic", () => {
     it("should be expanded if contentService matches resolvername", () => {
       contentServiceMock.machineResolver.set("test");
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(component.expanded()).toBeTruthy();
     });
 
     it("should not be expanded if contentService does not match resolvername", () => {
       contentServiceMock.machineResolver.set("other");
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(component.expanded()).toBeFalsy();
     });
 
@@ -286,6 +410,50 @@ describe("MachineResolverPanelEditComponent", () => {
       contentServiceMock.machineResolver.set("test");
       component.handleCollapse({} as any);
       expect(contentServiceMock.machineResolver()).toBe("");
+    });
+  });
+
+  describe("pending changes", () => {
+    it("does not register before entering edit mode with diff", () => {
+      expect(pendingChangesService.registerHasChanges).not.toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).not.toHaveBeenCalled();
+    });
+
+    it("registers hasChanges, validChanges, and save once editing with diff", () => {
+      component.isEditMode.set(true);
+      component.editedMachineResolver.update((mr) => ({ ...mr, data: { ...mr.data, filename: "changed" } }));
+      fixture.detectChanges();
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("saveMachineResolver resolves true on successful post", async () => {
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockResolvedValue(undefined as any);
+      jest.spyOn(machineResolverServiceMock, "postMachineResolver").mockResolvedValue(undefined as any);
+      component.isEditMode.set(true);
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(true);
+      expect(component.isEditMode()).toBe(false);
+    });
+
+    it("saveMachineResolver resolves false when test fails and user does not confirm", async () => {
+      jest
+        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
+        .mockRejectedValue(new Error("post-failed"));
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
+    });
+
+    it("saveMachineResolver resolves false when test fails with non post-failed error", async () => {
+      jest
+        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
+        .mockRejectedValue(new Error("other-error"));
+      const result = await component.saveMachineResolver();
+      expect(result).toBe(false);
     });
   });
 });

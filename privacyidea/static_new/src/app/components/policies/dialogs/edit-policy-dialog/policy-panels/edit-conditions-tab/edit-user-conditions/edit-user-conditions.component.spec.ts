@@ -18,15 +18,15 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockRealmService } from "../../../../../../../../testing/mock-services";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { MockResolverService } from "../../../../../../../../testing/mock-services/mock-resolver-service";
-import { PolicyService } from "../../../../../../../services/policies/policies.service";
-import { RealmService } from "../../../../../../../services/realm/realm.service";
-import { ResolverService } from "../../../../../../../services/resolver/resolver.service";
-import { EditUserConditionsComponent } from "./edit-user-conditions.component";
 import { ReactiveFormsModule } from "@angular/forms";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PolicyService } from "@services/policies/policies.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockRealmService } from "@testing/mock-services";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { EditUserConditionsComponent } from "./edit-user-conditions.component";
 
 describe("EditUserConditionsComponent", () => {
   let component: EditUserConditionsComponent;

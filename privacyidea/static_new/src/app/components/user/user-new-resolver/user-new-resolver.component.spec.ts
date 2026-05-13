@@ -16,25 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserNewResolverComponent } from "./user-new-resolver.component";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ActivatedRoute, Router } from "@angular/router";
-import { of, throwError } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { MockDialogService, MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
-import { ResourceStatus, signal } from "@angular/core";
+import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../testing/mock-services/mock-pending-changes-service";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { of, throwError } from "rxjs";
+import { UserNewResolverComponent } from "./user-new-resolver.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -55,9 +54,9 @@ describe("UserNewResolverComponent", () => {
   let fixture: ComponentFixture<UserNewResolverComponent>;
   let resolverService: MockResolverService;
   let dialogService: MockDialogService;
-  let dialogRef: MockMatDialogRef<any>;
   let mockSaveExitDialogRef: MockMatDialogRef<any>;
   let pendingChangesService: MockPendingChangesService;
+  let router: Router;
 
   async function detectChangesStable() {
     fixture.detectChanges(false);
@@ -89,9 +88,7 @@ describe("UserNewResolverComponent", () => {
             events: of(),
             url: ROUTE_PATHS.USERS_RESOLVERS
           }
-        },
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: {} }
+        }
       ]
     }).compileComponents();
 
@@ -99,8 +96,8 @@ describe("UserNewResolverComponent", () => {
     component = fixture.componentInstance;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
-    dialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any>;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    router = TestBed.inject(Router);
 
     // Create a reusable mock dialog ref for SaveAndExitDialog
     mockSaveExitDialogRef = new MockMatDialogRef();
@@ -132,10 +129,11 @@ describe("UserNewResolverComponent", () => {
         value: resolverData
       }
     });
-    const resourceStatus = signal(ResourceStatus.Resolved);
+    const resourceStatus = signal("resolved");
 
     (resolverService.selectedResolverResource as any).value = resourceValue;
     (resolverService.selectedResolverResource as any).status = resourceStatus;
+    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
 
     await detectChangesStable();
 
@@ -170,10 +168,11 @@ describe("UserNewResolverComponent", () => {
         value: resolverData
       }
     });
-    const resourceStatus = signal(ResourceStatus.Resolved);
+    const resourceStatus = signal("resolved");
 
     (resolverService.selectedResolverResource as any).value = resourceValue;
     (resolverService.selectedResolverResource as any).status = resourceStatus;
+    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
 
     await detectChangesStable();
 
@@ -200,15 +199,16 @@ describe("UserNewResolverComponent", () => {
     const resourceValue = signal({
       result: { status: true, value: initialData }
     });
-    const resourceStatus = signal(ResourceStatus.Resolved);
+    const resourceStatus = signal("resolved");
 
     (resolverService.selectedResolverResource as any).value = resourceValue;
     (resolverService.selectedResolverResource as any).status = resourceStatus;
+    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
 
     await detectChangesStable();
     expect(component.formData["fileName"]).toBe("/initial");
 
-    resourceStatus.set(ResourceStatus.Reloading);
+    resourceStatus.set("reloading");
     await detectChangesStable();
 
     const updatedData = {
@@ -221,7 +221,7 @@ describe("UserNewResolverComponent", () => {
     };
 
     resourceValue.set({ result: { status: true, value: updatedData } });
-    resourceStatus.set(ResourceStatus.Resolved);
+    resourceStatus.set("resolved");
 
     await detectChangesStable();
     expect(component.formData["fileName"]).toBe("/updated");
@@ -247,13 +247,10 @@ describe("UserNewResolverComponent", () => {
     resolverService.postResolver.mockReturnValue(of(errorResponse));
 
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    const router = TestBed.inject(Router);
 
     component.onSave();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Unable to connect to database.")
-    );
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Unable to connect to database."));
     expect(router.navigateByUrl).not.toHaveBeenCalled();
     expect(component.resolverName).toBe(resolverName);
   });
@@ -279,10 +276,10 @@ describe("UserNewResolverComponent", () => {
 
     component.onTest();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Connection test failed."));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Connection test failed."));
   });
 
-  it("should show success on save", async () => {
+  it("should show success on save and navigate to resolvers list", async () => {
     await detectChangesStable();
     component.resolverName = "new-res";
     component.resolverType = "passwdresolver";
@@ -293,16 +290,16 @@ describe("UserNewResolverComponent", () => {
     resolverService.postResolver.mockReturnValue(of(successResponse));
 
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    const dialogRef = TestBed.inject(MatDialogRef);
 
     const success = await component.onSave();
 
     expect(success).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("created"));
-    expect(dialogRef.close).toHaveBeenCalledWith(true);
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("created"));
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
-  it("should show success on save in edit mode", async () => {
+  it("should show success on save in edit mode and navigate to resolvers list", async () => {
     resolverService.selectedResolverName.set("edit-res");
     const resolverData = {
       "edit-res": {
@@ -315,6 +312,7 @@ describe("UserNewResolverComponent", () => {
     (resolverService.selectedResolverResource as any).value.set({
       result: { status: true, value: resolverData }
     });
+    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
     await detectChangesStable();
 
     const successResponse = new MockPiResponse<number, any>({
@@ -322,13 +320,13 @@ describe("UserNewResolverComponent", () => {
     });
     resolverService.postResolver.mockReturnValue(of(successResponse));
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    const dialogRef = TestBed.inject(MatDialogRef);
 
     const success = await component.onSave();
 
     expect(success).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("updated"));
-    expect(dialogRef.close).toHaveBeenCalledWith(true);
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("updated"));
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
   it("should show error on save when subscription fails", async () => {
@@ -347,7 +345,7 @@ describe("UserNewResolverComponent", () => {
     const success = await component.onSave();
 
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Detailed error"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Detailed error"));
   });
 
   it("should validate before save", async () => {
@@ -356,22 +354,20 @@ describe("UserNewResolverComponent", () => {
     component.resolverName = "";
     let success = await component.onSave();
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
 
     component.resolverName = "res";
     component.resolverType = "" as any;
     success = await component.onSave();
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
     component.resolverType = "passwdresolver";
     await detectChangesStable();
     component.passwdResolver()?.filenameControl.setValue("");
     success = await component.onSave();
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("fill in all required fields")
-    );
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
   it("should include additional fields in save payload", async () => {
@@ -401,16 +397,14 @@ describe("UserNewResolverComponent", () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Resolver test executed:"),
-      20000
-    );
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Resolver test executed:"), {
+      duration: 20000
+    });
 
     component.onQuickTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Resolver test executed:"),
-      20000
-    );
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Resolver test executed:"), {
+      duration: 20000
+    });
   });
 
   it("should show error on test when subscription fails", async () => {
@@ -425,7 +419,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onTest();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Network error"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Network error"));
   });
 
   it("should validate before test", async () => {
@@ -433,15 +427,13 @@ describe("UserNewResolverComponent", () => {
 
     component.resolverType = "" as any;
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
     component.resolverType = "passwdresolver";
     await detectChangesStable();
     component.passwdResolver()?.filenameControl.setValue("");
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("fill in all required fields")
-    );
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
   it("should include resolver name in test payload when in edit mode", async () => {
@@ -455,6 +447,7 @@ describe("UserNewResolverComponent", () => {
       }
     };
     (resolverService.selectedResolverResource as any).value.set({ result: { status: true, value: resolverData } });
+    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
     await detectChangesStable();
 
     resolverService.postResolverTest.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
@@ -494,58 +487,6 @@ describe("UserNewResolverComponent", () => {
     expect(component.formData["fileName"]).toBe("/etc/passwd");
   });
 
-  it("should initialize from dialog data resolver object", async () => {
-    const resolver = {
-      resolvername: "dialog-resolver",
-      type: "ldapresolver" as any,
-      censor_keys: [],
-      data: { LDAPURI: "ldap://localhost" }
-    };
-
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [UserNewResolverComponent, NoopAnimationsModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: ResolverService, useClass: MockResolverService },
-        { provide: NotificationService, useClass: MockNotificationService },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            paramMap: of({ get: () => "" })
-          }
-        },
-        {
-          provide: Router,
-          useValue: {
-            navigate: jest.fn(),
-            navigateByUrl: jest.fn(),
-            events: of(),
-            url: ROUTE_PATHS.USERS_RESOLVERS
-          }
-        },
-        {
-          provide: MatDialogRef,
-          useValue: {
-            close: jest.fn(),
-            backdropClick: jest.fn().mockReturnValue(of()),
-            keydownEvents: jest.fn().mockReturnValue(of())
-          }
-        },
-        { provide: MAT_DIALOG_DATA, useValue: { resolver } }
-      ]
-    }).compileComponents();
-
-    const fixtureDialog = TestBed.createComponent(UserNewResolverComponent);
-    const componentDialog = fixtureDialog.componentInstance;
-
-    expect(componentDialog.resolverName).toBe("dialog-resolver");
-    expect(componentDialog.resolverType).toBe("ldapresolver");
-    expect(componentDialog.formData["LDAPURI"]).toBe("ldap://localhost");
-    expect(componentDialog.isEditMode).toBeTruthy();
-  });
-
   it("should open SaveAndExitDialogComponent on cancel when there are changes", async () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
@@ -562,16 +503,16 @@ describe("UserNewResolverComponent", () => {
     );
   });
 
-  it("should close directly when there are no changes", async () => {
+  it("should navigate to resolvers list directly when there are no changes", async () => {
     await detectChangesStable();
 
     component.onCancel();
 
     expect(dialogService.openDialog).not.toHaveBeenCalled();
-    expect(dialogRef.close).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
-  it("should close when user selects 'discard' in cancel dialog", async () => {
+  it("should navigate to resolvers list when user selects 'discard' in cancel dialog", async () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
@@ -581,10 +522,10 @@ describe("UserNewResolverComponent", () => {
     component.onCancel();
 
     expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
-    expect(dialogRef.close).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
-  it("should close when user selects 'save-exit' and save succeeds", async () => {
+  it("should navigate to resolvers list when user selects 'save-exit' and save succeeds", async () => {
     component.resolverName = "test-res";
     component.resolverType = "passwdresolver";
     await detectChangesStable();
@@ -603,10 +544,10 @@ describe("UserNewResolverComponent", () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
-    expect(dialogRef.close).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
-  it("should NOT close when user selects 'save-exit' but save fails", async () => {
+  it("should NOT navigate when user selects 'save-exit' but save fails", async () => {
     component.resolverName = "test-res";
     component.resolverType = "passwdresolver";
     await detectChangesStable();
@@ -621,15 +562,14 @@ describe("UserNewResolverComponent", () => {
     resolverService.postResolver.mockReturnValue(of(errorResponse));
     pendingChangesService.save.mockReturnValue(Promise.resolve(false));
 
-    const closeSpy = jest.spyOn(dialogRef, "close");
-    closeSpy.mockClear();
+    jest.mocked(router.navigateByUrl).mockClear();
 
     component.onCancel();
 
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
-    expect(closeSpy).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
@@ -638,9 +578,6 @@ describe("UserNewResolverComponent", () => {
 
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
-
-    const closeSpy = jest.spyOn(dialogRef, "close");
-    closeSpy.mockClear();
 
     component.testUsername = "test";
     await detectChangesStable();
@@ -651,15 +588,12 @@ describe("UserNewResolverComponent", () => {
 
     expect(pendingChangesService.save).not.toHaveBeenCalled();
     expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
-    expect(closeSpy).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it("should do nothing when user closes dialog without selecting an option", async () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
-
-    const closeSpy = jest.spyOn(dialogRef, "close");
-    closeSpy.mockClear();
 
     component.resolverName = "changed";
     await detectChangesStable();
@@ -667,44 +601,6 @@ describe("UserNewResolverComponent", () => {
     component.onCancel();
 
     expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
-    expect(closeSpy).not.toHaveBeenCalled();
-  });
-
-  it("should navigate to resolvers list when not in dialog mode and cancel with no changes", async () => {
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [UserNewResolverComponent, NoopAnimationsModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: ResolverService, useClass: MockResolverService },
-        { provide: NotificationService, useClass: MockNotificationService },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            paramMap: of({ get: (key: string) => "" })
-          }
-        },
-        {
-          provide: Router,
-          useValue: {
-            navigate: jest.fn(),
-            navigateByUrl: jest.fn(),
-            events: of(),
-            url: ROUTE_PATHS.USERS_RESOLVERS
-          }
-        },
-        { provide: MatDialogRef, useValue: null },
-        { provide: MAT_DIALOG_DATA, useValue: null }
-      ]
-    }).compileComponents();
-
-    const fixtureNonDialog = TestBed.createComponent(UserNewResolverComponent);
-    const componentNonDialog = fixtureNonDialog.componentInstance;
-    const router = TestBed.inject(Router);
-
-    componentNonDialog.onCancel();
-
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });

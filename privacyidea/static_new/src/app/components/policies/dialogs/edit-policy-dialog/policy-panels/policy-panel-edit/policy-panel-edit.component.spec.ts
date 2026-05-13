@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testing";
-import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
-import { DialogService } from "../../../../../../services/dialog/dialog.service";
-import { PolicyService } from "../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { Component, input, output, provideZonelessChangeDetection } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { Component, input, output } from "@angular/core";
-import { of } from "rxjs";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
 
 /**
  * Concrete Mock class for DialogService.
@@ -75,7 +74,8 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
       imports: [PolicyPanelEditComponent, NoopAnimationsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        provideZonelessChangeDetection()
       ]
     })
       .overrideComponent(PolicyPanelEditComponent, {

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,8 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal, ElementRef, signal } from "@angular/core";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { NgClass } from "@angular/common";
+import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
+import { MatFormField } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
 import {
   MatCell,
   MatCellDef,
@@ -32,21 +38,14 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatIconButton } from "@angular/material/button";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatPaginator } from "@angular/material/paginator";
 import { MatTooltip } from "@angular/material/tooltip";
-import { NgClass } from "@angular/common";
-import { ContainerDetailToken } from "../../../../services/container/container.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { Sort } from "@angular/material/sort";
-import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-details-token-table",
@@ -77,7 +76,6 @@ import { UserService, UserServiceInterface } from "../../../../services/user/use
 })
 export class UserDetailsTokenTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -98,9 +96,10 @@ export class UserDetailsTokenTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
-  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   userTokenData: WritableSignal<MatTableDataSource<any, MatPaginator>> = linkedSignal({
-    source: this.tokenService.userTokenResource.value,
+    source: () =>
+      this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
     computation: (userTokenResource, previous) => {
       if (!userTokenResource) {
         return previous?.value ?? new MatTableDataSource<any, MatPaginator>([]);

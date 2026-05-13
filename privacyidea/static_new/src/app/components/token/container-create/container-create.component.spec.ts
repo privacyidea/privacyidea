@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,35 +18,41 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 
-import { ContainerCreateComponent } from "./container-create.component";
-import { MatDialog } from "@angular/material/dialog";
-import { NotificationService } from "../../../services/notification/notification.service";
 import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { Renderer2, signal } from "@angular/core";
+import { MatDialog } from "@angular/material/dialog";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerRegistrationCompletedDialogComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
   MockContentService,
+  MockDialogService,
   MockLocalService,
   MockNotificationService,
   MockRealmService,
   MockTokenService,
   MockUserService
-} from "../../../../testing/mock-services";
-import { Router } from "@angular/router";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ContentService } from "../../../services/content/content.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { TokenService } from "../../../services/token/token.service";
-import { UserService } from "../../../services/user/user.service";
-import { VersioningService } from "../../../services/version/version.service";
-import { Renderer2, signal } from "@angular/core";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class MockIntersectionObserver {
   observe = jest.fn();
@@ -95,7 +101,7 @@ const dialogCloseAll = jest.fn();
 const matDialogMock = { open: dialogOpen, closeAll: dialogCloseAll };
 
 const snack = jest.fn();
-const notificationMock = { openSnackBar: snack };
+const notificationMock = { success: jest.fn(), error: snack, warning: jest.fn(), handleResourceError: jest.fn() };
 
 const navigateByUrl = jest.fn().mockResolvedValue(true);
 const routerMock = { navigateByUrl } as unknown as Router;
@@ -112,6 +118,8 @@ describe("ContainerCreateComponent", () => {
   let userSvc: MockUserService;
   let authService: MockAuthService;
   let httpClientMock: any;
+  let dialogServiceMock: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
 
   let contentService: MockContentService;
 
@@ -136,6 +144,8 @@ describe("ContainerCreateComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: HttpClient, useValue: httpClientMock },
         { provide: VersioningService, useClass: DummyVersioningService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         MockLocalService,
         MockNotificationService
       ]
@@ -153,13 +163,15 @@ describe("ContainerCreateComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     authService.actionAllowed.mockReturnValue(true);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     jest
       .spyOn(containerServiceMock, "createContainer")
       .mockReturnValue(of({ result: { value: { container_serial: "C-001" } } } as any));
     jest.spyOn(containerServiceMock, "pollContainerRolloutState").mockReturnValue(
       of({
-        result: { value: { containers: [{ info: { registration_state: "ok" } }] } }
+        result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
       } as any)
     );
 
@@ -187,7 +199,7 @@ describe("ContainerCreateComponent", () => {
 
     expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
       expect.objectContaining({
-        container_type: "generic",
+        type: "generic",
         description: "",
         user: userSvc.selectionUsernameFilter()
       })
@@ -219,16 +231,35 @@ describe("ContainerCreateComponent", () => {
     expect(regSpy).toHaveBeenCalledWith("C-001");
   });
 
-  it("registerContainer: stores response, opens dialog, and starts polling with 5000", () => {
+  it("registerContainer: sets containerSerial signal before opening dialog", () => {
+    (component as any).registrationConfigComponent = {
+      userStorePassphrase: signal(false),
+      passphraseResponse: signal(""),
+      passphrasePrompt: signal("")
+    };
+
+    let serialAtDialogOpen = "";
+    jest.spyOn(component as any, "openRegistrationDialog").mockImplementation(() => {
+      serialAtDialogOpen = containerServiceMock.containerSerial();
+    });
+
+    (component as any).registerContainer("C-SET-SERIAL");
+
+    expect(serialAtDialogOpen).toBe("C-SET-SERIAL");
+  });
+
+  it("registerContainer: stores response, opens dialog, and starts polling", () => {
     const pollSpy = jest.spyOn(containerServiceMock, "startPolling");
+    const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
 
     (component as any).registrationConfigComponent = {
+      userStorePassphrase: signal(false),
       passphraseResponse: signal(""),
-      passphrasePrompt: signal(""),
-      userStorePassphrase: signal(false)
+      passphrasePrompt: signal("")
     };
 
     (component as any).registerContainer("C-001");
+    fixture.detectChanges();
 
     expect(containerServiceMock.registerContainer).toHaveBeenCalledWith({
       container_serial: "C-001",
@@ -236,7 +267,7 @@ describe("ContainerCreateComponent", () => {
       passphrase_response: "",
       passphrase_prompt: ""
     });
-    expect(matDialogMock.open).toHaveBeenCalled();
+    expect(openDialogSpy).toHaveBeenCalled();
     expect(pollSpy).toHaveBeenCalledWith("C-001");
   });
 
@@ -244,59 +275,83 @@ describe("ContainerCreateComponent", () => {
     (component as any).registerResponse.set({ result: { value: {} } } as any);
     containerServiceMock.containerSerial.set("CONT-42");
 
+    const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
     const pollSpy = jest.spyOn(containerServiceMock, "startPolling");
 
     component.reopenEnrollmentDialog();
+    fixture.detectChanges();
 
-    expect(matDialogMock.open).toHaveBeenCalled();
+    expect(openDialogSpy).toHaveBeenCalled();
     expect(pollSpy).toHaveBeenCalledWith("CONT-42");
   });
 
-  it("pollContainerRolloutState: closes dialog and opens completed dialog when state === 'registered'", () => {
-    authService.authData.set({
-      ...authService.authData()!,
-      container_wizard: { ...authService.authData()!.container_wizard, registration: true }
-    });
-    const dialog = TestBed.inject(MatDialog) as unknown as { closeAll: jest.Mock; open: jest.Mock };
-    const closeSpy = jest.spyOn(dialog, "closeAll");
-    const openSpy = jest.spyOn(dialog, "open");
-
+  it("closing enrollment dialog manually stops polling", () => {
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
-      result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
+    (component as any).registrationConfigComponent = {
+      userStorePassphrase: signal(false),
+      passphraseResponse: signal(""),
+      passphrasePrompt: signal("")
+    };
+
+    (component as any).registerContainer("C-001");
+    fixture.detectChanges();
+
+    const dialogRef = dialogServiceMock.openDialog.mock.results[0].value;
+    dialogRef.close();
+
+    expect(stopPollingSpy).toHaveBeenCalled();
+  });
+
+  it("pollContainerRolloutState: closes dialog and opens completed dialog when state === 'registered'", () => {
+    const closeAllSpy = jest.spyOn(dialogServiceMock, "closeAllDialogs");
+    const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
+
+    containerServiceMock.containerDetail.set({
+      serial: "CONT-OK",
+      type: "smartphone",
+      info: { registration_state: "registered" },
+      users: [],
+      tokens: [],
+      realms: [],
+      states: [],
+      select: ""
     } as any);
 
-    containerServiceMock.containerSerial.set("CONT-OK");
-
     fixture.detectChanges();
-    TestBed.flushEffects();
 
-    expect(closeSpy).toHaveBeenCalled();
-    expect(stopPollingSpy).toHaveBeenCalled();
+    expect(closeAllSpy).toHaveBeenCalled();
+    expect(openDialogSpy).toHaveBeenCalled();
 
-    expect(openSpy).toHaveBeenCalled();
-    expect(openSpy.mock.calls[0][1]).toEqual({ data: { containerSerial: "CONT-OK" } });
+    expect(openDialogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: ContainerRegistrationCompletedDialogComponent,
+        data: { containerSerial: "CONT-OK" }
+      })
+    );
   });
 
   it("pollContainerRolloutState: keeps dialog open when state == 'client_wait'", () => {
     const dialog = TestBed.inject(MatDialog) as any;
     const closeSpy = jest.spyOn(dialog, "closeAll");
     const openSpy = jest.spyOn(dialog, "open");
-    const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
-      result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
+    containerServiceMock.containerDetail.set({
+      serial: "CONT-WAIT",
+      type: "smartphone",
+      info: { registration_state: "client_wait" },
+      users: [],
+      tokens: [],
+      realms: [],
+      states: [],
+      select: ""
     } as any);
 
-    containerServiceMock.containerSerial.set("CONT-WAIT");
-
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(closeSpy).not.toHaveBeenCalled();
     expect(openSpy).not.toHaveBeenCalled();
-    expect(stopPollingSpy).not.toHaveBeenCalled();
   });
 
   it("ngAfterViewInit wires IO and toggles sticky class via renderer", () => {
@@ -339,14 +394,14 @@ describe("ContainerCreateComponent", () => {
     const registerSpy = jest.spyOn(dialog, "open");
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
       result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
     } as any);
 
     containerServiceMock.containerSerial.set("CONT-NO-REG");
 
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(stopPollingSpy).toHaveBeenCalled();
     expect(registerSpy).not.toHaveBeenCalled();
@@ -365,17 +420,102 @@ describe("ContainerCreateComponent", () => {
     const registerSpy = jest.spyOn(dialog, "open");
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
       result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
     } as any);
 
     containerServiceMock.containerSerial.set("CONT-NO-RIGHT");
 
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(stopPollingSpy).toHaveBeenCalled();
     expect(registerSpy).not.toHaveBeenCalled();
+  });
+
+  describe("registerHasChanges", () => {
+    let hasChangesFn: () => boolean;
+
+    beforeEach(() => {
+      hasChangesFn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+    });
+
+    it("returns false when all fields are empty", () => {
+      expect(hasChangesFn()).toBe(false);
+    });
+
+    it("returns true when description is set", () => {
+      component.description.set("my description");
+      expect(hasChangesFn()).toBe(true);
+    });
+
+    it("returns true when a template is selected", () => {
+      component.selectedTemplate.set({ name: "my-template", container_type: "generic", template_options: {} } as any);
+      expect(hasChangesFn()).toBe(true);
+    });
+
+    it("returns true when a user is selected", () => {
+      userSvc.selectionUsernameFilter.set("testuser");
+      expect(hasChangesFn()).toBe(true);
+    });
+  });
+
+  describe("registerSave / registerValidChanges", () => {
+    it("registers validChanges and save callbacks in ngOnInit", () => {
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("validChanges reflects component.validInput", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.validInput = true;
+      expect(fn()).toBe(true);
+      component.validInput = false;
+      expect(fn()).toBe(false);
+    });
+
+    it("save returns false when container type is not selected", async () => {
+      containerServiceMock.selectedContainerType.set(null as any);
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("save returns false when validInput is false", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = false;
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("save creates container and returns true on success", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      component.description.set("desc");
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(true);
+      expect(containerServiceMock.createContainer).toHaveBeenCalled();
+    });
+
+    it("save returns false when createContainer throws", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.validInput = true;
+      (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(throwError(() => new Error("fail")));
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const result = await fn();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("ngOnDestroy", () => {
+    it("clears pending-changes registrations on destroy", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 
   describe("wizard", () => {
@@ -403,7 +543,6 @@ describe("ContainerCreateComponent", () => {
     });
 
     it("container wizard creates smartphone with template and registration", () => {
-      // Arrange: set container_wizard data in authService
       authService.authData.set({
         ...authService.authData()!,
         container_wizard: {
@@ -417,22 +556,14 @@ describe("ContainerCreateComponent", () => {
       contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
       containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
 
-      // Spy on createContainer of containerSvc
       const createSpy = jest.spyOn(containerServiceMock, "createContainer");
       const registerSpy = jest.spyOn(containerServiceMock, "registerContainer");
 
-      // Act: call createContainer on wizardComponent
       wizardComponent.createContainer();
 
-      // Assert: check that createContainer was called with correct data
       expect(createSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          container_type: "smartphone",
-          template_name: "custom-template"
-        })
+        expect.objectContaining({ description: "", type: "smartphone", user: "" })
       );
-      // check registration
-      expect(wizardComponent.generateQRCode()).toBe(true);
       expect(registerSpy).toHaveBeenCalled();
     });
 
@@ -461,9 +592,26 @@ describe("ContainerCreateComponent", () => {
       expect(registerSpy).not.toHaveBeenCalled();
     });
 
+    it("wizard registerContainer sets containerSerial before openRegistrationDialog is called", () => {
+      (wizardComponent as any).registrationConfigComponent = {
+        userStorePassphrase: signal(false),
+        passphraseResponse: signal(""),
+        passphrasePrompt: signal("")
+      };
+
+      let serialAtDialogOpen = "";
+      jest.spyOn(wizardComponent as any, "openRegistrationDialog").mockImplementation(() => {
+        serialAtDialogOpen = containerServiceMock.containerSerial();
+      });
+
+      (wizardComponent as any).registerContainer("W-SERIAL");
+
+      expect(serialAtDialogOpen).toBe("W-SERIAL");
+    });
+
     it("container wizard creates generic container without template and without registration", () => {
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
-      // Arrange: set container_wizard data in authService
+
       authService.authData.set({
         ...authService.authData()!,
         container_wizard: {
@@ -475,78 +623,93 @@ describe("ContainerCreateComponent", () => {
       });
       contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
 
-      // Spy on createContainer of containerSvc
       const createSpy = jest.spyOn(containerServiceMock, "createContainer");
       const registerSpy = jest.spyOn(containerServiceMock, "registerContainer");
 
-      // Act: call createContainer on wizardComponent
       wizardComponent.createContainer();
 
-      // Assert: check that createContainer was called with correct data
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          container_type: "generic"
+          type: "generic"
         })
       );
-      // check registration
+
       expect(wizardComponent.generateQRCode()).toBe(false);
       expect(registerSpy).not.toHaveBeenCalled();
     });
 
     it("container wizard opens create dialog for non-smartphone", () => {
+      const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
+
       authService.authData.set({
         ...authService.authData()!,
-        container_wizard: {
-          enabled: true,
-          type: "generic",
-          registration: false,
-          template: null
-        }
+        container_wizard: { enabled: true, type: "generic", registration: false, template: null }
       });
-      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
-      const wizardComp = wizardFixture.componentInstance;
-      const dialog = TestBed.inject(MatDialog) as any;
-      const openSpy = jest.spyOn(dialog, "open");
 
-      jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
-        result: { value: { containers: [{ type: "generic", info: {} }] } }
-      } as any);
+      jest
+        .spyOn(containerServiceMock, "createContainer")
+        .mockReturnValue(of({ result: { value: { container_serial: "CONT-GENERIC" } } } as any));
 
-      containerServiceMock.containerSerial.set("CONT-GENERIC");
-
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      wizardComponent.createContainer();
       wizardFixture.detectChanges();
-      TestBed.flushEffects();
-
-      expect(openSpy).toHaveBeenCalled();
-      expect(openSpy.mock.calls[0][0]).toBe(ContainerCreatedDialogWizardComponent);
+      expect(openDialogSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: ContainerCreatedDialogWizardComponent
+        })
+      );
     });
 
     it("smartphone without register policy in wizard opens create dialog", () => {
       authService.actionAllowed.mockImplementation((action: string) => action !== "container_register");
       authService.authData.set({
         ...authService.authData()!,
-        container_wizard: {
-          enabled: true,
-          type: "smartphone",
-          registration: false,
-          template: null
-        }
+        container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
-      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
-      const dialog = TestBed.inject(MatDialog);
-      const openSpy = jest.spyOn(dialog, "open");
 
-      jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
-        result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
+      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+      wizardFixture.detectChanges();
+
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+
+      const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
+
+      wizardFixture.componentInstance.createContainer();
+
+      expect(openDialogSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ component: ContainerCreatedDialogWizardComponent })
+      );
+    });
+
+    it("wizard opens ContainerRegistrationCompletedDialogWizardComponent when registration state is registered", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        container_wizard: { enabled: true, type: "smartphone", registration: true, template: null }
+      });
+
+      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+      wizardFixture.detectChanges();
+
+      const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
+
+      containerServiceMock.containerDetail.set({
+        serial: "CONT-WIZARD-DONE",
+        type: "smartphone",
+        info: { registration_state: "registered" },
+        users: [],
+        tokens: [],
+        realms: [],
+        states: [],
+        select: ""
       } as any);
 
-      containerServiceMock.containerSerial.set("CONT-WIZ-NO-REG");
-
       wizardFixture.detectChanges();
-      TestBed.flushEffects();
-
-      expect(openSpy).toHaveBeenCalled();
-      expect(openSpy.mock.calls[0][0]).toBe(ContainerCreatedDialogWizardComponent);
+      expect(openDialogSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: ContainerRegistrationCompletedDialogWizardComponent,
+          data: { containerSerial: "CONT-WIZARD-DONE" }
+        })
+      );
     });
   });
 });

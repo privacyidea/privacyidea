@@ -16,16 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  EventActions,
-  EventCondition,
-  EventHandler,
-  EventServiceInterface
-} from "../../app/services/event/event.service";
-import { computed, signal, Signal, WritableSignal } from "@angular/core";
-import { of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
+import { computed, signal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { EventActions, EventCondition, EventHandler, EventServiceInterface } from "@services/event/event.service";
+import { of } from "rxjs";
 
 export class MockEventService implements EventServiceInterface {
   selectedHandlerModule: WritableSignal<string | null> = signal(null);
@@ -39,11 +34,11 @@ export class MockEventService implements EventServiceInterface {
 
   saveEventHandler = jest.fn((event: Record<string, any>) => of({ result: { value: 1 } } as PiResponse<number, any>));
 
-  enableEvent = jest.fn((eventId: string) => Promise.resolve({}));
+  enableEvent = jest.fn((eventId: number) => Promise.resolve({}));
 
-  disableEvent = jest.fn((eventId: string) => Promise.resolve({}));
+  disableEvent = jest.fn((eventId: number) => Promise.resolve({}));
 
-  deleteEvent = jest.fn((eventId: string) => of({ result: { value: 1 } } as PiResponse<number, any>));
+  deleteEvent = jest.fn((eventId: number) => of({ result: { value: 1 } } as PiResponse<number, any>));
 
   deleteWithConfirmDialog = jest.fn((event: EventHandler, dialog: any, afterDelete?: () => void) => {
     if (afterDelete) afterDelete();
@@ -74,7 +69,7 @@ export class MockEventService implements EventServiceInterface {
   moduleActions: Signal<EventActions> = computed(() => ({
     actionA: {
       opt1: { type: "bool", desc: "desc1", required: true },
-      opt2: { type: "int", desc: "desc2", visibleIf: "opt1"},
+      opt2: { type: "int", desc: "desc2", visibleIf: "opt1" },
       opt3: { type: "str", desc: "desc3", visibleIf: "opt2", visibleValue: 3 }
     },
     actionB: {

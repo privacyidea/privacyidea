@@ -17,25 +17,29 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { SmtpService } from "./smtp.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
+import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { SmtpService } from "./smtp.service";
 
 describe("SmtpService", () => {
   let service: SmtpService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -44,11 +48,13 @@ describe("SmtpService", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(SmtpService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
   afterEach(() => {
@@ -68,7 +74,18 @@ describe("SmtpService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved SMTP server.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMTP server.");
+  });
+
+  it("should show error notification when posting SMTP server fails", async () => {
+    const server = { identifier: "test", server: "smtp.test.com" } as any;
+    const promise = service.postSmtpServer(server);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save SMTP server. Something went wrong");
   });
 
   it("should delete SMTP server", async () => {
@@ -79,7 +96,17 @@ describe("SmtpService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMTP server: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMTP server: test.");
+  });
+
+  it("should show error notification when deleting SMTP server fails", async () => {
+    const promise = service.deleteSmtpServer("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete SMTP server. Something went wrong");
   });
 
   it("should test SMTP server", async () => {
@@ -92,6 +119,64 @@ describe("SmtpService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test email sent successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("Test email sent successfully.");
+  });
+
+  it("should show error notification when SMTP test request fails", async () => {
+    const params = { sender: "test@test.com" };
+    const promise = service.testSmtpServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/send_test_email`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to send test email. Something went wrong");
+  });
+
+  describe("smtpServers", () => {
+    it("smsGateways falls back to default when resource empty", () => {
+      expect(service.smtpServers()).toEqual([]);
+    });
+
+    it("should update smtpServers from smtpServerResource on successful response", async () => {
+      contentService.onExternalSmtp = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
+      expect(req.request.method).toBe("GET");
+      const smtpServers = {
+        test: {
+          identifier: "test",
+          server: "",
+          port: 25,
+          timeout: 120,
+          sender: "",
+          tls: true,
+          enqueue_job: false,
+          smime: false,
+          dont_send_on_error: true
+        }
+      };
+      req.flush(MockPiResponse.fromValue(smtpServers));
+      await Promise.resolve();
+
+      expect(service.smtpServers()).toEqual([smtpServers.test]);
+    });
+
+    it("should handle error state from smtpServerResource", async () => {
+      contentService.onExternalSmtp = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.smtpServers()).toEqual([]);
+    });
   });
 });

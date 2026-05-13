@@ -16,12 +16,12 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h1
-  i18n
-  mat-dialog-title>
-  Assign Selected Token to User
-</h1>
-<mat-dialog-content>
+<app-dialog-wrapper
+  [title]="'Assign Selected Token to User'"
+  [showCancelButton]="true"
+  [actions]="actions()"
+  (onAction)="onAction($event)"
+  (close)="onCancel()">
   @if (selectionContainsAssignedToken()) {
     <p
       class="inline-warning"
@@ -132,20 +132,4 @@
       </mat-form-field>
     </div>
   }
-</mat-dialog-content>
-<mat-dialog-actions>
-  <button
-    (click)="onCancel()"
-    i18n
-    mat-button>
-    Cancel
-  </button>
-  <button
-    (click)="onConfirm()"
-    [disabled]="!pinsMatch() || selectedUserRealmControl.invalid || userFilterControl.invalid"
-    color="primary"
-    i18n
-    mat-button>
-    Assign to Selected Token
-  </button>
-</mat-dialog-actions>
+</app-dialog-wrapper>

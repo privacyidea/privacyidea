@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,30 +16,32 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
-import { of, throwError } from "rxjs";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthData, AuthDetail, AuthService } from "@services/auth/auth.service";
+import { ConfigService } from "@services/config/config.service";
+import { LocalService } from "@services/local/local.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
-  MockAuthDetail,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse, MockSessionTimerService,
-  MockValidateService
-} from "../../../testing/mock-services";
-import { AuthData, AuthDetail, AuthService } from "../../services/auth/auth.service";
-import { LocalService } from "../../services/local/local.service";
-import { NotificationService } from "../../services/notification/notification.service";
-import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
-import { ValidateService } from "../../services/validate/validate.service";
+    MockAuthDetail,
+    MockLocalService,
+    MockNotificationService,
+    MockPiResponse,
+    MockSessionTimerService,
+    MockValidateService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockConfigService } from "@testing/mock-services/mock-config-service";
+import { of, throwError } from "rxjs";
 import { LoginComponent } from "./login.component";
-import { ROUTE_PATHS } from "../../route_paths";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { ConfigService } from "../../services/config/config.service";
-import { By } from "@angular/platform-browser";
-import { MockConfigService } from "../../../testing/mock-services/mock-config-service";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -103,7 +105,7 @@ describe("LoginComponent", () => {
       const loggedInFixture = TestBed.createComponent(LoginComponent);
       loggedInFixture.detectChanges();
 
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
+      expect(notificationService.warning).toHaveBeenCalledWith("User is already logged in.");
       expect(warn).toHaveBeenCalledWith("User is already logged in.");
 
       warn.mockRestore();
@@ -301,6 +303,66 @@ describe("LoginComponent", () => {
       expect(component.errorMessage()).toBe("Invalid credentials");
       expect(component.password()).toBe(""); // Password field should be cleared
     });
+
+    it("should toggle password visibility", () => {
+      // GIVEN: The password field is initially hidden
+      expect(component.hidePassword()).toBe(true);
+      const passwordInput = fixture.debugElement.query(By.css("#password")).nativeElement;
+      expect(passwordInput.type).toBe("password");
+
+      // WHEN: Clicking the visibility toggle button
+      const toggleButton = fixture.debugElement.query(By.css("button[matSuffix]"));
+      toggleButton.nativeElement.click();
+      fixture.detectChanges();
+
+      // THEN: The password field should be visible
+      expect(component.hidePassword()).toBe(false);
+      expect(passwordInput.type).toBe("text");
+
+      // AND: Clicking it again should hide it
+      toggleButton.nativeElement.click();
+      fixture.detectChanges();
+      expect(component.hidePassword()).toBe(true);
+      expect(passwordInput.type).toBe("password");
+    });
+
+    it("should reset password visibility on login reset", () => {
+      // GIVEN: password visibility is toggled to show
+      component.hidePassword.set(false);
+      fixture.detectChanges();
+      expect(fixture.debugElement.query(By.css("#password")).nativeElement.type).toBe("text");
+
+      // WHEN: Resetting the login
+      component.resetLogin();
+      fixture.detectChanges();
+
+      // THEN: password visibility should be reset to hidden
+      expect(component.hidePassword()).toBe(true);
+      expect(fixture.debugElement.query(By.css("#password")).nativeElement.type).toBe("password");
+    });
+
+    it("should reset password visibility on login error", () => {
+      // GIVEN: password visibility is toggled to show
+      component.hidePassword.set(false);
+      fixture.detectChanges();
+      expect(fixture.debugElement.query(By.css("#password")).nativeElement.type).toBe("text");
+
+      // AND: Auth fails
+      const errorResponse = { error: { result: { error: { message: "Invalid credentials" } } } };
+      authService.authenticate.mockReturnValue(throwError(() => errorResponse));
+
+      // WHEN: Submitting login
+      component.onSubmit();
+      fixture.detectChanges();
+
+      // THEN: password visibility should be reset to hidden
+      expect(component.hidePassword()).toBe(true);
+
+      // The password input stays in the DOM because showOtpField is false and useRemoteLogin is false.
+      const passwordInput = fixture.debugElement.query(By.css("#password"));
+      expect(passwordInput).not.toBeNull();
+      expect(passwordInput.nativeElement.type).toBe("password");
+    });
   });
 
   describe("passkeyLogin", () => {
@@ -470,7 +532,7 @@ describe("LoginComponent", () => {
       configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });
       fixture.detectChanges();
       const authSpy = jest.spyOn(authService, "authenticate").mockReturnValue(of({ result: { status: true } }));
-      const remoteLoginSpy = jest.spyOn(component, "remoteLogin")
+      const remoteLoginSpy = jest.spyOn(component, "remoteLogin");
       const btn = fixture.debugElement.query(By.css("button[aria-label='Remote Login Button']"));
       btn.nativeElement.click();
       fixture.detectChanges();
@@ -481,7 +543,7 @@ describe("LoginComponent", () => {
     it("remoteLogin should show error if remote_user is not set", () => {
       configService.config.set({ ...configService.config(), remote_user: "" });
       fixture.detectChanges();
-      const spy = jest.spyOn(notificationService, "openSnackBar");
+      const spy = jest.spyOn(notificationService, "warning");
       component.remoteLogin();
       expect(spy).toHaveBeenCalledWith(expect.stringContaining("Remote user not available"));
     });
@@ -508,8 +570,7 @@ describe("LoginComponent", () => {
       expect(btn).toBeNull();
     });
   });
-})
-;
+});
 
 describe("passkeyLoginEnabled signal", () => {
   let fixture: ComponentFixture<LoginComponent>;

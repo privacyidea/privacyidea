@@ -1,22 +1,18 @@
-@use "../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
-.events-layout{
+.events-layout {
   display: flex;
   justify-content: center;
 }
 
 .events-table-container {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding));
-  overflow: auto;
-  display: grid;
+  @include styles.main-component-style;
+  @include table.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
 }
 
 .event-handler-table {
-  td.mat-mdc-cell,
   td.mat-mdc-footer-cell {
     padding-top: 8px;
     padding-bottom: 8px;
@@ -27,16 +23,12 @@
     max-height: 48px;
     text-overflow: ellipsis;
   }
-
-  td.mat-mdc-cell.detailed-cell,
-  td.mat-mdc-footer-cell.detailed-cell{
-  }
 }
 
 .detailed-cell-container {
-    max-height: 160px;
-    overflow-y: scroll;
-    white-space: normal;
+  max-height: 160px;
+  overflow-y: scroll;
+  white-space: normal;
 }
 
 .break-words {
