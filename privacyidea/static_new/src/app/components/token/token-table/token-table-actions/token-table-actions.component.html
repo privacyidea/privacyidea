@@ -16,14 +16,36 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row gap-8">
+<div appOverflowNav class="flex-row gap-8">
   <button
+    data-overflow-pinned
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
     class="action-button-primary button-width-m"
     mat-stroked-button>
     <mat-icon> add_moderator</mat-icon>
     Enroll Token
   </button>
+  <button
+    data-overflow-pinned
+    [matMenuTriggerFor]="advancedFilterMenu"
+    class="action-button-secondary button-width-m"
+    i18n-matTooltip
+    mat-stroked-button
+    matTooltip="More Filter">
+    <mat-icon> filter_list</mat-icon>
+    More Filter
+  </button>
+  <mat-menu #advancedFilterMenu="matMenu">
+    @for (keyword of advancedApiFilter; track keyword) {
+      <button
+        class="mat-menu-item"
+        (click)="onAdvancedFilterClick(keyword)"
+        mat-menu-item>
+        <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
+        {{ keyword }}
+      </button>
+    }
+  </mat-menu>
   @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
     @if (authService.actionAllowed("delete")) {
       <button
@@ -65,7 +87,7 @@
         i18n
         mat-stroked-button>
         <mat-icon> toggle_on</mat-icon>
-        (De)activate Selected
+        Toggle Selected
       </button>
     }
     <button
@@ -77,25 +99,5 @@
       <mat-icon> restart_alt</mat-icon>
       Reset Failcounters
     </button>
-    <button
-      [matMenuTriggerFor]="advancedFilterMenu"
-      class="action-button-secondary button-width-m"
-      i18n-matTooltip
-      mat-stroked-button
-      matTooltip="More Filter">
-      <mat-icon> filter_list</mat-icon>
-      More Filter
-    </button>
-    <mat-menu #advancedFilterMenu="matMenu">
-      @for (keyword of advancedApiFilter; track keyword) {
-        <button
-          class="mat-menu-item"
-          (click)="onAdvancedFilterClick(keyword)"
-          mat-menu-item>
-          <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
-          {{ keyword }}
-        </button>
-      }
-    </mat-menu>
   }
 </div>

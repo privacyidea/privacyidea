@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
-  <div class="flex-row margin-bottom-16 gap-8">
+  <div appOverflowNav class="flex-row margin-bottom-16 gap-8">
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="createNewPolicy()"

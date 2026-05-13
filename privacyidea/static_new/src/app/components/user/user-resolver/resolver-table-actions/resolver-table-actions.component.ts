@@ -23,11 +23,12 @@ import { MatIconModule } from "@angular/material/icon";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
+import { OverflowNavDirective } from "@components/layout/navigation/overflow-nav.directive";
 
 @Component({
   selector: "app-resolver-table-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, OverflowNavDirective],
   templateUrl: "./resolver-table-actions.component.html",
   styleUrl: "./resolver-table-actions.component.scss"
 })

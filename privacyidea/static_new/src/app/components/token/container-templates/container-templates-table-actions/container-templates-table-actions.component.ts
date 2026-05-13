@@ -22,6 +22,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { OverflowNavDirective } from "@components/layout/navigation/overflow-nav.directive";
 import { ContainerTemplateCopyDialogComponent } from "@components/token/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import {
@@ -36,7 +37,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
   standalone: true,
   templateUrl: "./container-templates-table-actions.component.html",
   styleUrl: "./container-templates-table-actions.component.scss",
-  imports: [MatButtonModule, MatIconModule]
+  imports: [MatButtonModule, MatIconModule, OverflowNavDirective]
 })
 export class ContainerTemplatesTableActionsComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);

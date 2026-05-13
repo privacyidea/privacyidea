@@ -40,10 +40,11 @@ import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { OverflowNavDirective } from "@components/layout/navigation/overflow-nav.directive";
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule],
+  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule, OverflowNavDirective],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })

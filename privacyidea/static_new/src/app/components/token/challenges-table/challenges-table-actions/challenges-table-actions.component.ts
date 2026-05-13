@@ -26,11 +26,12 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { ChallengesService, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
+import { OverflowNavDirective } from "@components/layout/navigation/overflow-nav.directive";
 
 @Component({
   selector: "app-challenges-table-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, OverflowNavDirective],
   templateUrl: "./challenges-table-actions.component.html",
   styleUrls: ["./challenges-table-actions.component.scss"]
 })

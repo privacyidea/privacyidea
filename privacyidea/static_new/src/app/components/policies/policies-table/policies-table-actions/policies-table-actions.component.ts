@@ -29,11 +29,12 @@ import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { lastValueFrom } from "rxjs";
+import { OverflowNavDirective } from "@components/layout/navigation/overflow-nav.directive";
 
 @Component({
   selector: "app-policies-table-actions",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule],
+  imports: [MatIconModule, MatButtonModule, OverflowNavDirective],
   templateUrl: "./policies-table-actions.component.html",
   styleUrl: "./policies-table-actions.component.scss"
 })
