@@ -103,16 +103,13 @@
                   [disabled]="total() === 0" />
               }
               @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.serial">
                   <a
                     (click)="contentService.navigateContainerDetails(element.serial)"
                     attr.aria-label="{{ column.label }} Link">
                     {{ element[column.key] }}
                   </a>
-                  @if (element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial" />
-                  }
-                </div>
+                </app-copyable>
               }
               @case ("realms") {
                 <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">

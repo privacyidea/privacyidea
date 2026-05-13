@@ -28,7 +28,7 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -49,7 +49,7 @@ import { ContainerTableComponent } from "./container-table.component";
     MatInputModule,
     MatPaginatorModule,
     NgClass,
-    CopyButtonComponent,
+    CopyableComponent,
     MatCheckboxModule,
     FormsModule,
     MatIcon,

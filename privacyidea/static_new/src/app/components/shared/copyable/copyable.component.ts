@@ -16,21 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
-import { TextFieldModule } from "@angular/cdk/text-field";
-import { Component, model } from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { Component, Input } from "@angular/core";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
-  selector: "app-policy-name-edit",
-  templateUrl: "./policy-name-edit.component.html",
-  styleUrl: "./policy-name-edit.component.scss",
+  selector: "app-copyable",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule, ClearableInputComponent]
+  imports: [CopyButtonComponent],
+  templateUrl: "./copyable.component.html",
+  styleUrl: "./copyable.component.scss"
 })
-export class PolicyNameEditComponent {
-  readonly policyName = model.required<string>();
+export class CopyableComponent {
+  @Input() copyText: string = "";
 }

@@ -99,17 +99,14 @@
                 </div>
               }
               @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.serial">
                   <a
                     (click)="contentService.tokenSelected(element.serial)"
                     attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}
                   </a>
-                  @if (element.serial && element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
-                </div>
+                </app-copyable>
               }
               @case (column.key === "sig_check" || column.key === "missing_line" ? column.key : "") {
                 <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' : 'highlight-false']">
@@ -117,17 +114,14 @@
                 </span>
               }
               @case ("container_serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.container_serial">
                   <a
                     (click)="contentService.navigateContainerDetails(element.container_serial)"
                     attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}
                   </a>
-                  @if (element.container_serial && element.container_serial !== "") {
-                    <app-copy-button [copyText]="element.container_serial"></app-copy-button>
-                  }
-                </div>
+                </app-copyable>
               }
               @case ("startdate") {
                 <span>
@@ -147,11 +141,33 @@
                 }
               }
               @case ("user") {
-                <a
-                  (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                  attr.aria-label="{{ column.label }} Link">
-                  {{ element[column.key] }}
-                </a>
+                <app-copyable [copyText]="element[column.key]">
+                  <a
+                    (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                    attr.aria-label="{{ column.label }} Link">
+                    {{ element[column.key] }}
+                  </a>
+                </app-copyable>
+              }
+              @case ("realm") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("administrator") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("client") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
+              }
+              @case ("resolver") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
               }
               @default {
                 <span>

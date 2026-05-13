@@ -48,7 +48,7 @@ import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -123,10 +123,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent,
+    CopyableComponent,
     ScrollToTopDirective,
-    ClearableInputComponent,
-    CopyButtonComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent

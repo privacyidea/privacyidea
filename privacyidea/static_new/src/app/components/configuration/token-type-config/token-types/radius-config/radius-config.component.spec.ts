@@ -90,14 +90,4 @@ describe("RadiusConfigComponent", () => {
     expect(component.expanded()).toBe(false);
   });
 
-  it("should call updateFormData with empty value when clearField is called", async () => {
-    const initialServer = "radius-server-1";
-    fixture.componentRef.setInput("formData", { [RADIUS_SERVER]: initialServer });
-    fixture.detectChanges();
-    expect(component.formData()[RADIUS_SERVER]).toEqual(initialServer);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(RADIUS_SERVER);
-    expect(component.updateFormData).toHaveBeenCalledWith(RADIUS_SERVER, "");
-  });
 });

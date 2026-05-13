@@ -81,16 +81,13 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <div class="flex-row flex-nowrap ali-center">
+                    <app-copyable [copyText]="element.value">
                       <a
                         (click)="contentService.navigateContainerDetails(element.value)"
                         attr.aria-label="{{ element.keyMap.label }} Link">
                         {{ element.value }}
                       </a>
-                      @if (element.value !== "") {
-                        <app-copy-button [copyText]="element.value"></app-copy-button>
-                      }
-                    </div>
+                    </app-copyable>
                   }
                 }
                 @case ("realms") {
@@ -122,7 +119,9 @@
                       class="details-scrollable-container">
                       @for (realm of element.value; track realm) {
                         <mat-list-item class="height-auto pad-0">
-                          <span class="font-14">• {{ realm }}</span>
+                          <app-copyable [copyText]="realm">
+                            <span class="font-14">• {{ realm }}</span>
+                          </app-copyable>
                         </mat-list-item>
                       }
                     </div>

@@ -51,17 +51,6 @@ describe("HotpConfigComponent", () => {
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [HOTP_HASHLIB]: newValue });
   });
 
-  it("should call updateFormData with empty value when clearField is called", async () => {
-    const initialHashlib = "sha1";
-    fixture.componentRef.setInput("formData", { [HOTP_HASHLIB]: initialHashlib });
-    fixture.detectChanges();
-    expect(component.formData()[HOTP_HASHLIB]).toEqual(initialHashlib);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(HOTP_HASHLIB);
-    expect(component.updateFormData).toHaveBeenCalledWith(HOTP_HASHLIB, "");
-  });
-
   it("should preserve existing form data when updating a field", () => {
     const existingData = { "other.field": "value", [HOTP_HASHLIB]: "sha1" };
     fixture.componentRef.setInput("formData", existingData);

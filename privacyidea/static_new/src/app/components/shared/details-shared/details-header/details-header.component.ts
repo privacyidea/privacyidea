@@ -21,12 +21,12 @@ import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 
 @Component({
   selector: "app-details-header",
   standalone: true,
-  imports: [CopyButtonComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
+  imports: [CopyableComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
   templateUrl: "./details-header.component.html"
 })
 export class DetailsHeaderComponent {

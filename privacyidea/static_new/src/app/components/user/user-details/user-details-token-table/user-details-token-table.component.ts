@@ -39,7 +39,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -50,7 +50,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 @Component({
   selector: "app-user-details-token-table",
   imports: [
-    CopyButtonComponent,
+    CopyableComponent,
     MatCell,
     MatCellDef,
     MatColumnDef,

@@ -42,6 +42,7 @@ import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -57,6 +58,7 @@ import { ContainerTableActionsComponent } from "./container-table-actions/contai
     MatPaginatorModule,
     NgClass,
     CopyButtonComponent,
+    CopyableComponent,
     MatCheckboxModule,
     FormsModule,
     ScrollToTopDirective,

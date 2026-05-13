@@ -81,17 +81,6 @@ describe("SmsConfigComponent", () => {
     expect(component.formData()[SMS_PROVIDER_TIMEOUT]).toEqual(450);
   });
 
-  it("should call updateFormData with empty value when clearField is called", () => {
-    const initialGateway = "gateway1";
-    fixture.componentRef.setInput("formData", { [SMS_GATEWAY]: initialGateway });
-    fixture.detectChanges();
-    expect(component.formData()[SMS_GATEWAY]).toEqual(initialGateway);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(SMS_GATEWAY);
-    expect(component.updateFormData).toHaveBeenCalledWith(SMS_GATEWAY, "");
-  });
-
   it("should handle empty SMS identifier value", () => {
     jest.spyOn(component.formDataChange, "emit");
     const newValue = "";

@@ -44,6 +44,7 @@ import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angu
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -120,6 +121,7 @@ interface TokenOption {
     ContainerDetailsTokenTableComponent,
     MatDivider,
     ClearableInputComponent,
+    CopyableComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,
