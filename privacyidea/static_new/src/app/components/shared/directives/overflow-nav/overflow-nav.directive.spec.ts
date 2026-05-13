@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, ElementRef, ViewChild } from "@angular/core";
-import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { TestBed } from "@angular/core/testing";
 import { OverflowNavDirective } from "./overflow-nav.directive";
+import { MatIcon } from "@angular/material/icon";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,11 +56,15 @@ function waitForInit(): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, 60));
 }
 
+interface OverflowNavTestHost {
+  navRef: ElementRef<HTMLElement>;
+}
+
 // ── Test host components ─────────────────────────────────────────────────────
 
 @Component({
   standalone: true,
-  imports: [OverflowNavDirective],
+  imports: [OverflowNavDirective, MatIcon],
   template: `
     <nav #nav appOverflowNav>
       <button class="nav-button" id="btn1"><mat-icon class="mat-icon material-icons">home</mat-icon><span>Home</span></button>
@@ -154,6 +159,44 @@ class FirstActiveOverflowChildHostComponent {
   @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
 }
 
+@Component({
+  standalone: true,
+  imports: [OverflowNavDirective],
+  template: `
+    <nav #nav appOverflowNav>
+      <button class="nav-button" id="pinned1" data-overflow-pinned><span>Primary</span></button>
+      <button class="nav-button" id="pinned2" data-overflow-pinned><span>Filter</span></button>
+      <button class="nav-button" id="btn1"><span>Action1</span></button>
+      <button class="nav-button" id="btn2"><span>Action2</span></button>
+      <button class="nav-button" id="btn3"><span>Action3</span></button>
+      <div class="spacer"></div>
+    </nav>
+  `
+})
+class PinnedHostComponent {
+  @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
+}
+
+@Component({
+  standalone: true,
+  imports: [OverflowNavDirective, MatIcon],
+  template: `
+    <nav #nav appOverflowNav>
+      <button class="nav-button" id="mdc-btn">
+        <span class="mat-mdc-button-touch-target"></span>
+        <span class="mdc-button__label"><mat-icon class="mat-icon material-icons">delete</mat-icon> Delete Selected</span>
+        <span class="mat-mdc-focus-indicator"></span>
+        <span class="mat-ripple"></span>
+      </button>
+      <button class="nav-button" id="direct-text-btn">Direct Text</button>
+      <div class="spacer"></div>
+    </nav>
+  `
+})
+class MaterialButtonHostComponent {
+  @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
+}
+
 describe("OverflowNavDirective", () => {
   beforeAll(() => {
     patchGetComputedStyle();
@@ -178,12 +221,12 @@ describe("OverflowNavDirective", () => {
     if (moreBtn) mockElementWidth(moreBtn as HTMLElement, 80);
   }
 
-  async function setup<T>(comp: new (...args: any[]) => T, containerWidth: number, buttonWidth: number) {
+  async function setup<T extends OverflowNavTestHost>(comp: new (...args: unknown[]) => T, containerWidth: number, buttonWidth: number) {
     const fixture = TestBed.createComponent(comp);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    const navRef = (fixture.componentInstance as any).navRef as ElementRef<HTMLElement>;
+    const navRef = fixture.componentInstance.navRef;
     const navEl = navRef.nativeElement;
     setUpWidths(navEl, containerWidth, buttonWidth);
 
@@ -594,6 +637,89 @@ describe("OverflowNavDirective", () => {
       fixture.destroy();
     });
   });
+
+  describe("data-overflow-pinned prioritization", () => {
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [PinnedHostComponent]
+      }).compileComponents();
+    });
+
+    it("should keep pinned buttons visible even when space is limited", async () => {
+      const { navEl, fixture } = await setup(PinnedHostComponent, 350, 60);
+      const pinned1 = navEl.querySelector("#pinned1") as HTMLElement;
+      const pinned2 = navEl.querySelector("#pinned2") as HTMLElement;
+      expect(pinned1.classList.contains("sub-overflow-hidden")).toBe(false);
+      expect(pinned2.classList.contains("sub-overflow-hidden")).toBe(false);
+      fixture.destroy();
+    });
+
+    it("should hide non-pinned buttons when space is limited", async () => {
+      const { navEl, fixture } = await setup(PinnedHostComponent, 300, 60);
+      const hidden = navEl.querySelectorAll(".sub-overflow-hidden");
+      expect(hidden.length).toBeGreaterThan(0);
+      const hiddenIds = Array.from(hidden).map(el => el.id);
+      expect(hiddenIds).not.toContain("pinned1");
+      expect(hiddenIds).not.toContain("pinned2");
+      fixture.destroy();
+    });
+
+    it("should include non-pinned hidden buttons in the overflow menu", async () => {
+      const { navEl, fixture } = await setup(PinnedHostComponent, 300, 60);
+      const moreBtn = navEl.querySelector(".overflow-more-btn") as HTMLElement;
+      moreBtn.click();
+      const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
+      const menuTexts = Array.from(dropdown.querySelectorAll(".overflow-menu-item"))
+        .map(el => el.textContent?.trim());
+      expect(menuTexts).not.toContain("Primary");
+      expect(menuTexts).not.toContain("Filter");
+      fixture.destroy();
+    });
+  });
+
+  describe("extractButtonText with Material button structure", () => {
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [MaterialButtonHostComponent]
+      }).compileComponents();
+    });
+
+    it("should extract text from mdc-button__label excluding mat-icon content", async () => {
+      const { fixture } = await setup(MaterialButtonHostComponent, 100, 100);
+      const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
+      const items = Array.from(dropdown.querySelectorAll(".overflow-menu-item"));
+      const mdcItem = items.find(item => item.querySelector("span")?.textContent?.includes("Delete Selected"));
+      if (mdcItem) {
+        const labelSpan = mdcItem.querySelector("span");
+        expect(labelSpan?.textContent?.trim()).toBe("Delete Selected");
+      }
+      fixture.destroy();
+    });
+
+    it("should extract direct text nodes from buttons without spans", async () => {
+      const { fixture } = await setup(MaterialButtonHostComponent, 100, 100);
+      const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
+      const items = Array.from(dropdown.querySelectorAll(".overflow-menu-item"));
+      const directTextItem = items.find(item =>
+        item.querySelector("span")?.textContent?.includes("Direct Text")
+      );
+      expect(directTextItem).toBeTruthy();
+      fixture.destroy();
+    });
+  });
+
+  describe("data-overflow-child at index 0", () => {
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [FirstActiveOverflowChildHostComponent]
+      }).compileComponents();
+    });
+
+    it("should not crash when active overflow-child is at index 0 (no parent)", async () => {
+      const { navEl, fixture } = await setup(FirstActiveOverflowChildHostComponent, 250, 60);
+      const activeChild = navEl.querySelector("#btn1") as HTMLElement;
+      expect(activeChild.classList.contains("sub-overflow-hidden")).toBe(false);
+      fixture.destroy();
+    });
+  });
 });
-
-
