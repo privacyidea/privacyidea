@@ -29,7 +29,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { OverflowNavDirective } from "@components/layout/navigation/overflow-nav.directive";
+import { OverflowNavDirective } from "@components/shared/directives/overflow-nav.directive";
 
 @Component({
   selector: "app-user-table-actions",

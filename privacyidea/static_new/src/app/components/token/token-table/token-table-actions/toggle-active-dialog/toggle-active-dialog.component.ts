@@ -51,9 +51,9 @@ export interface ToggleActiveDialogData {
 })
 export class ToggleActiveDialogComponent extends AbstractDialogComponent<ToggleActiveDialogData, ToggleActiveAction> {
   actions: DialogAction<ToggleActiveAction>[] = [
-    { label: "Activate All", value: "activate", type: "confirm", primary: false },
-    { label: "Deactivate All", value: "deactivate", type: "destruct", primary: false },
-    { label: "Toggle All", value: "toggle", type: "confirm", primary: true }
+    { label: "Activate", value: "activate", type: "confirm", primary: false },
+    { label: "Deactivate", value: "deactivate", type: "destruct", primary: false },
+    { label: "Toggle", value: "toggle", type: "confirm", primary: true }
   ];
 
   onAction(value: ToggleActiveAction): void {
