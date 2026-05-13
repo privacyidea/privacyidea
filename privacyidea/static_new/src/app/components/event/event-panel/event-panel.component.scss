@@ -10,10 +10,7 @@
   display: grid;
   position: relative;
   box-sizing: border-box;
-  width: min(
-    calc(2 * 616px + var(--global-gap) + 2 * var(--global-padding)),
-    calc(100vw - 4 * var(--global-padding))
-  );
+  width: min(calc(2 * 616px + var(--global-gap) + 2 * var(--global-padding)), calc(100vw - 4 * var(--global-padding)));
 }
 
 .header-row {
@@ -22,6 +19,10 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+}
+
+.edit-event-handler-container .sticky-header.is-sticky {
+  box-shadow: var(--elevation-8) !important;
 }
 
 .action-buttons {
