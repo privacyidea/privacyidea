@@ -129,7 +129,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
 
   private createContainer(): void {
     this.dialogRef.close();
-    this.router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD]);
+    this.router.navigate([ROUTE_PATHS.CONTAINERS_WIZARD]);
   }
 
   logout(): void {

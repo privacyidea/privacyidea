@@ -250,12 +250,12 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]">
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.CONTAINERS]">
       <mat-icon class="mdi--folder-list"></mat-icon>
       <span i18n>Overview</span>
     </a>
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
       <a
         class="sub-nav-active">
         <mat-icon>source</mat-icon>
@@ -264,28 +264,28 @@
     }
     @if (authService.actionAllowed("container_create")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]">
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]">
         <mat-icon>create_new_folder</mat-icon>
         <span i18n>Create</span>
       </a>
     }
     @if (authService.oneActionAllowed(["container_template_list", "container_template_create"])) {
       <a
-        [ngClass]="contentService.onTokensContainersTemplates() ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES]">
+        [ngClass]="contentService.onContainersTemplates() ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES]">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Templates</span>
       </a>
     }
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)) {
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)) {
       <a
         class="sub-nav-active">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Template Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE) {
+    @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE) {
       <a
         class="sub-nav-active">
         <mat-icon>note_add</mat-icon>

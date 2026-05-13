@@ -298,11 +298,11 @@ export class LoginComponent implements OnDestroy {
       if (this.authService.tokenWizard()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
       } else if (this.authService.containerWizard().enabled) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD).then();
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
       } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.anyContainerActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS).then();
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
       } else {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       }
