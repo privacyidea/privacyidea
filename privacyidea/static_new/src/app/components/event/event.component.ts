@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { animate, state, style, transition, trigger } from "@angular/animations";
 import { CommonModule } from "@angular/common";
 import {
   Component,
@@ -68,14 +67,7 @@ import { of } from "rxjs";
   ],
   standalone: true,
   templateUrl: "./event.component.html",
-  styleUrl: "./event.component.scss",
-  animations: [
-    trigger("detailExpand", [
-      state("collapsed", style({ height: "0px", minHeight: "0" })),
-      state("expanded", style({ height: "*" })),
-      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
-    ])
-  ]
+  styleUrl: "./event.component.scss"
 })
 export class EventComponent {
   protected readonly authService = inject(AuthService);

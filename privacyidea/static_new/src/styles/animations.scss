@@ -1,0 +1,30 @@
+/**
+ * Shared CSS animations for animate.enter / animate.leave usage.
+ * See container-table.component.html for an example consumer.
+ */
+
+.detail-expand-enter {
+  animation: detail-expand-in 225ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.detail-expand-leave {
+  animation: detail-expand-out 225ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes detail-expand-in {
+  from {
+    grid-template-rows: 0fr;
+  }
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
+@keyframes detail-expand-out {
+  from {
+    grid-template-rows: 1fr;
+  }
+  to {
+    grid-template-rows: 0fr;
+  }
+}

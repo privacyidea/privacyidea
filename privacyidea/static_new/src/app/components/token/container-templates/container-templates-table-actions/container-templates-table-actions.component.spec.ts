@@ -19,7 +19,6 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/token/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
@@ -42,7 +41,7 @@ describe("ContainerTemplatesTableActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplatesTableActionsComponent, NoopAnimationsModule],
+      imports: [ContainerTemplatesTableActionsComponent],
       providers: [
         { provide: DialogService, useClass: MockDialogService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },

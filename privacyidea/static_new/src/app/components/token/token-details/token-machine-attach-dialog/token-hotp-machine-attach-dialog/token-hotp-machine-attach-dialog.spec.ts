@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Observable } from "rxjs";
 
 import { TokenHotpMachineAssignDialogComponent } from "./token-hotp-machine-attach-dialog";
@@ -51,7 +50,7 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
     machineService = new MockMachineService();
 
     await TestBed.configureTestingModule({
-      imports: [TokenHotpMachineAssignDialogComponent, BrowserAnimationsModule, MatDialogModule],
+      imports: [TokenHotpMachineAssignDialogComponent, MatDialogModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

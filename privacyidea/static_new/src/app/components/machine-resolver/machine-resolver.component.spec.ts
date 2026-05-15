@@ -22,7 +22,6 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -54,7 +53,7 @@ describe("MachineResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineResolverComponent, NoopAnimationsModule],
+      imports: [MachineResolverComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

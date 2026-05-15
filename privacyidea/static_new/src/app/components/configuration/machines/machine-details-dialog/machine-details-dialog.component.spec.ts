@@ -18,7 +18,6 @@
  **/
 import { computed, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -104,7 +103,7 @@ describe("MachineDetailsDialogComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachineDetailsDialogComponent, NoopAnimationsModule],
+      imports: [MachineDetailsDialogComponent],
       providers: [
         { provide: MachineService, useValue: machineServiceMock },
         { provide: ApplicationService, useValue: applicationServiceMock },

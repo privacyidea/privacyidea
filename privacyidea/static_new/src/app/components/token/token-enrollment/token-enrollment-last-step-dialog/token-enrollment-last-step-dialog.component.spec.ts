@@ -18,7 +18,6 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContentService } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -50,7 +49,7 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, TokenEnrollmentLastStepDialogComponent],
+      imports: [TokenEnrollmentLastStepDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: mockDialogData },

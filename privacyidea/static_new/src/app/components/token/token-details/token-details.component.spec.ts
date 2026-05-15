@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
@@ -70,7 +69,7 @@ describe("TokenDetailsComponent", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

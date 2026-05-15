@@ -21,7 +21,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -107,7 +106,6 @@ describe("TokenEnrollmentComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        NoopAnimationsModule,
         MockLocalService,
         MockNotificationService,
         { provide: LocalService, useExisting: MockLocalService },
