@@ -30,3 +30,4 @@ export * from './mock-policies-service';
 export * from './mock-documentation-service';
 export * from './mock-pending-changes-service';
 export * from './mock-periodic-task-service';
+export * from './mock-clients-service';
