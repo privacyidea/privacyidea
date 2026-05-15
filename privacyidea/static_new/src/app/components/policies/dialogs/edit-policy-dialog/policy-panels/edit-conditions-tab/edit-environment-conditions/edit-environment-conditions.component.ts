@@ -19,6 +19,7 @@
 
 import { Component, computed, inject, input, OnInit, output, signal, ViewChild } from "@angular/core";
 
+import { toSignal } from "@angular/core/rxjs-interop";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -29,8 +30,15 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+
+interface ClientSuggestion {
+  ip: string;
+  hostname?: string;
+  applications: string[];
+}
 
 @Component({
   selector: "app-edit-environment-conditions",
@@ -56,6 +64,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
 
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly systemService: SystemServiceInterface = inject(SystemService);
+  readonly clientsService: ClientsServiceInterface = inject(ClientsService);
 
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
@@ -63,6 +72,46 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
   clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
+  private readonly clientControlValue = toSignal(this.clientFormControl.valueChanges, {
+    initialValue: this.clientFormControl.value
+  });
+
+  readonly knownClients = computed<ClientSuggestion[]>(() => {
+    const dict = this.clientsService.clientsResource.value()?.result?.value ?? {};
+    const map = new Map<string, ClientSuggestion>();
+    for (const application of Object.keys(dict)) {
+      for (const cd of dict[application]) {
+        if (!cd.ip) continue;
+        let entry = map.get(cd.ip);
+        if (!entry) {
+          entry = { ip: cd.ip, hostname: cd.hostname, applications: [] };
+          map.set(cd.ip, entry);
+        }
+        if (cd.hostname && !entry.hostname) entry.hostname = cd.hostname;
+        if (!entry.applications.includes(application)) entry.applications.push(application);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => a.ip.localeCompare(b.ip));
+  });
+
+  readonly clientSearchTerm = computed<string>(() => {
+    const segment = this.currentClientSegment(this.clientControlValue() ?? "").raw;
+    return segment.trim().replace(/^!\s*/, "").toLowerCase();
+  });
+
+  readonly filteredKnownClients = computed<ClientSuggestion[]>(() => {
+    const term = this.clientSearchTerm();
+    const clients = this.knownClients();
+    const matches = term
+      ? clients.filter(
+          (c) =>
+            c.ip.toLowerCase().includes(term) ||
+            (c.hostname ?? "").toLowerCase().includes(term) ||
+            c.applications.some((app) => app.toLowerCase().includes(term))
+        )
+      : clients;
+    return matches.slice(0, 20);
+  });
 
   userAgentPresets = [
     "Credential Provider",
@@ -97,6 +146,28 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   ngOnInit() {
     this.validTimeFormControl.setValue(this.policy().time || "", { emitEvent: false });
     this.clientFormControl.setValue(this.policy().client?.join(", ") || "", { emitEvent: false });
+    this.clientsService.requestClientsForAutocomplete();
+  }
+
+  private currentClientSegment(value: string): { before: string; raw: string } {
+    const idx = value.lastIndexOf(",");
+    if (idx === -1) return { before: "", raw: value };
+    return { before: value.slice(0, idx + 1), raw: value.slice(idx + 1) };
+  }
+
+  buildClientSelection(ip: string): string {
+    const value = this.clientFormControl.value ?? "";
+    const { before, raw } = this.currentClientSegment(value);
+    const prefixMatch = raw.match(/^(\s*!?)/);
+    const prefix = prefixMatch ? prefixMatch[1] : "";
+    const leadingSpace = before && !prefix.startsWith(" ") ? " " : "";
+    return `${before}${leadingSpace}${prefix.replace(/^\s+/, "")}${ip}`;
+  }
+
+  formatClientSuggestion(c: ClientSuggestion): string {
+    const host = c.hostname ? ` — ${c.hostname}` : "";
+    const apps = c.applications.length ? ` (${c.applications.join(", ")})` : "";
+    return `${c.ip}${host}${apps}`;
   }
 
   emitEdits(edits: Partial<PolicyDetail>) {

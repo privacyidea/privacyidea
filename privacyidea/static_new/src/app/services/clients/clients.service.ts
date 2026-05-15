@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable } from "@angular/core";
+import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
@@ -36,6 +36,7 @@ export type ClientsDict = Record<string, ClientData[]>;
 
 export interface ClientsServiceInterface {
   clientsResource: HttpResourceRef<PiResponse<ClientsDict> | undefined>;
+  requestClientsForAutocomplete(): void;
 }
 
 @Injectable({
@@ -47,6 +48,8 @@ export class ClientsService implements ClientsServiceInterface {
   private readonly notificationService = inject(NotificationService);
   private clientsBaseUrl = environment.proxyUrl + "/client/";
 
+  private autocompleteRequested: WritableSignal<boolean> = signal(false);
+
   constructor() {
     effect(() => {
       this.notificationService.handleResourceError(this.clientsResource.error(), "clients");
@@ -54,7 +57,11 @@ export class ClientsService implements ClientsServiceInterface {
   }
 
   clientsResource = httpResource<PiResponse<ClientsDict>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.CLIENTS || !this.authService.actionAllowed("clienttype")) {
+    if (!this.authService.actionAllowed("clienttype")) {
+      return undefined;
+    }
+    const onClientsRoute = this.contentService.routeUrl() === ROUTE_PATHS.CLIENTS;
+    if (!onClientsRoute && !this.autocompleteRequested()) {
       return undefined;
     }
     return {
@@ -64,4 +71,10 @@ export class ClientsService implements ClientsServiceInterface {
       params: {}
     };
   });
+
+  requestClientsForAutocomplete(): void {
+    if (!this.autocompleteRequested()) {
+      this.autocompleteRequested.set(true);
+    }
+  }
 }
