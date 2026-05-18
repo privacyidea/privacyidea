@@ -11,7 +11,7 @@ import gnupg
 from privacyidea.lib import health
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
-from privacyidea.lib.metrics import inc, observe
+from privacyidea.lib.metrics import _utc_now, inc, observe
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
 from privacyidea.lib.radiusserver import add_radius, delete_radius
@@ -1742,7 +1742,7 @@ class HealthEndpointsTestCase(MyApiTestCase):
         row = MetricAggregate(
             metric_name="sms_send_total",
             labels_key='{"gateway":"x","result":"ok"}',
-            window_start=datetime.datetime.utcnow() - datetime.timedelta(hours=hours_ago),
+            window_start=_utc_now() - datetime.timedelta(hours=hours_ago),
             count=1)
         db.session.add(row)
         db.session.commit()

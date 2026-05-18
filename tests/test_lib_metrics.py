@@ -12,6 +12,7 @@ from privacyidea.lib.metrics import (
     _labels_key,
     _parse_labels_key,
     _percentile_from_buckets,
+    _utc_now,
     _window_start,
     cleanup_old_metrics,
     get_metrics,
@@ -189,7 +190,7 @@ class CrossWindowAndNodeAggregationTest(MyTestCase):
     def test_aggregates_across_nodes(self):
         # Drop two rows under the same (metric, labels_key, window) but
         # different node values, then read back - get_metrics should fold them.
-        now = _window_start(datetime.datetime.utcnow())
+        now = _window_start(_utc_now())
         for node in ("nodeA", "nodeB"):
             row = MetricAggregate(metric_name="cross_test", labels_key="",
                                   node=node, window_start=now,
@@ -203,7 +204,7 @@ class CrossWindowAndNodeAggregationTest(MyTestCase):
         self.assertAlmostEqual(results[0]["max"], 0.2)
 
     def test_aggregates_across_windows(self):
-        now = _window_start(datetime.datetime.utcnow())
+        now = _window_start(_utc_now())
         earlier = now - datetime.timedelta(seconds=300)
         for window in (now, earlier):
             row = MetricAggregate(metric_name="cross_test", labels_key="",
@@ -215,7 +216,7 @@ class CrossWindowAndNodeAggregationTest(MyTestCase):
         self.assertEqual(results[0]["count"], 20)
 
     def test_since_seconds_excludes_old_windows(self):
-        now = _window_start(datetime.datetime.utcnow())
+        now = _window_start(_utc_now())
         old = now - datetime.timedelta(hours=2)
         for window, count in [(now, 5), (old, 99)]:
             db.session.add(MetricAggregate(
@@ -235,7 +236,7 @@ class CleanupTest(MyTestCase):
         _wipe_metrics()
 
     def test_cleanup_drops_only_old_rows(self):
-        now = datetime.datetime.utcnow()
+        now = _utc_now()
         old = now - datetime.timedelta(days=2)
         recent = now - datetime.timedelta(minutes=10)
         for window in (old, recent):
@@ -263,7 +264,7 @@ class RaceToleranceTest(MyTestCase):
         # Simulate the race window: another worker's row is already in place
         # at flush time. We expect _get_or_create_row to roll back its INSERT
         # and refetch the winning row.
-        now = _window_start(datetime.datetime.utcnow())
+        now = _window_start(_utc_now())
         existing = MetricAggregate(metric_name="race_test", labels_key="",
                                    node="", window_start=now,
                                    count=11, sum_value=1.1, max_value=0.5)

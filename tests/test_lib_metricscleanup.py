@@ -5,6 +5,7 @@ import datetime
 
 from sqlalchemy import select
 
+from privacyidea.lib.metrics import _utc_now
 from privacyidea.lib.task.metricscleanup import MetricsCleanupTask
 from privacyidea.models import db
 from privacyidea.models.metric_aggregate import MetricAggregate
@@ -33,7 +34,7 @@ class MetricsCleanupTaskTest(MyTestCase):
         self.assertTrue(opts["older_than_hours"].get("description"))
 
     def test_do_default_drops_rows_older_than_24h(self):
-        now = datetime.datetime.utcnow()
+        now = _utc_now()
         _add_row(now - datetime.timedelta(hours=2))            # recent, keep
         _add_row(now - datetime.timedelta(hours=23, minutes=30))  # just inside, keep
         _add_row(now - datetime.timedelta(hours=25))           # past cutoff, drop
@@ -51,7 +52,7 @@ class MetricsCleanupTaskTest(MyTestCase):
     def test_do_honors_older_than_hours_option(self):
         # A 1h cutoff should drop everything older than an hour, even rows that
         # the default 24h cutoff would keep.
-        now = datetime.datetime.utcnow()
+        now = _utc_now()
         _add_row(now - datetime.timedelta(minutes=30))   # keep
         _add_row(now - datetime.timedelta(hours=2))      # drop with older_than_hours=1
         db.session.commit()
@@ -67,7 +68,7 @@ class MetricsCleanupTaskTest(MyTestCase):
     def test_do_with_string_option_value(self):
         # The DB stores option values as Unicode regardless of declared type, so do()
         # must coerce strings - this guards the int(...) coercion in the task body.
-        now = datetime.datetime.utcnow()
+        now = _utc_now()
         _add_row(now - datetime.timedelta(hours=5))
         db.session.commit()
 
@@ -82,7 +83,7 @@ class MetricsCleanupTaskTest(MyTestCase):
     def test_do_with_invalid_option_falls_back_to_default(self):
         # Garbage in the option value must not crash the task; the body has an
         # except (TypeError, ValueError) that drops back to 24h.
-        now = datetime.datetime.utcnow()
+        now = _utc_now()
         _add_row(now - datetime.timedelta(hours=2))   # keep under default 24h
         db.session.commit()
 

@@ -100,10 +100,16 @@ def _labels_hash(labels_key: str) -> str:
     return hashlib.sha256(labels_key.encode("utf-8")).hexdigest()
 
 
+def _utc_now() -> datetime.datetime:
+    # Naive UTC datetime. The metric_aggregate.window_start column is
+    # DateTime(timezone=False); keep everything we compare against it naive.
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+
 def _window_start(now: datetime.datetime) -> datetime.datetime:
     epoch = int(now.replace(tzinfo=datetime.timezone.utc).timestamp())
     bucket_epoch = epoch - (epoch % WINDOW_SECONDS)
-    return datetime.datetime.utcfromtimestamp(bucket_epoch)
+    return datetime.datetime.fromtimestamp(bucket_epoch, tz=datetime.timezone.utc).replace(tzinfo=None)
 
 
 # Metric writes happen on a dedicated session so they cannot piggyback on
@@ -163,7 +169,7 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
     try:
         node = get_privacyidea_node() or ""
         labels_key = _labels_key(labels)
-        window = _window_start(datetime.datetime.utcnow())
+        window = _window_start(_utc_now())
         session = _metric_session()
         try:
             row = _get_or_create_row(session, name, labels_key, node, window)
@@ -192,7 +198,7 @@ def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
     try:
         node = get_privacyidea_node() or ""
         labels_key = _labels_key(labels)
-        window = _window_start(datetime.datetime.utcnow())
+        window = _window_start(_utc_now())
         session = _metric_session()
         try:
             row = _get_or_create_row(session, name, labels_key, node, window)
@@ -232,7 +238,7 @@ def get_metrics(name: str | None = None, since_seconds: int = DEFAULT_QUERY_WIND
          "count": 120, "avg": 0.024, "p50": 0.025, "p95": 0.1,
          "max": 0.34, "since_seconds": 3600}
     """
-    cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=since_seconds)
+    cutoff = _utc_now() - datetime.timedelta(seconds=since_seconds)
     stmt = select(MetricAggregate).where(MetricAggregate.window_start >= cutoff)
     if name is not None:
         stmt = stmt.where(MetricAggregate.metric_name == name)
@@ -321,7 +327,7 @@ def track_resolver_op(op_name: str):
 
 def cleanup_old_metrics(older_than_seconds: int = RETENTION_SECONDS) -> int:
     """Delete metric rows older than ``older_than_seconds``. Returns row count."""
-    cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=older_than_seconds)
+    cutoff = _utc_now() - datetime.timedelta(seconds=older_than_seconds)
     stmt = delete(MetricAggregate).where(MetricAggregate.window_start < cutoff)
     # Run on the dedicated metric session so the cleanup commit can't promote
     # unrelated pending writes in the caller's ``db.session``.
