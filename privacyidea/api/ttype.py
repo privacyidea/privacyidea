@@ -18,16 +18,19 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This API endpoint is a generic endpoint that can be used by any token
-type.
+The ``/ttype/`` endpoint is a generic dispatcher for token-type-specific
+API calls. A token class may declare a ``classmethod api_endpoint`` and
+will then be reachable at ``/ttype/<tokentype>`` without having to register
+its own routes.
 
-The tokentype needs to implement a classmethod *api_endpoint* and can then be
-called by /ttype/<tokentype>.
-This way, each tokentype can create its own API without the need to change
-the core API.
+Authentication is **not** enforced by this dispatcher — it is the
+responsibility of each token class to validate the request, typically
+through cryptographic means (signed challenges, registered public keys,
+shared secrets). The dispatcher only sets up the audit, policy and event
+context.
 
-The TiQR Token uses this API to implement its special functionalities. See
-:ref:`code_tiqr_token`.
+Token classes that currently use this endpoint include TiQR
+(:ref:`code_tiqr_token`), push, U2F and Yubikey.
 """
 import copy
 import json
@@ -95,11 +98,29 @@ def before_request():
 @event("ttype", request, g)
 def token(ttype=None):
     """
-    This is a special token function. Each token type can define an
-    additional API call, that does not need authentication on the REST API
-    level.
+    Dispatch a token-type-specific API call to the matching token class.
+    The path component selects the token type; the request body / query
+    string is forwarded verbatim to the token class' ``api_endpoint``
+    classmethod, which is responsible for both validation and the response.
 
-    :return: Token Type dependent
+    Authentication is **not** enforced by the dispatcher — token classes
+    authenticate the request themselves (signed payloads, registered keys,
+    shared secrets). The response shape depends on what the token class
+    returns: JSON, HTML, plain text, or arbitrary binary data with custom
+    headers.
+
+    If the policy action :ref:`policy_hide_specific_error_message_for_ttype`
+    is active, exceptions raised by the token class are converted into a
+    generic error response instead of propagating the underlying message.
+
+    For the push token type, the dispatcher additionally evaluates the
+    ``push_code_to_phone_message`` policy and forwards its value to the
+    token class.
+
+    :param ttype: path component naming the token type
+        (e.g. ``tiqr``, ``push``, ``u2f``, ``yubikey``).
+    :status 200: token-type-dependent response.
+    :status 400: the ``ttype`` does not match any registered token class.
     """
     token_class = get_token_class(ttype)
     if token_class is None:
@@ -129,7 +150,7 @@ def token(ttype=None):
         raise
     serial = get_optional(request.all_data, "serial")
     user = get_user_from_param(request.all_data)
-    g.audit_object.log({"success": 1,
+    g.audit_object.log({"success": True,
                         "user": user.login,
                         "realm": user.realm,
                         "serial": serial,

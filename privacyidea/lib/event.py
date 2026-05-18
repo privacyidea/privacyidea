@@ -133,6 +133,35 @@ class event:
         return event_wrapper
 
 
+def _get_handler_classes():
+    """
+    Return the list of available event handler classes. Imports are kept
+    local to avoid circular imports during application startup.
+    """
+    from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
+    from privacyidea.lib.eventhandler.tokenhandler import TokenEventHandler
+    from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
+    from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
+    from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
+    from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
+    from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
+    from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
+    from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
+    from privacyidea.lib.eventhandler.webhookeventhandler import WebHookHandler
+    from privacyidea.lib.eventhandler.containerhandler import ContainerEventHandler
+    return [UserNotificationEventHandler, TokenEventHandler, ScriptEventHandler,
+            FederationEventHandler, CounterEventHandler, RequestManglerEventHandler,
+            ResponseManglerEventHandler, LoggingEventHandler,
+            CustomUserAttributesHandler, WebHookHandler, ContainerEventHandler]
+
+
+def get_handler_modules():
+    """
+    Return the identifiers of all available event handler modules.
+    """
+    return [cls.identifier for cls in _get_handler_classes()]
+
+
 def get_handler_object(handler_name):
     """
     Return an event handler object based on the Name of the event handler class
@@ -141,44 +170,10 @@ def get_handler_object(handler_name):
     :type handler_name: basestring
     :return:
     """
-    # TODO: beautify and make this work with several different handlers
-    from privacyidea.lib.eventhandler.usernotification import \
-        UserNotificationEventHandler
-    from privacyidea.lib.eventhandler.tokenhandler import TokenEventHandler
-    from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler
-    from privacyidea.lib.eventhandler.federationhandler import \
-        FederationEventHandler
-    from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
-    from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
-    from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
-    from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
-    from privacyidea.lib.eventhandler.customuserattributeshandler import CustomUserAttributesHandler
-    from privacyidea.lib.eventhandler.webhookeventhandler import WebHookHandler
-    from privacyidea.lib.eventhandler.containerhandler import ContainerEventHandler
-    handler = None
-    if handler_name == "UserNotification":
-        handler = UserNotificationEventHandler()
-    elif handler_name == "Token":
-        handler = TokenEventHandler()
-    elif handler_name == "Script":
-        handler = ScriptEventHandler()
-    elif handler_name == "Federation":
-        handler = FederationEventHandler()
-    elif handler_name == "Counter":
-        handler = CounterEventHandler()
-    elif handler_name == "RequestMangler":
-        handler = RequestManglerEventHandler()
-    elif handler_name == "ResponseMangler":
-        handler = ResponseManglerEventHandler()
-    elif handler_name == "Logging":
-        handler = LoggingEventHandler()
-    elif handler_name == "CustomUserAttributes":
-        handler = CustomUserAttributesHandler()
-    elif handler_name == "WebHook":
-        handler = WebHookHandler()
-    elif handler_name == "Container":
-        handler = ContainerEventHandler()
-    return handler
+    for cls in _get_handler_classes():
+        if cls.identifier == handler_name:
+            return cls()
+    return None
 
 
 def enable_event(event_id, enable=True):

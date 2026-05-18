@@ -18,11 +18,15 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This endpoint is used to create, update, list and delete RADIUS
-server definitions. RADIUS server definitions can be used for several purposes
-like RADIUS-Token or RADIUS-passthru policies.
+__doc__ = """
+The RADIUS-server REST API manages definitions of remote RADIUS servers.
+These definitions are referenced by the :ref:`radius_token` token type
+and by the :ref:`passthru_policy` to forward authentication to a RADIUS
+backend. See :ref:`radiusserver_config` for the conceptual chapter.
 
-The code of this module is tested in tests/test_api_radiusserver.py
+All endpoints require admin authentication. Read access is gated by the
+admin policy action :ref:`policy_radiusserver_read`; create, update,
+delete and the test request are gated by :ref:`policy_radiusserver_write`.
 """
 from flask import (Blueprint, request)
 
@@ -48,13 +52,24 @@ radiusserver_blueprint = Blueprint('radiusserver_blueprint', __name__)
 @log_with(log)
 def create(identifier=None):
     """
-    This call creates or updates a RADIUS server definition.
+    Create or update a RADIUS server definition. If a definition with the
+    given ``identifier`` already exists it is updated; otherwise it is
+    created. Spaces in ``identifier`` are replaced with underscores.
 
-    :param identifier: The unique name of the RADIUS server definition
-    :param server: The FQDN or IP of the RADIUS server
-    :param port: The port of the RADIUS server
-    :param secret: The RADIUS secret of the RADIUS server
-    :param description: A description for the definition
+    Requires admin authentication and the policy action
+    :ref:`policy_radiusserver_write`.
+
+    :param identifier: path component, the unique name of the definition.
+    :jsonparam server: hostname or IP of the RADIUS server (required).
+    :jsonparam port: UDP port of the RADIUS server, default ``1812``.
+    :jsonparam secret: shared RADIUS secret (required).
+    :jsonparam retries: number of retries on timeout, default ``3``.
+    :jsonparam timeout: per-attempt timeout in seconds, default ``5``.
+    :jsonparam dictionary: server-side filesystem path to the FreeRADIUS
+        dictionary file, default ``/etc/privacyidea/dictionary``.
+    :jsonparam description: free-form description.
+    :jsonparam options: optional dictionary of additional connection options.
+    :status 200: ``True`` on success.
     """
     param = request.all_data
     identifier = identifier.replace(" ", "_")
@@ -81,7 +96,17 @@ def create(identifier=None):
 @prepolicy(check_base_action, request, PolicyAction.RADIUSSERVERREAD)
 def list_radius():
     """
-    This call gets the list of RADIUS server definitions
+    Return all RADIUS server definitions known to this server. The shared
+    secret of each definition is redacted in the response.
+
+    The result is a dictionary keyed by ``identifier``; each value contains
+    ``id``, ``server``, ``port``, ``secret`` (always ``"__CENSORED__"``),
+    ``retries``, ``timeout``, ``dictionary``, ``description``.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_radiusserver_read`.
+
+    :status 200: dict of definitions in ``result.value``.
     """
     res = list_radiusservers()
     # We do not add the secret!
@@ -96,9 +121,13 @@ def list_radius():
 @log_with(log)
 def delete_server(identifier=None):
     """
-    This call deletes the specified RADIUS server configuration
+    Delete the RADIUS server definition with the given identifier.
 
-    :param identifier: The unique name of the RADIUS server definition
+    Requires admin authentication and the policy action
+    :ref:`policy_radiusserver_write`.
+
+    :param identifier: path component, the name of the definition.
+    :status 200: ``True`` if a definition was deleted, ``False`` otherwise.
     """
     r = delete_radius(identifier)
 
@@ -112,8 +141,27 @@ def delete_server(identifier=None):
 @log_with(log)
 def test():
     """
-    Test the RADIUS definition
-    :return:
+    Test a RADIUS server definition by performing an Access-Request against
+    it with the supplied credentials. The definition does not need to be
+    saved first — all parameters are taken from the request body.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_radiusserver_write`.
+
+    :jsonparam identifier: identifier under which the definition would be
+        saved (used for logging/audit only).
+    :jsonparam server: hostname or IP of the RADIUS server (required).
+    :jsonparam port: UDP port, default ``1812``.
+    :jsonparam secret: shared RADIUS secret (required).
+    :jsonparam retries: number of retries on timeout, default ``3``.
+    :jsonparam timeout: per-attempt timeout in seconds, default ``5``.
+    :jsonparam dictionary: server-side filesystem path to the FreeRADIUS
+        dictionary file, default ``/etc/privacyidea/dictionary``.
+    :jsonparam options: optional dictionary of additional connection options.
+    :jsonparam username: user name to test (required).
+    :jsonparam password: password / OTP to test (required).
+    :status 200: ``True`` if the RADIUS server accepted the credentials,
+        ``False`` otherwise.
     """
     param = request.all_data
     identifier = get_required(param, "identifier")
