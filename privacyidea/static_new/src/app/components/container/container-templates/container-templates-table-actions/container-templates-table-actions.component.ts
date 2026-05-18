@@ -24,13 +24,13 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
-import { OverflowNavDirective } from "@directives/overflow-nav/overflow-nav.directive"
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-container-templates-table-actions",
