@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, effect, inject, Injectable, Signal } from "@angular/core";
-import { environment } from "../../../environments/environment";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { PiResponse } from "../../app.component";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface SmtpServer {
@@ -76,7 +76,11 @@ export class SmtpService implements SmtpServiceInterface {
   }
 
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
-    if (!this.contentService.onExternalSmtp() && !this.contentService.onConfigurationTokenTypes() && !this.contentService.onConfigurationSystem()) {
+    if (
+      !this.contentService.onExternalSmtp() &&
+      !this.contentService.onConfigurationTokenTypes() &&
+      !this.contentService.onConfigurationSystem()
+    ) {
       return undefined;
     }
     return {
@@ -100,16 +104,16 @@ export class SmtpService implements SmtpServiceInterface {
   });
 
   async postSmtpServer(server: SmtpServer): Promise<void> {
-    const url = `${this.smtpServerBaseUrl}${server.identifier}`;
+    const url = `${this.smtpServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     try {
       await lastValueFrom(request);
-      this.notificationService.openSnackBar($localize`Successfully saved SMTP server.`);
+      this.notificationService.success($localize`Successfully saved SMTP server.`);
       this.smtpServerResource.reload();
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar($localize`Failed to save SMTP server. ` + message);
+      this.notificationService.error($localize`Failed to save SMTP server. ` + message);
       throw new Error("post-failed");
     }
   }
@@ -120,28 +124,28 @@ export class SmtpService implements SmtpServiceInterface {
     try {
       const res = await lastValueFrom(request);
       if (res?.result?.value) {
-        this.notificationService.openSnackBar($localize`Test email sent successfully.`);
+        this.notificationService.success($localize`Test email sent successfully.`);
         return true;
       }
       return false;
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar($localize`Failed to send test email. ` + message);
+      this.notificationService.error($localize`Failed to send test email. ` + message);
       return false;
     }
   }
 
   async deleteSmtpServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.smtpServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     try {
       await lastValueFrom(request);
-      this.notificationService.openSnackBar($localize`Successfully deleted SMTP server: ${identifier}.`);
+      this.notificationService.success($localize`Successfully deleted SMTP server: ${identifier}.`);
       this.smtpServerResource.reload();
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar($localize`Failed to delete SMTP server. ` + message);
+      this.notificationService.error($localize`Failed to delete SMTP server. ` + message);
       throw new Error("delete-failed");
     }
   }

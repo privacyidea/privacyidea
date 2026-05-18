@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable } from "@angular/core";
-import { ROUTE_PATHS } from "../../route_paths";
-import { VersioningService } from "../version/version.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { VersioningService } from "@services/version/version.service";
 
 export type ActionDocumentation = {
   info: string[];
@@ -59,7 +59,7 @@ export class DocumentationService implements DocumentationServiceInterface {
     let pageUrl;
     if (page.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       pageUrl = "webui/token_details.html";
-    } else if (page.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    } else if (page.startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
       pageUrl = "webui/container_view.html#container-details";
     } else {
       switch (page) {
@@ -69,7 +69,7 @@ export class DocumentationService implements DocumentationServiceInterface {
         case ROUTE_PATHS.TOKENS:
           pageUrl = "webui/index.html#tokens";
           break;
-        case ROUTE_PATHS.TOKENS_CONTAINERS:
+        case ROUTE_PATHS.CONTAINERS:
           pageUrl = "webui/index.html#containers";
           break;
         case "tokentypes":
@@ -87,7 +87,7 @@ export class DocumentationService implements DocumentationServiceInterface {
         case "containertypes":
           pageUrl = "container/container_types.html";
           break;
-        case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
+        case ROUTE_PATHS.CONTAINERS_CREATE:
           pageUrl = "webui/container_view.html#container-create";
           break;
         default:

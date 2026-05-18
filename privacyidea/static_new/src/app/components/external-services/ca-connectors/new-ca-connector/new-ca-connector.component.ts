@@ -27,27 +27,27 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import {
   CaConnector,
   CaConnectorService,
   CaConnectorServiceInterface
-} from "../../../../services/ca-connector/ca-connector.service";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { ActivatedRoute, Router } from "@angular/router";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MatSelectModule } from "@angular/material/select";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ScrollToTopDirective } from "../../../shared/directives/app-scroll-to-top.directive";
+} from "@services/ca-connector/ca-connector.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 @Component({
   selector: "app-ca-connector-edit-dialog",
@@ -133,7 +133,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
     const connectorData = connector?.data || {};
 
     this.caConnectorForm = this.formBuilder.group({
-      connectorname: [connector?.connectorname || "", [Validators.required]],
+      connectorname: [connector?.connectorname || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       type: [connector?.type || "local", [Validators.required]],
       // Local CA fields
       cacert: [connectorData["cacert"] || ""],

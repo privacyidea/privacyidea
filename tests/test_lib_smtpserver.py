@@ -3,7 +3,9 @@ This test file tests the lib/smtpserver.py
 """
 import binascii
 import email
+import re
 from email.mime.image import MIMEImage
+from email.mime.text import MIMEText
 from smtplib import SMTPException
 from unittest.mock import patch
 
@@ -92,7 +94,7 @@ class SMTPServerTestCase(MyTestCase):
     def test_03_updateserver(self):
         # Initial create
         smtp_id = add_smtpserver(identifier="myserver", server="100.2.3.4", smime=True, private_key="123",
-                           private_key_password="top_secret", certificate="cert")
+                                 private_key_password="top_secret", certificate="cert")
         self.assertGreater(smtp_id, 0)
         server_list = get_smtpservers(identifier="myserver")
         server = server_list[0].config
@@ -130,7 +132,6 @@ class SMTPServerTestCase(MyTestCase):
         server = server_list[0].config
         self.assertEqual("", server.private_key_password)
 
-
     def test_04_missing_configuration(self):
         self.assertRaises(ResourceNotFoundError, get_smtpserver, "notExisting")
 
@@ -155,7 +156,7 @@ class SMTPServerTestCase(MyTestCase):
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
@@ -165,7 +166,7 @@ class SMTPServerTestCase(MyTestCase):
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
@@ -193,7 +194,7 @@ class SMTPServerTestCase(MyTestCase):
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
@@ -203,12 +204,55 @@ class SMTPServerTestCase(MyTestCase):
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
         # Check, if the mock SMTP server actually has been configured as SMTP_SSL
         self.assertTrue(smtpmock.get_smtp_ssl())
+
+    @smtpmock.activate
+    def test_07_message_uses_crlf_line_endings(self):
+        # Regression test for issue #5217: when the message was serialized
+        # via as_bytes() the payload reaching smtplib.sendmail was bytes
+        # with bare "\n" line breaks. smtplib only normalizes line endings
+        # to CRLF for str input (via _fix_eols); bytes are sent through
+        # unchanged, so Exchange SE received the message with bare LF and
+        # treated the body as empty.
+        #
+        # Switching to as_string() means smtplib gets a str and normalizes
+        # to CRLF before transmission. This test simulates that wire
+        # transformation and asserts no bare LF remains -- which would
+        # fail if anyone reverts to as_bytes().
+        smtpmock.setdata(response={"user@example.com": (200, "OK")},
+                         support_tls=False)
+        s = dict(identifier="crlfConfig", server="mailserver", port=25,
+                 sender="mailsender@example.com", tls=False)
+
+        body = MIMEText(
+            "<p>Hello</p>\n\n<p>Dein OTP <b>562012</b></p>\n\n"
+            "<p>Hier ist ansonsten noch viel mehr Text, der zu "
+            "Zeilenumbrüchen führt</p>\n",
+            "html", "utf-8")
+        r = SMTPServer.test_email(s, "user@example.com",
+                                  "Regression CRLF", body)
+        self.assertTrue(r)
+
+        sent = smtpmock.get_sent_message()
+        # Reproduce smtplib.sendmail's wire transformation: str input is
+        # passed through _fix_eols and ASCII-encoded; bytes are sent as-is.
+        if isinstance(sent, str):
+            wire = re.sub(r"(?:\r\n|\n|\r(?!\n))", "\r\n", sent).encode("ascii")
+        else:
+            wire = sent
+        self.assertIn(b"\r\n", wire)
+        bare_lf = re.search(rb"(?<!\r)\n", wire)
+        self.assertIsNone(
+            bare_lf,
+            "Wire payload contains a bare LF, which Exchange treats as "
+            "an empty body (issue #5217). This happens when the message "
+            "is handed to smtplib as bytes (e.g. via as_bytes()) instead "
+            "of as a str.")
 
 
 class SMTPServerQueueTestCase(MockQueueTestCase):

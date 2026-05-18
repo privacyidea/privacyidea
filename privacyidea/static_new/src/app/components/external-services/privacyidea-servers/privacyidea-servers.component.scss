@@ -1,9 +1,10 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .privacyidea-servers-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
 }
 
 .actions-container {

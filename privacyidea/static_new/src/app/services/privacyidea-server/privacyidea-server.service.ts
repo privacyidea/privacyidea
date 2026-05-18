@@ -18,12 +18,12 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface PrivacyideaServer {
@@ -72,6 +72,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   }
 
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
+    if (this.authService.isSelfServiceUser()) return undefined;
     if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {
       return undefined;
     }
@@ -97,33 +98,36 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   });
 
   async postPrivacyideaServer(server: PrivacyideaServer): Promise<void> {
-    const url = `${this.privacyideaServerBaseUrl}${server.identifier}`;
+    const url = `${this.privacyideaServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved privacyIDEA server.`);
+        this.notificationService.success($localize`Successfully saved privacyIDEA server.`);
         this.remoteServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save privacyIDEA server. ` + message);
+        this.notificationService.error($localize`Failed to save privacyIDEA server. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deletePrivacyideaServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.privacyideaServerBaseUrl}${identifier}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<any>>(
+      `${this.privacyideaServerBaseUrl}${encodeURIComponent(identifier)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted privacyIDEA server: ${identifier}.`);
+        this.notificationService.success($localize`Successfully deleted privacyIDEA server: ${identifier}.`);
         this.remoteServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete privacyIDEA server. ` + message);
+        this.notificationService.error($localize`Failed to delete privacyIDEA server. ` + message);
         throw new Error("delete-failed");
       });
   }
@@ -134,15 +138,15 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     return lastValueFrom(request)
       .then((res) => {
         if (res?.result?.value) {
-          this.notificationService.openSnackBar($localize`Test request successful.`);
+          this.notificationService.success($localize`Test request successful.`);
           return true;
         }
-        this.notificationService.openSnackBar($localize`Test request failed.`);
+        this.notificationService.error($localize`Test request failed.`);
         return false;
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to send test request. ` + message);
+        this.notificationService.error($localize`Failed to send test request. ` + message);
         return false;
       });
   }

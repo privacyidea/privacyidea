@@ -649,6 +649,11 @@ class APIConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result["status"], result)
 
+        # The audit ``success`` column is the bool representation, not the
+        # numeric realm id returned from the lib.
+        audit_entry = self.find_most_recent_audit_entry(action='POST /defaultrealm/<realm>')
+        self.assertEqual(1, audit_entry['success'], audit_entry)
+
         # get the default realm
         with self.app.test_request_context('/defaultrealm',
                                            method='GET',
@@ -912,6 +917,10 @@ class APIConfigTestCase(MyApiTestCase):
             value = result.get("value")
             self.assertTrue(value.get("is_ready"), value)
 
+        # The audit ``success`` column is the bool readiness, not the dict.
+        audit_entry = self.find_most_recent_audit_entry(action='GET /system/hsm')
+        self.assertEqual(1, audit_entry['success'], audit_entry)
+
         # HSM is already set up. We do not need to set a password
         with self.app.test_request_context('/system/hsm',
                                            data={"password": "xx"},
@@ -945,6 +954,13 @@ class APIConfigTestCase(MyApiTestCase):
             # This is hex, we can unhexlify
             import binascii
             binascii.unhexlify(value)
+
+        # The audit entry must not contain the generated random material
+        # (success column is a bool, info records the requested length).
+        audit_entry = self.find_most_recent_audit_entry(action='GET /system/random')
+        self.assertEqual(1, audit_entry['success'], audit_entry)
+        self.assertNotIn(value, str(audit_entry))
+        self.assertEqual('len=32', audit_entry.get('info'))
 
         with self.app.test_request_context('/system/random?len=32&encode=b64',
                                            method="GET",
@@ -1338,6 +1354,18 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual('ERR905: Could not verify data in request!',
                              res.json.get("result").get("error").get("message"),
                              res.json)
+        # non-JSON body must yield a 400, not a 500
+        with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
+                                           method='POST',
+                                           data="not-json",
+                                           content_type="text/plain",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res)
+            self.assertEqual('ERR905: Could not verify data in request!',
+                             res.json.get("result").get("error").get("message"),
+                             res.json)
+
         # missing resolver name
         with self.app.test_request_context(f'/realm/realm_with_node/node/{nd1_uuid}',
                                            method='POST',

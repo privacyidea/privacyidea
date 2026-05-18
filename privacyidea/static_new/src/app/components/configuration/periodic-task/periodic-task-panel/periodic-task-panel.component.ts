@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ChangeDetectorRef, Component, inject, input, signal, ViewChild } from "@angular/core";
+import { Component, effect, inject, input, signal, ViewChild } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatIconButton } from "@angular/material/button";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
+import { MatIcon } from "@angular/material/icon";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTooltip } from "@angular/material/tooltip";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   EMPTY_PERIODIC_TASK,
   PERIODIC_TASK_MODULE_MAPPING,
   PeriodicTask,
   PeriodicTaskModule,
   PeriodicTaskService
-} from "../../../../services/periodic-task/periodic-task.service";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { FormsModule } from "@angular/forms";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
-import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
-import { MatDialog } from "@angular/material/dialog";
-import { AuthService } from "../../../../services/auth/auth.service";
+} from "@services/periodic-task/periodic-task.service";
+import { firstValueFrom } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
-import { MatTooltip } from "@angular/material/tooltip";
+import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
 
 @Component({
   selector: "app-periodic-task-panel",
@@ -56,9 +59,28 @@ import { MatTooltip } from "@angular/material/tooltip";
 export class PeriodicTaskPanelComponent {
   periodicTaskService = inject(PeriodicTaskService);
   authService = inject(AuthService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly pendingChangesService = inject(PendingChangesService);
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
   isEditMode = signal(false);
+
+  constructor() {
+    effect(() => {
+      if (this.isEditMode()) {
+        this.pendingChangesService.registerHasChanges(() => this.isEditMode() && this.isEdited());
+        this.pendingChangesService.registerValidChanges(() => this.canSave);
+        this.pendingChangesService.registerSave(() => this.savePeriodicTask());
+      }
+    });
+  }
+
+  isEdited(): boolean {
+    const editTask = this.editComponent?.editTask();
+    if (!editTask) {
+      return false;
+    }
+    return JSON.stringify(editTask) !== JSON.stringify(this.task());
+  }
 
   async deleteTask(): Promise<void> {
     await this.periodicTaskService.deleteWithConfirmDialog(this.task());
@@ -71,34 +93,62 @@ export class PeriodicTaskPanelComponent {
     }
     this.task()!.active = activate;
     if (!this.isEditMode()) {
+      const taskId = this.task()!.id;
+      if (taskId == null) {
+        return;
+      }
       if (activate) {
-        this.periodicTaskService.enablePeriodicTask(this.task()!.id);
+        this.periodicTaskService.enablePeriodicTask(taskId);
       } else {
-        this.periodicTaskService.disablePeriodicTask(this.task()!.id);
+        this.periodicTaskService.disablePeriodicTask(taskId);
       }
     }
   }
 
   cancelEdit(): void {
-    this.isEditMode.set(false);
+    if (!this.isEdited()) {
+      this.isEditMode.set(false);
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSave,
+          saveExitDisabled: !this.canSave
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result === "save-exit") {
+            if (!this.canSave) return;
+            this.savePeriodicTask();
+          } else if (result === "discard") {
+            this.isEditMode.set(false);
+          }
+        }
+      });
   }
 
   @ViewChild(PeriodicTaskEditComponent) editComponent?: PeriodicTaskEditComponent;
 
   canSave = false;
 
-  savePeriodicTask(): void {
-    // Get the edited task from the edit component
+  async savePeriodicTask(): Promise<boolean> {
     const editedTask = this.editComponent?.editTask();
-    if (editedTask && this.canSave) {
-      this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
-        next: (response) => {
-          if (response?.result?.value !== undefined) {
-            this.periodicTaskService.periodicTasksResource.reload();
-            this.isEditMode.set(false);
-          }
-        }
-      });
+    if (!editedTask || !this.canSave) return false;
+    try {
+      const response = await firstValueFrom(this.periodicTaskService.savePeriodicTask(editedTask));
+      if (response?.result?.value !== undefined) {
+        this.periodicTaskService.periodicTasksResource.reload();
+        this.isEditMode.set(false);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
   }
 

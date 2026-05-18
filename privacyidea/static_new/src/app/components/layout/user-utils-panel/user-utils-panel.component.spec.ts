@@ -17,44 +17,44 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideZonelessChangeDetection } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { UserUtilsPanelComponent } from "./user-utils-panel.component";
-import { ActivatedRoute, provideRouter, Router } from "@angular/router";
-import { provideLocationMocks } from "@angular/common/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { of } from "rxjs";
-import { TokenService } from "../../../services/token/token.service";
+import { provideLocationMocks } from "@angular/common/testing";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActivatedRoute, provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MachineService } from "@services/machine/machine.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { ChallengesService } from "@services/token/challenges/challenges.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import {
   MockAuditService,
   MockChallengesService,
   MockContainerService,
   MockContentService,
+  MockDialogService,
   MockLocalService,
   MockMachineService,
   MockNotificationService,
   MockPendingChangesService,
   MockSessionTimerService,
   MockTokenService,
-  MockUserService,
-  MockDialogService
-} from "../../../../testing/mock-services";
-import { ContainerService } from "../../../services/container/container.service";
-import { ChallengesService } from "../../../services/token/challenges/challenges.service";
-import { MachineService } from "../../../services/machine/machine.service";
-import { UserService } from "../../../services/user/user.service";
-import { AuditService } from "../../../services/audit/audit.service";
-import { ContentService } from "../../../services/content/content.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { SessionTimerService } from "../../../services/session-timer/session-timer.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { MatSnackBar } from "@angular/material/snack-bar";
-import { ROUTE_PATHS } from "../../../route_paths";
+  MockUserService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
+import { UserUtilsPanelComponent } from "./user-utils-panel.component";
 
 describe("UserUtilsPanelComponent", () => {
   let component: UserUtilsPanelComponent;
@@ -115,8 +115,7 @@ describe("UserUtilsPanelComponent", () => {
         MockLocalService,
         MockNotificationService
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(UserUtilsPanelComponent);
     component = fixture.componentInstance;
@@ -142,7 +141,6 @@ describe("UserUtilsPanelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-
   describe("refreshPage per route", () => {
     beforeEach(() => {
       jest.clearAllMocks();
@@ -156,9 +154,9 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("refreshes tokens containers details route", () => {
-      content.routeUrl.set(`${ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS}/abc`);
+      content.routeUrl.set(`${ROUTE_PATHS.CONTAINERS_DETAILS}/abc`);
       component.refreshPage();
-      expect(containerService.containerDetailResource.reload).toHaveBeenCalled();
+      expect(containerService.containerDetailsResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
     });
 
@@ -169,7 +167,7 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("refreshes tokens containers route", () => {
-      content.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      content.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       component.refreshPage();
       expect(containerService.containerResource.reload).toHaveBeenCalled();
     });
@@ -214,7 +212,7 @@ describe("UserUtilsPanelComponent", () => {
       expect(component.profileText()).toBe("bob");
     });
     it("returns username and realm if available", () => {
-     authService.role.set("");
+      authService.role.set("");
       authService.realm.set("default");
       authService.username.set("alice");
       expect(component.profileText()).toBe("alice @ default");
@@ -234,7 +232,6 @@ describe("UserUtilsPanelComponent", () => {
   });
 
   describe("sessionTimeFormat signal", () => {
-
     it("format less than 10 min is 'm:ss'", () => {
       sessionTimerService.remainingTime.set(10 * 60 * 1000 - 1000);
       expect(component.sessionTimeFormat()).toBe("m:ss");

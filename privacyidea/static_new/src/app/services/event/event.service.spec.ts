@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,24 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { EventService } from "./event.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import {
-  MockContentService,
-  MockDialogService,
-  MockNotificationService,
-  MockPiResponse
-} from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { NotificationService } from "../notification/notification.service";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import { ROUTE_PATHS } from "../../route_paths";
-import { ContentService } from "../content/content.service";
-import { AuthService } from "../auth/auth.service";
-import { DialogService } from "../dialog/dialog.service";
-import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
+import { EventService } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -90,7 +85,7 @@ describe("EventService", () => {
     const event = { name: "fail", handlermodule: "mod" };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeUndefined();
-      expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationMock.error).toHaveBeenCalledWith(
         expect.stringContaining("Failed to save event handler.")
       );
     });
@@ -100,9 +95,9 @@ describe("EventService", () => {
   });
 
   it("should enable an event handler", async () => {
-    const eventId = "123";
+    const eventId = 123;
     const promise = service.enableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({});
     await expect(promise).resolves.toBeDefined();
@@ -110,65 +105,65 @@ describe("EventService", () => {
 
   it("should handle error when enabling an event handler", async () => {
     service.allEventsResource.reload = jest.fn();
-    const eventId = "err123";
+    const eventId = 123;
     const promise = service.enableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to enable event handler!")
     );
     expect(service.allEventsResource.reload).toHaveBeenCalled();
   });
 
   it("should disable an event handler", async () => {
-    const eventId = "123";
+    const eventId = 123;
     const promise = service.disableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({});
     await expect(promise).resolves.toBeDefined();
   });
 
   it("should handle error when disabling an event handler", async () => {
-    const eventId = "err456";
+    const eventId = 456;
     const promise = service.disableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to disable event handler!")
     );
   });
 
   it("should delete an event handler", () => {
-    const eventId = "123";
+    const eventId = 123;
     service.deleteEvent(eventId).subscribe((response) => {
       expect(response).toBeTruthy();
       expect(response.result).toBeDefined();
     });
-    const req = httpMock.expectOne(service.eventBaseUrl + "/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { value: 1 } });
   });
 
   it("should handle error when deleting an event handler", (done) => {
-    const eventId = "err789";
+    const eventId = 789;
     service.deleteEvent(eventId).subscribe({
       next: () => {
         // Should not be called
         fail("Expected error, but got success response");
       },
       error: (err) => {
-        expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationMock.error).toHaveBeenCalledWith(
           expect.stringContaining("Failed to delete event handler.")
         );
         done();
       }
     });
-    const req = httpMock.expectOne(service.eventBaseUrl + "/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { error: { message: "Delete error" } } }, { status: 500, statusText: "Server Error" });
   });
@@ -177,7 +172,7 @@ describe("EventService", () => {
     let event: any;
 
     beforeEach(() => {
-      event = { id: "1", name: "Test Event" } as any;
+      event = { id: 1, name: "Test Event" } as any;
     });
 
     it("should open confirmation dialog and call delete on success", async () => {
@@ -191,7 +186,7 @@ describe("EventService", () => {
       await expect(deletePromise).resolves.toEqual(response);
 
       expect(deleteSpy).toHaveBeenCalledWith(event.id);
-      expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted event handler.");
+      expect(notificationMock.success).toHaveBeenCalledWith("Successfully deleted event handler.");
     });
 
     it("should open confirmation dialog and do nothing on cancel", async () => {
@@ -204,7 +199,7 @@ describe("EventService", () => {
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalled();
       expect(deleteSpy).not.toHaveBeenCalled();
-      expect(notificationMock.openSnackBar).not.toHaveBeenCalled();
+      expect(notificationMock.warning).not.toHaveBeenCalled();
     });
   });
 
@@ -222,7 +217,7 @@ describe("EventService", () => {
       const req = httpMock.expectOne(`${service.eventBaseUrl}/`);
       const eventHandlers = [
         {
-          id: "1",
+          id: 1,
           name: "test",
           active: true,
           handlermodule: "testModule",
@@ -252,7 +247,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -315,7 +311,8 @@ describe("EventService", () => {
 
       const req = httpMock.expectOne(`${service.eventBaseUrl}/handlermodules`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -345,7 +342,8 @@ describe("EventService", () => {
 
       const req = httpMock.expectOne(`${service.eventBaseUrl}/available`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -371,7 +369,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/positions/testModule`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -436,7 +435,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/actions/testModule`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -482,7 +482,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/conditions/testModule`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

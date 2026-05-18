@@ -17,23 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { EnrollPasskeyComponent } from "./enroll-passkey.component";
-import { MockBase64Service, MockNotificationService, MockTokenService } from "../../../../../testing/mock-services";
-import { TokenService } from "../../../../services/token/token.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { Base64Service } from "../../../../services/base64/base64.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { Base64Service } from "@services/base64/base64.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockBase64Service, MockNotificationService, MockTokenService } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { EnrollPasskeyComponent } from "./enroll-passkey.component";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
@@ -95,7 +92,7 @@ describe("EnrollPasskeyComponent", () => {
     expect(() => component.enrollmentArgsGetter({} as TokenEnrollmentData)).toThrow(
       /Passkey\/WebAuthn is not supported/i
     );
-    expect(notif.openSnackBar).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
+    expect(notif.error).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
   });
 
   it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
@@ -170,7 +167,7 @@ describe("EnrollPasskeyComponent", () => {
     const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
-    expect(notif.openSnackBar).toHaveBeenCalledWith(
+    expect(notif.error).toHaveBeenCalledWith(
       "Failed to initiate Passkey registration: Invalid server response."
     );
     expect(dialogSvc.openDialog).not.toHaveBeenCalled();
@@ -218,7 +215,7 @@ describe("EnrollPasskeyComponent", () => {
 
     await expect(finalResponse).rejects.toThrow();
 
-    expect(notif.openSnackBar).toHaveBeenCalledWith(
+    expect(notif.error).toHaveBeenCalledWith(
       "Error during final Passkey registration step. Attempting to clean up token."
     );
     expect(tokenSvc.deleteToken).toHaveBeenCalledWith("S-2");

@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { PrivacyideaServerService } from "./privacyidea-server.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
-import { ROUTE_PATHS } from "../../route_paths";
-import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { lastValueFrom, of } from "rxjs";
-import { ContentService } from "../content/content.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { PrivacyideaServerService } from "./privacyidea-server.service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
@@ -36,6 +36,15 @@ describe("PrivacyideaServerService", () => {
   let contentService: MockContentService;
 
   beforeEach(() => {
+    const authServiceMock = {
+      getHeaders: jest.fn().mockReturnValue({})
+    };
+    const notificationServiceMock = {
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      handleResourceError: jest.fn()
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -69,7 +78,21 @@ describe("PrivacyideaServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved privacyIDEA server.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved privacyIDEA server.");
+  });
+
+  it("should show error notification when posting privacyIDEA server fails", async () => {
+    const server = { identifier: "test", url: "http://test", tls: true } as any;
+    const promise = service.postPrivacyideaServer(server);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save privacyIDEA server. Something went wrong");
   });
 
   it("should delete privacyIDEA server", async () => {
@@ -80,7 +103,20 @@ describe("PrivacyideaServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted privacyIDEA server: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted privacyIDEA server: test.");
+  });
+
+  it("should show error notification when deleting privacyIDEA server fails", async () => {
+    const promise = service.deletePrivacyideaServer("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete privacyIDEA server. Something went wrong");
   });
 
   it("should test privacyIDEA server", async () => {
@@ -93,7 +129,34 @@ describe("PrivacyideaServerService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test request successful.");
+    expect(notificationService.success).toHaveBeenCalledWith("Test request successful.");
+  });
+
+  it("should show error notification when privacyIDEA test returns false", async () => {
+    const params = { url: "http://test" };
+    const promise = service.testPrivacyideaServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
+    req.flush({ result: { value: false } });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Test request failed.");
+  });
+
+  it("should show error notification when privacyIDEA test request fails", async () => {
+    const params = { url: "http://test" };
+    const promise = service.testPrivacyideaServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to send test request. Something went wrong");
   });
 
   it("privacyideaServerResource should not do request and return undefined on unexpected route", () => {
@@ -137,8 +200,9 @@ describe("PrivacyideaServerService", () => {
     const req = httpMock.expectOne(service.privacyideaServerBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
-      });
+      status: 403,
+      statusText: "Permission denied"
+    });
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(service.remoteServerOptions()).toEqual([]);

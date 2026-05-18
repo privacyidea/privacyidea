@@ -9,12 +9,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { Component, Input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyFilterComponent } from "./policy-filter.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { PolicyDetail } from "src/app/services/policies/policies.service";
-import { Component, output, Input } from "@angular/core";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { PolicyDetail } from "@services/policies/policies.service";
+import { PolicyFilterComponent } from "./policy-filter.component";
 
 @Component({ selector: "app-clearable-input", standalone: true, template: "<ng-content></ng-content>" })
 class MockClearableInput {

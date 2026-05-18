@@ -1,18 +1,8 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .token-enrollment-container {
   @include styles.main-component-style;
   display: grid;
-}
-
-.type-select {
-  width: 616px;
-}
-
-@media (max-width: 1040px) {
-  .type-select {
-    width: 100%;
-  }
+  min-width: 616px;
 }

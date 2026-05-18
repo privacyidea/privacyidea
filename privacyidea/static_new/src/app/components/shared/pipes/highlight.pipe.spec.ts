@@ -17,60 +17,59 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HighlightPipe } from './highlight.pipe';
-import { DomSanitizer } from '@angular/platform-browser';
 import { SecurityContext } from "@angular/core";
+import { DomSanitizer } from "@angular/platform-browser";
+import { HighlightPipe } from "./highlight.pipe";
 
-describe('HighlightPipe', () => {
+describe("HighlightPipe", () => {
   let sanitizer: DomSanitizer;
   let pipe: HighlightPipe;
 
   beforeEach(() => {
     // Minimal mock for DomSanitizer
     sanitizer = {
-      sanitize: (ctx: SecurityContext, value: string | null) => value,
+      sanitize: (ctx: SecurityContext, value: string | null) => value
     } as DomSanitizer;
     pipe = new HighlightPipe(sanitizer);
   });
 
-  it('should return escaped HTML if no search term is provided', () => {
-    const result = pipe.transform('Hello <b>World</b> & "Test"', '');
-    expect(result).toBe('Hello &lt;b&gt;World&lt;/b&gt; &amp; &quot;Test&quot;');
+  it("should return escaped HTML if no search term is provided", () => {
+    const result = pipe.transform('Hello <b>World</b> & "Test"', "");
+    expect(result).toBe("Hello &lt;b&gt;World&lt;/b&gt; &amp; &quot;Test&quot;");
   });
 
-  it('should return empty value if value is empty', () => {
-    const result = pipe.transform('', 'test');
-    expect(result).toBe('');
+  it("should return empty value if value is empty", () => {
+    const result = pipe.transform("", "test");
+    expect(result).toBe("");
   });
 
-  it('should highlight all matches of the search term (case-insensitive)', () => {
-    const result = pipe.transform('Hello World, hello world!', 'hello');
+  it("should highlight all matches of the search term (case-insensitive)", () => {
+    const result = pipe.transform("Hello World, hello world!", "hello");
     expect(result).toBe('<span class="highlight">Hello</span> World, <span class="highlight">hello</span> world!');
   });
 
-  it('should return escaped HTML if search term is not found', () => {
-    const result = pipe.transform('Hello <b>World</b>', 'foo');
-    expect(result).toBe('Hello &lt;b&gt;World&lt;/b&gt;');
+  it("should return escaped HTML if search term is not found", () => {
+    const result = pipe.transform("Hello <b>World</b>", "foo");
+    expect(result).toBe("Hello &lt;b&gt;World&lt;/b&gt;");
   });
 
-  it('should escape special characters in value and highlight search term', () => {
-    const result = pipe.transform('1 < 2 & 3 > 2', '2');
+  it("should escape special characters in value and highlight search term", () => {
+    const result = pipe.transform("1 < 2 & 3 > 2", "2");
     expect(result).toBe('1 &lt; <span class="highlight">2</span> &amp; 3 &gt; <span class="highlight">2</span>');
   });
 
-  it('should handle special regex characters in search term', () => {
-    const result = pipe.transform('a+b*c', '+b*');
+  it("should handle special regex characters in search term", () => {
+    const result = pipe.transform("a+b*c", "+b*");
     expect(result).toBe('a<span class="highlight">+b*</span>c');
   });
 
-  it('should not break on XSS attempt in value', () => {
-    const result = pipe.transform('<img src=x onerror=alert(1)>', '');
-    expect(result).toBe('&lt;img src=x onerror=alert(1)&gt;');
+  it("should not break on XSS attempt in value", () => {
+    const result = pipe.transform("<img src=x onerror=alert(1)>", "");
+    expect(result).toBe("&lt;img src=x onerror=alert(1)&gt;");
   });
 
-  it('should not break on XSS attempt in search term', () => {
-    const result = pipe.transform('normal text', '<script>alert(1)</script>');
-    expect(result).toBe('normal text');
+  it("should not break on XSS attempt in search term", () => {
+    const result = pipe.transform("normal text", "<script>alert(1)</script>");
+    expect(result).toBe("normal text");
   });
 });
-

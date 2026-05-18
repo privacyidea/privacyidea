@@ -19,12 +19,12 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EditUserDialogComponent } from "./edit-user-dialog.component";
-import { UserService } from "../../../services/user/user.service";
-import { MockUserService } from "../../../../testing/mock-services";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { UserService } from "@services/user/user.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockUserService } from "@testing/mock-services";
+import { EditUserDialogComponent } from "./edit-user-dialog.component";
 
 describe("EditUserDialogComponent", () => {
   let component: EditUserDialogComponent;

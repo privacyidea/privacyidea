@@ -92,10 +92,15 @@ angular.module("privacyideaApp")
                         username: $scope.User.username,
                         password: $scope.User.password
                     }, function (data) {
-                        inform.add(gettextCatalog.getString("Password set successfully."),
-                            {type: "info"});
-                        $scope.User.password = "";
-                        $scope.password2 = "";
+                        if (data.result.value) {
+                            inform.add(gettextCatalog.getString("Password set successfully."),
+                                {type: "info"});
+                            $scope.User.password = "";
+                            $scope.password2 = "";
+                        } else {
+                            inform.add(gettextCatalog.getString("Failed to set password."),
+                                {type: "danger"});
+                        }
                     });
             };
 
@@ -453,6 +458,7 @@ angular.module("privacyideaApp")
                         params.email = "*" + $scope.params.emailFilter + "*";
                     }
                     params.attributes = "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
+                    params.include_custom_attributes = false;
                     $scope.usersLoading = true;
                     UserFactory.getUsers(params,
                         function (data) {

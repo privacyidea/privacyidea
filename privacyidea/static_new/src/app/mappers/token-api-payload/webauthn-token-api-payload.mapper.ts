@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenDetails, WebAuthnRegisterRequest } from "../../services/token/token.service";
+import { TokenDetails, WebAuthnRegisterRequest } from "@services/token/token.service";
 import {
   BaseApiPayloadMapper,
   EnrollmentResponse,

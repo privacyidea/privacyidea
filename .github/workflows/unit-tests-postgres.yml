@@ -93,20 +93,7 @@ jobs:
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
         pip freeze
-        # Collect coverage only on the lowest Python version to avoid redundant
-        # reports and reduce overhead on all other matrix jobs.
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
-        if [ "$PYTHON_VERSION" = "3.10" ]; then
-          python -b -m pytest -v -n auto --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
-        else
-          python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
-        fi
-
-    - name: Codecov upload
-      if: ${{ steps.pytest_run.outcome == 'success' && matrix.python-version == '3.10' }}
-      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
-      with:
-        files: ./coverage.xml
-        token: ${{ secrets.CODECOV_TOKEN }}
+        python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
 

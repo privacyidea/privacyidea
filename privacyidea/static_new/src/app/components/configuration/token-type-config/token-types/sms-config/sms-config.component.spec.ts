@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
-import { provideRouter } from "@angular/router";
 import { provideAnimations } from "@angular/platform-browser/animations";
-import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "../../../../../constants/token.constants";
+import { provideRouter } from "@angular/router";
+import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
+import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
 
 const mockSmsGateways = ["gateway1", "gateway2", "gateway3"];
 
@@ -116,7 +116,7 @@ describe("SmsConfigComponent", () => {
 
   it("should handle numeric values for provider timeout", () => {
     jest.spyOn(component.formDataChange, "emit");
-    
+
     component.updateFormData(SMS_PROVIDER_TIMEOUT, 100);
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [SMS_PROVIDER_TIMEOUT]: 100 });
 

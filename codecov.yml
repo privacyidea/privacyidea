@@ -1,0 +1,66 @@
+# Codecov configuration.
+#
+# Backend (Python) and frontend (Angular) coverage are tracked as separate
+# flags and components so one does not dilute the other when aggregated.
+#
+# Flags are set by the uploading workflows:
+#   - backend:  .github/workflows/unit-tests-{postgres,mariadb}.yml
+#   - frontend: .github/workflows/webui-test.yml
+
+coverage:
+  status:
+    project:
+      # Disable the default mixed-pool status so PRs are not judged by a
+      # combined backend+frontend percentage (which moves whenever either
+      # side grows, independent of actual coverage change).
+      default: false
+      backend:
+        flags:
+          - backend
+        target: auto
+        threshold: 1%
+      frontend:
+        flags:
+          - frontend
+        target: auto
+        threshold: 1%
+    patch:
+      default: false
+      backend:
+        flags:
+          - backend
+        target: auto
+      frontend:
+        flags:
+          - frontend
+        target: auto
+
+flag_management:
+  default_rules:
+    # carryforward keeps the last known coverage for a flag when a PR does
+    # not re-upload it (e.g. a backend-only PR won't re-run webui tests).
+    carryforward: true
+  individual_flags:
+    - name: backend
+      paths:
+        - "privacyidea/"
+    - name: frontend
+      paths:
+        - "privacyidea/static_new/"
+
+component_management:
+  individual_components:
+    - component_id: backend
+      name: backend
+      paths:
+        - "privacyidea/**"
+        - "!privacyidea/static/**"
+        - "!privacyidea/static_new/**"
+    - component_id: frontend
+      name: frontend
+      paths:
+        - "privacyidea/static_new/**"
+
+comment:
+  layout: "header, diff, flags, components, files"
+  require_changes: false

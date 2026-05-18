@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,8 +19,8 @@
 import { TestBed } from "@angular/core/testing";
 import { delay, Observable, of, Subject } from "rxjs";
 
-import { LoadingService } from "./loading-service";
 import { HttpEvent } from "@angular/common/http";
+import { LoadingService } from "./loading-service";
 
 describe("LoadingService", () => {
   let loadingService: LoadingService;

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { ContentService } from "./content.service";
-import { ROUTE_PATHS } from "../../route_paths";
+import { TestBed } from "@angular/core/testing";
 import { NavigationEnd, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { Subject } from "rxjs";
+import { ContentService } from "./content.service";
 
 describe("ContentService", () => {
   let service: ContentService;
@@ -50,10 +50,7 @@ describe("ContentService", () => {
     };
 
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        { provide: Router, useValue: mockRouter }
-      ]
+      providers: [provideHttpClient(), { provide: Router, useValue: mockRouter }]
     });
 
     service = TestBed.inject(ContentService);
@@ -90,37 +87,71 @@ describe("ContentService", () => {
     emitNav(ROUTE_PATHS.TOKENS_DETAILS + "/SER1");
     expect(service.onTokenEnrollmentLikely()).toBe(true);
 
-    emitNav(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
+    emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES);
     expect(service.onTokenEnrollmentLikely()).toBe(true);
 
     emitNav(ROUTE_PATHS.TOKENS);
     expect(service.onTokenEnrollmentLikely()).toBe(false);
   });
 
+  describe("container route signals", () => {
+    it("onContainersCreate is true for CONTAINERS_CREATE and CONTAINERS_WIZARD paths", () => {
+      expect(service.onContainersCreate()).toBe(false);
+      emitNav(ROUTE_PATHS.CONTAINERS_CREATE);
+      expect(service.onContainersCreate()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS_WIZARD);
+      expect(service.onContainersCreate()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS);
+      expect(service.onContainersCreate()).toBe(false);
+    });
+  });
+
+  describe("template route signals", () => {
+    it("onContainersTemplates is true only for exact CONTAINERS_TEMPLATES path", () => {
+      expect(service.onContainersTemplates()).toBe(false);
+      emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES);
+      expect(service.onContainersTemplates()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES + "/something");
+      expect(service.onContainersTemplates()).toBe(false);
+    });
+
+    it("onContainersTemplatesCreate is true only for exact CONTAINERS_TEMPLATES_CREATE path", () => {
+      expect(service.onContainersTemplatesCreate()).toBe(false);
+      emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE);
+      expect(service.onContainersTemplatesCreate()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES);
+      expect(service.onContainersTemplatesCreate()).toBe(false);
+    });
+
+    it("onContainersTemplatesDetails is true for paths starting with CONTAINERS_TEMPLATES_DETAILS", () => {
+      expect(service.onContainersTemplatesDetails()).toBe(false);
+      emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + "myTemplate");
+      expect(service.onContainersTemplatesDetails()).toBe(true);
+      emitNav(ROUTE_PATHS.CONTAINERS_TEMPLATES);
+      expect(service.onContainersTemplatesDetails()).toBe(false);
+    });
+  });
+
   describe("tokenSelected()", () => {
     it("navigates to token details and sets serial", async () => {
-      emitNav("/tokens/containers");
+      emitNav("/containers");
       service.tokenSelected("SER1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
-        ROUTE_PATHS.TOKENS_DETAILS + "SER1"
-      );
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
       expect(service.tokenSerial()).toBe("SER1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
-      expect(service.previousUrl()).toBe("/tokens/containers");
+      expect(service.previousUrl()).toBe("/containers");
     });
   });
 
   describe("containerSelected()", () => {
     it("navigates to container details and sets serial", async () => {
       emitNav("/tokens");
-      service.containerSelected("C1");
+      service.navigateContainerDetails("C1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
-        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1"
-      );
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_DETAILS + "C1");
       expect(service.containerSerial()).toBe("C1");
-      expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1");
+      expect(service.routeUrl()).toBe(ROUTE_PATHS.CONTAINERS_DETAILS + "C1");
       expect(service.previousUrl()).toBe("/tokens");
     });
   });

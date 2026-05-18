@@ -17,31 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
-import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MatTableModule } from "@angular/material/table";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 
+import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatDivider } from "@angular/material/list";
 import { MatError } from "@angular/material/form-field";
-import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
+import { MatDivider } from "@angular/material/list";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { HttpConfigComponent } from "./http-config/http-config.component";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 import { HttpGroupsAttributeComponent } from "./http-groups-attribute/http-groups-attribute.component";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { PiResponse } from "../../../../app.component";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;

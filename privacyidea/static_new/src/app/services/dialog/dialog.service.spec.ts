@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { Subject } from "rxjs";
-import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { DialogService } from "./dialog.service";
 import { Component } from "@angular/core";
-import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TestBed } from "@angular/core/testing";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { Subject } from "rxjs";
+import { DialogService } from "./dialog.service";
 
 @Component({ template: "" })
 class TestDialogComponent extends AbstractDialogComponent<any, any> {}

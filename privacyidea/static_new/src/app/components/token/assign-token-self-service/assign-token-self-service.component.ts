@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -23,9 +23,9 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-attach-token-self-service",

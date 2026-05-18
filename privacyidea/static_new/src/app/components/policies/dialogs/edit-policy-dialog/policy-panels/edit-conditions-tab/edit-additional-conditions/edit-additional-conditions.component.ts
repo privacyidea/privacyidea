@@ -17,30 +17,32 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, output, signal, linkedSignal, input } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 
+import { FormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule, MatIconButton } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDividerModule } from "@angular/material/divider";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { FormsModule } from "@angular/forms";
-import { MatButtonModule, MatIconButton } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { MatDividerModule } from "@angular/material/divider";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
-  PolicyService,
-  PolicyDetail,
-  SECTION_OPTIONS,
+  AdditionalCondition,
   COMPARATOR_OPTIONS,
-  HANDLE_MISSING_DATA_OPTIONS,
-  SectionOptionKey,
   ComparatorOptionKey,
+  HANDLE_MISSING_DATA_OPTIONS,
   HandleMissingDataOptionKey,
-  AdditionalCondition
-} from "../../../../../../../services/policies/policies.service";
+  PolicyDetail,
+  PolicyService,
+  SECTION_OPTIONS,
+  SectionOptionKey
+} from "@services/policies/policies.service";
 
 @Component({
   selector: "app-edit-additional-conditions",
@@ -98,6 +100,7 @@ export class EditAdditionalConditionsComponent {
   ];
 
   readonly policyService: PolicyService = inject(PolicyService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   // Inputs/Outputs
   readonly policy = input.required<PolicyDetail>();
@@ -141,6 +144,39 @@ export class EditAdditionalConditionsComponent {
 
   readonly additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);
 
+  readonly canSaveCondition = computed(
+    () =>
+      !!this.conditionSection() &&
+      !!this.conditionComparator() &&
+      !!this.conditionHandleMissingData() &&
+      !!this.conditionKey().trim()
+  );
+
+  readonly isFormDirty = computed(() => {
+    if (!this.showAddConditionForm()) return false;
+    const index = this.editIndex();
+    if (index !== null) {
+      const original = this.additionalConditions()[index];
+      if (!original) return false;
+      return (
+        this.conditionSection() !== original[0] ||
+        this.conditionKey() !== original[1] ||
+        this.conditionComparator() !== original[2] ||
+        this.conditionValue() !== original[3] ||
+        this.conditionActive() !== !original[4] ||
+        this.conditionHandleMissingData() !== original[5]
+      );
+    }
+    return (
+      this.conditionSection() !== "" ||
+      this.conditionKey() !== "" ||
+      this.conditionComparator() !== "" ||
+      this.conditionValue() !== "" ||
+      this.conditionActive() !== true ||
+      this.conditionHandleMissingData() !== "condition_is_false"
+    );
+  });
+
   startEditCondition(condition: AdditionalCondition, index: number) {
     this.editIndex.set(index);
     this.showAddConditionForm.set(true);
@@ -180,10 +216,37 @@ export class EditAdditionalConditionsComponent {
     }
 
     this.policyEdit.emit({ conditions: currentConditions });
-    this.cancelEdit();
+    this._resetForm();
   }
 
   cancelEdit() {
+    if (!this.isFormDirty()) {
+      this._resetForm();
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveCondition(),
+          saveExitDisabled: !this.canSaveCondition()
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result === "save-exit") {
+            if (!this.canSaveCondition()) return;
+            this.saveCondition();
+          } else if (result === "discard") {
+            this._resetForm();
+          }
+        }
+      });
+  }
+
+  private _resetForm() {
     this.editIndex.set(null);
     this.showAddConditionForm.set(false);
     this.conditionSection.set("");

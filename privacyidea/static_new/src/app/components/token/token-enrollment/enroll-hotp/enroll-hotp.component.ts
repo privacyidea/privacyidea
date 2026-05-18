@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,25 +19,16 @@
 import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatFormField, MatHint, MatLabel, MatError } from "@angular/material/form-field";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import {
-  HotpApiPayloadMapper,
-  HotpEnrollmentData
-} from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "../../../../constants/token.constants";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { HotpApiPayloadMapper, HotpEnrollmentData } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";

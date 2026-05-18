@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogAction } from "../../../../models/dialog";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
 
 @Component({
   selector: "app-search-token-dialog",
@@ -32,7 +32,8 @@ export class SearchTokenDialogComponent extends AbstractDialogComponent<string, 
   action: DialogAction<true> = {
     label: $localize`Start Search`,
     value: true,
-    type: "confirm"
+    type: "confirm",
+    primary: true
   };
   onAction(value: boolean) {
     this.close(value);

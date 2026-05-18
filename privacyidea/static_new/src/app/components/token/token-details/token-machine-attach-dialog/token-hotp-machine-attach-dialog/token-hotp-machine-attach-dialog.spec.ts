@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Observable } from "rxjs";
 
 import { TokenHotpMachineAssignDialogComponent } from "./token-hotp-machine-attach-dialog";
@@ -58,7 +58,7 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: { tokenSerial: "SERIAL-1" } },
         { provide: MatDialogRef, useValue: dialogRef },
         {
-          provide: (await import("../../../../../services/machine/machine.service")).MachineService,
+          provide: (await import("@services/machine/machine.service")).MachineService,
           useValue: machineService
         }
       ]

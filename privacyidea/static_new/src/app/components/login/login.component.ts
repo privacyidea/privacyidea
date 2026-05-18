@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,8 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgOptimizedImage } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
@@ -30,22 +32,21 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { Router } from "@angular/router";
-import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
-import { challengesTriggered, isAuthenticationSuccessful } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
-import { AuthResponse, AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { LocalService, LocalServiceInterface } from "../../services/local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../../services/notification/notification.service";
-import { SessionTimerService, SessionTimerServiceInterface } from "../../services/session-timer/session-timer.service";
-import { ValidateService, ValidateServiceInterface } from "../../services/validate/validate.service";
-import { ConfigService } from "../../services/config/config.service";
+import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ClearButtonComponent } from "../shared/clear-button/clear-button.component";
-import { environment } from "../../../environments/environment";
+import { Router } from "@angular/router";
+import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { environment } from "@env/environment";
+import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ConfigService } from "@services/config/config.service";
+import { LocalService, LocalServiceInterface } from "@services/local/local.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
+import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
+import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -69,7 +70,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   ],
   styleUrl: "./login.component.scss"
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router: Router = inject(Router);
   private readonly localService: LocalServiceInterface = inject(LocalService);
@@ -80,6 +81,7 @@ export class LoginComponent implements OnDestroy {
   private transactionId = "";
   private pollingSubscription: Subscription | null = null;
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("usernameInput") usernameInput?: ElementRef<HTMLInputElement>;
   username = signal<string>("");
   password = signal<string>("");
   hidePassword = signal<boolean>(true);
@@ -142,7 +144,7 @@ export class LoginComponent implements OnDestroy {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     } else {
       this.showOtpField.set(false);
     }
@@ -182,7 +184,7 @@ export class LoginComponent implements OnDestroy {
 
   remoteLogin(): void {
     if (!this.remoteUser()) {
-      this.notificationService.openSnackBar($localize`Remote user not available. Remote Login not possible.`);
+      this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
       return;
     }
     const params: any = { username: this.remoteUser() };
@@ -221,7 +223,7 @@ export class LoginComponent implements OnDestroy {
   logout(): void {
     this.authService.logout();
     this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.success("Logout successful."));
   }
 
   resetLogin(): void {
@@ -230,6 +232,10 @@ export class LoginComponent implements OnDestroy {
     this.otp.set("");
     this.password.set("");
     this.hidePassword.set(true);
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => this.usernameInput?.nativeElement.focus(), 0);
   }
 
   ngOnDestroy(): void {
@@ -298,11 +304,11 @@ export class LoginComponent implements OnDestroy {
       if (this.authService.tokenWizard()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
       } else if (this.authService.containerWizard().enabled) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD).then();
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
       } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.anyContainerActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS).then();
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
       } else {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       }

@@ -18,14 +18,13 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditEnvironmentConditionsComponent } from "./edit-environment-conditions.component";
-import { PolicyService } from "../../../../../../../services/policies/policies.service";
-import { SystemService } from "../../../../../../../services/system/system.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { MockSystemService } from "src/testing/mock-services/mock-system-service";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ReactiveFormsModule } from "@angular/forms";
-import { By } from "@angular/platform-browser";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { PolicyService } from "@services/policies/policies.service";
+import { SystemService } from "@services/system/system.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { EditEnvironmentConditionsComponent } from "./edit-environment-conditions.component";
 
 describe("EditEnvironmentConditionsComponent", () => {
   let component: EditEnvironmentConditionsComponent;

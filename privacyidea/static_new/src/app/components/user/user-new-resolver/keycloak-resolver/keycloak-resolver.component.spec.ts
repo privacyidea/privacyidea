@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { KeycloakResolverComponent } from "./keycloak-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ComponentRef } from "@angular/core";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentRef } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { KeycloakResolverComponent } from "./keycloak-resolver.component";
 
 describe("KeycloakResolverComponent", () => {
   let component: KeycloakResolverComponent;
@@ -39,8 +39,7 @@ describe("KeycloakResolverComponent", () => {
         { provide: ResolverService, useClass: MockResolverService }
       ],
       imports: [KeycloakResolverComponent, NoopAnimationsModule]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     fixture = TestBed.createComponent(KeycloakResolverComponent);

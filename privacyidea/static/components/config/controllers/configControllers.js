@@ -491,9 +491,12 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 }
             });
             if (policy.user_agents) {
-                angular.forEach($scope.userAgents, function (value, key) {
-                    if (policy.user_agents.indexOf(value.identifier) > -1) {
-                        $scope.userAgents[key].ticked = true;
+                angular.forEach(policy.user_agents, function (identifier) {
+                    const existing = $scope.userAgents.find(a => a.identifier === identifier);
+                    if (existing) {
+                        existing.ticked = true;
+                    } else {
+                        $scope.userAgents.push({name: identifier, identifier: identifier, ticked: true});
                     }
                 });
             }
@@ -609,6 +612,8 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
                 $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary";
                 // SMS
                 $scope.form['sms.Provider'] = $scope.form['sms.Provider'] || $scope.defaultSMSProvider;
+                // Yubico
+                $scope.form['yubico.url'] = $scope.form['yubico.url'] || "https://api.yubico.com/wsapi/2.0/verify";
                 // Email
                 $scope.form['email.password.type'] = "password";
                 // We need to convert the values to bools - otherwise we have
@@ -1500,8 +1505,11 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.advancedParams["realm"] = params["realm"];
                 }
 
-                if (params["config_get_user_groups"]) {
+                if (angular.isObject(params["config_get_user_groups"]) && !angular.isArray(params["config_get_user_groups"])) {
                     $scope.groups_config = params["config_get_user_groups"];
+                    if ($scope.groups_config.method) {
+                        $scope.groups_config.method = $scope.groups_config.method.toLowerCase();
+                    }
                 }
             } else {
                 $scope.params = params;

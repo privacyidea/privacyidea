@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,15 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { Route, Router, UrlSegment } from "@angular/router";
-import { AuthService } from "../services/auth/auth.service";
-import { NotificationService } from "../services/notification/notification.service";
-import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
-import { MockLocalService, MockNotificationService } from "../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../testing/mock-services/mock-auth-service";
+import { TestBed } from "@angular/core/testing";
+import { Route, Router, UrlSegment } from "@angular/router";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockLocalService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { adminMatch, AuthGuard, selfServiceMatch } from "./auth.guard";
 
 const flushPromises = () => new Promise((r) => setTimeout(r, 0));
 
@@ -123,7 +123,7 @@ describe("AuthGuard class", () => {
     expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
 
     await flushPromises();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
+    expect(notificationService.warning).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
   });
 
   it("calls navigate and shows snackbar twice when both canActivate + canActivateChild deny access", async () => {
@@ -139,9 +139,9 @@ describe("AuthGuard class", () => {
 
     await flushPromises(); // resolve both .then handlers
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledTimes(2);
-    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(1, "Navigation blocked by AuthGuard!");
-    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(2, "Navigation blocked by AuthGuard!");
+    expect(notificationService.warning).toHaveBeenCalledTimes(2);
+    expect(notificationService.warning).toHaveBeenNthCalledWith(1, "Navigation blocked by AuthGuard!");
+    expect(notificationService.warning).toHaveBeenNthCalledWith(2, "Navigation blocked by AuthGuard!");
   });
 
   it("does not show snackbar if router.navigate never resolves (simulates failure without unhandled rejection)", async () => {
@@ -154,6 +154,6 @@ describe("AuthGuard class", () => {
 
     await flushPromises();
 
-    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+    expect(notificationService.warning).not.toHaveBeenCalled();
   });
 });

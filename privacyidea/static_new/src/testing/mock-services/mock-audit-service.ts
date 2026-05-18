@@ -18,10 +18,10 @@
  **/
 import { linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { Audit, AuditServiceInterface } from "../../app/services/audit/audit.service";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { Audit, AuditServiceInterface } from "@services/audit/audit.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
-import { PiResponse } from "../../app/app.component";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export class MockAuditService implements AuditServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
@@ -38,6 +38,7 @@ export class MockAuditService implements AuditServiceInterface {
     MockPiResponse.fromValue<Audit>({ auditcolumns: [], auditdata: [], count: 0, current: 0 })
   );
   sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
+  isDownloading: WritableSignal<boolean> = signal(false);
   clearFilter = jest.fn().mockImplementation(() => {
     this.auditFilter.set(new FilterValue());
   });
@@ -45,4 +46,5 @@ export class MockAuditService implements AuditServiceInterface {
     const inputElement = $event.target as HTMLInputElement;
     this.auditFilter.set(new FilterValue({ value: inputElement.value }));
   });
+  downloadCSV = jest.fn();
 }

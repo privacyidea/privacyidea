@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,16 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PeriodicTaskComponent } from "./periodic-task.component";
-import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
-import { MockPeriodicTaskService } from "../../../../testing/mock-services/mock-periodic-task-service";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
+import { PeriodicTaskComponent } from "./periodic-task.component";
 
 describe("PeriodicTaskComponent", () => {
   let component: PeriodicTaskComponent;
   let fixture: ComponentFixture<PeriodicTaskComponent>;
   let periodicTaskService: PeriodicTaskService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     periodicTaskService = new MockPeriodicTaskService() as any;
@@ -35,12 +38,14 @@ describe("PeriodicTaskComponent", () => {
       imports: [PeriodicTaskComponent],
       providers: [
         provideHttpClient(),
-        { provide: PeriodicTaskService, useValue: periodicTaskService }
+        { provide: PeriodicTaskService, useValue: periodicTaskService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PeriodicTaskComponent);
     component = fixture.componentInstance;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
   });
 
   it("should create", () => {
@@ -61,5 +66,10 @@ describe("PeriodicTaskComponent", () => {
 
   it("should initialize periodicTasks signal", () => {
     expect(component.periodicTasks).toBeDefined();
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

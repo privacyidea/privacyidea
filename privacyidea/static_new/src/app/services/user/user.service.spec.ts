@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,15 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { RealmService } from "@services/realm/realm.service";
+import { Tokens, TokenService } from "@services/token/token.service";
 import { UserAttributePolicy, UserData, UserService } from "./user.service";
-import { RealmService } from "../realm/realm.service";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { Tokens, TokenService } from "../token/token.service";
 
+import { signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { NotificationService } from "@services/notification/notification.service";
 import {
   MockContentService,
   MockHttpResourceRef,
@@ -33,13 +38,8 @@ import {
   MockPiResponse,
   MockRealmService,
   MockTokenService
-} from "../../../testing/mock-services";
-import { ROUTE_PATHS } from "../../route_paths";
-import { PiResponse } from "../../app.component";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { environment } from "../../../environments/environment";
-import { NotificationService } from "../notification/notification.service";
-import { signal } from "@angular/core";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 function buildUser(username: string): UserData {
   return {
@@ -255,9 +255,7 @@ describe("UserService", () => {
         }
       };
 
-      (userService as any).editableAttributesResource = new MockHttpResourceRef(
-        MockPiResponse.fromValue(policy)
-      );
+      (userService as any).editableAttributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(policy));
 
       expect(userService.attributePolicy()).toEqual(policy);
       expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);
@@ -297,7 +295,8 @@ describe("UserService", () => {
       const req = httpMock.expectOne((r) => r.url === "/user/attribute");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -335,7 +334,6 @@ describe("UserService", () => {
   });
 
   describe("editableAttributesResource / attributePolicy", () => {
-
     it("attributePolicy falls back to default when resource empty", () => {
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
     });
@@ -346,7 +344,7 @@ describe("UserService", () => {
 
       const req = httpMock.expectOne((r) => r.url === "/user/editable_attributes/");
       expect(req.request.method).toBe("GET");
-      const attributePolicy = { delete: ["test1", "test2"], set: { "test2": ["*"], "test3": ["opt1", "opt2"] } };
+      const attributePolicy = { delete: ["test1", "test2"], set: { test2: ["*"], test3: ["opt1", "opt2"] } };
       req.flush(MockPiResponse.fromValue(attributePolicy));
       await Promise.resolve();
 
@@ -363,7 +361,8 @@ describe("UserService", () => {
       const req = httpMock.expectOne((r) => r.url === "/user/editable_attributes/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -455,7 +454,7 @@ describe("UserService", () => {
       req.flush({ result: {} });
 
       // Ignore and flush all other open requests
-      httpMock.match(() => true).forEach(r => r.flush({ result: {} }));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
 
       await Promise.resolve();
 
@@ -475,11 +474,12 @@ describe("UserService", () => {
       // Expect and flush an error response
       const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
 
       // Ignore and flush all other open requests
-      httpMock.match(() => true).forEach(r => r.flush({ result: {} }));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
 
       await Promise.resolve();
 
@@ -499,6 +499,38 @@ describe("UserService", () => {
       });
       expect(userService.users()).toEqual([]);
     });
+
+    it("should not show previous user details when detailsUsername changes", async () => {
+      const realm = "test-realm";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/alice");
+      userService.detailsUsername.set("alice");
+      userService.selectedUserRealm.set(realm);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.tick();
+
+      // Load alice
+      const req1 = mockBackend.expectOne(environment.proxyUrl + "/user/?user=alice&realm=" + realm);
+      req1.flush(MockPiResponse.fromValue([buildUser("alice")]));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+      await Promise.resolve();
+
+      expect(userService.user().username).toBe("alice");
+
+      // Switch to bob — while loading, user signal should NOT keep alice's data
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/bob");
+      userService.detailsUsername.set("bob");
+      TestBed.tick();
+
+      // Before bob's response arrives, user should be reset to empty
+      expect(userService.user().username).toBe("");
+
+      const req2 = mockBackend.expectOne(environment.proxyUrl + "/user/?user=bob&realm=" + realm);
+      req2.flush(MockPiResponse.fromValue([buildUser("bob")]));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+      await Promise.resolve();
+
+      expect(userService.user().username).toBe("bob");
+    });
   });
 
   describe("users signal (list)", () => {
@@ -510,7 +542,7 @@ describe("UserService", () => {
       contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
       userService.selectedUserRealm.set("other");
       TestBed.tick();
-      httpMock.match(() => true).forEach(r => r.flush({ result: { value: [] } }));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: { value: [] } }));
 
       userService.selectedUserRealm.set("realm1");
       userService.users();
@@ -544,10 +576,10 @@ describe("UserService", () => {
       const resolver = "test";
       const userData = { username: "new-user" } as any;
       let resultValue: boolean | undefined;
-      userService.createUser(resolver, userData).subscribe(result => {
+      userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/user/"));
       req.flush({ result: { value: true, status: true } });
       expect(resultValue).toBe(true);
       expect(req.request.body).toEqual({ user: "new-user", resolver });
@@ -557,10 +589,10 @@ describe("UserService", () => {
       const resolver = "test";
       const userData = { username: "new-user" } as any;
       let resultValue: boolean | undefined;
-      userService.createUser(resolver, userData).subscribe(result => {
+      userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/user/"));
       req.flush({ result: { value: true, status: false } });
       expect(resultValue).toBe(false);
       expect(req.request.body).toEqual({ user: "new-user", resolver });
@@ -570,15 +602,16 @@ describe("UserService", () => {
       const resolver = "test";
       const userData = { username: "fail-user" } as any;
       let resultValue: boolean | undefined;
-      userService.createUser(resolver, userData).subscribe(result => {
+      userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
-      req.flush({ result: { status: false, error: { message: "fail message" } } },
-        { status: 500, statusText: "Server Error" });
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/user/"));
+      req.flush(
+        { result: { status: false, error: { message: "fail message" } } },
+        { status: 500, statusText: "Server Error" }
+      );
       expect(resultValue).toBe(false);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to create user fail-user. fail" +
-        " message");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to create user fail-user. fail" + " message");
     });
   });
 
@@ -587,10 +620,10 @@ describe("UserService", () => {
       const resolver = "test";
       const userData = { username: "edit-user" } as any;
       let resultValue: boolean | undefined;
-      userService.editUser(resolver, userData).subscribe(result => {
+      userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "PUT" && r.url.includes("/user/"));
       req.flush({ result: { value: true, status: true } });
       expect(resultValue).toBe(true);
       expect(req.request.body).toEqual({ user: "edit-user", resolver });
@@ -600,10 +633,10 @@ describe("UserService", () => {
       const resolver = "test";
       const userData = { username: "edit-user" } as any;
       let resultValue: boolean | undefined;
-      userService.editUser(resolver, userData).subscribe(result => {
+      userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "PUT" && r.url.includes("/user/"));
       req.flush({ result: { value: true, status: false } });
       expect(resultValue).toBe(false);
       expect(req.request.body).toEqual({ user: "edit-user", resolver });
@@ -613,13 +646,13 @@ describe("UserService", () => {
       const resolver = "test";
       const userData = { username: "fail-user" } as any;
       let resultValue: boolean | undefined;
-      userService.editUser(resolver, userData).subscribe(result => {
+      userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "PUT" && r.url.includes("/user/"));
       req.flush({ result: { status: false, error: { message: "fail" } } }, { status: 500, statusText: "Server Error" });
       expect(resultValue).toBe(false);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update user fail-user. fail");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to update user fail-user. fail");
     });
   });
 
@@ -628,10 +661,10 @@ describe("UserService", () => {
       const resolver = "test";
       const username = "deleteuser";
       let resultValue: boolean | undefined;
-      userService.deleteUser(resolver, username).subscribe(result => {
+      userService.deleteUser(resolver, username).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "DELETE" && r.url.includes("/user/"));
       req.flush({ result: { value: true, status: true } });
       expect(resultValue).toBe(true);
     });
@@ -640,10 +673,10 @@ describe("UserService", () => {
       const resolver = "test";
       const username = "deleteuser";
       let resultValue: boolean | undefined;
-      userService.deleteUser(resolver, username).subscribe(result => {
+      userService.deleteUser(resolver, username).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "DELETE" && r.url.includes("/user/"));
       req.flush({ result: { value: true, status: false } });
       expect(resultValue).toBe(false);
     });
@@ -652,13 +685,13 @@ describe("UserService", () => {
       const resolver = "test";
       const username = "fail-user";
       let resultValue: boolean | undefined;
-      userService.deleteUser(resolver, username).subscribe(result => {
+      userService.deleteUser(resolver, username).subscribe((result) => {
         resultValue = result;
       });
-      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      const req = httpMock.expectOne((r) => r.method === "DELETE" && r.url.includes("/user/"));
       req.flush({ result: { error: { message: "fail" } } }, { status: 500, statusText: "Server Error" });
       expect(resultValue).toBe(false);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete user fail-user. fail");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user fail-user. fail");
     });
   });
 });

@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewRadiusServerComponent } from "./new-radius-server.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, ParamMap, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { MockDialogService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockRadiusService } from "@testing/mock-services/mock-radius-service";
 import { BehaviorSubject } from "rxjs";
-import { RadiusServerService } from "../../../../services/radius-server/radius-server.service";
-import { MockRadiusService } from "../../../../../testing/mock-services/mock-radius-service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { signal } from "@angular/core";
+import { NewRadiusServerComponent } from "./new-radius-server.component";
 
 describe("NewRadiusServerComponent", () => {
   let component: NewRadiusServerComponent;
@@ -199,7 +199,7 @@ describe("NewRadiusServerComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
@@ -218,7 +218,7 @@ describe("NewRadiusServerComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
@@ -238,7 +238,7 @@ describe("NewRadiusServerComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
@@ -251,7 +251,7 @@ describe("NewRadiusServerComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.save).not.toHaveBeenCalled();
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe("NewRadiusServerComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(routerMock.navigateByUrl).not.toHaveBeenCalled();

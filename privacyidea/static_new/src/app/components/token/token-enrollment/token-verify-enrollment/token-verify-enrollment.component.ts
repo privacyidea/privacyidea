@@ -18,22 +18,18 @@
  **/
 
 import { Component, computed, inject } from "@angular/core";
-import { toSignal } from '@angular/core/rxjs-interop';
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import {
-  TokenEnrollmentDialogData,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../services/token/token.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { TokenEnrollmentDataComponent } from "../token-enrollment-data/token-enrollment-data.component";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatFormField, MatHint } from "@angular/material/form-field";
-import { DialogAction } from "../../../../models/dialog";
+import { MatInput } from "@angular/material/input";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/select";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { DialogAction } from "@models/dialog";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-token-verify-enrollment",
@@ -63,7 +59,9 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Toke
 
   verifyOTPControl = new FormControl("", { nonNullable: true, validators: Validators.required });
 
-  private readonly statusSignal = toSignal(this.verifyOTPControl.statusChanges, { initialValue: this.verifyOTPControl.status });
+  private readonly statusSignal = toSignal(this.verifyOTPControl.statusChanges, {
+    initialValue: this.verifyOTPControl.status
+  });
   invalidInputSignal = computed(() => {
     this.statusSignal();
     return this.verifyOTPControl.invalid;

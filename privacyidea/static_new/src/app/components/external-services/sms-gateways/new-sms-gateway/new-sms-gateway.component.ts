@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { CommonModule } from "@angular/common";
 import {
   AfterViewInit,
   Component,
@@ -29,7 +30,6 @@ import {
   untracked,
   ViewChild
 } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -39,18 +39,18 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   SmsGateway,
   SmsGatewayService,
   SmsGatewayServiceInterface,
   SmsProvider
-} from "../../../../services/sms-gateway/sms-gateway.service";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { CommonModule } from "@angular/common";
+} from "@services/sms-gateway/sms-gateway.service";
 
 type KeyValueRow = { key: string; value: string };
 
@@ -86,7 +86,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   private gatewayName: string | null = null;
 
   smsForm: FormGroup = this.formBuilder.group({
-    name: ["", [Validators.required]],
+    name: ["", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
     providermodule: ["", [Validators.required]],
     description: [""]
   });

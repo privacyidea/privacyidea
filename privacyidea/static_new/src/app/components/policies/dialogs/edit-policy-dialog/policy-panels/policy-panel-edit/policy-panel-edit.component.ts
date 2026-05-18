@@ -19,15 +19,15 @@
 
 import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 
-import { MatButtonModule } from "@angular/material/button";
 import { FormsModule } from "@angular/forms";
-import { PolicyDetail } from "../../../../../../services/policies/policies.service";
-import { EditActionTabComponent } from "../edit-action-tab/edit-action-tab.component";
-import { EditConditionsTabComponent } from "../edit-conditions-tab/edit-conditions-tab.component";
-import { DialogService, DialogServiceInterface } from "../../../../../../services/dialog/dialog.service";
+import { MatButtonModule } from "@angular/material/button";
+import { EditActionTabComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/edit-action-tab.component";
+import { EditConditionsTabComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PolicyDetail } from "@services/policies/policies.service";
 import { PolicyDescriptionEditComponent } from "./policy-description/policy-description-edit.component";
-import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
 import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.component";
+import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
 
 export type PolicyTab = "actions" | "conditions";
 

@@ -1,5 +1,4 @@
 @use "theme";
-@use "@angular/material" as mat;
 
 $button-height: 40px;
 $button-width: 240px;
@@ -270,7 +269,7 @@ $button-low-contrast-variant: linear-gradient(
   width: 48px;
   color: var(--mat-sys-on-surface);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
 }
 
 .back-button {
@@ -278,14 +277,15 @@ $button-low-contrast-variant: linear-gradient(
   margin: 32px 16px 0 16px;
 
   &:hover {
-    @include mat.elevation(8);
+    box-shadow: var(--elevation-8);
   }
 }
 
 .mdi--folder-list {
   display: inline-block;
-  width: 1.7em !important;
-  height: 1.7em !important;
+  width: 1.9em !important;
+  height: 1.9em !important;
+  transform: translateY(4px);
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 8 4 l 2 2 h 6 a 2 2 0 0 1 2 2 v 8 c -0.033 1.502 -0.545 1.996 -2 2 H 3 a 2 2 0 0 1 -2 -2 V 6 c 0 -1.11 0.89 -2 2 -2 z M 20 6 h 14 v 2 H 20 V 6 M 20 10 h 9 v 2 H 20 V 10 M 20 14 h 7 v 2 H 20 v -2'/%3E%3C/svg%3E");
   background-color: currentColor;
   -webkit-mask-image: var(--svg);
@@ -340,8 +340,8 @@ $button-low-contrast-variant: linear-gradient(
 
 .ms--shield-list {
   display: inline-block;
-  width: 2em !important;
-  height: 2em !important;
+  width: 1.9em !important;
+  height: 1.9em !important;
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 19 9 h 14 v 2 H 19 V 9 M 19 13 h 9 v 2 H 19 V 13 M 19 17 h 7 v 2 H 19 v -2 M 9.8 5 L 2.6 8.2 L 2.6 13 C 2.6 17.44 5.672 21.592 9.8 22.6 C 13.928 21.592 17 17.44 17 13 L 17 8.2 L 9.8 5 Z'/%3E%3C/svg%3E");
   background-color: currentColor;
   -webkit-mask-image: var(--svg);
@@ -373,9 +373,72 @@ $button-low-contrast-variant: linear-gradient(
   width: 1em;
   height: 1em;
   background-color: currentColor;
-
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -25 85 50'%3E%3Cpath fill='%23000' d='M 0 0 A 2 2 0 0 0 80 0 A 2 2 0 0 0 0 0 M 40 -20 L 40 -13 L 18 -16 L 18 -23 Z M 61 -23 L 61 -16 L 40 -13 L 40 -20 Z M 58 -9 C 60 -9 61 -8 61 -5 L 61 9 C 60 23 45 23 40 23 C 36 23 19 23 18 9 L 18 -5 C 18 -8 19 -9 21 -9 Z M 55 -2 L 55 1 C 55 11 57 17 40 17 C 24 17 25 11 25 1 L 25 -2 Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
 
+.icon-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .icon-badge-overlay {
+    position: absolute;
+    bottom: -1px;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    border-radius: 50%;
+    background-color: var(--mat-sys-surface-container-lowest);
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &.mat-icon {
+      width: 14px !important;
+      height: 14px !important;
+      font-size: 14px !important;
+    }
+
+    &.icon-badge-add {
+      font-weight: bold;
+      right: -3px;
+    }
+
+    &.icon-badge-gear {
+      right: -1px;
+    }
+  }
+}
+
+.mdi--github {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.mdi--netknights {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: var(--green-brand-base);
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5.75' y='3.25' width='6' height='6' fill='%23000'/%3E%3Crect x='12.25' y='3.25' width='6' height='6' fill='%23000'/%3E%3Crect x='5.75' y='9.75' width='6' height='6' fill='%23000'/%3E%3Crect x='5.75' y='16.25' width='6' height='6' fill='%23000'/%3E%3C/svg%3E");
   -webkit-mask-image: var(--svg);
   mask-image: var(--svg);
   -webkit-mask-repeat: no-repeat;
@@ -394,10 +457,10 @@ $button-low-contrast-variant: linear-gradient(
   width: calc(var(--header-height) / 3);
   color: var(--mat-sys-on-surface);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
 
   &:hover {
-    @include mat.elevation(8);
+    box-shadow: var(--elevation-8);
     background: var(--mat-sys-surface-container-low);
     color: var(--mat-sys-on-surface-variant);
   }
@@ -431,7 +494,6 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-
 %action-button-base {
   border-radius: var(--border-radius);
   border-style: solid;
@@ -455,7 +517,16 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin action-button($bg, $color, $hover-bg, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
+@mixin action-button(
+  $bg,
+  $color,
+  $hover-bg,
+  $ripple: null,
+  $ripple-mdc: null,
+  $layer: null,
+  $border: true,
+  $primary: false
+) {
   @extend %action-button-base;
   background-color: $bg;
 
@@ -499,44 +570,44 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-primary {
   @include action-button(
-                  var(--mat-sys-primary),
-                  var(--mat-sys-surface-container-lowest),
-                  var(--mat-sys-primary-base-active),
-                  $border: false,
-                  $primary: true
+    var(--mat-sys-primary),
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary-base-active),
+    $border: false,
+    $primary: true
   );
 }
 
 .action-button-secondary {
   @include action-button(
-                  var(--mat-sys-surface-container-lowest),
-                  var(--mat-sys-primary),
-                  var(--sky-blue),
-                  $ripple-mdc: var(--sky-bg)
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary),
+    var(--sky-blue),
+    $ripple-mdc: var(--sky-bg)
   );
 }
 
 .action-button-delete-primary {
   @include action-button(
-                  var(--red-base),
-                  var(--mat-sys-surface-container-lowest),
-                  var(--red-light),
-                  $ripple: var(--red-light-active),
-                  $ripple-mdc: var(--rose-bg),
-                  $layer: var(--rose-bg),
-                  $border: false,
-                  $primary: true
+    var(--red-base),
+    var(--mat-sys-surface-container-lowest),
+    var(--red-light),
+    $ripple: var(--red-light-active),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg),
+    $border: false,
+    $primary: true
   );
 }
 
 .action-button-delete-secondary {
   @include action-button(
-                  var(--mat-sys-surface-container-lowest),
-                  var(--red-base),
-                  var(--rose-bg),
-                  $ripple: var(--rose-ripple),
-                  $ripple-mdc: var(--rose-bg),
-                  $layer: var(--rose-bg)
+    var(--mat-sys-surface-container-lowest),
+    var(--red-base),
+    var(--rose-bg),
+    $ripple: var(--rose-ripple),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg)
   );
 }
 
@@ -656,10 +727,10 @@ $button-low-contrast-variant: linear-gradient(
   color: var(--mat-sys-on-surface-variant);
   border-radius: var(--border-radius);
   border: unset;
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
 
   &:hover {
-    @include mat.elevation(8);
+    box-shadow: var(--elevation-8);
   }
 }
 
@@ -667,7 +738,7 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-::ng-deep mat-icon {
+mat-icon {
   display: flex !important;
   align-items: center !important;
 }

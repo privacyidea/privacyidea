@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface CaConnector {
@@ -42,16 +42,19 @@ export interface CaConnectorServiceInterface {
 
   deleteCaConnector(connectorname: string): Promise<void>;
 
-  getCaSpecificOptions(catype: string, params: {
-    hostname: any;
-    port?: any;
-    use_ssl?: any;
-    ssl_ca_cert?: any;
-    ssl_client_cert?: any;
-    ssl_client_key?: any;
-    ssl_client_key_password?: any;
-    http_proxy?: any;
-  }): Promise<any>;
+  getCaSpecificOptions(
+    catype: string,
+    params: {
+      hostname: any;
+      port?: any;
+      use_ssl?: any;
+      ssl_ca_cert?: any;
+      ssl_client_cert?: any;
+      ssl_client_key?: any;
+      ssl_client_key_password?: any;
+      http_proxy?: any;
+    }
+  ): Promise<any>;
 }
 
 @Injectable({
@@ -65,12 +68,6 @@ export class CaConnectorService implements CaConnectorServiceInterface {
 
   readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
 
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.caConnectorResource.error(), "CA connectors");
-    });
-  }
-
   caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => {
     if (!this.contentService.onExternalCaConnectors()) {
       return undefined;
@@ -83,45 +80,57 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: () => this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
-    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+    source: () => ({
+      value: this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+      isLoading: this.caConnectorResource.isLoading(),
+      error: this.caConnectorResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
+      return value;
+    }
   });
 
   async postCaConnector(connector: CaConnector): Promise<void> {
-    const url = `${this.caConnectorBaseUrl}${connector.connectorname}`;
+    const url = `${this.caConnectorBaseUrl}${encodeURIComponent(connector.connectorname)}`;
     const request = this.http.post<PiResponse<any>>(url, connector.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved CA connector.`);
+        this.notificationService.success($localize`Successfully saved CA connector.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save CA connector. ` + message);
+        this.notificationService.error($localize`Failed to save CA connector. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteCaConnector(connectorname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.caConnectorBaseUrl}${connectorname}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<any>>(
+      `${this.caConnectorBaseUrl}${encodeURIComponent(connectorname)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted CA connector: ${connectorname}.`);
+        this.notificationService.success($localize`Successfully deleted CA connector: ${connectorname}.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete CA connector. ` + message);
+        this.notificationService.error($localize`Failed to delete CA connector. ` + message);
         throw new Error("delete-failed");
       });
   }
 
   async getCaSpecificOptions(catype: string, params: any): Promise<any> {
     const pstring = new URLSearchParams(params).toString();
-    const url = `${this.caConnectorBaseUrl}specific/${catype}?${pstring}`;
+    const url = `${this.caConnectorBaseUrl}specific/${encodeURIComponent(catype)}?${pstring}`;
     const request = this.http.get<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -130,7 +139,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to fetch CA specific options. ` + message);
+        this.notificationService.error($localize`Failed to fetch CA specific options. ` + message);
         throw new Error("fetch-failed");
       });
   }

@@ -74,8 +74,11 @@
                 required />
             </app-clearable-input>
             <mat-hint i18n>This is the unique identifying name for this service definition.</mat-hint>
-            @if (serviceIdForm.get('servicename')?.invalid && serviceIdForm.get('servicename')?.touched) {
+            @if (serviceIdForm.get('servicename')?.hasError('required') && serviceIdForm.get('servicename')?.touched) {
               <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
+            }
+            @if (serviceIdForm.get('servicename')?.hasError('pattern') && serviceIdForm.get('servicename')?.touched) {
+              <mat-error i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
             }
           </mat-form-field>
 

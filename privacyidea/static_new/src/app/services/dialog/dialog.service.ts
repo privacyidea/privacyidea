@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { ComponentType } from "@angular/cdk/overlay";
 import { inject, Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
-import { ComponentType } from "@angular/cdk/overlay";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom, take } from "rxjs";
-import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export interface DialogServiceInterface {
   closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent<any, R>, R>, result?: R): boolean;

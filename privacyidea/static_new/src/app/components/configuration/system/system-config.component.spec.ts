@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SystemConfigComponent } from "./system-config.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { provideRouter, Router } from "@angular/router";
 import { provideLocationMocks } from "@angular/common/testing";
-import { of } from "rxjs";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { ContentService } from "../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockContentService } from "../../../../testing/mock-services";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockSystemService } from "../../../../testing/mock-services/mock-system-service";
-import { MockPiResponse } from "../../../../testing/mock-services";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SystemService } from "@services/system/system.service";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { of, throwError } from "rxjs";
+import { SystemConfigComponent } from "./system-config.component";
 
 describe("SystemConfigComponent", () => {
   let component: SystemConfigComponent;
@@ -42,6 +42,7 @@ describe("SystemConfigComponent", () => {
   let authService: MockAuthService;
   let notificationService: MockNotificationService;
   let router: Router;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -55,7 +56,8 @@ describe("SystemConfigComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: MatSnackBar, useValue: { open: jest.fn() } }
+        { provide: MatSnackBar, useValue: { open: jest.fn() } },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -65,6 +67,7 @@ describe("SystemConfigComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     router = TestBed.inject(Router);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     const contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     contentService.routeUrl.set(ROUTE_PATHS.CONFIGURATION_SYSTEM);
@@ -110,7 +113,7 @@ describe("SystemConfigComponent", () => {
 
   it("should save system config successfully", () => {
     const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    const notificationSpy = jest.spyOn(notificationService, "success");
 
     component.saveSystemConfig();
 
@@ -119,10 +122,10 @@ describe("SystemConfigComponent", () => {
   });
 
   it("should handle save system config error", () => {
-    jest.spyOn(systemService, "saveSystemConfig").mockReturnValueOnce(
-      of(new MockPiResponse<{ status: boolean }>({ result: { status: false } }))
-    );
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    jest
+      .spyOn(systemService, "saveSystemConfig")
+      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+    const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.saveSystemConfig();
 
@@ -131,7 +134,7 @@ describe("SystemConfigComponent", () => {
 
   it("should delete user cache successfully", () => {
     const deleteSpy = jest.spyOn(systemService, "deleteUserCache");
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    const notificationSpy = jest.spyOn(notificationService, "success");
 
     component.deleteUserCache();
 
@@ -140,10 +143,10 @@ describe("SystemConfigComponent", () => {
   });
 
   it("should handle delete user cache error", () => {
-    jest.spyOn(systemService, "deleteUserCache").mockReturnValueOnce(
-      of(new MockPiResponse<{ status: boolean }>({ result: { status: false } }))
-    );
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    jest
+      .spyOn(systemService, "deleteUserCache")
+      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+    const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.deleteUserCache();
 
@@ -162,5 +165,60 @@ describe("SystemConfigComponent", () => {
     const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
     component.loadSystemConfig();
     expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("should register hasChanges, validChanges, and save in ngOnInit", () => {
+    expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+    expect(pendingChangesService.registerSave).toHaveBeenCalled();
+  });
+
+  it("should report hasChanges based on form dirty state", () => {
+    const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+    expect(fn()).toBe(false);
+    component.systemConfigForm.form.markAsDirty();
+    expect(fn()).toBe(true);
+  });
+
+  it("_saveAndReturn should call saveSystemConfig and resolve true on success", async () => {
+    const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
+    const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+    const result = await saveFn();
+    expect(saveSpy).toHaveBeenCalled();
+    expect(notificationService.success).toHaveBeenCalledWith("System configuration saved successfully.");
+    expect(result).toBe(true);
+  });
+
+  it("_saveAndReturn should resolve false when save returns status false", async () => {
+    jest
+      .spyOn(systemService, "saveSystemConfig")
+      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+    const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+    const result = await saveFn();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save system configuration.");
+    expect(result).toBe(false);
+  });
+
+  it("_saveAndReturn should resolve false on HTTP error", async () => {
+    jest
+      .spyOn(systemService, "saveSystemConfig")
+      .mockReturnValueOnce(throwError(() => new Error("Network error")));
+    const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+    const result = await saveFn();
+    expect(notificationService.error).toHaveBeenCalledWith("Error saving system configuration.");
+    expect(result).toBe(false);
+  });
+
+  it("validChanges combines permission and form validity", () => {
+    const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    expect(fn()).toBe(true);
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+    expect(fn()).toBe(false);
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

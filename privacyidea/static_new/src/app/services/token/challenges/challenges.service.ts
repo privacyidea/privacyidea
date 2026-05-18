@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,18 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { TokenService, TokenServiceInterface } from "../token.service";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { Observable } from "rxjs";
 
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { NotificationService } from "../../notification/notification.service";
-import { PiResponse } from "../../../app.component";
 import { Sort } from "@angular/material/sort";
-import { StringUtils } from "../../../utils/string.utils";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { StringUtils } from "@utils/string.utils";
 
 const apiFilter = ["serial", "transaction_id"];
 const advancedApiFilter: string[] = [];
@@ -77,13 +76,6 @@ export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly notificationService = inject(NotificationService);
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.challengesResource.error(), "challenges");
-    });
-  }
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   challengesFilter = linkedSignal({
@@ -132,7 +124,9 @@ export class ChallengesService implements ChallengesServiceInterface {
     }
 
     const { params: filterParams, serial } = this.filterParams();
-    const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
+    const url = serial
+      ? `${this.tokenBaseUrl}challenges/${encodeURIComponent(serial)}`
+      : `${this.tokenBaseUrl}challenges/`;
 
     return {
       url,

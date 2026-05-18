@@ -1,6 +1,5 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .details-container {
   @include styles.main-component-style;
@@ -42,9 +41,8 @@
 .user-details-grid,
 .user-details-column {
   display: grid;
-  grid-template-columns: auto auto;
-  gap: 16px;
-  padding: 0;
+  gap: 10px 16px;
+  padding-right: 16px;
   border: 0;
   margin-bottom: auto;
 
@@ -60,6 +58,7 @@
   display: block;
   margin-block: auto;
   max-width: 240px;
+  height: 28px;
 }
 
 .value {
@@ -69,6 +68,12 @@
   display: block;
   margin-block: auto;
   max-width: 240px;
+  height: 28px;
+}
+
+.label-value-row {
+  display: grid;
+  grid-template-columns: auto auto;
 }
 
 .return-button {
@@ -143,5 +148,4 @@
 
 .username-header {
   color: var(--mat-sys-primary);
-  margin-right: -8px;
 }

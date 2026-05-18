@@ -31,30 +31,30 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { MatButton } from "@angular/material/button";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButton } from "@angular/material/button";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTab, MatTabGroup } from "@angular/material/tabs";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_EVENT, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { deepCopy } from "@utils/deep-copy.utils";
+import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
-import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
-import { deepCopy } from "../../../utils/deep-copy.utils";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MatChipsModule } from "@angular/material/chips";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { EventSelectionComponent } from "./event-selection/event-selection.component";
-import { MatTab, MatTabGroup } from "@angular/material/tabs";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatTooltip } from "@angular/material/tooltip";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -195,7 +195,6 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     this.observer?.disconnect();
   }
 
-
   cancelEdit(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
   }
@@ -214,7 +213,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     const validity: Record<string, any> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "";
+    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
     validity["handlerModule"] =
       this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
@@ -258,7 +257,9 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
       eventParams["option." + optionKey] = optionValue;
     }
-    eventParams["id"] = eventParams["id"].toString();
+    if (eventParams["id"] != null) {
+      eventParams["id"] = eventParams["id"].toString();
+    }
     eventParams["handlermodule"] = this.eventService.selectedHandlerModule();
     delete eventParams["options"];
     return eventParams;
@@ -279,7 +280,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
             const message = this.isNewEvent()
               ? $localize`Event handler created successfully.`
               : $localize`Event handler updated successfully.`;
-            this.notificationService.openSnackBar(message);
+            this.notificationService.success(message);
             resolve(true);
           } else {
             resolve(false);
@@ -296,7 +297,9 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   }
 
   toggleActive(activate: boolean): void {
-    if (!this.editEvent()) return;
+    if (!this.editEvent() || this.event()!.id == null) {
+      return;
+    }
     this.editEvent()!.active = activate;
     if (activate) {
       this.eventService.enableEvent(this.event()!.id);

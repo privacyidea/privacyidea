@@ -20,8 +20,8 @@ import { Component, computed, effect, input } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { PasswdResolverData } from "../../../../services/resolver/resolver.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { PasswdResolverData } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-passwd-resolver",

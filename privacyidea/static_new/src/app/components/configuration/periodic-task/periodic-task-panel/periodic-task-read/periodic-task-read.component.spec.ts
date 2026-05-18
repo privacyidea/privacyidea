@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,7 +18,7 @@
  **/
 
 import { TestBed } from "@angular/core/testing";
-import { EMPTY_PERIODIC_TASK } from "../../../../../services/periodic-task/periodic-task.service";
+import { EMPTY_PERIODIC_TASK } from "@services/periodic-task/periodic-task.service";
 import { PeriodicTaskReadComponent } from "./periodic-task-read.component";
 
 describe("PeriodicTaskPanelComponent", () => {
@@ -73,14 +73,17 @@ describe("PeriodicTaskPanelComponent", () => {
 
   it("should render interval, nodes, ordering, and retry_if_failed", () => {
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain("Interval " + task.interval );
+    expect(compiled.textContent).toContain("Interval " + task.interval);
     expect(compiled.textContent).toContain("Nodes " + task.nodes[0]);
     expect(compiled.textContent).toContain("Ordering " + task.ordering.toString());
     expect(compiled.textContent).toContain("Retry If Failed");
   });
 
   it("should render options", () => {
-    fixture.componentRef.setInput("task", { ...task, options: { event_counter: "test-counter", reset_event_counter: "true" } });
+    fixture.componentRef.setInput("task", {
+      ...task,
+      options: { event_counter: "test-counter", reset_event_counter: "true" }
+    });
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain("Options");
@@ -92,7 +95,8 @@ describe("PeriodicTaskPanelComponent", () => {
 
   it("should render last_runs as dates and fallback", () => {
     fixture.componentRef.setInput("task", {
-      ...task, last_runs: {
+      ...task,
+      last_runs: {
         node1: "2024-08-03T12:00:00Z",
         node2: 1717238400000,
         node3: "not-a-date"

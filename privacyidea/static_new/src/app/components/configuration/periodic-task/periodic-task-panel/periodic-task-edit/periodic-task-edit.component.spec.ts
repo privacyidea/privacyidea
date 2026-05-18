@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,12 +19,12 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { PeriodicTaskEditComponent } from "./periodic-task-edit.component";
 import { provideHttpClient } from "@angular/common/http";
-import { MockPeriodicTaskService } from "../../../../../../testing/mock-services/mock-periodic-task-service";
-import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "../../../../../services/periodic-task/periodic-task.service";
-import { SystemService } from "../../../../../services/system/system.service";
-import { MockSystemService } from "../../../../../../testing/mock-services/mock-system-service";
+import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { SystemService } from "@services/system/system.service";
+import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
+import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { PeriodicTaskEditComponent } from "./periodic-task-edit.component";
 
 describe("PeriodicTaskEditComponent", () => {
   let component: PeriodicTaskEditComponent;
@@ -49,8 +49,7 @@ describe("PeriodicTaskEditComponent", () => {
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
         { provide: SystemService, useClass: MockSystemService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(PeriodicTaskEditComponent);
     component = fixture.componentInstance;
@@ -157,6 +156,5 @@ describe("PeriodicTaskEditComponent", () => {
       });
       expect(component.allowSave).toBe(true);
     });
-
   });
 });

@@ -16,23 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 
-import { TokenDetailsComponent } from "./token-details.component";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ValidateService } from "../../../services/validate/validate.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContentService } from "../../../services/content/content.service";
-import { MachineService } from "../../../services/machine/machine.service";
+import { MatDialog } from "@angular/material/dialog";
+import { ActivatedRoute } from "@angular/router";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { MachineService } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
+  MockAuditService,
   MockContainerService,
   MockContentService,
   MockLocalService,
@@ -42,10 +46,10 @@ import {
   MockTableUtilsService,
   MockTokenService,
   MockValidateService
-} from "../../../../testing/mock-services";
-import { MatDialog } from "@angular/material/dialog";
-import { ActivatedRoute } from "@angular/router";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { TokenDetailsComponent } from "./token-details.component";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -56,6 +60,7 @@ describe("TokenDetailsComponent", () => {
   let realmSvc: MockRealmService;
   let contentSvc: MockContentService;
   let machineSvc: MockMachineService;
+  let pendingChangesService: MockPendingChangesService;
 
   const matDialogOpen = jest.fn();
   const matDialogMock = { open: matDialogOpen };
@@ -75,6 +80,7 @@ describe("TokenDetailsComponent", () => {
             params: of({ id: "123" })
           }
         },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },
@@ -84,6 +90,7 @@ describe("TokenDetailsComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: MatDialog, useValue: matDialogMock },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         MockLocalService,
         MockNotificationService
       ]
@@ -94,6 +101,7 @@ describe("TokenDetailsComponent", () => {
     realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
     contentSvc = TestBed.inject(ContentService) as unknown as MockContentService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     // Monkey-patch unimplemented service methods we’ll hit via the component.
     (tokenSvc.getTokengroups as any) = jest
@@ -137,7 +145,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("saveContainer assigns when a container is selected", () => {
-    containerSvc.selectedContainer.set("container1");
+    containerSvc.selectedContainerSerial.set("container1");
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
@@ -148,7 +156,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("saveContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainer.set("");
+    containerSvc.selectedContainerSerial.set("");
     (containerSvc.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
@@ -243,10 +251,10 @@ describe("TokenDetailsComponent", () => {
       isEditing: signal(true)
     } as any;
 
-    containerSvc.selectedContainer.set("X");
+    containerSvc.selectedContainerSerial.set("X");
     component.cancelTokenEdit(el);
 
-    expect(containerSvc.selectedContainer()).toBe("");
+    expect(containerSvc.selectedContainerSerial()).toBe("");
     expect(el.isEditing()).toBe(false);
   });
 
@@ -305,5 +313,123 @@ describe("TokenDetailsComponent", () => {
 
     machineSvc.tokenApplications.set([{ id: 1 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects editing state of inline fields", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.isEditingUser.set(true);
+      expect(fn()).toBe(true);
+      component.isEditingUser.set(false);
+
+      component.isEditingInfo.set(true);
+      expect(fn()).toBe(true);
+    });
+
+    it("hasChanges ignores tokenIsRevoked (only edit state matters)", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.tokenIsRevoked.set(true);
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
+
+    it("registers validChanges and save in ngOnInit", () => {
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
+      const editingRow = {
+        keyMap: { key: "description", label: "Description" },
+        value: "new",
+        isEditing: signal(true)
+      } as any;
+      const idleRow = {
+        keyMap: { key: "maxfail", label: "Max" },
+        value: 5,
+        isEditing: signal(false)
+      } as any;
+      (component as any).tokenDetailData = () => [editingRow, idleRow];
+      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => {});
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(true);
+      expect(saveSpy).toHaveBeenCalledTimes(1);
+      expect(saveSpy).toHaveBeenCalledWith(editingRow);
+    });
+
+    it("saveAllInlineEdits delegates user save to userChild when isEditingUser", async () => {
+      (component as any).tokenDetailData = () => [];
+      component.isEditingUser.set(true);
+      const userSaveSpy = jest.fn();
+      component.userChild = { saveUser: userSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(userSaveSpy).toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
+      (component as any).tokenDetailData = () => [];
+      const infoEl = {
+        keyMap: { key: "info", label: "Information" },
+        value: { foo: "bar" },
+        isEditing: signal(true)
+      } as any;
+      (component as any).infoData = () => [infoEl];
+      component.isEditingInfo.set(true);
+      const infoSaveSpy = jest.fn();
+      component.infoChild = { saveInfo: infoSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
+    });
+
+    it("validChanges always reports true so save button stays enabled", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(true);
+    });
+
+    it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
+      (component as any).tokenDetailData = () => [];
+      (component as any).infoData = () => [];
+      component.isEditingUser.set(false);
+      component.isEditingInfo.set(false);
+      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => {});
+      component.userChild = { saveUser: jest.fn() } as any;
+      component.infoChild = { saveInfo: jest.fn() } as any;
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(true);
+      expect(saveSpy).not.toHaveBeenCalled();
+      expect(component.userChild!.saveUser).not.toHaveBeenCalled();
+      expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
+      (component as any).tokenDetailData = () => [];
+      (component as any).infoData = () => [];
+      component.isEditingInfo.set(true);
+      const infoSaveSpy = jest.fn();
+      component.infoChild = { saveInfo: infoSaveSpy } as any;
+
+      await component.saveAllInlineEdits();
+
+      expect(infoSaveSpy).not.toHaveBeenCalled();
+      expect(component.isEditingInfo()).toBe(false);
+    });
   });
 });

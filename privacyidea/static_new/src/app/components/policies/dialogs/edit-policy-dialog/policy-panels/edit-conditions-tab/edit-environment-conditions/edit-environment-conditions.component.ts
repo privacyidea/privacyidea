@@ -17,24 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, output, signal, ViewChild, input, OnInit } from "@angular/core";
+import { Component, computed, inject, input, OnInit, output, signal, ViewChild } from "@angular/core";
 
-import { AbstractControl, FormControl, FormsModule, ValidationErrors, ReactiveFormsModule } from "@angular/forms";
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
-import { MatButtonModule } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatExpansionModule } from "@angular/material/expansion";
-import {
-  PolicyService,
-  PolicyDetail,
-  PolicyServiceInterface
-} from "../../../../../../../services/policies/policies.service";
-import { SystemServiceInterface, SystemService } from "../../../../../../../services/system/system.service";
-import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-only/multi-select-only.component";
-import { ClearButtonComponent } from "../../../../../../shared/clear-button/clear-button.component";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 
 @Component({
   selector: "app-edit-environment-conditions",

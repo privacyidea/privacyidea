@@ -1,11 +1,7 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .audit-table-container {
   @include styles.main-component-style;
-  @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-}
-.filter-max-width {
-  max-width: 1466px;
+  @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
 }

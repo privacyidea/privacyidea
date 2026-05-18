@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpHeaders, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
-import { Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Resource, ResourceSnapshot, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
 
 export function makeResource<T>(initial: T) {
@@ -45,8 +45,9 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
       reload: this.reload,
       error: this.error,
       hasValue: this.hasValue.bind(this),
-      status: signal("resolved"),
-      isLoading: signal(false)
+      status: this.status,
+      isLoading: this.isLoading,
+      snapshot: this.snapshot
     } as any;
   }
 
@@ -60,14 +61,23 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 
   destroy(): void {}
 
+  snapshot: Signal<ResourceSnapshot<T>> = computed(() => {
+    const status = this.status();
+    if (status === "error") {
+      return { status, error: this.error()! } as ResourceSnapshot<T>;
+    }
+    return { status, value: this.value() } as ResourceSnapshot<T>;
+  });
+
   status: Signal<ResourceStatus> = signal("resolved");
   error = signal<Error | undefined>(undefined);
   isLoading: Signal<boolean> = signal(false);
-  reload = jest.fn();
+  reload = jest.fn().mockReturnValue(true);
 
   constructor(initial: T) {
     this.value = signal(initial) as WritableSignal<T>;
   }
+  snapshot: Signal<ResourceSnapshot<T>>;
 }
 
 export class MockBase64Service {
@@ -99,7 +109,7 @@ export class MockPiResponse<Value, Detail = unknown> {
       status: boolean;
       value?: Value;
       init?: any;
-      error?: { code: number; message: string }
+      error?: { code: number; message: string };
     };
     error?: { code: number; message: string };
     id?: number;
@@ -109,7 +119,7 @@ export class MockPiResponse<Value, Detail = unknown> {
     version?: string;
     versionnumber?: string;
   }) {
-    this.detail = (args.detail ?? ({} as Detail));
+    this.detail = args.detail ?? ({} as Detail);
     this.result = args.result;
     this.error = args.error;
     this.id = args.id ?? 0;
@@ -120,19 +130,25 @@ export class MockPiResponse<Value, Detail = unknown> {
     this.versionnumber = args.versionnumber ?? "1.0";
   }
 
-  static fromValue<Value, Detail = unknown>(value: Value, detail: Detail = {} as Detail, init: any = {}): MockPiResponse<Value, Detail> {
+  static fromValue<Value, Detail = unknown>(
+    value: Value,
+    detail: Detail = {} as Detail,
+    init: any = {}
+  ): MockPiResponse<Value, Detail> {
     return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value, init } });
   }
 
-  static fromError<Value = unknown, Detail = unknown>(error: {
-    code?: number;
-    message: string
-  }, detail: Detail = {} as Detail): MockPiResponse<Value, Detail> {
+  static fromError<Value = unknown, Detail = unknown>(
+    error: {
+      code?: number;
+      message: string;
+    },
+    detail: Detail = {} as Detail
+  ): MockPiResponse<Value, Detail> {
     const errorWithCode = { code: error.code ?? 0, message: error.message };
     return new MockPiResponse<Value, Detail>({ detail, result: { status: false, error: errorWithCode } });
   }
 }
-
 
 export class MockRouter {
   navigate = jest.fn();

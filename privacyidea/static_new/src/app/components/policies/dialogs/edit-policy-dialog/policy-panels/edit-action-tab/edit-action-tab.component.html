@@ -23,6 +23,7 @@
       <app-added-actions-list
         [isEditMode]="true"
         [actions]="actions()"
+        [scope]="policy().scope"
         (actionsChange)="onActionsChange($event)" />
     }
     <app-action-selector

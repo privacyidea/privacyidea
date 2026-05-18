@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
-import { MockContentService, MockPiResponse } from "src/testing/mock-services";
-import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
-import { MockNotificationService } from "src/testing/mock-services/mock-notification-service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
+import { PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
 
 describe("PolicyService", () => {
   let service: PolicyService;
@@ -107,9 +107,9 @@ describe("PolicyService", () => {
       service.allPolicies.set([policy]);
 
       const changes = { description: "updated description" };
-      service.savePolicyEdits(policyName, { ...policy, ...changes });
+      service.savePolicyEdits("test/policy", { ...policy, ...changes, name: "test/policy" });
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${policyName}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("test/policy")}`);
 
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toMatchObject(changes);
@@ -117,18 +117,18 @@ describe("PolicyService", () => {
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should toggle policy active state optimistically", () => {
-      const policy: PolicyDetail = { ...service.getEmptyPolicy(), name: "test", active: true };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy(), name: "test/1", active: true };
       service.allPolicies.set([policy]);
       service.togglePolicyActive(policy);
       expect(service.allPolicies()[0].active).toBeFalsy();
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}disable/test`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}disable/${encodeURIComponent("test/1")}`);
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should delete a policy and update the signal", async () => {
-      const policy = { ...service.getEmptyPolicy(), name: "to-delete" };
+      const policy = { ...service.getEmptyPolicy(), name: "to/delete" };
       service.allPolicies.set([policy]);
-      const deletePromise = service.deletePolicy("to-delete");
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}to-delete`);
+      const deletePromise = service.deletePolicy("to/delete");
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("to/delete")}`);
       expect(req.request.method).toBe("DELETE");
       req.flush(MockPiResponse.fromValue(1));
       const response = await deletePromise;
@@ -159,7 +159,7 @@ describe("PolicyService", () => {
         action: { "test-action": true }
       };
       // Reset notification service mock
-      notificationService.openSnackBar.mockClear();
+      notificationService.warning.mockClear();
     });
 
     it("should return true and show success notification when policy is created successfully", async () => {
@@ -168,16 +168,14 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toMatchObject(newPolicy);
       req.flush(MockPiResponse.fromValue({ status: true }));
 
       const result = await savePromise;
       expect(result).toBe(true);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        expect.stringContaining("Policy created successfully")
-      );
+      expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Policy created successfully"));
       expect(reloadSpy).toHaveBeenCalled();
     });
 
@@ -188,15 +186,15 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       req.flush(MockPiResponse.fromError({ message: errorMessage }));
 
       const result = await savePromise;
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
       expect(reloadSpy).toHaveBeenCalled();
     });
 
@@ -207,7 +205,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       const errorBody = {
         result: {
           error: {
@@ -223,7 +221,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
       expect(reloadSpy).toHaveBeenCalled();
@@ -234,7 +232,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       req.flush(null, {
         status: 0,
         statusText: "Unknown Error"
@@ -243,9 +241,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        expect.stringContaining("Creating policy failed")
-      );
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Creating policy failed"));
     });
   });
 
@@ -265,7 +261,7 @@ describe("PolicyService", () => {
         action: { "updated-action": true }
       };
       service.allPolicies.set([originalPolicy]);
-      notificationService.openSnackBar.mockClear();
+      notificationService.success.mockClear();
     });
 
     describe("Update policy without name change", () => {
@@ -285,7 +281,7 @@ describe("PolicyService", () => {
         const result = await savePromise;
         expect(result).toBe(true);
         expect(reloadSpy).toHaveBeenCalled();
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
       });
@@ -299,20 +295,23 @@ describe("PolicyService", () => {
 
         // Simulate POST failure
         const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
-        postReq.flush({
-          result: {
-            error: {
-              message: errorMessage
+        postReq.flush(
+          {
+            result: {
+              error: {
+                message: errorMessage
+              }
             }
-          }
-        }, { status: 400, statusText: "Bad Request" });
+          },
+          { status: 400, statusText: "Bad Request" }
+        );
 
         const result = await savePromise;
 
         expect(result).toBe(false);
         // Verify rollback - should still have original policy
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining(`Saving policy failed: ${errorMessage}`)
         );
       });
@@ -343,7 +342,7 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Give patch request time to be sent after successful POST
-        await new Promise(resolve => process.nextTick(resolve));
+        await new Promise((resolve) => process.nextTick(resolve));
 
         // Handle PATCH request for rename
         let patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
@@ -354,7 +353,7 @@ describe("PolicyService", () => {
         const result = await savePromise;
         expect(result).toBe(true);
         expect(reloadSpy).toHaveBeenCalled();
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
       });
@@ -368,20 +367,23 @@ describe("PolicyService", () => {
 
         // Simulate POST failure
         const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
-        postReq.flush({
-          result: {
-            error: {
-              message: errorMessage
+        postReq.flush(
+          {
+            result: {
+              error: {
+                message: errorMessage
+              }
             }
-          }
-        }, { status: 400, statusText: "Bad Request" });
+          },
+          { status: 400, statusText: "Bad Request" }
+        );
 
         const result = await savePromise;
         expect(result).toBe(false);
         // Verify rollback - should have original policy with original name
         expect(service.allPolicies()[0].name).toBe("existing-policy");
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed: " + errorMessage)
         );
       });
@@ -395,24 +397,29 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Wait for microtasks to complete
-        await new Promise(resolve => process.nextTick(resolve));
+        await new Promise((resolve) => process.nextTick(resolve));
 
         // Handle failed PATCH request
-        const patchReq = httpTestingController.expectOne(req => req.method === "PATCH" && req.url === `${service.policyBaseUrl}${originalPolicy.name}`);
-        patchReq.flush({
-          result: {
-            error: {
-              message: errorMessage
+        const patchReq = httpTestingController.expectOne(
+          (req) => req.method === "PATCH" && req.url === `${service.policyBaseUrl}${originalPolicy.name}`
+        );
+        patchReq.flush(
+          {
+            result: {
+              error: {
+                message: errorMessage
+              }
             }
-          }
-        }, { status: 409, statusText: "Conflict" });
+          },
+          { status: 409, statusText: "Conflict" }
+        );
 
         const result = await savePromise;
         expect(result).toBe(false);
         // Verify rollback - should have updated action but original name (last stable state after POST)
         expect(service.allPolicies()[0].name).toBe("existing-policy");
         expect(service.allPolicies()[0].action).toEqual({ "updated-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed: " + errorMessage)
         );
       });
@@ -430,9 +437,7 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         // Verify rollback
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-          expect.stringContaining("Saving policy failed")
-        );
+        expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Saving policy failed"));
       });
 
       it("should handle error without message gracefully", async () => {
@@ -443,13 +448,12 @@ describe("PolicyService", () => {
 
         const result = await savePromise;
         expect(result).toBe(false);
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("Saving policy failed");
+        expect(notificationService.error).toHaveBeenCalledWith("Saving policy failed");
       });
     });
   });
 
   describe("allPolicies", () => {
-
     it("Default should be an empty list", () => {
       expect(service.allPolicies()).toEqual([]);
     });
@@ -461,25 +465,27 @@ describe("PolicyService", () => {
 
       const req = httpTestingController.expectOne((r) => r.url === "/policy/");
       expect(req.request.method).toBe("GET");
-      const policies = [{
-        action: {},
-        active: true,
-        adminrealm: [],
-        adminuser: [],
-        check_all_resolvers: false,
-        client: [],
-        conditions: [],
-        description: "Test description",
-        name: "Test",
-        pinode: [],
-        realm: [],
-        resolver: [],
-        scope: "user",
-        time: "",
-        user: [],
-        user_agents: [],
-        user_case_insensitive: false
-      }];
+      const policies = [
+        {
+          action: {},
+          active: true,
+          adminrealm: [],
+          adminuser: [],
+          check_all_resolvers: false,
+          client: [],
+          conditions: [],
+          description: "Test description",
+          name: "Test",
+          pinode: [],
+          realm: [],
+          resolver: [],
+          scope: "user",
+          time: "",
+          user: [],
+          user_agents: [],
+          user_case_insensitive: false
+        }
+      ];
       req.flush(MockPiResponse.fromValue(policies));
       await Promise.resolve();
 
@@ -496,7 +502,8 @@ describe("PolicyService", () => {
       const req = httpTestingController.expectOne((r) => r.url === "/policy/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -507,7 +514,6 @@ describe("PolicyService", () => {
   });
 
   describe("policyActions", () => {
-
     it("Default should be an empty dict", () => {
       expect(service.policyActions()).toEqual({});
     });
@@ -518,7 +524,7 @@ describe("PolicyService", () => {
 
       const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
       expect(req.request.method).toBe("GET");
-      const policyActions = {admin: {}, user: {}};
+      const policyActions = { admin: {}, user: {} };
       req.flush(MockPiResponse.fromValue(policyActions));
       await Promise.resolve();
 
@@ -532,7 +538,8 @@ describe("PolicyService", () => {
       const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -540,6 +547,56 @@ describe("PolicyService", () => {
       expect(service.allPolicyActionsFlat()).toEqual({});
       expect(service.allPolicyScopes()).toEqual([]);
       expect(service.policyActionsByGroup()).toEqual({});
+    });
+  });
+
+  describe("getDetailsOfAction", () => {
+    const adminDetail: PolicyActionDetail = { type: "bool", desc: "Admin is allowed." };
+    const userDetail: PolicyActionDetail = { type: "str", desc: "User is allowed." };
+
+    async function loadPolicyActions(actions: object) {
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
+      req.flush(MockPiResponse.fromValue(actions));
+      await Promise.resolve();
+    }
+
+    it("should return null for empty actionName", () => {
+      expect(service.getDetailsOfAction("")).toBeNull();
+    });
+
+    it("should return null when action does not exist", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("nonexistent")).toBeNull();
+    });
+
+    it("should return action detail from flat map when no scope provided", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("configread")).toEqual(adminDetail);
+    });
+
+    it("should return scope-specific detail when scope is provided", async () => {
+      await loadPolicyActions({
+        admin: { container_add_token: adminDetail },
+        user: { container_add_token: userDetail }
+      });
+      expect(service.getDetailsOfAction("container_add_token", "admin")).toEqual(adminDetail);
+      expect(service.getDetailsOfAction("container_add_token", "user")).toEqual(userDetail);
+    });
+
+    it("should return null when action does not exist in the given scope", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("configread", "user")).toBeNull();
+    });
+
+    it("allPolicyActionsFlat should only contain one entry for duplicate action names across scopes", async () => {
+      await loadPolicyActions({
+        admin: { container_add_token: adminDetail },
+        user: { container_add_token: userDetail }
+      });
+      const flat = service.allPolicyActionsFlat();
+      expect(Object.keys(flat).filter((k) => k === "container_add_token").length).toBe(1);
     });
   });
 });

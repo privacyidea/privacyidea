@@ -19,10 +19,10 @@
 <div
   appScrollToTop
   class="audit-table-container">
-  <div class="filter-paginator-container filter-max-width">
+  <div class="filter-paginator-container">
     <mat-form-field
       subscriptSizing="dynamic"
-      class="token-table-filter">
+      class="audit-table-filter">
       <mat-label i18n>Filter Audit Log...</mat-label>
       <app-clearable-input
         (onClick)="auditService.clearFilter()"
@@ -46,10 +46,23 @@
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons />
   </div>
+  <div class="margin-bottom-16">
+    @if (authService.actionAllowed("auditlog_download")) {
+      <button
+        (click)="auditService.downloadCSV()"
+        [disabled]="auditService.isDownloading()"
+        class="action-button-primary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon>download</mat-icon>
+        Download
+      </button>
+    }
+  </div>
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"
-    class="token-table"
+    class="audit-table"
     i18n-aria-label
     mat-table>
     @for (column of columnKeysMap; track column) {
@@ -132,7 +145,7 @@
               @case ("container_serial") {
                 <div class="flex-row flex-nowrap ali-center">
                   <a
-                    (click)="contentService.containerSelected(element.container_serial)"
+                    (click)="contentService.navigateContainerDetails(element.container_serial)"
                     attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}

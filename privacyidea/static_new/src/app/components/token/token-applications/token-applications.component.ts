@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,26 +18,20 @@
  **/
 import { Component, inject } from "@angular/core";
 import { MatSelectModule } from "@angular/material/select";
-import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline/token-applications-offline.component";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh/token-applications-ssh.component";
 
 @Component({
   selector: "app-token-applications",
   standalone: true,
-  imports: [
-    TokenApplicationsSshComponent,
-    TokenApplicationsOfflineComponent,
-    MatSelectModule,
-    ScrollToTopDirective
-  ],
+  imports: [TokenApplicationsSshComponent, TokenApplicationsOfflineComponent, MatSelectModule, ScrollToTopDirective],
   templateUrl: "./token-applications.component.html",
   styleUrls: ["./token-applications.component.scss"]
 })
 export class TokenApplicationsComponent {
-  private readonly machineService: MachineServiceInterface =
-    inject(MachineService);
+  private readonly machineService: MachineServiceInterface = inject(MachineService);
 
   selectedApplicationType = this.machineService.selectedApplicationType;
 }

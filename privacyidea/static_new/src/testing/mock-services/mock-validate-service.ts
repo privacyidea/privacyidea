@@ -16,9 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { AuthData, AuthDetail, AuthResponse, AuthRole } from "@services/auth/auth.service";
+import { ValidateCheckResponse, ValidateServiceInterface } from "@services/validate/validate.service";
 import { Observable, of } from "rxjs";
-import { AuthData, AuthDetail, AuthResponse, AuthRole } from "../../app/services/auth/auth.service";
-import { ValidateCheckResponse, ValidateServiceInterface } from "../../app/services/validate/validate.service";
 import { MockPiResponse } from "./mock-utils";
 
 export class MockAuthData implements AuthData {
@@ -82,7 +82,12 @@ export class MockValidateService implements ValidateServiceInterface {
     return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as any);
   }
 
-  authenticateWebAuthn(_args: { signRequest: any; transaction_id: string; username: string; isTest?: boolean }): Observable<AuthResponse> {
+  authenticateWebAuthn(_args: {
+    signRequest: any;
+    transaction_id: string;
+    username: string;
+    isTest?: boolean;
+  }): Observable<AuthResponse> {
     return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as any);
   }
 

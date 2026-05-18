@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,21 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal, DOCUMENT } from "@angular/core";
+import { computed, DOCUMENT, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
-import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { Observable, shareReplay } from "rxjs";
 import { PageEvent } from "@angular/material/paginator";
-import { PiResponse } from "../../app.component";
 import { Sort } from "@angular/material/sort";
-import { environment } from "../../../environments/environment";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { StringUtils } from "../../utils/string.utils";
-import { NotificationService } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { StringUtils } from "@utils/string.utils";
+import { Observable, shareReplay } from "rxjs";
 
 export type TokenApplications = TokenApplication[];
 
@@ -144,18 +143,7 @@ export class MachineService implements MachineServiceInterface {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly document: Document = inject(DOCUMENT);
-  private readonly notificationService = inject(NotificationService);
   private baseUrl = environment.proxyUrl + "/machine/";
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.machinesResource.error(), "machines");
-    });
-
-    effect(() => {
-      this.notificationService.handleResourceError(this.tokenApplicationResource.error(), "token applications");
-    });
-  }
   sshApiFilter = ["serial", "service_id"];
   offlineApiFilter = ["serial", "count", "rounds"];
   advancedApiFilter = ["hostname", "machineid & resolver"];
@@ -182,7 +170,9 @@ export class MachineService implements MachineServiceInterface {
   machineFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
       selectedApplicationType: this.selectedApplicationType(),
-      tokenDetailResource: this.tokenService.tokenDetailResource.hasValue() ? this.tokenService.tokenDetailResource.value() : undefined
+      tokenDetailResource: this.tokenService.tokenDetailResource.hasValue()
+        ? this.tokenService.tokenDetailResource.value()
+        : undefined
     }),
     computation: (source) => {
       const tokenSerial = source.tokenDetailResource?.result?.value?.tokens[0]?.serial;
@@ -284,16 +274,30 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machines: WritableSignal<Machines | undefined> = linkedSignal({
-    source: () => this.machinesResource.hasValue() ? this.machinesResource.value() : undefined,
-    computation: (machinesResource, previous) => {
-      return machinesResource?.result?.value ?? previous?.value;
+    source: () => ({
+      value: this.machinesResource.hasValue() ? this.machinesResource.value() : undefined,
+      isLoading: this.machinesResource.isLoading(),
+      error: this.machinesResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return undefined;
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? previous?.value : undefined;
+      return value;
     }
   });
 
   tokenApplications: Signal<TokenApplications | undefined> = linkedSignal({
-    source: () => this.tokenApplicationResource.hasValue() ? this.tokenApplicationResource.value() : undefined,
-    computation: (tokenApplicationResource, previous) => {
-      return tokenApplicationResource?.result?.value ?? previous?.value;
+    source: () => ({
+      value: this.tokenApplicationResource.hasValue() ? this.tokenApplicationResource.value() : undefined,
+      isLoading: this.tokenApplicationResource.isLoading(),
+      error: this.tokenApplicationResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return undefined;
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? previous?.value : undefined;
+      return value;
     }
   });
 
@@ -310,7 +314,10 @@ export class MachineService implements MachineServiceInterface {
   deleteAssignMachineToToken(args: { serial: string; application: string; mtid: string }): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.baseUrl}token/${args.serial}/${args.application}/${args.mtid}`, { headers })
+      .delete(
+        `${this.baseUrl}token/${encodeURIComponent(args.serial)}/${encodeURIComponent(args.application)}/${encodeURIComponent(args.mtid)}`,
+        { headers }
+      )
       .pipe(shareReplay(1));
   }
 
@@ -346,7 +353,7 @@ export class MachineService implements MachineServiceInterface {
     const headers = this.authService.getHeaders();
     let params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
     return this.http
-      .get(application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`, {
+      .get(application ? `${this.baseUrl}authitem/${encodeURIComponent(application)}` : `${this.baseUrl}authitem`, {
         headers,
         params
       })
@@ -392,13 +399,21 @@ export class MachineService implements MachineServiceInterface {
   deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`, { headers })
+      .delete(
+        `${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(machineid)}/${encodeURIComponent(resolver)}/${encodeURIComponent(application)}`,
+        { headers }
+      )
       .pipe(shareReplay(1));
   }
 
   deleteTokenById(serial: string, application: string, id: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${id}`, { headers }).pipe(shareReplay(1));
+    return this.http
+      .delete(
+        `${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(application)}/${encodeURIComponent(id)}`,
+        { headers }
+      )
+      .pipe(shareReplay(1));
   }
 
   getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {

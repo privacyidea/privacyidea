@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,15 +18,14 @@
  **/
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { RealmService } from "../realm/realm.service";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { catchError, Observable, throwError } from "rxjs";
-import { parseBooleanValue } from "../../utils/parse-boolean-value";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ResolverType =
   | "ldapresolver"
@@ -203,6 +202,9 @@ export class ResolverService implements ResolverServiceInterface {
     if (!this.contentService.onAnyUsersRoute()) {
       return undefined;
     }
+    if (!this.authService.actionAllowed("resolverread")) {
+      return undefined;
+    }
     return {
       url: this.resolverBaseUrl,
       method: "GET",
@@ -216,7 +218,7 @@ export class ResolverService implements ResolverServiceInterface {
       return undefined;
     }
     return {
-      url: this.resolverBaseUrl + resolverName,
+      url: this.resolverBaseUrl + encodeURIComponent(resolverName),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -292,7 +294,7 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error("Error during resolver test:", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to test resolver. " + message);
+          this.notificationService.error("Failed to test resolver. " + message);
           return throwError(() => error);
         })
       );
@@ -300,12 +302,14 @@ export class ResolverService implements ResolverServiceInterface {
 
   postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>> {
     return this.http
-      .post<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() })
+      .post<
+        PiResponse<any, any>
+      >(this.resolverBaseUrl + encodeURIComponent(resolverName), data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error(`Error during posting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to save resolver. " + message);
+          this.notificationService.error("Failed to save resolver. " + message);
           return throwError(() => error);
         })
       );
@@ -313,12 +317,14 @@ export class ResolverService implements ResolverServiceInterface {
 
   deleteResolver(resolverName: string): Observable<PiResponse<any, any>> {
     return this.http
-      .delete<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() })
+      .delete<
+        PiResponse<any, any>
+      >(this.resolverBaseUrl + encodeURIComponent(resolverName), { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error(`Error during deleting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to delete resolver. " + message);
+          this.notificationService.error("Failed to delete resolver. " + message);
           return throwError(() => error);
         })
       );
@@ -328,12 +334,12 @@ export class ResolverService implements ResolverServiceInterface {
     return this.http
       .get<
         PiResponse<any, any>
-      >(this.resolverBaseUrl + resolverType + "/default", { headers: this.authService.getHeaders() })
+      >(this.resolverBaseUrl + encodeURIComponent(resolverType) + "/default", { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error(`Error during getting default resolver config for ${resolverType}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to get default resolver config. " + message);
+          this.notificationService.error("Failed to get default resolver config. " + message);
           return throwError(() => error);
         })
       );

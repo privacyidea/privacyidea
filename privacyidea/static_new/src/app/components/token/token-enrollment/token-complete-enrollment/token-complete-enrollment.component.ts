@@ -18,20 +18,16 @@
  **/
 
 import { Component, computed, inject } from "@angular/core";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import {
-  TokenEnrollmentDialogData,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../services/token/token.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { DialogAction } from "../../../../models/dialog";
-import {FormControl, FormsModule, ReactiveFormsModule, Validators} from "@angular/forms";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatHint } from "@angular/material/form-field";
-import {toSignal} from "@angular/core/rxjs-interop";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { DialogAction } from "@models/dialog";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-token-complete-enrollment",
@@ -56,12 +52,18 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
   protected readonly tokenType = this.data.response?.type ?? "hotp";
   protected readonly enrollParameters = this.data.enrollParameters ?? {};
   protected readonly twoStepEnrollment = computed(() => {
-    return this.enrollDetails?.["2step_output"] || this.enrollDetails?.["2step_difficulty"] || this.enrollDetails?.["2step_salt"];
+    return (
+      this.enrollDetails?.["2step_output"] ||
+      this.enrollDetails?.["2step_difficulty"] ||
+      this.enrollDetails?.["2step_salt"]
+    );
   });
 
   clientPartControl = new FormControl("", { nonNullable: true, validators: Validators.required });
 
-  private readonly statusSignal = toSignal(this.clientPartControl.statusChanges, { initialValue: this.clientPartControl.status });
+  private readonly statusSignal = toSignal(this.clientPartControl.statusChanges, {
+    initialValue: this.clientPartControl.status
+  });
   invalidInputSignal = computed(() => {
     this.statusSignal();
     return this.clientPartControl.invalid;

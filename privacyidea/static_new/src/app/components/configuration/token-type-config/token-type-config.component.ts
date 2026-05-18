@@ -16,12 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+import { HttpClient } from "@angular/common/http";
 import {
   AfterViewInit,
   Component,
   computed,
   DestroyRef,
-  effect,
   ElementRef,
   inject,
   linkedSignal,
@@ -29,38 +30,39 @@ import {
   OnInit,
   Renderer2,
   signal,
-  untracked,
   ViewChild
 } from "@angular/core";
-
-import { MatExpansionModule } from "@angular/material/expansion";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { HttpClient } from "@angular/common/http";
-import { environment } from "../../../../environments/environment";
-import { forkJoin, lastValueFrom } from "rxjs";
-import { PiResponse } from "../../../app.component";
-import { HotpConfigComponent } from "./token-types/hotp-config/hotp-config.component";
-import { TotpConfigComponent } from "./token-types/totp-config/totp-config.component";
-import { U2fConfigComponent } from "./token-types/u2f-config/u2f-config.component";
-import { WebauthnConfigComponent } from "./token-types/webauthn-config/webauthn-config.component";
-import { RadiusConfigComponent } from "./token-types/radius-config/radius-config.component";
-import { RemoteConfigComponent } from "./token-types/remote-config/remote-config.component";
-import { SmsConfigComponent } from "./token-types/sms-config/sms-config.component";
-import { TiqrConfigComponent } from "./token-types/tiqr-config/tiqr-config.component";
-import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
-import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config/questionnaire-config.component";
-import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config.component";
-import { ApiKeyData, YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
-import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import { MatButtonModule } from "@angular/material/button";
+import { MatAccordion, MatExpansionModule } from "@angular/material/expansion";
+import { MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute } from "@angular/router";
+import { PiResponse } from "@app/app.component";
+import { DaypasswordConfigComponent } from "@components/configuration/token-type-config/token-types/daypassword-config/daypassword-config.component";
+import { EmailConfigComponent } from "@components/configuration/token-type-config/token-types/email-config/email-config.component";
+import { HotpConfigComponent } from "@components/configuration/token-type-config/token-types/hotp-config/hotp-config.component";
+import { QuestionnaireConfigComponent } from "@components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component";
+import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
+import { RemoteConfigComponent } from "@components/configuration/token-type-config/token-types/remote-config/remote-config.component";
+import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
+import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
+import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
+import { U2fConfigComponent } from "@components/configuration/token-type-config/token-types/u2f-config/u2f-config.component";
+import { WebauthnConfigComponent } from "@components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component";
+import { YubicoConfigComponent } from "@components/configuration/token-type-config/token-types/yubico-config/yubico-config.component";
+import {
+  ApiKeyData,
+  YubikeyConfigComponent
+} from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
+import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { forkJoin, lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-token-type-config",
@@ -69,6 +71,7 @@ import { ActivatedRoute } from "@angular/router";
     MatExpansionModule,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     HotpConfigComponent,
     TotpConfigComponent,
     U2fConfigComponent,
@@ -103,6 +106,19 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   @ViewChild("scrollContainer") scrollContainer!: ElementRef;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef;
+  @ViewChild(MatAccordion) accordion!: MatAccordion;
+
+  allPanelsOpen = signal(false);
+
+  toggleAllPanels(): void {
+    if (this.allPanelsOpen()) {
+      this.accordion?.closeAll();
+      this.allPanelsOpen.set(false);
+    } else {
+      this.accordion?.openAll();
+      this.allPanelsOpen.set(true);
+    }
+  }
 
   private observer!: IntersectionObserver;
 
@@ -221,7 +237,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   addQuestion(text: string) {
     if (!text) {
-      this.notificationService.openSnackBar($localize`Please enter a question.`);
+      this.notificationService.warning($localize`Please enter a question.`);
       return;
     }
     const index = this.nextQuestionIndex();
@@ -278,7 +294,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     const generateKey = apiKeyData.generateKey;
 
     if (!apiId) {
-      this.notificationService.openSnackBar($localize`Please enter a Client ID.`);
+      this.notificationService.warning($localize`Please enter a Client ID.`);
       return;
     }
 
@@ -296,7 +312,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
           }));
         }
       } catch (e) {
-        this.notificationService.openSnackBar($localize`Failed to generate API key.`);
+        this.notificationService.error($localize`Failed to generate API key.`);
       }
     } else {
       this.formData.update((f) => ({
@@ -321,16 +337,16 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
       }
       const response = await lastValueFrom(saveCall);
       if (response?.result?.status) {
-        this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
+        this.notificationService.success($localize`Token configuration saved successfully.`);
         this.pendingDeletes.set(new Set());
         this.systemService.systemConfigResource.reload();
         return true;
       } else {
-        this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
+        this.notificationService.error($localize`Failed to save token configuration.`);
         return false;
       }
     } catch (e) {
-      this.notificationService.openSnackBar($localize`Error saving token configuration.`);
+      this.notificationService.error($localize`Error saving token configuration.`);
       return false;
     }
   }

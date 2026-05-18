@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, computed } from "@angular/core";
+import { Component, computed, input } from "@angular/core";
+import { MatIconModule } from "@angular/material/icon";
 import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
@@ -27,9 +28,8 @@ import {
   PolicyDetail,
   SECTION_OPTIONS,
   SectionOptionKey
-} from "../../../../services/policies/policies.service";
+} from "@services/policies/policies.service";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
-import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: "app-view-conditions-column",
