@@ -392,9 +392,9 @@ describe("TokenService", () => {
       );
     });
 
-    it("resyncOTPToken posts /resync", () => {
-      postSpy.mockReturnValue(of({}));
-      tokenService.resyncOTPToken("S", "111", "222").subscribe();
+    it("resyncOTPToken posts /resync", async () => {
+      postSpy.mockReturnValue(of({} as any));
+      await tokenService.resyncOTPToken("S", "111", "222");
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}resync`,
         { serial: "S", otp1: "111", otp2: "222" },
@@ -466,7 +466,6 @@ describe("TokenService", () => {
     it.each([
       ["setPin", () => tokenService.setPin("X", "1"), "Failed to set PIN. boom"],
       ["setRandomPin", () => tokenService.setRandomPin("X"), "Failed to set random PIN. boom"],
-      ["resyncOTPToken", () => tokenService.resyncOTPToken("X", "111", "222"), "Failed to resync OTP token. boom"],
       ["setTokenRealm", () => tokenService.setTokenRealm("X", ["r"]), "Failed to set token realm. boom"],
       ["lostToken", () => tokenService.lostToken("X"), "Failed to mark token as lost. boom"]
     ])("%s() notifies on error", async (_label, call, expected) => {
@@ -477,6 +476,16 @@ describe("TokenService", () => {
       });
 
       expect(notificationService.error).toHaveBeenCalledWith(expected);
+    });
+
+    it("resyncOTPToken() notifies on error", async () => {
+      postSpy.mockReturnValue(throwError(() => makeErr("boom")));
+
+      await expect(tokenService.resyncOTPToken("X", "111", "222")).rejects.toMatchObject({
+        error: { result: { error: { message: "boom" } } }
+      });
+
+      expect(notificationService.error).toHaveBeenCalledWith("Failed to resync OTP token. boom");
     });
 
     it("assignUserToAll stops on first error and shows snackbar", (done) => {
@@ -914,6 +923,24 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(tokenService.tokenSerialResource.hasValue()).toBe(false);
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+
+    it("should reset to empty array when tokenSerialResource errors after successful load", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      let req = mockBackend.expectOne((r) => r.url === "/token/");
+      req.flush(MockPiResponse.fromValue({ count: 1, current: 1, tokens: [{ serial: "OATH123" }] }));
+      await Promise.resolve();
+      expect(tokenService.tokenOptions()).toEqual(["OATH123"]);
+
+      tokenService.tokenSerialResource.reload();
+      TestBed.tick();
+      req = mockBackend.expectOne((r) => r.url === "/token/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
       expect(tokenService.tokenOptions()).toEqual([]);
     });
   });

@@ -30,6 +30,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
   AdditionalCondition,
   COMPARATOR_OPTIONS,
@@ -98,6 +100,7 @@ export class EditAdditionalConditionsComponent {
   ];
 
   readonly policyService: PolicyService = inject(PolicyService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   // Inputs/Outputs
   readonly policy = input.required<PolicyDetail>();
@@ -141,6 +144,39 @@ export class EditAdditionalConditionsComponent {
 
   readonly additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);
 
+  readonly canSaveCondition = computed(
+    () =>
+      !!this.conditionSection() &&
+      !!this.conditionComparator() &&
+      !!this.conditionHandleMissingData() &&
+      !!this.conditionKey().trim()
+  );
+
+  readonly isFormDirty = computed(() => {
+    if (!this.showAddConditionForm()) return false;
+    const index = this.editIndex();
+    if (index !== null) {
+      const original = this.additionalConditions()[index];
+      if (!original) return false;
+      return (
+        this.conditionSection() !== original[0] ||
+        this.conditionKey() !== original[1] ||
+        this.conditionComparator() !== original[2] ||
+        this.conditionValue() !== original[3] ||
+        this.conditionActive() !== !original[4] ||
+        this.conditionHandleMissingData() !== original[5]
+      );
+    }
+    return (
+      this.conditionSection() !== "" ||
+      this.conditionKey() !== "" ||
+      this.conditionComparator() !== "" ||
+      this.conditionValue() !== "" ||
+      this.conditionActive() !== true ||
+      this.conditionHandleMissingData() !== "condition_is_false"
+    );
+  });
+
   startEditCondition(condition: AdditionalCondition, index: number) {
     this.editIndex.set(index);
     this.showAddConditionForm.set(true);
@@ -180,10 +216,37 @@ export class EditAdditionalConditionsComponent {
     }
 
     this.policyEdit.emit({ conditions: currentConditions });
-    this.cancelEdit();
+    this._resetForm();
   }
 
   cancelEdit() {
+    if (!this.isFormDirty()) {
+      this._resetForm();
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSaveCondition(),
+          saveExitDisabled: !this.canSaveCondition()
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result === "save-exit") {
+            if (!this.canSaveCondition()) return;
+            this.saveCondition();
+          } else if (result === "discard") {
+            this._resetForm();
+          }
+        }
+      });
+  }
+
+  private _resetForm() {
     this.editIndex.set(null);
     this.showAddConditionForm.set(false);
     this.conditionSection.set("");

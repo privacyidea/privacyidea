@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnInit, ViewChild } from "@angular/core";
+import { Component, effect, inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { FormsModule, NgForm } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -30,6 +30,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { isChecked } from "@utils/parse-boolean-value";
@@ -54,12 +55,13 @@ import { SystemDocumentationDialogComponent } from "./system-documentation-dialo
   ],
   styleUrls: ["./system-config.component.scss"]
 })
-export class SystemConfigComponent implements OnInit {
+export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly authService: AuthService = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
   @ViewChild("systemConfigForm", { static: true }) systemConfigForm!: NgForm;
 
@@ -99,8 +101,12 @@ export class SystemConfigComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSystemConfig();
-    // Trigger loading SMTP servers; the effect above will populate smtpIdentifiers when loaded
     this.smtpService.smtpServerResource.reload();
+    this.pendingChangesService.registerHasChanges(() => this.systemConfigForm?.dirty ?? false);
+    this.pendingChangesService.registerValidChanges(
+      () => this.hasConfigWritePermission() && (this.systemConfigForm?.valid ?? false),
+    );
+    this.pendingChangesService.registerSave(() => this._saveAndReturn());
   }
 
   loadSystemConfig(): void {
@@ -122,6 +128,26 @@ export class SystemConfigComponent implements OnInit {
         console.error("Error saving system configuration:", error);
         this.notificationService.error("Error saving system configuration.");
       }
+    });
+  }
+
+  private _saveAndReturn(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      this.systemService.saveSystemConfig({ ...this.params }).subscribe({
+        next: (response: any) => {
+          if (response.result.status) {
+            this.notificationService.success("System configuration saved successfully.");
+            resolve(true);
+          } else {
+            this.notificationService.error("Failed to save system configuration.");
+            resolve(false);
+          }
+        },
+        error: () => {
+          this.notificationService.error("Error saving system configuration.");
+          resolve(false);
+        }
+      });
     });
   }
 
@@ -159,5 +185,9 @@ export class SystemConfigComponent implements OnInit {
         this.notificationService.error("Error loading system documentation.");
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 }

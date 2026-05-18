@@ -499,6 +499,38 @@ describe("UserService", () => {
       });
       expect(userService.users()).toEqual([]);
     });
+
+    it("should not show previous user details when detailsUsername changes", async () => {
+      const realm = "test-realm";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/alice");
+      userService.detailsUsername.set("alice");
+      userService.selectedUserRealm.set(realm);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.tick();
+
+      // Load alice
+      const req1 = mockBackend.expectOne(environment.proxyUrl + "/user/?user=alice&realm=" + realm);
+      req1.flush(MockPiResponse.fromValue([buildUser("alice")]));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+      await Promise.resolve();
+
+      expect(userService.user().username).toBe("alice");
+
+      // Switch to bob — while loading, user signal should NOT keep alice's data
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/bob");
+      userService.detailsUsername.set("bob");
+      TestBed.tick();
+
+      // Before bob's response arrives, user should be reset to empty
+      expect(userService.user().username).toBe("");
+
+      const req2 = mockBackend.expectOne(environment.proxyUrl + "/user/?user=bob&realm=" + realm);
+      req2.flush(MockPiResponse.fromValue([buildUser("bob")]));
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+      await Promise.resolve();
+
+      expect(userService.user().username).toBe("bob");
+    });
   });
 
   describe("users signal (list)", () => {

@@ -107,7 +107,8 @@
     <mat-hint i18n>Tasks with lower ordering number are executed first.</mat-hint>
   </mat-form-field>
   <mat-checkbox
-    [(ngModel)]="editTask().retry_if_failed"
+    [checked]="editTask().retry_if_failed"
+    (change)="editTask.set({ ...editTask(), retry_if_failed: $event.checked })"
     class="server-checkbox"
     i18n>
     Retry to execute this periodic task if it fails.

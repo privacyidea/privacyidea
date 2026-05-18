@@ -50,6 +50,7 @@ describe("ResolverService", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders({ Authorization: "test-token" }));
+    (authService.actionAllowed as jest.Mock).mockImplementation((action: string) => action === "resolverread");
     contentService.routeUrl.set(ROUTE_PATHS.USERS);
   });
 
