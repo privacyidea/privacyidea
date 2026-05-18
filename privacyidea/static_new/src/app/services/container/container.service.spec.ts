@@ -626,8 +626,8 @@ describe("ContainerService", () => {
 
   describe("containerOptions", () => {
     it("should update containerOptions from httpResource when not yet present", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/");
@@ -646,8 +646,8 @@ describe("ContainerService", () => {
     });
 
     it("should handle error state from containerResource", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/");
@@ -662,8 +662,8 @@ describe("ContainerService", () => {
     });
 
     it("should reset to empty array when containerResource errors after successful load", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       TestBed.tick();
 
       let req = httpMock.expectOne((r) => r.url === "/container/");
@@ -692,7 +692,7 @@ describe("ContainerService", () => {
     });
 
     it("should update containerTypeOptions from containerTypesResource", async () => {
-      contentServiceMock.onTokensContainers = signal(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/types");
@@ -712,7 +712,7 @@ describe("ContainerService", () => {
     });
 
     it("containerTypeOptions should handle error state from containerTypesResource", async () => {
-      contentServiceMock.onTokensContainers = signal(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/types");
@@ -736,8 +736,8 @@ describe("ContainerService", () => {
     });
 
     it("should update containerDetail from containerDetailResource when not yet present", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       // Set the serial so the resource will be triggered
       containerService.containerSerial.set("c1");
       TestBed.tick();
@@ -761,8 +761,8 @@ describe("ContainerService", () => {
     });
 
     it("should handle error state from containerDetailResource", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       containerService.containerSerial.set("c2");
       TestBed.tick();
 
@@ -780,8 +780,8 @@ describe("ContainerService", () => {
     });
 
     it("should reset to default when containerDetailResource errors after successful load", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
       containerService.containerSerial.set("c1");
       TestBed.tick();
 
@@ -824,8 +824,8 @@ describe("ContainerService", () => {
       (containerService as any).containerTypeOptions = containerTypeOptionsSignal;
       (containerService as any).compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onTokensContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
     });
 
     it("should compute compatibleTypes correctly", () => {
