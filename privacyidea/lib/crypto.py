@@ -1207,7 +1207,11 @@ def verify_encryption_key(check_value: str) -> bool:
     :raises HSMException: if the encryption key does not match
     """
     decrypted = to_unicode(decryptPassword(check_value))
-    if decrypted != ENCKEY_CHECK_PLAINTEXT:
+    if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+        raise HSMException(
+            "Encryption key verification failed! The encryption key does not "
+            "match the one used to encrypt the data. Failed to decrypt check value.")
+    elif decrypted != ENCKEY_CHECK_PLAINTEXT:
         raise HSMException(
             "Encryption key verification failed! The encryption key does not "
             "match the one used to encrypt the data. "

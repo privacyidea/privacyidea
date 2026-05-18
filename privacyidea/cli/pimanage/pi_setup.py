@@ -115,6 +115,7 @@ def create_enckey(ctx, enckey_b64):
                     fg="yellow")
         click.secho("The enckey_check table may not exist yet. Run 'create_tables' first, "
                     "then re-run 'create_enckey' or manually store the check value.", fg="yellow")
+        db.session.rollback()
 
 
 @setup_cli.command("create_pgp_keys")

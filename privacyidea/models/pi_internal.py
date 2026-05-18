@@ -30,5 +30,5 @@ class PiInternal(MethodsMixin, db.Model):
     """
     __tablename__ = "pi_internal"
     id: Mapped[int] = mapped_column(Integer, Sequence("pi_internal_seq"), primary_key=True, nullable=False)
-    name: Mapped[str] = mapped_column(Unicode(255), nullable=False)
+    name: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True, index=True)
     check_value: Mapped[str] = mapped_column(Unicode(2000), nullable=False)

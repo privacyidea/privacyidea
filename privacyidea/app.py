@@ -393,26 +393,32 @@ def create_app(config_name="development",
             # Verify the encryption key using the check value from the database
             try:
                 from privacyidea.lib.crypto import verify_encryption_key
+                from privacyidea.lib.error import HSMException
                 from privacyidea.models.pi_internal import PiInternal
                 inspect = sa.inspect(db.engine)
                 if inspect.has_table(PiInternal.__tablename__):
                     check_row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
                     if check_row:
-                        try:
-                            verify_encryption_key(check_row.check_value)
-                        except Exception as e:
-                            log.error(f"Encryption key verification failed: {e}")
-                            sys.stderr.write(
-                                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                                "  ERROR: Encryption key verification failed!\n"
-                                "  The configured encryption key does not match the\n"
-                                "  one used to encrypt existing data.\n"
-                                "  This will lead to failed decryption of secrets!\n"
-                                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                            )
-                            sys.exit(1)
-            except (ImportError, sa.exc.SQLAlchemyError):
-                log.exception("Failed to initialize encryption key verification.")
+                        verify_encryption_key(check_row.check_value)
+            except HSMException as e:
+                log.error(f"Encryption key verification failed: {e}")
+                sys.stderr.write(
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    "  ERROR: Encryption key verification failed!\n"
+                    "  The configured encryption key does not match the\n"
+                    "  one used to encrypt existing data.\n"
+                    "  This will lead to failed decryption of secrets!\n"
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                )
+                sys.exit(1)
+            except Exception as e:
+                log.error(f"Unexpected error during encryption key verification: {e}")
+                sys.stderr.write(
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    f"  ERROR: Encryption key verification could not be performed:\n"
+                    f"  {e}\n"
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                )
                 raise
 
     _setup_node_configuration(app)
@@ -500,6 +506,36 @@ def create_docker_app():
     if app.config.get(ConfigKey.HSM_INITIALIZE, False):
         with app.app_context():
             init_hsm()
+            # Verify the encryption key using the check value from the database
+            try:
+                from privacyidea.lib.crypto import verify_encryption_key
+                from privacyidea.lib.error import HSMException
+                from privacyidea.models.pi_internal import PiInternal
+                inspect = sa.inspect(db.engine)
+                if inspect.has_table(PiInternal.__tablename__):
+                    check_row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
+                    if check_row:
+                        verify_encryption_key(check_row.check_value)
+            except HSMException as e:
+                log.error(f"Encryption key verification failed: {e}")
+                sys.stderr.write(
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    "  ERROR: Encryption key verification failed!\n"
+                    "  The configured encryption key does not match the\n"
+                    "  one used to encrypt existing data.\n"
+                    "  This will lead to failed decryption of secrets!\n"
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                )
+                sys.exit(1)
+            except Exception as e:
+                log.error(f"Unexpected error during encryption key verification: {e}")
+                sys.stderr.write(
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                    f"  ERROR: Encryption key verification could not be performed:\n"
+                    f"  {e}\n"
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+                )
+                raise
 
     # Check database connection
     with app.app_context():
