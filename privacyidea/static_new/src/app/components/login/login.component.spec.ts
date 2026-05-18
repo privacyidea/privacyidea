@@ -31,12 +31,12 @@ import { NotificationService } from "@services/notification/notification.service
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
-    MockAuthDetail,
-    MockLocalService,
-    MockNotificationService,
-    MockPiResponse,
-    MockSessionTimerService,
-    MockValidateService
+  MockAuthDetail,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse,
+  MockSessionTimerService,
+  MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
@@ -516,6 +516,37 @@ describe("LoginComponent", () => {
 
       const realmSelect = fixture.debugElement.query(By.css("mat-select"));
       expect(realmSelect).toBeFalsy();
+    });
+
+    it("should filter out '-' from the realms list", () => {
+      configService.config.set({
+        ...configService.config(),
+        realms: "realm1,realm2,-"
+      });
+      fixture.detectChanges();
+
+      expect(component.realms()).toEqual(["realm1", "realm2"]);
+    });
+
+    it("should not pre-select a realm if '-' is the first option", () => {
+      configService.config.set({
+        ...configService.config(),
+        realms: "-,realm1,realm2"
+      });
+      fixture.detectChanges();
+
+      expect(component.realm()).toBe("");
+    });
+
+    it("should pre-select the first realm if '-' is not first", () => {
+      configService.config.set({
+        ...configService.config(),
+        realms: "realm1,-,realm2"
+      });
+      fixture.detectChanges();
+
+      expect(component.realms()).toEqual(["realm1", "realm2"]);
+      expect(component.realm()).toBe("realm1");
     });
   });
 

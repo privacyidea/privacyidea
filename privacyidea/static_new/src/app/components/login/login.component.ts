@@ -102,21 +102,22 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     return !this.username() || !this.password();
   });
 
-  realms = computed(() => {
+  private rawRealms = computed(() => {
     return (this.configService.config()?.realms || "")
       .split(",")
       .map((r: string) => r.trim())
       .filter((r: string) => r);
   });
 
+  realms = computed(() => this.rawRealms().filter((r: string) => r !== "-"));
+
   realm = linkedSignal({
-    source: this.realms,
-    computation: (realms) => {
-      if (realms.length > 0) {
-        return realms[0];
-      } else {
+    source: this.rawRealms,
+    computation: (rawRealms) => {
+      if (rawRealms[0] === "-") {
         return "";
       }
+      return rawRealms.find((r: string) => r !== "-") ?? "";
     }
   });
 
