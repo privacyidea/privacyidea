@@ -18,7 +18,6 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
@@ -36,7 +35,7 @@ import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
-import { ContainerTableComponent } from "@components/token/container-table/container-table.component";
+import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
@@ -48,14 +47,6 @@ import {
   MockTableUtilsService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-
-function makeResource<T>(initial: T) {
-  return {
-    value: signal(initial) as WritableSignal<T>,
-    reload: jest.fn(),
-    error: jest.fn().mockReturnValue(null)
-  };
-}
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -184,10 +175,9 @@ describe("ContainerTableComponent (Jest)", () => {
       };
       const containerDetailData1 = { ...containerDetailData0, serial: "CONT-2" };
       const containerDetailData2 = { ...containerDetailData0, serial: "CONT-3" };
-      const dataSourceFilled: MatTableDataSource<ContainerDetailData, MatPaginator> = new MatTableDataSource([
+      const dataSourceFilled = new MatTableDataSource<ContainerDetailData, MatPaginator>([
         containerDetailData0,
-        containerDetailData1,
-        containerDetailData2
+        (containerDetailData1 = new containerDetailData2())
       ]);
       component.containerDataSource.set(dataSourceFilled);
 
@@ -261,9 +251,9 @@ describe("ContainerTableSelfServiceComponent", () => {
 
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    consalogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 
     component = fixture.componentInstance;
     fixture.detectChanges();
