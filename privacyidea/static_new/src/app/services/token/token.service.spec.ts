@@ -925,6 +925,24 @@ describe("TokenService", () => {
       expect(tokenService.tokenSerialResource.hasValue()).toBe(false);
       expect(tokenService.tokenOptions()).toEqual([]);
     });
+
+    it("should reset to empty array when tokenSerialResource errors after successful load", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      let req = mockBackend.expectOne((r) => r.url === "/token/");
+      req.flush(MockPiResponse.fromValue({ count: 1, current: 1, tokens: [{ serial: "OATH123" }] }));
+      await Promise.resolve();
+      expect(tokenService.tokenOptions()).toEqual(["OATH123"]);
+
+      tokenService.tokenSerialResource.reload();
+      TestBed.tick();
+      req = mockBackend.expectOne((r) => r.url === "/token/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
   });
 
   describe("tokenTypesResource / tokenTypeOptions", () => {

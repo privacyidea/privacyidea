@@ -146,7 +146,7 @@ describe("LoginComponent", () => {
       });
       component.onSubmit();
 
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_WIZARD);
     });
   });
 
