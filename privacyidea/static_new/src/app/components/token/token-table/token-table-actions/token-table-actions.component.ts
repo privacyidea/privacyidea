@@ -148,12 +148,13 @@ export class TokenTableActionsComponent {
       .subscribe({
         next: (action: ToggleActiveAction | undefined) => {
           if (!action) return;
+          const nonRevokedTokens = selectedTokens.filter((t) => !t.revoked);
           const tokensToProcess =
             action === "activate"
-              ? selectedTokens.filter((t) => !t.active)
+              ? nonRevokedTokens.filter((t) => !t.active)
               : action === "deactivate"
-                ? selectedTokens.filter((t) => t.active)
-                : selectedTokens;
+                ? nonRevokedTokens.filter((t) => t.active)
+                : nonRevokedTokens;
           if (tokensToProcess.length === 0) {
             this.notificationService.success("No tokens to process.");
             return;
