@@ -23,7 +23,7 @@ import {
   computed,
   effect,
   ElementRef,
-  inject,
+  inject, input,
   OnDestroy,
   Renderer2,
   signal,
@@ -410,4 +410,6 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     const { [key]: _, ...rest } = this.customHeaders;
     this.customHeaders = rest;
   }
+
+  protected readonly input = input;
 }

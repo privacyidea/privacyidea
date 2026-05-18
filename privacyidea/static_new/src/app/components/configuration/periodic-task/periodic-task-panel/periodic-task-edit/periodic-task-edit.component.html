@@ -162,7 +162,7 @@
                 <mat-form-field>
                   <input
                     matInput
-                    [value]="newOptionValues()[option] ?? ''"
+                    [value]="newOptionValues()[option]"
                     (input)="updateNewOptionValue(option, $any($event.target).value)" />
                 </mat-form-field>
               </div>

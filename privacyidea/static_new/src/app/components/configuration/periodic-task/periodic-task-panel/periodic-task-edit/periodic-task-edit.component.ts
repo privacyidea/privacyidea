@@ -36,7 +36,7 @@ import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } fr
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatOption, MatSelect } from "@angular/material/select";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import {
   EMPTY_PERIODIC_TASK,
@@ -69,7 +69,6 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    MatError
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"

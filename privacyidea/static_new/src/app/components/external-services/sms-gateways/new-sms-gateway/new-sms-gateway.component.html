@@ -79,7 +79,9 @@
               <mat-error i18n>Name is <strong>required</strong></mat-error>
             }
             @if (smsForm.name().errors().some(e => e.kind === 'pattern')) {
-              <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+              <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
+                              underscores and hyphens are allowed.
+              </mat-error>
             }
           </mat-form-field>
 
@@ -146,7 +148,7 @@
 
               @if (!param.value.values && param.value.type === 'text') {
                 <textarea
-                  [value]="parametersModel()[param.key] ?? ''"
+                  [value]="parametersModel()[param.key]"
                   (input)="updateParameter(param.key, $any($event.target).value)"
                   [required]="param.value.required"
                   matInput
@@ -158,7 +160,7 @@
                   (onClick)="clearParameter(param.key)"
                   [showClearButton]="!!parametersModel()[param.key]">
                   <input
-                    [value]="parametersModel()[param.key] ?? ''"
+                    [value]="parametersModel()[param.key]"
                     (input)="updateParameter(param.key, $any($event.target).value)"
                     [required]="param.value.required"
                     matInput />

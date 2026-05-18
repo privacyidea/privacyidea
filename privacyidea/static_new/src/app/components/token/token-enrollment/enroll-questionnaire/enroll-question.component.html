@@ -49,7 +49,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label>{{ question.question }}</mat-label>
         <input
-          [value]="answers()[question.question] ?? ''"
+          [value]="answers()[question.question]"
           (input)="setAnswer(question.question, $event.target['value'])"
           [disabled]="disabled()"
           matInput

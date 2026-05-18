@@ -17,12 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, Input, WritableSignal } from "@angular/core";
-import { FormField } from "@angular/forms/signals";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 export interface HttpConfigModel {
   method: string;
@@ -38,7 +37,6 @@ export interface HttpConfigModel {
   selector: "app-http-config",
   standalone: true,
   imports: [
-    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
