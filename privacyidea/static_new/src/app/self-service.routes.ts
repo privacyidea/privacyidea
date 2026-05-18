@@ -21,10 +21,10 @@ import { Routes } from "@angular/router";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
 import { AssignTokenSelfServiceComponent } from "./components/token/assign-token-self-service/assign-token-self-service.component";
-import { ContainerCreateSelfServiceComponent } from "./components/token/container-create/container-create.self-service.component";
-import { ContainerCreateWizardComponent } from "./components/token/container-create/container-create.wizard.component";
-import { ContainerDetailsSelfServiceComponent } from "./components/token/container-details/container-details.self-service.component";
-import { ContainerTableSelfServiceComponent } from "./components/token/container-table/container-table.self-service.component";
+import { ContainerCreateSelfServiceComponent } from "./components/container/container-create/container-create.self-service.component";
+import { ContainerCreateWizardComponent } from "./components/container/container-create/container-create.wizard.component";
+import { ContainerDetailsSelfServiceComponent } from "./components/container/container-details/container-details.self-service.component";
+import { ContainerTableSelfServiceComponent } from "./components/container/container-table/container-table.self-service.component";
 import { TokenDetailsSelfServiceComponent } from "./components/token/token-details/token-details.self-service.component";
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
@@ -43,20 +43,20 @@ export const routes: Routes = [
       },
       { path: "enrollment", component: TokenEnrollmentSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
       { path: "assign-token", component: AssignTokenSelfServiceComponent },
-      {
-        path: "containers",
-        children: [
-          { path: "", component: ContainerTableSelfServiceComponent },
-          { path: "create", component: ContainerCreateSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
-          {
-            path: "details/:serial",
-            component: ContainerDetailsSelfServiceComponent
-          },
-          { path: "wizard", component: ContainerCreateWizardComponent, canDeactivate: [pendingChangesGuard] }
-        ]
-      },
       { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
       { path: "wizard", component: TokenEnrollmentWizardComponent, canDeactivate: [pendingChangesGuard] }
+    ]
+  },
+  {
+    path: "containers",
+    children: [
+      { path: "", component: ContainerTableSelfServiceComponent },
+      { path: "create", component: ContainerCreateSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
+      {
+        path: "details/:serial",
+        component: ContainerDetailsSelfServiceComponent
+      },
+      { path: "wizard", component: ContainerCreateWizardComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {

@@ -1,0 +1,25 @@
+@use "styles";
+@use "table";
+
+.container-create-container {
+  @include styles.main-component-style;
+  display: grid;
+  min-width: 616px;
+}
+
+.container-type-hint {
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.type-select {
+  flex: 0 0 calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
+  width: calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
+}
+
+@media (max-width: 996px) {
+  .type-select {
+    flex: 0 0 calc(308px + 2 * var(--three-quarters-global-padding));
+    width: calc(308px + 2 * var(--three-quarters-global-padding));
+  }
+}

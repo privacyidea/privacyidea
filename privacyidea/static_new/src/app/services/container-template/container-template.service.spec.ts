@@ -74,7 +74,7 @@ describe("ContainerTemplateService", () => {
 
   describe("templatesResource", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -133,11 +133,29 @@ describe("ContainerTemplateService", () => {
 
       expect(service.templates()).toEqual([]);
     });
+
+    it("should reset to empty array when templatesResource errors after successful load", async () => {
+      TestBed.tick();
+
+      let req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush({ result: { value: { templates: [{ name: "template1" }] } } });
+      TestBed.tick();
+      await Promise.resolve();
+      expect(service.templates()).toEqual([{ name: "template1" }]);
+
+      service.templatesResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(service.templates()).toEqual([]);
+    });
   });
 
   describe("templateTokentypesResource", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -222,7 +240,7 @@ describe("ContainerTemplateService", () => {
 
   describe("getTokenTypesForContainerType", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -365,7 +383,7 @@ describe("ContainerTemplateService", () => {
     };
 
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
       TestBed.tick();
       const reqs = httpMock.match(() => true);
