@@ -281,7 +281,7 @@ export class TokenTableActionsComponent {
         next: (result) => {
           if (result) {
             this.tokenService.bulkUnassignTokens(selectedTokens).subscribe({
-              next: (response: PiResponse<BulkResult, boolean>) => {
+              next: (response: PiResponse<BulkResult>) => {
                 const failedTokens = response.result?.value?.failed || [];
                 const unauthorizedTokens = response.result?.value?.unauthorized || [];
                 const count_success = response.result?.value?.count_success || 0;

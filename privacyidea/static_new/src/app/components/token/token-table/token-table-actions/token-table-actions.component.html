@@ -46,7 +46,7 @@
       </button>
     }
   </mat-menu>
-  @if (authService.oneActionAllowed(["delete", "assign", "unassign"])) {
+  @if (authService.oneActionAllowed(["delete", "assign", "unassign", "enable", "disable", "reset"])) {
     @if (authService.actionAllowed("delete")) {
       <button
         (click)="deleteSelectedTokens()"
@@ -90,14 +90,16 @@
         Toggle Selected
       </button>
     }
-    <button
-      (click)="resetFailcounterSelectedTokens()"
-      [disabled]="tokenSelection().length === 0"
-      class="action-button-secondary button-width-m"
-      i18n
-      mat-stroked-button>
-      <mat-icon> restart_alt</mat-icon>
-      Reset Failcounters
-    </button>
+    @if (authService.actionAllowed("reset")) {
+      <button
+        (click)="resetFailcounterSelectedTokens()"
+        [disabled]="tokenSelection().length === 0"
+        class="action-button-secondary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon> restart_alt</mat-icon>
+        Reset Failcounters
+      </button>
+    }
   }
 </div>
