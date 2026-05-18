@@ -47,9 +47,7 @@ export interface ServiceIdServiceInterface {
   deleteServiceId(servicename: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

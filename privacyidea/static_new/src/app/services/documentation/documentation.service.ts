@@ -40,9 +40,7 @@ export interface DocumentationServiceInterface {
    */
   getPolicyActionDocumentation(scope: string, actionName: string): Promise<ActionDocumentation | null>;
 }
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class DocumentationService implements DocumentationServiceInterface {
   private _versioningService = inject(VersioningService);
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation

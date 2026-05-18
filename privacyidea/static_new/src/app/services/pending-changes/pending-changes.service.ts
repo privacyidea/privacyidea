@@ -34,7 +34,7 @@ export interface PendingChangesServiceInterface {
   registerValidChanges(fn: () => boolean): void;
 }
 
-@Injectable({ providedIn: "root" })
+@Injectable()
 export class PendingChangesService implements PendingChangesServiceInterface {
   private _hasChangesFn = signal<(() => boolean) | null>(null);
   private _saveFn = signal<(() => Promise<boolean>) | null>(null);

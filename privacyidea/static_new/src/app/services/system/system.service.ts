@@ -54,9 +54,7 @@ export interface SystemServiceInterface {
   getDocumentation(): Observable<string>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SystemService implements SystemServiceInterface {
   private readonly systemBaseUrl = environment.proxyUrl + "/system/";
 

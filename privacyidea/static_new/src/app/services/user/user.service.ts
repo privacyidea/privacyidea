@@ -119,9 +119,7 @@ export interface UserServiceInterface {
   displayUser(user: UserData | string): string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class UserService implements UserServiceInterface {
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

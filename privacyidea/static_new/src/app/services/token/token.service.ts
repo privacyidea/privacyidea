@@ -323,9 +323,7 @@ export interface TokenServiceInterface {
   importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TokenService implements TokenServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);

@@ -133,9 +133,7 @@ export interface MachineServiceInterface {
   focusActiveInput(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class MachineService implements MachineServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
