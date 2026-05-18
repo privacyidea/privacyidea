@@ -92,23 +92,41 @@ export class ContainerTableActionsComponent {
   }
 
   private toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.containerService.containerFilter()
-    });
+    const newValue =
+      filterKeyword === "assigned"
+        ? this.tableUtilsService.toggleBooleanInFilter({
+            keyword: filterKeyword,
+            currentValue: this.containerService.containerFilter()
+          })
+        : this.tableUtilsService.toggleKeywordInFilter({
+            keyword: filterKeyword,
+            currentValue: this.containerService.containerFilter()
+          });
     this.containerService.containerFilter.set(newValue);
   }
 
   getFilterIconName(keyword: string): string {
+    if (keyword === "assigned") {
+      const value = this.containerService.containerFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    }
     const isSelected = this.containerService.containerFilter().hasKey(keyword);
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
-  onAdvancedFilterClick(filterKeyword: string): void {
+  onAdvancedFilterClick(filterKeyword: string, event?: MouseEvent): void {
+    if (filterKeyword === "assigned") {
+      event?.stopPropagation();
+    }
     this.toggleFilter(filterKeyword);
-    setTimeout(() => {
-      const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
-      elementById?.focus();
-    });
+    if (filterKeyword !== "assigned") {
+      setTimeout(() => {
+        const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
+        elementById?.focus();
+      });
+    }
   }
 }

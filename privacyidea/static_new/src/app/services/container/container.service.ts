@@ -36,8 +36,8 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm", "state", "template", "assigned"];
-const advancedApiFilter = ["token_serial"];
+const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
+const advancedApiFilter = ["token_serial", "template", "assigned"];
 
 export const CONTAINER_STATE_OPTIONS = [
   { value: "active", label: $localize`active` },

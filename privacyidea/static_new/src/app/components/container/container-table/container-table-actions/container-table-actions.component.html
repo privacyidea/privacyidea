@@ -49,7 +49,7 @@
     class="button-width-m">
     @for (keyword of containerService.advancedApiFilter; track keyword) {
       <button
-        (click)="onAdvancedFilterClick(keyword)"
+        (click)="onAdvancedFilterClick(keyword, $event)"
         mat-menu-item>
         <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
         {{ keyword }}
