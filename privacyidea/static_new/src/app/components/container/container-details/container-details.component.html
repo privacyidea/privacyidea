@@ -71,13 +71,15 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    @for (state of element.value; track state; let idx = $index) {
-                      <span
-                        [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
-                        class="font-14">
-                        {{ tableUtilsService.getDisplayTextForState(state) }}
-                      </span>
-                    }
+                    <div class="flex-row gap-8 flex-wrap">
+                      @for (state of element.value; track state; let idx = $index) {
+                        <span
+                          [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
+                          class="font-14">
+                          {{ tableUtilsService.getDisplayTextForState(state) }}
+                        </span>
+                      }
+                    </div>
                   }
                 }
                 @case ("realms") {
@@ -210,7 +212,11 @@
                   } @else {
                     <a
                       (click)="contentService.userSelected(element.value, element['user_realm'])"
-                      i18n-aria-label="{{ element.keyMap.label }} Link">
+                      (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
+                      (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])"
+                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ element.value }}
                     </a>
                   }

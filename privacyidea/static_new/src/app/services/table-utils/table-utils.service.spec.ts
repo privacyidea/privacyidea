@@ -276,9 +276,13 @@ describe("TableUtilsService", () => {
   it.each([
     ["active", false, "highlight-true"],
     ["disabled", false, "highlight-false"],
+    ["damaged", false, "highlight-false"],
+    ["lost", false, "highlight-false"],
     ["other", false, ""],
     ["active", true, "highlight-true-clickable"],
     ["disabled", true, "highlight-false-clickable"],
+    ["damaged", true, "highlight-false-clickable"],
+    ["lost", true, "highlight-false-clickable"],
     ["other", true, ""]
   ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
     expect(service.getSpanClassForState(state, clickable)).toBe(expected);
