@@ -30,7 +30,6 @@ def upgrade():
     except Exception as _exx:
         print(f"Could not create sequence '{pi_internal_seq}'!")
         raise
-    op.execute(sa.schema.CreateSequence(pi_internal_seq))
     op.create_table('pi_internal',
                     sa.Column('id', sa.Integer(), server_default=pi_internal_seq.next_value(), nullable=False),
                     sa.Column('name', sa.Unicode(length=255), nullable=False),
