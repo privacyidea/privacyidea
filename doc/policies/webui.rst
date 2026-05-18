@@ -298,7 +298,8 @@ The type of this action was changed to "string" in version 2.16. You can set
 a space separated list of realm names. Only these realm names are displayed in
 the dropdown box. The first realm in the list will be preselected.
 
-.. note:: The realm names in the policy are not checked, if they really exist!
+You can include ``-`` as an entry in the list to represent a "no realm"
+option (i.e. authenticate without selecting a specific realm).
 
 .. index:: Search on Enter
 
