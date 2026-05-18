@@ -16,8 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable, signal, Signal } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
+import { effect, inject, Injectable, signal, Signal } from "@angular/core";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { AdditionalCondition } from "@services/policies/policies.service";
+import { catchError, map, Observable, of, shareReplay, tap } from "rxjs";
 import { POLICY_TEMPLATE_INDEX, POLICY_TEMPLATES } from "./policy-templates.constants";
 
 export type PolicyTemplateIndex = Record<string, string>;
@@ -37,16 +42,88 @@ export interface PolicyTemplate {
 export interface PolicyTemplatesServiceInterface {
   readonly policyTemplatesIndex: Signal<PolicyTemplateIndex>;
 
-  getTemplate(templateName: string): PolicyTemplate | undefined;
+  getTemplate(templateName: string): Observable<PolicyTemplate | undefined>;
 }
+
+/**
+ * Relative URL that is resolved against the document's `<base href>`:
+ *   - In dev (`ng serve`) the `public/` folder is mounted at `/`, so the
+ *     request hits `/policy-templates/...` directly.
+ *   - In a production build the build output places the files under
+ *     `dist/privacyidea-webui/browser/policy-templates/`, which is served at
+ *     `/static/dist/privacyidea-webui/browser/policy-templates/...`.
+ */
+const POLICY_TEMPLATE_URL = "policy-templates/";
 
 @Injectable({
   providedIn: "root"
 })
 export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
-  readonly policyTemplatesIndex: Signal<PolicyTemplateIndex> = signal(POLICY_TEMPLATE_INDEX).asReadonly();
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  getTemplate(templateName: string): PolicyTemplate | undefined {
-    return POLICY_TEMPLATES[templateName];
+  private readonly _index = signal<PolicyTemplateIndex>(POLICY_TEMPLATE_INDEX);
+  readonly policyTemplatesIndex: Signal<PolicyTemplateIndex> = this._index.asReadonly();
+
+  private templateCache = new Map<string, Observable<PolicyTemplate | undefined>>();
+  private lastBaseUrl: string | null = null;
+
+  constructor() {
+    effect(() => {
+      const baseUrl = this.resolveBaseUrl(this.authService.policyTemplateUrl());
+      if (baseUrl === this.lastBaseUrl) return;
+      this.lastBaseUrl = baseUrl;
+      this.templateCache.clear();
+      this.fetchIndex(baseUrl);
+    });
+  }
+
+  getTemplate(templateName: string): Observable<PolicyTemplate | undefined> {
+    const cached = this.templateCache.get(templateName);
+    if (cached) return cached;
+
+    const baseUrl = this.lastBaseUrl ?? this.resolveBaseUrl(this.authService.policyTemplateUrl());
+    const request = this.http.get<PolicyTemplate>(`${baseUrl}${templateName}.json`).pipe(
+      map((template) => ({ ...template, name: template.name ?? templateName })),
+      catchError(() => {
+        this.notificationService.error($localize`Error fetching policy template ${templateName}.`);
+        return of(POLICY_TEMPLATES[templateName]);
+      }),
+      shareReplay(1)
+    );
+    this.templateCache.set(templateName, request);
+    return request;
+  }
+
+  private fetchIndex(baseUrl: string): void {
+    this.http
+      .get<PolicyTemplateIndex>(`${baseUrl}index.json`)
+      .pipe(
+        tap((index) => this._index.set(index)),
+        catchError(() => {
+          this.notificationService.error($localize`Error fetching policy templates.`);
+          this._index.set(POLICY_TEMPLATE_INDEX);
+          return of(null);
+        })
+      )
+      .subscribe();
+  }
+
+  private resolveBaseUrl(url: string | undefined | null): string {
+    const raw = url && url.length > 0 ? url : POLICY_TEMPLATE_URL;
+    const withTrailingSlash = raw.endsWith("/") ? raw : `${raw}/`;
+    // Absolute URLs (https://...) are used verbatim.
+    if (/^https?:\/\//i.test(withTrailingSlash)) {
+      return withTrailingSlash;
+    }
+    // Root-relative paths (e.g. an admin-set "/static/policy-templates/") get
+    // the dev proxy prefix so they reach the Flask backend in `ng serve`.
+    if (withTrailingSlash.startsWith("/")) {
+      return `${environment.proxyUrl}${withTrailingSlash}`;
+    }
+    // Path-relative URLs resolve against `<base href>` and are served by the
+    // Angular bundle itself in both dev and prod.
+    return withTrailingSlash;
   }
 }

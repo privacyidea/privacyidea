@@ -15,10 +15,6 @@
  * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * The data in this file mirrors the JSON files in
- * /privacyidea/static/policy-templates/, which the legacy WebUI fetches at
- * runtime. Keep both in sync when adding or changing templates.
  **/
 import { PolicyTemplate, PolicyTemplateIndex } from "./policy-templates.service";
 

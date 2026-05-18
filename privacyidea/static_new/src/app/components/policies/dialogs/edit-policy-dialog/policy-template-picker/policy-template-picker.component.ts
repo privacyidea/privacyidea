@@ -46,10 +46,11 @@ export class PolicyTemplatePickerComponent {
   });
 
   selectTemplate(templateName: string): void {
-    const template = this.policyTemplatesService.getTemplate(templateName);
-    if (!template) return;
-    this.templateApplied.emit(this.buildPolicyEdits(template));
-    this.isExpanded.set(false);
+    this.policyTemplatesService.getTemplate(templateName).subscribe((template) => {
+      if (!template) return;
+      this.templateApplied.emit(this.buildPolicyEdits(template));
+      this.isExpanded.set(false);
+    });
   }
 
   private buildPolicyEdits(template: PolicyTemplate): Partial<PolicyDetail> {

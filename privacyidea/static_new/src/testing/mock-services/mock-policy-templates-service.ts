@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, signal } from "@angular/core";
+import { of } from "rxjs";
 import {
   PolicyTemplate,
   PolicyTemplateIndex,
@@ -29,7 +30,7 @@ export class MockPolicyTemplatesService implements PolicyTemplatesServiceInterfa
 
   readonly policyTemplatesIndex = computed(() => this.indexSignal());
 
-  getTemplate = jest.fn().mockImplementation((name: string) => this.templates.get(name));
+  getTemplate = jest.fn().mockImplementation((name: string) => of(this.templates.get(name)));
 
   setIndex(index: PolicyTemplateIndex): void {
     this.indexSignal.set(index);
