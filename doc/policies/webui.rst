@@ -296,10 +296,13 @@ user is not known at this moment.
 
 The type of this action was changed to "string" in version 2.16. You can set
 a space separated list of realm names. Only these realm names are displayed in
-the dropdown box. The first realm in the list will be preselected.
+the dropdown box, in the order given by the policy. The first realm in the
+list is preselected.
 
-You can include ``-`` as an entry in the list to represent a "no realm"
-option (i.e. authenticate without selecting a specific realm).
+You can include ``-`` as an entry in the list to add an empty option to the
+dropdown (i.e. authenticate without selecting a specific realm). If ``-`` is
+the first entry, no realm is preselected and the user must explicitly choose
+one (or leave the field empty).
 
 .. index:: Search on Enter
 
