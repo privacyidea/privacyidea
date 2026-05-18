@@ -47,6 +47,7 @@ import {
   MockTableUtilsService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -94,36 +95,39 @@ describe("ContainerTableComponent (Jest)", () => {
   });
 
   it("containerDataSource maps user_name/user_realm from first user entry", () => {
-    const withUsers = {
-      result: {
-        value: {
-          count: 1,
-          containers: [
-            {
-              serial: "C-1",
-              states: [],
-              realms: [],
-              tokens: [],
-              type: "generic",
-              description: "d",
-              users: [{ user_name: "alice", user_realm: "r1", user_resolver: "", user_id: "" }]
-            }
-          ]
+    const withUsers = MockPiResponse.fromValue({
+      count: 1,
+      containers: [
+        {
+          serial: "C-1",
+          states: [],
+          realms: [],
+          tokens: [],
+          type: "generic",
+          description: "d",
+          users: [{ user_name: "alice", user_realm: "r1", user_resolver: "", user_id: "" }]
         }
-      }
-    } as any;
+      ]
+    });
 
-    (containerService.containerResource as any).set(withUsers);
+    containerService.containerResource.set(withUsers);
     fixture.detectChanges();
 
-    const row = component.containerDataSource().data[0] as any;
+    const row = component.containerDataSource().data[0];
     expect(row.user_name).toBe("alice");
     expect(row.user_realm).toBe("r1");
   });
 
   describe("#handleStateClick", () => {
     it("calls toggleActive and reloads data", () => {
-      const element = { serial: "CONT-1", states: ["active"], realms: [], tokens: [], type: "", users: [] } as any;
+      const element: ContainerDetailData = {
+        serial: "CONT-1",
+        states: ["active"],
+        realms: [],
+        tokens: [],
+        type: "",
+        users: []
+      };
       component.handleStateClick(element);
 
       expect(containerService.toggleActive).toHaveBeenCalledWith("CONT-1", ["active"]);
@@ -177,7 +181,8 @@ describe("ContainerTableComponent (Jest)", () => {
       const containerDetailData2 = { ...containerDetailData0, serial: "CONT-3" };
       const dataSourceFilled = new MatTableDataSource<ContainerDetailData, MatPaginator>([
         containerDetailData0,
-        (containerDetailData1 = new containerDetailData2())
+        containerDetailData1,
+        containerDetailData2
       ]);
       component.containerDataSource.set(dataSourceFilled);
 
@@ -227,7 +232,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: MAT_DIALOG_DATA, useValue: {} },
-        { provide: MatDialogRef, useValue: { close: () => {} } },
+        { provide: MatDialogRef, useClass: MockMatDialogRef },
         {
           provide: Router,
           useValue: {
@@ -253,7 +258,7 @@ describe("ContainerTableSelfServiceComponent", () => {
     confirmClosed = new Subject();
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
-    consalogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 
     component = fixture.componentInstance;
     fixture.detectChanges();
