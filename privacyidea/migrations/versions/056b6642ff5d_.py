@@ -7,6 +7,7 @@ Create Date: 2025-09-15 13:29:06.058342
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = '056b6642ff5d'
@@ -16,11 +17,15 @@ depends_on = None
 
 
 def upgrade():
-    with op.batch_alter_table('pidea_audit', schema=None) as batch_op:
-        batch_op.alter_column('signature',
-                              existing_type=sa.VARCHAR(length=620),
-                              type_=sa.Unicode(length=1100),
-                              existing_nullable=True)
+    try:
+        with op.batch_alter_table('pidea_audit', schema=None) as batch_op:
+            batch_op.alter_column('signature',
+                                  existing_type=sa.VARCHAR(length=620),
+                                  type_=sa.Unicode(length=1100),
+                                  existing_nullable=True)
+    except (OperationalError, ProgrammingError) as exx:
+        print("Could not increase 'signature' column size in 'pidea_audit' table.")
+        raise
 
 
 def downgrade():

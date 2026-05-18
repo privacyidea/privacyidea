@@ -7,7 +7,7 @@ Create Date: 2025-08-19 19:20:32.427088
 """
 from alembic import op, context
 import sqlalchemy as sa
-from sqlalchemy.exc import DatabaseError
+from sqlalchemy.exc import DatabaseError, OperationalError, ProgrammingError
 
 
 # revision identifiers, used by Alembic.
@@ -18,18 +18,26 @@ depends_on = None
 
 
 def upgrade():
-    if context.get_context().dialect.name == "oracle":
-        # For Oracle: use CLOB with JSON constraint
-        op.add_column("radiusserver", sa.Column("options", sa.Text(), nullable=True))
-        # Add JSON validation constraint
-        op.execute("""
-                   ALTER TABLE radiusserver
-                       ADD CONSTRAINT json_data_is_json
-                           CHECK ("OPTIONS" IS JSON)
-                    """)
-    else:
-        with op.batch_alter_table("radiusserver", schema=None) as batch_op:
-            batch_op.add_column(sa.Column('options', sa.JSON(), nullable=True))
+    try:
+        if context.get_context().dialect.name == "oracle":
+            # For Oracle: use CLOB with JSON constraint
+            op.add_column("radiusserver", sa.Column("options", sa.Text(), nullable=True))
+            # Add JSON validation constraint
+            op.execute("""
+                       ALTER TABLE radiusserver
+                           ADD CONSTRAINT json_data_is_json
+                               CHECK ("OPTIONS" IS JSON)
+                        """)
+        else:
+            with op.batch_alter_table("radiusserver", schema=None) as batch_op:
+                batch_op.add_column(sa.Column('options', sa.JSON(), nullable=True))
+    except (OperationalError, ProgrammingError) as exx:
+        msg = str(exx.orig).lower()
+        if "already exists" in msg or "duplicate column" in msg:
+            print("Column 'options' in 'radiusserver' already exists.")
+        else:
+            print("Could not add column 'options' to 'radiusserver'.")
+            raise
 
 
 def downgrade():

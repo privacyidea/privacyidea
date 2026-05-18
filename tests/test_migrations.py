@@ -796,6 +796,51 @@ def test_each_migration_survives_round_trip(flask_app):
         # Leave the DB at rev.revision — the next iteration will upgrade from here.
 
 
+def test_each_migration_is_idempotent_after_partial_apply(flask_app):
+    """
+    Every migration in the window must be safe to re-run against a database
+    that already has its schema changes applied.
+
+    Real-world failure mode: on MariaDB, DDL auto-commits, so if an upgrade
+    crashes after the ALTER but before alembic_version is bumped — or if an
+    operator restores a partial backup — the next upgrade attempt re-enters
+    the same migration with the schema change already in place. A
+    non-idempotent upgrade() then fails with "duplicate column" /
+    "already exists" and leaves the DB unrepairable without manual surgery.
+
+    Strategy per revision:
+      1. Upgrade to rev.
+      2. Stamp alembic_version back to rev.down_revision (schema untouched —
+         this simulates "DDL committed, version bump lost").
+      3. Upgrade to rev again. Must not raise.
+    """
+    from alembic import command
+
+    script = ScriptDirectory.from_config(get_alembic_cfg())
+    revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
+
+    load_seed()
+
+    for rev in revisions_in_window:
+        if rev.down_revision is None:
+            continue
+        if isinstance(rev.down_revision, tuple):
+            parent_revision = rev.down_revision[0]
+        else:
+            parent_revision = rev.down_revision
+
+        command.upgrade(get_alembic_cfg(), rev.revision)
+        command.stamp(get_alembic_cfg(), parent_revision)
+        try:
+            command.upgrade(get_alembic_cfg(), rev.revision)
+        except Exception as e:
+            pytest.fail(
+                f"Migration {rev.revision!r} ('{rev.doc}') is not idempotent: "
+                f"re-running upgrade() against a DB whose schema already has "
+                f"the change failed with: {e}"
+            )
+
+
 def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
     """
     Downgrading must not delete data from tables that survive the downgrade.

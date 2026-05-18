@@ -32,10 +32,11 @@ def upgrade():
         if "already exists" in str(exx.orig).lower():
             print("Ok, Table 'nodename' already exists.")
         else:
-            print(exx)
-    except Exception as exx:
-        print("Could not add table 'nodename' to database")
-        print(exx)
+            print("Could not add table 'nodename' to database.")
+            raise
+    except Exception:
+        print("Could not add table 'nodename' to database.")
+        raise
 
 
 def downgrade():
