@@ -106,11 +106,7 @@ describe("EditEnvironmentConditionsComponent", () => {
   describe("knownClients", () => {
     it("aggregates clients across applications, dedupes apps, and sorts by IP", () => {
       clientsMock.setClients({
-        "App B": [
-          { ip: "10.0.0.2" },
-          { ip: "10.0.0.1", hostname: "host-one" },
-          { ip: "10.0.0.1" }
-        ],
+        "App B": [{ ip: "10.0.0.2" }, { ip: "10.0.0.1", hostname: "host-one" }, { ip: "10.0.0.1" }],
         "App A": [{ ip: "10.0.0.1" }, { ip: "10.0.0.3", hostname: "host-three" }]
       });
 
@@ -215,52 +211,17 @@ describe("EditEnvironmentConditionsComponent", () => {
 
     it("preserves a leading '!' negation marker on the current segment", () => {
       component.clientFormControl.setValue("10.0.0.0/8, !19");
-      expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8,!192.168.1.1");
+      expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, !192.168.1.1");
     });
 
     it("preserves a '!' negation marker when it is the first character", () => {
       component.clientFormControl.setValue("!19");
       expect(component.buildClientSelection("192.168.1.1")).toBe("!192.168.1.1");
     });
-  });
 
-  describe("formatClientSuggestion", () => {
-    it("formats IP, hostname and applications when all are present", () => {
-      expect(
-        component.formatClientSuggestion({
-          ip: "10.0.0.1",
-          hostname: "host.example.com",
-          applications: ["App A", "App B"]
-        })
-      ).toBe("10.0.0.1 — host.example.com (App A, App B)");
-    });
-
-    it("omits the hostname segment when no hostname is set", () => {
-      expect(
-        component.formatClientSuggestion({
-          ip: "10.0.0.1",
-          applications: ["App A"]
-        })
-      ).toBe("10.0.0.1 (App A)");
-    });
-
-    it("omits the applications segment when there are none", () => {
-      expect(
-        component.formatClientSuggestion({
-          ip: "10.0.0.1",
-          hostname: "host.example.com",
-          applications: []
-        })
-      ).toBe("10.0.0.1 — host.example.com");
-    });
-
-    it("returns just the IP when no hostname and no applications are present", () => {
-      expect(
-        component.formatClientSuggestion({
-          ip: "10.0.0.1",
-          applications: []
-        })
-      ).toBe("10.0.0.1");
+    it("keeps the space after the comma when a partial IP has already been typed", () => {
+      component.clientFormControl.setValue("127.0.0.1, 10");
+      expect(component.buildClientSelection("10.0.0.1")).toBe("127.0.0.1, 10.0.0.1");
     });
   });
 });

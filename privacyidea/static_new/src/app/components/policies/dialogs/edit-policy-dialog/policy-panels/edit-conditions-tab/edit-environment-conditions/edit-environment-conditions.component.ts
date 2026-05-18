@@ -19,7 +19,6 @@
 
 import { Component, computed, inject, input, OnInit, output, signal, ViewChild } from "@angular/core";
 
-import { toSignal } from "@angular/core/rxjs-interop";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -72,9 +71,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
   clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
-  private readonly clientControlValue = toSignal(this.clientFormControl.valueChanges, {
-    initialValue: this.clientFormControl.value
-  });
+  private readonly clientControlValue = signal<string | null>(this.clientFormControl.value);
 
   readonly knownClients = computed<ClientSuggestion[]>(() => {
     const dict = this.clientsService.clientsResource.value()?.result?.value ?? {};
@@ -140,12 +137,17 @@ export class EditEnvironmentConditionsComponent implements OnInit {
 
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe(() => this.setValidTime());
-    this.clientFormControl.valueChanges.subscribe(() => this.setClients());
+    this.clientFormControl.valueChanges.subscribe((value) => {
+      this.clientControlValue.set(value);
+      this.setClients();
+    });
   }
 
   ngOnInit() {
     this.validTimeFormControl.setValue(this.policy().time || "", { emitEvent: false });
-    this.clientFormControl.setValue(this.policy().client?.join(", ") || "", { emitEvent: false });
+    const initialClients = this.policy().client?.join(", ") || "";
+    this.clientFormControl.setValue(initialClients, { emitEvent: false });
+    this.clientControlValue.set(initialClients);
     this.clientsService.requestClientsForAutocomplete();
   }
 
@@ -158,16 +160,9 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   buildClientSelection(ip: string): string {
     const value = this.clientFormControl.value ?? "";
     const { before, raw } = this.currentClientSegment(value);
-    const prefixMatch = raw.match(/^(\s*!?)/);
-    const prefix = prefixMatch ? prefixMatch[1] : "";
-    const leadingSpace = before && !prefix.startsWith(" ") ? " " : "";
-    return `${before}${leadingSpace}${prefix.replace(/^\s+/, "")}${ip}`;
-  }
-
-  formatClientSuggestion(c: ClientSuggestion): string {
-    const host = c.hostname ? ` — ${c.hostname}` : "";
-    const apps = c.applications.length ? ` (${c.applications.join(", ")})` : "";
-    return `${c.ip}${host}${apps}`;
+    const negation = /^\s*!/.test(raw) ? "!" : "";
+    const separator = before ? " " : "";
+    return `${before}${separator}${negation}${ip}`;
   }
 
   emitEdits(edits: Partial<PolicyDetail>) {
@@ -264,12 +259,12 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     return userAgent && userAgent.includes(",") ? { includesComma: { value: control.value } } : null;
   }
 
-  handleEnterOnSearch(event: Event, select: any): void {
+  handleEnterOnSearch(event: Event, select: MatSelect): void {
     event.preventDefault();
     event.stopPropagation();
     const currentResults = this.filteredUserAgentPresets();
     if (currentResults.length > 0) {
-      this.addUserAgentFromSelect({ value: currentResults[0] } as any, select);
+      this.addUserAgentFromSelect({ value: currentResults[0] } as MatSelectChange, select);
       this.userAgentSearch.set("");
       select.close();
     }

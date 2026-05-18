@@ -60,8 +60,7 @@ export class ClientsService implements ClientsServiceInterface {
     if (!this.authService.actionAllowed("clienttype")) {
       return undefined;
     }
-    const onClientsRoute = this.contentService.routeUrl() === ROUTE_PATHS.CLIENTS;
-    if (!onClientsRoute && !this.autocompleteRequested()) {
+    if (!this.autocompleteRequested() && this.contentService.routeUrl() !== ROUTE_PATHS.CLIENTS) {
       return undefined;
     }
     return {
