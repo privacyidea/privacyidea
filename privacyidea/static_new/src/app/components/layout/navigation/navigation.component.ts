@@ -102,7 +102,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
-    { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.TOKENS_CONTAINERS, section: "container" },
+    { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.CONTAINERS, section: "container" },
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
     { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
     { icon: "event_repeat", label: $localize`Subscription`, route: ROUTE_PATHS.SUBSCRIPTION, section: "subscription" },
@@ -135,7 +135,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
-    if (url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)) return "container";
+    if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";

@@ -47,11 +47,11 @@ import { MachineResolverComponent } from "@components/machine-resolver/machine-r
 import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
-import { ContainerCreateComponent } from "@components/token/container-create/container-create.component";
-import { ContainerDetailsComponent } from "@components/token/container-details/container-details.component";
-import { ContainerTableComponent } from "@components/token/container-table/container-table.component";
-import { ContainerTemplatesComponent } from "@components/token/container-templates/container-templates.component";
-import { ContainerTemplateEditDialogComponent } from "@components/token/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
+import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
+import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
+import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
+import { ContainerTemplatesComponent } from "@components/container/container-templates/container-templates.component";
+import { ContainerTemplateEditDialogComponent } from "@components/container/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { TokenApplicationsComponent } from "@components/token/token-applications/token-applications.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { TokenEnrollmentComponent } from "@components/token/token-enrollment/token-enrollment.component";
@@ -74,28 +74,28 @@ export const routes: Routes = [
       { path: "challenges", component: ChallengesTableComponent },
       { path: "applications", component: TokenApplicationsComponent },
       { path: "get-serial", component: TokenFindSerialComponent },
-      {
-        path: "containers",
-        children: [
-          { path: "", component: ContainerTableComponent },
-          { path: "create", component: ContainerCreateComponent, canDeactivate: [pendingChangesGuard] },
-          { path: "details/:serial", component: ContainerDetailsComponent, canDeactivate: [pendingChangesGuard] },
-          {
-            path: "templates",
-            children: [
-              { path: "", component: ContainerTemplatesComponent },
-              { path: "create", component: ContainerTemplateEditDialogComponent, canDeactivate: [pendingChangesGuard] },
-              {
-                path: "details/:name",
-                component: ContainerTemplateEditDialogComponent,
-                canDeactivate: [pendingChangesGuard]
-              }
-            ]
-          }
-        ]
-      },
       { path: "details/:serial", component: TokenDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "import", component: TokenImportComponent, canDeactivate: [pendingChangesGuard] }
+    ]
+  },
+  {
+    path: "containers",
+    children: [
+      { path: "", component: ContainerTableComponent },
+      { path: "create", component: ContainerCreateComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:serial", component: ContainerDetailsComponent, canDeactivate: [pendingChangesGuard] },
+      {
+        path: "templates",
+        children: [
+          { path: "", component: ContainerTemplatesComponent },
+          { path: "create", component: ContainerTemplateEditDialogComponent, canDeactivate: [pendingChangesGuard] },
+          {
+            path: "details/:name",
+            component: ContainerTemplateEditDialogComponent,
+            canDeactivate: [pendingChangesGuard]
+          }
+        ]
+      }
     ]
   },
   {

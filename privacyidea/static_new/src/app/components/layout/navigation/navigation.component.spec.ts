@@ -260,8 +260,8 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       expect(component.activeSection()).toBe("token");
     });
 
-    it("should detect 'container' for tokens/containers route", () => {
-      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+    it("should detect 'container' for containers route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       expect(component.activeSection()).toBe("container");
     });
 

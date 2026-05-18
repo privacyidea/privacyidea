@@ -223,6 +223,6 @@ describe("NavigationSelfServiceComponent", () => {
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
       .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
-    expect(keys).toContain(ROUTE_PATHS.TOKENS_CONTAINERS);
+    expect(keys).toContain(ROUTE_PATHS.CONTAINERS);
   });
 });

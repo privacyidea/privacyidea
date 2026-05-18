@@ -353,10 +353,10 @@ export class UserService implements UserServiceInterface {
     // Only load users on routes with a user list or selection.
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onTokens() ||
       this.contentService.onUsers() ||
-      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onContainersCreate() ||
       this.contentService.onTokensEnrollment();
 
     if (!onAllowedRoute) {
