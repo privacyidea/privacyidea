@@ -26,10 +26,10 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService } from "@services/notification/notification.service";
 
 export interface ClientData {
-  hostname?: string;
-  ip?: string;
-  lastseen?: string;
-  application?: string;
+  hostname?: string | null;
+  ip?: string | null;
+  lastseen?: string | null;
+  application?: string | null;
 }
 
 export type ClientsDict = Record<string, ClientData[]>;
