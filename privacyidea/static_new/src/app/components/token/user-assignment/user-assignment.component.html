@@ -57,7 +57,7 @@
     @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {
       <mat-hint> Select a realm first to enable user selection.</mat-hint>
     }
-    @if (required() && !selectedUser()) {
+    @if (required() && !userService.selectedUser()) {
       <mat-error>User is <strong>required</strong></mat-error>
     }
   </mat-form-field>

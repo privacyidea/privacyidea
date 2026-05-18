@@ -26,12 +26,10 @@
     i18n>
     Enroll a New Token
   </h3>
-  <form
-    (ngSubmit)="enrollToken()"
-    [formGroup]="formGroupSignal()">
+  <form (submit)="$event.preventDefault(); enrollToken()">
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
-      [formInvalid]="formGroupSignal().invalid"
+      [formInvalid]="isFormInvalid()"
       [scrollContainer]="scrollContainer"
       (reopenDialog)="reopenEnrollmentDialog()" />
     <div class="responsive-margin-left-1310">
@@ -49,19 +47,18 @@
         class="input-width-xl margin-top-16">
         <mat-label i18n>Description</mat-label>
         <textarea
-          [formControl]="descriptionControl"
-          [maxlength]="80"
+          [formField]="descriptionForm"
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }}
         </mat-hint>
-        @if (descriptionControl.hasError("required")) {
+        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
           <mat-error i18n>
             Description is <strong>required</strong>.
           </mat-error>
         }
-        @if (descriptionControl.hasError("maxlength")) {
+        @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
           <mat-error i18n>
             Description must not exceed {{ tokenService.maxDescriptionLength }} characters.
           </mat-error>
@@ -71,9 +68,8 @@
       <div class="flex-row gap-16">
         @if (authService.actionAllowed("enrollpin")) {
           <app-enrollment-pin
-            [setPinControl]="setPinField"
-            [repeatPinControl]="repeatPinField"
-            [formGroup]="formGroupSignal()" />
+            [setPinControl]="setPinForm"
+            [repeatPinControl]="repeatPinForm" />
         }
 
         @if (authService.actionAllowed("container_list")) {
@@ -81,15 +77,18 @@
             <h4 i18n>Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
-                (onClick)="selectedContainerControl.setValue('')"
-                [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                (onClick)="selectedContainer.set(''); trackChange()"
+                [showClearButton]="selectedContainer() !== ''">
                 <input
-                  [formControl]="selectedContainerControl"
+                  [value]="selectedContainer()"
+                  (input)="selectedContainer.set($any($event.target).value); trackChange()"
                   [matAutocomplete]="containerAuto"
                   matInput />
               </app-clearable-input>
               <mat-label i18n>Container Serial</mat-label>
-              <mat-autocomplete #containerAuto="matAutocomplete">
+              <mat-autocomplete
+                #containerAuto="matAutocomplete"
+                (optionSelected)="selectedContainer.set($event.option.value); trackChange()">
                 @for (option of containerService.filteredContainerOptions(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
