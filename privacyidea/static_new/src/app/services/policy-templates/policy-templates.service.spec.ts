@@ -128,6 +128,24 @@ describe("PolicyTemplatesService", () => {
     expect(service.policyTemplatesIndex()).toEqual({ x: "remote" });
   });
 
+  it("ignores the legacy /static/policy-templates/ default and keeps using the bundled URL", () => {
+    httpMock.expectOne(`${baseUrl}index.json`).flush({ tpl: "bundled" });
+
+    authMock.authData.update((data) => ({ ...data!, policy_template_url: "/static/policy-templates/" }));
+    TestBed.tick();
+
+    // The legacy default must NOT trigger a request to /proxy/static/policy-templates/ —
+    // it resolves to the same bundled URL we already fetched.
+    httpMock.expectNone("/proxy/static/policy-templates/index.json");
+    httpMock.expectNone("/static/policy-templates/index.json");
+
+    let received: PolicyTemplate | undefined;
+    service.getTemplate("webui1").subscribe((tpl) => (received = tpl));
+    const req = httpMock.expectOne(`${baseUrl}webui1.json`);
+    req.flush({ name: "webui1", scope: "webui" });
+    expect(received).toEqual({ name: "webui1", scope: "webui" });
+  });
+
   it("notifies on index fetch failure", () => {
     const errorSpy = jest.spyOn(notificationMock, "error");
     httpMock.expectOne(`${baseUrl}index.json`).error(new ProgressEvent("network error"));

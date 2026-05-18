@@ -55,6 +55,13 @@ export interface PolicyTemplatesServiceInterface {
  */
 const POLICY_TEMPLATE_URL = "policy-templates/";
 
+/**
+ * The backend defaults `policy_template_url` to this legacy path, which is
+ * served by the old WebUI but does not exist in the new bundle. Treat it as
+ * "unset" and fall back to the locally bundled templates.
+ */
+const LEGACY_POLICY_TEMPLATE_URL = "/static/policy-templates/";
+
 @Injectable({
   providedIn: "root"
 })
@@ -113,11 +120,16 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
   private resolveBaseUrl(url: string | undefined | null): string {
     const raw = url && url.length > 0 ? url : POLICY_TEMPLATE_URL;
     const withTrailingSlash = raw.endsWith("/") ? raw : `${raw}/`;
+    // The backend's default points to the old WebUI which no longer exists in
+    // the new bundle; use the locally bundled templates instead.
+    if (withTrailingSlash === LEGACY_POLICY_TEMPLATE_URL) {
+      return POLICY_TEMPLATE_URL;
+    }
     // Absolute URLs (https://...) are used verbatim.
     if (/^https?:\/\//i.test(withTrailingSlash)) {
       return withTrailingSlash;
     }
-    // Root-relative paths (e.g. an admin-set "/static/policy-templates/") get
+
     // the dev proxy prefix so they reach the Flask backend in `ng serve`.
     if (withTrailingSlash.startsWith("/")) {
       return `${environment.proxyUrl}${withTrailingSlash}`;
