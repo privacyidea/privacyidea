@@ -2227,7 +2227,7 @@ class PolicyTestCase(MyTestCase):
         # Valid realm list
         self.setUp_user_realms()
         self.setUp_user_realm2()
-        action_str = f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2}"
+        action_str = f"{PolicyAction.REALMDROPDOWN}=- {self.realm1} {self.realm2}"
         self.assertTrue(validate_actions(SCOPE.WEBUI, action_str))
 
         # Invalid realm in realm list
