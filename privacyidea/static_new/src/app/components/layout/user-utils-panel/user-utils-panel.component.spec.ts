@@ -154,7 +154,7 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("refreshes tokens containers details route", () => {
-      content.routeUrl.set(`${ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS}/abc`);
+      content.routeUrl.set(`${ROUTE_PATHS.CONTAINERS_DETAILS}/abc`);
       component.refreshPage();
       expect(containerService.containerDetailsResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("refreshes tokens containers route", () => {
-      content.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      content.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       component.refreshPage();
       expect(containerService.containerResource.reload).toHaveBeenCalled();
     });
