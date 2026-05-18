@@ -781,7 +781,7 @@ describe("ContainerService", () => {
 
     it("should reset to default when containerDetailResource errors after successful load", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       containerService.containerSerial.set("c1");
       TestBed.tick();
 
