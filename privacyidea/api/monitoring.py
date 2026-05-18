@@ -17,9 +17,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This endpoint is used fetch monitoring/statistics data
+The monitoring REST API exposes time-series statistics that privacyIDEA
+collects via its monitoring module (e.g. token counts, success/failure
+rates, audit volume). Which keys are available depends on the active
+monitoring module (see :ref:`monitoring_modules`) and on event handlers
+that emit ``Counter`` actions.
 
-The code of this module is tested in tests/test_api_monitoring.py
+All endpoints require admin authentication. Reading is gated by the
+admin policy action :ref:`policy_statistics_read`, deletion by
+:ref:`policy_statistics_delete`.
 """
 from flask import (Blueprint, request)
 from privacyidea.api.lib.utils import send_result
@@ -46,12 +52,26 @@ monitoring_blueprint = Blueprint('monitoring_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.STATISTICSREAD)
 def get_statistics(stats_key=None):
     """
-    return a list of all available statistics keys in the database if no *stats_key*
-    is specified.
+    Return statistics from the monitoring store. The behavior depends on
+    whether ``stats_key`` is given as a path component:
 
-    If a stats_key is specified it returns the data of this key.
-    The parameters "start" and "end" can be used to specify a time window,
-    from which the statistics data should be fetched.
+    * without a key — return the list of all statistics keys currently
+      stored on the server.
+    * with a key — return a list of ``[timestamp, value]`` pairs for that
+      key, ordered by timestamp ascending. Timestamps are strings in the
+      format ``%Y-%m-%d %H:%M:%S.%f%z``.
+
+    The ``start`` and ``end`` query parameters restrict the time window
+    (inclusive on both ends). Always send timezone-aware datetimes; otherwise
+    the server will interpret naive timestamps as its own local time, which
+    typically yields unexpected results. Example: ``2010-12-31 22:00+0200``.
+
+    Requires admin authentication and the policy action :ref:`policy_statistics_read`.
+
+    :param stats_key: optional path component selecting a single key.
+    :query start: lower bound of the time window (timezone-aware).
+    :query end: upper bound of the time window (timezone-aware).
+    :status 200: list of keys, or list of ``[timestamp, value]`` pairs.
     """
     if stats_key is None:
         stats_keys = get_stats_keys()
@@ -77,15 +97,21 @@ def get_statistics(stats_key=None):
 @prepolicy(check_base_action, request, PolicyAction.STATISTICSDELETE)
 def delete_statistics(stats_key):
     """
-    Delete the statistics data of a certain stats_key.
+    Delete entries for the given statistics key. Without ``start`` or ``end``,
+    all entries for the key are removed; otherwise only entries within the
+    given time window are deleted.
 
-    You can specify the start date and the end date when to delete the
-    monitoring data.
-    You should specify the dates including the timezone. Otherwise your client
-    could send its local time and the server would interpret it as its own local
-    time which would result in deleting unexpected entries.
+    Always send timezone-aware datetimes for ``start`` / ``end``. If they
+    are sent without a timezone, the server will interpret them as its own
+    local time, which typically yields unexpected deletions. Example:
+    ``2010-12-31 22:00+0200``.
 
-    You can specify the dates like 2010-12-31 22:00+0200
+    Requires admin authentication and the policy action :ref:`policy_statistics_delete`.
+
+    :param stats_key: path component, the key whose data should be deleted.
+    :query start: lower bound of the time window (timezone-aware, inclusive).
+    :query end: upper bound of the time window (timezone-aware, inclusive).
+    :status 200: number of deleted entries in ``result.value``.
     """
     param = request.all_data
     start = get_optional(param, "start")
@@ -104,7 +130,13 @@ def delete_statistics(stats_key):
 @prepolicy(check_base_action, request, PolicyAction.STATISTICSREAD)
 def get_statistics_last(stats_key):
     """
-    Get the last value of the stats key
+    Return the most recent value stored for the given statistics key.
+
+    Requires admin authentication and the policy action :ref:`policy_statistics_read`.
+
+    :param stats_key: path component, the key to query.
+    :status 200: the scalar value in ``result.value``, or ``null`` if no
+        data exists for the key.
     """
     last_value = get_last_value(stats_key)
     g.audit_object.log({"success": True})

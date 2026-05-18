@@ -15,7 +15,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """The tokengroup endpoint allows administrators to manage tokengroup definitions.
+__doc__ = """
+The tokengroup REST API manages tokengroup definitions. See
+:ref:`tokengroups` for the conceptual chapter.
+
+All endpoints require admin authentication. Listing is gated by the
+admin policy action :ref:`policy_tokengroup_list`, creation/update by
+:ref:`policy_tokengroup_add`, deletion by :ref:`policy_tokengroup_delete`.
 """
 from flask import (Blueprint, request)
 from .lib.utils import (send_result)
@@ -40,25 +46,23 @@ tokengroup_blueprint = Blueprint('tokengroup_blueprint', __name__)
 @log_with(log)
 def set_tokengroup_api(groupname):
     """
-    This call creates a new tokengroup or updates the description
-    of an existing tokengroup.
+    Create a new tokengroup or update the description of an existing one.
+    The tokengroup name must be unique.
 
-    Note, that the identifier (name) of the tokengroup needs to be unique.
+    Requires admin authentication and the policy action
+    :ref:`policy_tokengroup_add`.
 
-    :param tokengroup: The unique name of the tokengroup
-    :param description: The description of the tokengroup
-    :return:
+    :param groupname: path component, the unique name of the tokengroup.
+    :jsonparam description: free-form description of the tokengroup.
+    :status 200: database id of the tokengroup in ``result.value``.
 
     **Example request**:
-
-    To create a new tokengroup "groupA" with a description call:
 
     .. sourcecode:: http
 
        POST /tokengroup/groupA HTTP/1.1
        Host: example.com
        Accept: application/json
-       Content-Length: 26
        Content-Type: application/x-www-form-urlencoded
 
        description=My cool first tokengroup
@@ -71,15 +75,14 @@ def set_tokengroup_api(groupname):
        Content-Type: application/json
 
        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-                    "status": true,
-                    "value": 1
-          }
-          "version": "privacyIDEA unknown"
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
        }
-
     """
     param = request.all_data
     description = get_optional(param, "description")
@@ -97,11 +100,17 @@ def set_tokengroup_api(groupname):
 @log_with(log)
 def get_tokengroup_api(groupname=None):
     """
-    This call returns the information for the given tokengroup.
-    If no groupname is specified, it returns a list of all defined tokengroups.
+    Return tokengroup definitions. If ``groupname`` is given, only the
+    matching tokengroup is returned; otherwise all tokengroups are listed.
 
-    :return: a json result with a list of tokengropups
+    The result is a dictionary keyed by tokengroup name; each value carries
+    ``description`` and ``id``.
 
+    Requires admin authentication and the policy action
+    :ref:`policy_tokengroup_list`.
+
+    :param groupname: optional path component selecting a single tokengroup.
+    :status 200: dict of tokengroups in ``result.value``.
 
     **Example request**:
 
@@ -115,22 +124,21 @@ def get_tokengroup_api(groupname=None):
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "gruppe1": {"description": "1st group"},
-              "gruppe2": {"description": "2nd group"}
-              }
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "gruppe1": {"description": "1st group", "id": 1},
+             "gruppe2": {"description": "2nd group", "id": 2}
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     tgs = get_tokengroups(name=groupname)
     g.audit_object.log({"success": True})
@@ -148,11 +156,17 @@ def get_tokengroup_api(groupname=None):
 @log_with(log)
 def delete_tokengroup_api(groupname=None):
     """
-    This call deletes the given tokengroup.
+    Delete the tokengroup with the given name. The tokengroup must be empty
+    — if any tokens are still assigned to it, the request fails.
 
-    :param groupname: The name of the token.
+    Requires admin authentication and the policy action
+    :ref:`policy_tokengroup_delete`.
 
-    :return: a json result with value=1 if deleting the realm was successful
+    :param groupname: path component, the name of the tokengroup.
+    :status 200: ``result.value`` is ``1`` on success.
+    :status 404: no tokengroup with that name exists.
+    :status 400: the tokengroup still has tokens assigned and cannot be
+        deleted.
 
     **Example request**:
 
@@ -169,16 +183,15 @@ def delete_tokengroup_api(groupname=None):
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 1
-          },
-          "version": "privacyIDEA unknown"
-        }
-
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     delete_tokengroup(groupname)
     g.audit_object.log({"success": True,

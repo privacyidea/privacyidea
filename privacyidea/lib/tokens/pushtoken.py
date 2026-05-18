@@ -60,7 +60,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
-                                    get_action_values_from_options)
+                                    get_action_values_from_options,
+                                    comma_escape_text)
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
@@ -465,6 +466,13 @@ class PushTokenClass(TokenClass):
                            PushAction.PUSH_CODE_TO_PHONE_MESSAGE: {
                                'type': 'str',
                                'desc': _('The message that is shown above the code on the smartphone.'),
+                               'group': 'PUSH'
+                           },
+                           PushAction.CHALLENGE_TEXT: {
+                               'type': 'str',
+                               'desc': _('Use an alternative challenge text for telling the '
+                                         'user to confirm the authentication on his mobile device.')
+                                       + " " + comma_escape_text,
                                'group': 'PUSH'
                            },
                            PushAction.PRESENCE_OPTIONS: {
@@ -1116,11 +1124,8 @@ class PushTokenClass(TokenClass):
         additional challenge ``reply_dict``, which is displayed in the JSON challenges response.
         """
         options = options or {}
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 PolicyAction.CHALLENGETEXT,
-                                                 options) or str(DEFAULT_CHALLENGE_TEXT)
-
-        message = message.replace(r'\,', ',')
+        # Depending on the mode we have different default messages
+        default_message = str(DEFAULT_CHALLENGE_TEXT)
 
         # Determine if require presence is enabled
         g = options.get("g")
@@ -1151,8 +1156,17 @@ class PushTokenClass(TokenClass):
                     "smartphone_confirmed": False,
                 }
 
-            message = _("Please enter the code displayed on your smartphone.")
+            # push_code_to_phone has a different default message
+            default_message = _("Please enter the code displayed on your smartphone.")
             client_mode = ClientMode.INTERACTIVE
+
+        # Now potentially get a different message from policies. The push-specific policy
+        # takes precedence; fall back to the generic challenge_text policy for backwards
+        # compatibility, then to the mode-dependent default.
+        message = (get_action_values_from_options(SCOPE.AUTH, PushAction.CHALLENGE_TEXT, options)
+                   or get_action_values_from_options(SCOPE.AUTH, PolicyAction.CHALLENGETEXT, options)
+                   or default_message)
+        message = message.replace(r'\,', ',')
 
         # Initially we assume there is no error from Firebase
         res = True

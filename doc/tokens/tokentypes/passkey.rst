@@ -34,4 +34,18 @@ the scope authentication and that policy does affect passkey authentication.
 On the token detail page, the passkey can be tested and, if successful, will show the username that is returned by
 privacyIDEA to use for login.
 
+Avoiding double registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+During passkey enrollment, privacyIDEA always sends the credential ids of the user's existing passkey and
+WebAuthn tokens in the WebAuthn ``excludeCredentials`` list. The authenticator will then refuse to create a new
+credential if it already holds one of these, preventing a user from accidentally registering the same authenticator
+twice. Unlike the :ref:`policy_webauthn_avoid_double_registration` policy for WebAuthn tokens, this behavior is
+always on for passkeys and is not configurable.
+
+Tokens that have been **revoked** are excluded from this list, so the same authenticator can be re-enrolled for
+the user after revocation. Tokens that are merely **disabled** are still included, since disabling is reversible
+and the underlying credential is still bound to the user. Tokens whose enrollment never finished
+(rollout state ``clientwait``) are also excluded.
+
 A non-exhaustive list of devices that are known to work can be found here :ref:`fido_device_matrix`.

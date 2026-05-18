@@ -24,10 +24,17 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""This is the audit REST API that can be used to search the audit log.
-It only provides the method
+"""
+The audit REST API exposes the privacyIDEA audit log: a paginated search
+endpoint and a CSV download endpoint. See :ref:`audit` for the conceptual
+chapter and the available audit modules (SQL, logger, container).
 
-  GET /audit
+All endpoints require admin authentication. Search is gated by the admin
+policy action :ref:`policy_auditlog`; the CSV download by
+:ref:`policy_auditlog_download`. Both endpoints honor the
+:ref:`policy_auditlog_age` policy that limits how far back an admin may
+look. The :ref:`policy_hide_audit_columns` policy is applied only to the
+search endpoint, not to the CSV download.
 """
 from flask import (Blueprint, request, current_app, stream_with_context)
 from .lib.utils import (send_result, send_file)
@@ -51,42 +58,33 @@ audit_blueprint = Blueprint('audit_blueprint', __name__)
 @prepolicy(hide_audit_columns, request)
 def search_audit():
     """
-    return a paginated list of audit entries.
+    Return a paginated page of audit entries. All filter parameters are
+    accepted as query parameters; column names from the audit schema can be
+    used directly as filter keys (``realm``, ``user``, ``serial``, ``action``,
+    ``success``, ...). Filter values support the wildcard ``*``.
 
-    Params can be passed as key-value-pairs.
-
-    :httpparam timelimit: A timelimit, that limits the recent audit entries.
-        This param gets overwritten by a policy auditlog_age. Can be 1d, 1m, 1h.
+    Requires admin authentication and the policy action :ref:`policy_auditlog`.
+    The :ref:`policy_auditlog_age` policy may shrink ``timelimit`` to the
+    configured maximum, and :ref:`policy_hide_audit_columns` may strip
+    configured columns from the response.
 
     **Example request**:
 
     .. sourcecode:: http
 
-       GET /audit?realm=realm1 HTTP/1.1
+       GET /audit/?realm=realm1&page=1&page_size=15 HTTP/1.1
        Host: example.com
        Accept: application/json
 
-    **Example response**:
-
-    .. sourcecode:: http
-
-       HTTP/1.1 200 OK
-       Content-Type: application/json
-
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-              {
-                 "serial": "....",
-                 "missing_line": "..."
-              }
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
+    :query timelimit: only consider entries newer than this (e.g. ``1d``,
+        ``2h``, ``30m``). Capped by the :ref:`policy_auditlog_age` policy.
+    :query page: page number, 1-indexed.
+    :query page_size: entries per page.
+    :query sortname: column to sort by.
+    :query sortorder: ``asc`` or ``desc``.
+    :query: any audit column name as a filter key.
+    :status 200: paginated audit dictionary in ``result.value`` with
+        ``count``, ``current``, ``next``, ``prev``, ``auditdata``.
     """
     admin_params = get_admin_audit_params()
     audit_dict = search(current_app.config, request.all_data, admin_params)
@@ -101,9 +99,15 @@ def search_audit():
 @admin_required
 def download_csv(csvfile=None):
     """
-    Download the audit entry as CSV file.
+    Stream the audit log as a CSV file. The path component is the desired
+    download filename (e.g. ``audit.csv``); the actual filter is given by
+    the query parameters, which use the same syntax as the search endpoint.
 
-    Params can be passed as key-value-pairs.
+    Requires admin authentication and the policy action
+    :ref:`policy_auditlog_download`. The :ref:`policy_auditlog_age` policy
+    caps how far back the export may go. Hidden-column policies do **not**
+    apply to the download — disallow downloading if you need that
+    restriction.
 
     **Example request**:
 
@@ -113,27 +117,12 @@ def download_csv(csvfile=None):
        Host: example.com
        Accept: text/csv
 
-    **Example response**:
-
-    .. sourcecode:: http
-
-       HTTP/1.1 200 OK
-       Content-Type: text/csv
-
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-              {
-                 "serial": "....",
-                 "missing_line": "..."
-              }
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
+    :param csvfile: filename to use for the download.
+    :query timelimit: only export entries newer than this. Capped by the
+        :ref:`policy_auditlog_age` policy.
+    :query: any audit column name as a filter key (same as for the search
+        endpoint).
+    :status 200: ``text/csv`` body containing the audit entries.
     """
     audit = getAudit(current_app.config)
     g.audit_object.log({'success': True})

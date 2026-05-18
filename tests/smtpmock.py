@@ -88,6 +88,8 @@ class SmtpMock(object):
         self._request_data = {}
         self._calls.reset()
         self.sent_message = None
+        self.sent_sender = None
+        self.sent_recipient = None
 
     def get_smtp_ssl(self):
         return self.smtp_ssl
@@ -108,6 +110,12 @@ class SmtpMock(object):
 
     def get_sent_message(self):
         return self.sent_message
+
+    def get_sent_sender(self):
+        return self.sent_sender
+
+    def get_sent_recipient(self):
+        return self.sent_recipient
 
     @property
     def calls(self):
@@ -172,6 +180,8 @@ class SmtpMock(object):
 
         def unbound_on_send(SMTP, sender, recipient, msg, *a, **kwargs):
             self.sent_message = msg
+            self.sent_sender = sender
+            self.sent_recipient = recipient
             return self._on_request(SMTP, sender, recipient, msg, *a, **kwargs)
 
         self._patcher = mock.patch('smtplib.SMTP.sendmail',
