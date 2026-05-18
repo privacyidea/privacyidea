@@ -45,13 +45,13 @@ def upgrade():
             print("Unique constraint on tokencontainerrealm already removed.")
         else:
             print("Could not drop unique constraint on tokencontainerrealm.")
-            raise
+            print(exx)
     except ValueError as exx:
         if "no such constraint" in str(exx).lower():
             print("Unique constraint on tokencontainerrealm already removed.")
         else:
             print("Could not drop unique constraint on tokencontainerrealm.")
-            raise
+            print(exx)
 
 
 def downgrade():

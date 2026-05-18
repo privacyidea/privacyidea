@@ -24,7 +24,7 @@ def upgrade():
             print("Column 'handle_missing_data' already exists.")
         else:
             print("Could not add column 'handle_missing_data' to table 'policycondition'.")
-            raise
+            print(exx)
 
     # ### end Alembic commands ###
 
@@ -39,6 +39,7 @@ def downgrade():
             print("Column 'handle_missing_data' already removed.")
         else:
             print("Could not remove column 'handle_missing_data' from table 'policycondition'.")
+            print(exx)
             raise
 
     # ### end Alembic commands ###

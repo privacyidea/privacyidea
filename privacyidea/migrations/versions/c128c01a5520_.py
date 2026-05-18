@@ -31,7 +31,7 @@ def upgrade():
             print("Table 'tokencontainertemplate' already exists.")
         else:
             print("Could not add table 'tokencontainertemplate' to database.")
-            raise
+            print(exx)
 
     migration_context = op.get_context()
     try:
@@ -50,7 +50,7 @@ def upgrade():
             print("Foreign key 'template_id' already exist.")
         else:
             print("Could not add foreign key 'template_id' to table 'tokencontainer'.")
-            raise
+            print(exx)
     # ### end Alembic commands ###
 
 
@@ -81,14 +81,14 @@ def downgrade():
             print("Foreign key 'template_id' already removed.")
         else:
             print("Could not remove foreign key 'template_id' from table 'tokencontainer'.")
-            raise
+            print(exx)
     except (KeyError, ValueError) as exx:
         msg = str(exx).lower()
         if "no such column" in msg or "does not exist" in msg or "no such constraint" in msg:
             print("Foreign key 'template_id' already removed.")
         else:
             print("Could not remove foreign key 'template_id' from table 'tokencontainer'.")
-            raise
+            print(exx)
 
     try:
         op.drop_column('tokencontainer', 'template_id')
@@ -98,6 +98,7 @@ def downgrade():
             print("Column 'template_id' already removed.")
         else:
             print("Could not remove column 'template_id' from table 'tokencontainer'.")
+            print(exx)
             raise
 
     try:
@@ -108,5 +109,5 @@ def downgrade():
             print("Table 'tokencontainertemplate' already removed.")
         else:
             print("Could not remove table 'tokencontainertemplate'.")
-            raise
+            print(exx)
     # ### end Alembic commands ###

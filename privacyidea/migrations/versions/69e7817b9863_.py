@@ -36,7 +36,7 @@ def upgrade():
             print("Table 'tokencontainer' already exists.")
         else:
             print("Could not add table 'tokencontainer' to database.")
-            raise
+            print(exx)
 
     try:
         op.create_table('tokencontainerinfo',
@@ -58,7 +58,7 @@ def upgrade():
             print("Table 'tokencontainerinfo' already exists.")
         else:
             print("Could not add table 'tokencontainerinfo' to database.")
-            raise
+            print(exx)
 
     try:
         op.create_table('tokencontainerowner',
@@ -79,7 +79,7 @@ def upgrade():
             print("Table 'tokencontainerowner' already exists.")
         else:
             print("Could not add table 'tokencontainerowner' to database.")
-            raise
+            print(exx)
 
     try:
         op.create_table('tokencontainerrealm',
@@ -95,7 +95,7 @@ def upgrade():
             print("Table 'tokencontainerrealm' already exists.")
         else:
             print("Could not add table 'tokencontainerrealm' to database.")
-            raise
+            print(exx)
 
     try:
         op.create_table('tokencontainerstates',
@@ -111,7 +111,7 @@ def upgrade():
             print("Table 'tokencontainerstates' already exists.")
         else:
             print("Could not add table 'tokencontainerstates' to database.")
-            raise
+            print(exx)
 
     try:
         op.create_table('tokencontainertoken',
@@ -127,7 +127,7 @@ def upgrade():
             print("Table 'tokencontainertoken' already exists.")
         else:
             print("Could not add table 'tokencontainertoken' to database.")
-            raise
+            print(exx)
 
     try:
         op.add_column('pidea_audit', sa.Column('container_serial', sa.Unicode(20), nullable=True))
@@ -136,7 +136,7 @@ def upgrade():
             print("Columns 'container_serial' already exist.")
         else:
             print("Could not add columns 'container_serial' to table 'pidea_audit'.")
-            raise
+            print(exx)
 
     try:
         op.add_column('pidea_audit', sa.Column('container_type', sa.Unicode(20), nullable=True))
@@ -145,7 +145,7 @@ def upgrade():
             print("Columns 'container_type' already exist.")
         else:
             print("Could not add columns 'container_type' to table 'pidea_audit'.")
-            raise
+            print(exx)
     # ### end Alembic commands ###
 
 
@@ -159,7 +159,7 @@ def downgrade():
             print("Column 'container_type' already removed.")
         else:
             print("Could not remove column 'container_type' from table 'pidea_audit'.")
-            raise
+            print(exx)
 
     try:
         op.drop_column('pidea_audit', 'container_serial')
@@ -169,7 +169,7 @@ def downgrade():
             print("Column 'container_serial' already removed.")
         else:
             print("Could not remove column 'container_serial' from table 'pidea_audit'.")
-            raise
+            print(exx)
 
     try:
         op.drop_table('tokencontainertoken')
@@ -179,7 +179,7 @@ def downgrade():
             print("Table 'tokencontainertoken' already removed.")
         else:
             print("Could not remove table 'tokencontainertoken'.")
-            raise
+            print(exx)
 
     try:
         op.drop_table('tokencontainerstates')
@@ -189,7 +189,7 @@ def downgrade():
             print("Table 'tokencontainerstates' already removed.")
         else:
             print("Could not remove table 'tokencontainerstates'.")
-            raise
+            print(exx)
 
     try:
         op.drop_table('tokencontainerrealm')
@@ -199,7 +199,7 @@ def downgrade():
             print("Table 'tokencontainerrealm' already removed.")
         else:
             print("Could not remove table 'tokencontainerrealm'.")
-            raise
+            print(exx)
 
     try:
         op.drop_index(op.f('ix_tokencontainerowner_user_id'), table_name='tokencontainerowner')
@@ -209,7 +209,7 @@ def downgrade():
             print("Index 'ix_tokencontainerowner_user_id' already removed.")
         else:
             print("Could not remove index 'ix_tokencontainerowner_user_id' from table 'tokencontainerowner'.")
-            raise
+            print(exx)
 
     try:
         op.drop_index(op.f('ix_tokencontainerowner_resolver'), table_name='tokencontainerowner')
@@ -219,7 +219,7 @@ def downgrade():
             print("Index 'ix_tokencontainerowner_resolver' already removed.")
         else:
             print("Could not remove index 'ix_tokencontainerowner_resolver' from table 'tokencontainerowner'.")
-            raise
+            print(exx)
 
     try:
         op.drop_table('tokencontainerowner')
@@ -229,7 +229,7 @@ def downgrade():
             print("Table 'tokencontainerowner' already removed.")
         else:
             print("Could not remove table 'tokencontainerowner'.")
-            raise
+            print(exx)
 
     try:
         op.drop_index(op.f('ix_tokencontainerinfo_container_id'), table_name='tokencontainerinfo')
@@ -239,7 +239,7 @@ def downgrade():
             print("Index 'ix_tokencontainerinfo_container_id' already removed.")
         else:
             print("Could not remove index 'ix_tokencontainerinfo_container_id' from table 'tokencontainerinfo'.")
-            raise
+            print(exx)
 
     try:
         op.drop_table('tokencontainerinfo')
@@ -249,7 +249,7 @@ def downgrade():
             print("Table 'tokencontainerinfo' already removed.")
         else:
             print("Could not remove table 'tokencontainerinfo'.")
-            raise
+            print(exx)
 
     try:
         op.drop_index(op.f('ix_tokencontainer_serial'), table_name='tokencontainer')
@@ -259,7 +259,7 @@ def downgrade():
             print("Index 'ix_tokencontainer_serial' already removed.")
         else:
             print("Could not remove index 'ix_tokencontainer_serial' from table 'tokencontainer'.")
-            raise
+            print(exx)
 
     try:
         op.drop_table('tokencontainer')
@@ -269,5 +269,4 @@ def downgrade():
             print("Table 'tokencontainer' already removed.")
         else:
             print("Could not remove table 'tokencontainer'.")
-            raise
     # ### end Alembic commands ###

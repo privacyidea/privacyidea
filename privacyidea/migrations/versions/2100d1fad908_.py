@@ -18,15 +18,13 @@ def upgrade():
     try:
         op.create_index(op.f('ix_challenge_expiration'), 'challenge', ['expiration'], unique=False)
     except (OperationalError, ProgrammingError) as exx:
-        msg = str(exx.orig).lower()
-        if "already exists" in msg or "duplicate key name" in msg:
-            print("Ok, Index 'ix_challenge_expiration' in table 'challenge' already exists.")
+        if "Index already exists" in str(exx.orig).lower():
+            print("Ok, Index 'expiration' in table 'challenge' already exists.")
         else:
-            print("Could not create index 'ix_challenge_expiration' on table 'challenge'.")
-            raise
-    except Exception:
-        print("Could not create index 'ix_challenge_expiration' on table 'challenge'.")
-        raise
+            print(exx)
+    except Exception as exx:
+        print("Could not create index 'expiration' on table 'challenge'")
+        print(exx)
 
 
 def downgrade():

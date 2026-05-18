@@ -23,7 +23,7 @@ def upgrade():
             print("Column 'user_agents' already exists.")
         else:
             print("Could not add column 'user_agents' to table 'policy'.")
-            raise
+            print(exx)
 
 
 def downgrade():
@@ -35,4 +35,5 @@ def downgrade():
             print("Column 'user_agents' already removed.")
         else:
             print("Could not remove column 'user_agents' from table 'policy'.")
+            print(exx)
             raise
