@@ -50,8 +50,8 @@ describe("EnrollEmailComponent", () => {
         readEmailDynamically: true
       });
       component.ngOnInit();
-      expect(component.emailAddressControl.value).toBe("test@example.com");
-      expect(component.readEmailDynamicallyControl.value).toBe(true);
+      expect(component.emailAddress()).toBe("test@example.com");
+      expect(component.readEmailDynamically()).toBe(true);
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -61,8 +61,8 @@ describe("EnrollEmailComponent", () => {
         readEmailDynamically: undefined
       });
       component.ngOnInit();
-      expect(component.emailAddressControl.value).toBe("");
-      expect(component.readEmailDynamicallyControl.value).toBe(false);
+      expect(component.emailAddress()).toBe("");
+      expect(component.readEmailDynamically()).toBe(false);
     });
   });
 });

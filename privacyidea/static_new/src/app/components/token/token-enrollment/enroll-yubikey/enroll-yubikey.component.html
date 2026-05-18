@@ -22,7 +22,8 @@
       class="input-width-l">
       <mat-label i18n>Test Yubikey</mat-label>
       <input
-        [formControl]="testYubiKeyControl"
+        [value]="testYubiKey()"
+        (input)="testYubiKey.set($event.target.value)"
         i18n-placeholder
         matInput
         placeholder="Push Yubikey button here" />
@@ -31,17 +32,15 @@
       class="input-width-l">
       <mat-label>OTP length</mat-label>
       <input
-        [formControl]="otpLengthControl"
+        [formField]="otpLengthForm"
         matInput
-        min="32"
-        required
         type="number" />
       <mat-error i18n>OTP length is <strong>required</strong></mat-error>
     </mat-form-field>
     <mat-form-field class="input-width-l">
       <mat-label i18n>OTP Key</mat-label>
       <input
-        [formControl]="otpKeyControl"
+        [formField]="otpKeyForm"
         i18n-placeholder
         matInput
         placeholder="Enter OTP key" />

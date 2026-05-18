@@ -72,8 +72,7 @@
           <input
             [formField]="radiusForm.identifier"
             matInput
-            placeholder="myRadiusServer"
-            required />
+            placeholder="myRadiusServer" />
         </app-clearable-input>
         <mat-hint i18n>The unique identifying name of the RADIUS server definition.</mat-hint>
         @if (radiusForm.identifier().errors().some(e => e.kind === 'required')) {
@@ -99,8 +98,7 @@
             <input
               [formField]="radiusForm.server"
               matInput
-              placeholder="1.2.3.4"
-              required />
+              placeholder="1.2.3.4" />
           </app-clearable-input>
           @if (radiusForm.server().errors().some(e => e.kind === 'required')) {
             <mat-error
@@ -132,7 +130,6 @@
             <input
               [formField]="radiusForm.secret"
               matInput
-              required
               type="password" />
           </app-clearable-input>
           @if (radiusForm.secret().errors().some(e => e.kind === 'required')) {

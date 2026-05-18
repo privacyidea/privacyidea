@@ -73,8 +73,7 @@
               <input
                 [formField]="smsForm.name"
                 matInput
-                placeholder="mySmsGateway"
-                required />
+                placeholder="mySmsGateway" />
             </app-clearable-input>
             @if (smsForm.name().errors().some(e => e.kind === 'required')) {
               <mat-error i18n>Name is <strong>required</strong></mat-error>
@@ -135,7 +134,7 @@
               @if (param.value.values) {
                 <mat-select
                   [value]="parametersModel()[param.key]"
-                  (selectionChange)="parametersModel.update(m => ({...m, [param.key]: $event.value})); parametersDirty.set(true)"
+                  (selectionChange)="updateParameter(param.key, $event.value)"
                   [required]="param.value.required">
                   @for (val of param.value.values; track val) {
                     <mat-option [value]="val">
@@ -148,7 +147,7 @@
               @if (!param.value.values && param.value.type === 'text') {
                 <textarea
                   [value]="parametersModel()[param.key] ?? ''"
-                  (input)="parametersModel.update(m => ({...m, [param.key]: $any($event.target).value})); parametersDirty.set(true)"
+                  (input)="updateParameter(param.key, $any($event.target).value)"
                   [required]="param.value.required"
                   matInput
                   rows="2"></textarea>
@@ -156,11 +155,11 @@
 
               @if (!param.value.values && param.value.type !== 'text') {
                 <app-clearable-input
-                  (onClick)="parametersModel.update(m => ({...m, [param.key]: ''})); parametersDirty.set(true)"
+                  (onClick)="clearParameter(param.key)"
                   [showClearButton]="!!parametersModel()[param.key]">
                   <input
                     [value]="parametersModel()[param.key] ?? ''"
-                    (input)="parametersModel.update(m => ({...m, [param.key]: $any($event.target).value})); parametersDirty.set(true)"
+                    (input)="updateParameter(param.key, $any($event.target).value)"
                     [required]="param.value.required"
                     matInput />
                 </app-clearable-input>

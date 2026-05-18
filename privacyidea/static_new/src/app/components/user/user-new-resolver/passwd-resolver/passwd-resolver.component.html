@@ -27,8 +27,7 @@
         <input
           [formField]="passwdForm.fileName"
           matInput
-          placeholder="/etc/passwd"
-          required />
+          placeholder="/etc/passwd" />
       </app-clearable-input>
 
       @if (passwdForm.fileName().errors().some(e => e.kind === 'required') && passwdForm.fileName().touched()) {

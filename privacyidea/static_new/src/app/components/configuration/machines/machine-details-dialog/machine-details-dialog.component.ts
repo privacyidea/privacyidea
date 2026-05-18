@@ -18,7 +18,6 @@
  **/
 import { CommonModule } from "@angular/common";
 import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -58,7 +57,6 @@ import { lastValueFrom } from "rxjs";
     MatTooltipModule,
     MatTableModule,
     MatPaginatorModule,
-    FormsModule,
     MatSelectModule,
     MatAutocompleteModule,
     CopyButtonComponent
@@ -83,8 +81,8 @@ export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
   dataSource = new MatTableDataSource<TokenApplication>([]);
   displayedColumns: string[] = ["serial", "application", "options", "actions"];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  newTokenSerial = "";
-  selectedApplication: "offline" | "ssh" = "offline";
+  newTokenSerial = signal("");
+  selectedApplication = signal<"offline" | "ssh">("offline");
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
   editingIds = new Set<number>();
@@ -117,6 +115,7 @@ export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
   }
 
   onTokenSerialInput(value: string): void {
+    this.newTokenSerial.set(value);
     this.tokenService.selectedToken.set(value);
   }
 
@@ -195,20 +194,20 @@ export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
 
   attachToken(): void {
     const machine = this.data();
-    if (!this.newTokenSerial || !this.selectedApplication || !machine) {
+    if (!this.newTokenSerial() || !this.selectedApplication() || !machine) {
       return;
     }
 
     this.machineService
       .postAssignMachineToToken({
-        serial: this.newTokenSerial,
-        application: this.selectedApplication,
+        serial: this.newTokenSerial(),
+        application: this.selectedApplication(),
         machineid: machine.id,
         resolver: machine.resolver_name
       })
       .subscribe(() => {
-        this.newTokenSerial = "";
-        this.selectedApplication = "offline";
+        this.newTokenSerial.set("");
+        this.selectedApplication.set("offline");
         this.loadTokenApplications();
       });
   }

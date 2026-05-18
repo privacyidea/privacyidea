@@ -25,14 +25,11 @@ import {
   input,
   linkedSignal,
   Output,
-  QueryList,
   Signal,
   signal,
   ViewChild,
-  ViewChildren,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, NgModel } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
@@ -60,7 +57,6 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
   imports: [
     MatFormField,
     MatInput,
-    FormsModule,
     MatOption,
     MatSelect,
     MatLabel,
@@ -92,18 +88,18 @@ export class PeriodicTaskEditComponent {
   }
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
-  @ViewChildren(NgModel) ngModelControls?: QueryList<NgModel>;
 
   resetFormState(): void {
-    this.ngModelControls?.forEach((m) => {
-      m.control.markAsPristine();
-      m.control.markAsUntouched();
-    });
+    // No-op: signal forms don't have dirty/touched state to reset
   }
 
   editTask = linkedSignal(() => deepCopy(this.task()));
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
+
+  updateNewOptionValue(option: string, value: string): void {
+    this.newOptionValues.set({ ...this.newOptionValues(), [option]: value });
+  }
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;

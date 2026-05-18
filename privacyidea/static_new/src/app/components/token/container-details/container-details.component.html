@@ -71,7 +71,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Realms</mat-label>
                       <mat-select
-                        [(ngModel)]="selectedRealms"
+                        (selectionChange)="selectedRealms.set($event.value)"
                         [value]="selectedRealms()"
                         multiple>
                         @for (option of realmService.realmOptions(); track option) {
@@ -105,7 +105,8 @@
                       class="input-width-m description height-115"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         i18n-placeholder
                         matInput
                         placeholder="Enter description"
@@ -179,7 +180,8 @@
                         (onClick)="userService.selectionFilter.set('')"
                         [showClearButton]="userService.selectionFilter() !== ''">
                         <input
-                          [(ngModel)]="userService.selectionFilter"
+                          [value]="userService.selectionFilter()"
+                          (input)="userService.selectionFilter.set($any($event.target).value)"
                           [matAutocomplete]="userAuto"
                           matInput />
                         <mat-autocomplete
@@ -206,7 +208,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Realm of User</mat-label>
                       <mat-select
-                        [(ngModel)]="userService.selectedUserRealm"
+                        (selectionChange)="userService.selectedUserRealm.set($event.value)"
                         [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions(); track option) {
                           <mat-option value="{{ option }}">{{ option }}</mat-option>

@@ -33,8 +33,8 @@
         class="input-width-l responsive-margin-bottom-1090">
         <mat-label i18n>SMTP Server Configuration</mat-label>
         <mat-select
-          [ngModel]="formData()[EMAIL_SMTP_SERVER_KEY]"
-          (ngModelChange)="updateFormData(EMAIL_SMTP_SERVER_KEY, $event)">
+          [value]="formData()[EMAIL_SMTP_SERVER_KEY]"
+          (valueChange)="updateFormData(EMAIL_SMTP_SERVER_KEY, $event)">
           @for (server of smtpServers(); track server) {
             <mat-option [value]="server">{{ server }}</mat-option>
           }
@@ -54,8 +54,8 @@
         class="input-width-l">
         <mat-label i18n>OTP Validity Time</mat-label>
         <input
-          [ngModel]="formData()[EMAIL_VALIDITY_TIME_KEY]"
-        (ngModelChange)="updateFormData(EMAIL_VALIDITY_TIME_KEY, $event)"
+          [value]="formData()[EMAIL_VALIDITY_TIME_KEY]"
+        (input)="updateFormData(EMAIL_VALIDITY_TIME_KEY, $any($event.target).valueAsNumber)"
           matInput
           type="number">
         <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>

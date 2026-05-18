@@ -19,7 +19,7 @@
 import { AsyncPipe, NgClass } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { ReactiveFormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
@@ -50,7 +50,6 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
   selector: "app-token-enrollment-wizard",
   imports: [
     ReactiveFormsModule,
-    FormsModule,
     MatNativeDateModule,
     MatDatepickerModule,
     MatButton,

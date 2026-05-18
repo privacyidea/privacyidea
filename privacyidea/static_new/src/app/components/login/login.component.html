@@ -148,7 +148,6 @@
               [formField]="usernameField"
               id="username"
               matInput
-              name="username"
               type="text" />
           </mat-form-field>
         }
@@ -162,7 +161,6 @@
               [formField]="passwordField"
               id="password"
               matInput
-              name="password"
               [type]="hidePassword() ? 'password' : 'text'" />
             <button
               (click)="hidePassword.set(!hidePassword())"
@@ -185,7 +183,6 @@
               autocomplete="one-time-code"
               id="otp"
               matInput
-              name="otp"
               type="text" />
           </mat-form-field>
         }

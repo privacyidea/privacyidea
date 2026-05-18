@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -34,7 +33,6 @@ export type SelectableAction = { label: string; actionName: string; scope: strin
   selector: "app-policy-action-item-new",
   standalone: true,
   imports: [
-    FormsModule,
     MatIconModule,
     MatTooltipModule,
     SelectorButtonsComponent,

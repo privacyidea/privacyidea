@@ -28,8 +28,7 @@
           <input
             [formField]="scimForm.Authserver"
             matInput
-            placeholder="http://localhost:8080/osiam-auth-server"
-            required />
+            placeholder="http://localhost:8080/osiam-auth-server" />
         </app-clearable-input>
         @if (scimForm.Authserver().errors().some(e => e.kind === 'required') && scimForm.Authserver().touched()) {
           <mat-error i18n>
@@ -48,8 +47,7 @@
           <input
             [formField]="scimForm.Resourceserver"
             matInput
-            placeholder="http://localhost:8080/osiam-resource-server"
-            required />
+            placeholder="http://localhost:8080/osiam-resource-server" />
         </app-clearable-input>
         @if (scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()) {
           <mat-error i18n>
@@ -70,8 +68,7 @@
           <input
             [formField]="scimForm.Client"
             matInput
-            placeholder="hostname"
-            required />
+            placeholder="hostname" />
         </app-clearable-input>
         @if (scimForm.Client().errors().some(e => e.kind === 'required') && scimForm.Client().touched()) {
           <mat-error i18n>
@@ -91,7 +88,6 @@
             [formField]="scimForm.Secret"
             matInput
             placeholder="d81c31e4-9f65-4805-b5ba-6edf0761f954"
-            required
             type="password" />
         </app-clearable-input>
         @if (scimForm.Secret().errors().some(e => e.kind === 'required') && scimForm.Secret().touched()) {
@@ -109,8 +105,7 @@
       <textarea
         [formField]="scimForm.Mapping"
         matInput
-        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
-        required></textarea>
+        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'></textarea>
       @if (scimForm.Mapping().errors().some(e => e.kind === 'required') && scimForm.Mapping().touched()) {
         <mat-error i18n>
           Mapping is

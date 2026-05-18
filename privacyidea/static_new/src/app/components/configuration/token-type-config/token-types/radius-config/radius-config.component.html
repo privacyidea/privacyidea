@@ -31,8 +31,8 @@
         class="input-width-m">
         <mat-label i18n>RADIUS Server Configuration</mat-label>
         <mat-select
-          [ngModel]="formData()[RADIUS_SERVER]"
-          (ngModelChange)="updateFormData(RADIUS_SERVER, $event)">
+          [value]="formData()[RADIUS_SERVER]"
+          (valueChange)="updateFormData(RADIUS_SERVER, $event)">
           @for (id of radiusServers(); track id) {
             <mat-option [value]="id">{{ id }}</mat-option>
           }

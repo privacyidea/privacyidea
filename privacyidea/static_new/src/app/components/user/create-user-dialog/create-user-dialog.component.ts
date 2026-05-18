@@ -30,7 +30,7 @@ import {
   WritableSignal
 } from "@angular/core";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -62,7 +62,6 @@ export interface CreateUserDialogData {
     MatLabel,
     MatOption,
     MatSelect,
-    FormsModule,
     MatHint,
     MatError,
     MatInput,

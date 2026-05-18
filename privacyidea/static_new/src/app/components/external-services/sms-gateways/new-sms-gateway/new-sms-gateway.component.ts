@@ -121,6 +121,16 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   /** Whether the parameters have been touched/dirtied */
   parametersDirty = signal(false);
 
+  updateParameter(key: string, value: string): void {
+    this.parametersModel.update(m => ({ ...m, [key]: value }));
+    this.parametersDirty.set(true);
+  }
+
+  clearParameter(key: string): void {
+    this.parametersModel.update(m => ({ ...m, [key]: '' }));
+    this.parametersDirty.set(true);
+  }
+
   customOptions: Record<string, string> = {};
   customHeaders: Record<string, string> = {};
 

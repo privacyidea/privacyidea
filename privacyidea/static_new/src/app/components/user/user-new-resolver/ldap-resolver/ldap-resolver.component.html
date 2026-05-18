@@ -54,8 +54,7 @@
           [showClearButton]="!!model().LDAPBASE">
           <input
             [formField]="ldapForm.LDAPBASE"
-            matInput
-            required />
+            matInput />
         </app-clearable-input>
         @if (ldapForm.LDAPBASE().errors().some(e => e.kind === 'required') && ldapForm.LDAPBASE().touched()) {
           <mat-error i18n>
@@ -74,8 +73,7 @@
           <input
             [formField]="ldapForm.LDAPURI"
             matInput
-            placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
-            required />
+            placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2" />
         </app-clearable-input>
         @if (ldapForm.LDAPURI().errors().some(e => e.kind === 'required') && ldapForm.LDAPURI().touched()) {
           <mat-error i18n>
@@ -146,7 +144,6 @@
               [showClearButton]="!!model().TLS_CA_FILE">
               <input
                 [formField]="ldapForm.TLS_CA_FILE"
-                [disabled]="tlsCaFileDisabled()"
                 matInput
                 placeholder="/etc/privacyidea/ldap-ca.crt" />
             </app-clearable-input>
@@ -366,8 +363,7 @@
             <input
               [formField]="ldapForm.LOGINNAMEATTRIBUTE"
               matInput
-              placeholder="sAMAccountName"
-              required />
+              placeholder="sAMAccountName" />
           </app-clearable-input>
           @if (ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()) {
             <mat-error i18n>
@@ -399,8 +395,7 @@
           <input
             [formField]="ldapForm.LDAPSEARCHFILTER"
             matInput
-            placeholder="(sAMAccountName=*)(objectClass=person)"
-            required />
+            placeholder="(sAMAccountName=*)(objectClass=person)" />
         </app-clearable-input>
         @if (ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()) {
           <mat-error i18n>
@@ -417,8 +412,7 @@
           [formField]="ldapForm.USERINFO"
           matInput
           placeholder='{"phone:" : "telephoneNumber", "mobile": "mobile", "email" : "mail", "surname" : "sn",
-             "givenname" : "givenName"}'
-          required></textarea>
+             "givenname" : "givenName"}'></textarea>
         @if (ldapForm.USERINFO().errors().some(e => e.kind === 'required') && ldapForm.USERINFO().touched()) {
           <mat-error i18n>
             Attribute mapping is

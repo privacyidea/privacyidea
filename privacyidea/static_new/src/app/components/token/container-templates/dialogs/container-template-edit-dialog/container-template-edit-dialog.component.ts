@@ -20,7 +20,6 @@
 import { Component, computed, DestroyRef, inject, linkedSignal, signal } from "@angular/core";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -59,7 +58,6 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatCardModule,
     MatIconModule,
     MatButtonModule,
-    FormsModule,
     MatTooltipModule,
     MatFormFieldModule,
     MatListModule,

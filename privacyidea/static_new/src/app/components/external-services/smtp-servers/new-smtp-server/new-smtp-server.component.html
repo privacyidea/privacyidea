@@ -71,8 +71,7 @@
             <input
               [formField]="smtpForm.identifier"
               matInput
-              placeholder="mySmtpServer"
-              required />
+              placeholder="mySmtpServer" />
           </app-clearable-input>
           <mat-hint i18n>The unique identifying name of the SMTP server definition.</mat-hint>
           @if (smtpForm.identifier().errors().some(e => e.kind === 'required')) {
@@ -98,8 +97,7 @@
               <input
                 [formField]="smtpForm.server"
                 matInput
-                placeholder="smtp://mail.example.com"
-                required />
+                placeholder="smtp://mail.example.com" />
             </app-clearable-input>
             @if (smtpForm.server().errors().some(e => e.kind === 'required')) {
               <mat-error
@@ -131,8 +129,7 @@
               <input
                 [formField]="smtpForm.sender"
                 matInput
-                placeholder="privacyidea@example.com"
-                required />
+                placeholder="privacyidea@example.com" />
             </app-clearable-input>
             @if (smtpForm.sender().errors().some(e => e.kind === 'required')) {
               <mat-error

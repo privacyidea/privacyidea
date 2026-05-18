@@ -56,8 +56,7 @@
             <input
               [formField]="httpForm.endpoint"
               matInput
-              placeholder="https://example.com/path/to/users/:userid"
-              required />
+              placeholder="https://example.com/path/to/users/:userid" />
           </app-clearable-input>
           @if (httpForm.endpoint().errors().some(e => e.kind === 'required') && httpForm.endpoint().touched()) {
             <mat-error i18n>
@@ -86,7 +85,7 @@
           [formField]="httpForm.requestMapping"
           matInput
           placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'
-          required></textarea>
+          ></textarea>
         @if (httpForm.requestMapping().errors().some(e => e.kind === 'required') && httpForm.requestMapping().touched()) {
           <mat-error i18n>
             Request mapping is
@@ -102,7 +101,7 @@
           [formField]="httpForm.headers"
           matInput
           placeholder='{"Content-Type":"application/json; charset=UTF-8"}'
-          required></textarea>
+          ></textarea>
         @if (httpForm.headers().errors().some(e => e.kind === 'required') && httpForm.headers().touched()) {
           <mat-error i18n>
             Headers are
@@ -118,7 +117,7 @@
           [formField]="httpForm.responseMapping"
           matInput
           placeholder='{"username":"{Username}","email":"{Email}"}'
-          required></textarea>
+          ></textarea>
         @if (httpForm.responseMapping().errors().some(e => e.kind === 'required') && httpForm.responseMapping().touched()) {
           <mat-error i18n>
             Response mapping is
@@ -144,7 +143,7 @@
           [formField]="httpForm.errorResponse"
           matInput
           placeholder='{"success": false, "message": "An error occurred!"}'
-          required></textarea>
+          ></textarea>
         @if (httpForm.errorResponse().errors().some(e => e.kind === 'required') && httpForm.errorResponse().touched()) {
           <mat-error i18n>
             Response contains is
@@ -180,8 +179,7 @@
           <input
             [formField]="httpForm.base_url"
             matInput
-            placeholder="https://example.com/path/to/users"
-            required />
+            placeholder="https://example.com/path/to/users" />
         </app-clearable-input>
         <mat-hint i18n>
           The base URL of the API of the user store which will be concatenated with the user endpoints defined below.
@@ -364,6 +362,7 @@
           <mat-form-field class="input-width-s">
             <mat-label i18n>Timeout</mat-label>
             <input
+              type="number"
               [formField]="httpForm.timeout"
               matInput
               placeholder="60" />
@@ -398,7 +397,6 @@
             [showClearButton]="!!model().tls_ca_path">
             <input
               [formField]="httpForm.tls_ca_path"
-              [disabled]="!model().verify_tls"
               matInput
               placeholder="/etc/privacyidea/ldap-ca.crt" />
           </app-clearable-input>
@@ -444,8 +442,7 @@
                       <input
                         [formField]="httpForm.tenant"
                         matInput
-                        placeholder="e.g. 12345678-1234-1234-1234-123456789012"
-                        required />
+                        placeholder="e.g. 12345678-1234-1234-1234-123456789012" />
                     </app-clearable-input>
                     @if (httpForm.tenant().errors().some(e => e.kind === 'required') && httpForm.tenant().touched()) {
                       <mat-error i18n>
@@ -464,8 +461,7 @@
                       <input
                         [formField]="httpForm.client_id"
                         matInput
-                        placeholder="e.g. 87654321-4321-4321-4321-210987654321"
-                        required />
+                        placeholder="e.g. 87654321-4321-4321-4321-210987654321" />
                     </app-clearable-input>
                     @if (httpForm.client_id().errors().some(e => e.kind === 'required') && httpForm.client_id().touched()) {
                       <mat-error i18n>
@@ -497,7 +493,6 @@
                         <input
                           [formField]="httpForm.client_secret"
                           matInput
-                          required
                           type="password" />
                       </app-clearable-input>
                       @if (httpForm.client_secret().errors().some(e => e.kind === 'required') && httpForm.client_secret().touched()) {

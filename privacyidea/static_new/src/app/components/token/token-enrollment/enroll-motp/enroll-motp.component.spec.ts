@@ -42,10 +42,9 @@ describe("EnrollMotpComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should initially have generateOnServer enabled and otpKey disabled", () => {
-    expect(component.generateOnServerControl.value).toBe(true);
-    expect(component.generateOnServerControl.disabled).toBe(false);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+  it("should initially have generateOnServer true and otpKey form disabled", () => {
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 });

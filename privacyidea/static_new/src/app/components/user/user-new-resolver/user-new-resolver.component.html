@@ -55,10 +55,8 @@
           [showClearButton]="!isEditMode() && !!resolverNameModel().resolverName">
           <input
             [formField]="resolverNameForm.resolverName"
-            [disabled]="isEditMode()"
             matInput
-            placeholder="resolver1"
-            required />
+            placeholder="resolver1" />
         </app-clearable-input>
         @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()) {
           <mat-error i18n>

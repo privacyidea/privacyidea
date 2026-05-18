@@ -52,9 +52,9 @@ describe("EnrollSmsComponent", () => {
       });
       fixture.detectChanges();
       component.ngOnInit();
-      expect(component.smsGatewayControl.value).toBe("TestGateway");
-      expect(component.readNumberDynamicallyControl.value).toBe(true);
-      expect(component.phoneNumberControl.value).toBe("+1234567890");
+      expect(component.smsGateway()).toBe("TestGateway");
+      expect(component.readNumberDynamically()).toBe(true);
+      expect(component.phoneNumber()).toBe("+1234567890");
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -65,9 +65,9 @@ describe("EnrollSmsComponent", () => {
         phoneNumber: undefined
       });
       component.ngOnInit();
-      expect(component.smsGatewayControl.value).toBe("");
-      expect(component.readNumberDynamicallyControl.value).toBe(false);
-      expect(component.phoneNumberControl.value).toBe("");
+      expect(component.smsGateway()).toBe("");
+      expect(component.readNumberDynamically()).toBe(false);
+      expect(component.phoneNumber()).toBe("");
     });
   });
 });

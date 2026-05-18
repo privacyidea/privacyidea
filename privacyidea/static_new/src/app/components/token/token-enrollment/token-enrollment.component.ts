@@ -33,12 +33,12 @@ import {
   AbstractControl,
   FormControl,
   FormGroup,
-  FormsModule,
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
   Validators
 } from "@angular/forms";
+import { form } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import {
   DateAdapter,
@@ -156,7 +156,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatSelect,
     MatOption,
     ReactiveFormsModule,
-    FormsModule,
     MatHint,
     MatInput,
     MatLabel,
@@ -240,6 +239,10 @@ export class TokenEnrollmentComponent implements OnDestroy {
     return this.authService.requireDescription().includes(selectedTokenType.key);
   });
 
+  setPinSignal = signal<string>("");
+  repeatPinSignal = signal<string>("");
+  setPinField = form(this.setPinSignal);
+  repeatPinField = form(this.repeatPinSignal);
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
   selectedContainerControl = new FormControl(this.containerService.selectedContainerSerial(), { nonNullable: true });
@@ -481,7 +484,7 @@ export class TokenEnrollmentComponent implements OnDestroy {
       user: user?.username ?? "",
       realm: this.selectedUserRealmControl.value ?? "",
       onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
-      pin: this.setPinControl.value ?? "",
+      pin: this.setPinSignal() ?? "",
       serial: this.serial()
     };
 

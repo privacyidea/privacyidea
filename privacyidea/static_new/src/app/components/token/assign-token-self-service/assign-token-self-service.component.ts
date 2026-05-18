@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AfterViewInit, Component, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -29,7 +28,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 
 @Component({
   selector: "app-attach-token-self-service",
-  imports: [MatError, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon, ScrollToTopDirective],
+  imports: [MatError, MatFormField, MatLabel, MatInput, MatButton, MatIcon, ScrollToTopDirective],
   templateUrl: "./assign-token-self-service.component.html",
   styleUrl: "./assign-token-self-service.component.scss"
 })

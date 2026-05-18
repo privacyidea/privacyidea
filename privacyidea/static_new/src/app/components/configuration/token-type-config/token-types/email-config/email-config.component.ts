@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -32,7 +31,6 @@ import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token
   selector: "app-email-config",
   standalone: true,
   imports: [
-    FormsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,

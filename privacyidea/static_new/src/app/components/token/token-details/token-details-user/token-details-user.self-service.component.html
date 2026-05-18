@@ -50,7 +50,8 @@
                   [showClearButton]="userService.selectionFilter() !== ''">
                   <input
                     matInput
-                    [(ngModel)]="userService.selectionFilter"
+                    [value]="userService.selectionFilter()"
+                    (input)="userService.selectionFilter.set($any($event.target).value)"
                     [matAutocomplete]="userAuto" />
                   <mat-autocomplete #userAuto="matAutocomplete">
                     @for (option of userService.selectionFilteredUsernames(); track option) {
@@ -70,8 +71,8 @@
                 subscriptSizing="dynamic">
                 <mat-label i18n>Select Realm of User</mat-label>
                 <mat-select
-                  [(ngModel)]="userService.selectedUserRealm"
-                  [value]="userService.selectedUserRealm()">
+                  [value]="userService.selectedUserRealm()"
+                  (selectionChange)="userService.selectedUserRealm.set($event.value)">
                   @for (option of realmService.realmOptions(); track option) {
                     <mat-option value="{{ option }}">{{ option }}</mat-option>
                   }

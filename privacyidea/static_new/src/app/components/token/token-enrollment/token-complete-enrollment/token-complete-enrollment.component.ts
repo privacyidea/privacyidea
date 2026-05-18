@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, inject, signal } from "@angular/core";
+import type { FormControl } from "@angular/forms";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -33,13 +33,12 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   selector: "app-token-complete-enrollment",
   imports: [
     DialogWrapperComponent,
-    FormsModule,
     MatFormField,
     MatHint,
     MatInput,
     MatLabel,
     TokenEnrollmentDataComponent,
-    ReactiveFormsModule
+    FormField
   ],
   templateUrl: "./token-complete-enrollment.component.html",
   styleUrl: "./token-complete-enrollment.component.scss"
@@ -59,15 +58,9 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
     );
   });
 
-  clientPartControl = new FormControl("", { nonNullable: true, validators: Validators.required });
-
-  private readonly statusSignal = toSignal(this.clientPartControl.statusChanges, {
-    initialValue: this.clientPartControl.status
-  });
-  invalidInputSignal = computed(() => {
-    this.statusSignal();
-    return this.clientPartControl.invalid;
-  });
+  clientPart = signal<string>("");
+  clientPartForm = form(this.clientPart, (f) => { required(f); });
+  invalidInputSignal = computed(() => !this.clientPartForm().valid());
 
   readonly dialogActions = computed<DialogAction<string>[]>(() => [
     {
@@ -86,8 +79,8 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
 
   enrollToken() {
     this.enrollParameters.data.serial = this.enrollDetails?.serial;
-    if (this.clientPartControl.value) {
-      this.enrollParameters.data["otpKey"] = this.clientPartControl.value;
+    if (this.clientPart()) {
+      this.enrollParameters.data["otpKey"] = this.clientPart();
       this.enrollParameters.data["otpKeyFormat"] = "base32check";
       this.enrollParameters.data["generateOnServer"] = false;
       if (this.enrollParameters.data["twoStepInit"]) {

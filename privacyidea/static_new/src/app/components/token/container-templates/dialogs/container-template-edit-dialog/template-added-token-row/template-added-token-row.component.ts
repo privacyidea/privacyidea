@@ -17,9 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormControl, FormsModule } from "@angular/forms";
+import { Component, computed, input, linkedSignal, output, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -58,7 +56,6 @@ import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token
     MatButtonModule,
     MatCheckboxModule,
     MatExpansionModule,
-    FormsModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -82,8 +79,6 @@ import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token
   styleUrls: ["./template-added-token-row.component.scss"]
 })
 export class TemplateAddedTokenRowComponent {
-  private readonly destroyRef = inject(DestroyRef);
-
   // Inputs & Outputs
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
 
@@ -94,8 +89,8 @@ export class TemplateAddedTokenRowComponent {
   // State Signals
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
 
-  readonly formControls = signal<{ [key: string]: FormControl<any> }>({});
-  readonly childHadNoForm = computed(() => Object.keys(this.formControls()).length === 0);
+  readonly childHadForm = signal<boolean>(false);
+  readonly childHadNoForm = computed(() => !this.childHadForm());
 
   readonly enrollmentArgsGetterSignal = signal<enrollmentArgsGetterFn | null>(null);
 
@@ -112,21 +107,6 @@ export class TemplateAddedTokenRowComponent {
     }
   });
 
-  constructor() {
-    // Sync external token changes back into the form controls
-    effect(() => {
-      const controls = this.formControls();
-      const currentToken = this.tokenEnrollmentPayload();
-
-      Object.entries(controls).forEach(([key, control]) => {
-        const tokenValue = (currentToken as any)[key];
-        if (tokenValue !== undefined && tokenValue !== null && control.value !== tokenValue) {
-          control.setValue(tokenValue, { emitEvent: false });
-        }
-      });
-    });
-  }
-
   updateEnrollmentArgsGetter(
     enrollmentArgsGetter: (
       basicOptions: TokenEnrollmentData
@@ -137,24 +117,8 @@ export class TemplateAddedTokenRowComponent {
   }
 
   // Token Management Methods
-  updateAdditionalFormFields(fields: { [key: string]: FormControl<any> }) {
-    this.formControls.set(fields);
-    const initialPatch: { [key: string]: any } = {};
-
-    Object.entries(fields).forEach(([key, control]) => {
-      if (control) {
-        initialPatch[key] = control.value;
-
-        control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
-          if (value === this.tokenEnrollmentData()?.[key]) {
-            return;
-          }
-          this.updateToken({ [key]: value });
-        });
-      }
-    });
-
-    this._initialTokenFill(initialPatch);
+  updateAdditionalFormFields(fields: Record<string, any>) {
+    this.childHadForm.set(Object.keys(fields).length > 0);
   }
 
   toggleUserAssign(checked: boolean) {
@@ -186,18 +150,4 @@ export class TemplateAddedTokenRowComponent {
     }
   }
 
-  private _initialTokenFill(patch: { [key: string]: Partial<TokenEnrollmentData> }) {
-    const currentToken = this.tokenEnrollmentData();
-    const updatedFields: { [key: string]: Partial<TokenEnrollmentData> } = {};
-
-    Object.keys(patch).forEach((key) => {
-      if ((currentToken as any)[key] === undefined || (currentToken as any)[key] === null) {
-        updatedFields[key] = patch[key];
-      }
-    });
-
-    if (Object.keys(updatedFields).length > 0) {
-      this.updateToken(updatedFields);
-    }
-  }
 }

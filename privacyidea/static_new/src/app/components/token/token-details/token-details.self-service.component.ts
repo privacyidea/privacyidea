@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -49,11 +48,9 @@ import { TokenDetailsComponent } from "./token-details.component";
     MatRow,
     MatTable,
     NgClass,
-    FormsModule,
     MatInput,
     MatFormFieldModule,
     MatSelectModule,
-    ReactiveFormsModule,
     MatIconButton,
     TokenDetailsUserSelfServiceComponent,
     MatAutocomplete,

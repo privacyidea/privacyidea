@@ -28,8 +28,8 @@
           placeholder="Template Name"
           i18n-placeholder
           aria-label="Template Name"
-          [ngModel]="template().name"
-          (ngModelChange)="editTemplate({ name: $event })"
+          [value]="template().name"
+          (input)="editTemplate({ name: $any($event.target).value })"
           (keydown)="$event.stopPropagation()"
           [errorStateMatcher]="nameErrorMatcher" />
         @if (nameConflict()) {

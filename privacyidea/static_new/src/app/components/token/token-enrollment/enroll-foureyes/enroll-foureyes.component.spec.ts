@@ -52,9 +52,9 @@ describe("EnrollFoureyesComponent", () => {
           { realm: "realm2", tokens: 2 }
         ]
       });
-      component.ngOnInit();
-      expect(component.separatorControl.value).toBe(":");
-      expect(component.requiredTokensOfRealmsControl.value).toEqual(["realm1", "realm2"]);
+      fixture.detectChanges();
+      expect(component.separator()).toBe(":");
+      expect(component.requiredTokensOfRealms()).toEqual(["realm1", "realm2"]);
       expect(component.tokensByRealm).toEqual(
         new Map([
           ["realm1", 1],
@@ -69,9 +69,9 @@ describe("EnrollFoureyesComponent", () => {
         separator: undefined,
         requiredTokenOfRealms: undefined
       });
-      component.ngOnInit();
-      expect(component.separatorControl.value).toBe("|");
-      expect(component.requiredTokensOfRealmsControl.value).toEqual([]);
+      fixture.detectChanges();
+      expect(component.separator()).toBe("|");
+      expect(component.requiredTokensOfRealms()).toEqual([]);
       expect(component.tokensByRealm).toEqual(new Map());
     });
   });

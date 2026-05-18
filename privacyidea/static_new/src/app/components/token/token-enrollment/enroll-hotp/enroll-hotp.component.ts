@@ -16,8 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import type { FormControl } from "@angular/forms";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -43,7 +44,6 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   selector: "app-enroll-hotp",
   imports: [
     MatCheckbox,
-    FormsModule,
     MatSelect,
     MatOption,
     MatLabel,
@@ -51,7 +51,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
     MatInput,
     MatHint,
     MatError,
-    ReactiveFormsModule
+    FormField
   ],
   templateUrl: "./enroll-hotp.component.html",
   styleUrl: "./enroll-hotp.component.scss",
@@ -63,12 +63,14 @@ export class EnrollHotpComponent implements OnInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
+
   enrollmentData = input<HotpEnrollmentData | null>();
   @Input() wizard: boolean = false;
   @Output() enrollmentArgsGetterChange = new EventEmitter<
@@ -81,101 +83,85 @@ export class EnrollHotpComponent implements OnInit {
     [key: string]: FormControl<any>;
   }>();
   disabled = input<boolean>(false);
+
   twoStep = computed(() => this.authService.check2Step("hotp"));
-  twoStepControl = new FormControl<boolean>(this.twoStep() === "force");
-  generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
-  otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
-  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  defaultHashlib = computed(() => this.systemService.systemConfig()[HOTP_HASHLIB] || "sha1");
-  hashAlgorithmFormControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
+  twoStepEnabled = signal<boolean>(false);
+  generateOnServer = signal<boolean>(true);
+  otpKey = signal<string>("");
+  otpLength = signal<number>(6);
+  hashAlgorithm = signal<string>("sha1");
+
+  twoStepDisabled = computed(() => this.disabled() || this.twoStep() === "force");
+  generateOnServerDisabled = computed(
+    () =>
+      this.disabled() ||
+      this.twoStep() === "force" ||
+      (this.twoStep() === "allow" && this.twoStepEnabled()) ||
+      this.authService.checkForceServerGenerateOTPKey("hotp")
+  );
+
+  otpKeyForm = form(this.otpKey, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
+    disabled(f, () => this.disabled() || this.generateOnServer() || this.twoStepEnabled());
+  });
+
+  otpLengthForm = form(this.otpLength, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_OTP_LENGTH]);
+  });
+
+  hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_HASHLIB]);
+  });
 
   constructor() {
-    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+    // Apply policy defaults when rights load
     effect(() => {
-      if (this.enrollmentData()) {
-        this._setInitialFormValues({ enrollmentData: this.enrollmentData(), eventEmit: false });
+      const hashlib = this.authService.rightsWithValues()[HOTP_HASHLIB];
+      if (hashlib) this.hashAlgorithm.set(hashlib);
+      const otpLengthPolicy = this.authService.rightsWithValues()[HOTP_OTP_LENGTH];
+      if (otpLengthPolicy) {
+        const v = parseInt(otpLengthPolicy, 10);
+        if (!isNaN(v)) this.otpLength.set(v);
+      }
+    });
+
+    // Force two-step when policy requires it
+    effect(() => {
+      if (this.twoStep() === "force") {
+        this.twoStepEnabled.set(true);
+        this.generateOnServer.set(true);
+      }
+    });
+
+    // Force generateOnServer when policy requires it
+    effect(() => {
+      if (this.authService.checkForceServerGenerateOTPKey("hotp")) this.generateOnServer.set(true);
+    });
+
+    // When twoStep is enabled with "allow" policy, force generateOnServer=true
+    effect(() => {
+      if (this.twoStep() === "allow" && this.twoStepEnabled()) this.generateOnServer.set(true);
+    });
+
+    // Apply initial enrollment data
+    effect(() => {
+      const data = this.enrollmentData();
+      if (data) {
+        this.generateOnServer.set(data.generateOnServer ?? true);
+        this.otpLength.set(data.otpLength ?? 6);
+        this.hashAlgorithm.set(data.hashAlgorithm ?? "sha1");
+        if (data.twoStepInit) this.twoStepEnabled.set(data.twoStepInit);
+        if (data.otpKey) this.otpKey.set(data.otpKey);
       }
     });
   }
 
   ngOnInit(): void {
-    this._setInitialFormValues({ enrollmentData: this.enrollmentData() });
-    this.additionalFormFieldsChange.emit({
-      twoStep: this.twoStepControl,
-      generateOnServer: this.generateOnServerFormControl,
-      otpLength: this.otpLengthFormControl,
-      otpKey: this.otpKeyFormControl,
-      hashAlgorithm: this.hashAlgorithmFormControl
-    });
+    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this._applyPolicies();
-  }
-
-  private _setInitialFormValues(args: { enrollmentData?: HotpEnrollmentData | null; eventEmit?: boolean }): void {
-    const { enrollmentData, eventEmit } = args;
-    if (enrollmentData) {
-      this.generateOnServerFormControl.setValue(enrollmentData.generateOnServer ?? true, {
-        emitEvent: eventEmit
-      });
-      if (enrollmentData.generateOnServer) {
-        this.otpKeyFormControl.disable({ emitEvent: eventEmit });
-        this.twoStepControl.disable({ emitEvent: eventEmit });
-      } else {
-        this.otpKeyFormControl.enable({ emitEvent: eventEmit });
-        this.otpKeyFormControl.disable({ emitEvent: eventEmit });
-      }
-      this.twoStepControl.setValue(enrollmentData.twoStepInit ?? false, { emitEvent: eventEmit });
-      this.otpLengthFormControl.setValue(enrollmentData.otpLength ?? 6, { emitEvent: eventEmit });
-      this.otpKeyFormControl.setValue(enrollmentData.otpKey ?? "", { emitEvent: eventEmit });
-      this.hashAlgorithmFormControl.setValue(enrollmentData.hashAlgorithm ?? "sha1", { emitEvent: eventEmit });
-    }
-  }
-
-  private _applyPolicies() {
-    if (this.twoStep() === "force") {
-      this.twoStepControl.setValue(true, { emitEvent: false });
-      this.twoStepControl.disable({ emitEvent: false });
-      this.generateOnServerFormControl.disable({ emitEvent: false });
-    } else if (this.twoStep() === "allow") {
-      this.twoStepControl.valueChanges.subscribe((twoStepEnabled) => {
-        if (twoStepEnabled) {
-          this.generateOnServerFormControl.disable({ emitEvent: false });
-          this.generateOnServerFormControl.setValue(true);
-        } else if (!this.authService.checkForceServerGenerateOTPKey("hotp")) {
-          this.generateOnServerFormControl.enable({ emitEvent: false });
-        }
-      });
-    }
-
-    if (this.authService.checkForceServerGenerateOTPKey("hotp")) {
-      this.generateOnServerFormControl.disable({ emitEvent: false });
-    } else {
-      this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-        if (!generate) {
-          this.otpKeyFormControl.enable({ emitEvent: false });
-          this.otpKeyFormControl.setValidators([Validators.required]);
-        } else {
-          this.otpKeyFormControl.disable({ emitEvent: false });
-          this.otpKeyFormControl.clearValidators();
-          this.otpKeyFormControl.setValue("");
-        }
-        this.otpKeyFormControl.updateValueAndValidity();
-      });
-    }
-
-    const hashlib = this.authService.rightsWithValues()[HOTP_HASHLIB];
-    if (hashlib) {
-      this.hashAlgorithmFormControl.setValue(hashlib, { emitEvent: false });
-      this.hashAlgorithmFormControl.disable({ emitEvent: false });
-    }
-    const otpLength = this.authService.rightsWithValues()[HOTP_OTP_LENGTH];
-    if (otpLength) {
-      const otpLengthNumber = parseInt(otpLength, 10);
-      if (!isNaN(otpLengthNumber)) {
-        this.otpLengthFormControl.setValue(otpLengthNumber, { emitEvent: false });
-        this.otpLengthFormControl.disable({ emitEvent: false });
-      }
-    }
   }
 
   enrollmentArgsGetter = (
@@ -187,35 +173,23 @@ export class EnrollHotpComponent implements OnInit {
     const enrollmentData: HotpEnrollmentOptions = {
       ...basicOptions,
       type: "hotp",
-      generateOnServer: !!this.generateOnServerFormControl.value,
-      otpLength: this.otpLengthFormControl.value ?? 6,
-      hashAlgorithm: this.hashAlgorithmFormControl.value ?? "sha1",
-      twoStepInit: !!this.twoStepControl.value
+      generateOnServer: this.generateOnServer(),
+      otpLength: this.otpLength(),
+      hashAlgorithm: this.hashAlgorithm(),
+      twoStepInit: this.twoStepEnabled()
     };
 
-    if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyFormControl.value?.trim() ?? "";
+    if (!this.generateOnServer()) {
+      if (!this.otpKeyForm().valid()) {
+        this.otpKeyForm().markAsTouched();
+        return null;
+      }
+      enrollmentData.otpKey = this.otpKey().trim();
     }
+
     return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
   };
-
-  private _disableFormControls(): void {
-    this.generateOnServerFormControl.disable();
-    this.otpLengthFormControl.disable();
-    this.otpKeyFormControl.disable();
-    this.hashAlgorithmFormControl.disable();
-  }
-
-  private _enableFormControls(): void {
-    this.generateOnServerFormControl.enable();
-    this.otpLengthFormControl.enable();
-    if (!this.generateOnServerFormControl.value) {
-      this.otpKeyFormControl.enable();
-    }
-    this.hashAlgorithmFormControl.enable();
-    this._applyPolicies();
-  }
 }

@@ -29,8 +29,7 @@
             <input
               [formField]="sqlForm.Driver"
               matInput
-              placeholder="mysql+pymysql"
-              required />
+              placeholder="mysql+pymysql" />
           </app-clearable-input>
           @if (sqlForm.Driver().errors().some(e => e.kind === 'required') && sqlForm.Driver().touched()) {
             <mat-error i18n>
@@ -63,8 +62,7 @@
             <input
               [formField]="sqlForm.Server"
               matInput
-              placeholder="127.0.0.1"
-              required />
+              placeholder="127.0.0.1" />
           </app-clearable-input>
           @if (sqlForm.Server().errors().some(e => e.kind === 'required') && sqlForm.Server().touched()) {
             <mat-error i18n>
@@ -222,8 +220,7 @@
             <input
               [formField]="sqlForm.Table"
               matInput
-              placeholder="Users"
-              required />
+              placeholder="Users" />
           </app-clearable-input>
           @if (sqlForm.Table().errors().some(e => e.kind === 'required') && sqlForm.Table().touched()) {
             <mat-error i18n>
@@ -240,7 +237,6 @@
             [formField]="sqlForm.Limit"
             matInput
             placeholder="500"
-            required
             type="number" />
           @if (sqlForm.Limit().errors().some(e => e.kind === 'required') && sqlForm.Limit().touched()) {
             <mat-error i18n>
@@ -257,8 +253,7 @@
         <textarea
           [formField]="sqlForm.Map"
           matInput
-          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'
-          required></textarea>
+          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
         @if (sqlForm.Map().errors().some(e => e.kind === 'required') && sqlForm.Map().touched()) {
           <mat-error i18n>
             Mapping is

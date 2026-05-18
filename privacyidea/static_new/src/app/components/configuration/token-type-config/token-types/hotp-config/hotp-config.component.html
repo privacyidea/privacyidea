@@ -39,8 +39,8 @@
         class="input-width-m">
         <mat-label i18n>Default Hashlib</mat-label>
         <mat-select
-          [ngModel]="formData()[HOTP_HASHLIB]"
-          (ngModelChange)="updateFormData(HOTP_HASHLIB, $event)">
+          [value]="formData()[HOTP_HASHLIB]"
+          (valueChange)="updateFormData(HOTP_HASHLIB, $event)">
           @for (hashlib of hashLibs(); track hashlib) {
             <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
           }

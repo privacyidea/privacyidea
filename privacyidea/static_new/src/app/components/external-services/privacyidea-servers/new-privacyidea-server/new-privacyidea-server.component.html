@@ -74,8 +74,7 @@
             <input
               [formField]="privacyideaForm.identifier"
               matInput
-              placeholder="myRemotePrivacyIDEAServer"
-              required />
+              placeholder="myRemotePrivacyIDEAServer" />
           </app-clearable-input>
           @if (privacyideaForm.identifier().errors().some(e => e.kind === 'required')) {
             <mat-error i18n>Identifier is <strong>required</strong></mat-error>
@@ -98,8 +97,7 @@
             <input
               [formField]="privacyideaForm.url"
               matInput
-              placeholder="https://pi17.example.com/"
-              required />
+              placeholder="https://pi17.example.com/" />
           </app-clearable-input>
           @if (privacyideaForm.url().errors().some(e => e.kind === 'required')) {
             <mat-error i18n>URL of the privacyIDEA Server is <strong>required</strong></mat-error>

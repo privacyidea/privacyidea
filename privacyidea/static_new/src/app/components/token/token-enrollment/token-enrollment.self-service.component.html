@@ -71,8 +71,8 @@
       <div class="flex-row gap-16">
         @if (authService.actionAllowed("enrollpin")) {
           <app-enrollment-pin
-            [setPinControl]="setPinControl"
-            [repeatPinControl]="repeatPinControl"
+            [setPinControl]="setPinField"
+            [repeatPinControl]="repeatPinField"
             [formGroup]="formGroupSignal()" />
         }
 

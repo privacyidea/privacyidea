@@ -83,7 +83,8 @@
                       <textarea
                         matInput
                         rows="4"
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         i18n-placeholder
                         placeholder="Enter description"></textarea>
                     </mat-form-field>
@@ -156,7 +157,8 @@
                         [showClearButton]="userService.selectionFilter() !== ''">
                         <input
                           matInput
-                          [(ngModel)]="userService.selectionFilter"
+                          [value]="userService.selectionFilter()"
+                          (input)="userService.selectionFilter.set($any($event.target).value)"
                           [matAutocomplete]="userAuto" />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
@@ -178,7 +180,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Realm of User</mat-label>
                       <mat-select
-                        [(ngModel)]="userService.selectedUserRealm"
+                        (selectionChange)="userService.selectedUserRealm.set($event.value)"
                         [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions(); track option) {
                           <mat-option value="{{ option }}">{{ option }}</mat-option>
