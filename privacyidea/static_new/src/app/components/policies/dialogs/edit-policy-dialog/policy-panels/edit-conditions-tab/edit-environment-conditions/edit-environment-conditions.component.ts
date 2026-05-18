@@ -17,9 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, OnInit, output, signal, ViewChild } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  OnInit,
+  output,
+  signal,
+  untracked,
+  ViewChild
+} from "@angular/core";
 
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import { Field, form, FormField, validate } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -53,7 +65,8 @@ interface ClientSuggestion {
     ReactiveFormsModule,
     MultiSelectOnlyComponent,
     ClearButtonComponent,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    FormField
   ],
   templateUrl: "./edit-environment-conditions.component.html",
   styleUrl: "./edit-environment-conditions.component.scss"
@@ -70,8 +83,11 @@ export class EditEnvironmentConditionsComponent implements OnInit {
 
   addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
   validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
-  clientFormControl = new FormControl<string>("", this.clientValidator.bind(this));
-  private readonly clientControlValue = signal<string | null>(this.clientFormControl.value);
+
+  readonly clientModel = signal<string>("");
+  readonly clientForm: Field<string> = form(this.clientModel, (path) => {
+    validate(path, ({ value }) => this.validateClientString(value()));
+  });
 
   readonly knownClients = computed<ClientSuggestion[]>(() => {
     const dict = this.clientsService.clientsResource.value()?.result?.value ?? {};
@@ -92,7 +108,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   });
 
   readonly clientSearchTerm = computed<string>(() => {
-    const segment = this.currentClientSegment(this.clientControlValue() ?? "").raw;
+    const segment = this.currentClientSegment(this.clientModel()).raw;
     return segment.trim().replace(/^!\s*/, "").toLowerCase();
   });
 
@@ -135,19 +151,23 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     return this.userAgentPresets.filter((ua) => !selected.includes(ua) && ua.toLowerCase().includes(search));
   });
 
+  private clientInitialized = false;
+
   constructor() {
     this.validTimeFormControl.valueChanges.subscribe(() => this.setValidTime());
-    this.clientFormControl.valueChanges.subscribe((value) => {
-      this.clientControlValue.set(value);
-      this.setClients();
+    effect(() => {
+      this.clientModel();
+      if (!this.clientInitialized) {
+        this.clientInitialized = true;
+        return;
+      }
+      untracked(() => this.setClients());
     });
   }
 
   ngOnInit() {
     this.validTimeFormControl.setValue(this.policy().time || "", { emitEvent: false });
-    const initialClients = this.policy().client?.join(", ") || "";
-    this.clientFormControl.setValue(initialClients, { emitEvent: false });
-    this.clientControlValue.set(initialClients);
+    this.clientModel.set(this.policy().client?.join(", ") || "");
     this.clientsService.requestClientsForAutocomplete();
   }
 
@@ -158,7 +178,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   buildClientSelection(ip: string): string {
-    const value = this.clientFormControl.value ?? "";
+    const value = this.clientModel();
     const { before, raw } = this.currentClientSegment(value);
     const negation = /^\s*!/.test(raw) ? "!" : "";
     const separator = before ? " " : "";
@@ -174,13 +194,16 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   addUserAgentFromSelect($event: MatSelectChange, selectRef: MatSelect) {
-    const userAgent = $event.value;
+    this.addUserAgentValue($event.value);
+    setTimeout(() => (selectRef.value = null));
+  }
+
+  private addUserAgentValue(userAgent: string | null | undefined) {
     if (!userAgent) return;
     const oldUserAgents = this.selectedUserAgents();
     if (!oldUserAgents.includes(userAgent)) {
       this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
     }
-    setTimeout(() => (selectRef.value = null));
   }
 
   addUserAgent() {
@@ -213,20 +236,20 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   setClients() {
-    const client = this.clientFormControl.value;
-    if (this.clientFormControl.valid) {
+    const client = this.clientModel();
+    if (this.clientForm().valid()) {
       const clientsArray = client
         ? client
             .split(",")
-            .map((c) => c.trim())
-            .filter((c) => c !== "")
+            .map((c: string) => c.trim())
+            .filter((c: string) => c !== "")
         : [];
       this.emitEdits({ client: clientsArray });
     }
   }
 
   clearClientControl() {
-    this.clientFormControl.setValue("");
+    this.clientModel.set("");
   }
 
   validTimeValidator(control: AbstractControl): ValidationErrors | null {
@@ -243,15 +266,16 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   readonly regexHostname =
     /^!?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9])$/;
 
-  clientValidator(clientControl: AbstractControl<string | null>): ValidationErrors | null {
-    const clients = clientControl.value;
+  private validateClientString(clients: string | null): { kind: string; message: string } | null {
     if (!clients) return null;
     const invalidClients = clients
       .split(",")
       .map((c) => c.trim())
       .filter((c) => c !== "")
       .filter((c) => !this.regexIpV4.test(c) && !this.regexIpV6.test(c) && !this.regexHostname.test(c));
-    return invalidClients.length > 0 ? { invalidClient: { value: invalidClients.join(", ") } } : null;
+    return invalidClients.length > 0
+      ? { kind: "invalidClient", message: `Invalid client format: ${invalidClients.join(", ")}` }
+      : null;
   }
 
   userAgentValidator(control: AbstractControl): ValidationErrors | null {
@@ -264,7 +288,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     event.stopPropagation();
     const currentResults = this.filteredUserAgentPresets();
     if (currentResults.length > 0) {
-      this.addUserAgentFromSelect({ value: currentResults[0] } as MatSelectChange, select);
+      this.addUserAgentValue(currentResults[0]);
       this.userAgentSearch.set("");
       select.close();
     }

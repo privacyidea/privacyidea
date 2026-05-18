@@ -63,7 +63,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   it("should initialize form controls with policy values", () => {
     expect(component.validTimeFormControl.value).toBe("Mon-Fri: 9-18");
-    expect(component.clientFormControl.value).toBe("10.0.0.0/8");
+    expect(component.clientModel()).toBe("10.0.0.0/8");
   });
 
   it("falls back to empty strings when policy has no time or client", () => {
@@ -72,7 +72,7 @@ describe("EditEnvironmentConditionsComponent", () => {
     freshFixture.detectChanges();
     const fresh = freshFixture.componentInstance;
     expect(fresh.validTimeFormControl.value).toBe("");
-    expect(fresh.clientFormControl.value).toBe("");
+    expect(fresh.clientModel()).toBe("");
   });
 
   it("requests known clients for autocomplete on init", () => {
@@ -80,11 +80,11 @@ describe("EditEnvironmentConditionsComponent", () => {
   });
 
   it("should validate client format correctly", () => {
-    component.clientFormControl.setValue("invalid-ip");
-    expect(component.clientFormControl.invalid).toBe(true);
+    component.clientModel.set("invalid-ip");
+    expect(component.clientForm().invalid()).toBe(true);
 
-    component.clientFormControl.setValue("192.168.1.1");
-    expect(component.clientFormControl.valid).toBe(true);
+    component.clientModel.set("192.168.1.1");
+    expect(component.clientForm().valid()).toBe(true);
   });
 
   it("should emit edits when adding a user agent", () => {
@@ -153,32 +153,32 @@ describe("EditEnvironmentConditionsComponent", () => {
     });
 
     it("returns all clients when no search term is entered", () => {
-      component.clientFormControl.setValue("");
+      component.clientModel.set("");
       expect(component.filteredKnownClients()).toHaveLength(3);
     });
 
     it("filters by IP substring", () => {
-      component.clientFormControl.setValue("192.168");
+      component.clientModel.set("192.168");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
     it("filters by hostname case-insensitively", () => {
-      component.clientFormControl.setValue("ROUTER");
+      component.clientModel.set("ROUTER");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
     it("filters by application name", () => {
-      component.clientFormControl.setValue("otherapp");
+      component.clientModel.set("otherapp");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["10.0.0.1"]);
     });
 
     it("strips a leading exclamation mark from the search term", () => {
-      component.clientFormControl.setValue("!192.168");
+      component.clientModel.set("!192.168");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
     it("uses only the segment after the last comma", () => {
-      component.clientFormControl.setValue("10.0.0.0/8, !192");
+      component.clientModel.set("10.0.0.0/8, !192");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
@@ -188,39 +188,39 @@ describe("EditEnvironmentConditionsComponent", () => {
         dict["App"].push({ ip: `10.0.0.${i}` });
       }
       clientsMock.setClients(dict);
-      component.clientFormControl.setValue("");
+      component.clientModel.set("");
       expect(component.filteredKnownClients()).toHaveLength(20);
     });
   });
 
   describe("buildClientSelection", () => {
     it("returns just the IP when the form control is empty", () => {
-      component.clientFormControl.setValue("");
+      component.clientModel.set("");
       expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1");
     });
 
     it("replaces the current incomplete segment when there is no comma", () => {
-      component.clientFormControl.setValue("10.0");
+      component.clientModel.set("10.0");
       expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1");
     });
 
     it("appends the IP after the last comma with a leading space", () => {
-      component.clientFormControl.setValue("10.0.0.0/8,");
+      component.clientModel.set("10.0.0.0/8,");
       expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, 192.168.1.1");
     });
 
     it("preserves a leading '!' negation marker on the current segment", () => {
-      component.clientFormControl.setValue("10.0.0.0/8, !19");
+      component.clientModel.set("10.0.0.0/8, !19");
       expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, !192.168.1.1");
     });
 
     it("preserves a '!' negation marker when it is the first character", () => {
-      component.clientFormControl.setValue("!19");
+      component.clientModel.set("!19");
       expect(component.buildClientSelection("192.168.1.1")).toBe("!192.168.1.1");
     });
 
     it("keeps the space after the comma when a partial IP has already been typed", () => {
-      component.clientFormControl.setValue("127.0.0.1, 10");
+      component.clientModel.set("127.0.0.1, 10");
       expect(component.buildClientSelection("10.0.0.1")).toBe("127.0.0.1, 10.0.0.1");
     });
   });
