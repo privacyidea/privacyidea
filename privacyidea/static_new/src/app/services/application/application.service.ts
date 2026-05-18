@@ -22,6 +22,7 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { empty } from "rxjs";
 
 export type Applications = {
   luks: ApplicationLuks;
@@ -79,6 +80,29 @@ export class ApplicationService implements ApplicationServiceInterface {
   private readonly notificationService = inject(NotificationService);
   readonly applicationBaseUrl = environment.proxyUrl + "/application/";
 
+  private readonly empty: Applications = {
+    luks: {
+      options: {
+        totp: { partition: { type: "" }, slot: { type: "", value: [] } }
+      }
+    },
+    offline: {
+      options: {
+        hotp: { count: { type: "" }, rounds: { type: "" } },
+        passkey: {},
+        webauthn: {}
+      }
+    },
+    ssh: {
+      options: {
+        sshkey: {
+          service_id: { description: "", type: "", value: [] },
+          user: { description: "", type: "" }
+        }
+      }
+    }
+  };
+
   constructor() {
     effect(() => {
       this.notificationService.handleResourceError(this.applicationResource.error(), "applications");
@@ -97,31 +121,9 @@ export class ApplicationService implements ApplicationServiceInterface {
       error: this.applicationResource.error()
     }),
     computation: (source, previous) => {
-      const empty: Applications = {
-        luks: {
-          options: {
-            totp: { partition: { type: "" }, slot: { type: "", value: [] } }
-          }
-        },
-        offline: {
-          options: {
-            hotp: { count: { type: "" }, rounds: { type: "" } },
-            passkey: {},
-            webauthn: {}
-          }
-        },
-        ssh: {
-          options: {
-            sshkey: {
-              service_id: { description: "", type: "", value: [] },
-              user: { description: "", type: "" }
-            }
-          }
-        }
-      };
-      if (source.error) return empty;
+      if (source.error) return this.empty;
       const value = source.value?.result?.value;
-      if (!value) return source.isLoading ? (previous?.value ?? empty) : empty;
+      if (!value) return source.isLoading ? (previous?.value ?? this.empty) : this.empty;
       return value;
     }
   });
