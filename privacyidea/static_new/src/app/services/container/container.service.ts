@@ -380,7 +380,7 @@ export class ContainerService implements ContainerServiceInterface {
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
       this.contentService.onUserDetails() ||
-      this.contentService.onTokensContainers() ||
+      this.contentService.onContainers() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokens();
 
@@ -469,9 +469,9 @@ export class ContainerService implements ContainerServiceInterface {
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
     // Only load container types on routes with a container type list or selection.
     const onAllowedRoute =
-      this.contentService.onTokensContainers() ||
-      this.contentService.onTokensContainersCreate() ||
-      this.contentService.onTokensContainersWizard() ||
+      this.contentService.onContainers() ||
+      this.contentService.onContainersCreate() ||
+      this.contentService.onContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
     if (!onAllowedRoute) {
@@ -503,10 +503,10 @@ export class ContainerService implements ContainerServiceInterface {
     computation: (routeUrl) => {
       let containerType = this.authService.defaultContainerType();
 
-      if (this.contentService.onTokensContainersWizard()) {
+      if (this.contentService.onContainersWizard()) {
         containerType = this.authService.containerWizard().type || containerType;
       }
-      if (this.contentService.onTokensContainersTemplates()) {
+      if (this.contentService.onContainersTemplates()) {
         return undefined;
       }
       return (
@@ -951,7 +951,7 @@ export class ContainerService implements ContainerServiceInterface {
       const active = this.isPollingActive();
 
       const onAllowedRoute =
-        this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
+        this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
 
       if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
         return;
@@ -973,7 +973,7 @@ export class ContainerService implements ContainerServiceInterface {
         const isRollover = this.isRolloverPolling();
         if (isRollover) {
           this.notificationService.success("Container rollover completed successfully.");
-        } else if (!this.contentService.onTokensContainersCreate()) {
+        } else if (!this.contentService.onContainersCreate()) {
           this.notificationService.success("Container registered successfully.");
         }
         this.isPollingActive.set(false);

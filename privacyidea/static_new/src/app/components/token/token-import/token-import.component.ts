@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, inject, Renderer2, signal, ViewChild } from "@angular/core";
+import { Component, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
 import {
   AbstractControl,
   FormControl,
@@ -34,6 +34,7 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
@@ -58,12 +59,13 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     ReactiveFormsModule
   ]
 })
-export class TokenImportComponent {
+export class TokenImportComponent implements OnDestroy {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly Object = Object;
   private observer!: IntersectionObserver;
   fileTypes: Record<string, string> = {
@@ -97,6 +99,20 @@ export class TokenImportComponent {
       const validLength = [0, 32].includes(control.value.length);
       return validLength ? null : { invalidLength: { value: control.value } };
     };
+  }
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        this.fileName() !== "" ||
+        this.pskPassword() !== "" ||
+        this.fileType() !== "OATH CSV" ||
+        this.pskValidation() !== "check_fail_hard",
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   ngAfterViewInit(): void {

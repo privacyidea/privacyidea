@@ -16,6 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatTooltipDefaultOptions } from "@angular/material/tooltip";
+
+export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
+  showDelay: 500,
+  touchLongPressShowDelay: 500,
+  hideDelay: 0,
+  touchendHideDelay: 0,
+  disableTooltipInteractivity: true
+};
+
 /**
  * A list of token types that do should not show a QR code in the last enrollment step dialog.
  */

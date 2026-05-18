@@ -21,6 +21,7 @@ import { Injectable, signal } from "@angular/core";
 export interface PendingChangesServiceInterface {
   hasChanges: boolean;
   validChanges: boolean;
+  hasSaveFn: boolean;
 
   registerHasChanges(fn: () => boolean): void;
 
@@ -42,6 +43,10 @@ export class PendingChangesService implements PendingChangesServiceInterface {
   get hasChanges(): boolean {
     const fn = this._hasChangesFn();
     return fn ? fn() : false;
+  }
+
+  get hasSaveFn(): boolean {
+    return this._saveFn() !== null;
   }
 
   registerHasChanges(fn: () => boolean): void {

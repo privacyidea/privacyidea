@@ -92,7 +92,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   }
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
+    if (!this.contentService.onContainersCreate() && !this.contentService.onContainersTemplates()) {
       return undefined;
     }
 
@@ -112,10 +112,10 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   readonly templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
     if (
-      !this.contentService.onTokensContainersCreate() &&
-      !this.contentService.onTokensContainersTemplates() &&
-      !this.contentService.onTokensContainersTemplatesCreate() &&
-      !this.contentService.onTokensContainersTemplatesDetails()
+      !this.contentService.onContainersCreate() &&
+      !this.contentService.onContainersTemplates() &&
+      !this.contentService.onContainersTemplatesCreate() &&
+      !this.contentService.onContainersTemplatesDetails()
     ) {
       return undefined;
     }

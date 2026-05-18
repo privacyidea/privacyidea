@@ -362,10 +362,10 @@ export class UserService implements UserServiceInterface {
     // Only load users on routes with a user list or selection.
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onTokens() ||
       this.contentService.onUsers() ||
-      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onContainersCreate() ||
       this.contentService.onTokensEnrollment();
 
     if (!onAllowedRoute) {
@@ -383,6 +383,7 @@ export class UserService implements UserServiceInterface {
       params: {
         realm: selectedUserRealm,
         attributes: "username,userid,givenname,surname,email,phone,mobile,description,resolver,editable",
+        include_custom_attributes: false,
         ...this.filterParams()
       }
     };

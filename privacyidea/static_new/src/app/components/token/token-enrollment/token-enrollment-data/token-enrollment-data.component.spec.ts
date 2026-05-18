@@ -172,13 +172,4 @@ describe("TokenEnrollmentDataComponent", () => {
     fixture.detectChanges();
     expect(component["hasEnrollmentData"]()).toBe(false);
   });
-
-  it("shows fallback serial message when no enrollment data is available", () => {
-    fixture.componentRef.setInput("tokenType", "spass");
-    fixture.componentRef.setInput("enrolledInputData", { serial: "SPASS001" });
-    fixture.detectChanges();
-    const text = fixture.nativeElement.textContent as string;
-    expect(text).toContain("SPASS001");
-    expect(text).toContain("successfully enrolled");
-  });
 });

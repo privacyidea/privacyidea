@@ -19,7 +19,9 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
 import { PeriodicTaskComponent } from "./periodic-task.component";
 
@@ -27,17 +29,23 @@ describe("PeriodicTaskComponent", () => {
   let component: PeriodicTaskComponent;
   let fixture: ComponentFixture<PeriodicTaskComponent>;
   let periodicTaskService: PeriodicTaskService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     periodicTaskService = new MockPeriodicTaskService() as any;
 
     await TestBed.configureTestingModule({
       imports: [PeriodicTaskComponent],
-      providers: [provideHttpClient(), { provide: PeriodicTaskService, useValue: periodicTaskService }]
+      providers: [
+        provideHttpClient(),
+        { provide: PeriodicTaskService, useValue: periodicTaskService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PeriodicTaskComponent);
     component = fixture.componentInstance;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
   });
 
   it("should create", () => {
@@ -58,5 +66,10 @@ describe("PeriodicTaskComponent", () => {
 
   it("should initialize periodicTasks signal", () => {
     expect(component.periodicTasks).toBeDefined();
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

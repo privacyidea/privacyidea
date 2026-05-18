@@ -18,6 +18,8 @@
  **/
 
 import { Component, inject, input, output } from "@angular/core";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 @Component({
@@ -28,6 +30,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 })
 export class TokenEnrolledTextComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   serial = input<string>();
   containerSerial = input<string>();
@@ -35,13 +38,13 @@ export class TokenEnrolledTextComponent {
   userRealm = input<string>();
   onlyAddToRealm = input<boolean>();
   rollover = input<boolean>(false);
-  onSwitchRoute = output();
+  switchRoute = output();
 
   tokenSelected() {
     if (!this.serial()) {
       return;
     }
-    this.onSwitchRoute.emit();
+    this.switchRoute.emit();
     this.contentService.tokenSelected(this.serial() ?? "");
   }
 
@@ -49,7 +52,20 @@ export class TokenEnrolledTextComponent {
     if (!this.containerSerial()) {
       return;
     }
-    this.onSwitchRoute.emit();
+    this.switchRoute.emit();
     this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
+  }
+
+  navigateUserDetails() {
+    if (!this.username() || !this.userRealm()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.userSelected(this.username() ?? "", this.userRealm() ?? "");
+  }
+
+  navigateRealms() {
+    this.switchRoute.emit();
+    this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS);
   }
 }

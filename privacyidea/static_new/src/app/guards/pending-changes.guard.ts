@@ -34,7 +34,7 @@ export const pendingChangesGuard: CanDeactivateFn<any> = () => {
       component: SaveAndExitDialogComponent,
       data: {
         saveExitDisabled: !pendingChangesService.validChanges,
-        allowSaveExit: true
+        allowSaveExit: pendingChangesService.hasSaveFn
       }
     })
     .afterClosed()

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/core";
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -28,7 +28,7 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -42,6 +42,7 @@ import {
   TokenApplication,
   TokenApplications
 } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
 
@@ -65,13 +66,13 @@ import { lastValueFrom } from "rxjs";
   templateUrl: "./machine-details-dialog.component.html",
   styleUrl: "./machine-details-dialog.component.scss"
 })
-export class MachineDetailsDialogComponent implements OnInit {
+export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly router: Router = inject(Router);
   private readonly route: ActivatedRoute = inject(ActivatedRoute);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -112,7 +113,7 @@ export class MachineDetailsDialogComponent implements OnInit {
     if (this.data()) {
       this.loadTokenApplications();
     }
-    // If data() is still undefined, the effect() will handle it once machines signal resolves.
+    this.pendingChangesService.registerHasChanges(() => this.editingIds.size > 0);
   }
 
   onTokenSerialInput(value: string): void {
@@ -210,6 +211,10 @@ export class MachineDetailsDialogComponent implements OnInit {
         this.selectedApplication = "offline";
         this.loadTokenApplications();
       });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   onTokenClick(serial: string): void {

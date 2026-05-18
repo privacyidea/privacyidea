@@ -257,7 +257,7 @@ describe("ContainerService", () => {
   });
 
   it("poll container details completes when state == registered for container create", async () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
     containerService.containerSerial.set("SMPH1");
 
     const valueSpy = jest
@@ -287,7 +287,7 @@ describe("ContainerService", () => {
   });
 
   it("poll container details completes when state == registered for container details", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/SMPH1");
     containerService.containerSerial.set("SMPH1");
 
     const valueSpy = jest
@@ -627,7 +627,7 @@ describe("ContainerService", () => {
   describe("containerOptions", () => {
     it("should update containerOptions from httpResource when not yet present", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/");
@@ -647,7 +647,7 @@ describe("ContainerService", () => {
 
     it("should handle error state from containerResource", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/");
@@ -663,7 +663,7 @@ describe("ContainerService", () => {
 
     it("should reset to empty array when containerResource errors after successful load", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       let req = httpMock.expectOne((r) => r.url === "/container/");
@@ -692,7 +692,7 @@ describe("ContainerService", () => {
     });
 
     it("should update containerTypeOptions from containerTypesResource", async () => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/types");
@@ -712,7 +712,7 @@ describe("ContainerService", () => {
     });
 
     it("containerTypeOptions should handle error state from containerTypesResource", async () => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/types");
@@ -737,7 +737,7 @@ describe("ContainerService", () => {
 
     it("should update containerDetail from containerDetailResource when not yet present", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       // Set the serial so the resource will be triggered
       containerService.containerSerial.set("c1");
       TestBed.tick();
@@ -762,7 +762,7 @@ describe("ContainerService", () => {
 
     it("should handle error state from containerDetailResource", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       containerService.containerSerial.set("c2");
       TestBed.tick();
 
@@ -825,7 +825,7 @@ describe("ContainerService", () => {
       (containerService as any).compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
     });
 
     it("should compute compatibleTypes correctly", () => {

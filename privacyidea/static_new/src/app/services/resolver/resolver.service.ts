@@ -202,6 +202,9 @@ export class ResolverService implements ResolverServiceInterface {
     if (!this.contentService.onAnyUsersRoute()) {
       return undefined;
     }
+    if (!this.authService.actionAllowed("resolverread")) {
+      return undefined;
+    }
     return {
       url: this.resolverBaseUrl,
       method: "GET",

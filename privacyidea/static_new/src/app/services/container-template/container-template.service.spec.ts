@@ -74,7 +74,7 @@ describe("ContainerTemplateService", () => {
 
   describe("templatesResource", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -155,7 +155,7 @@ describe("ContainerTemplateService", () => {
 
   describe("templateTokentypesResource", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -240,7 +240,7 @@ describe("ContainerTemplateService", () => {
 
   describe("getTokenTypesForContainerType", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -383,7 +383,7 @@ describe("ContainerTemplateService", () => {
     };
 
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
       TestBed.tick();
       const reqs = httpMock.match(() => true);

@@ -139,6 +139,12 @@ ng\:form {
   display: block;
 }
 
+pi-client-ip-input [uib-typeahead-popup].dropdown-menu,
+pi-client-ip-input .uib-typeahead-popup.dropdown-menu {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
 .assign-user-search-dropdown {
     display: block;
     position: static;

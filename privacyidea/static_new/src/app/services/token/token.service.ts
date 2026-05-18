@@ -39,6 +39,7 @@ import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
   catchError,
+  firstValueFrom,
   forkJoin,
   Observable,
   shareReplay,
@@ -296,7 +297,7 @@ export interface TokenServiceInterface {
 
   setRandomPin(tokenSerial: string): Observable<any>; // TODO: Specify return type
 
-  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Observable<Object>;
+  resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Promise<PiResponse<boolean>>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
@@ -403,7 +404,7 @@ export class TokenService implements TokenServiceInterface {
     source: this.contentService.routeUrl,
     computation: () => {
       // Initially show tokens not in a container on the container details route.
-      return this.contentService.onTokensContainersDetails();
+      return this.contentService.onContainersDetails();
     }
   });
 
@@ -414,13 +415,13 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: (source, previous) => {
       // Outside of container details and user details we reset the filter.
-      if (!this.contentService.onTokensContainersDetails() && !this.contentService.onUserDetails()) {
+      if (!this.contentService.onContainersDetails() && !this.contentService.onUserDetails()) {
         return new FilterValue();
       }
       // Initialize filter when the route changes.
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
-          hiddenValue: this.contentService.onTokensContainersDetails()
+          hiddenValue: this.contentService.onContainersDetails()
             ? source.showOnlyTokenNotInContainer
               ? "container_serial:"
               : " "
@@ -435,7 +436,7 @@ export class TokenService implements TokenServiceInterface {
 
       let filterValue = previous.value;
 
-      if (this.contentService.onTokensContainersDetails()) {
+      if (this.contentService.onContainersDetails()) {
         filterValue = source.showOnlyTokenNotInContainer
           ? filterValue.addHiddenKey("container_serial")
           : filterValue.removeHiddenKey("container_serial");
@@ -495,8 +496,8 @@ export class TokenService implements TokenServiceInterface {
       this.contentService.onTokens() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensGetSerial() ||
-      this.contentService.onTokensContainersCreate() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersCreate() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
@@ -573,7 +574,7 @@ export class TokenService implements TokenServiceInterface {
     // Only load tokens on routes with a token list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
@@ -984,10 +985,10 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Observable<Object> {
+  resyncOTPToken(tokenSerial: string, fristOTPValue: string, secondOTPValue: string): Promise<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    return this.http
-      .post(
+    const request = this.http
+      .post<PiResponse<boolean>>(
         `${this.tokenBaseUrl}resync`,
         {
           serial: tokenSerial,
@@ -1004,6 +1005,7 @@ export class TokenService implements TokenServiceInterface {
           return throwError(() => error);
         })
       );
+    return firstValueFrom(request);
   }
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
