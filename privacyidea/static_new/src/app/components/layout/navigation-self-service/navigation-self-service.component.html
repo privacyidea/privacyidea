@@ -74,7 +74,7 @@
     @if (authService.rights().includes("container_list")) {
       <app-navigation-self-service-button
         i18n-title
-        key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS}}"
+        key="{{this.ROUTE_PATHS.CONTAINERS}}"
         matIconClass="mdi--folder-list"
         matIconSize="tile-icon-x-large"
         title="Container Overview" />
@@ -82,7 +82,7 @@
     @if (authService.rights().includes("container_create") && authService.containerWizard().enabled) {
       <app-navigation-self-service-button
         i18n-title
-        key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS_CREATE}}"
+        key="{{this.ROUTE_PATHS.CONTAINERS_CREATE}}"
         matIconName="create_new_folder"
         title="Create Container" />
     }
