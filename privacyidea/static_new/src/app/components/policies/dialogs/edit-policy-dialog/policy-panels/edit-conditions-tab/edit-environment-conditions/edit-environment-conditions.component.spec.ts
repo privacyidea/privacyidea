@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ReactiveFormsModule } from "@angular/forms";
+import { MatSelect, MatSelectChange } from "@angular/material/select";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { PolicyService } from "@services/policies/policies.service";
@@ -190,6 +191,168 @@ describe("EditEnvironmentConditionsComponent", () => {
       clientsMock.setClients(dict);
       component.clientModel.set("");
       expect(component.filteredKnownClients()).toHaveLength(20);
+    });
+  });
+
+  describe("addUserAgentFromSelect", () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("emits the selected value and clears the MatSelect after the timer flushes", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const selectRef = { value: "Keycloak" } as unknown as MatSelect;
+
+      component.addUserAgentFromSelect({ value: "Keycloak" } as MatSelectChange, selectRef);
+
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "Keycloak"] });
+      expect(selectRef.value).toBe("Keycloak");
+      jest.runAllTimers();
+      expect(selectRef.value).toBeNull();
+    });
+
+    it("does not emit when the selected value is empty but still clears the select", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const selectRef = { value: "" } as unknown as MatSelect;
+
+      component.addUserAgentFromSelect({ value: "" } as MatSelectChange, selectRef);
+      jest.runAllTimers();
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(selectRef.value).toBeNull();
+    });
+
+    it("does not re-emit when the user agent is already selected", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const selectRef = { value: "PAM" } as unknown as MatSelect;
+
+      component.addUserAgentFromSelect({ value: "PAM" } as MatSelectChange, selectRef);
+      jest.runAllTimers();
+
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handleEnterOnSearch", () => {
+    function makeEvent(): Event {
+      return {
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn()
+      } as unknown as Event;
+    }
+
+    function makeSelect(): MatSelect {
+      return { close: jest.fn() } as unknown as MatSelect;
+    }
+
+    it("prevents default and stops propagation on the event", () => {
+      const event = makeEvent();
+      component.handleEnterOnSearch(event, makeSelect());
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(event.stopPropagation).toHaveBeenCalled();
+    });
+
+    it("adds the first filtered preset, clears the search, and closes the select", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const select = makeSelect();
+      component.userAgentSearch.set("key");
+
+      component.handleEnterOnSearch(makeEvent(), select);
+
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "Keycloak"] });
+      expect(component.userAgentSearch()).toBe("");
+      expect(select.close).toHaveBeenCalled();
+    });
+
+    it("uses the first remaining preset when no search term is set", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const select = makeSelect();
+
+      component.handleEnterOnSearch(makeEvent(), select);
+
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "Credential Provider"] });
+      expect(select.close).toHaveBeenCalled();
+    });
+
+    it("does nothing when no preset matches the search", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const select = makeSelect();
+      component.userAgentSearch.set("no-such-preset");
+
+      component.handleEnterOnSearch(makeEvent(), select);
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.userAgentSearch()).toBe("no-such-preset");
+      expect(select.close).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when every preset is already selected", () => {
+      fixture.componentRef.setInput("policy", {
+        name: "test-policy",
+        user_agents: [...component.userAgentPresets]
+      });
+      fixture.detectChanges();
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      const select = makeSelect();
+
+      component.handleEnterOnSearch(makeEvent(), select);
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(select.close).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("setClients", () => {
+    it("does not emit when the client value is invalid", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.clientModel.set("not-an-ip");
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("emits an empty client array when the model is cleared", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.clientModel.set("");
+      fixture.detectChanges();
+      expect(spy).toHaveBeenCalledWith({ client: [] });
+    });
+
+    it("splits, trims, and drops empty segments when emitting", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.clientModel.set("10.0.0.1 ,  192.168.1.1 , ");
+      fixture.detectChanges();
+      expect(spy).toHaveBeenCalledWith({ client: ["10.0.0.1", "192.168.1.1"] });
+    });
+  });
+
+  describe("clearClientControl", () => {
+    it("resets the client model to an empty string", () => {
+      component.clientModel.set("10.0.0.1");
+      component.clearClientControl();
+      expect(component.clientModel()).toBe("");
+    });
+  });
+
+  describe("clientModel effect", () => {
+    it("does not emit a client edit during initialization from policy.client", () => {
+      const freshFixture = TestBed.createComponent(EditEnvironmentConditionsComponent);
+      const fresh = freshFixture.componentInstance;
+      const spy = jest.spyOn(fresh.policyEdit, "emit");
+      freshFixture.componentRef.setInput("policy", {
+        name: "init-policy",
+        client: ["10.0.0.1", "192.168.1.1"]
+      });
+      freshFixture.detectChanges();
+      expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ client: expect.anything() }));
+      expect(fresh.clientModel()).toBe("10.0.0.1, 192.168.1.1");
+    });
+
+    it("re-emits on every subsequent clientModel change", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.clientModel.set("10.0.0.1");
+      fixture.detectChanges();
+      component.clientModel.set("192.168.1.1");
+      fixture.detectChanges();
+      const clientCalls = spy.mock.calls.filter((c) => "client" in (c[0] as object));
+      expect(clientCalls).toEqual([[{ client: ["10.0.0.1"] }], [{ client: ["192.168.1.1"] }]]);
     });
   });
 
