@@ -156,7 +156,7 @@ export class TokenTableActionsComponent {
                 ? nonRevokedTokens.filter((t) => t.active)
                 : nonRevokedTokens;
           if (tokensToProcess.length === 0) {
-            this.notificationService.success("No tokens to process.");
+            this.notificationService.success($localize`No tokens to process.`);
             return;
           }
           from(tokensToProcess)
@@ -169,13 +169,12 @@ export class TokenTableActionsComponent {
             )
             .subscribe({
               next: () => {
-                const actionLabel = action === "activate" ? "activated" : action === "deactivate" ? "deactivated" : "toggled";
-                this.notificationService.success(`Successfully ${actionLabel} ${tokensToProcess.length} token(s).`);
+                const actionLabel = action === "activate" ? $localize`activated` : action === "deactivate" ? $localize`deactivated` : $localize`toggled`;
+                this.notificationService.success($localize`Successfully ${actionLabel} ${tokensToProcess.length} token(s).`);
                 this.tokenService.tokenResource.reload();
-                this.tokenService.tokenDetailResource.reload();
               },
               error: (err) => {
-                let message = "An error occurred while toggling tokens.";
+                let message = $localize`An error occurred while toggling tokens.`;
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }
@@ -211,12 +210,12 @@ export class TokenTableActionsComponent {
               )
               .subscribe({
                 next: () => {
-                  this.notificationService.success(`Successfully reset failcounter for ${selectedTokens.length} token(s).`);
+                  this.notificationService.success($localize`Successfully reset failcounter for ${selectedTokens.length} token(s).`);
                   this.tokenService.tokenResource.reload();
                   this.tokenService.tokenDetailResource.reload();
                 },
                 error: (err) => {
-                  let message = "An error occurred while resetting failcounters.";
+                  let message = $localize`An error occurred while resetting failcounters.`;
                   if (err.error?.result?.error?.message) {
                     message = err.error.result.error.message;
                   }
@@ -253,7 +252,7 @@ export class TokenTableActionsComponent {
         ),
         tap(() => this.tokenService.tokenResource.reload()),
         catchError((err) => {
-          let message = "An error occurred while assigning tokens.";
+          let message = $localize`An error occurred while assigning tokens.`;
           if (err.error?.result?.error?.message) {
             message = err.error.result.error.message;
           }
@@ -288,16 +287,16 @@ export class TokenTableActionsComponent {
                 const messages: string[] = [];
 
                 if (count_success) {
-                  messages.push(`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`);
+                  messages.push($localize`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`);
                 }
 
                 if (failedTokens.length > 0) {
-                  messages.push(`The following tokens failed to unassign: ${failedTokens.join(", ")}`);
+                  messages.push($localize`The following tokens failed to unassign: ${failedTokens.join(", ")}`);
                 }
 
                 if (unauthorizedTokens.length > 0) {
                   messages.push(
-                    `You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`
+                    $localize`You are not authorized to unassign the following tokens: ${unauthorizedTokens.join(", ")}`
                   );
                 }
 
@@ -307,7 +306,7 @@ export class TokenTableActionsComponent {
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
-                let message = "An error occurred while unassigning tokens.";
+                let message = $localize`An error occurred while unassigning tokens.`;
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }

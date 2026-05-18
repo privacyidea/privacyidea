@@ -79,7 +79,7 @@
         Unassign Selected
       </button>
     }
-    @if (authService.actionAllowed("enable") || authService.actionAllowed("disable")) {
+    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
       <button
         (click)="toggleActiveSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
