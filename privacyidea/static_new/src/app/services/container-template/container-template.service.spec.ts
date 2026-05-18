@@ -133,6 +133,24 @@ describe("ContainerTemplateService", () => {
 
       expect(service.templates()).toEqual([]);
     });
+
+    it("should reset to empty array when templatesResource errors after successful load", async () => {
+      TestBed.tick();
+
+      let req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush({ result: { value: { templates: [{ name: "template1" }] } } });
+      TestBed.tick();
+      await Promise.resolve();
+      expect(service.templates()).toEqual([{ name: "template1" }]);
+
+      service.templatesResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(service.templates()).toEqual([]);
+    });
   });
 
   describe("templateTokentypesResource", () => {

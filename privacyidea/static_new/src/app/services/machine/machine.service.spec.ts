@@ -293,6 +293,26 @@ describe("MachineService resources and signals", () => {
 
       expect(machineService.machines()).toBeUndefined();
     });
+
+    it("should reset to undefined when machinesResource errors after successful load", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onConfigurationMachines = signal(true);
+      TestBed.tick();
+
+      let req = httpMock.expectOne((r) => r.url.includes("/machine/"));
+      const machines = [{ hostname: "test", id: 1, ip: "127.0.0.1", resolver_name: "test" }];
+      req.flush(MockPiResponse.fromValue(machines));
+      await Promise.resolve();
+      expect(machineService.machines()).toEqual(machines);
+
+      machineService.machinesResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne((r) => r.url.includes("/machine/"));
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(machineService.machines()).toBeUndefined();
+    });
   });
 
   describe("tokenApplications signal", () => {
@@ -327,6 +347,28 @@ describe("MachineService resources and signals", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(machineService.tokenApplications()).toBeUndefined();
+    });
+
+    it("should reset to undefined when tokenApplicationResource errors after successful load", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onTokensApplications = signal(true);
+      TestBed.tick();
+
+      let req = httpMock.expectOne((r) => r.url.includes("/machine/token"));
+      const applications = [
+        { application: "test", hostname: "localhost", id: 0, options: {}, serial: "1234", type: "ssh" }
+      ];
+      req.flush(MockPiResponse.fromValue(applications));
+      await Promise.resolve();
+      expect(machineService.tokenApplications()).toEqual(applications);
+
+      machineService.tokenApplicationResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne((r) => r.url.includes("/machine/token"));
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(machineService.tokenApplications()).toBeUndefined();
