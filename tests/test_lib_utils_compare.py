@@ -435,6 +435,7 @@ class UtilsCompareTestCase(MyTestCase):
                     "now": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     "now+10h": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
                         hours=10)).isoformat(),
+                    "time_as_datetime": datetime.datetime.now(datetime.timezone.utc),
                     "past": "2017-04-20 11:30+0200",
                     "invalid_date": "16. März 2020",
                     "text": "ABC",
@@ -519,6 +520,11 @@ class UtilsCompareTestCase(MyTestCase):
 
         past_date = datetime.datetime(2017, 4, 20, 9, 30, tzinfo=datetime.timezone.utc).isoformat()
         self.assertTrue(compare_generic(f"past=={past_date}", mock_attribute, "Error {0!s}"))
+
+        # Testing that one can be a string and one a datetime object
+        self.assertTrue(compare_generic(
+            f"time_as_datetime>{(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=10)).isoformat()}",
+            mock_attribute, "Error {0!s}"))
 
         # unexpected result: The date string can not be parsed since dateutil.parser does not understand locale dates.
         # So the strings themselves are compared since parse_date() returns 'None'

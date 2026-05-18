@@ -308,10 +308,10 @@ def _safe_members(tf, dest):
 
 def _write_mysql_defaults(defaults_file, parsed_sqluri):
     # create a mysql config file to avoid adding username and password to the command
-    sql_defaults = configparser.ConfigParser()
+    sql_defaults = configparser.ConfigParser(interpolation=None)
     sql_defaults['client'] = {
-        "user": parsed_sqluri.username,
-        "password": parsed_sqluri.password
+        "user": str(parsed_sqluri.username or ""),
+        "password": str(parsed_sqluri.password or "")
     }
     sql_defaults['mysqldump'] = {"no-tablespaces": "True"}
     with defaults_file.open(mode="w") as f:

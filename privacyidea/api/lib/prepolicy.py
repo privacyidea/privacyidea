@@ -1303,6 +1303,19 @@ def check_base_action(request=None, action=None, anonymous=False):
     return True
 
 
+def check_admin_base_action(request=None, action=None, anonymous=False):
+    """
+    Like ``check_base_action``, but only enforces the action when the
+    caller is an admin. User-role callers are passed through untouched
+    so endpoints that admins and users share (e.g. ``GET /system/``)
+    can be gated against an admin-only policy without breaking the
+    user-side path.
+    """
+    if g.logged_in_user.get("role") == ROLE.USER:
+        return True
+    return check_base_action(request=request, action=action, anonymous=anonymous)
+
+
 def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator

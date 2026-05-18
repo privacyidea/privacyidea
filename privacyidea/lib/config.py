@@ -142,7 +142,7 @@ class SharedConfigClass:
                             try:
                                 value = json.loads(rconf.Value)
                             except json.JSONDecodeError as error:
-                                log.debug(
+                                log.warning(
                                     f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
                                 value = rconf.Value
                         elif rconf.Type == "dict_with_password":
@@ -154,7 +154,7 @@ class SharedConfigClass:
                                         value[key] = decryptPassword(val)
                                         resolverdef["censor_keys"].append(f"{rconf.Key}.{key}")
                             except json.JSONDecodeError as error:
-                                log.debug(
+                                log.warning(
                                     f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
                                 value = rconf.Value
                         else:

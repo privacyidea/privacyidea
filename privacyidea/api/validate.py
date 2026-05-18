@@ -37,15 +37,35 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__ = """This module contains the REST API for doing authentication.
-The methods are tested in the file tests/test_api_validate.py
+__doc__ = """
+The validate REST API verifies one-time passwords, drives challenge-
+response flows, and supports out-of-band token polling. It is the
+endpoint group that consumers (RADIUS plugins, SAML adapters, PAM
+modules, web applications) call to actually authenticate a user.
 
-Authentication is either done by providing a username and a password or a
-serial number and a password.
+This is distinct from :ref:`rest_auth`, which issues the JWT-based
+admin/user session tokens for the management API.
+
+The endpoints fall in five groups:
+
+* :http:post:`/validate/check` — verify a user/serial + password and,
+  for challenge-response tokens, trigger or complete the challenge.
+  Two URL aliases exist for protocol adapters: ``/validate/radiuscheck``
+  shapes the response into RADIUS-friendly status codes (204 / 400),
+  and ``/validate/samlcheck`` returns user attributes alongside the
+  auth result.
+* :http:post:`/validate/triggerchallenge` — admin-only, requires the
+  ``triggerchallenge`` policy. Forces a challenge for every matching
+  challenge-response token of a user.
+* :http:get:`/validate/polltransaction` — anonymous. Out-of-band
+  tokens (push, container) poll this to see whether a challenge has
+  been answered.
+* :http:post:`/validate/initialize` — anonymous. Bootstraps a
+  FIDO2/passkey challenge before login.
+* :http:post:`/validate/offlinerefill` — refills the OTP buffer of a
+  token attached to a machine for offline use.
 
 **Authentication workflow**
-
-Authentication workflow is like this:
 
 In case of authenticating a user:
 
@@ -55,7 +75,7 @@ In case of authenticating a user:
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
-In case if authenticating a serial number:
+In case of authenticating a serial number:
 
  * :func:`privacyidea.lib.token.check_serial_pass`
  * :func:`privacyidea.lib.token.check_token_list`
@@ -63,6 +83,8 @@ In case if authenticating a serial number:
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_pin`
  * :func:`privacyidea.lib.tokenclass.TokenClass.check_otp`
 
+See :ref:`client_modes` for the per-token-type interaction model that
+clients consume from challenge responses.
 """
 
 import copy
@@ -196,18 +218,37 @@ def before_request():
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
     """
-    For HOTP token, this endpoint will return the amount of offline OTP values so that the client has the defined count,
-    which is why the last pass is required.
-    For WebAuthn/Passkey, this endpoint will return nothing specific.
-    Every response contains the serial and a new refilltoken.
-    Returns an error in case the token has been unmarked for offline use or if the refilltoken is incorrect.
+    Replenish the OTP buffer of a token that is attached to a machine
+    for offline use. Each successful refill rotates the
+    ``refilltoken`` so that the previous one cannot be reused.
 
-    :param serial: The serial number of the token, that should be refilled.
-    :param refilltoken: The authorization token, that allows refilling.
-    :param pass: The last password (or password+OTP) entered by the user.
-                 For WebAuthn/Passkey, the value should be empty ("").
-    :return: Hashed OTP values (HOTP) or nothing (WebAuthn/Passkey). Returns an error in case the token has been
-     unmarked for offline use or if the refilltoken is incorrect (out of sync).
+    For HOTP tokens, the response carries enough fresh OTP values to
+    bring the offline buffer back up to the configured count. The
+    caller must supply the last password (PIN+OTP) the end user
+    entered so the server can advance the counter to the right
+    position. For WebAuthn / Passkey tokens, the response carries
+    only the new ``refilltoken`` and the WebAuthn/Passkey machine
+    name is read from the user agent string; ``pass`` should be an
+    empty string in that case.
+
+    The response carries the new ``refilltoken``, the token serial,
+    and the OTP material under
+    ``response.auth_items.offline``. Failures may be masked into a
+    generic error by the
+    ``hide_specific_error_message_for_offline_refill`` user-scope
+    policy.
+
+    :jsonparam serial: token serial number (required).
+    :jsonparam refilltoken: the refill authorization token issued on
+        the previous refill or at offline attachment time (required).
+    :jsonparam pass: the last PIN+OTP the user entered (required;
+        empty string for WebAuthn / Passkey).
+    :status 200: refill payload in the response body, with the new
+        ``refilltoken`` and OTP material under
+        ``auth_items.offline``.
+    :status 400: the token does not exist, is not marked for offline
+        use, the refilltoken is wrong, or the calling machine cannot
+        be identified from the user agent (WebAuthn/Passkey).
     """
     serial = get_required(request.all_data, "serial")
     refilltoken_request = get_required(request.all_data, "refilltoken")
@@ -298,39 +339,56 @@ def offlinerefill():
 @event("validate_check", request, g)
 def check():
     """
-    .. important::
-        The ``/validate/samlcheck`` endpoint will be deprecated in v3.12
+    Verify an authentication attempt.
 
-    Check the authentication for a user or a serial number.
-    Either a ``serial`` or a ``user`` is required to authenticate.
-    The PIN and OTP value is sent in the parameter ``pass``.
-    In case of successful authentication it returns ``result->value: true``.
+    The endpoint is bound to three URL paths that share the same
+    request shape but produce different response shapes for protocol
+    adapters:
 
-    In case of a challenge response authentication a parameter ``exception=1``
-    can be passed. This would result in an HTTP 500 Server Error response if
-    an error occurred during sending of SMS or Email.
+    * ``/validate/check`` — standard JSON response, ``result.value``
+      is ``true`` / ``false``.
+    * ``/validate/radiuscheck`` — RADIUS adapter shape: a successful
+      authentication returns an empty ``204``, a failed
+      authentication an empty ``400``. Error responses (server-side
+      faults) are the same as for ``/validate/check``.
+    * ``/validate/samlcheck`` — SAML adapter shape: ``result.value``
+      is a dictionary with ``auth`` (bool) and ``attributes`` (the
+      user's resolver attributes, optionally extended via the
+      resolver's attribute map and ``MULTIVALUEATTRIBUTES``).
 
-    In case ``/validate/radiuscheck`` is requested, the responses are
-    modified as follows: A successful authentication returns an empty ``HTTP
-    204`` response. An unsuccessful authentication returns an empty ``HTTP
-    400`` response. Error responses are the same responses as for the
-    ``/validate/check`` endpoint.
+    Either ``user`` (with optional ``realm``) or ``serial`` is
+    required. The PIN+OTP is sent in ``pass``. Subsequent legs of a
+    challenge-response flow carry ``transaction_id`` (and any
+    additional fields the token type needs). The authorization
+    decision can be vetoed by the AUTHZ-scope ``authorized=deny_access``
+    policy (see :ref:`authorization_policies`).
 
-    :param serial: The serial number of the token, that tries to authenticate.
-    :param user: The loginname/username of the user, who tries to authenticate.
-    :param realm: The realm of the user, who tries to authenticate. If the
-        realm is omitted, the user is looked up in the default realm.
-    :param type: The tokentype of the tokens, that are taken into account during
-        authentication. Requires the *authz* policy :ref:`application_tokentype_policy`.
-        It is ignored when a distinct serial is given.
-    :param pass: The password, that consists of the OTP PIN and the OTP value.
-    :param otponly: If set to 1, only the OTP value is verified. This is used
-        in the management UI. Only used with the parameter serial.
-    :param transaction_id: The transaction ID for a response to a challenge
-        request
-    :param state: The state ID for a response to a challenge request
-
-    :return: a json result with a boolean "result": true
+    :jsonparam serial: token serial. Either ``serial`` or ``user`` is
+        required.
+    :jsonparam user: login name of the user. Either ``serial`` or
+        ``user`` is required.
+    :jsonparam realm: realm of the user; defaults to the default
+        realm if omitted.
+    :jsonparam pass: PIN concatenated with OTP. For WebAuthn/Passkey
+        endpoints it may be empty.
+    :jsonparam type: restrict the authentication to tokens of this
+        type. Requires the AUTHZ policy
+        :ref:`application_tokentype_policy`. Ignored when a serial
+        is supplied.
+    :jsonparam otponly: ``1`` to skip the PIN check and only verify
+        the OTP value. Used by the management UI; only meaningful
+        with ``serial``.
+    :jsonparam transaction_id: transaction id for the second leg of
+        a challenge-response flow.
+    :jsonparam state: alias of ``transaction_id`` for legacy callers.
+    :jsonparam exception: ``1`` to surface delivery failures (SMS,
+        email, push) as HTTP 500 instead of returning a generic
+        challenge-creation error.
+    :jsonparam credential_id: FIDO2 credential id for passkey /
+        WebAuthn authentication.
+    :jsonparam cancel_enrollment: ``1`` together with
+        ``transaction_id`` cancels an in-progress
+        ``enroll_via_multichallenge`` flow without authenticating.
 
     **Example Validation Request**:
 
@@ -752,24 +810,29 @@ def _finalize_auth_response(context):
 @event("validate_triggerchallenge", request, g)
 def trigger_challenge():
     """
-    An administrator can call this endpoint if he has the right of
-    ``triggerchallenge`` (scope: admin).
-    He can pass a ``user`` name and or a ``serial`` number.
-    privacyIDEA will trigger challenges for all native challenges response
-    tokens, possessed by this user or only for the given serial number.
+    Trigger a fresh challenge for every challenge-response token
+    matching the given user and/or serial. Used by the WebUI and by
+    automation that must initiate challenge-response flows on behalf
+    of a user (for example pre-positioning a push prompt).
 
-    The request needs to contain a valid PI-Authorization header.
+    Requires admin authentication and the policy action
+    :ref:`policy_triggerchallenge`. The request must carry a valid
+    ``PI-Authorization`` header.
 
-    :param user: The loginname/username of the user, who tries to authenticate.
-    :param realm: The realm of the user, who tries to authenticate. If the
-        realm is omitted, the user is looked up in the default realm.
-    :param serial: The serial number of the token.
-    :param type: The tokentype of the tokens, that are taken into account during
-        authentication. Requires authz policy application_tokentype.
-        Is ignored when a distinct serial is given.
+    If the AUTHZ-scope ``increase_failcounter_on_challenge`` policy
+    is active, the fail counter is incremented on every matching
+    token before the challenges are created.
 
-    :return: a json result with a "result" of the number of matching
-        challenge response tokens
+    :jsonparam user: user the challenges should be created for.
+    :jsonparam realm: realm of the user; defaults to the default
+        realm.
+    :jsonparam serial: restrict to a specific token.
+    :jsonparam type: restrict to tokens of this type. Requires the
+        AUTHZ policy :ref:`application_tokentype_policy`. Ignored
+        when ``serial`` is supplied.
+    :reqheader PI-Authorization: admin auth token.
+    :status 200: ``result.value`` is the number of created
+        challenges; ``detail.multi_challenge`` lists them.
 
     **Example response** for a successful triggering of challenge:
 
@@ -903,14 +966,24 @@ def trigger_challenge():
 @event("validate_poll_transaction", request, g)
 def poll_transaction(transaction_id=None):
     """
-    Given a mandatory transaction ID, check if any non-expired challenge for this transaction ID
-    has been answered. In this case, return true. If this is not the case, return false.
-    This endpoint also returns false if no challenge with the given transaction ID exists.
+    Report whether a challenge has been answered. Out-of-band tokens
+    (push, container) poll this endpoint to learn when the user has
+    interacted with the challenge so that the calling client can
+    follow up with :http:post:`/validate/check`.
 
-    This is mostly useful for out-of-band tokens that should poll this endpoint
-    to determine when to send an authentication request to ``/validate/check``.
+    This endpoint is anonymous — no authentication header is
+    required.
 
-    :jsonparam transaction_id: a transaction ID
+    :param transaction_id: optional path component, the transaction
+        id to check. May also be supplied as a query parameter.
+    :query transaction_id: alternative to the path component.
+    :status 200: ``result.value`` is ``true`` if at least one
+        non-expired challenge with this transaction id has been
+        answered, ``false`` otherwise. ``detail.challenge_status`` is
+        one of ``accept`` (an answered challenge exists),
+        ``declined`` (the user declined a challenge), or ``pending``
+        (the challenges are still open or no matching challenge
+        exists at all).
     """
 
     if transaction_id is None:
@@ -984,8 +1057,30 @@ def poll_transaction(transaction_id=None):
 @prepolicy(disabled_token_types, request=request)
 def initialize():
     """
-    Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
-    :jsonparam type: The type of the token, for which a challenge should be created.
+    Initialize an authentication by requesting a fresh challenge for
+    a token type. Currently only the ``passkey`` type is supported;
+    the WebUI calls this to obtain the FIDO2 challenge it then
+    forwards to the browser's ``navigator.credentials.get`` call.
+
+    For ``passkey``, the ``webauthn_relying_party_id`` policy must
+    be set (the FIDO2 prepolicy reads it from the AUTH scope); the
+    user-verification requirement is taken from the
+    ``user_verification_requirement`` policy and defaults to
+    ``preferred``.
+
+    This endpoint is anonymous — no authentication header is
+    required.
+
+    :jsonparam type: the token type to initialize a challenge for
+        (``passkey``; required).
+    :status 200: ``result.value`` is ``false`` (no authentication
+        decision yet); ``detail.transaction_id`` carries the
+        transaction id and ``detail.passkey`` carries the FIDO2
+        challenge payload that the client must pass to the
+        authenticator.
+    :status 400: the requested ``type`` is unsupported, the token
+        type is disabled by policy, or the relying-party id policy
+        is missing.
     """
     token_type = get_required(request.all_data, "type")
     details = {}
