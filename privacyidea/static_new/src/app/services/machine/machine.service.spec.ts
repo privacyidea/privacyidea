@@ -229,6 +229,7 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("should not include empty filter values in filterParams", () => {
+    machineService.selectedApplicationType.set("ssh");
     machineService.machineFilter.set({
       filterMap: new Map([
         ["serial", ""],
