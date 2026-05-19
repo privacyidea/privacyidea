@@ -25,7 +25,7 @@ import logging
 import traceback
 
 from privacyidea.lib.error import CAError
-from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
+from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from privacyidea.lib.utils import is_true, int_to_hex
 from privacyidea.lib.error import CSRError, CSRPending
 from privacyidea.lib.utils import to_bytes
@@ -42,7 +42,7 @@ try:
                                                             RevokeCertificateRequest,
                                                             RevokeCertificateReply)
 
-    AvailableCAConnectors.append("privacyidea.lib.caconnectors.msca.MSCAConnector")
+
 except ImportError:  # pragma: no cover
     log.warning("Can not import grpc modules.")
 

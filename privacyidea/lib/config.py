@@ -423,10 +423,12 @@ def get_caconnector_types():
     Returns a list of valid CA connector types
     :return:
     """
-    caconnector_types = []
-    for cacon in BaseCAConnector.__subclasses__():
-        caconnector_types.append(cacon.connector_type)
-    return caconnector_types
+    modules = get_caconnector_module_list()
+    types = []
+    for module in modules:
+        if inspect.isclass(module) and issubclass(module, BaseCAConnector) and module is not BaseCAConnector:
+            types.append(module.connector_type)
+    return types
 
 
 # @cache.cached(key_prefix="classes")

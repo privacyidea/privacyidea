@@ -25,7 +25,8 @@ This module is tested in tests/test_lib_caconnector.py
 """
 
 # This takes a set of all CA Connector modules.
-AvailableCAConnectors = []
+AvailableCAConnectors = ["privacyidea.lib.caconnectors.localca.LocalCAConnector",
+                         "privacyidea.lib.caconnectors.msca.MSCAConnector"]
 
 
 class BaseCAConnector:
