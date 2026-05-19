@@ -177,22 +177,24 @@
                   </div>
                 }
                 @case ("states") {
-                  <div
-                    (click)="handleStateClick(element); $event.stopPropagation()"
-                    (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
-                    (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
-                    class="flex-row gap-8 flex-wrap cursor-pointer"
-                    role="button"
-                    tabindex="0">
-                    @for (state of element[column.key]; track state) {
-                      <span
-                        [ngClass]="
-                          tableUtilsService.getSpanClassForState(state, state === 'active' || state === 'disabled')
-                        ">
-                        {{ tableUtilsService.getDisplayTextForState(state) }}
-                      </span>
-                    }
-                  </div>
+                  @if (element[column.key]?.length) {
+                    <div
+                      (click)="handleStateClick(element); $event.stopPropagation()"
+                      (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
+                      (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
+                      class="flex-row gap-8 flex-wrap cursor-pointer"
+                      role="button"
+                      tabindex="0">
+                      @for (state of element[column.key]; track state) {
+                        <span
+                          [ngClass]="
+                            tableUtilsService.getSpanClassForState(state, state === 'active' || state === 'disabled')
+                          ">
+                          {{ tableUtilsService.getDisplayTextForState(state) }}
+                        </span>
+                      }
+                    </div>
+                  }
                 }
                 @case ("user_name") {
                   <a

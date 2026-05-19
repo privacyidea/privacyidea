@@ -43,19 +43,18 @@ import { MatFormField, MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerDetailsActionsComponent } from "@components/container/container-details/container-details-actions/container-details-actions.component";
+import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
+import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
+import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
-import { ContainerDetailsActionsComponent } from "@components/container/container-details/container-details-actions/container-details-actions.component";
-import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
-import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
-import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { infoDetailsKeyMap } from "@components/token/token-details/token-details.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   CONTAINER_STATE_OPTIONS,
@@ -65,6 +64,8 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -133,6 +134,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private previousPageSize = 10;
@@ -354,7 +356,9 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
         this.saveDescription();
         break;
       case "states":
-        this.saveStates();
+        if (!this.saveStates()) {
+          return;
+        }
         break;
       case "user_name":
         this.saveUser();
@@ -422,26 +426,26 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   }
 
   onStatesChange(newStates: string[]) {
-    const prev = this.selectedStates();
-    const added = newStates.find((s) => !prev.includes(s));
-    if (added === "active") {
-      this.selectedStates.set(newStates.filter((s) => s !== "disabled"));
-    } else if (added === "disabled") {
-      this.selectedStates.set(newStates.filter((s) => s !== "active"));
+    if (newStates.includes("active") && newStates.includes("disabled")) {
+      const prev = this.selectedStates();
+      const toRemove = prev.includes("active") ? "active" : "disabled";
+      this.selectedStates.set(newStates.filter((s) => s !== toRemove));
     } else {
       this.selectedStates.set(newStates);
     }
   }
 
-  saveStates() {
+  saveStates(): boolean {
     if (this.selectedStates().length === 0) {
-      return;
+      this.notificationService.error("At least one state must be selected.");
+      return false;
     }
     this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({
       next: () => {
         this.containerDetailResource.reload();
       }
     });
+    return true;
   }
 
   saveRealms() {
@@ -481,7 +485,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     if (this.isEditingInfo()) {
       const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
       if (infoElement) {
-        this.infoChild?.saveInfo(infoElement as any);
+        this.infoChild?.saveInfo(infoElement);
       } else {
         this.isEditingInfo.set(false);
       }
