@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollEmailComponent } from "./enroll-email.component";
 import { SystemService } from "@services/system/system.service";
 import { MockSystemService, MockTokenService} from "@testing/mock-services";
@@ -32,7 +31,7 @@ describe("EnrollEmailComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollEmailComponent, BrowserAnimationsModule],
+      imports: [EnrollEmailComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
         { provide: TokenService, useClass: MockTokenService }

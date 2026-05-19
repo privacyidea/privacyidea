@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -101,7 +100,7 @@ describe("TokenDetailsUserComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsUserComponent, NoopAnimationsModule],
+      imports: [TokenDetailsUserComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

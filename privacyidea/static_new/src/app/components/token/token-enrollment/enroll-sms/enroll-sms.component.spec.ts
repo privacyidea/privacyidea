@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollSmsComponent } from "./enroll-sms.component";
 import { SystemService } from "@services/system/system.service";
 import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
@@ -34,7 +33,7 @@ describe("EnrollSmsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollSmsComponent, BrowserAnimationsModule],
+      imports: [EnrollSmsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

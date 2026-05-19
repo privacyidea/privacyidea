@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
@@ -68,7 +67,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenTableComponent, TokenTableSelfServiceComponent, NoopAnimationsModule],
+      imports: [TokenTableComponent, TokenTableSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

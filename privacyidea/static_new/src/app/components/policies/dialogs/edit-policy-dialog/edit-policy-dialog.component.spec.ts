@@ -19,7 +19,6 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
@@ -39,7 +38,7 @@ class MockPanel {
 
 function createTestBed(paramName: string | null) {
   return TestBed.configureTestingModule({
-    imports: [EditPolicyDialogComponent, NoopAnimationsModule],
+    imports: [EditPolicyDialogComponent],
     providers: [
       {
         provide: ActivatedRoute,

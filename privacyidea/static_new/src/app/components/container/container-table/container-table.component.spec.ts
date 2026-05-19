@@ -24,7 +24,6 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/materia
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource } from "@angular/material/table";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { of, Subject } from "rxjs";
 
@@ -67,7 +66,7 @@ describe("ContainerTableComponent (Jest)", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [ContainerTableComponent, BrowserAnimationsModule],
+      imports: [ContainerTableComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -229,7 +228,7 @@ describe("ContainerTableSelfServiceComponent", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [ContainerTableSelfServiceComponent, BrowserAnimationsModule, MatDialogModule],
+      imports: [ContainerTableSelfServiceComponent, MatDialogModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

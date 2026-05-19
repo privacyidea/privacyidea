@@ -21,7 +21,6 @@ import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatCheckboxChange } from "@angular/material/checkbox";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -57,7 +56,7 @@ describe("ContainerTemplatesComponent", () => {
   beforeEach(async () => {
     templatesSignal.set(mockTemplates);
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplatesComponent, NoopAnimationsModule],
+      imports: [ContainerTemplatesComponent],
       providers: [
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
         { provide: AuthService, useValue: mockAuthService },

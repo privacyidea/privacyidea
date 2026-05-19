@@ -419,11 +419,16 @@ export class ContainerService implements ContainerServiceInterface {
     };
   });
 
-  containerOptions = linkedSignal({
-    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
-    computation: (containerResource) => {
-      if (!containerResource) return [];
-      return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
+  containerOptions: WritableSignal<string[]> = linkedSignal({
+    source: () => ({
+      value: this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+      isLoading: this.containerResource.isLoading(),
+      error: this.containerResource.error()
+    }),
+    computation: (source, previous): string[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
 
@@ -432,12 +437,17 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 
-  containersForTokenType = linkedSignal({
-    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
-    computation: (containerResource) => {
-      if (!containerResource) return [];
+  containersForTokenType: WritableSignal<string[]> = linkedSignal({
+    source: () => ({
+      value: this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+      isLoading: this.containerResource.isLoading(),
+      error: this.containerResource.error()
+    }),
+    computation: (source, previous): string[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
       return (
-        containerResource.result?.value?.containers
+        source.value.result?.value?.containers
           .filter((container) => this.compatibleTypes().includes(container.type))
           .map((container) => container.serial) ?? []
       );
@@ -523,16 +533,17 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerDetails: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => (this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined),
-    computation: (containerDetailResource, previous) => {
-      const containerDetail = containerDetailResource?.result?.value;
-      if (containerDetail) return containerDetail;
-      return (
-        previous?.value ?? {
-          containers: [],
-          count: 0
-        }
-      );
+    source: () => ({
+      value: this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined,
+      isLoading: this.containerDetailsResource.isLoading(),
+      error: this.containerDetailsResource.error()
+    }),
+    computation: (source, previous) => {
+      const empty: ContainerDetails = { containers: [], count: 0 };
+      if (source.error) return empty;
+      const containerDetail = source.value?.result?.value;
+      if (!containerDetail) return source.isLoading ? (previous?.value ?? empty) : empty;
+      return containerDetail;
     }
   });
 

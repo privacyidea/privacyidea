@@ -272,16 +272,30 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machines: WritableSignal<Machines | undefined> = linkedSignal({
-    source: () => (this.machinesResource.hasValue() ? this.machinesResource.value() : undefined),
-    computation: (machinesResource, previous) => {
-      return machinesResource?.result?.value ?? previous?.value;
+    source: () => ({
+      value: this.machinesResource.hasValue() ? this.machinesResource.value() : undefined,
+      isLoading: this.machinesResource.isLoading(),
+      error: this.machinesResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return undefined;
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? previous?.value : undefined;
+      return value;
     }
   });
 
   tokenApplications: Signal<TokenApplications | undefined> = linkedSignal({
-    source: () => (this.tokenApplicationResource.hasValue() ? this.tokenApplicationResource.value() : undefined),
-    computation: (tokenApplicationResource, previous) => {
-      return tokenApplicationResource?.result?.value ?? previous?.value;
+    source: () => ({
+      value: this.tokenApplicationResource.hasValue() ? this.tokenApplicationResource.value() : undefined,
+      isLoading: this.tokenApplicationResource.isLoading(),
+      error: this.tokenApplicationResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return undefined;
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? previous?.value : undefined;
+      return value;
     }
   });
 

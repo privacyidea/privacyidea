@@ -18,7 +18,6 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockPiResponse } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
@@ -34,7 +33,7 @@ describe("HttpResolverComponent", () => {
   beforeEach(async () => {
     mockResolverService = new MockResolverService();
     await TestBed.configureTestingModule({
-      imports: [HttpResolverComponent, NoopAnimationsModule],
+      imports: [HttpResolverComponent],
       providers: [{ provide: ResolverService, useValue: mockResolverService }]
     }).compileComponents();
 

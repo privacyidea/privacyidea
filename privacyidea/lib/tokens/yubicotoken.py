@@ -61,9 +61,9 @@ from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
 YUBICO_LEN_ID = 12
 YUBICO_LEN_OTP = 44
 YUBICO_URL = "https://api.yubico.com/wsapi/2.0/verify"
-# The Yubico API requires GET requests. See: https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
-# Previously we used POST requests.
-# If you want to have the old behaviour, you can set this to True
+# The Yubico API requires GET requests. See:
+# https://developers.yubico.com/OTP/Specifications/OTP_validation_protocol.html
+# Previously we used POST requests. If you want to have the old behaviour, you can set this to True
 DO_YUBICO_POST = False
 DEFAULT_CLIENT_ID = 20771
 DEFAULT_API_KEY = "9iE9DRkPHQDJbAFFC31/dum5I54="
@@ -216,7 +216,7 @@ class YubicoTokenClass(TokenClass):
                             res = -2
                     else:
                         # possible results are listed here:
-                        # https://github.com/Yubico/yubikey-val/wiki/ValidationProtocolV20
+                        # https://developers.yubico.com/OTP/Specifications/OTP_validation_protocol.html
                         log.warning(f"failed with {result!r}")
 
             except Exception as ex:

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { YubicoConfigComponent } from "@components/configuration/token-type-config/token-types/yubico-config/yubico-config.component";
 import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
@@ -29,7 +28,7 @@ describe("YubicoConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [YubicoConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(YubicoConfigComponent);
     fixture.componentRef.setInput("formData", {});

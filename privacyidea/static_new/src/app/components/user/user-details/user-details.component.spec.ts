@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { BehaviorSubject, map, of } from "rxjs";
 
 import { BreakpointObserver } from "@angular/cdk/layout";
@@ -91,7 +90,7 @@ describe("UserDetailsComponent", () => {
     });
 
     await TestBed.configureTestingModule({
-      imports: [UserDetailsComponent, BrowserAnimationsModule],
+      imports: [UserDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

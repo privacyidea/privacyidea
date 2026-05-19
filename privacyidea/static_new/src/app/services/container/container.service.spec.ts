@@ -630,8 +630,8 @@ describe("ContainerService", () => {
 
   describe("containerOptions", () => {
     it("should update containerOptions from httpResource when not yet present", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/");
@@ -650,8 +650,8 @@ describe("ContainerService", () => {
     });
 
     it("should handle error state from containerResource", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/");
@@ -660,6 +660,29 @@ describe("ContainerService", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(containerService.containerOptions()).toEqual([]);
+    });
+
+    it("should reset to empty array when containerResource errors after successful load", async () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      TestBed.tick();
+
+      let req = httpMock.expectOne((r) => r.url === "/container/");
+      req.flush(
+        MockPiResponse.fromValue({
+          containers: [{ serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] }]
+        })
+      );
+      await Promise.resolve();
+      expect(containerService.containerOptions()).toEqual(["c1"]);
+
+      containerService.containerResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne((r) => r.url === "/container/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(containerService.containerOptions()).toEqual([]);
@@ -673,7 +696,7 @@ describe("ContainerService", () => {
     });
 
     it("should update containerTypeOptions from containerTypesResource", async () => {
-      contentServiceMock.onContainers = signal(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/types");
@@ -693,7 +716,7 @@ describe("ContainerService", () => {
     });
 
     it("containerTypeOptions should handle error state from containerTypesResource", async () => {
-      contentServiceMock.onContainers = signal(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/container/types");
@@ -717,8 +740,8 @@ describe("ContainerService", () => {
     });
 
     it("should update containerDetail from containerDetailResource when not yet present", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       // Set the serial so the resource will be triggered
       containerService.containerSerial.set("c1");
       TestBed.tick();
@@ -742,8 +765,8 @@ describe("ContainerService", () => {
     });
 
     it("should handle error state from containerDetailResource", async () => {
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       containerService.containerSerial.set("c2");
       TestBed.tick();
 
@@ -755,6 +778,35 @@ describe("ContainerService", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(containerService.containerDetails()).toEqual({ containers: [], count: 0 });
+    });
+
+    it("should reset to default when containerDetailResource errors after successful load", async () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      containerService.containerSerial.set("c1");
+      TestBed.tick();
+
+      let req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("container_serial") === "c1"
+      );
+      req.flush(
+        MockPiResponse.fromValue({
+          count: 1,
+          containers: [{ serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] }]
+        })
+      );
+      await Promise.resolve();
+      expect(containerService.containerDetails().count).toBe(1);
+
+      containerService.containerDetailsResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("container_serial") === "c1"
+      );
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(containerService.containerDetails()).toEqual({ containers: [], count: 0 });
@@ -776,8 +828,8 @@ describe("ContainerService", () => {
       (containerService as any).containerTypeOptions = containerTypeOptionsSignal;
       (containerService as any).compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
-      authServiceMock.actionAllowed = jest.fn().mockReturnValue(true);
-      contentServiceMock.onContainers = signal(true);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
     });
 
     it("should compute compatibleTypes correctly", () => {
@@ -811,6 +863,30 @@ describe("ContainerService", () => {
       const req = httpMock.expectOne((r) => r.url === "/container/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }));
+      await Promise.resolve();
+
+      expect(containerService.containersForTokenType()).toEqual([]);
+    });
+
+    it("should reset containersForTokenType to empty when resource errors after success", async () => {
+      TestBed.tick();
+
+      let req = httpMock.expectOne((r) => r.url === "/container/");
+      req.flush(
+        MockPiResponse.fromValue({
+          containers: [
+            { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
+            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] }
+          ]
+        })
+      );
+      await Promise.resolve();
+      expect(containerService.containersForTokenType()).toEqual(["c1", "c2"]);
+
+      containerService.containerResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne((r) => r.url === "/container/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(containerService.containersForTokenType()).toEqual([]);

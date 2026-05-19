@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { LdapMachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverLdapTabComponent } from "./machine-resolver-ldap-tab.component";
 
@@ -28,7 +27,7 @@ describe("MachineResolverLdapTabComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineResolverLdapTabComponent, NoopAnimationsModule]
+      imports: [MachineResolverLdapTabComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(MachineResolverLdapTabComponent);

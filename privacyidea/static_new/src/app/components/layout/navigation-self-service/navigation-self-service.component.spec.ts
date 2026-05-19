@@ -20,8 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { By } from "@angular/platform-browser";
 import { ActivatedRoute, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -118,12 +116,11 @@ describe("NavigationSelfServiceComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NavigationSelfServiceComponent, BrowserAnimationsModule],
+      imports: [NavigationSelfServiceComponent],
       providers: [
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideAnimationsAsync(),
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },

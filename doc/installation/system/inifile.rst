@@ -141,6 +141,20 @@ sheet to customize the look and feel. Read more at :ref:`themes`.
    set ``PI_LOGLEVEL = 9``, which is a lower log level than ``logging.DEBUG``.
    Use this setting with caution and always delete the logfiles!
 
+``PI_MAIL_DEBUG_LEVEL`` enables ``smtplib``'s SMTP debug output when sending
+mails. Allowed values match ``smtplib.SMTP.set_debuglevel``: ``0`` (default,
+off), ``1`` (protocol trace) or ``2`` (protocol trace with timestamps). The
+output is written by ``smtplib`` directly to ``stderr`` and therefore ends
+up wherever the WSGI server (Apache, uWSGI, gunicorn, systemd journal, ...)
+captures stderr — typically the webserver's error log.
+
+.. warning:: With ``PI_MAIL_DEBUG_LEVEL`` enabled the stderr stream will
+   contain the full SMTP wire trace, including the ``AUTH`` line (SMTP
+   credentials in base64) and the complete message body (which may include
+   OTP values or enrollment links). Only enable this for short
+   troubleshooting sessions and rotate or scrub the affected log
+   afterwards.
+
 privacyIDEA digitally signs the responses with the private key in
 ``PI_AUDIT_KEY_PRIVATE``. If you can be sure that the private key has
 not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``

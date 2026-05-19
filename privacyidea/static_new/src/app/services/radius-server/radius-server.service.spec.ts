@@ -187,5 +187,26 @@ describe("RadiusServerService", () => {
 
       expect(service.radiusServers()).toEqual([]);
     });
+
+    it("should reset to empty array when resource errors after successful load", async () => {
+      contentServiceMock.onExternalRadius = signal(true);
+      TestBed.tick();
+
+      const radiusServers = {
+        server1: { server: "1.2.3.4", secret: "abc" }
+      };
+      let req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      req.flush(MockPiResponse.fromValue(radiusServers));
+      await Promise.resolve();
+      expect(service.radiusServers()).toEqual([{ identifier: "server1", server: "1.2.3.4", secret: "abc" }]);
+
+      service.radiusServerResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(service.radiusServers()).toEqual([]);
+    });
   });
 });

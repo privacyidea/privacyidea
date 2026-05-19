@@ -21,7 +21,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuditService } from "@services/audit/audit.service";
@@ -73,7 +72,6 @@ describe("TokenTableActionsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideNoopAnimations(),
         { provide: Router, useValue: routerMock },
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: TokenService, useClass: MockTokenService },

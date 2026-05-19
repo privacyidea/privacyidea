@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { NotificationService } from "@services/notification/notification.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
 import { MockChallengesService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
@@ -36,7 +35,7 @@ describe("ChallengesTableActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ChallengesTableActionsComponent, BrowserAnimationsModule],
+      imports: [ChallengesTableActionsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

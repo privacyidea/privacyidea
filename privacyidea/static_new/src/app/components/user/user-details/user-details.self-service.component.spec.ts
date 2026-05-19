@@ -20,7 +20,6 @@ import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { UserService } from "@services/user/user.service";
 import { MockUserService } from "@testing/mock-services";
@@ -40,7 +39,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     });
 
     await TestBed.configureTestingModule({
-      imports: [UserDetailsSelfServiceComponent, BrowserAnimationsModule],
+      imports: [UserDetailsSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -51,7 +50,7 @@ describe("SmsGatewaysComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [SmsGatewaysComponent, NoopAnimationsModule],
+      imports: [SmsGatewaysComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
