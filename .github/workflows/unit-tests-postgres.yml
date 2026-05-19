@@ -26,7 +26,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  versions:
+    name: Load Python versions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.load.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: load
+        # Run on oldest and latest supported versions only — enough to catch
+        # PostgreSQL dialect issues without duplicating the full MariaDB matrix.
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "matrix=[\"$MIN\",\"$MAX\"]" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: versions
     name: 'Python ${{ matrix.python-version }}'
     permissions:
       checks: write
@@ -34,9 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Run on oldest and latest supported versions only — enough to catch
-        # PostgreSQL dialect issues without duplicating the full MariaDB matrix.
-        python-version: ['3.10', '3.14']
+        python-version: ${{ fromJSON(needs.versions.outputs.matrix) }}
 
     services:
       postgres:
