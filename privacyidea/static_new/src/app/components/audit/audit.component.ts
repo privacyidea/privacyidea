@@ -50,6 +50,39 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 
+type AuditCellRenderType =
+  | "status-span"
+  | "highlight-ok"
+  | "date"
+  | "policies-csv"
+  | "copy-text"
+  | "serial-link"
+  | "container-link"
+  | "user-link"
+  | "default";
+
+const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
+  success: "status-span",
+  authentication: "status-span",
+  sig_check: "highlight-ok",
+  missing_line: "highlight-ok",
+  startdate: "date",
+  date: "date",
+  policies: "policies-csv",
+  serial: "serial-link",
+  container_serial: "container-link",
+  user: "user-link",
+  action: "copy-text",
+  action_detail: "copy-text",
+  info: "copy-text",
+  user_agent: "copy-text",
+  privacyidea_server: "copy-text",
+  realm: "copy-text",
+  administrator: "copy-text",
+  client: "copy-text",
+  resolver: "copy-text"
+};
+
 const columnKeysMap = [
   { key: "number", label: "Number" },
   { key: "action", label: "Action" },
@@ -194,5 +227,9 @@ export class AuditComponent {
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.filterInput?.nativeElement.focus();
+  }
+
+  getCellRenderType(columnKey: string): AuditCellRenderType {
+    return cellRenderTypeByKey[columnKey] ?? "default";
   }
 }

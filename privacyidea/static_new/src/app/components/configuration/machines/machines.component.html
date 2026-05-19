@@ -65,11 +65,15 @@
         <td
           *matCellDef="let machine"
           mat-cell>
-          <app-copyable [copyText]="machine.hostname">
+          <app-copyable [copyText]="machine.hostname.join(', ')">
             <a
               (click)="openDetailsDialog(machine)"
-              class="flex ali-center clickable">
-              {{ machine.hostname }}
+              (keydown.enter)="openDetailsDialog(machine)"
+              (keydown.space)="$event.preventDefault(); openDetailsDialog(machine)"
+              class="flex ali-center clickable"
+              role="button"
+              tabindex="0">
+              {{ machine.hostname.join(", ") }}
             </a>
           </app-copyable>
         </td>
