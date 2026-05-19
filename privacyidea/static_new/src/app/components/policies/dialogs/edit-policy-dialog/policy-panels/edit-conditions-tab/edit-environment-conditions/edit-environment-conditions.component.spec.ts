@@ -36,7 +36,8 @@ describe("EditEnvironmentConditionsComponent", () => {
       imports: [EditEnvironmentConditionsComponent, ReactiveFormsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
-        { provide: SystemService, useClass: MockSystemService }
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: ClientsService, useClass: MockClientsService }
       ]
     }).compileComponents();
 
