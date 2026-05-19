@@ -22,7 +22,6 @@ import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 import { By } from "@angular/platform-browser";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
@@ -53,7 +52,7 @@ describe("PolicyActionItemEditComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PolicyActionItemEditComponent, FormsModule, CommonModule],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(PolicyActionItemEditComponent, {
         set: {

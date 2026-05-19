@@ -34,18 +34,6 @@ $breakpoint-compact: 1822px;
   z-index: 100;
 }
 
-.margin-right-5 {
-  margin-right: 5px;
-}
-
-.margin-right-3 {
-  margin-right: 3px;
-}
-
-.margin-right-2 {
-  margin-right: 2px;
-}
-
 .primary-toolbar {
   @include flex-center;
   gap: 8px;

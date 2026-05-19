@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { DAYPASSWORD_HASHLIB } from "@constants/token.constants";
 import { DaypasswordConfigComponent } from "./daypassword-config.component";
 
@@ -29,8 +28,7 @@ describe("DaypasswordConfigComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DaypasswordConfigComponent],
-      providers: [provideAnimations()]
+      imports: [DaypasswordConfigComponent]
     }).compileComponents();
     fixture = TestBed.createComponent(DaypasswordConfigComponent);
     fixture.componentRef.setInput("formData", {});

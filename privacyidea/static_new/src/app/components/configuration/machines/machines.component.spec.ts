@@ -21,7 +21,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { MachineService } from "@services/machine/machine.service";
@@ -41,7 +40,7 @@ describe("MachinesComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachinesComponent, NoopAnimationsModule],
+      imports: [MachinesComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

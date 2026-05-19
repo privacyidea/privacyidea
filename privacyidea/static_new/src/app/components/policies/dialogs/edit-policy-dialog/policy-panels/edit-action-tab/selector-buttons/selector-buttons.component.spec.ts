@@ -19,7 +19,6 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { SelectorButtonsComponent } from "./selector-buttons.component";
 
 describe("SelectorButtonsComponent", () => {
@@ -28,8 +27,7 @@ describe("SelectorButtonsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SelectorButtonsComponent],
-      providers: [provideNoopAnimations()]
+      imports: [SelectorButtonsComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent<SelectorButtonsComponent<string>>(SelectorButtonsComponent as any);

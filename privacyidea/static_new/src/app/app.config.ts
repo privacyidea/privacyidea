@@ -19,7 +19,6 @@
 import { APP_BASE_HREF } from "@angular/common";
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import { ApplicationConfig, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core";
-import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { provideRouter } from "@angular/router";
 import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
@@ -36,7 +35,6 @@ export const appConfig: ApplicationConfig = {
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideAnimationsAsync(),
     { provide: APP_BASE_HREF, useValue: "/app/v2/" },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),

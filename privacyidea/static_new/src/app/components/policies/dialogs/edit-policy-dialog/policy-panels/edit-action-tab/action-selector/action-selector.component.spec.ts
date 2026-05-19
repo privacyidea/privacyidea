@@ -21,7 +21,6 @@ import { CommonModule } from "@angular/common";
 import { Component, input, model, output, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -90,7 +89,7 @@ describe("ActionSelectorComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(ActionSelectorComponent, {
         set: {

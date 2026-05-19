@@ -19,7 +19,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ContentService } from "@services/content/content.service";
 import { MachineService } from "@services/machine/machine.service";
 import { MockContainerService, MockMachineService } from "@testing/mock-services";
@@ -34,7 +33,7 @@ describe("TokenDetailsInfoComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsMachineComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsMachineComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

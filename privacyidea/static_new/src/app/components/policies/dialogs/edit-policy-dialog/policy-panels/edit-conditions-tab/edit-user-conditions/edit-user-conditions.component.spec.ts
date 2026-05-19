@@ -19,7 +19,6 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ReactiveFormsModule } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PolicyService } from "@services/policies/policies.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -34,7 +33,7 @@ describe("EditUserConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditUserConditionsComponent, NoopAnimationsModule, ReactiveFormsModule],
+      imports: [EditUserConditionsComponent, ReactiveFormsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },

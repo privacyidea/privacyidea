@@ -19,7 +19,6 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter.component";
 
@@ -33,7 +32,7 @@ describe("ContainerTemplatesFilterComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplatesFilterComponent, NoopAnimationsModule]
+      imports: [ContainerTemplatesFilterComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTemplatesFilterComponent);
