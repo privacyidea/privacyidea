@@ -13,6 +13,7 @@ on:
       - 'tests/requirements.txt'
       - 'doc/requirements.txt'
       - '.github/python-versions.env'
+      - '.github/workflows/python-requirements-sync.yml'
 
 permissions:
   contents: read
@@ -35,7 +36,10 @@ jobs:
         with:
           python-version: ${{ steps.pyversions.outputs.min }}
       - name: Install pip-tools
-        run: pip install pip-tools
+        # Pinned so the drift check always uses the same pip-compile version.
+        # pip-compile output can change between pip-tools releases, which would
+        # otherwise produce spurious diffs unrelated to the PR.
+        run: pip install pip-tools==7.4.1
       - name: Recompile runtime requirements
         run: pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
       - name: Recompile test requirements

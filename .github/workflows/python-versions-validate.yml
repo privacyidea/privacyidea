@@ -55,16 +55,23 @@ jobs:
               fail=1
             fi
           done
-          # ALL must be a space-separated list of "3.X" tokens
-          for v in $ALL; do
-            if ! [[ "$v" =~ ^3\.[0-9]+$ ]]; then
-              echo "::error file=.github/python-versions.env::ALL contains invalid token: $v"
-              fail=1
-            fi
-          done
+          # Validate ALL using the same splitting the consumer workflows use:
+          # `jq -Rc 'split(" ")'` does NOT collapse repeated/leading/trailing
+          # spaces, so a value like "3.10  3.14" would yield an empty matrix
+          # entry. Reject anything that doesn't match a strict single-space
+          # separated list of "3.X" tokens.
+          tokens=$(printf '%s' "$ALL" | jq -Rc 'split(" ")')
+          if printf '%s' "$tokens" | jq -e 'any(.[]; . == "")' >/dev/null; then
+            echo "::error file=.github/python-versions.env::ALL contains empty token (check for repeated/leading/trailing spaces)"
+            fail=1
+          fi
+          if ! printf '%s' "$tokens" | jq -e 'all(.[]; test("^3\\.[0-9]+$"))' >/dev/null; then
+            echo "::error file=.github/python-versions.env::ALL contains a token that does not match 3.X"
+            fail=1
+          fi
           # ALL must contain MIN and MAX
           for required in "$MIN" "$MAX"; do
-            if ! printf '%s\n' $ALL | grep -qx "$required"; then
+            if ! printf '%s' "$tokens" | jq -e --arg v "$required" 'any(.[]; . == $v)' >/dev/null; then
               echo "::error file=.github/python-versions.env::ALL does not contain $required"
               fail=1
             fi
