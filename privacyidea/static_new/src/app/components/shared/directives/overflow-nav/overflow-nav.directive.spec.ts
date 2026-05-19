@@ -184,7 +184,7 @@ class PinnedHostComponent {
     <nav #nav appOverflowNav>
       <button class="nav-button" id="mdc-btn">
         <span class="mat-mdc-button-touch-target"></span>
-        <span class="mdc-button__label"><mat-icon class="mat-icon material-icons">delete</mat-icon> Delete Selected</span>
+        <span class="mdc-button__label"><mat-icon class="mat-icon material-icons">delete</mat-icon> Delete</span>
         <span class="mat-mdc-focus-indicator"></span>
         <span class="mat-ripple"></span>
       </button>
@@ -688,10 +688,10 @@ describe("OverflowNavDirective", () => {
       const { fixture } = await setup(MaterialButtonHostComponent, 100, 100);
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
       const items = Array.from(dropdown.querySelectorAll(".overflow-menu-item"));
-      const mdcItem = items.find(item => item.querySelector("span")?.textContent?.includes("Delete Selected"));
+      const mdcItem = items.find(item => item.querySelector("span")?.textContent?.includes("Delete"));
       if (mdcItem) {
         const labelSpan = mdcItem.querySelector("span");
-        expect(labelSpan?.textContent?.trim()).toBe("Delete Selected");
+        expect(labelSpan?.textContent?.trim()).toBe("Delete");
       }
       fixture.destroy();
     });

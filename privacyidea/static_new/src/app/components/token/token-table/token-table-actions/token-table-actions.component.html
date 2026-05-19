@@ -29,9 +29,8 @@
     data-overflow-pinned
     [matMenuTriggerFor]="advancedFilterMenu"
     class="action-button-secondary button-width-m"
-    i18n-matTooltip
-    mat-stroked-button
-    matTooltip="More Filter">
+    i18n
+    mat-stroked-button>
     <mat-icon> filter_list</mat-icon>
     More Filter
   </button>
@@ -55,7 +54,7 @@
         i18n
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
-        Delete Selected
+        Delete
       </button>
     }
     @if (authService.actionAllowed("assign")) {
@@ -66,7 +65,7 @@
         i18n
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
-        Assign Selected
+        Assign
       </button>
     }
     @if (authService.actionAllowed("unassign")) {
@@ -76,7 +75,7 @@
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
-        Unassign Selected
+        Unassign
       </button>
     }
     @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -87,7 +86,7 @@
         i18n
         mat-stroked-button>
         <mat-icon> toggle_on</mat-icon>
-        Toggle Selected
+        (De)activate
       </button>
     }
     @if (authService.actionAllowed("reset")) {
