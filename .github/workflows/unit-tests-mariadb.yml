@@ -19,6 +19,7 @@ on:
       - 'requirements.txt'
       - 'tools/**'
       - '.github/workflows/unit-tests-mariadb.yml'
+      - '.github/python-versions.env'
   schedule:
     # Nightly at 02:00 UTC — runs all Python versions as a dependency health check
     - cron: '0 2 * * *'

@@ -12,6 +12,7 @@ on:
       - 'requirements.txt'
       - 'tests/requirements.txt'
       - 'doc/requirements.txt'
+      - '.github/python-versions.env'
 
 permissions:
   contents: read

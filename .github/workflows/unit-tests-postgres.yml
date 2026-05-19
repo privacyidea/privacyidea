@@ -16,6 +16,7 @@ on:
       - 'requirements.txt'
       - 'tools/**'
       - '.github/workflows/unit-tests-postgres.yml'
+      - '.github/python-versions.env'
 
 permissions:
   contents: read

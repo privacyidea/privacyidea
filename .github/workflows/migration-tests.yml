@@ -24,6 +24,7 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.github/workflows/migration-tests.yml'
+      - '.github/python-versions.env'
   workflow_dispatch:
 
 permissions:
