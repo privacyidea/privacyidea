@@ -352,7 +352,7 @@ describe("ContainerService", () => {
   });
 
   it("startPolling returns early when already active", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/SMPH1");
     jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
     jest.spyOn(containerService.containerDetailsResource, "value").mockReturnValue({
       result: { value: { count: 1, containers: [{ info: { registration_state: "pending" } }] } }
@@ -370,7 +370,7 @@ describe("ContainerService", () => {
   });
 
   it("poll container details shows rollover success notification when isRollover is true", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "/SMPH1");
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/SMPH1");
     containerService.containerSerial.set("SMPH1");
 
     jest
@@ -714,7 +714,7 @@ describe("ContainerService", () => {
 
   describe("containerOptions", () => {
     it("should update containerOptions from httpResource when not yet present", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
@@ -734,7 +734,7 @@ describe("ContainerService", () => {
     });
 
     it("should handle error state from containerResource", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
@@ -750,7 +750,7 @@ describe("ContainerService", () => {
     });
 
     it("should reset to empty array when containerResource errors after successful load", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       TestBed.tick();
 
@@ -824,7 +824,7 @@ describe("ContainerService", () => {
     });
 
     it("should update containerDetail from containerDetailResource when not yet present", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       // Set the serial so the resource will be triggered
       containerService.containerSerial.set("c1");
@@ -849,7 +849,7 @@ describe("ContainerService", () => {
     });
 
     it("should handle error state from containerDetailResource", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       containerService.containerSerial.set("c2");
       TestBed.tick();
@@ -868,14 +868,12 @@ describe("ContainerService", () => {
     });
 
     it("should reset to default when containerDetailResource errors after successful load", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       containerService.containerSerial.set("c1");
       TestBed.tick();
 
-      let req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("container_serial") === "c1"
-      );
+      let req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("container_serial") === "c1");
       req.flush(
         MockPiResponse.fromValue({
           count: 1,
@@ -887,9 +885,7 @@ describe("ContainerService", () => {
 
       containerService.containerDetailsResource.reload();
       TestBed.tick();
-      req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("container_serial") === "c1"
-      );
+      req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("container_serial") === "c1");
       req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
@@ -916,7 +912,7 @@ describe("ContainerService", () => {
       mockableService.containerTypeOptions = containerTypeOptionsSignal;
       mockableService.compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
     });
 
