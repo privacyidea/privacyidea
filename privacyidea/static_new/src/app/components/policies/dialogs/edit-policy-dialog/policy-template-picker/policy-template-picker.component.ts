@@ -18,7 +18,6 @@
  **/
 import { Component, computed, inject, input, output, signal } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { MatIconModule } from "@angular/material/icon";
 import { PolicyDetail } from "@services/policies/policies.service";
 import {
   PolicyTemplate,
@@ -29,7 +28,7 @@ import {
 @Component({
   selector: "app-policy-template-picker",
   standalone: true,
-  imports: [MatExpansionModule, MatIconModule],
+  imports: [MatExpansionModule],
   templateUrl: "./policy-template-picker.component.html",
   styleUrl: "./policy-template-picker.component.scss"
 })

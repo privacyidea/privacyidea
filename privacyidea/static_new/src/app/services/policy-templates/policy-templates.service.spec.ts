@@ -24,7 +24,6 @@ import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
-import { POLICY_TEMPLATE_INDEX, POLICY_TEMPLATES } from "./policy-templates.constants";
 import { PolicyTemplate, PolicyTemplateIndex, PolicyTemplatesService } from "./policy-templates.service";
 
 describe("PolicyTemplatesService", () => {
@@ -70,11 +69,11 @@ describe("PolicyTemplatesService", () => {
     expect(service.policyTemplatesIndex()).toEqual(remoteIndex);
   });
 
-  it("falls back to the bundled index when the fetch fails", () => {
+  it("resets to an empty index when the fetch fails", () => {
     const req = httpMock.expectOne(`${baseUrl}index.json`);
     req.error(new ProgressEvent("network error"));
 
-    expect(service.policyTemplatesIndex()).toEqual(POLICY_TEMPLATE_INDEX);
+    expect(service.policyTemplatesIndex()).toEqual({});
   });
 
   it("fetches an individual template from the configured URL", () => {
@@ -108,14 +107,14 @@ describe("PolicyTemplatesService", () => {
     expect(cached).toEqual({ name: "webui1", scope: "webui" });
   });
 
-  it("falls back to the bundled template when the fetch fails", () => {
+  it("yields undefined when a template fetch fails", () => {
     httpMock.expectOne(`${baseUrl}index.json`).flush({});
 
-    let received: PolicyTemplate | undefined;
+    let received: PolicyTemplate | undefined = { name: "sentinel", scope: "x" };
     service.getTemplate("webui1").subscribe((tpl) => (received = tpl));
     httpMock.expectOne(`${baseUrl}webui1.json`).error(new ProgressEvent("network error"));
 
-    expect(received).toEqual(POLICY_TEMPLATES["webui1"]);
+    expect(received).toBeUndefined();
   });
 
   it("uses an absolute URL verbatim without prefixing the dev proxy", () => {

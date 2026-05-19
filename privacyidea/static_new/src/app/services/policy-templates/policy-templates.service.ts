@@ -23,9 +23,10 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { AdditionalCondition } from "@services/policies/policies.service";
 import { catchError, map, Observable, of, shareReplay, tap } from "rxjs";
-import { POLICY_TEMPLATE_INDEX, POLICY_TEMPLATES } from "./policy-templates.constants";
 
 export type PolicyTemplateIndex = Record<string, string>;
+
+const EMPTY_INDEX: PolicyTemplateIndex = {};
 
 export interface PolicyTemplate {
   name: string;
@@ -70,7 +71,7 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  private readonly _index = signal<PolicyTemplateIndex>(POLICY_TEMPLATE_INDEX);
+  private readonly _index = signal<PolicyTemplateIndex>(EMPTY_INDEX);
   readonly policyTemplatesIndex: Signal<PolicyTemplateIndex> = this._index.asReadonly();
 
   private templateCache = new Map<string, Observable<PolicyTemplate | undefined>>();
@@ -95,7 +96,7 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
       map((template) => ({ ...template, name: template.name ?? templateName })),
       catchError(() => {
         this.notificationService.error($localize`Error fetching policy template ${templateName}.`);
-        return of(POLICY_TEMPLATES[templateName]);
+        return of(undefined);
       }),
       shareReplay(1)
     );
@@ -114,7 +115,7 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
         catchError(() => {
           if (this.lastBaseUrl !== baseUrl) return of(null);
           this.notificationService.error($localize`Error fetching policy templates.`);
-          this._index.set(POLICY_TEMPLATE_INDEX);
+          this._index.set(EMPTY_INDEX);
           return of(null);
         })
       )
@@ -134,7 +135,8 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
       return withTrailingSlash;
     }
 
-    // the dev proxy prefix so they reach the Flask backend in `ng serve`.
+    // Absolute-path URLs are prefixed with the dev proxy so they reach the
+    // Flask backend in `ng serve`; in production `proxyUrl` is empty.
     if (withTrailingSlash.startsWith("/")) {
       return `${environment.proxyUrl}${withTrailingSlash}`;
     }
