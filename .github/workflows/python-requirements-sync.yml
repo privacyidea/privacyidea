@@ -48,8 +48,13 @@ jobs:
       - name: Recompile doc requirements
         run: pip-compile --allow-unsafe --extra=doc --generate-hashes --output-file=doc/requirements.txt pyproject.toml
       - name: Fail on drift
+        # -I ignores hunks whose changed lines all match the pattern. The
+        # pip-compile invocation header records default-valued CLI flags
+        # (--cert=None etc.) which differ between local and CI without
+        # reflecting any real dependency change.
         run: |
-          if ! git diff --exit-code requirements.txt tests/requirements.txt doc/requirements.txt; then
+          if ! git diff --exit-code -I '^#    pip-compile' \
+                requirements.txt tests/requirements.txt doc/requirements.txt; then
             echo "::error::pyproject.toml and the pinned requirements files are out of sync."
             echo "Run pip-compile locally (see each file's header) and commit the result."
             exit 1
