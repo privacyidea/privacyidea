@@ -424,7 +424,7 @@ def get_caconnector_types():
     :return:
     """
     _, type_dict = get_caconnector_class_dict()
-    types = list(type_dict.values())
+    types = sorted(type_dict.values())
     return types
 
 
