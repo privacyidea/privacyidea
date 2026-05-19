@@ -22,7 +22,6 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { NavigationEnd, Router } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
@@ -69,7 +68,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [ContainerDetailsTokenTableComponent, BrowserAnimationsModule],
+      imports: [ContainerDetailsTokenTableComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

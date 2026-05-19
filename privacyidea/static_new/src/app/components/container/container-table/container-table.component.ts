@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { animate, state, style, transition, trigger } from "@angular/animations";
 import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
@@ -71,14 +70,7 @@ import { ContainerTableActionsComponent } from "./container-table-actions/contai
     MatTooltipModule
   ],
   templateUrl: "./container-table.component.html",
-  styleUrl: "./container-table.component.scss",
-  animations: [
-    trigger("detailExpand", [
-      state("collapsed", style({ height: "0px", minHeight: "0" })),
-      state("expanded", style({ height: "*" })),
-      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
-    ])
-  ]
+  styleUrl: "./container-table.component.scss"
 })
 export class ContainerTableComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);

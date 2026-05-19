@@ -41,7 +41,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 
 import { ROUTE_PATHS } from "@app/route_paths";
-import { OverflowNavDirective } from "./overflow-nav.directive";
+import { OverflowNavDirective } from "../../shared/directives/overflow-nav/overflow-nav.directive";
 
 export interface NavItem {
   icon: string;

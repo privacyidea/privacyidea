@@ -27,7 +27,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
   selector: "app-details-header",
   standalone: true,
   imports: [CopyableComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
-  templateUrl: "./details-header.component.html"
+  templateUrl: "./details-header.component.html",
+  styleUrl: "./details-header.component.scss"
 })
 export class DetailsHeaderComponent {
   @Input({ required: true }) serial!: string;

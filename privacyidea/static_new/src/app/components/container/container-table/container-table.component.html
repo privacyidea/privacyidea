@@ -195,26 +195,31 @@
           *matCellDef="let element"
           [attr.colspan]="columnKeys.length"
           mat-cell>
-          <div
-            [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
-            class="expanded-detail">
-            <div class="expanded-token-list">
-              @for (token of element.tokens; track token) {
-                <div class="token-item flex-row flex-nowrap ali-center">
-                  <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }}</a>
-                  <app-copy-button [copyText]="token.serial"></app-copy-button>
-                  [{{ token.tokentype }}]
+          @if (expandedElement === element) {
+            <div
+              animate.enter="detail-expand-enter"
+              animate.leave="detail-expand-leave"
+              class="expanded-detail">
+              <div class="expanded-detail-content">
+                <div class="expanded-token-list">
+                  @for (token of element.tokens; track token) {
+                    <div class="token-item flex-row flex-nowrap ali-center">
+                      <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }}</a>
+                      <app-copy-button [copyText]="token.serial"></app-copy-button>
+                      [{{ token.tokentype }}]
+                    </div>
+                  }
+                  @if (element.tokens?.length === 0) {
+                    <div
+                      class="flex ali-center"
+                      i18n>
+                      Container has no tokens.
+                    </div>
+                  }
                 </div>
-              }
-              @if (element.tokens?.length === 0) {
-                <div
-                  class="flex ali-center"
-                  i18n>
-                  Container has no tokens.
-                </div>
-              }
+              </div>
             </div>
-          </div>
+          }
         </td>
       </ng-container>
 

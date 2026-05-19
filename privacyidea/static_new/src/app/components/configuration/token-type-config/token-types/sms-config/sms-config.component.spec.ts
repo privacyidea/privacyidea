@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
@@ -31,7 +30,7 @@ describe("SmsConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SmsConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(SmsConfigComponent);
     fixture.componentRef.setInput("formData", {});

@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollIndexedsecretComponent } from "./enroll-indexedsecret.component";
 
 describe("EnrollIndexedsecretComponent", () => {
@@ -29,7 +28,7 @@ describe("EnrollIndexedsecretComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollIndexedsecretComponent, BrowserAnimationsModule],
+      imports: [EnrollIndexedsecretComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 

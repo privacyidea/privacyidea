@@ -752,6 +752,11 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"), result)
             self.assertIn('token', result.get('value'), result)
             self.assertEqual(result.get("value").get('role'), 'user', result)
+        # The token type used to authenticate is recorded in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(1, audit_entry['success'], audit_entry)
+        self.assertEqual('spass', audit_entry['token_type'], audit_entry)
+        self.assertEqual(serial, audit_entry['serial'], audit_entry)
 
         # Disable the spass token for authentication
         set_policy(name="disable_spass_token", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass")
@@ -1882,6 +1887,10 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             hotp = get_one_token(serial=serial)
             self.assertEqual(2, hotp.get_failcount())
             self.assertEqual(1, len(get_challenges(serial)))
+        # The token types of the multi_challenge are recorded in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual('hotp', audit_entry['token_type'], audit_entry)
+        self.assertEqual(serial, audit_entry['serial'], audit_entry)
 
         hotp.delete_token()
         delete_policy("pi_login")
@@ -1922,6 +1931,11 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json.get("result").get("authentication"))
+        # The token type used to authenticate is recorded in the audit
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(1, audit_entry['success'], audit_entry)
+        self.assertEqual('hotp', audit_entry['token_type'], audit_entry)
+        self.assertEqual(hotp.get_serial(), audit_entry['serial'], audit_entry)
 
         # Clean-up
         totp.delete_token()

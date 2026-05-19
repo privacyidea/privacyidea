@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -56,7 +55,7 @@ describe("UserTableComponent", () => {
         MockLocalService,
         MockNotificationService
       ],
-      imports: [UserTableComponent, NoopAnimationsModule]
+      imports: [UserTableComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserTableComponent);

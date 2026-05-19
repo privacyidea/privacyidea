@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { MockContainerTemplateService } from "../../../../../testing/mock-services/mock-container-template-service";
 import { ContainerTemplateEditComponent } from "./container-template-edit.component";
@@ -30,7 +29,7 @@ describe("ContainerTemplateEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateEditComponent, NoopAnimationsModule],
+      imports: [ContainerTemplateEditComponent],
       providers: [{ provide: ContainerTemplateService, useClass: MockContainerTemplateService }]
     }).compileComponents();
 

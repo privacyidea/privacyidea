@@ -262,22 +262,34 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     let usedWidth = 0;
     const priorityIndices = new Set<number>();
 
+    for (let i = 0; i < buttons.length; i++) {
+      if (buttons[i].hasAttribute("data-overflow-pinned")) {
+        const w = buttons[i].offsetWidth + GAP;
+        if (usedWidth + w <= maxWidth) {
+          usedWidth += w;
+          visible[i] = true;
+          priorityIndices.add(i);
+        }
+      }
+    }
+
     const activeIndex = buttons.findIndex(isActive);
-    if (activeIndex >= 0) {
+    if (activeIndex >= 0 && !priorityIndices.has(activeIndex)) {
       const w = buttons[activeIndex].offsetWidth + GAP;
-      if (w <= maxWidth) {
+      if (usedWidth + w <= maxWidth) {
         usedWidth += w;
         visible[activeIndex] = true;
         priorityIndices.add(activeIndex);
       }
-      // Keep parents of contextual child items (detail/create pages) marked with data-overflow-child visible too
       if (activeIndex > 0 && buttons[activeIndex].hasAttribute("data-overflow-child")) {
         const parentIndex = activeIndex - 1;
-        const pw = buttons[parentIndex].offsetWidth + GAP;
-        if (usedWidth + pw <= maxWidth) {
-          usedWidth += pw;
-          visible[parentIndex] = true;
-          priorityIndices.add(parentIndex);
+        if (!priorityIndices.has(parentIndex)) {
+          const pw = buttons[parentIndex].offsetWidth + GAP;
+          if (usedWidth + pw <= maxWidth) {
+            usedWidth += pw;
+            visible[parentIndex] = true;
+            priorityIndices.add(parentIndex);
+          }
         }
       }
     }
@@ -363,6 +375,25 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       const text = span.textContent?.trim();
       if (text) return text;
     }
+    const labelSpan = btn.querySelector(".mdc-button__label");
+    if (labelSpan) {
+      const textParts: string[] = [];
+      for (const node of Array.from(labelSpan.childNodes)) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent?.trim();
+          if (text) textParts.push(text);
+        }
+      }
+      if (textParts.length > 0) return textParts.join(" ");
+    }
+    const directText: string[] = [];
+    for (const node of Array.from(btn.childNodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text) directText.push(text);
+      }
+    }
+    if (directText.length > 0) return directText.join(" ");
     return btn.textContent?.trim() || "";
   }
 

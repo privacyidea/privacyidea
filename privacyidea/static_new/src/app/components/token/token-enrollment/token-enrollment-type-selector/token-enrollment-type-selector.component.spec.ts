@@ -18,7 +18,6 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatSelect } from "@angular/material/select";
 import { MockTokenService } from "../../../../../testing/mock-services";
 import { TokenService } from "../../../../services/token/token.service";
@@ -43,7 +42,7 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
     });
 
     await TestBed.configureTestingModule({
-      imports: [TokenEnrollmentTypeSelectorComponent, NoopAnimationsModule],
+      imports: [TokenEnrollmentTypeSelectorComponent],
       providers: [{ provide: TokenService, useClass: MockTokenService }]
     }).compileComponents();
 
