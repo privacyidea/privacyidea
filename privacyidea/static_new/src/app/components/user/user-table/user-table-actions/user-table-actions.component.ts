@@ -28,10 +28,11 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-user-table-actions",
-  imports: [MatButtonModule, MatFormField, MatLabel, MatOption, MatSelect, MatIcon],
+  imports: [MatButtonModule, MatFormField, MatLabel, MatOption, MatSelect, MatIcon, OverflowNavDirective],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
 })

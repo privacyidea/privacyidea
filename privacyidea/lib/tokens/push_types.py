@@ -37,6 +37,7 @@ class PushAction:
     PRESENCE_CUSTOM_OPTIONS = "push_presence_custom_options"
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"
     USE_PIA_SCHEME = "push_use_pia_scheme"
+    CHALLENGE_TEXT = "push_challenge_text"
 
 
 class PushAllowPolling:

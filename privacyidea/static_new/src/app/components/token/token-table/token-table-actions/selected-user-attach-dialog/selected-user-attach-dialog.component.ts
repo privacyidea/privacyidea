@@ -19,7 +19,7 @@
 import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
@@ -51,6 +51,7 @@ export interface SelectedUserAssignResult {
     MatInput,
     MatIcon,
     MatButtonModule,
+    MatSuffix,
     ClearableInputComponent,
     DialogWrapperComponent
   ],

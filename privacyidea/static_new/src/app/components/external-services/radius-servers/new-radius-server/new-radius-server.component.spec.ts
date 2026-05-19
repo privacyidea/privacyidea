@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, ParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -50,7 +49,7 @@ describe("NewRadiusServerComponent", () => {
     routerMock = { navigateByUrl: jest.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
-      imports: [NewRadiusServerComponent, NoopAnimationsModule],
+      imports: [NewRadiusServerComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

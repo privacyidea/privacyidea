@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollRemoteComponent } from "./enroll-remote.component";
 
 describe("EnrollRemoteComponent", () => {
@@ -29,7 +28,7 @@ describe("EnrollRemoteComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollRemoteComponent, BrowserAnimationsModule],
+      imports: [EnrollRemoteComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 

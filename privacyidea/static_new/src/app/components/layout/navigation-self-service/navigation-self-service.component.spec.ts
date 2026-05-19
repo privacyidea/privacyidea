@@ -20,8 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { By } from "@angular/platform-browser";
 import { ActivatedRoute } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -59,11 +57,10 @@ describe("NavigationSelfServiceComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NavigationSelfServiceComponent, BrowserAnimationsModule],
+      imports: [NavigationSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideAnimationsAsync(),
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: AuthService, useClass: MockAuthService },
         { provide: UserService, useClass: MockUserService },
@@ -223,6 +220,6 @@ describe("NavigationSelfServiceComponent", () => {
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
       .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
-    expect(keys).toContain(ROUTE_PATHS.TOKENS_CONTAINERS);
+    expect(keys).toContain(ROUTE_PATHS.CONTAINERS);
   });
 });

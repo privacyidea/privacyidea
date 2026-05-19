@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
@@ -37,7 +36,7 @@ describe("EnrollHotpComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollHotpComponent, BrowserAnimationsModule],
+      imports: [EnrollHotpComponent],
       providers: [
         { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService },

@@ -78,9 +78,15 @@ log = logging.getLogger(__name__)
 
 # Keys that are part of the Yubico Validation Protocol v2 and must be included
 # in the HMAC signature.  Everything else in request.all_data (e.g. 'ttype',
-# or any future privacyIDEA-internal key) is silently ignored.
-# https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
-_YUBICO_PROTOCOL_KEYS = frozenset({"id", "nonce", "otp", "sl", "timeout", "timestamp"})
+# or any future privacyIDEA-internal key) is silently ignored.  This set is the
+# union of request fields (id, nonce, otp, sl, timeout, timestamp) and response
+# fields (otp, nonce, t, status, timestamp, sessioncounter, sessionuse, sl), so
+# the same helper can both sign outgoing requests and verify server responses.
+# https://developers.yubico.com/OTP/Specifications/OTP_validation_protocol.html
+_YUBICO_PROTOCOL_KEYS = frozenset({
+    "id", "nonce", "otp", "sl", "timeout", "timestamp",
+    "t", "status", "sessioncounter", "sessionuse",
+})
 
 
 def yubico_api_signature(data, api_key):
@@ -296,7 +302,8 @@ class YubikeyTokenClass(TokenClass):
         # occupies the last 2 bytes of the decrypted OTP value. Calculating the
         # CRC-16 checksum of the whole decrypted OTP should give a fixed
         # residual
-        # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details).
+        # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details,
+        # https://downloads.yubico.com/support/yubico_YubiKey-Technical-Manual-v3.3_2014.pdf).
         crc16 = checksum(msg_bin)
         log.debug(f"calculated checksum (61624): {crc16!r}")
         if crc16 != 0xf0b8:  # pragma: no cover
@@ -366,7 +373,7 @@ class YubikeyTokenClass(TokenClass):
 
         The endpoint /ttype/yubikey is used for the Yubico validate request
         according to
-        https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
+        https://developers.yubico.com/OTP/Specifications/OTP_validation_protocol.html
 
         :param request: The Flask request
         :param g: The Flask global object g

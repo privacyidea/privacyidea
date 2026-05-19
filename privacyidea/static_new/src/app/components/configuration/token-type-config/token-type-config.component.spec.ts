@@ -2,7 +2,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { NotificationService } from "@services/notification/notification.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
@@ -25,7 +24,7 @@ describe("TokenTypeConfigComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenTypeConfigComponent, NoopAnimationsModule],
+      imports: [TokenTypeConfigComponent],
       providers: [
         { provide: ActivatedRoute, useClass: MockActivatedRoute },
         provideHttpClient(),

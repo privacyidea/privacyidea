@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Observable, of } from "rxjs";
 
 import { TokenSshMachineAssignDialogComponent } from "./token-ssh-machine-attach-dialog";
@@ -52,7 +51,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     userSvc = new MockUserService();
 
     await TestBed.configureTestingModule({
-      imports: [TokenSshMachineAssignDialogComponent, BrowserAnimationsModule, MatDialogModule],
+      imports: [TokenSshMachineAssignDialogComponent, MatDialogModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

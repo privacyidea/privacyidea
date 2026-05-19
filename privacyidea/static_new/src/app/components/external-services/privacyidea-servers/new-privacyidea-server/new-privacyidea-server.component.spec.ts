@@ -21,7 +21,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -42,7 +41,7 @@ describe("NewPrivacyideaServerComponent", () => {
     paramMapSubject = new BehaviorSubject(convertToParamMap({}));
 
     await TestBed.configureTestingModule({
-      imports: [NewPrivacyideaServerComponent, NoopAnimationsModule],
+      imports: [NewPrivacyideaServerComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

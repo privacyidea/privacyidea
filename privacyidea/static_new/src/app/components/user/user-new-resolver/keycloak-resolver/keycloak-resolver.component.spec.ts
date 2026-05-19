@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { KeycloakResolverComponent } from "./keycloak-resolver.component";
@@ -37,7 +36,7 @@ describe("KeycloakResolverComponent", () => {
         provideHttpClientTesting(),
         { provide: ResolverService, useClass: MockResolverService }
       ],
-      imports: [KeycloakResolverComponent, NoopAnimationsModule]
+      imports: [KeycloakResolverComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(KeycloakResolverComponent);

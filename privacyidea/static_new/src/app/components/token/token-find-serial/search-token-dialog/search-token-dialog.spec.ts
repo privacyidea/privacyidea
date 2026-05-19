@@ -18,7 +18,6 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { SearchTokenDialogComponent } from "./search-token-dialog";
 
@@ -29,7 +28,7 @@ describe("SearchTokenDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, SearchTokenDialogComponent],
+      imports: [SearchTokenDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: 100 }

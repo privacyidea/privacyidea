@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { QuestionnaireConfigComponent } from "@components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component";
 import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
@@ -31,7 +30,7 @@ describe("QuestionnaireConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [QuestionnaireConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(QuestionnaireConfigComponent);
     fixture.componentRef.setInput("formData", {});

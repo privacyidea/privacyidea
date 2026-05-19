@@ -20,7 +20,6 @@
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { AddedActionsListComponent } from "./added-actions-list.component";
@@ -50,7 +49,7 @@ describe("AddedActionsListComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddedActionsListComponent],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(AddedActionsListComponent, {
         set: {

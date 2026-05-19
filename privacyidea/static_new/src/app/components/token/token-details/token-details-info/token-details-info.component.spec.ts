@@ -18,7 +18,6 @@
  **/
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsInfoComponent } from "./token-details-info.component";
@@ -52,7 +51,7 @@ describe("TokenDetailsInfoComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsInfoComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsInfoComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

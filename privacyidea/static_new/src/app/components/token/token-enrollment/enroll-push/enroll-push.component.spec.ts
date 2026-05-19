@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PiResponse } from "@app/app.component";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { PushApiPayloadMapper } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
@@ -67,7 +66,7 @@ describe("EnrollPushComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollPushComponent, NoopAnimationsModule],
+      imports: [EnrollPushComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

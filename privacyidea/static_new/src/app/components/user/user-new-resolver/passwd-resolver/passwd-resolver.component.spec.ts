@@ -18,7 +18,6 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PasswdResolverComponent } from "./passwd-resolver.component";
 
 describe("PasswdResolverComponent", () => {
@@ -28,7 +27,7 @@ describe("PasswdResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PasswdResolverComponent, NoopAnimationsModule]
+      imports: [PasswdResolverComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PasswdResolverComponent);

@@ -11,7 +11,6 @@
 
 import { Component, Input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { PolicyFilterComponent } from "./policy-filter.component";
@@ -28,7 +27,7 @@ describe("PolicyFilterComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyFilterComponent, NoopAnimationsModule]
+      imports: [PolicyFilterComponent]
     })
       .overrideComponent(PolicyFilterComponent, {
         set: { imports: [MockClearableInput] }

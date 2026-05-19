@@ -17,10 +17,14 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""This is the audit REST API that can be used to retrieve the
-privacyIDDEA authentication clients, which used privacyIDEA to authenticate.
+__doc__ = """
+The client REST API lists the client applications (PAM, SAML, RADIUS,
+Keycloak, ...) that have authenticated against privacyIDEA, grouped by
+client type. Entries are populated automatically as clients hit the
+:ref:`rest_validate` endpoints.
 
-  GET /clients
+Access requires admin authentication and the admin policy action
+:ref:`policy_clienttype`.
 """
 from flask import (Blueprint, request)
 from .lib.utils import send_result
@@ -39,14 +43,19 @@ client_blueprint = Blueprint('client_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.CLIENTTYPE)
 def get_clients():
     """
-    return a list of authenticated clients grouped (dictionary) by the
-    clienttype.
+    Return all client applications that have authenticated against
+    privacyIDEA, grouped by client type. The result is a dictionary keyed
+    by client type (``PAM``, ``SAML``, ``RADIUS``, ...) where each value
+    is a list of records carrying the client's IP, hostname and the most
+    recent ``lastseen`` timestamp across all nodes.
+
+    Requires the admin policy action :ref:`policy_clienttype`.
 
     **Example request**:
 
     .. sourcecode:: http
 
-      GET /client HTTP/1.1
+      GET /client/ HTTP/1.1
       Host: example.com
       Accept: application/json
 
@@ -57,16 +66,23 @@ def get_clients():
       HTTP/1.1 200 OK
       Content-Type: application/json
 
-       {
-         "id": 1,
-         "jsonrpc": "2.0",
-         "result": {
-           "status": true,
-           "value": {"PAM": [],
-                     "SAML": [],
-         },
-         "version": "privacyIDEA unknown"
-       }
+      {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "result": {
+          "status": true,
+          "value": {
+            "PAM": [
+              {"ip": "10.0.0.5", "hostname": "host1.example.com",
+               "lastseen": "2026-05-01 12:34:56"}
+            ],
+            "SAML": []
+          }
+        },
+        "version": "privacyIDEA unknown"
+      }
+
+    :status 200: clients returned in ``result.value``.
     """
     clients = get_clientapplication()
     g.audit_object.log({'success': True})
