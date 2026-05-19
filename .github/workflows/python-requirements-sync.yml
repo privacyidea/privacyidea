@@ -36,10 +36,11 @@ jobs:
         with:
           python-version: ${{ steps.pyversions.outputs.min }}
       - name: Install pip-tools
-        # Pinned so the drift check always uses the same pip-compile version.
-        # pip-compile output can change between pip-tools releases, which would
-        # otherwise produce spurious diffs unrelated to the PR.
-        run: pip install pip-tools==7.4.1
+        # Pin both pip and pip-tools so the drift check is reproducible.
+        # pip-compile output can change between pip-tools releases (spurious
+        # diffs), and pip-tools 7.4.1 is incompatible with pip>=25 (which
+        # dropped PackageFinder.allow_all_prereleases).
+        run: pip install "pip==24.3.1" "pip-tools==7.4.1"
       - name: Recompile runtime requirements
         run: pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
       - name: Recompile test requirements
