@@ -47,6 +47,7 @@ describe("CaConnectorService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        CaConnectorService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }

@@ -26,6 +26,8 @@ import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { MachineService } from "@services/machine/machine.service";
 import { MachinesComponent } from "./machines.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -46,7 +48,8 @@ describe("MachinesComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: MachineService, useValue: machineServiceMock }
+        { provide: MachineService, useValue: machineServiceMock },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 

@@ -8,9 +8,10 @@ import { NotificationService } from "@services/notification/notification.service
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { MockPendingChangesService, MockSystemService } from "@testing/mock-services";
 import { Observable, of } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -45,7 +46,11 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() } }
+        {
+          provide: NotificationService,
+          useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() }
+        },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 

@@ -22,6 +22,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollApplspecComponent } from "./enroll-applspec.component";
+import { ServiceIdService } from "@services/service-id/service-id.service";
+import { MockServiceIdService, MockTokenService} from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
@@ -30,7 +33,10 @@ describe("EnrollAspComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollApplspecComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollApplspecComponent);

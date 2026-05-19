@@ -50,7 +50,7 @@ describe("ContentService", () => {
     };
 
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), { provide: Router, useValue: mockRouter }]
+      providers: [provideHttpClient(), ContentService, { provide: Router, useValue: mockRouter }]
     });
 
     service = TestBed.inject(ContentService);

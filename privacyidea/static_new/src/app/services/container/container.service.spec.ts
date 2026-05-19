@@ -31,11 +31,13 @@ import {
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
-  MockTokenService
+  MockTokenService,
+  MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { ContainerDetails, ContainerService } from "./container.service";
+import { UserService } from "@services/user/user.service";
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
@@ -52,10 +54,12 @@ describe("ContainerService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        ContainerService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService
       ]

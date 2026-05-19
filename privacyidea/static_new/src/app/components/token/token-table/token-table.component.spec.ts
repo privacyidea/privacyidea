@@ -31,7 +31,7 @@ import {
     MockContainerService,
     MockContentService,
     MockLocalService,
-    MockNotificationService,
+    MockNotificationService, MockRealmService,
     MockTableUtilsService,
     MockTokenService
 } from "@testing/mock-services";
@@ -40,6 +40,7 @@ import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
+import { RealmService } from "@services/realm/realm.service";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -78,6 +79,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]

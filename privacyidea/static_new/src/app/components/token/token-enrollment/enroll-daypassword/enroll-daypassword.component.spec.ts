@@ -30,7 +30,8 @@ import {
 } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
 
@@ -47,6 +48,7 @@ describe("EnrollDaypasswordComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();

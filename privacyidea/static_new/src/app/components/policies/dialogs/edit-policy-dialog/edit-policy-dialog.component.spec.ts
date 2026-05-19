@@ -23,10 +23,11 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyService } from "@services/policies/policies.service";
-import { MockPendingChangesService, MockPolicyService } from "@testing/mock-services";
+import { MockContentService, MockPendingChangesService, MockPolicyService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 
@@ -49,6 +50,7 @@ function createTestBed(paramName: string | null) {
         useValue: { navigateByUrl: jest.fn(), events: of(), url: ROUTE_PATHS.POLICIES }
       },
       { provide: PolicyService, useClass: MockPolicyService },
+      { provide: ContentService, useClass: MockContentService },
       { provide: DialogService, useClass: MockDialogService },
       { provide: PendingChangesService, useClass: MockPendingChangesService }
     ]

@@ -24,8 +24,9 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { MockCaConnectorService, MockPendingChangesService } from "@testing/mock-services";
+import { MockCaConnectorService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { NewCaConnectorComponent } from "./new-ca-connector.component";
 
 describe("NewCaConnectorComponent", () => {
@@ -42,6 +43,7 @@ describe("NewCaConnectorComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: CaConnectorService, useClass: MockCaConnectorService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();

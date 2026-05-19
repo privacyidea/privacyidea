@@ -24,10 +24,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { PrivacyideaServersComponent } from "./privacyidea-servers.component";
 
@@ -59,7 +61,9 @@ describe("PrivacyideaServersComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 

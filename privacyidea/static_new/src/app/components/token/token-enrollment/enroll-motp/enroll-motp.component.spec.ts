@@ -22,6 +22,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollMotpComponent } from "./enroll-motp.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
@@ -30,7 +32,8 @@ describe("EnrollMotpComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollMotpComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollMotpComponent);

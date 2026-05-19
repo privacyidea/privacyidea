@@ -36,12 +36,18 @@ import { ValidateService } from "@services/validate/validate.service";
 import {
   MockAuditService,
   MockContainerService,
+  MockContentService,
   MockNotificationService,
+  MockRealmService,
+  MockTableUtilsService,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ContentService } from "@services/content/content.service";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -75,7 +81,10 @@ describe("ContainerDetailsComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: UserService, useClass: MockUserService },
-        { provide: PendingChangesService, useClass: MockPendingChangesService }
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 

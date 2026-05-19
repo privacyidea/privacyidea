@@ -19,6 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button.component";
 
@@ -30,12 +32,8 @@ describe("NavigationSelfServiceButtonComponent", () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        }
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: ContentService, useClass: MockContentService }
       ],
       imports: [NavigationSelfServiceButtonComponent]
     }).compileComponents();

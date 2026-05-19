@@ -21,6 +21,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body.component";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
+import { SystemService } from "@services/system/system.service";
 
 const baseTemplate: ContainerTemplate = {
   name: "Test",
@@ -37,13 +40,20 @@ describe("ContainerTemplateEditBodyComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateEditBodyComponent, NoopAnimationsModule]
+      imports: [ContainerTemplateEditBodyComponent, NoopAnimationsModule],
+      providers: [
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: SystemService, useClass: MockSystemService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTemplateEditBodyComponent);
     component = fixture.componentInstance;
 
-    fixture.componentRef.setInput("template", { ...baseTemplate, template_options: { tokens: [...baseTemplate.template_options.tokens] } });
+    fixture.componentRef.setInput("template", {
+      ...baseTemplate,
+      template_options: { tokens: [...baseTemplate.template_options.tokens] }
+    });
     fixture.componentRef.setInput("availableTokenTypes", ["hotp", "totp"]);
     fixture.detectChanges();
   });

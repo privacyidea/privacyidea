@@ -22,6 +22,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollCertificateComponent } from "./enroll-certificate.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService, MockSystemService} from "@testing/mock-services";
+import { SystemService } from "@services/system/system.service";
 
 describe("EnrollCertComponent", () => {
   let component: EnrollCertificateComponent;
@@ -30,7 +33,10 @@ describe("EnrollCertComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollCertificateComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: SystemService, useClass: MockSystemService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollCertificateComponent);

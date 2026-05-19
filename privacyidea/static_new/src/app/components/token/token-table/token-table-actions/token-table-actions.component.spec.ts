@@ -31,16 +31,20 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { BulkResult, TokenDetails, TokenService } from "@services/token/token.service";
 import { VersioningService } from "@services/version/version.service";
 import {
-    MockAuditService,
-    MockContentService,
-    MockNotificationService,
-    MockPiResponse,
-    MockTokenService,
-    MockVersioningService
+  MockAuditService,
+  MockContentService,
+  MockDocumentationService,
+  MockNotificationService,
+  MockPiResponse,
+  MockTableUtilsService,
+  MockTokenService,
+  MockVersioningService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 import { TokenTableActionsComponent } from "./token-table-actions.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
 
 describe("TokenTableActionsComponent", () => {
   let component: TokenTableActionsComponent;
@@ -78,7 +82,9 @@ describe("TokenTableActionsComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuditService, useClass: MockAuditService },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: DocumentationService, useClass: MockDocumentationService }
       ]
     }).compileComponents();
     fixture = TestBed.createComponent(TokenTableActionsComponent);

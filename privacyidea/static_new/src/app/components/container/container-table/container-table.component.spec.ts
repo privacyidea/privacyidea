@@ -40,14 +40,16 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-    MockContainerService,
-    MockContentService,
-    MockDialogService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService
+  MockContainerService,
+  MockContentService,
+  MockDialogService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService,
+  MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { TokenService } from "@services/token/token.service";
 
 function makeResource<T>(initial: T) {
   return {
@@ -74,6 +76,7 @@ describe("ContainerTableComponent (Jest)", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: TokenService, useClass: MockTokenService },
         {
           provide: Router,
           useValue: {
@@ -236,6 +239,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         { provide: MatDialogRef, useValue: { close: () => {} } },
         {

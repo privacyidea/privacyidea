@@ -28,7 +28,9 @@ import { UserDetailsComponent } from "./user-details.component";
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
+import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -36,6 +38,8 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
+    MockAuditService,
+    MockContainerService,
     MockContentService,
     MockDialogService,
     MockLocalService,
@@ -106,6 +110,8 @@ describe("UserDetailsComponent", () => {
         },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: ContainerService, useClass: MockContainerService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },

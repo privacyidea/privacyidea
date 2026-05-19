@@ -25,8 +25,12 @@ import { Renderer2, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ContainerRegistrationCompletedDialogComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
-import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import {
+  ContainerRegistrationCompletedDialogComponent
+} from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import {
+  ContainerRegistrationCompletedDialogWizardComponent
+} from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
@@ -38,6 +42,7 @@ import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
+  MockContainerTemplateService,
   MockContentService,
   MockDialogService,
   MockLocalService,
@@ -52,7 +57,10 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
+import {
+  ContainerCreatedDialogWizardComponent
+} from "./container-created-dialog/container-created-dialog.wizard.component";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
 
 class MockIntersectionObserver {
   observe = jest.fn();
@@ -146,6 +154,7 @@ describe("ContainerCreateComponent", () => {
         { provide: VersioningService, useClass: DummyVersioningService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        {provide: ContainerTemplateService, useClass: MockContainerTemplateService},
         MockLocalService,
         MockNotificationService
       ]
