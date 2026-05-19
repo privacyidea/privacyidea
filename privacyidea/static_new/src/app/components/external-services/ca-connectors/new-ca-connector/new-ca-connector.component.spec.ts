@@ -20,7 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
@@ -36,7 +35,7 @@ describe("NewCaConnectorComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NewCaConnectorComponent, NoopAnimationsModule],
+      imports: [NewCaConnectorComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

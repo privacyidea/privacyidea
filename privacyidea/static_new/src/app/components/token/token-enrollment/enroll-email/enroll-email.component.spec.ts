@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollEmailComponent } from "./enroll-email.component";
 
 describe("EnrollEmailComponent", () => {
@@ -29,7 +28,7 @@ describe("EnrollEmailComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollEmailComponent, BrowserAnimationsModule],
+      imports: [EnrollEmailComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 

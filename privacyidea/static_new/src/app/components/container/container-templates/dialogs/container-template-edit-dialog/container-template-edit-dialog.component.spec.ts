@@ -20,7 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
@@ -41,7 +40,7 @@ describe("ContainerTemplateEditDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateEditDialogComponent, NoopAnimationsModule],
+      imports: [ContainerTemplateEditDialogComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

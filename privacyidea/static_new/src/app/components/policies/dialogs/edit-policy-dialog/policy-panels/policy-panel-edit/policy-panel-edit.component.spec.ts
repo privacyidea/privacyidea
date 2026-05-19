@@ -19,7 +19,6 @@
 
 import { Component, input, output, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -71,7 +70,7 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyPanelEditComponent, NoopAnimationsModule],
+      imports: [PolicyPanelEditComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: DialogService, useClass: MockDialogService },

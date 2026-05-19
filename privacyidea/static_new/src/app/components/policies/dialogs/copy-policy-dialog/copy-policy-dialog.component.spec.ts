@@ -21,7 +21,6 @@ import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
 
 class MockMatDialogRef {
@@ -48,7 +47,7 @@ describe("CopyPolicyDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CopyPolicyDialogComponent, NoopAnimationsModule, ReactiveFormsModule],
+      imports: [CopyPolicyDialogComponent, ReactiveFormsModule],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: initialPolicyName }

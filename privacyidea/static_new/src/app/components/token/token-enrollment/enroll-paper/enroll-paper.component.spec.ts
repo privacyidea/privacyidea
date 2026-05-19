@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollPaperComponent } from "./enroll-paper.component";
 
 describe("EnrollPaperComponent", () => {
@@ -29,7 +28,7 @@ describe("EnrollPaperComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollPaperComponent, BrowserAnimationsModule],
+      imports: [EnrollPaperComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 

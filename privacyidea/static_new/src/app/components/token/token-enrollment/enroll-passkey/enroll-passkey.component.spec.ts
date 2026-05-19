@@ -20,7 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { Base64Service } from "@services/base64/base64.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -54,7 +53,7 @@ describe("EnrollPasskeyComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [EnrollPasskeyComponent, NoopAnimationsModule],
+      imports: [EnrollPasskeyComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

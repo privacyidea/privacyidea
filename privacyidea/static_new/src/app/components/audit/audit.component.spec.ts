@@ -20,7 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -67,7 +66,6 @@ describe("AuditComponent (unit)", () => {
       imports: [AuditComponent],
       providers: [
         provideHttpClient(),
-        provideNoopAnimations(),
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
         { provide: MockAuditService as any, useClass: MockAuditService },
         { provide: MockTableUtilsService as any, useClass: MockTableUtilsService },

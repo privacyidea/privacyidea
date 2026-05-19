@@ -17,6 +17,7 @@
 @include meta.load-css("actions.scss");
 @include meta.load-css("overflow.scss");
 @include meta.load-css("snackbar.scss");
+@include meta.load-css("animations.scss");
 
 html,
 body {
