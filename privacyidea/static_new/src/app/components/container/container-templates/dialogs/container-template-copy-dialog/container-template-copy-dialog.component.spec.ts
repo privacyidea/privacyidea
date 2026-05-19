@@ -21,7 +21,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -40,7 +39,7 @@ describe("ContainerTemplateCopyDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateCopyDialogComponent, NoopAnimationsModule],
+      imports: [ContainerTemplateCopyDialogComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

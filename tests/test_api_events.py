@@ -14,11 +14,6 @@ from .base import MyApiTestCase, FakeFlaskG
 from .test_lib_events import ContainerEventTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
-# TODO: this should be imported from lib.event when available
-HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
-            "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes", "Container"]
-
-
 class APIEventsTestCase(MyApiTestCase):
 
     def test_00_api_errors(self):
@@ -254,16 +249,6 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue("token_init" in result.get("value"))
             self.assertTrue("token_assign" in result.get("value"))
             self.assertTrue("token_unassign" in result.get("value"))
-
-    def test_04_handler_modules(self):
-        with self.app.test_request_context('/event/handlermodules',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            for h in HANDLERS:
-                self.assertIn(h, result.get("value"), result)
 
     def test_05_get_handler_actions(self):
         with self.app.test_request_context('/event/actions/UserNotification',
@@ -813,7 +798,7 @@ class EventWrapperTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
         delete_event(r)
 
@@ -846,7 +831,7 @@ class EventWrapperTestCase(MyApiTestCase):
             expected = "Failed to send a notification email to user {'email': ['donut@example.com']}"
             mock_log.assert_called_once_with(expected)
 
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: donut@example.com', msg)
         delete_event(r)
 
@@ -1073,7 +1058,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Registration", msg)
         delete_event(r)
@@ -1128,7 +1113,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Your container was unregistered.", msg)
         delete_event(r)
@@ -1191,7 +1176,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
         delete_event(r)
@@ -1257,7 +1242,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
 

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { of, throwError } from "rxjs";
 
 import { HttpClient, provideHttpClient } from "@angular/common/http";
@@ -130,7 +129,7 @@ describe("ContainerCreateComponent", () => {
     };
     let DummyVersioningService;
     await TestBed.configureTestingModule({
-      imports: [ContainerCreateComponent, NoopAnimationsModule],
+      imports: [ContainerCreateComponent],
       providers: [
         provideHttpClient(),
         { provide: MatDialog, useValue: matDialogMock },

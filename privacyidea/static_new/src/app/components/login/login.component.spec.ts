@@ -21,7 +21,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthData, AuthDetail, AuthService } from "@services/auth/auth.service";
@@ -61,7 +60,7 @@ describe("LoginComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [LoginComponent, BrowserAnimationsModule],
+      imports: [LoginComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

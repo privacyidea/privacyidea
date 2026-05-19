@@ -21,7 +21,6 @@ import { Component, EventEmitter, Output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormControl } from "@angular/forms";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 
@@ -40,7 +39,7 @@ describe("TemplateAddedTokenRowComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TemplateAddedTokenRowComponent, NoopAnimationsModule]
+      imports: [TemplateAddedTokenRowComponent]
     })
       .overrideComponent(TemplateAddedTokenRowComponent, {
         remove: { imports: [EnrollHotpComponent] },

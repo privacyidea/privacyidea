@@ -162,36 +162,41 @@
         *matCellDef="let element"
         [attr.colspan]="columnKeysSelfService.length"
         mat-cell>
-        <div
-          [@detailExpand]="expandedElement === element ? 'expanded' : 'collapsed'"
-          class="expanded-detail">
-          <div class="expanded-token-list-self-serivce">
-            @for (token of element.tokens; track token) {
-              <div class="token-item">
-                @if (containerService.containerBelongsToUser(token.container_serial)) {
-                  <a (click)="contentService.tokenSelected(token.serial)">
-                    {{ token.serial }}
-                  </a>
-                } @else {
-                  {{ token.serial }}
+        @if (expandedElement === element) {
+          <div
+            animate.enter="detail-expand-enter"
+            animate.leave="detail-expand-leave"
+            class="expanded-detail">
+            <div class="expanded-detail-content">
+              <div class="expanded-token-list-self-serivce">
+                @for (token of element.tokens; track token) {
+                  <div class="token-item">
+                    @if (containerService.containerBelongsToUser(token.container_serial)) {
+                      <a (click)="contentService.tokenSelected(token.serial)">
+                        {{ token.serial }}
+                      </a>
+                    } @else {
+                      {{ token.serial }}
+                    }
+                    @if (token.tokentype) {
+                      [
+                      <span i18n>
+                        {{ token.tokentype }} </span
+                      >]
+                    }
+                  </div>
                 }
-                @if (token.tokentype) {
-                  [
-                  <span i18n>
-                    {{ token.tokentype }} </span
-                  >]
+                @if (element.tokens?.length === 0) {
+                  <div
+                    class="flex ali-center"
+                    i18n>
+                    Container has no tokens.
+                  </div>
                 }
               </div>
-            }
-            @if (element.tokens?.length === 0) {
-              <div
-                class="flex ali-center"
-                i18n>
-                Container has no tokens.
-              </div>
-            }
+            </div>
           </div>
-        </div>
+        }
       </td>
     </ng-container>
 

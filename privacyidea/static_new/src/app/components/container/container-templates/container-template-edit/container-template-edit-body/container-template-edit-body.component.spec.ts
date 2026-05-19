@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body.component";
 
@@ -37,7 +36,7 @@ describe("ContainerTemplateEditBodyComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateEditBodyComponent, NoopAnimationsModule]
+      imports: [ContainerTemplateEditBodyComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTemplateEditBodyComponent);

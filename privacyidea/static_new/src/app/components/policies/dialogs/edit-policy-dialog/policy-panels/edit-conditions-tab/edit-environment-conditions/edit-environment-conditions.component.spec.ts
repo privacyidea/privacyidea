@@ -20,14 +20,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { EditEnvironmentConditionsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { SystemService } from "@services/system/system.service";
-import { MockClientsService } from "@testing/mock-services/mock-clients-service";
-import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
-import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { EditEnvironmentConditionsComponent } from "./edit-environment-conditions.component";
+import { MockClientsService, MockPolicyService, MockSystemService } from "@testing/mock-services";
 
 describe("EditEnvironmentConditionsComponent", () => {
   let component: EditEnvironmentConditionsComponent;
@@ -39,9 +36,7 @@ describe("EditEnvironmentConditionsComponent", () => {
       imports: [EditEnvironmentConditionsComponent, ReactiveFormsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
-        { provide: SystemService, useClass: MockSystemService },
-        { provide: ClientsService, useClass: MockClientsService },
-        provideNoopAnimations()
+        { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 

@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollApplspecComponent } from "./enroll-applspec.component";
 
 describe("EnrollAspComponent", () => {
@@ -29,7 +28,7 @@ describe("EnrollAspComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollApplspecComponent, BrowserAnimationsModule],
+      imports: [EnrollApplspecComponent],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 

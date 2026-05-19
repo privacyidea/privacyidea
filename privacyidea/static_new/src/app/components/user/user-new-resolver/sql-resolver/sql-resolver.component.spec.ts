@@ -18,7 +18,6 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { SqlResolverComponent } from "./sql-resolver.component";
@@ -30,7 +29,7 @@ describe("SqlResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SqlResolverComponent, NoopAnimationsModule],
+      imports: [SqlResolverComponent],
       providers: [{ provide: ResolverService, useClass: MockResolverService }]
     }).compileComponents();
 

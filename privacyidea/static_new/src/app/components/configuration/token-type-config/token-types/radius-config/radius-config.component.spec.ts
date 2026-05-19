@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
 import { RADIUS_SERVER } from "@constants/token.constants";
@@ -31,7 +30,7 @@ describe("RadiusConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RadiusConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(RadiusConfigComponent);
     fixture.componentRef.setInput("formData", {});

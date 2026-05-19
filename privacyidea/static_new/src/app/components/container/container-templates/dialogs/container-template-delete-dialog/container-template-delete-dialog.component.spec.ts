@@ -20,7 +20,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { ContainerTemplate } from "@services/container/container.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -48,7 +47,7 @@ describe("ContainerTemplateDeleteDialogComponent", () => {
 
   async function createComponent(data: ContainerTemplate[] = mockData) {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateDeleteDialogComponent, NoopAnimationsModule],
+      imports: [ContainerTemplateDeleteDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: data }
