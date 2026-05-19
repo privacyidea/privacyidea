@@ -28,8 +28,9 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
+import os
 from flask import (Blueprint, render_template, request,
-                   current_app, g)
+                   current_app, g, send_from_directory, redirect, abort)
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import send_html, send_result
@@ -48,6 +49,18 @@ DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 # note: the empty comment in the following line allows to include it in the docs
 DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs',
                          'it', 'ta', 'pt', 'ru', 'uk']  #:
+
+# Case-insensitive, separator-insensitive lookup: normalized key → canonical BCP 47 locale
+_LOCALE_CANONICAL = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in DEFAULT_LANGUAGE_LIST}
+
+
+def _canonical_locale(locale, lang_list=None):
+    """Return the canonical BCP 47 locale for a given input, or None if unknown."""
+    lookup = _LOCALE_CANONICAL
+    if lang_list is not None:
+        lookup = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in lang_list}
+    return lookup.get(locale.replace("_", "-").lower())
+
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
@@ -112,6 +125,7 @@ def get_render_context():
     page_title = current_app.config.get("PI_PAGE_TITLE", "privacyIDEA Authentication System")
     # check if login with REMOTE_USER is allowed.
     remote_user = ""
+    force_remote_user = False
     password_reset = False
     if not hasattr(request, "all_data"):
         request.all_data = {}
@@ -127,7 +141,7 @@ def get_render_context():
                 .action_values(unique=False, write_to_audit_log=False)
             # Use the realms from the policy.
             realms = ",".join(realm_dropdown_values)
-        except AttributeError as _e:
+        except AttributeError:
             # The policy is still a boolean realm_dropdown action
             # Thus we display ALL realms
             realms = ",".join(get_realms())
@@ -213,14 +227,53 @@ def get_render_context():
     return render_context
 
 
+def _serve_locale(locale):
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    canonical = _canonical_locale(locale, pi_lang_list)
+    if not canonical:
+        return None
+    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", canonical)
+    if not os.path.isfile(os.path.join(dist, "index.html")):
+        return None
+    return send_from_directory(dist, "index.html")
+
+
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
-    render_context = get_render_context()
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
         return send_html(render_template("deactivated.html"))
+    locale = get_accepted_language()
+    if locale and locale != "en":
+        url_locale = locale.replace("_", "-")
+        dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
+        if os.path.isfile(os.path.join(dist, "index.html")):
+            return redirect(f"/app/v2/{url_locale}/")
+    en_dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", "en")
+    if os.path.isfile(os.path.join(en_dist, "index.html")):
+        return redirect("/app/v2/")
+    render_context = get_render_context()
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
+
+
+@login_blueprint.route('/app/v2/<locale>', methods=['GET'])
+@login_blueprint.route('/app/v2/<locale>/', defaults={'subpath': ''}, methods=['GET'])
+@login_blueprint.route('/app/v2/<locale>/<path:subpath>', methods=['GET'])
+def single_page_application_locale(locale, subpath=None):
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    canonical = _canonical_locale(locale, pi_lang_list)
+    if not canonical:
+        if request.accept_mimetypes.accept_html:
+            return _serve_locale("en") or abort(404)
+        abort(404)
+    if canonical != locale or subpath is None:
+        path = f"/app/v2/{canonical}/" + (subpath or "")
+        qs = request.query_string.decode()
+        if qs:
+            path += "?" + qs
+        return redirect(path)
+    return _serve_locale(locale) or abort(404)
 
 
 @login_blueprint.route('/config', methods=['GET'])

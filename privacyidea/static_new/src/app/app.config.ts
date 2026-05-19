@@ -18,7 +18,13 @@
  **/
 import { APP_BASE_HREF } from "@angular/common";
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
-import { ApplicationConfig, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core";
+import {
+  ApplicationConfig,
+  inject,
+  LOCALE_ID,
+  provideAppInitializer,
+  provideZonelessChangeDetection
+} from "@angular/core";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { provideRouter } from "@angular/router";
 import { routes } from "./app.routes";
@@ -27,6 +33,13 @@ import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interc
 import { AuthService } from "./services/auth/auth.service";
 import { ConfigService } from "./services/config/config.service";
 import { ThemeService } from "./services/theme/theme.service";
+
+export function baseHrefFactory(): string {
+  const locale = inject(LOCALE_ID);
+  return locale === "en" || locale.toLowerCase().startsWith("en-")
+    ? "/app/v2/"
+    : `/app/v2/${locale}/`;
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -37,7 +50,10 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
-    { provide: APP_BASE_HREF, useValue: "/app/v2/" },
+    {
+      provide: APP_BASE_HREF,
+      useFactory: baseHrefFactory
+    },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
     provideAppInitializer(() => {
