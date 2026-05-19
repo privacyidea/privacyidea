@@ -107,8 +107,12 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
     this.http
       .get<PolicyTemplateIndex>(`${baseUrl}index.json`)
       .pipe(
-        tap((index) => this._index.set(index)),
+        tap((index) => {
+          if (this.lastBaseUrl !== baseUrl) return;
+          this._index.set(index);
+        }),
         catchError(() => {
+          if (this.lastBaseUrl !== baseUrl) return of(null);
           this.notificationService.error($localize`Error fetching policy templates.`);
           this._index.set(POLICY_TEMPLATE_INDEX);
           return of(null);
