@@ -64,7 +64,7 @@ describe("EditAdminConditionsComponent", () => {
         adminuser: ["admin1", "admin2"]
       })
     );
-    expect(component.adminFormControl.value).toBe("");
+    expect(component.adminSignal()).toBe("");
   });
 
   it("should remove admin user", () => {

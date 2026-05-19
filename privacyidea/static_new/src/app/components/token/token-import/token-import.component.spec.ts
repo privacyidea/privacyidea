@@ -100,22 +100,20 @@ describe("TokenImportComponent", () => {
     const event = { target: { files: [file] } } as any;
     component.onFileSelected(event);
     expect(component.fileName()).toBe("test.csv");
-    expect(component.file.value).toBe(file);
+    expect(component.file()).toBe(file);
   });
 
   it("should clear file selection", () => {
-    component.file.setValue("dummy");
+    component.file.set("dummy");
     component.fileName.set("dummy.csv");
     component.clearFileSelection();
-    expect(component.file.value).toBe("");
+    expect(component.file()).toBe("");
     expect(component.fileName()).toBe("");
   });
 
   it("should call importTokens and show notification on success", () => {
-    component.file.setValue(new Blob(["data"]));
+    component.file.set(new Blob(["data"]) as any);
     component.fileName.set("import.csv");
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
     jest.spyOn(tokenService, "importTokens").mockReturnValue(
       of({
         result: { value: { n_imported: 2, n_not_imported: 1 } }
@@ -127,10 +125,8 @@ describe("TokenImportComponent", () => {
   });
 
   it("should not call importTokens if form is invalid", () => {
-    component.file.setValue("");
+    component.file.set("");
     component.fileName.set("");
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
     const spy = jest.spyOn(tokenService, "importTokens");
     component.importTokens();
     expect(spy).not.toHaveBeenCalled();
@@ -138,10 +134,10 @@ describe("TokenImportComponent", () => {
 
   it("should validate preSharedKey length for PSKC", () => {
     component.fileType.set("pskc");
-    component.preSharedKey.setValue("12345678901234567890123456789012");
-    expect(component.preSharedKey.valid).toBe(true);
-    component.preSharedKey.setValue("short");
-    expect(component.preSharedKey.valid).toBe(false);
+    component.preSharedKey.set("12345678901234567890123456789012");
+    expect(component.preSharedKeyValid()).toBe(true);
+    component.preSharedKey.set("short");
+    expect(component.preSharedKeyValid()).toBe(false);
   });
 
   it("should update selectedRealms", () => {
@@ -160,14 +156,12 @@ describe("TokenImportComponent", () => {
   it("should call importTokens with correct parameters for PSKC file", () => {
     const file = new File(["pskc content"], "pskcfile.pskc", { type: "application/xml" });
     component.fileType.set("pskc");
-    component.file.setValue(file);
+    component.file.set(file);
     component.fileName.set("pskcfile.pskc");
-    component.preSharedKey.setValue("12345678901234567890123456789012");
+    component.preSharedKey.set("12345678901234567890123456789012");
     component.pskPassword.set("testpassword");
     component.pskValidation.set("check_fail_soft");
     component.selectedRealms.set(["realm1", "realm2"]);
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
 
     const importTokensSpy = jest.spyOn(tokenService, "importTokens").mockReturnValue(
       of({
@@ -191,14 +185,12 @@ describe("TokenImportComponent", () => {
   it("should not include psk and password parameters if they are empty for PSKC file", () => {
     const file = new File(["pskc content"], "pskcfile.pskc", { type: "application/xml" });
     component.fileType.set("pskc");
-    component.file.setValue(file);
+    component.file.set(file);
     component.fileName.set("pskcfile.pskc");
-    component.preSharedKey.setValue(""); // empty
+    component.preSharedKey.set(""); // empty
     component.pskPassword.set(""); // empty
     component.pskValidation.set("check_fail_hard");
     component.selectedRealms.set(["realm1"]);
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
 
     const importTokensSpy = jest.spyOn(tokenService, "importTokens").mockReturnValue(
       of({

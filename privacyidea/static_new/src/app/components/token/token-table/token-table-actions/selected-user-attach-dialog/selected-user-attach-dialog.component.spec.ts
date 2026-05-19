@@ -87,8 +87,8 @@ describe("SelectedUserAssignDialogComponent", () => {
     const testRealm = "testrealm";
     const testPin = "123456";
 
-    component.userFilterControl.setValue(testUser);
-    component.selectedUserRealmControl.setValue(testRealm);
+    component.selectedUser.set(testUser);
+    component.selectedRealm.set(testRealm);
     component.pin.set(testPin);
     component.pinRepeat.set(testPin);
 
@@ -120,22 +120,22 @@ describe("SelectedUserAssignDialogComponent", () => {
     const testPin = "123456";
 
     // No user selected
-    component.userFilterControl.setValue(null);
-    component.selectedUserRealmControl.setValue(testRealm);
+    component.selectedUser.set(null);
+    component.selectedRealm.set(testRealm);
     component.pin.set(testPin);
     component.pinRepeat.set(testPin);
     component.onConfirm();
     expect((component as any).dialogRef.close).not.toHaveBeenCalled();
 
     // No realm selected
-    component.userFilterControl.setValue(testUser);
-    component.selectedUserRealmControl.setValue("");
+    component.selectedUser.set(testUser);
+    component.selectedRealm.set("");
     component.onConfirm();
     expect((component as any).dialogRef.close).not.toHaveBeenCalled();
 
     // Pins do not match
-    component.userFilterControl.setValue(testUser);
-    component.selectedUserRealmControl.setValue(testRealm);
+    component.selectedUser.set(testUser);
+    component.selectedRealm.set(testRealm);
     component.pin.set(testPin);
     component.pinRepeat.set("654321");
     component.onConfirm();

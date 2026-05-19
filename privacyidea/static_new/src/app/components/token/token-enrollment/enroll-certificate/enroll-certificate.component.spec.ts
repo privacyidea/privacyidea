@@ -50,8 +50,8 @@ describe("EnrollCertComponent", () => {
         certTemplate: "template-abc"
       });
       component.ngOnInit();
-      expect(component.caConnectorControl.value).toBe("connector-123");
-      expect(component.certTemplateControl.value).toBe("template-abc");
+      expect(component.caConnector()).toBe("connector-123");
+      expect(component.certTemplate()).toBe("template-abc");
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -61,8 +61,8 @@ describe("EnrollCertComponent", () => {
         certTemplate: undefined
       });
       component.ngOnInit();
-      expect(component.caConnectorControl.value).toBe("");
-      expect(component.certTemplateControl.value).toBe("");
+      expect(component.caConnector()).toBe("");
+      expect(component.certTemplate()).toBe("");
     });
   });
 });

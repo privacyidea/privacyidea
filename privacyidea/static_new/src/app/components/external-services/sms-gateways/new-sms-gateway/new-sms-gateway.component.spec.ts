@@ -146,7 +146,7 @@ describe("NewSmsGatewayComponent", () => {
         description: ""
       });
       // Simulate dirty state by triggering form interaction
-      component.smsForm().markAsTouched();
+      component.smsForm().markAsDirty();
 
       component.onCancel();
 

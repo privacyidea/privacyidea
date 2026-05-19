@@ -154,8 +154,8 @@ describe("MachineDetailsDialogComponent", () => {
   });
 
   it("should attach token", () => {
-    component.newTokenSerial = "S2";
-    component.selectedApplication = "ssh";
+    component.newTokenSerial.set("S2");
+    component.selectedApplication.set("ssh");
     component.attachToken();
     expect(machineServiceMock.postAssignMachineToToken).toHaveBeenCalledWith({
       serial: "S2",

@@ -74,14 +74,14 @@ describe("ContainerRegistrationConfigComponent", () => {
   });
 
   it("should disable checkbox if containerHasOwner is false", async () => {
-    component.containerHasOwner = false;
+    fixture.componentRef.setInput("containerHasOwner", false);
     await detectChangesStable(fixture);
     const checkboxDebug = fixture.debugElement.query(By.directive(MatCheckbox));
     expect(checkboxDebug.componentInstance.disabled).toBe(true);
   });
 
   it("should enable checkbox if containerHasOwner is true", async () => {
-    component.containerHasOwner = true;
+    fixture.componentRef.setInput("containerHasOwner", true);
     await detectChangesStable(fixture);
     const checkboxDebug = fixture.debugElement.query(By.directive(MatCheckbox));
     expect(checkboxDebug.componentInstance.disabled).toBe(false);

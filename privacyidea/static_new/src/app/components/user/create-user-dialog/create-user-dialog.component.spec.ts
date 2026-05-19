@@ -85,8 +85,7 @@ describe("CreateUserDialogComponent", () => {
   });
 
   it("should initialize resolver from realm correctly", () => {
-    expect(component.resolverControl.value).toEqual("resolver1");
-    expect(component.selectedResolver()).toBe("resolver1");
+    expect(component.resolver()).toBe("resolver1");
   });
 
   it("should set empty resolver if no realms are available", () => {
@@ -96,38 +95,38 @@ describe("CreateUserDialogComponent", () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(component.resolverControl.value).toEqual("");
-    expect(component.selectedResolver()).toBe("");
+    expect(component.resolver()).toBe("");
   });
 
-  it("selectedResolver signal should update when resolverControl value changes", () => {
-    expect(component.selectedResolver()).toBe("resolver1");
-    component.resolverControl.setValue("resolver2");
+  it("resolver signal should update when value changes", () => {
+    expect(component.resolver()).toBe("resolver1");
+    component.resolver.set("resolver2");
     fixture.detectChanges();
-    expect(component.selectedResolver()).toBe("resolver2");
+    expect(component.resolver()).toBe("resolver2");
   });
 
-  it("should initialize form controls", () => {
-    expect(component.inputGroup).toBeDefined();
+  it("should initialize form signals", () => {
     expect(component.username).toBeDefined();
-    expect(component.resolverControl).toBeDefined();
+    expect(component.resolver).toBeDefined();
+    expect(component.usernameForm).toBeDefined();
+    expect(component.resolverForm).toBeDefined();
   });
 
   it("should mark form invalid if username is empty", () => {
-    component.username.setValue("");
+    component.username.set("");
     fixture.detectChanges();
-    expect(component.inputGroup.invalid).toBe(true);
+    expect(component.canSave()).toBe(false);
   });
 
   it("should mark form invalid if resolver is empty", () => {
-    component.resolverControl.setValue("");
+    component.resolver.set("");
     fixture.detectChanges();
-    expect(component.inputGroup.invalid).toBe(true);
+    expect(component.canSave()).toBe(false);
   });
 
   it("should call notificationService if form is invalid on save", () => {
-    component.username.setValue("");
-    component.resolverControl.setValue("");
+    component.username.set("");
+    component.resolver.set("");
     fixture.detectChanges();
     component.onSave();
     expect(mockNotificationService.warning).toHaveBeenCalledWith(
@@ -136,8 +135,8 @@ describe("CreateUserDialogComponent", () => {
   });
 
   it("should call userService.createUser on valid form", async () => {
-    component.username.setValue("testuser");
-    component.resolverControl.setValue("testresolver");
+    component.username.set("testuser");
+    component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: any) => next(true)
     });
@@ -150,8 +149,8 @@ describe("CreateUserDialogComponent", () => {
   });
 
   it("should reload usersResource and navigate back on successful user creation", async () => {
-    component.username.setValue("testuser");
-    component.resolverControl.setValue("testresolver");
+    component.username.set("testuser");
+    component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: any) => next(true)
     });
@@ -174,7 +173,7 @@ describe("CreateUserDialogComponent", () => {
       realmA: { resolver: [{ name: "resolver1" } as RealmResolver] } as Realm,
       realmB: { resolver: [{ name: "resolver2" } as RealmResolver] } as Realm
     });
-    component.resolverControl.setValue("resolver1");
+    component.resolver.set("resolver1");
     fixture.detectChanges();
     expect(component.correspondingRealms()).toContain("realmA");
     expect(component.correspondingRealms()).not.toContain("realmB");
@@ -231,7 +230,7 @@ describe("CreateUserDialogComponent", () => {
   it("onCancel should call pendingChangesService.save when dialog result is save-exit and form is valid", () => {
     const mockDialogRef = new MockMatDialogRef();
     mockDialogService.openDialog.mockReturnValue(mockDialogRef);
-    component.username.setValue("testuser");
+    component.username.set("testuser");
     component.editedUserData.set({ username: "testuser" });
     fixture.detectChanges();
     component.onCancel();
@@ -242,7 +241,7 @@ describe("CreateUserDialogComponent", () => {
   it("onCancel should not save when dialog result is save-exit but form is invalid", () => {
     const mockDialogRef = new MockMatDialogRef();
     mockDialogService.openDialog.mockReturnValue(mockDialogRef);
-    component.username.setValue("");
+    component.username.set("");
     component.editedUserData.set({ username: "draft" });
     fixture.detectChanges();
     component.onCancel();
@@ -251,8 +250,8 @@ describe("CreateUserDialogComponent", () => {
   });
 
   it("onSave should resolve false when createUser returns false", async () => {
-    component.username.setValue("testuser");
-    component.resolverControl.setValue("testresolver");
+    component.username.set("testuser");
+    component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: any) => next(false)
     });
@@ -262,8 +261,8 @@ describe("CreateUserDialogComponent", () => {
   });
 
   it("onSave should resolve false when createUser errors", async () => {
-    component.username.setValue("testuser");
-    component.resolverControl.setValue("testresolver");
+    component.username.set("testuser");
+    component.resolver.set("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ error }: any) => error(new Error("network error"))
     });

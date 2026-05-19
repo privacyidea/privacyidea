@@ -53,7 +53,7 @@ describe("VerifyEnrollmentComponent", () => {
   });
 
   it("should call verifyToken and reload on verifyOTP", () => {
-    component.otpControl.setValue("123456");
+    component.otpValue.set("123456");
     component.verifyOTP();
     expect(tokenService.verifyToken).toHaveBeenCalledWith({
       serial: tokenService.tokenSerial(),
@@ -72,13 +72,13 @@ describe("VerifyEnrollmentComponent", () => {
       })
     );
     const snackSpy = jest.spyOn(notificationService, "success");
-    component.otpControl.setValue("654321");
+    component.otpValue.set("654321");
     component.verifyOTP();
     expect(snackSpy).not.toHaveBeenCalled();
   });
 
   it("should disable button if otpControl is invalid", () => {
-    component.otpControl.setValue("");
+    component.otpValue.set("");
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector("button");
     expect(button.disabled).toBe(true);

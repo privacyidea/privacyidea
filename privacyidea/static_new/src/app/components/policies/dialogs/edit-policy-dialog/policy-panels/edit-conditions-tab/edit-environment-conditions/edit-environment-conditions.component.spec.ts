@@ -56,21 +56,21 @@ describe("EditEnvironmentConditionsComponent", () => {
   });
 
   it("should initialize form controls with policy values", () => {
-    expect(component.validTimeFormControl.value).toBe("Mon-Fri: 9-18");
-    expect(component.clientFormControl.value).toBe("10.0.0.0/8");
+    expect(component.validTimeSignal()).toBe("Mon-Fri: 9-18");
+    expect(component.clientSignal()).toBe("10.0.0.0/8");
   });
 
   it("should validate client format correctly", () => {
-    component.clientFormControl.setValue("invalid-ip");
-    expect(component.clientFormControl.invalid).toBe(true);
+    component.clientSignal.set("invalid-ip");
+    expect(component.clientField().valid()).toBe(false);
 
-    component.clientFormControl.setValue("192.168.1.1");
-    expect(component.clientFormControl.valid).toBe(true);
+    component.clientSignal.set("192.168.1.1");
+    expect(component.clientField().valid()).toBe(true);
   });
 
   it("should emit edits when adding a user agent", () => {
     const spy = jest.spyOn(component.policyEdit, "emit");
-    component.addUserAgentFormControl.setValue("NewAgent");
+    component.addUserAgentSignal.set("NewAgent");
     component.addUserAgent();
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -81,6 +81,6 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   it("should clear valid time control", () => {
     component.clearValidTimeControl();
-    expect(component.validTimeFormControl.value).toBe("");
+    expect(component.validTimeSignal()).toBe("");
   });
 });

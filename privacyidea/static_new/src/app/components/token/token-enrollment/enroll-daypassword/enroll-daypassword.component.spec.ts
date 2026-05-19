@@ -160,7 +160,7 @@ describe("EnrollDaypasswordComponent", () => {
         timeStep: "12h",
         generateOnServer: false
       });
-      component.ngOnInit();
+      fixture.detectChanges();
       expect(component.otpKey()).toBe("otp-key-123");
       expect(component.otpLength()).toBe(8);
       expect(component.hashAlgorithm()).toBe("SHA512");
@@ -177,7 +177,7 @@ describe("EnrollDaypasswordComponent", () => {
         timeStep: undefined,
         generateOnServer: undefined
       });
-      component.ngOnInit();
+      fixture.detectChanges();
       expect(component.otpKey()).toBe("");
       expect(component.otpLength()).toBe(6);
       expect(component.hashAlgorithm()).toBe("sha256");

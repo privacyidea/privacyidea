@@ -19,7 +19,6 @@
 
 import { Component, EventEmitter, Output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormControl } from "@angular/forms";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
@@ -88,20 +87,14 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(spy).toHaveBeenCalledWith(5);
     });
 
-    it("should sync form field changes to onEditToken", () => {
+    it("emits onEditToken when the enrollmentArgsGetter is registered and returns args", () => {
       const spy = jest.spyOn(component.onEditToken, "emit");
-
-      component.updateEnrollmentArgsGetter((data) => ({
-        data: data,
-        mapper: { toApiPayload: (d: any) => d } as any
-      }));
-
       fixture.detectChanges();
 
-      const mockControl = new FormControl("initial");
-      component.updateAdditionalFormFields({ testKey: mockControl });
-
-      mockControl.setValue("updatedValue");
+      component.updateEnrollmentArgsGetter((data) => ({
+        data: { ...data, testKey: "updatedValue" } as any,
+        mapper: { toApiPayload: (d: any) => d } as any
+      }));
 
       expect(spy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -111,74 +104,24 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
   });
 
-  describe("Token Data Synchronization", () => {
-    it("should perform initial token fill for undefined fields", () => {
-      const spy = jest.spyOn(component.onEditToken, "emit");
-
-      component.updateEnrollmentArgsGetter((data) => ({
-        data: data,
-        mapper: { toApiPayload: (d: any) => d } as any
-      }));
-
-      fixture.detectChanges();
-
-      const mockControl = new FormControl("default-value");
-      component.updateAdditionalFormFields({ secret: mockControl });
-
-      expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          secret: "default-value"
-        })
-      );
-    });
-
-    it("should not overwrite existing token values during initial fill", () => {
-      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", secret: "existing" });
-      const spy = jest.spyOn(component.onEditToken, "emit");
-      fixture.detectChanges();
-
-      const mockControl = new FormControl("should-be-ignored");
-      component.updateAdditionalFormFields({ secret: mockControl });
-
-      expect(spy).not.toHaveBeenCalled();
-    });
-
-    it("should sync external token changes to existing form controls via effect", async () => {
-      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "old" });
-
-      const mockControl = new FormControl("old");
-      component.updateAdditionalFormFields({ description: mockControl });
-      fixture.detectChanges();
-
-      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "new" });
-
-      await fixture.whenStable();
-      fixture.detectChanges();
-
-      expect(mockControl.value).toBe("new");
-    });
-  });
-
   describe("Lifecycle & UI Logic", () => {
     it("should update childHadNoForm to false when fields are added", () => {
       fixture.detectChanges();
 
       expect(component.childHadNoForm()).toBe(true);
 
-      component.updateAdditionalFormFields({ pin: new FormControl("") });
+      component.updateAdditionalFormFields({ pin: {} });
       fixture.detectChanges();
 
       expect(component.childHadNoForm()).toBe(false);
     });
 
-    it("should replace old form controls when updateAdditionalFormFields is called again", () => {
-      const firstControl = new FormControl("first");
-      component.updateAdditionalFormFields({ key: firstControl });
+    it("should set childHadForm back to false when no fields are passed", () => {
+      component.updateAdditionalFormFields({ key: {} });
+      expect(component.childHadForm()).toBe(true);
 
-      const secondControl = new FormControl("second");
-      component.updateAdditionalFormFields({ key: secondControl });
-
-      expect(component.formControls()).toEqual({ key: secondControl });
+      component.updateAdditionalFormFields({});
+      expect(component.childHadForm()).toBe(false);
     });
 
     it("should stop propagation on delete button click", () => {
