@@ -19,18 +19,22 @@ This implementation is for the Microsoft CA via our middleware.
 
 This module is tested in tests/test_lib_caconnector.py
 """
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
+
 import logging
 import traceback
 
-from privacyidea.lib.error import CAError
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+
+from privacyidea.lib import _
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector
-from privacyidea.lib.utils import is_true, int_to_hex
+from privacyidea.lib.error import CAError
 from privacyidea.lib.error import CSRError, CSRPending
+from privacyidea.lib.utils import is_true, int_to_hex
 from privacyidea.lib.utils import to_bytes
 
 log = logging.getLogger(__name__)
+_grpc_available = False
 try:
     import grpc
     from privacyidea.lib.caconnectors.caservice_pb2_grpc import CAServiceStub
@@ -41,8 +45,7 @@ try:
                                                             GetCertificateRequest,
                                                             RevokeCertificateRequest,
                                                             RevokeCertificateReply)
-
-
+    _grpc_available = True
 except ImportError:  # pragma: no cover
     log.warning("Can not import grpc modules.")
 
@@ -147,6 +150,8 @@ class MSCAConnector(BaseCAConnector):
         """
         creates a connection to the middleware and returns it.
         """
+        if not _grpc_available:  # pragma: no cover
+            raise CAError(_("grpc module is not available. Cannot connect to MS CA worker."))
         if self.use_ssl:
             # Secure connection
             if not (self.ssl_ca_cert and self.ssl_client_cert and self.ssl_client_key):
