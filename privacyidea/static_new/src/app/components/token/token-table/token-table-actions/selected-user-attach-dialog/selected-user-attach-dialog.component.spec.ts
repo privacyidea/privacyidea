@@ -141,4 +141,95 @@ describe("SelectedUserAssignDialogComponent", () => {
     component.onConfirm();
     expect((component as any).dialogRef.close).not.toHaveBeenCalled();
   });
+
+  describe("realm and user filter interactions", () => {
+    it("onRealmChange should reset user, filter, and persist realm in user service", () => {
+      const testUser: UserData = { username: "u1" } as UserData;
+      component.selectedUser.set(testUser);
+      component.userFilter.set("u1");
+
+      component.onRealmChange("newRealm");
+
+      expect(component.selectedRealm()).toBe("newRealm");
+      expect(component.selectedUser()).toBeNull();
+      expect(component.userFilter()).toBe("");
+      expect(component.userService.selectedUserRealm()).toBe("newRealm");
+    });
+
+    it("onUserFilterInput should clear selectedUser when filter is empty", () => {
+      component.selectedUser.set({ username: "u1" } as UserData);
+      component.onUserFilterInput("");
+      expect(component.selectedUser()).toBeNull();
+      expect(component.userFilter()).toBe("");
+    });
+
+    it("onUserFilterInput should not clear selection when filter has a value", () => {
+      const user = { username: "u1" } as UserData;
+      component.selectedUser.set(user);
+      component.onUserFilterInput("u");
+      expect(component.selectedUser()).toBe(user);
+      expect(component.userFilter()).toBe("u");
+    });
+
+    it("onUserSelected should set user and sync the filter to the username", () => {
+      const user = { username: "alice" } as UserData;
+      component.onUserSelected(user);
+      expect(component.selectedUser()).toBe(user);
+      expect(component.userFilter()).toBe("alice");
+    });
+  });
+
+  describe("displayUser", () => {
+    it("should return empty string for null", () => {
+      expect(component.displayUser(null)).toBe("");
+    });
+
+    it("should return the string value when given a string", () => {
+      expect(component.displayUser("typed")).toBe("typed");
+    });
+
+    it("should return the username when given a UserData", () => {
+      expect(component.displayUser({ username: "bob" } as UserData)).toBe("bob");
+    });
+  });
+
+  describe("onAction", () => {
+    it("should call onConfirm when value is 'submit'", () => {
+      const spy = jest.spyOn(component, "onConfirm").mockImplementation(() => {});
+      component.onAction("submit");
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it("should call onCancel when value is null", () => {
+      const spy = jest.spyOn(component, "onCancel").mockImplementation(() => {});
+      component.onAction(null);
+      expect(spy).toHaveBeenCalled();
+    });
+  });
+
+  describe("validity computed signals", () => {
+    it("realmInvalid should be true when no realm selected", () => {
+      component.selectedRealm.set("");
+      expect(component.realmInvalid()).toBe(true);
+    });
+
+    it("userInvalid should be true when no user selected", () => {
+      component.selectedUser.set(null);
+      expect(component.userInvalid()).toBe(true);
+    });
+
+    it("primary action should be disabled when realm or user invalid or pins do not match", () => {
+      component.selectedRealm.set("");
+      expect(component.actions()[0].disabled).toBe(true);
+
+      component.selectedRealm.set("realm");
+      component.selectedUser.set({ username: "u" } as UserData);
+      component.pin.set("a");
+      component.pinRepeat.set("a");
+      expect(component.actions()[0].disabled).toBe(false);
+
+      component.pinRepeat.set("b");
+      expect(component.actions()[0].disabled).toBe(true);
+    });
+  });
 });

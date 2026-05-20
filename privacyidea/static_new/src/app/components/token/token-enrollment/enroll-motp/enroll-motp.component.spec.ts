@@ -20,11 +20,21 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollMotpComponent } from "./enroll-motp.component";
 
 describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
   let fixture: ComponentFixture<EnrollMotpComponent>;
+
+  const basicOptions: TokenEnrollmentData = {
+    type: "motp",
+    description: "",
+    containerSerial: "",
+    validityPeriodStart: "",
+    validityPeriodEnd: "",
+    pin: ""
+  } as any;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -45,5 +55,85 @@ describe("EnrollMotpComponent", () => {
     expect(component.generateOnServer()).toBe(true);
     expect(component.otpKey()).toEqual("");
     expect(component.otpKeyForm().disabled()).toBe(true);
+  });
+
+  describe("motpPinForm validation", () => {
+    it("should require motpPin", () => {
+      expect(component.motpPinForm().errors().some((e: any) => e.kind === "required")).toBe(true);
+    });
+
+    it("should reject pin shorter than 4 chars", () => {
+      component.motpPin.set("abc");
+      expect(component.motpPinForm().errors().some((e: any) => e.kind === "minlength")).toBe(true);
+    });
+
+    it("should accept pin of 4 chars or longer", () => {
+      component.motpPin.set("abcd");
+      expect(component.motpPinForm().errors().some((e: any) => e.kind === "minlength")).toBe(false);
+    });
+  });
+
+  describe("repeatMotpPinForm validation", () => {
+    it("should fail when repeat differs from motpPin", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abce");
+      expect(component.repeatMotpPinForm().errors().some((e: any) => e.kind === "motpPinMismatch")).toBe(true);
+    });
+
+    it("should pass when repeat matches motpPin", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abcd");
+      expect(component.repeatMotpPinForm().errors().some((e: any) => e.kind === "motpPinMismatch")).toBe(false);
+    });
+  });
+
+  describe("enrollmentArgsGetter", () => {
+    it("should return null and mark touched when motpPin is invalid", () => {
+      component.motpPin.set("");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.motpPinForm().touched()).toBe(true);
+    });
+
+    it("should return null and mark touched when repeat pin does not match", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("xyzw");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.repeatMotpPinForm().touched()).toBe(true);
+    });
+
+    it("should return null and mark otpKey touched when generateOnServer is false and otpKey is empty", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abcd");
+      component.generateOnServer.set(false);
+      component.otpKey.set("");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.otpKeyForm().touched()).toBe(true);
+    });
+
+    it("should return data without otpKey when generateOnServer is true", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abcd");
+      component.generateOnServer.set(true);
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.type).toBe("motp");
+      expect(result!.data.generateOnServer).toBe(true);
+      expect(result!.data.motpPin).toBe("abcd");
+      expect((result!.data as any).otpKey).toBeUndefined();
+    });
+
+    it("should include otpKey when generateOnServer is false", () => {
+      component.motpPin.set("abcd");
+      component.repeatMotpPin.set("abcd");
+      component.generateOnServer.set(false);
+      component.otpKey.set("ABCDEF");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).not.toBeNull();
+      expect((result!.data as any).otpKey).toBe("ABCDEF");
+      expect(result!.data.generateOnServer).toBe(false);
+    });
   });
 });

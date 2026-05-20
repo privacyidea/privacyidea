@@ -20,18 +20,33 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { CaConnector } from "@services/ca-connector/ca-connector.service";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService } from "@testing/mock-services";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollCertificateComponent } from "./enroll-certificate.component";
 
 describe("EnrollCertComponent", () => {
   let component: EnrollCertificateComponent;
   let fixture: ComponentFixture<EnrollCertificateComponent>;
+  let systemServiceMock: MockSystemService;
+
+  const basicOptions: TokenEnrollmentData = { type: "certificate" } as any;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollCertificateComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService }
+      ]
     }).compileComponents();
 
+    systemServiceMock = TestBed.inject(SystemService) as unknown as MockSystemService;
+    systemServiceMock.caConnectorResource = new MockHttpResourceRef<any>(undefined);
     fixture = TestBed.createComponent(EnrollCertificateComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -61,6 +76,93 @@ describe("EnrollCertComponent", () => {
       });
       component.ngOnInit();
       expect(component.caConnector()).toBe("");
+      expect(component.certTemplate()).toBe("");
+    });
+  });
+
+  describe("caConnectorOptions computed", () => {
+    it("should return empty array when caConnectorResource has no value", () => {
+      expect(component.caConnectorOptions()).toEqual([]);
+    });
+
+    it("should map connectorname from the resource value", () => {
+      (systemServiceMock.caConnectorResource as MockHttpResourceRef<any>).set(
+        MockPiResponse.fromValue([
+          { connectorname: "conn-1" },
+          { connectorname: "conn-2" }
+        ])
+      );
+      const opts = (component as any).caConnectorOptions();
+      expect(opts).toEqual(["conn-1", "conn-2"]);
+    });
+  });
+
+  describe("certTemplateOptions linkedSignal", () => {
+    it("should return empty list when no caConnector is selected", () => {
+      systemServiceMock.caConnectors = signal<CaConnector[]>([]) as any;
+      expect(component.certTemplateOptions()).toEqual([]);
+    });
+
+    it("should expose templates keys of the selected connector", () => {
+      systemServiceMock.caConnectors = signal<CaConnector[]>([
+        { connectorname: "conn-1", type: "local", data: {}, templates: { t1: {}, t2: {} } },
+        { connectorname: "conn-2", type: "local", data: {}, templates: { t3: {} } }
+      ]) as any;
+      component.caConnector.set("conn-1");
+      expect(component.certTemplateOptions().sort()).toEqual(["t1", "t2"]);
+    });
+  });
+
+  describe("enrollmentArgsGetter", () => {
+    it("should return null and mark pem touched when uploadRequest selected but pem is empty", () => {
+      component.intention.set("uploadRequest");
+      component.pem.set("");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.pemForm().touched()).toBe(true);
+    });
+
+    it("should return null and mark caConnectorTouched when generate but caConnector empty", () => {
+      component.intention.set("generate");
+      component.caConnector.set("");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.caConnectorTouched()).toBe(true);
+    });
+
+    it("should return null and mark certTemplateTouched when generate but certTemplate empty", () => {
+      component.intention.set("generate");
+      component.caConnector.set("conn-1");
+      component.certTemplate.set("");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.certTemplateTouched()).toBe(true);
+    });
+
+    it("should return enrollment data without pem when intention is generate", () => {
+      component.intention.set("generate");
+      component.caConnector.set("conn-1");
+      component.certTemplate.set("t1");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.caConnector).toBe("conn-1");
+      expect(result!.data.certTemplate).toBe("t1");
+      expect((result!.data as any).pem).toBeUndefined();
+    });
+
+    it("should include pem when intention is uploadCert", () => {
+      component.intention.set("uploadCert");
+      component.pem.set("-----BEGIN CERTIFICATE-----");
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).not.toBeNull();
+      expect((result!.data as any).pem).toBe("-----BEGIN CERTIFICATE-----");
+    });
+  });
+
+  describe("clearTemplateSelection", () => {
+    it("should reset certTemplate to empty string", () => {
+      component.certTemplate.set("t1");
+      component.clearTemplateSelection();
       expect(component.certTemplate()).toBe("");
     });
   });

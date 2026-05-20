@@ -23,10 +23,18 @@ import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
-import { MockDialogService, MockPrivacyideaServerService } from "@testing/mock-services";
-import { BehaviorSubject } from "rxjs";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockPendingChangesService,
+  MockPrivacyideaServerService
+} from "@testing/mock-services";
+import { BehaviorSubject, of } from "rxjs";
 import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
 
 describe("NewPrivacyideaServerComponent", () => {
@@ -48,9 +56,13 @@ describe("NewPrivacyideaServerComponent", () => {
         provideRouter([]),
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: ActivatedRoute, useValue: { paramMap: paramMapSubject.asObservable() } }
       ]
     }).compileComponents();
+
+    const authSvc = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authSvc.authData.set({ ...(authSvc.authData() as any), rights: ["privacyideaserver_write"] } as any);
 
     privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
     router = TestBed.inject(Router);
@@ -124,5 +136,82 @@ describe("NewPrivacyideaServerComponent", () => {
     component.privacyideaForm.description().markAsDirty();
     component.onCancel();
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+  });
+
+  it("save should return false when form is invalid", async () => {
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "", url: "" }));
+    const result = await component.save();
+    expect(result).toBe(false);
+    expect(privacyideaServerServiceMock.postPrivacyideaServer).not.toHaveBeenCalled();
+  });
+
+  it("test should not call service when form is invalid", () => {
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "", url: "" }));
+    component.test();
+    expect(privacyideaServerServiceMock.testPrivacyideaServer).not.toHaveBeenCalled();
+    expect(component.isTesting()).toBe(false);
+  });
+
+  it("test should set isTesting flag while waiting and reset on completion", async () => {
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "t", url: "http://t" }));
+    let resolveFn: () => void;
+    privacyideaServerServiceMock.testPrivacyideaServer = jest.fn(
+      () => new Promise<void>((resolve) => (resolveFn = resolve))
+    );
+    component.test();
+    expect(component.isTesting()).toBe(true);
+    resolveFn!();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(component.isTesting()).toBe(false);
+  });
+
+  describe("onCancel dialog handling", () => {
+    let mockDialogRef: any;
+
+    beforeEach(() => {
+      mockDialogRef = { afterClosed: jest.fn() };
+      dialogServiceMock.openDialog.mockReturnValue(mockDialogRef);
+      jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    });
+
+    it("should open SaveAndExit dialog when there are changes", () => {
+      mockDialogRef.afterClosed.mockReturnValue(of(undefined));
+      component.privacyideaForm.description().markAsDirty();
+      component.onCancel();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: SaveAndExitDialogComponent })
+      );
+    });
+
+    it("should navigate after 'discard'", async () => {
+      mockDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.privacyideaForm.description().markAsDirty();
+      component.onCancel();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
+    });
+
+    it("should save and navigate when 'save-exit' selected and save succeeds", async () => {
+      mockDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      const pcs = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      pcs.save = jest.fn().mockReturnValue(Promise.resolve(true));
+      component.privacyideaModel.update((m) => ({ ...m, identifier: "x", url: "http://x" }));
+      component.privacyideaForm.description().markAsDirty();
+      component.onCancel();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(pcs.save).toHaveBeenCalled();
+    });
+
+    it("should not navigate when 'save-exit' but canSave is false", async () => {
+      mockDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      const pcs = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      pcs.save = jest.fn();
+      component.privacyideaModel.update((m) => ({ ...m, identifier: "", url: "" }));
+      component.privacyideaForm.description().markAsDirty();
+      component.onCancel();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(pcs.save).not.toHaveBeenCalled();
+    });
   });
 });

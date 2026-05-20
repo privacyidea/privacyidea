@@ -20,11 +20,23 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { RemoteServer } from "@services/privacyidea-server/privacyidea-server.service";
 import { EnrollRemoteComponent } from "./enroll-remote.component";
 
 describe("EnrollRemoteComponent", () => {
   let component: EnrollRemoteComponent;
   let fixture: ComponentFixture<EnrollRemoteComponent>;
+
+  const basicOptions: TokenEnrollmentData = {
+    type: "remote"
+  } as any;
+
+  const mockRemoteServer: RemoteServer = {
+    identifier: "remote-1",
+    name: "remote-1",
+    url: "https://test.example"
+  } as any;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -39,5 +51,72 @@ describe("EnrollRemoteComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("ngOnInit with enrollmentData input", () => {
+    it("should set initial values from enrollmentData", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "remote",
+        checkPinLocally: true,
+        remoteServer: mockRemoteServer,
+        remoteSerial: "S1",
+        remoteUser: "u",
+        remoteRealm: "r",
+        remoteResolver: "res"
+      });
+      component.ngOnInit();
+      expect(component.checkPinLocally()).toBe(true);
+      expect(component.remoteServer()).toEqual(mockRemoteServer);
+      expect(component.remoteSerial()).toBe("S1");
+      expect(component.remoteUser()).toBe("u");
+      expect(component.remoteRealm()).toBe("r");
+      expect(component.remoteResolver()).toBe("res");
+    });
+
+    it("should default fields when enrollmentData fields are missing", () => {
+      fixture.componentRef.setInput("enrollmentData", { type: "remote" });
+      component.ngOnInit();
+      expect(component.checkPinLocally()).toBe(false);
+      expect(component.remoteServer()).toBeNull();
+      expect(component.remoteSerial()).toBe("");
+      expect(component.remoteUser()).toBe("");
+      expect(component.remoteRealm()).toBe("");
+      expect(component.remoteResolver()).toBe("");
+    });
+  });
+
+  describe("enrollmentArgsGetter", () => {
+    it("should return null when no remoteServer is selected", () => {
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+    });
+
+    it("should return null and mark fields touched when required fields are empty", () => {
+      component.remoteServer.set(mockRemoteServer);
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).toBeNull();
+      expect(component.remoteSerialForm().touched()).toBe(true);
+      expect(component.remoteUserForm().touched()).toBe(true);
+      expect(component.remoteResolverForm().touched()).toBe(true);
+    });
+
+    it("should build enrollment data when all required fields are filled", () => {
+      component.remoteServer.set(mockRemoteServer);
+      component.remoteSerial.set("S1");
+      component.remoteUser.set("alice");
+      component.remoteResolver.set("res1");
+      component.remoteRealm.set("realm1");
+      component.checkPinLocally.set(true);
+
+      const result = component.enrollmentArgsGetter(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.type).toBe("remote");
+      expect(result!.data.remoteServer).toEqual(mockRemoteServer);
+      expect(result!.data.remoteSerial).toBe("S1");
+      expect(result!.data.remoteUser).toBe("alice");
+      expect(result!.data.remoteResolver).toBe("res1");
+      expect(result!.data.remoteRealm).toBe("realm1");
+      expect(result!.data.checkPinLocally).toBe(true);
+    });
   });
 });
