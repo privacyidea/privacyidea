@@ -53,7 +53,7 @@ export class UserAssignmentComponent {
   required = input<boolean>(false);
 
   onlyAddToRealm = signal(false);
-  userFilter = signal(this.userService.selectionFilter());
+  userFilter = signal<string>(this.userService.selectionUsernameFilter());
 
   readonly userInputDisabled = computed(
     () => !this.userService.selectedUserRealm() || this.onlyAddToRealm()

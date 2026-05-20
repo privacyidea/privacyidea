@@ -277,6 +277,7 @@ export class ContainerCreateComponent {
           this.notificationService.error("Container creation failed. No container serial returned.");
           return;
         }
+        this.pendingChangesService.clearAllRegistrations();
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
         } else {

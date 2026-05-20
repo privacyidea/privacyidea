@@ -29,6 +29,7 @@ import { ClientsService } from "@services/clients/clients.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { EventService } from "@services/event/event.service";
 import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
@@ -69,6 +70,7 @@ export const routes: Routes = [
       ContainerService,
       ContainerTemplateService,
       ContentService,
+      DialogService,
       DocumentationService,
       EventService,
       MachineResolverService,

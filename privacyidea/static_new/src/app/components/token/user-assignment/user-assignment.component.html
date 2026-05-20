@@ -17,6 +17,12 @@
   SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="assign-user-container">
+  <input
+    style="display: none"
+    type="text" />
+  <input
+    style="display: none"
+    type="password" />
   <mat-form-field
     class="input-width-l">
     <mat-label>Select Realm of User</mat-label>
@@ -51,7 +57,7 @@
       [displayWith]="displayUser"
       (optionSelected)="onUserSelected($event.option.value)">
       @for (user of userService.selectionFilteredUsers(); track user) {
-        <mat-option [value]="user">{{ user.username }}</mat-option>
+        <mat-option class="type-option" [value]="user">{{ user.username }}</mat-option>
       }
     </mat-autocomplete>
     @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {
