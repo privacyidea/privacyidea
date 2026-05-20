@@ -185,7 +185,7 @@ export class UserUtilsPanelComponent {
   refreshPage() {
     if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.containersForTokenTypeResource.reload();
       return;
     } else if (this.contentService.onContainersDetails()) {
       this.containerService.containerDetailsResource.reload();
@@ -214,7 +214,7 @@ export class UserUtilsPanelComponent {
         this.machineService.tokenApplicationResource.reload();
         break;
       case ROUTE_PATHS.TOKENS_ENROLLMENT:
-        this.containerService.containerResource.reload();
+        this.containerService.containersForTokenTypeResource.reload();
         this.userService.usersResource.reload();
         break;
       case ROUTE_PATHS.AUDIT:

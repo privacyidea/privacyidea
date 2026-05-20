@@ -90,7 +90,7 @@
               </app-clearable-input>
               <mat-label i18n>Container Serial</mat-label>
               <mat-autocomplete #containerAuto="matAutocomplete">
-                @for (option of containerService.filteredContainerOptions(); track option) {
+                @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-autocomplete>

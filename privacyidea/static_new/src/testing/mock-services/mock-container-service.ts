@@ -61,12 +61,8 @@ export class MockContainerService implements ContainerServiceInterface {
   containerResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  containerOptions: WritableSignal<string[]> = signal([]);
-  filteredContainerOptions: Signal<string[]> = computed(() => {
-    const options = this.containerOptions();
-    const filter = this.containerFilter();
-    return options.filter((option) => option.includes(filter.value) || option.includes(filter.hiddenValue));
-  });
+  containersForTokenTypeResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue({ containers: [], count: 0 }));
   containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
   containerTypesResource: MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue<ContainerTypes>(new Map()));

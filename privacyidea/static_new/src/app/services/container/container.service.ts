@@ -39,6 +39,16 @@ import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwErro
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];
 
+export function toWildcardParam(
+  key: string,
+  value: string | null | undefined,
+  plainKeys: Set<string>
+): Record<string, string> {
+  const trimmed = (value ?? "").trim();
+  if (!StringUtils.validFilterValue(trimmed)) return {};
+  return { [key]: plainKeys.has(key) ? trimmed : `*${trimmed}*` };
+}
+
 export interface TemplateComparisonResult {
   [containerSerial: string]: {
     tokens: {
@@ -184,8 +194,7 @@ export interface ContainerServiceInterface {
   pageIndex: WritableSignal<number>;
   loadAllContainers: Signal<boolean>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
-  containerOptions: Signal<string[]>;
-  filteredContainerOptions: Signal<string[]>;
+  containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
   containerSelection: WritableSignal<ContainerDetailData[]>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
@@ -289,9 +298,7 @@ export class ContainerService implements ContainerServiceInterface {
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => StringUtils.validFilterValue(v))
-      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+      .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
 
     const params = Object.fromEntries(entries) as Record<string, string>;
 
@@ -322,12 +329,7 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(
-    () =>
-      this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokenDetails() ||
-      this.contentService.onUserDetails()
-  );
+  loadAllContainers = computed(() => this.contentService.onUserDetails());
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
     const tt = this.compatibleWithSelectedTokenType();
@@ -347,6 +349,10 @@ export class ContainerService implements ContainerServiceInterface {
     return compatible;
   });
 
+  private readonly serialFilterParam = computed(() =>
+    toWildcardParam("container_serial", this.selectedContainerSerial(), new Set())
+  );
+
   private readonly tokenInContainer = computed<boolean>(() => {
     let assigned = "";
     if (this.tokenService.tokenDetailResource.hasValue()) {
@@ -362,25 +368,9 @@ export class ContainerService implements ContainerServiceInterface {
       return undefined;
     }
 
-    // On token details only load containers if details are available and the token is not already in a container.
-    if (this.contentService.onTokenDetails()) {
-      if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
-      const tokenRes = this.tokenService.tokenDetailResource.value();
-      if (!tokenRes) {
-        return undefined;
-      }
-      if (this.tokenInContainer()) {
-        return undefined;
-      }
-    }
-
     // Only load containers on routes with a container list or selection.
     const onAllowedRoute =
-      this.contentService.onTokenDetails() ||
-      this.contentService.onUserDetails() ||
-      this.contentService.onContainers() ||
-      this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokens();
+      this.contentService.onUserDetails() || this.contentService.onContainers() || this.contentService.onTokens();
 
     if (!onAllowedRoute) {
       return undefined;
@@ -419,29 +409,56 @@ export class ContainerService implements ContainerServiceInterface {
     };
   });
 
-  containerOptions: WritableSignal<string[]> = linkedSignal({
-    source: () => ({
-      value: this.containerResource.hasValue() ? this.containerResource.value() : undefined,
-      isLoading: this.containerResource.isLoading(),
-      error: this.containerResource.error()
-    }),
-    computation: (source, previous): string[] => {
-      if (source.error) return [];
-      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
-      return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
+  containersForTokenTypeResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    // Do not load containers if the action is not allowed, or we are not on the container details page
+    if (!this.authService.actionAllowed("container_list")) {
+      return undefined;
     }
-  });
 
-  filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainerSerial() || "").toLowerCase();
-    return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
+    // only load for token details and enrollment
+    if (!this.contentService.onTokenDetails() && !this.contentService.onTokensEnrollment()) {
+      return undefined;
+    }
+
+    // for token details: only load containers if details are available and the token is not already in a container.
+    if (this.contentService.onTokenDetails()) {
+      if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
+      const tokenRes = this.tokenService.tokenDetailResource.value();
+      if (!tokenRes) {
+        return undefined;
+      }
+      if (this.tokenInContainer()) {
+        return undefined;
+      }
+    }
+
+    const baseParams: Record<string, any> = {
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      no_token: 1,
+      sortby: this.sort().active,
+      sortdir: this.sort().direction,
+      ...this.serialFilterParam()
+    };
+
+    const compatibleType = this.uniqueCompatibleType();
+    if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
+      baseParams["type"] = compatibleType;
+    }
+
+    return {
+      url: this.containerBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: baseParams
+    };
   });
 
   containersForTokenType: WritableSignal<string[]> = linkedSignal({
     source: () => ({
-      value: this.containerResource.hasValue() ? this.containerResource.value() : undefined,
-      isLoading: this.containerResource.isLoading(),
-      error: this.containerResource.error()
+      value: this.containersForTokenTypeResource.hasValue() ? this.containersForTokenTypeResource.value() : undefined,
+      isLoading: this.containersForTokenTypeResource.isLoading(),
+      error: this.containersForTokenTypeResource.error()
     }),
     computation: (source, previous): string[] => {
       if (source.error) return [];
@@ -948,8 +965,7 @@ export class ContainerService implements ContainerServiceInterface {
       const serial = this.containerSerial();
       const active = this.isPollingActive();
 
-      const onAllowedRoute =
-        this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
+      const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
 
       if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
         return;
