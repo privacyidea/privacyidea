@@ -21,6 +21,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollU2fComponent } from "./enroll-u2f.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("EnrollU2fComponent", () => {
   let component: EnrollU2fComponent;
@@ -29,7 +31,8 @@ describe("EnrollU2fComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollU2fComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollU2fComponent);

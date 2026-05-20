@@ -26,9 +26,17 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
-import { MockDialogService, MockNotificationService, MockTokenService } from "@testing/mock-services";
+import {
+  MockDialogService,
+  MockNotificationService,
+  MockSystemService,
+  MockTokenService,
+  MockUserService
+} from "@testing/mock-services";
 import { of } from "rxjs";
 import { TokenRolloverComponent } from "./token-rollover.component";
+import { UserService } from "@services/user/user.service";
+import { SystemService } from "@services/system/system.service";
 
 describe("TokenRolloverComponent", () => {
   let component: TokenRolloverComponent;
@@ -52,7 +60,9 @@ describe("TokenRolloverComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: MatDialogRef, useValue: dialogRef }
+        { provide: MatDialogRef, useValue: dialogRef },
+        { provide: UserService, useClass: MockUserService },
+        { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 

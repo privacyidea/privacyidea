@@ -23,6 +23,8 @@ import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { TableUtilsService } from "./table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("TableUtilsService", () => {
   let service: TableUtilsService;
@@ -31,7 +33,12 @@ describe("TableUtilsService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [TableUtilsService, provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        TableUtilsService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     });
     service = TestBed.inject(TableUtilsService);
     authService = TestBed.inject(AuthService);

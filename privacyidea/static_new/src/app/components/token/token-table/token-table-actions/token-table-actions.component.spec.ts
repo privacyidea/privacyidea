@@ -33,6 +33,7 @@ import {
   MockAuditService,
   MockContentService,
   MockDialogService,
+  MockDocumentationService,
   MockNotificationService,
   MockPiResponse,
   MockTableUtilsService,
@@ -42,6 +43,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, throwError } from "rxjs";
 import { TokenTableActionsComponent } from "./token-table-actions.component";
+import { DocumentationService } from "@services/documentation/documentation.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -84,6 +86,7 @@ describe("TokenTableActionsComponent", () => {
         { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: DocumentationService, useClass: MockDocumentationService }
         { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();

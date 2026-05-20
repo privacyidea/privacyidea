@@ -21,6 +21,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MachineService } from "@services/machine/machine.service";
 import { TokenApplicationsActionsComponent } from "./token-applications-actions.component";
+import { MockMachineService } from "@testing/mock-services";
 
 describe("TokenApplicationsActionsComponent", () => {
   let component: TokenApplicationsActionsComponent;
@@ -30,7 +31,11 @@ describe("TokenApplicationsActionsComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenApplicationsActionsComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: MachineService, useClass: MockMachineService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsActionsComponent);

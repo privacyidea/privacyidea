@@ -16,24 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { ClientsDict, ClientsServiceInterface } from "@services/clients/clients.service";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
-export interface VersioningServiceInterface {
-  rawVersion: WritableSignal<string>;
-  version: Signal<string>;
-  getVersion(): string;
-}
-
-@Injectable({ providedIn: "root" })
-export class VersioningService implements VersioningServiceInterface {
-  rawVersion = signal("");
-  version = computed(() => {
-    // Extract major.minor.patch from rawVersion
-    const match = this.rawVersion().match(/^(\d+\.\d+(?:\.\d+)?)/);
-    return match ? match[1] : "";
-  });
-
-  getVersion(): string {
-    return this.version();
-  }
+export class MockClientsService implements ClientsServiceInterface {
+  clientsResource = new MockHttpResourceRef<PiResponse<ClientsDict> | undefined>(
+    MockPiResponse.fromValue<ClientsDict>({})
+  );
 }
