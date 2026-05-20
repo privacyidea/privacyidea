@@ -30,7 +30,8 @@ import {
     MockContainerService,
     MockContentService,
     MockLocalService,
-    MockNotificationService, MockRealmService,
+    MockNotificationService,
+    MockRealmService,
     MockTableUtilsService,
     MockTokenService
 } from "@testing/mock-services";
