@@ -23,8 +23,6 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { CaConnector } from "@services/ca-connector/ca-connector.service";
-import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollCertificateComponent } from "./enroll-certificate.component";
 import { TokenService } from "@services/token/token.service";
