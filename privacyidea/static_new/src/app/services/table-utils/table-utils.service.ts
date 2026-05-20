@@ -340,7 +340,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     const classes = ["width-241"];
     if (key === "description") {
       classes.push("height-127");
-    } else if (["realms", "tokengroup", "states"].includes(key)) {
+    } else if (["realms", "tokengroup"].includes(key)) {
       classes.push("height-78");
     } else {
       classes.push("height-53");
