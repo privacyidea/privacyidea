@@ -20,7 +20,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -51,12 +50,12 @@ describe("PolicyActionItemEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyActionItemEditComponent, FormsModule, CommonModule],
+      imports: [PolicyActionItemEditComponent, CommonModule],
       providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(PolicyActionItemEditComponent, {
         set: {
-          imports: [CommonModule, FormsModule, MockSelectorButtonsComponent]
+          imports: [CommonModule, MockSelectorButtonsComponent]
         }
       })
       .compileComponents();

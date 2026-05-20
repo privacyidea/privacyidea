@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, inject, signal } from "@angular/core";
-import type { FormControl } from "@angular/forms";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatHint } from "@angular/material/form-field";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";

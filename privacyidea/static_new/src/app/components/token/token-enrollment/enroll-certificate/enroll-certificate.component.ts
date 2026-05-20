@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, EventEmitter, inject, input, linkedSignal, OnInit, Output, signal } from "@angular/core";
-import type { FormControl } from "@angular/forms";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatOption } from "@angular/material/core";
@@ -65,9 +64,7 @@ export class EnrollCertificateComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
 
   enrollmentData = input<CertificateEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: CertificateEnrollmentData;

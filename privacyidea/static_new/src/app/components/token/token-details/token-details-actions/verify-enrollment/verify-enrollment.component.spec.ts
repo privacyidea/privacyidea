@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { MockNotificationService } from "@testing/mock-services";
@@ -34,7 +33,7 @@ describe("VerifyEnrollmentComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [VerifyEnrollmentComponent, FormsModule, ReactiveFormsModule],
+      imports: [VerifyEnrollmentComponent],
       providers: [
         { provide: TokenService, useClass: MockTokenService },
         { provide: NotificationService, useClass: MockNotificationService }

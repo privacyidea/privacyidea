@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import type { FormControl } from "@angular/forms";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -42,9 +41,7 @@ export class EnrollTiqrComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: TiqrEnrollmentData;

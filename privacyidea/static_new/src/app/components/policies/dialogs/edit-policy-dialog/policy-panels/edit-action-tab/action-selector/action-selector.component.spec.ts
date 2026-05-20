@@ -20,7 +20,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, input, model, output, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -52,8 +51,8 @@ class MockSelectorButtonsComponent {
 
 @Component({
   standalone: true,
-  imports: [ActionSelectorComponent, ClearableInputComponent, FormsModule],
-  template: ` <app-action-selector [(policy)]="policy" /> `
+  imports: [ActionSelectorComponent, ClearableInputComponent],
+  template: ` <app-action-selector [policy]="policy()" /> `
 })
 class TestHostComponent {
   policy = model<PolicyDetail>({
@@ -95,7 +94,6 @@ describe("ActionSelectorComponent", () => {
         set: {
           imports: [
             CommonModule,
-            FormsModule,
             MockPolicyActionItemComponent,
             MockSelectorButtonsComponent,
             ClearableInputComponent

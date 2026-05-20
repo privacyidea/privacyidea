@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
-import type { FormControl } from "@angular/forms";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -79,9 +78,7 @@ export class EnrollHotpComponent implements OnInit {
       mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
     } | null
   >();
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("hotp"));

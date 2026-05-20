@@ -19,7 +19,6 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
 
@@ -47,7 +46,7 @@ describe("CopyPolicyDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CopyPolicyDialogComponent, ReactiveFormsModule],
+      imports: [CopyPolicyDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: initialPolicyName }
@@ -55,7 +54,7 @@ describe("CopyPolicyDialogComponent", () => {
     })
       .overrideComponent(CopyPolicyDialogComponent, {
         set: {
-          imports: [MockDialogWrapperComponent, ReactiveFormsModule]
+          imports: [MockDialogWrapperComponent]
         }
       })
       .compileComponents();

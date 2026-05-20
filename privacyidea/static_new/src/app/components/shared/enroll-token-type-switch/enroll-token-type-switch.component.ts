@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { FormControl } from "@angular/forms";
 import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
@@ -87,7 +86,7 @@ export class EnrollTokenTypeSwitchComponent {
   @Input({ required: true }) tokenTypeKey!: string;
   @Input() wizard = false;
 
-  @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();
   @Output() onEnrollmentResponseChange = new EventEmitter<OnEnrollmentResponseFn>();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();

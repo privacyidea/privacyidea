@@ -223,6 +223,8 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   }
 
   setNewOptions(options: any): void {
+    const current = this.editEvent().options || {};
+    if (JSON.stringify(options) === JSON.stringify(current)) return;
     this.editEvent.set({ ...this.editEvent(), options });
     this.hasChanges.set(true);
   }

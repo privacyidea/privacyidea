@@ -19,7 +19,6 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TokenService } from "@services/token/token.service";
@@ -72,7 +71,7 @@ describe("TokenImportComponent", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [TokenImportComponent, FormsModule, ReactiveFormsModule],
+      imports: [TokenImportComponent],
       providers: [
         provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },

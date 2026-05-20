@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormField } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -36,7 +35,7 @@ describe("ContainerRegistrationConfigComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FormsModule, MatCheckbox, MatFormField, MatInput]
+      imports: [MatCheckbox, MatFormField, MatInput]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerRegistrationConfigComponent);

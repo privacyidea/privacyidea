@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
 import { PolicyService } from "@services/policies/policies.service";
 import { SystemService } from "@services/system/system.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -31,7 +30,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditEnvironmentConditionsComponent, ReactiveFormsModule],
+      imports: [EditEnvironmentConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: SystemService, useClass: MockSystemService },

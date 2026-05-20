@@ -20,17 +20,17 @@
 import { ENTER } from "@angular/cdk/keycodes";
 import {
   Component,
+  computed,
   effect,
   inject,
   input,
   linkedSignal,
   model,
   output,
+  signal,
   ViewChild,
   ViewEncapsulation
 } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   MatAutocomplete,
   MatAutocompleteSelectedEvent,
@@ -55,7 +55,6 @@ import { EventService } from "@services/event/event.service";
     MatIcon,
     MatLabel,
     MatOption,
-    ReactiveFormsModule,
     MatInput,
     ClearButtonComponent
   ],
@@ -70,12 +69,14 @@ export class EventSelectionComponent {
 
   toolTipClearSearch = $localize`Clear Search Term`;
 
-  selectedEvents = new FormControl<string[]>([], { nonNullable: true, validators: [Validators.required] });
-  selectedEventsSignal = toSignal(this.selectedEvents.valueChanges, { initialValue: this.selectedEvents.value });
+  selectedEvents = signal<string[]>([]);
+  touched = signal(false);
+  invalid = computed(() => this.selectedEvents().length === 0);
+  showError = computed(() => this.touched() && this.invalid());
 
   constructor() {
     effect(() => {
-      this.selectedEvents.setValue(this.events());
+      this.selectedEvents.set(this.events());
     });
   }
 
@@ -83,21 +84,25 @@ export class EventSelectionComponent {
   lastSearchTerm = "";
   readonly separatorKeysCodes: number[] = [ENTER];
 
+  markTouched(): void {
+    this.touched.set(true);
+  }
+
   removeEvent(event: string): void {
-    const current = this.selectedEvents.value;
+    const current = this.selectedEvents();
     const index = current.indexOf(event);
     if (index > -1) {
       const updated = [...current.slice(0, index), ...current.slice(index + 1)];
-      this.selectedEvents.setValue(updated);
+      this.selectedEvents.set(updated);
       this.newEvents.emit(updated);
     }
   }
 
   addEvent(event: string): void {
-    const current = this.selectedEvents.value;
+    const current = this.selectedEvents();
     if (event && current.indexOf(event) === -1) {
       const updated = [...current, event];
-      this.selectedEvents.setValue(updated);
+      this.selectedEvents.set(updated);
       this.newEvents.emit(updated);
     }
   }
@@ -120,7 +125,7 @@ export class EventSelectionComponent {
   remainingEvents = linkedSignal({
     source: () => ({
       available: this.eventService.availableEvents(),
-      selected: this.selectedEventsSignal(),
+      selected: this.selectedEvents(),
       search: this.searchTerm()
     }),
     computation: ({ available, selected, search }) =>

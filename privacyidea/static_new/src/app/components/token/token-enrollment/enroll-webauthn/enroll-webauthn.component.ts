@@ -18,7 +18,6 @@
  **/
 
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import type { FormControl } from "@angular/forms";
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
@@ -57,9 +56,7 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: WebAuthnEnrollmentData;

@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
 import { PolicyService } from "@services/policies/policies.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -33,7 +32,7 @@ describe("EditAdminConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditAdminConditionsComponent, ReactiveFormsModule],
+      imports: [EditAdminConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },
