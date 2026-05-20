@@ -45,6 +45,7 @@ describe("EventService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        EventService,
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },

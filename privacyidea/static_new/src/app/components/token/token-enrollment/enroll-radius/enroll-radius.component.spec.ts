@@ -21,8 +21,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService, MockContentService} from "@testing/mock-services";
 import { EnrollRadiusComponent } from "./enroll-radius.component";
+import { ContentService } from "@services/content/content.service";
 
 describe("EnrollRadiusComponent", () => {
   let component: EnrollRadiusComponent;
@@ -34,7 +36,9 @@ describe("EnrollRadiusComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: SystemService, useClass: MockSystemService }
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 

@@ -54,9 +54,7 @@ export interface PrivacyideaServerServiceInterface {
   testPrivacyideaServer(params: any): Promise<boolean>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class PrivacyideaServerService implements PrivacyideaServerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

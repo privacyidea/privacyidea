@@ -31,13 +31,17 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { TokenService } from "./token.service";
+import { RealmService } from "@services/realm/realm.service";
 
 class MockNotificationService {
-  success = jest.fn(); error = jest.fn(); warning = jest.fn(); handleResourceError = jest.fn();
+  success = jest.fn();
+  error = jest.fn();
+  warning = jest.fn();
+  handleResourceError = jest.fn();
 }
 
 describe("TokenService", () => {
@@ -62,7 +66,8 @@ describe("TokenService", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: RealmService, useClass: MockRealmService }
       ]
     });
 
@@ -520,9 +525,7 @@ describe("TokenService", () => {
         next: () => fail("should error"),
         error: (e) => {
           expect(e.error.result.error.message).toBe("oops");
-          expect(notificationService.error).toHaveBeenCalledWith(
-            "Failed to unassign user from all tokens. oops"
-          );
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user from all tokens. oops");
           done();
         }
       });
@@ -556,9 +559,7 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           // service reads error.result?.error?.message; keep assertion loose
-          expect(notificationService.error).toHaveBeenCalledWith(
-            expect.stringContaining("Failed to delete tokens.")
-          );
+          expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete tokens."));
           done();
         }
       });

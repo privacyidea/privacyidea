@@ -45,6 +45,7 @@ describe("TokengroupService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        TokengroupService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }

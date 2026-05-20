@@ -28,12 +28,13 @@ import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SystemService } from "@services/system/system.service";
-import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockContentService, MockNotificationService, MockPiResponse, MockSmtpService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, throwError } from "rxjs";
 import { SystemConfigComponent } from "./system-config.component";
+import { SmtpService } from "@services/smtp/smtp.service";
 
 describe("SystemConfigComponent", () => {
   let component: SystemConfigComponent;
@@ -57,7 +58,8 @@ describe("SystemConfigComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
-        { provide: PendingChangesService, useClass: MockPendingChangesService }
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: SmtpService, useClass: MockSmtpService }
       ]
     }).compileComponents();
 
@@ -200,9 +202,7 @@ describe("SystemConfigComponent", () => {
   });
 
   it("_saveAndReturn should resolve false on HTTP error", async () => {
-    jest
-      .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(throwError(() => new Error("Network error")));
+    jest.spyOn(systemService, "saveSystemConfig").mockReturnValueOnce(throwError(() => new Error("Network error")));
     const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
     const result = await saveFn();
     expect(notificationService.error).toHaveBeenCalledWith("Error saving system configuration.");

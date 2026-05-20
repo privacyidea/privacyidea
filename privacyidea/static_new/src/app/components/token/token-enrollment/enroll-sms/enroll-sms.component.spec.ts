@@ -29,6 +29,11 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSmsGatewayService } from "@testing/mock-services/mock-sms-gateway-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { EnrollSmsComponent } from "./enroll-sms.component";
+import { SystemService } from "@services/system/system.service";
+import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { ContentService } from "@services/content/content.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 
 describe("EnrollSmsComponent", () => {
   let component: EnrollSmsComponent;
@@ -45,9 +50,10 @@ describe("EnrollSmsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useClass: MockAuthService },
-        { provide: SmsGatewayService, useClass: MockSmsGatewayService },
-        { provide: SystemService, useClass: MockSystemService }
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService}
       ]
     }).compileComponents();
 

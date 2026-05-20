@@ -1,4 +1,5 @@
 export * from './mock-utils';
+export * from './mock-auth-service';
 export * from './mock-validate-service';
 export * from './mock-realm-service';
 export * from './mock-table-utils-service';
@@ -30,3 +31,4 @@ export * from './mock-policies-service';
 export * from './mock-documentation-service';
 export * from './mock-pending-changes-service';
 export * from './mock-periodic-task-service';
+export * from './mock-clients-service';

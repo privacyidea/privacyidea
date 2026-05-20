@@ -22,9 +22,9 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogService } from "@services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { CaConnector, CaConnectorService } from "@services/ca-connector/ca-connector.service";
-import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockCaConnectorService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { of } from "rxjs";
@@ -44,6 +44,7 @@ describe("NewCaConnectorComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: CaConnectorService, useClass: MockCaConnectorService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();

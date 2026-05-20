@@ -24,6 +24,8 @@ import { provideRouter, Router } from "@angular/router";
 import { EventHandler, EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventComponent } from "./event.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -33,7 +35,12 @@ describe("EventComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventComponent],
-      providers: [provideHttpClient(), provideRouter([]), { provide: EventService, useClass: MockEventService }]
+      providers: [
+        provideHttpClient(),
+        provideRouter([]),
+        { provide: EventService, useClass: MockEventService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventComponent);

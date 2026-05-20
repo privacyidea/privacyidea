@@ -23,6 +23,16 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
 import { of } from "rxjs";
 import { ContainerTableActionsComponent } from "./container-table-actions.component";
+import { ContainerService } from "@services/container/container.service";
+import {
+  MockContainerService,
+  MockContentService,
+  MockDocumentationService,
+  MockTableUtilsService
+} from "@testing/mock-services";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { ContentService } from "@services/content/content.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
 
 describe("ContainerTableActionsComponent", () => {
   let component: ContainerTableActionsComponent;
@@ -36,7 +46,11 @@ describe("ContainerTableActionsComponent", () => {
         {
           provide: ActivatedRoute,
           useValue: { params: of({ id: "123" }) }
-        }
+        },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DocumentationService, useClass: MockDocumentationService }
       ],
       imports: [ContainerTableActionsComponent]
     }).compileComponents();

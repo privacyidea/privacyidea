@@ -104,9 +104,7 @@ export interface EventServiceInterface {
   moduleConditionsByGroup: Signal<Record<string, Record<string, EventCondition>> | undefined>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class EventService implements EventServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);

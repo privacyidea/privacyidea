@@ -180,9 +180,7 @@ export interface ResolverServiceInterface {
   getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ResolverService implements ResolverServiceInterface {
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);

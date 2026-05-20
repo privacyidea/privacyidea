@@ -27,6 +27,9 @@ import { SystemService } from "@services/system/system.service";
 import { MockSystemService } from "@testing/mock-services";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollCertificateComponent } from "./enroll-certificate.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService, MockSystemService} from "@testing/mock-services";
+import { SystemService } from "@services/system/system.service";
 
 describe("EnrollCertComponent", () => {
   let component: EnrollCertificateComponent;
@@ -38,9 +41,8 @@ describe("EnrollCertComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollCertificateComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService },
         { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();

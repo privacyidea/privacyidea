@@ -32,6 +32,7 @@ import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
+import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
@@ -41,6 +42,7 @@ import {
   MockLocalService,
   MockNotificationService,
   MockRealmService,
+  MockSystemService,
   MockTokenService,
   MockUserService,
   MockVersioningService
@@ -111,6 +113,7 @@ describe("TokenEnrollmentComponent", () => {
         { provide: NotificationService, useExisting: MockNotificationService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: RealmService, useClass: MockRealmService },
+        { provide: SystemService, useClass: MockSystemService },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },

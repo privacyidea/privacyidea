@@ -22,8 +22,17 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NotificationService } from "@services/notification/notification.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
-import { MockNotificationService } from "@testing/mock-services";
+import {
+  MockChallengesService,
+  MockContentService,
+  MockNotificationService,
+  MockTableUtilsService,
+  MockTokenService
+} from "@testing/mock-services";
 import { ChallengesTableComponent } from "./challenges-table.component";
+import { TokenService } from "@services/token/token.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("ChallengesTableComponent", () => {
   let component: ChallengesTableComponent;
@@ -37,7 +46,11 @@ describe("ChallengesTableComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: ChallengesService, useClass: MockChallengesService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 

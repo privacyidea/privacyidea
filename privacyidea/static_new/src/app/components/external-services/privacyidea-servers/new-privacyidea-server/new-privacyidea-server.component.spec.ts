@@ -55,8 +55,9 @@ describe("NewPrivacyideaServerComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
-        { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: ActivatedRoute, useValue: { paramMap: paramMapSubject.asObservable() } }
       ]
     }).compileComponents();

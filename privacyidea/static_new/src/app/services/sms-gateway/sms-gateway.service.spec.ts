@@ -47,6 +47,7 @@ describe("SmsGatewayService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        SmsGatewayService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }
