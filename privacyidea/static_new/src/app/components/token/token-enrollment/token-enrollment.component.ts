@@ -277,10 +277,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.reopenDialog.set(event);
   }
 
-  updateAdditionalFormFields(_event: Record<string, unknown>): void {
-    // Children self-validate via enrollmentArgsGetter; nothing to do here
-  }
-
   updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
     this.onEnrollmentResponse.set(event);
   }

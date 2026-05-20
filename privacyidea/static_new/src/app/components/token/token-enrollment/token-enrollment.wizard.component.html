@@ -54,7 +54,6 @@
     <app-enroll-token-type-switch
       [tokenTypeKey]="authService.defaultTokentype() || 'hotp'"
       [wizard]="wizard"
-      (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
       (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
       (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
       (reopenDialogChange)="updateReopenDialog($event)" />

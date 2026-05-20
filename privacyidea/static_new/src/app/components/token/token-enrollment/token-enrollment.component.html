@@ -35,7 +35,6 @@
       <h4 i18n>Token Configuration</h4>
       <app-enroll-token-type-switch
         [tokenTypeKey]="tokenService.selectedTokenType().key"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
         (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
         (reopenDialogChange)="updateReopenDialog($event)" />

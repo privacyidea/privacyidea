@@ -88,10 +88,6 @@ export class PeriodicTaskEditComponent {
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
 
-  resetFormState(): void {
-    // No-op: signal forms don't have dirty/touched state to reset
-  }
-
   editTask = linkedSignal(() => deepCopy(this.task()));
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
