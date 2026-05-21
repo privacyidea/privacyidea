@@ -213,6 +213,47 @@ describe("NotificationService", () => {
     expect(warningCall["panelClass"]).toEqual(["warning-snackbar"]);
   });
 
+  describe("handleResourceError", () => {
+    it("does nothing when error is undefined", () => {
+      service.handleResourceError(undefined, "tokens");
+      flushDebounce();
+      expect(snackBar.open).not.toHaveBeenCalled();
+    });
+
+    it("uses the nested HttpErrorResponse result message when present", () => {
+      const httpError = {
+        message: "Http failure response",
+        error: { result: { error: { message: "Token not found" } } }
+      } as unknown as Error;
+
+      service.handleResourceError(httpError, "tokens");
+      flushDebounce();
+
+      expect(snackBar.open).toHaveBeenCalledTimes(1);
+      const [message, , config] = snackBar.open.mock.calls[0];
+      expect(message).toBe("Failed to get tokens. Token not found");
+      expect(config["panelClass"]).toEqual(["error-snackbar"]);
+    });
+
+    it("falls back to error.message when no nested result message is present", () => {
+      const error = new Error("Network down");
+
+      service.handleResourceError(error, "containers");
+      flushDebounce();
+
+      const message = snackBar.open.mock.calls[0][0];
+      expect(message).toBe("Failed to get containers. Network down");
+    });
+  });
+
+  describe("_flush", () => {
+    it("returns early without opening a snackbar when the queue is empty", () => {
+      const flush = (service as unknown as { _flush: () => void })._flush.bind(service);
+      flush();
+      expect(snackBar.open).not.toHaveBeenCalled();
+    });
+  });
+
   describe("batching", () => {
     it("coalesces multiple errors within the debounce window into one snackbar", () => {
       service.error("First error");
