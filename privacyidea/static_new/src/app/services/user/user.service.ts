@@ -119,9 +119,7 @@ export interface UserServiceInterface {
   displayUser(user: UserData | string): string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class UserService implements UserServiceInterface {
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -320,9 +318,11 @@ export class UserService implements UserServiceInterface {
   user: WritableSignal<UserData> = linkedSignal({
     source: () => ({
       userRes: this.userResource.hasValue() ? this.userResource.value() : undefined,
+      isLoading: this.userResource.isLoading(),
+      error: this.userResource.error(),
       detailsUsername: this.detailsUsername()
     }),
-    computation: (source) => {
+    computation: (source, previous) => {
       const emptyDetails: UserData = {
         description: "",
         editable: false,
@@ -335,7 +335,14 @@ export class UserService implements UserServiceInterface {
         userid: "",
         username: ""
       };
-      return source.userRes?.result?.value?.[0] ?? emptyDetails;
+      if (source.error) return emptyDetails;
+      const value = source.userRes?.result?.value?.[0];
+      if (!value) {
+        if (!source.isLoading) return emptyDetails;
+        if (source.detailsUsername !== previous?.source.detailsUsername) return emptyDetails;
+        return previous?.value ?? emptyDetails;
+      }
+      return value;
     }
   });
 
@@ -353,10 +360,10 @@ export class UserService implements UserServiceInterface {
     // Only load users on routes with a user list or selection.
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onTokens() ||
       this.contentService.onUsers() ||
-      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onContainersCreate() ||
       this.contentService.onTokensEnrollment();
 
     if (!onAllowedRoute) {
@@ -383,15 +390,19 @@ export class UserService implements UserServiceInterface {
   users: WritableSignal<UserData[]> = linkedSignal({
     source: () => ({
       userRes: this.usersResource.hasValue() ? this.usersResource.value() : undefined,
+      isLoading: this.usersResource.isLoading(),
+      error: this.usersResource.error(),
       realm: this.selectedUserRealm()
     }),
     computation: (source, previous) => {
+      if (source.error) return [];
       const users = source.userRes?.result?.value;
-      if (!users && source.realm !== previous?.source.realm) {
-        // If the realm changed we do not fall back on the previous user list
-        return [];
-      }
-      return users ?? previous?.value ?? [];
+      if (users) return users;
+      // No value: distinguish loading vs settled-without-data
+      if (!source.isLoading) return [];
+      // Loading: keep previous only if the realm did not change
+      if (source.realm !== previous?.source.realm) return [];
+      return previous?.value ?? [];
     }
   });
 

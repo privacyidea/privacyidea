@@ -323,9 +323,7 @@ export interface TokenServiceInterface {
   importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TokenService implements TokenServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -404,7 +402,7 @@ export class TokenService implements TokenServiceInterface {
     source: this.contentService.routeUrl,
     computation: () => {
       // Initially show tokens not in a container on the container details route.
-      return this.contentService.onTokensContainersDetails();
+      return this.contentService.onContainersDetails();
     }
   });
 
@@ -415,13 +413,13 @@ export class TokenService implements TokenServiceInterface {
     }),
     computation: (source, previous) => {
       // Outside of container details and user details we reset the filter.
-      if (!this.contentService.onTokensContainersDetails() && !this.contentService.onUserDetails()) {
+      if (!this.contentService.onContainersDetails() && !this.contentService.onUserDetails()) {
         return new FilterValue();
       }
       // Initialize filter when the route changes.
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
-          hiddenValue: this.contentService.onTokensContainersDetails()
+          hiddenValue: this.contentService.onContainersDetails()
             ? source.showOnlyTokenNotInContainer
               ? "container_serial:"
               : " "
@@ -436,7 +434,7 @@ export class TokenService implements TokenServiceInterface {
 
       let filterValue = previous.value;
 
-      if (this.contentService.onTokensContainersDetails()) {
+      if (this.contentService.onContainersDetails()) {
         filterValue = source.showOnlyTokenNotInContainer
           ? filterValue.addHiddenKey("container_serial")
           : filterValue.removeHiddenKey("container_serial");
@@ -496,8 +494,8 @@ export class TokenService implements TokenServiceInterface {
       this.contentService.onTokens() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensGetSerial() ||
-      this.contentService.onTokensContainersCreate() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersCreate() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
@@ -574,7 +572,7 @@ export class TokenService implements TokenServiceInterface {
     // Only load tokens on routes with a token list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
@@ -610,11 +608,16 @@ export class TokenService implements TokenServiceInterface {
 
   selectedToken: WritableSignal<string | null> = signal(null);
 
-  tokenOptions = linkedSignal({
-    source: () => (this.tokenSerialResource.hasValue() ? this.tokenSerialResource.value() : undefined),
-    computation: (tokenSerialResource) => {
-      if (!tokenSerialResource) return [];
-      return tokenSerialResource.result?.value?.tokens?.map((token) => token.serial) ?? [];
+  tokenOptions: WritableSignal<string[]> = linkedSignal({
+    source: () => ({
+      value: this.tokenSerialResource.hasValue() ? this.tokenSerialResource.value() : undefined,
+      isLoading: this.tokenSerialResource.isLoading(),
+      error: this.tokenSerialResource.error()
+    }),
+    computation: (source, previous): string[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return source.value.result?.value?.tokens?.map((token) => token.serial) ?? [];
     }
   });
 

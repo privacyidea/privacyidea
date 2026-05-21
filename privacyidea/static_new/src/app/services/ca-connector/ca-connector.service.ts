@@ -57,9 +57,7 @@ export interface CaConnectorServiceInterface {
   ): Promise<any>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class CaConnectorService implements CaConnectorServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -80,8 +78,17 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: () => (this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined),
-    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+    source: () => ({
+      value: this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+      isLoading: this.caConnectorResource.isLoading(),
+      error: this.caConnectorResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
+      return value;
+    }
   });
 
   async postCaConnector(connector: CaConnector): Promise<void> {

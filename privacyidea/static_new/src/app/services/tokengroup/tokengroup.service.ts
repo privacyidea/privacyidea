@@ -47,9 +47,7 @@ export interface TokengroupServiceInterface {
   deleteTokengroup(groupname: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TokengroupService implements TokengroupServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -76,12 +74,15 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   tokengroups: WritableSignal<Tokengroup[]> = linkedSignal({
-    source: () => (this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined),
-    computation: (tokengroupResource, previous) => {
-      const value = tokengroupResource?.result?.value;
-      if (!value) {
-        return previous?.value ?? [];
-      }
+    source: () => ({
+      value: this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined,
+      isLoading: this.tokengroupResource.isLoading(),
+      error: this.tokengroupResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
       return Object.entries(value).map(([groupname, { description, id }]) => ({
         groupname,
         description,

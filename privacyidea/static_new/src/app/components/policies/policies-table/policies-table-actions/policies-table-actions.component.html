@@ -17,13 +17,18 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
-  <div class="flex-row margin-bottom-16 gap-8">
+  <div
+    appOverflowNav
+    class="flex-row margin-bottom-16 gap-8">
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="createNewPolicy()"
         class="action-button-primary button-width-m"
         mat-stroked-button>
-        <mat-icon>add</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create Policy</span>
       </button>
     }
@@ -35,7 +40,7 @@
         class="action-button-delete-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Delete Selected</span>
+        <span i18n>Delete</span>
       </button>
     }
 
@@ -46,7 +51,7 @@
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>content_copy</mat-icon>
-        <span i18n>Copy Selected</span>
+        <span i18n>Copy</span>
       </button>
     }
   </div>

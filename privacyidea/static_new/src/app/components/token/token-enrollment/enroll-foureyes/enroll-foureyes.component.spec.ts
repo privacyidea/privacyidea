@@ -20,8 +20,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollFoureyesComponent } from "./enroll-foureyes.component";
+import { RealmService } from "@services/realm/realm.service";
+import { MockRealmService, MockTokenService} from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollFoureyesComponent", () => {
   let component: EnrollFoureyesComponent;
@@ -29,8 +31,11 @@ describe("EnrollFoureyesComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollFoureyesComponent, NoopAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollFoureyesComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollFoureyesComponent);

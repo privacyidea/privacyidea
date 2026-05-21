@@ -21,7 +21,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import {
@@ -74,7 +73,7 @@ describe("MachineResolverPanelEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineResolverPanelEditComponent, NoopAnimationsModule],
+      imports: [MachineResolverPanelEditComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

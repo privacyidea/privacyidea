@@ -20,8 +20,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollRemoteComponent } from "./enroll-remote.component";
+import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { MockPrivacyideaServerService, MockTokenService} from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollRemoteComponent", () => {
   let component: EnrollRemoteComponent;
@@ -29,8 +31,11 @@ describe("EnrollRemoteComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollRemoteComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollRemoteComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollRemoteComponent);

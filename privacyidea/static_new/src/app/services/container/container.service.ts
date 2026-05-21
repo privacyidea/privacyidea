@@ -235,9 +235,7 @@ export interface ContainerServiceInterface {
   startPolling(containerSerial: string): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ContainerService implements ContainerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -380,7 +378,7 @@ export class ContainerService implements ContainerServiceInterface {
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
       this.contentService.onUserDetails() ||
-      this.contentService.onTokensContainers() ||
+      this.contentService.onContainers() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokens();
 
@@ -421,11 +419,16 @@ export class ContainerService implements ContainerServiceInterface {
     };
   });
 
-  containerOptions = linkedSignal({
-    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
-    computation: (containerResource) => {
-      if (!containerResource) return [];
-      return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
+  containerOptions: WritableSignal<string[]> = linkedSignal({
+    source: () => ({
+      value: this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+      isLoading: this.containerResource.isLoading(),
+      error: this.containerResource.error()
+    }),
+    computation: (source, previous): string[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
 
@@ -434,12 +437,17 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 
-  containersForTokenType = linkedSignal({
-    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
-    computation: (containerResource) => {
-      if (!containerResource) return [];
+  containersForTokenType: WritableSignal<string[]> = linkedSignal({
+    source: () => ({
+      value: this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+      isLoading: this.containerResource.isLoading(),
+      error: this.containerResource.error()
+    }),
+    computation: (source, previous): string[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
       return (
-        containerResource.result?.value?.containers
+        source.value.result?.value?.containers
           .filter((container) => this.compatibleTypes().includes(container.type))
           .map((container) => container.serial) ?? []
       );
@@ -459,9 +467,9 @@ export class ContainerService implements ContainerServiceInterface {
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
     // Only load container types on routes with a container type list or selection.
     const onAllowedRoute =
-      this.contentService.onTokensContainers() ||
-      this.contentService.onTokensContainersCreate() ||
-      this.contentService.onTokensContainersWizard() ||
+      this.contentService.onContainers() ||
+      this.contentService.onContainersCreate() ||
+      this.contentService.onContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
     if (!onAllowedRoute) {
@@ -493,10 +501,10 @@ export class ContainerService implements ContainerServiceInterface {
     computation: (routeUrl) => {
       let containerType = this.authService.defaultContainerType();
 
-      if (this.contentService.onTokensContainersWizard()) {
+      if (this.contentService.onContainersWizard()) {
         containerType = this.authService.containerWizard().type || containerType;
       }
-      if (this.contentService.onTokensContainersTemplates()) {
+      if (this.contentService.onContainersTemplates()) {
         return undefined;
       }
       return (
@@ -525,16 +533,17 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerDetails: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => (this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined),
-    computation: (containerDetailResource, previous) => {
-      const containerDetail = containerDetailResource?.result?.value;
-      if (containerDetail) return containerDetail;
-      return (
-        previous?.value ?? {
-          containers: [],
-          count: 0
-        }
-      );
+    source: () => ({
+      value: this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined,
+      isLoading: this.containerDetailsResource.isLoading(),
+      error: this.containerDetailsResource.error()
+    }),
+    computation: (source, previous) => {
+      const empty: ContainerDetails = { containers: [], count: 0 };
+      if (source.error) return empty;
+      const containerDetail = source.value?.result?.value;
+      if (!containerDetail) return source.isLoading ? (previous?.value ?? empty) : empty;
+      return containerDetail;
     }
   });
 
@@ -940,7 +949,7 @@ export class ContainerService implements ContainerServiceInterface {
       const active = this.isPollingActive();
 
       const onAllowedRoute =
-        this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
+        this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
 
       if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
         return;
@@ -962,7 +971,7 @@ export class ContainerService implements ContainerServiceInterface {
         const isRollover = this.isRolloverPolling();
         if (isRollover) {
           this.notificationService.success("Container rollover completed successfully.");
-        } else if (!this.contentService.onTokensContainersCreate()) {
+        } else if (!this.contentService.onContainersCreate()) {
           this.notificationService.success("Container registered successfully.");
         }
         this.isPollingActive.set(false);

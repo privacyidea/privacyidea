@@ -21,7 +21,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -34,6 +33,7 @@ import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
+import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
@@ -43,6 +43,7 @@ import {
   MockLocalService,
   MockNotificationService,
   MockRealmService,
+  MockSystemService,
   MockTokenService,
   MockUserService,
   MockVersioningService
@@ -107,13 +108,13 @@ describe("TokenEnrollmentComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        NoopAnimationsModule,
         MockLocalService,
         MockNotificationService,
         { provide: LocalService, useExisting: MockLocalService },
         { provide: NotificationService, useExisting: MockNotificationService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: RealmService, useClass: MockRealmService },
+        { provide: SystemService, useClass: MockSystemService },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },

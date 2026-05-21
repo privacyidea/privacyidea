@@ -38,9 +38,7 @@ export interface ClientsServiceInterface {
   clientsResource: HttpResourceRef<PiResponse<ClientsDict> | undefined>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ClientsService implements ClientsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

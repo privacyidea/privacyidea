@@ -65,7 +65,7 @@ class WebHookHandler(BaseEventHandler):
     With the WebHook Handler, a webhook can be sent at a particular event
     """
 
-    identifier = "WebHookHandler"
+    identifier = "WebHook"
     description = "This eventhandler can post webhooks"
 
     @property

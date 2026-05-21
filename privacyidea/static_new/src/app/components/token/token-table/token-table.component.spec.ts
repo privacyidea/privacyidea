@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
@@ -32,6 +31,7 @@ import {
     MockContentService,
     MockLocalService,
     MockNotificationService,
+    MockRealmService,
     MockTableUtilsService,
     MockTokenService
 } from "@testing/mock-services";
@@ -40,6 +40,7 @@ import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
+import { RealmService } from "@services/realm/realm.service";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -67,7 +68,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenTableComponent, TokenTableSelfServiceComponent, NoopAnimationsModule],
+      imports: [TokenTableComponent, TokenTableSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -78,6 +79,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]

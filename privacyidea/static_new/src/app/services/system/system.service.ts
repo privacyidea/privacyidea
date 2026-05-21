@@ -54,9 +54,7 @@ export interface SystemServiceInterface {
   getDocumentation(): Observable<string>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SystemService implements SystemServiceInterface {
   private readonly systemBaseUrl = environment.proxyUrl + "/system/";
 
@@ -117,10 +115,16 @@ export class SystemService implements SystemServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: () => (this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined),
-    computation: (caConnectorResource, previous) => {
-      const caConnectors = caConnectorResource?.result?.value;
-      return caConnectors ?? previous?.value ?? [];
+    source: () => ({
+      value: this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+      isLoading: this.caConnectorResource.isLoading(),
+      error: this.caConnectorResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const caConnectors = source.value?.result?.value;
+      if (!caConnectors) return source.isLoading ? (previous?.value ?? []) : [];
+      return caConnectors;
     }
   });
   nodesResource = httpResource<PiResponse<NodeInfo[]>>(() => {

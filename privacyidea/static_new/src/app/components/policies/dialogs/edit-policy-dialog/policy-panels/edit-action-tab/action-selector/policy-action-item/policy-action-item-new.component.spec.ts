@@ -22,7 +22,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
 
@@ -62,7 +61,7 @@ describe("PolicyActionItemComponent", () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [PolicyActionItemComponent, NoopAnimationsModule, FormsModule, MatSelectModule],
+      imports: [PolicyActionItemComponent, FormsModule, MatSelectModule],
       providers: [{ provide: PolicyService, useValue: policyServiceMock }]
     })
       .overrideComponent(PolicyActionItemComponent, {

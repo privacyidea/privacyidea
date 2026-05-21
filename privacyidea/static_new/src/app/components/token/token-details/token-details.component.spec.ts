@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
@@ -45,11 +44,13 @@ import {
   MockRealmService,
   MockTableUtilsService,
   MockTokenService,
+  MockUserService,
   MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { TokenDetailsComponent } from "./token-details.component";
+import { UserService } from "@services/user/user.service";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -70,7 +71,7 @@ describe("TokenDetailsComponent", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -91,6 +92,7 @@ describe("TokenDetailsComponent", () => {
         { provide: MachineService, useClass: MockMachineService },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService
       ]
@@ -132,7 +134,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header .token-serial");
+    const header = fixture.nativeElement.querySelector(".details-header .serial");
     expect(header.textContent).toContain("Mock serial");
   });
 

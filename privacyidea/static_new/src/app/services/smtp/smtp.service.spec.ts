@@ -46,6 +46,7 @@ describe("SmtpService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        SmtpService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }

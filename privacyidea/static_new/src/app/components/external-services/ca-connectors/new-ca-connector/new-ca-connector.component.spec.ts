@@ -20,12 +20,12 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { MockCaConnectorService, MockPendingChangesService } from "@testing/mock-services";
+import { MockCaConnectorService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { NewCaConnectorComponent } from "./new-ca-connector.component";
 
 describe("NewCaConnectorComponent", () => {
@@ -36,12 +36,13 @@ describe("NewCaConnectorComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NewCaConnectorComponent, NoopAnimationsModule],
+      imports: [NewCaConnectorComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: CaConnectorService, useClass: MockCaConnectorService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();

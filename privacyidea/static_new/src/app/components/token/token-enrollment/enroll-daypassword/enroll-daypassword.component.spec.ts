@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import {
     DAYPASSWORD_HASHLIB,
     DAYPASSWORD_OTP_LENGTH,
@@ -30,7 +29,8 @@ import {
 } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
 
@@ -42,11 +42,12 @@ describe("EnrollDaypasswordComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollDaypasswordComponent, BrowserAnimationsModule],
+      imports: [EnrollDaypasswordComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();

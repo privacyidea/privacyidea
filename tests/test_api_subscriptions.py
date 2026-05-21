@@ -44,6 +44,14 @@ class APISubscriptionsTestCase(MyApiTestCase):
             self.assertEqual(value[0].get("application"),
                              "demo_application")
 
+        # Filtering by an unknown application returns an empty list.
+        with self.app.test_request_context('/subscriptions/no_such_app',
+                                           method="GET",
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            self.assertEqual([], res.json.get("result").get("value"))
+
         # delete subscriptions
         with self.app.test_request_context('/subscriptions/demo_application',
                                            method="DELETE",

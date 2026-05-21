@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
 import {
@@ -37,7 +36,7 @@ describe("TiqrConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TiqrConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(TiqrConfigComponent);
     fixture.componentRef.setInput("formData", {});
