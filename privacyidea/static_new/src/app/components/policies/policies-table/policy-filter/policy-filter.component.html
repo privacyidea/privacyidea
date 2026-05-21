@@ -22,7 +22,7 @@
     subscriptSizing="dynamic">
     <mat-label i18n>Filter Policies...</mat-label>
     <app-clearable-input
-      (cleared)="clearFilter()"
+      (clearButtonClick)="clearFilter()"
       [showClearButton]="!isEmpty()">
       <input
         #filterHTMLInputElement

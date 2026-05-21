@@ -27,7 +27,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Filter Event Handlers ...</mat-label>
       <app-clearable-input
-        (cleared)="onClearFilter()"
+        (clearButtonClick)="onClearFilter()"
         [showClearButton]="filterHTMLInputElement.value.length > 0">
         <input
           #filterHTMLInputElement

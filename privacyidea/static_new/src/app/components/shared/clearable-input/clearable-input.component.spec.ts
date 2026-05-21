@@ -41,10 +41,10 @@ describe("ClearableInputComponent", () => {
     expect(component.showClearButton()).toBe(true);
   });
 
-  it("should emit cleared event when clearInput is called", () => {
-    jest.spyOn(component.cleared, "emit");
+  it("should emit clearButtonClick event when clearInput is called", () => {
+    jest.spyOn(component.clearButtonClick, "emit");
     component.clearInput();
-    expect(component.cleared.emit).toHaveBeenCalled();
+    expect(component.clearButtonClick.emit).toHaveBeenCalled();
   });
 
   it("should allow showClearButton to be set to false", () => {

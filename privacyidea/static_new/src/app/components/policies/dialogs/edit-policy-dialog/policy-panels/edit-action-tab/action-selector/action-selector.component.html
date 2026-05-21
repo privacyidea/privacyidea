@@ -59,7 +59,7 @@
       </div>
 
       <app-clearable-input
-        (cleared)="actionFilter.set('')"
+        (clearButtonClick)="actionFilter.set('')"
         [showClearButton]="actionFilter() !== ''">
         <input
           clearableInput

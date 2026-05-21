@@ -22,7 +22,7 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Filename</mat-label>
       <app-clearable-input
-        (cleared)="filenameControl.setValue('')"
+        (clearButtonClick)="filenameControl.setValue('')"
         [showClearButton]="!!filenameControl.value">
         <input
           [formControl]="filenameControl"

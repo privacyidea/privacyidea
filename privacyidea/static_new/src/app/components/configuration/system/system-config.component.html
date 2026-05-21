@@ -170,7 +170,7 @@
             class="input-width-l">
             <mat-label i18n>Override Authorization Clients</mat-label>
             <app-clearable-input
-              (cleared)="params.OverrideAuthorizationClient = ''"
+              (clearButtonClick)="params.OverrideAuthorizationClient = ''"
               [showClearButton]="!!params.OverrideAuthorizationClient">
               <input
                 [(ngModel)]="params.OverrideAuthorizationClient"

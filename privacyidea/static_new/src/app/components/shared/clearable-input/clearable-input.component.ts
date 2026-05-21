@@ -28,7 +28,7 @@ import { ClearButtonComponent } from "@components/shared/clear-button/clear-butt
   styleUrl: "./clearable-input.component.scss"
 })
 export class ClearableInputComponent {
-  readonly cleared = output<void>();
+  readonly clearButtonClick = output<void>();
   readonly showClearButton = input<boolean>(true);
   readonly disabled = input<boolean>(false);
 
@@ -36,6 +36,6 @@ export class ClearableInputComponent {
     if (this.disabled()) {
       return;
     }
-    this.cleared.emit();
+    this.clearButtonClick.emit();
   }
 }

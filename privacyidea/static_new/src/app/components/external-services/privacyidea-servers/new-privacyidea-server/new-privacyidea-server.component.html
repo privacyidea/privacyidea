@@ -72,7 +72,7 @@
             class="input-width-l">
             <mat-label i18n>Identifier</mat-label>
             <app-clearable-input
-              (cleared)="privacyideaForm.get('identifier')?.setValue('')"
+              (clearButtonClick)="privacyideaForm.get('identifier')?.setValue('')"
               [showClearButton]="!isEditMode && !!privacyideaForm.get('identifier')?.value">
               <input
                 formControlName="identifier"
@@ -96,7 +96,7 @@
             class="input-width-l">
             <mat-label i18n>URL of the privacyIDEA Server</mat-label>
             <app-clearable-input
-              (cleared)="privacyideaForm.get('url')?.setValue('')"
+              (clearButtonClick)="privacyideaForm.get('url')?.setValue('')"
               [showClearButton]="!!privacyideaForm.get('url')?.value">
               <input
                 formControlName="url"
@@ -129,7 +129,7 @@
           class="input-width-xl margin-top-16">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (cleared)="privacyideaForm.get('description')?.setValue('')"
+            (clearButtonClick)="privacyideaForm.get('description')?.setValue('')"
             [showClearButton]="!!privacyideaForm.get('description')?.value">
             <input
               formControlName="description"
@@ -144,7 +144,7 @@
               class="input-width-l">
               <mat-label i18n>User</mat-label>
               <app-clearable-input
-                (cleared)="privacyideaForm.get('username')?.setValue('')"
+                (clearButtonClick)="privacyideaForm.get('username')?.setValue('')"
                 [showClearButton]="!!privacyideaForm.get('username')?.value">
                 <input
                   formControlName="username"
@@ -157,7 +157,7 @@
               class="input-width-l">
               <mat-label i18n>Password</mat-label>
               <app-clearable-input
-                (cleared)="privacyideaForm.get('password')?.setValue('')"
+                (clearButtonClick)="privacyideaForm.get('password')?.setValue('')"
                 [showClearButton]="!!privacyideaForm.get('password')?.value">
                 <input
                   autocomplete="new-password"

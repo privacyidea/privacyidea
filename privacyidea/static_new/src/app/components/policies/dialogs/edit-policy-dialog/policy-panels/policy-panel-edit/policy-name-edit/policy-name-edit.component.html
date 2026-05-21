@@ -21,7 +21,7 @@
 <mat-form-field>
   <mat-label i18n>Policy Name</mat-label>
   <app-clearable-input
-    (cleared)="policyName.set('')"
+    (clearButtonClick)="policyName.set('')"
     [showClearButton]="!!policyName()">
     <input
       #nameInput="ngModel"

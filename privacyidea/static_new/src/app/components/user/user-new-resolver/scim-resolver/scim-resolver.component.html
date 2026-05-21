@@ -23,7 +23,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Authentication Server URI</mat-label>
         <app-clearable-input
-          (cleared)="authServerControl.setValue('')"
+          (clearButtonClick)="authServerControl.setValue('')"
           [showClearButton]="!!authServerControl.value">
           <input
             [formControl]="authServerControl"
@@ -43,7 +43,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resource Server Uri</mat-label>
         <app-clearable-input
-          (cleared)="resourceServerControl.setValue('')"
+          (clearButtonClick)="resourceServerControl.setValue('')"
           [showClearButton]="!!resourceServerControl.value">
           <input
             [formControl]="resourceServerControl"
@@ -65,7 +65,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Client</mat-label>
         <app-clearable-input
-          (cleared)="clientControl.setValue('')"
+          (clearButtonClick)="clientControl.setValue('')"
           [showClearButton]="!!clientControl.value">
           <input
             [formControl]="clientControl"
@@ -85,7 +85,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Secret</mat-label>
         <app-clearable-input
-          (cleared)="secretControl.setValue('')"
+          (clearButtonClick)="secretControl.setValue('')"
           [showClearButton]="!!secretControl.value">
           <input
             [formControl]="secretControl"

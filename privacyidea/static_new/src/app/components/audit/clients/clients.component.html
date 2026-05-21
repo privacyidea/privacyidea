@@ -32,7 +32,7 @@
     class="width-100">
     <mat-label i18n>Filter Clients ...</mat-label>
     <app-clearable-input
-      (cleared)="clearFilter()"
+      (clearButtonClick)="clearFilter()"
       [showClearButton]="filterValue !== ''">
       <input
         (input)="handleFilterInput($event)"

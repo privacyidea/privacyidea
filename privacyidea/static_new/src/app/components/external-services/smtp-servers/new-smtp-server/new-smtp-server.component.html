@@ -68,7 +68,7 @@
           class="input-width-l margin-bottom-32">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (cleared)="smtpForm.get('identifier')?.setValue('')"
+            (clearButtonClick)="smtpForm.get('identifier')?.setValue('')"
             [showClearButton]="!isEditMode && !!smtpForm.get('identifier')?.value">
             <input
               formControlName="identifier"
@@ -95,7 +95,7 @@
             class="input-width-l">
             <mat-label i18n>IP or FQDN</mat-label>
             <app-clearable-input
-              (cleared)="smtpForm.get('server')?.setValue('')"
+              (clearButtonClick)="smtpForm.get('server')?.setValue('')"
               [showClearButton]="!!smtpForm.get('server')?.value">
               <input
                 formControlName="server"
@@ -128,7 +128,7 @@
             class="input-width-l">
             <mat-label i18n>Sender Email</mat-label>
             <app-clearable-input
-              (cleared)="smtpForm.get('sender')?.setValue('')"
+              (clearButtonClick)="smtpForm.get('sender')?.setValue('')"
               [showClearButton]="!!smtpForm.get('sender')?.value">
               <input
                 formControlName="sender"
@@ -166,7 +166,7 @@
             class="input-width-l margin-bottom-16">
             <mat-label i18n>Username</mat-label>
             <app-clearable-input
-              (cleared)="smtpForm.get('username')?.setValue('')"
+              (clearButtonClick)="smtpForm.get('username')?.setValue('')"
               [showClearButton]="!!smtpForm.get('username')?.value">
               <input
                 formControlName="username"
@@ -181,7 +181,7 @@
             class="input-width-l">
             <mat-label i18n>Password</mat-label>
             <app-clearable-input
-              (cleared)="smtpForm.get('password')?.setValue('')"
+              (clearButtonClick)="smtpForm.get('password')?.setValue('')"
               [showClearButton]="!!smtpForm.get('password')?.value">
               <input
                 formControlName="password"
@@ -197,7 +197,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (cleared)="smtpForm.get('description')?.setValue('')"
+            (clearButtonClick)="smtpForm.get('description')?.setValue('')"
             [showClearButton]="!!smtpForm.get('description')?.value">
             <input
               formControlName="description"
@@ -236,7 +236,7 @@
               class="input-width-l">
               <mat-label i18n>Certificate</mat-label>
               <app-clearable-input
-                (cleared)="smtpForm.get('certificate')?.setValue('')"
+                (clearButtonClick)="smtpForm.get('certificate')?.setValue('')"
                 [showClearButton]="!!smtpForm.get('certificate')?.value">
                 <input
                   formControlName="certificate"
@@ -263,7 +263,7 @@
               class="input-width-l">
               <mat-label i18n>Private Key</mat-label>
               <app-clearable-input
-                (cleared)="smtpForm.get('private_key')?.setValue('')"
+                (clearButtonClick)="smtpForm.get('private_key')?.setValue('')"
                 [showClearButton]="!!smtpForm.get('private_key')?.value">
                 <input
                   formControlName="private_key"
@@ -277,7 +277,7 @@
               class="input-width-l">
               <mat-label i18n>Password for the Private Key</mat-label>
               <app-clearable-input
-                (cleared)="smtpForm.get('private_key_password')?.setValue('')"
+                (clearButtonClick)="smtpForm.get('private_key_password')?.setValue('')"
                 [showClearButton]="!!smtpForm.get('private_key_password')?.value">
                 <input
                   formControlName="private_key_password"
@@ -296,7 +296,7 @@
           class="input-width-l margin-top-16">
           <mat-label i18n>Recipient for Testing</mat-label>
           <app-clearable-input
-            (cleared)="smtpForm.get('recipient')?.setValue('')"
+            (clearButtonClick)="smtpForm.get('recipient')?.setValue('')"
             [showClearButton]="!!smtpForm.get('recipient')?.value">
             <input
               formControlName="recipient"

@@ -59,7 +59,7 @@
           class="input-width-l margin-bottom-16">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (cleared)="tokengroupForm.get('groupname')?.setValue('')"
+            (clearButtonClick)="tokengroupForm.get('groupname')?.setValue('')"
             [showClearButton]="!isEditMode && !!tokengroupForm.get('groupname')?.value">
             <input
               formControlName="groupname"
@@ -83,7 +83,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (cleared)="tokengroupForm.get('description')?.setValue('')"
+            (clearButtonClick)="tokengroupForm.get('description')?.setValue('')"
             [showClearButton]="!!tokengroupForm.get('description')?.value">
             <input
               formControlName="description"
