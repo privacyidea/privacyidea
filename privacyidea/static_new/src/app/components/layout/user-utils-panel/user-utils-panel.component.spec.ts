@@ -217,6 +217,15 @@ describe("UserUtilsPanelComponent", () => {
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
     });
 
+    it("refreshes user details route", () => {
+      content.routeUrl.set(`${ROUTE_PATHS.USERS_DETAILS}/alice`);
+      component.refreshPage();
+      expect(userService.usersResource.reload).toHaveBeenCalled();
+      expect(tokenService.tokenResource.reload).toHaveBeenCalled();
+      expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
+      expect(containerService.userContainersResource.reload).toHaveBeenCalled();
+    });
+
     it("refreshes tokens route", () => {
       content.routeUrl.set(ROUTE_PATHS.TOKENS);
       component.refreshPage();

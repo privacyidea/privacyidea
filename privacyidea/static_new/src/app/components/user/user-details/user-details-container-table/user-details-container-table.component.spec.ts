@@ -32,6 +32,7 @@ import {
   MockLoadingService,
   MockLocalService,
   MockNotificationService,
+  MockPiResponse,
   MockTableUtilsService,
   MockUserService
 } from "@testing/mock-services";
@@ -121,6 +122,45 @@ describe("UserDetailsContainerTableComponent", () => {
   it("onPageSizeChange updates pageSize", () => {
     component.onPageSizeChange(25);
     expect(component.pageSize).toBe(25);
+  });
+
+  describe("userContainers signal", () => {
+    const mockContainers = [
+      { serial: "CONT-1", type: "generic", states: [], realms: [], tokens: [], users: [] } as any
+    ];
+
+    it("returns [] on resource error", () => {
+      containerServiceMock.userContainersResource.value.set(
+        MockPiResponse.fromValue({ containers: mockContainers, count: 1 }) as any
+      );
+      expect(component.userContainers()).toEqual(mockContainers);
+
+      containerServiceMock.userContainersResource.error.set(new Error("network error"));
+      expect(component.userContainers()).toEqual([]);
+    });
+
+    it("returns [] while loading with no previous containers", () => {
+      containerServiceMock.userContainersResource.value.set(undefined as any);
+      (containerServiceMock.userContainersResource.isLoading as any).set(true);
+      expect(component.userContainers()).toEqual([]);
+    });
+
+    it("retains previous containers while loading", () => {
+      containerServiceMock.userContainersResource.value.set(
+        MockPiResponse.fromValue({ containers: mockContainers, count: 1 }) as any
+      );
+      expect(component.userContainers()); // prime previous
+      containerServiceMock.userContainersResource.value.set(undefined as any);
+      (containerServiceMock.userContainersResource.isLoading as any).set(true);
+      expect(component.userContainers()).toEqual(mockContainers);
+    });
+
+    it("returns containers on successful load", () => {
+      containerServiceMock.userContainersResource.value.set(
+        MockPiResponse.fromValue({ containers: mockContainers, count: 1 }) as any
+      );
+      expect(component.userContainers()).toEqual(mockContainers);
+    });
   });
 
   it("handleStateClick calls toggleActive and reloads", () => {
