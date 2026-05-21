@@ -23,8 +23,9 @@
     <mat-panel-title i18n>E-Mail</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n>The E-Mail token is a challenge response token that sends the OTP value to the given email address, when the
-            correct OTP PIN was presented by the user.
+    <p i18n>
+      The E-Mail token is a challenge response token that sends the OTP value to the given email address, when the
+      correct OTP PIN was presented by the user.
     </p>
 
     <div class="flex-row gap-16 ali-center margin-bottom-16">
@@ -41,11 +42,10 @@
         </mat-select>
         <app-clear-button
           matSuffix
-          (onClick)="clearField(EMAIL_SMTP_SERVER_KEY); $event.stopPropagation()"></app-clear-button>
-        <mat-hint i18n>Select a predefined
-          <a
-            [routerLink]=[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]><strong>SMTP server configuration</strong>.
-          </a>
+          (clearButtonClick)="clearField(EMAIL_SMTP_SERVER_KEY); $event.stopPropagation()"></app-clear-button>
+        <mat-hint i18n
+          >Select a predefined
+          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"><strong>SMTP server configuration</strong>. </a>
         </mat-hint>
       </mat-form-field>
 
@@ -55,11 +55,11 @@
         <mat-label i18n>OTP Validity Time</mat-label>
         <input
           [ngModel]="formData()[EMAIL_VALIDITY_TIME_KEY]"
-        (ngModelChange)="updateFormData(EMAIL_VALIDITY_TIME_KEY, $event)"
+          (ngModelChange)="updateFormData(EMAIL_VALIDITY_TIME_KEY, $event)"
           matInput
-          type="number">
+          type="number" />
         <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>
       </mat-form-field>
     </div>
-    </div>
+  </div>
 </mat-expansion-panel>

@@ -46,7 +46,7 @@
       @if (validTimeFormControl.value !== "") {
         <app-clear-button
           matSuffix
-          (onClick)="clearValidTimeControl()"></app-clear-button>
+          (clearButtonClick)="clearValidTimeControl()"></app-clear-button>
       }
     </mat-form-field>
 
@@ -64,7 +64,7 @@
       @if (clientFormControl.value !== "") {
         <app-clear-button
           matSuffix
-          (onClick)="clearClientControl()"></app-clear-button>
+          (clearButtonClick)="clearClientControl()"></app-clear-button>
       }
     </mat-form-field>
   </div>

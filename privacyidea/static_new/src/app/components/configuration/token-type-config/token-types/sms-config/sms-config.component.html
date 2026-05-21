@@ -24,8 +24,9 @@
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n>The SMS Token is an event based token.</p>
-    <p i18n>After the user has tried to authenticate with the OTP PIN, an SMS with an OTP value is sent to the users
-            mobile phone. Then user can authenticate with this OTP value in a second step.
+    <p i18n>
+      After the user has tried to authenticate with the OTP PIN, an SMS with an OTP value is sent to the users mobile
+      phone. Then user can authenticate with this OTP value in a second step.
     </p>
     <p i18n>Here you can define how the SMS will be sent - via which kind of gateway.</p>
 
@@ -43,11 +44,10 @@
         </mat-select>
         <app-clear-button
           matSuffix
-          (onClick)="clearField(SMS_GATEWAY); $event.stopPropagation()"></app-clear-button>
-        <mat-hint i18n>Select a predefined
-          <a
-            [routerLink]=[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]><strong>SMS Gateway configuration</strong>.
-          </a>
+          (clearButtonClick)="clearField(SMS_GATEWAY); $event.stopPropagation()"></app-clear-button>
+        <mat-hint i18n
+          >Select a predefined
+          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"><strong>SMS Gateway configuration</strong>. </a>
         </mat-hint>
       </mat-form-field>
 
@@ -60,7 +60,7 @@
           (ngModelChange)="updateFormData(SMS_PROVIDER_TIMEOUT, $event)"
           matInput
           placeholder="300"
-          type="number">
+          type="number" />
         <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>
       </mat-form-field>
     </div>
