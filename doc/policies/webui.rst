@@ -169,13 +169,15 @@ policy_template_url
 
 type: ``string``
 
-Here you can define a URL from where the policies should be fetched. The
-default URL is a Github repository [#defaulturl]_.
+Here you can define a URL from where the policy templates should be fetched.
+The default is ``/static/policy-templates/``, which resolves to the bundled
+templates shipped with privacyIDEA.
+
+You can point this to an external URL (e.g. ``https://example.com/my-templates/``)
+or any other path reachable by the WebUI to provide custom policy templates.
 
 .. note:: When setting a template_url policy the modified URL will only get
    active after the user has logged out and in again.
-
-.. [#defaulturl] "/static/policy-templates/".
 
 
 .. index:: Default tokentype
