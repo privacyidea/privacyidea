@@ -98,20 +98,24 @@
             <div>
               @switch (column.key) {
                 @case ("username") {
-                  <a
-                    (click)="onClickUsername(element)"
-                    attr.aria-label="{{ column.label }} Link"
-                    routerLink="/users/details/{{ element.username }}">
-                    {{ element[column.key] }}
-                  </a>
+                  <app-copyable [copyText]="element[column.key]">
+                    <a
+                      (click)="onClickUsername(element)"
+                      attr.aria-label="{{ column.label }} Link"
+                      routerLink="/users/details/{{ element.username }}">
+                      {{ element[column.key] }}
+                    </a>
+                  </app-copyable>
                 }
                 @case ("resolver") {
-                  <a
-                    (click)="onClickResolver(element[column.key]); $event.preventDefault()"
-                    attr.aria-label="{{ column.label }} Link"
-                    role="button">
-                    {{ element[column.key] }}
-                  </a>
+                  <app-copyable [copyText]="element[column.key]">
+                    <a
+                      (click)="onClickResolver(element[column.key]); $event.preventDefault()"
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button">
+                      {{ element[column.key] }}
+                    </a>
+                  </app-copyable>
                 }
                 @default {
                   <span>

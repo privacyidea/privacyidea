@@ -26,7 +26,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -60,7 +60,7 @@ const columnKeysMap = [
     MatIconModule,
     MatButtonModule,
     NgClass,
-    CopyButtonComponent,
+    CopyableComponent,
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent

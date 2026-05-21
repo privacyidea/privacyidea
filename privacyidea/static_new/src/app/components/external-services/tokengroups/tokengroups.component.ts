@@ -27,7 +27,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -50,7 +50,7 @@ import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@serv
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./tokengroups.component.html",
   styleUrl: "./tokengroups.component.scss"

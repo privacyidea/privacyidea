@@ -29,7 +29,14 @@ import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from 
 @Component({
   selector: "app-totp-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
+  imports: [
+    FormsModule,
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    ClearButtonComponent
+  ],
   templateUrl: "./totp-config.component.html",
   styleUrl: "./totp-config.component.scss"
 })

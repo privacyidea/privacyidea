@@ -50,14 +50,4 @@ describe("EmailConfigComponent", () => {
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [EMAIL_SMTP_SERVER_KEY]: newValue });
   });
 
-  it("should call updateFormData with empty value when clearField is called", async () => {
-    const initialServer = "server1";
-    fixture.componentRef.setInput("formData", { [EMAIL_SMTP_SERVER_KEY]: initialServer });
-    fixture.detectChanges();
-    expect(component.formData()[EMAIL_SMTP_SERVER_KEY]).toEqual(initialServer);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(EMAIL_SMTP_SERVER_KEY);
-    expect(component.updateFormData).toHaveBeenCalledWith(EMAIL_SMTP_SERVER_KEY, "");
-  });
 });

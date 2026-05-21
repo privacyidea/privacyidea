@@ -91,16 +91,13 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.serial">
                   <a
                     (click)="serialClicked(element)"
                     class="flex ali-center">
                     {{ element.serial }}
                   </a>
-                  @if (element.serial) {
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
-                </div>
+                </app-copyable>
               }
               @case ("otp_received") {
                 <div class="flex just-center width-100">

@@ -149,7 +149,7 @@
                     [disabled]="total() === 0"></mat-checkbox>
                 }
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="element.serial">
                     <a
                       (click)="contentService.navigateContainerDetails(element.serial)"
                       (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
@@ -159,10 +159,7 @@
                       tabindex="0">
                       {{ element[column.key] }}
                     </a>
-                    @if (element.serial !== "") {
-                      <app-copy-button [copyText]="element.serial"></app-copy-button>
-                    }
-                  </div>
+                  </app-copyable>
                 }
                 @case ("realms") {
                   <div [ngClass]="{ 'realm-list': (element[column.key]?.length || 0) > 1 }">
@@ -197,17 +194,19 @@
                   }
                 }
                 @case ("user_name") {
-                  <a
-                    (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                    (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                    (keydown.space)="
-                      $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
-                    "
-                    attr.aria-label="{{ column.label }} Link"
-                    role="button"
-                    tabindex="0">
-                    {{ element[column.key] }}
-                  </a>
+                  <app-copyable [copyText]="element[column.key]">
+                    <a
+                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                      (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ element[column.key] }}
+                    </a>
+                  </app-copyable>
                 }
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {

@@ -71,14 +71,13 @@
       <td
         *matCellDef="let gateway"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="gateway.name">
           <a
             (click)="onEditGateway(gateway)"
             class="flex ali-center">
             {{ gateway.name }}
           </a>
-          <app-copy-button [copyText]="gateway.name" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 

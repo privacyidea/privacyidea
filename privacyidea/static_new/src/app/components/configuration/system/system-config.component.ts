@@ -27,6 +27,7 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -51,7 +52,8 @@ import { SystemDocumentationDialogComponent } from "./system-documentation-dialo
     MatCheckbox,
     ScrollToTopDirective,
     MatButton,
-    MatIcon
+    MatIcon,
+    ClearableInputComponent
   ],
   styleUrls: ["./system-config.component.scss"]
 })

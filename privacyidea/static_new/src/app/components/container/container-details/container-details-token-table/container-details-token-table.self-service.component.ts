@@ -27,7 +27,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatCell, MatHeaderCell, MatHeaderRow, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -52,7 +52,7 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
     MatTableModule,
     MatIcon,
     MatIconButton,
-    CopyButtonComponent,
+    CopyableComponent,
     ReactiveFormsModule,
     FormsModule,
     MatTooltip,

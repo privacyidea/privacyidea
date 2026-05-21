@@ -48,6 +48,7 @@ import { ContainerDetailsInfoComponent } from "@components/container/container-d
 import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -116,6 +117,7 @@ interface TokenOption {
     ContainerDetailsTokenTableComponent,
     MatDivider,
     ClearableInputComponent,
+    CopyableComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,

@@ -111,7 +111,9 @@
                       class="details-scrollable-container">
                       @for (realm of element.value; track realm; let idx = $index) {
                         <mat-list-item class="height-auto pad-0">
-                          <span class="font-14">• {{ realm }}</span>
+                          <app-copyable [copyText]="realm">
+                            <span class="font-14">• {{ realm }}</span>
+                          </app-copyable>
                         </mat-list-item>
                       }
                     </div>
@@ -210,15 +212,17 @@
                       </app-clearable-input>
                     </mat-form-field>
                   } @else {
-                    <a
-                      (click)="contentService.userSelected(element.value, element['user_realm'])"
-                      (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
-                      (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])"
-                      i18n-aria-label="{{ element.keyMap.label }} Link"
-                      role="button"
-                      tabindex="0">
-                      {{ element.value }}
-                    </a>
+                    <app-copyable [copyText]="element.value">
+                      <a
+                        (click)="contentService.userSelected(element.value, element['user_realm'])"
+                        (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
+                        (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])"
+                        i18n-aria-label="{{ element.keyMap.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element.value }}
+                      </a>
+                    </app-copyable>
                   }
                 }
                 @case ("user_realm") {
@@ -236,7 +240,9 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <span>{{ element.value }}</span>
+                    <app-copyable [copyText]="element.value">
+                      <span>{{ element.value }}</span>
+                    </app-copyable>
                   }
                 }
                 @default {

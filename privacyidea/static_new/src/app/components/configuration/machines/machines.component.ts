@@ -30,7 +30,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -51,7 +51,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatFormFieldModule,
     MatInputModule,
     ClearableInputComponent,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"

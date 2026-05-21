@@ -85,14 +85,13 @@
       <td
         *matCellDef="let group"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="group.groupname">
           <a
             (click)="onEditTokengroup(group)"
             class="flex ali-center">
             {{ group.groupname }}
           </a>
-          <app-copy-button [copyText]="group.groupname" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 
