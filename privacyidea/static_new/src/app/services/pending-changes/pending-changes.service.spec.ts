@@ -24,7 +24,9 @@ describe("PendingChangesService", () => {
   let service: PendingChangesService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [PendingChangesService]
+    });
     service = TestBed.inject(PendingChangesService);
   });
 

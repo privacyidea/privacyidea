@@ -21,9 +21,12 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { ClientsDict } from "@services/clients/clients.service";
-import { MockAuditService, MockContentService, MockPiResponse } from "@testing/mock-services";
+import { ClientsDict, ClientsService } from "@services/clients/clients.service";
+import { MockAuditService, MockClientsService, MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;
@@ -35,9 +38,10 @@ describe("ClientsComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ClientsComponent],
       providers: [
-        { provide: "AuditService", useClass: MockAuditService },
-        { provide: "AuthService", useClass: MockAuthService },
-        { provide: "ContentService", useClass: MockContentService },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: ClientsService, useClass: MockClientsService },
         provideHttpClient()
       ]
     }).compileComponents();

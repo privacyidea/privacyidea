@@ -244,9 +244,7 @@ export interface ContainerServiceInterface {
   startPolling(containerSerial: string): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ContainerService implements ContainerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);

@@ -50,6 +50,7 @@ describe("PrivacyideaServerService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        PrivacyideaServerService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }

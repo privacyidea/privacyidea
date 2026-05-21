@@ -26,6 +26,7 @@ import { RealmService } from "@services/realm/realm.service";
 import { Tokens, TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
+  MockContentService,
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
@@ -36,6 +37,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
+import { ContentService } from "@services/content/content.service";
 
 function makeTokenDetailResponse(tokentype: any): MockPiResponse<Tokens> {
   return {
@@ -107,6 +109,7 @@ describe("TokenDetailsUserComponent", () => {
         { provide: RealmService, useClass: MockRealmService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
         MockLocalService,
         MockNotificationService
       ]

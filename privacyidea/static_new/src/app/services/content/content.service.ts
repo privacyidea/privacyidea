@@ -80,7 +80,7 @@ export interface ContentServiceInterface {
   machineResolverSelected: (resolverName: string) => void;
 }
 
-@Injectable({ providedIn: "root" })
+@Injectable()
 export class ContentService implements ContentServiceInterface {
   detailsUsername = signal("");
   router = inject(Router);

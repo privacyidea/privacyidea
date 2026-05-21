@@ -72,9 +72,7 @@ export interface ApplicationServiceInterface {
   applications: WritableSignal<Applications>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ApplicationService implements ApplicationServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);

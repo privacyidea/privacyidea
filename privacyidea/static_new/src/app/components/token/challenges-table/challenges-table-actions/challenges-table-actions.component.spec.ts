@@ -22,9 +22,10 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NotificationService } from "@services/notification/notification.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
-import { MockNotificationService } from "@testing/mock-services";
+import { MockChallengesService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
 import { of, throwError } from "rxjs";
 import { ChallengesTableActionsComponent } from "./challenges-table-actions.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 describe("ChallengesTableActionsComponent", () => {
   let component: ChallengesTableActionsComponent;
@@ -38,7 +39,9 @@ describe("ChallengesTableActionsComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ChallengesService, useClass: MockChallengesService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 

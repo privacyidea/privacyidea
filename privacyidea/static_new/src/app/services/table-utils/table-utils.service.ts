@@ -129,9 +129,7 @@ export interface TableUtilsServiceInterface {
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);

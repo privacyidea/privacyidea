@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { HttpClient, HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
@@ -24,18 +25,6 @@ import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService } from "@services/auth/auth.service";
-import { ContentService } from "@services/content/content.service";
-import { NotificationService } from "@services/notification/notification.service";
-import { TokenService } from "@services/token/token.service";
-import {
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse,
-  MockTokenService
-} from "@testing/mock-services";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { lastValueFrom, of, throwError } from "rxjs";
 import {
   ContainerCreateResult,
   ContainerDetailData,
@@ -45,7 +34,21 @@ import {
   ContainerService,
   ContainerType,
   TemplateComparisonResult
-} from "./container.service";
+} from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import {
+  MockAuthService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse,
+  MockTokenService,
+  MockUserService
+} from "@testing/mock-services";
+import { lastValueFrom, of, throwError } from "rxjs";
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
@@ -62,10 +65,12 @@ describe("ContainerService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        ContainerService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService
       ]

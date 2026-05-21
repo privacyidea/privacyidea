@@ -105,9 +105,7 @@ export interface PeriodicTaskServiceInterface {
   fetchAllModuleOptions(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
