@@ -1,4 +1,4 @@
-name: GitLab
+name: GitLab Push to Master Branch
 
 on:
   push:

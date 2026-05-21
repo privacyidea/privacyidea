@@ -20,12 +20,16 @@
 <div class="action-name-container">
 <mat-form-field>
   <mat-label i18n>Policy Name</mat-label>
-  <input
-    matInput
-    type="text"
-    [formField]="nameField"
-    i18n-placeholder
-    placeholder="Enter policy name..." />
+  <app-clearable-input
+    (onClick)="policyName.set('')"
+    [showClearButton]="!!policyName()">
+    <input
+      matInput
+      type="text"
+      [formField]="nameField"
+      i18n-placeholder
+      placeholder="Enter policy name..." />
+  </app-clearable-input>
   @if (nameField().errors().some(e => e.kind === 'required')) {
     <mat-error i18n>Policy name is <strong>required</strong>.</mat-error>
   }

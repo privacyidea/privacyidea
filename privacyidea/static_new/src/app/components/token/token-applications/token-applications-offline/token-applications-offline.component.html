@@ -103,14 +103,13 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.serial">
                   <a
                     (click)="contentService.tokenSelected(element.serial)"
                     attr.aria-label="{{ column.label }} Link">
                     {{ element[column.key] }}
                   </a>
-                  <app-copy-button [copyText]="element.serial"></app-copy-button>
-                </div>
+                </app-copyable>
               }
               @default {
                 @if (tableUtilsService.isLink(column.key)) {

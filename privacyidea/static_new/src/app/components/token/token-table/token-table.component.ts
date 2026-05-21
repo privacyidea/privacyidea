@@ -47,7 +47,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -81,7 +81,7 @@ const columnKeysMap = [
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
-    CopyButtonComponent,
+    CopyableComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,

@@ -30,6 +30,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -59,7 +60,8 @@ import { lastValueFrom } from "rxjs";
     MatPaginatorModule,
     MatSelectModule,
     MatAutocompleteModule,
-    CopyButtonComponent
+    CopyButtonComponent,
+    CopyableComponent
   ],
   templateUrl: "./machine-details-dialog.component.html",
   styleUrl: "./machine-details-dialog.component.scss"

@@ -70,7 +70,7 @@
       }
       @if (certTemplate()) {
         <app-clear-button
-          (onClick)="clearTemplateSelection()"
+          (clearButtonClick)="clearTemplateSelection()"
           matSuffix></app-clear-button>
       }
     </mat-form-field>
@@ -81,12 +81,12 @@
       <span
         class="margin-bottom-16"
         i18n>
- The server will create the private RSA key and store it in the database. <br />
- You can later download the PKCS#12 file.</span>
+        The server will create the private RSA key and store it in the database. <br />
+        You can later download the PKCS#12 file.</span
+      >
     }
     @case ("uploadRequest") {
-      <mat-form-field
-        class="width-100">
+      <mat-form-field class="width-100">
         <mat-label i18n> Certificate Signing Request (PEM)</mat-label>
         <textarea
           [formField]="pemForm"
@@ -98,8 +98,7 @@
       </mat-form-field>
     }
     @case ("uploadCert") {
-      <mat-form-field
-        class="width-100">
+      <mat-form-field class="width-100">
         <mat-label i18n> Certificate (PEM)</mat-label>
         <textarea
           [formField]="pemForm"

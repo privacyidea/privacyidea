@@ -23,7 +23,7 @@ import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 
 @Component({
   selector: "app-system-documentation-dialog",
@@ -37,7 +37,7 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
     MatInput,
     MatButton,
     CdkTextareaAutosize,
-    CopyButtonComponent
+    CopyableComponent
   ]
 })
 export class SystemDocumentationDialogComponent implements AfterViewInit {

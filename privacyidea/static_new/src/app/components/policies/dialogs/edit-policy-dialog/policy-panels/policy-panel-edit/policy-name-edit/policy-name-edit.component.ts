@@ -22,13 +22,14 @@ import { Component, computed, model } from "@angular/core";
 import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-policy-name-edit",
   templateUrl: "./policy-name-edit.component.html",
   styleUrl: "./policy-name-edit.component.scss",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, FormField, TextFieldModule]
+  imports: [MatFormFieldModule, MatInputModule, FormField, TextFieldModule, ClearableInputComponent]
 })
 export class PolicyNameEditComponent {
   readonly policyName = model.required<string>();

@@ -84,7 +84,9 @@
               mat-cell>
               @switch (column.key) {
                 @case ("name") {
-                  <span>{{ element.name }}</span>
+                  <app-copyable [copyText]="element.name">
+                    <span>{{ element.name }}</span>
+                  </app-copyable>
                 }
                 @case ("isDefault") {
                   <div class="flex just-center">

@@ -95,14 +95,13 @@
       <td
         *matCellDef="let service"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="service.servicename">
           <a
             (click)="onEditServiceId(service)"
             class="flex ali-center">
             {{ service.servicename }}
           </a>
-          <app-copy-button [copyText]="service.servicename" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 

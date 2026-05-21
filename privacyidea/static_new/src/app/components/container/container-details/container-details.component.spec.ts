@@ -26,6 +26,7 @@ import { ContainerDetailsComponent } from "@components/container/container-detai
 import { ContainerDetailsSelfServiceComponent } from "@components/container/container-details/container-details.self-service.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -235,6 +236,185 @@ describe("ContainerDetailsComponent", () => {
     component.cancelContainerEdit(element);
 
     expect(component.selectedRealms()).toEqual([]);
+  });
+
+  it("isEditableElement returns true for states when action is allowed", () => {
+    const authService = TestBed.inject(AuthService);
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    expect(component.isEditableElement("states")).toBe(true);
+  });
+
+  it("isEditableElement returns true for description when action is allowed", () => {
+    const authService = TestBed.inject(AuthService);
+    jest.spyOn(authService, "actionAllowed").mockImplementation((action) => action === "container_description");
+    expect(component.isEditableElement("description")).toBe(true);
+  });
+
+  it("isEditableElement returns true for realms when action is allowed", () => {
+    const authService = TestBed.inject(AuthService);
+    jest.spyOn(authService, "actionAllowed").mockImplementation((action) => action === "container_realms");
+    expect(component.isEditableElement("realms")).toBe(true);
+  });
+
+  it("isEditableElement returns false for an unknown key", () => {
+    const authService = TestBed.inject(AuthService);
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    expect(component.isEditableElement("unknown")).toBe(false);
+  });
+
+  it("cancelContainerEdit for user_name toggles isEditingUser", () => {
+    component.userData.set([
+      {
+        keyMap: { label: "User Name", key: "user_name" },
+        value: "alice",
+        isEditing: signal(true)
+      }
+    ]);
+    const element = component.userData()[0];
+    component.isEditingUser.set(true);
+
+    component.cancelContainerEdit(element);
+
+    expect(component.isEditingUser()).toBe(false);
+    expect(element.isEditing()).toBe(false);
+  });
+
+  it("cancelContainerEdit for states defaults to [] when containerDetails has no states", () => {
+    component.containerDetails.set(undefined as any);
+    component.containerDetailData.set([
+      {
+        keyMap: { label: "Status", key: "states" },
+        value: ["active"],
+        isEditing: signal(true)
+      }
+    ]);
+    component.selectedStates.set(["disabled"]);
+    const element = component.containerDetailData()[0];
+
+    component.cancelContainerEdit(element);
+
+    expect(component.selectedStates()).toEqual([]);
+    expect(element.isEditing()).toBe(false);
+  });
+
+  it("selectedStates linkedSignal defaults to [] when containerDetails has no states", () => {
+    component.containerDetails.set({
+      serial: "Mock serial",
+      states: undefined as any,
+      realms: [],
+      tokens: [],
+      type: "generic",
+      users: []
+    });
+    expect(component.selectedStates()).toEqual([]);
+  });
+
+  describe("#onStatesChange", () => {
+    it("keeps other states when a non-conflicting state is added", () => {
+      component.selectedStates.set(["active"]);
+      component.onStatesChange(["active", "lost"]);
+      expect(component.selectedStates()).toEqual(["active", "lost"]);
+    });
+
+    it("removes disabled when active is added", () => {
+      component.selectedStates.set(["disabled"]);
+      component.onStatesChange(["disabled", "active"]);
+      expect(component.selectedStates()).not.toContain("disabled");
+      expect(component.selectedStates()).toContain("active");
+    });
+
+    it("removes active when disabled is added", () => {
+      component.selectedStates.set(["active"]);
+      component.onStatesChange(["active", "disabled"]);
+      expect(component.selectedStates()).not.toContain("active");
+      expect(component.selectedStates()).toContain("disabled");
+    });
+  });
+
+  it("saveContainerEdit for states calls setStates with selectedStates", () => {
+    jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+    component.selectedStates.set(["active", "lost"]);
+
+    component.containerDetailData.set([
+      {
+        keyMap: { label: "Status", key: "states" },
+        value: ["active"],
+        isEditing: signal(true)
+      }
+    ]);
+    const element = component.containerDetailData()[0];
+    component.saveContainerEdit(element);
+
+    expect(containerService.setStates).toHaveBeenCalledWith("Mock serial", ["active", "lost"]);
+    expect(element.isEditing()).toBe(false);
+  });
+
+  describe("#saveStates", () => {
+    it("returns false, shows an error, and does not call setStates when no state is selected", () => {
+      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+      const notificationService = TestBed.inject(NotificationService);
+      component.selectedStates.set([]);
+
+      const result = component.saveStates();
+
+      expect(result).toBe(false);
+      expect(notificationService.error).toHaveBeenCalledWith("At least one state must be selected.");
+      expect(setStatesSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns true and calls setStates when at least one state is selected", () => {
+      const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+      component.selectedStates.set(["active"]);
+
+      const result = component.saveStates();
+
+      expect(result).toBe(true);
+      expect(setStatesSpy).toHaveBeenCalledWith("Mock serial", ["active"]);
+    });
+  });
+
+  it("saveContainerEdit for states keeps edit mode open when saveStates fails (empty selection)", () => {
+    const setStatesSpy = jest.spyOn(containerService, "setStates").mockReturnValue(of({}));
+    const notificationService = TestBed.inject(NotificationService);
+    component.selectedStates.set([]);
+
+    component.containerDetailData.set([
+      {
+        keyMap: { label: "Status", key: "states" },
+        value: [],
+        isEditing: signal(true)
+      }
+    ]);
+    const element = component.containerDetailData()[0];
+    component.saveContainerEdit(element);
+
+    expect(setStatesSpy).not.toHaveBeenCalled();
+    expect(notificationService.error).toHaveBeenCalledWith("At least one state must be selected.");
+    expect(element.isEditing()).toBe(true);
+  });
+
+  it("cancelContainerEdit for states resets selectedStates to the original states from containerDetails", () => {
+    component.containerDetails.set({
+      serial: "Mock serial",
+      states: ["active"],
+      realms: [],
+      tokens: [],
+      type: "generic",
+      users: []
+    });
+    component.containerDetailData.set([
+      {
+        keyMap: { label: "Status", key: "states" },
+        value: ["active"],
+        isEditing: signal(true)
+      }
+    ]);
+    component.selectedStates.set(["disabled", "lost"]);
+    const element = component.containerDetailData()[0];
+    component.cancelContainerEdit(element);
+
+    expect(component.selectedStates()).toEqual(["active"]);
+    expect(element.isEditing()).toBe(false);
   });
 
   it("unassignUser triggers service and refresh", () => {

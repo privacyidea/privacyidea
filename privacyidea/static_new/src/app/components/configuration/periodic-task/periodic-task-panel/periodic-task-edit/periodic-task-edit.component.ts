@@ -40,6 +40,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import {
   EMPTY_PERIODIC_TASK,
   EMPTY_PERIODIC_TASK_OPTION,
@@ -73,6 +74,8 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
     FormField,
+    ClearableInputComponent
+
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"

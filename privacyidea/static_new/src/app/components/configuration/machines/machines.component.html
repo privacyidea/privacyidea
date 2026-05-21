@@ -65,14 +65,17 @@
         <td
           *matCellDef="let machine"
           mat-cell>
-          <div class="flex-row flex-nowrap ali-center">
+          <app-copyable [copyText]="machine.hostname.join(', ')">
             <a
               (click)="openDetailsDialog(machine)"
-              class="flex ali-center clickable">
-              {{ machine.hostname }}
+              (keydown.enter)="openDetailsDialog(machine)"
+              (keydown.space)="$event.preventDefault(); openDetailsDialog(machine)"
+              class="flex ali-center clickable"
+              role="button"
+              tabindex="0">
+              {{ machine.hostname.join(", ") }}
             </a>
-            <app-copy-button [copyText]="machine.hostname" />
-          </div>
+          </app-copyable>
         </td>
       </ng-container>
 
@@ -85,7 +88,10 @@
         </th>
         <td
           *matCellDef="let machine"
-          mat-cell> {{ machine.ip }}
+          mat-cell>
+          <app-copyable [copyText]="machine.ip">
+            <span>{{ machine.ip }}</span>
+          </app-copyable>
         </td>
       </ng-container>
 
@@ -111,7 +117,10 @@
         </th>
         <td
           *matCellDef="let machine"
-          mat-cell> {{ machine.resolver_name }}
+          mat-cell>
+          <app-copyable [copyText]="machine.resolver_name">
+            <span>{{ machine.resolver_name }}</span>
+          </app-copyable>
         </td>
       </ng-container>
 

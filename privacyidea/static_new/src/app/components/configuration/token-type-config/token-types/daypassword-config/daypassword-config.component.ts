@@ -33,11 +33,11 @@ import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.con
   styleUrl: "./daypassword-config.component.scss"
 })
 export class DaypasswordConfigComponent {
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, unknown>>();
+  formDataChange = output<Record<string, unknown>>();
   hashLibs = input.required<string[]>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: unknown): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

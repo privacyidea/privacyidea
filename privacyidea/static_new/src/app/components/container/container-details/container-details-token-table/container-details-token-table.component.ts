@@ -46,7 +46,7 @@ import {
 } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -80,7 +80,7 @@ type ContainerDetailTokenData = {
     MatTable,
     MatTableModule,
     MatIconButton,
-    CopyButtonComponent,
+    CopyableComponent,
     MatPaginatorModule,
     NgClass,
     MatIconModule,

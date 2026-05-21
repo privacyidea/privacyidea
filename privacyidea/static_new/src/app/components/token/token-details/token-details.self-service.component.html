@@ -82,7 +82,7 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <div class="flex-row flex-nowrap ali-center">
+                    <app-copyable [copyText]="element.value">
                       @if (containerService.containerBelongsToUser(element.value)) {
                         <a
                           attr.aria-label="{{ element.keyMap.label }} Link"
@@ -92,10 +92,7 @@
                       } @else {
                         {{ element.value }}
                       }
-                      @if (element.value !== "") {
-                        <app-copy-button [copyText]="element.value"></app-copy-button>
-                      }
-                    </div>
+                    </app-copyable>
                   }
                 }
                 @case ("realms") {
