@@ -150,4 +150,89 @@ describe("PolicyTemplatesService", () => {
     httpMock.expectOne(`${baseUrl}index.json`).error(new ProgressEvent("network error"));
     expect(errorSpy).toHaveBeenCalled();
   });
+
+  it("falls back to the requested template name when the response omits it", () => {
+    httpMock.expectOne(`${baseUrl}index.json`).flush({});
+
+    let received: PolicyTemplate | undefined;
+    service.getTemplate("webui1").subscribe((tpl) => (received = tpl));
+    httpMock.expectOne(`${baseUrl}webui1.json`).flush({ scope: "webui" });
+
+    expect(received).toEqual({ name: "webui1", scope: "webui" });
+  });
+
+  it("appends a trailing slash to a configured URL that is missing one", () => {
+    httpMock.expectOne(`${baseUrl}index.json`).flush({});
+
+    authMock.authData.update((data) => ({ ...data!, policy_template_url: "https://example.com/templates" }));
+    TestBed.tick();
+
+    httpMock.expectOne("https://example.com/templates/index.json").flush({});
+  });
+
+  it("prefixes absolute-path URLs with the dev proxy", () => {
+    httpMock.expectOne(`${baseUrl}index.json`).flush({});
+
+    authMock.authData.update((data) => ({ ...data!, policy_template_url: "/custom/templates/" }));
+    TestBed.tick();
+
+    // In tests `environment.proxyUrl` is empty, so the prefix is a no-op but the
+    // branch that builds `${environment.proxyUrl}${url}` is exercised.
+    httpMock.expectOne("/custom/templates/index.json").flush({});
+  });
+
+  it("does not refetch when the auth signal changes but resolves to the same URL", () => {
+    httpMock.expectOne(`${baseUrl}index.json`).flush({});
+
+    // Trigger the effect with a value that still resolves to the same bundled URL.
+    authMock.authData.update((data) => ({ ...data! }));
+    TestBed.tick();
+
+    httpMock.expectNone(`${baseUrl}index.json`);
+  });
+
+  it("ignores a stale index response when the base URL has changed mid-flight", () => {
+    const firstReq = httpMock.expectOne(`${baseUrl}index.json`);
+
+    authMock.authData.update((data) => ({ ...data!, policy_template_url: "https://example.com/templates/" }));
+    TestBed.tick();
+    const secondReq = httpMock.expectOne("https://example.com/templates/index.json");
+
+    // The stale response must not overwrite the index for the current URL.
+    firstReq.flush({ stale: "value" });
+    expect(service.policyTemplatesIndex()).toEqual({});
+
+    secondReq.flush({ fresh: "value" });
+    expect(service.policyTemplatesIndex()).toEqual({ fresh: "value" });
+  });
+
+  it("suppresses error notifications for a stale index fetch", () => {
+    const errorSpy = jest.spyOn(notificationMock, "error");
+    const firstReq = httpMock.expectOne(`${baseUrl}index.json`);
+
+    authMock.authData.update((data) => ({ ...data!, policy_template_url: "https://example.com/templates/" }));
+    TestBed.tick();
+    const secondReq = httpMock.expectOne("https://example.com/templates/index.json");
+
+    firstReq.error(new ProgressEvent("network error"));
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    secondReq.flush({});
+  });
+
+  it("re-fetches a template after a previous fetch failed", () => {
+    httpMock.expectOne(`${baseUrl}index.json`).flush({});
+
+    let firstReceived: PolicyTemplate | undefined = { name: "sentinel", scope: "x" };
+    service.getTemplate("webui1").subscribe((tpl) => (firstReceived = tpl));
+    httpMock.expectOne(`${baseUrl}webui1.json`).error(new ProgressEvent("network error"));
+    expect(firstReceived).toBeUndefined();
+
+    // The cached failure must have been evicted so a retry actually hits the network.
+    let secondReceived: PolicyTemplate | undefined;
+    service.getTemplate("webui1").subscribe((tpl) => (secondReceived = tpl));
+    const retry = httpMock.expectOne(`${baseUrl}webui1.json`);
+    retry.flush({ name: "webui1", scope: "webui" });
+    expect(secondReceived).toEqual({ name: "webui1", scope: "webui" });
+  });
 });

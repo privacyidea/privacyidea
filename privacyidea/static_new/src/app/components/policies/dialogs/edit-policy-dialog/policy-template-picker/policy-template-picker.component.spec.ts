@@ -77,15 +77,8 @@ describe("PolicyTemplatePickerComponent", () => {
     expect(emitSpy).toHaveBeenCalledWith({
       name: "webui1",
       scope: "webui",
-      realm: [],
       action: { login_mode: "privacyIDEA", logout_time: "240" },
-      resolver: [],
-      adminrealm: [],
-      conditions: [],
-      pinode: [],
-      user_agents: [],
-      priority: 7,
-      active: true
+      priority: 7
     });
     expect(component.isExpanded()).toBe(false);
   });

@@ -95,6 +95,7 @@ export class PolicyTemplatesService implements PolicyTemplatesServiceInterface {
     const request = this.http.get<PolicyTemplate>(`${baseUrl}${templateName}.json`).pipe(
       map((template) => ({ ...template, name: template.name ?? templateName })),
       catchError(() => {
+        this.templateCache.delete(templateName);
         this.notificationService.error($localize`Error fetching policy template ${templateName}.`);
         return of(undefined);
       }),

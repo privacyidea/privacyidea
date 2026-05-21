@@ -53,18 +53,17 @@ export class PolicyTemplatePickerComponent {
   }
 
   private buildPolicyEdits(template: PolicyTemplate): Partial<PolicyDetail> {
-    return {
+    const edits: Partial<PolicyDetail> = {
       name: template.name,
       scope: template.scope,
-      realm: template.realm ?? [],
-      action: template.action ?? null,
-      resolver: template.resolver ?? [],
-      adminrealm: template.adminrealm ?? [],
-      conditions: template.conditions ?? [],
-      pinode: [],
-      user_agents: template.user_agents ?? [],
-      priority: this.currentPriority() || 1,
-      active: true
+      priority: this.currentPriority() || 1
     };
+    if (template.realm !== undefined) edits.realm = template.realm;
+    if (template.action !== undefined) edits.action = template.action;
+    if (template.resolver !== undefined) edits.resolver = template.resolver;
+    if (template.adminrealm !== undefined) edits.adminrealm = template.adminrealm;
+    if (template.conditions !== undefined) edits.conditions = template.conditions;
+    if (template.user_agents !== undefined) edits.user_agents = template.user_agents;
+    return edits;
   }
 }
