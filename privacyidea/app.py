@@ -37,7 +37,6 @@ from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 
-import sqlalchemy
 import sqlalchemy as sa
 import yaml
 from flask import Flask, render_template, jsonify, request

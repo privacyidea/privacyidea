@@ -6,9 +6,8 @@ Create Date: 2026-05-07 13:22:55.368183
 
 """
 import sqlalchemy as sa
-from alembic import op, context
+from alembic import op
 from sqlalchemy.exc import OperationalError, ProgrammingError
-from sqlalchemy.schema import Sequence, CreateSequence, DropSequence
 
 # revision identifiers, used by Alembic.
 revision = 'dbee40db26ba'

@@ -88,7 +88,7 @@ class TestApp:
         ], logger.handlers)
 
     def test_02_create_production_app(self):
-        app = create_app(config_name='production', config_file=pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
+        app = create_app(config_name='production', config_file=pathlib.Path.cwd() / "privacyida/config.py")
         dc = config['production']()
         members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]

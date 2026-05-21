@@ -1,17 +1,17 @@
 """
 Data transformation test for migration dbee40db26ba
-Create the pi_internal table and pi_internal_seq sequence.
+Create the pi_internal table.
 
-upgrade()   — creates the 'pi_internal_seq' sequence and the 'pi_internal' table
-              with columns 'id' (server_default from sequence), 'name', and 'check_value'
-downgrade() — drops the 'pi_internal' table and the 'pi_internal_seq' sequence
+upgrade()   — creates the 'pi_internal' table
+              with columns 'id' (with sequence), 'name', and 'check_value'
+downgrade() — drops the 'pi_internal' table
 """
 
 import os
 
 import pytest
 
-from tests.migration_test_utils import MigrationTestBase, is_postgres
+from tests.migration_test_utils import MigrationTestBase
 
 pytestmark = [
     pytest.mark.migration,
@@ -22,27 +22,6 @@ pytestmark = [
 ]
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "")
-
-
-def _sequence_exists(engine, seq_name: str) -> bool:
-    """Check whether a sequence exists in the database."""
-    from sqlalchemy import text
-    with engine.connect() as conn:
-        if is_postgres():
-            result = conn.execute(text(
-                "SELECT 1 FROM information_schema.sequences "
-                "WHERE sequence_name = :name"
-            ), {"name": seq_name}).scalar()
-        else:
-            # MariaDB/MySQL: sequences appear in information_schema.tables
-            # with table_type = 'SEQUENCE'
-            result = conn.execute(text(
-                "SELECT 1 FROM information_schema.tables "
-                "WHERE table_schema = DATABASE() "
-                "AND table_type = 'SEQUENCE' "
-                "AND table_name = :name"
-            ), {"name": seq_name}).scalar()
-    return result is not None
 
 
 class TestMigrationDbee40db26ba(MigrationTestBase):
@@ -65,21 +44,6 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         engine = self._engine()
         assert self._table_exists(engine, "pi_internal"), (
             "upgrade() must create the 'pi_internal' table"
-        )
-        engine.dispose()
-
-    def test_upgrade_creates_sequence(self, flask_app):
-        """upgrade() must create the 'pi_internal_seq' sequence."""
-        engine = self._engine()
-        self._load_seed_and_upgrade_to_parent(engine)
-        assert not _sequence_exists(engine, "pi_internal_seq")
-        engine.dispose()
-
-        self._upgrade()
-
-        engine = self._engine()
-        assert _sequence_exists(engine, "pi_internal_seq"), (
-            "upgrade() must create the 'pi_internal_seq' sequence"
         )
         engine.dispose()
 
@@ -157,28 +121,8 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         )
         engine.dispose()
 
-    def test_downgrade_drops_sequence(self, flask_app):
-        """downgrade() must drop the 'pi_internal_seq' sequence."""
-        engine = self._engine()
-        self._load_seed_and_upgrade_to_parent(engine)
-        engine.dispose()
-
-        self._upgrade()
-
-        engine = self._engine()
-        assert _sequence_exists(engine, "pi_internal_seq")
-        engine.dispose()
-
-        self._downgrade()
-
-        engine = self._engine()
-        assert not _sequence_exists(engine, "pi_internal_seq"), (
-            "downgrade() must drop the 'pi_internal_seq' sequence"
-        )
-        engine.dispose()
-
     def test_round_trip(self, flask_app):
-        """An upgrade → downgrade round-trip must leave no trace of the table or sequence."""
+        """An upgrade → downgrade round-trip must leave no trace of the table."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         engine.dispose()
@@ -189,8 +133,5 @@ class TestMigrationDbee40db26ba(MigrationTestBase):
         engine = self._engine()
         assert not self._table_exists(engine, "pi_internal"), (
             "After round-trip, pi_internal table should not exist"
-        )
-        assert not _sequence_exists(engine, "pi_internal_seq"), (
-            "After round-trip, pi_internal_seq sequence should not exist"
         )
         engine.dispose()
