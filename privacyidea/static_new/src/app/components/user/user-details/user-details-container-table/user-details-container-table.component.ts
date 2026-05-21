@@ -102,13 +102,18 @@ export class UserDetailsContainerTableComponent {
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: this.containerService.containerResource.value,
-    computation: (containerResource, previous) => {
-      if (!containerResource?.result?.value) {
-        return previous?.value ?? [];
-      }
+    source: () => ({
+      value: this.containerService.userContainersResource.hasValue()
+        ? this.containerService.userContainersResource.value()
+        : undefined,
+      isLoading: this.containerService.userContainersResource.isLoading(),
+      error: this.containerService.userContainersResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
 
-      return containerResource.result.value.containers ?? [];
+      return source.value.result?.value?.containers ?? [];
     }
   });
 

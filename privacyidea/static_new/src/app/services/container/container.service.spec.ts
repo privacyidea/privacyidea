@@ -939,6 +939,57 @@ describe("ContainerService", () => {
     });
   });
 
+  describe("userContainersResource", () => {
+    let userServiceMock: MockUserService;
+
+    const flushPending = () =>
+      httpMock.match((r) => r.url === "/container/").forEach((r) =>
+        r.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
+      );
+
+    beforeEach(() => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      userServiceMock = TestBed.inject(UserService) as any;
+      userServiceMock.detailsUsername.set("alice");
+      userServiceMock.selectedUserRealm.set("realm1");
+    });
+
+    it("does not load when not on user details page", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("realm") === "realm1");
+      flushPending();
+    });
+
+    it("does not load when container_list is not allowed", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("realm") === "realm1");
+      flushPending();
+    });
+
+    it("loads on user details page with no_token, user, and realm params", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      TestBed.tick();
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("realm") === "realm1"
+      );
+      expect(req.request.method).toBe("GET");
+      expect(req.request.params.get("user")).toBe("alice");
+      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      flushPending();
+    });
+
+    it("omits realm when selectedUserRealm is empty", () => {
+      userServiceMock.selectedUserRealm.set("");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.has("realm"));
+      flushPending();
+    });
+  });
+
   describe("compareWithTemplate", () => {
     const containerWithTemplate = (serial: string, template: string | undefined) => ({
       count: 1,

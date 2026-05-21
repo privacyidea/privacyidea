@@ -229,7 +229,7 @@ export class UserService implements UserServiceInterface {
     };
   });
 
-  detailsUsername = this.tokenService.detailsUsername;
+  detailsUsername = this.contentService.detailsUsername;
 
   apiUserFilter = signal(new FilterValue());
 

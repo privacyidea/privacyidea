@@ -194,6 +194,7 @@ export interface ContainerServiceInterface {
   pageIndex: WritableSignal<number>;
   loadAllContainers: Signal<boolean>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
   containerSelection: WritableSignal<ContainerDetailData[]>;
@@ -300,14 +301,7 @@ export class ContainerService implements ContainerServiceInterface {
       .filter(([key]) => allowed.includes(key))
       .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
 
-    const params = Object.fromEntries(entries) as Record<string, string>;
-
-    // If we are on the user details page, always restrict containers to that user + realm
-    if (this.contentService.onUserDetails()) {
-      params["user"] = this.userService.detailsUsername();
-    }
-
-    return params;
+    return Object.fromEntries(entries) as Record<string, string>;
   });
 
   pageSize = linkedSignal({
@@ -369,8 +363,7 @@ export class ContainerService implements ContainerServiceInterface {
     }
 
     // Only load containers on routes with a container list or selection.
-    const onAllowedRoute =
-      this.contentService.onUserDetails() || this.contentService.onContainers() || this.contentService.onTokens();
+    const onAllowedRoute = this.contentService.onContainers() || this.contentService.onTokens();
 
     if (!onAllowedRoute) {
       return undefined;
@@ -382,25 +375,41 @@ export class ContainerService implements ContainerServiceInterface {
     }
 
     const baseParams: Record<string, any> = {
-      ...(!this.loadAllContainers() && {
-        page: this.pageIndex() + 1,
-        pagesize: this.pageSize()
-      }),
-      ...(this.loadAllContainers() && {
-        no_token: 1,
-        ...(this.userService.selectedUser()?.username && { user: this.userService.selectedUser()?.username }),
-        ...(this.userService.selectedUser()?.username &&
-          this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
-      }),
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
       ...this.filterParams()
     };
 
-    const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
-      baseParams["type"] = compatibleType;
+    return {
+      url: this.containerBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: baseParams
+    };
+  });
+
+  userContainersResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    // Do not load containers if the action is not allowed.
+    if (!this.authService.actionAllowed("container_list")) {
+      return undefined;
     }
+
+    // This resource is specific to the user details page
+    if (!this.contentService.onUserDetails()) {
+      return undefined;
+    }
+
+    const baseParams: Record<string, any> = {
+      no_token: 1,
+      ...(this.userService.detailsUsername() && { user: this.userService.detailsUsername() }),
+      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() }),
+      sortby: this.sort().active,
+      sortdir: this.sort().direction,
+      ...this.filterParams()
+    };
+
     return {
       url: this.containerBaseUrl,
       method: "GET",
