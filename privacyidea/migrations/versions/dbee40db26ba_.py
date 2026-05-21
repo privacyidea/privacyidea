@@ -18,26 +18,21 @@ depends_on = None
 
 
 def upgrade():
-    pi_internal_seq = sa.Sequence('pi_internal_seq')
     try:
-        if context.get_context().dialect.supports_sequences:
-            op.execute(CreateSequence(pi_internal_seq))
+        op.create_table('pi_internal',
+                        sa.Column('id', sa.Integer(), sa.Sequence('pi_internal_seq'), primary_key=True),
+                        sa.Column('name', sa.Unicode(length=255), nullable=False),
+                        sa.Column('check_value', sa.Unicode(length=2000), nullable=False),
+                        sa.PrimaryKeyConstraint('id'),
+                        sa.UniqueConstraint('name'),
+                        mysql_row_format='DYNAMIC'
+                        )
     except (OperationalError, ProgrammingError) as exx:
         if "already exists" in str(exx.orig).lower():
-            print(f"Ok, sequence '{pi_internal_seq}' already exists.")
+            print("Table 'pi_internal' already exists.")
         else:
+            print("Could not add table 'pi_internal' to database.")
             raise
-    except Exception as _exx:
-        print(f"Could not create sequence '{pi_internal_seq}'!")
-        raise
-    op.create_table('pi_internal',
-                    sa.Column('id', sa.Integer(), server_default=pi_internal_seq.next_value(), nullable=False),
-                    sa.Column('name', sa.Unicode(length=255), nullable=False),
-                    sa.Column('check_value', sa.Unicode(length=2000), nullable=False),
-                    sa.PrimaryKeyConstraint('id'),
-                    sa.UniqueConstraint('name'),
-                    mysql_row_format='DYNAMIC'
-                    )
 
 
 def downgrade():
@@ -49,12 +44,3 @@ def downgrade():
             print("Table 'description' already removed.")
         else:
             raise
-    seq = Sequence('pi_internal_seq')
-    if context.get_context().dialect.supports_sequences:
-        try:
-            op.execute(DropSequence(seq))
-        except (OperationalError, ProgrammingError) as exx:
-            if "does not exist" in str(exx.orig).lower():
-                print(f"Sequence '{seq.name}' already removed.")
-            else:
-                raise

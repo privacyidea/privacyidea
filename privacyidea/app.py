@@ -37,6 +37,7 @@ from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 
+import sqlalchemy
 import sqlalchemy as sa
 import yaml
 from flask import Flask, render_template, jsonify, request
@@ -82,7 +83,7 @@ from privacyidea.api.user import user_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.lib import queue
-from privacyidea.lib.crypto import init_hsm
+from privacyidea.lib.crypto import init_hsm, ENCKEY_CHECK_PLAINTEXT, encryptPassword
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
@@ -399,6 +400,11 @@ def create_app(config_name="development",
                 check_row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
                 if check_row:
                     verify_encryption_key(check_row.check_value)
+                else:
+                    check_value = encryptPassword(ENCKEY_CHECK_PLAINTEXT)
+                    db.session.query(PiInternal).filter_by(name="enckey_check").delete()
+                    db.session.add(PiInternal(name="enckey_check", check_value=check_value))
+                    db.session.commit()
         except HSMException as e:
             log.error(f"Encryption key verification failed: {e}")
             sys.stderr.write(

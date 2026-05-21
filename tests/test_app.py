@@ -4,10 +4,11 @@ This testfile tests the basic app functionality of the privacyIDEA app
 import inspect
 import logging
 import os
-import unittest
+import pathlib
 
 import flask
 import mock
+import pytest
 from testfixtures import Comparison, compare, OutputCapture
 
 from privacyidea.app import create_app
@@ -20,27 +21,33 @@ from privacyidea.models.pi_internal import PiInternal
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 
-class AppTestCase(unittest.TestCase):
-    def setUp(self):
-        self.logger = logging.getLogger()
-        self.orig_handlers = self.logger.handlers
-        self.logger.handlers = []
-        self.level = self.logger.level
+@pytest.fixture(autouse=True)
+def reset_root_logger():
+    """Save and restore root logger handlers/level around each test."""
+    logger = logging.getLogger()
+    orig_handlers = logger.handlers[:]
+    orig_level = logger.level
+    logger.handlers = []
+    yield
+    logger.handlers = orig_handlers
+    logger.level = orig_level
 
-    def tearDown(self):
-        self.logger.handlers = self.orig_handlers
-        self.logger.level = self.level
 
+@pytest.fixture(autouse=True)
+def clean_env(monkeypatch):
+    """Remove PRIVACYIDEA_CONFIGFILE env var to avoid loading local config."""
+    monkeypatch.delenv("PRIVACYIDEA_CONFIGFILE", raising=False)
+
+
+class TestApp:
     def test_01_create_default_app(self):
         # This will create the app with the 'development' configuration
         app = create_app()
-        self.assertIsInstance(app, flask.app.Flask, app)
-        #        self.assertEqual(app.env, 'production', app)
-        self.assertTrue(app.debug, app)
-        self.assertFalse(app.testing, app)
-        self.assertEqual(app.import_name, 'privacyidea.app', app)
-        self.assertEqual(app.name, 'privacyidea.app', app)
-        #        self.assertTrue(app.response_class == PiResponseClass, app)
+        assert isinstance(app, flask.app.Flask)
+        assert app.debug
+        assert not app.testing
+        assert app.import_name == 'privacyidea.app'
+        assert app.name == 'privacyidea.app'
         # TODO: additional blueprints will not be checked here
         blueprints = ['validate_blueprint', 'token_blueprint', 'system_blueprint',
                       'resolver_blueprint', 'realm_blueprint', 'defaultrealm_blueprint',
@@ -52,21 +59,21 @@ class AppTestCase(unittest.TestCase):
                       'privacyideaserver_blueprint', 'eventhandling_blueprint',
                       'smsgateway_blueprint', 'client_blueprint', 'subscriptions_blueprint',
                       'monitoring_blueprint']
-        self.assertTrue(all(k in app.before_request_funcs for k in blueprints), app)
-        self.assertTrue(all(k in app.blueprints for k in blueprints), app)
+        assert all(k in app.before_request_funcs for k in blueprints)
+        assert all(k in app.blueprints for k in blueprints)
         extensions = ['sqlalchemy', 'migrate', 'babel']
-        self.assertTrue(all(k in extensions for k in app.extensions), app)
-        self.assertEqual(app.secret_key, 't0p s3cr3t', app)
+        assert all(k in extensions for k in app.extensions)
+        assert app.secret_key == 't0p s3cr3t'
         # TODO: check url_map and view_functions
         # check that the configuration was loaded successfully
         # the default configuration is 'development'
         dc = config['development']()
         members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]
-        self.assertTrue(all(app.config[k] == v for k, v in conf), app)
+        assert all(app.config[k] == v for k, v in conf)
         # check the correct initialization of the logging
         logger = logging.getLogger('privacyidea')
-        self.assertEqual(logger.level, logging.DEBUG, logger)
+        assert logger.level == logging.DEBUG
         compare([
             Comparison('logging.handlers.RotatingFileHandler',
                        baseFilename=os.path.join(dirname, 'privacyidea.log'),
@@ -81,11 +88,11 @@ class AppTestCase(unittest.TestCase):
         ], logger.handlers)
 
     def test_02_create_production_app(self):
-        app = create_app(config_name='production')
+        app = create_app(config_name='production', config_file=pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         dc = config['production']()
         members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]
-        self.assertTrue(all(app.config[k] == v for k, v in conf), app)
+        assert all(app.config[k] == v for k, v in conf)
 
     def test_03_logging_config_file(self):
         class Config(TestingConfig):
@@ -95,7 +102,7 @@ class AppTestCase(unittest.TestCase):
             create_app(config_name='testing')
             # check the correct initialization of the logging from config file
             logger = logging.getLogger('privacyidea')
-            self.assertEqual(logger.level, logging.DEBUG, logger)
+            assert logger.level == logging.DEBUG
             compare([
                 Comparison('logging.handlers.RotatingFileHandler',
                            baseFilename=os.path.join(dirname, 'privacyidea.log'),
@@ -109,7 +116,7 @@ class AppTestCase(unittest.TestCase):
                            partial=True)
             ], logger.handlers)
             logger = logging.getLogger('privacyidea.lib.auditmodules.loggeraudit')
-            self.assertEqual(logger.level, logging.INFO, logger)
+            assert logger.level == logging.INFO
             compare([
                 Comparison('logging.handlers.RotatingFileHandler',
                            baseFilename=os.path.join(dirname, 'audit.log'),
@@ -131,7 +138,7 @@ class AppTestCase(unittest.TestCase):
             create_app(config_name='testing')
             # check the correct initialization of the logging from config file
             logger = logging.getLogger('privacyidea')
-            self.assertEqual(logger.level, logging.INFO, logger)
+            assert logger.level == logging.INFO
             compare([
                 Comparison('logging.handlers.RotatingFileHandler',
                            baseFilename=os.path.join(dirname, 'privacyidea.log'),
@@ -146,7 +153,7 @@ class AppTestCase(unittest.TestCase):
                            partial=True)
             ], logger.handlers)
             logger = logging.getLogger('audit')
-            self.assertEqual(logger.level, logging.INFO, logger)
+            assert logger.level == logging.INFO
             compare([
                 Comparison('logging.handlers.RotatingFileHandler',
                            backupCount=14,
@@ -163,12 +170,11 @@ class AppTestCase(unittest.TestCase):
         with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
             with OutputCapture() as output:
                 create_app(config_name='testing')
-            self.assertIn("Could not use PI_LOGCONFIG: Unable to configure handler 'file'",
-                          output.captured, output.captured)
+            assert "Could not use PI_LOGCONFIG: Unable to configure handler 'file'" in output.captured
             # check the correct initialization of the logging with the default
             # values since the yaml file is broken
             logger = logging.getLogger('privacyidea')
-            self.assertEqual(logger.level, logging.INFO, logger)
+            assert logger.level == logging.INFO
             compare([
                 Comparison('logging.handlers.RotatingFileHandler',
                            baseFilename=os.path.join(dirname, 'privacyidea.log'),
@@ -182,54 +188,80 @@ class AppTestCase(unittest.TestCase):
                            partial=True)
             ], logger.handlers)
 
+    @staticmethod
+    def _ensure_tables_exist():
+        """Ensure the test DB has all tables created."""
+        from sqlalchemy import create_engine
+        from privacyidea.models import db as _db
+        engine = create_engine(TestingConfig.SQLALCHEMY_DATABASE_URI)
+        _db.metadata.create_all(engine)
+        engine.dispose()
+
+    @staticmethod
+    def _clean_enckey_check():
+        """Remove enckey_check from the test DB without triggering app verification."""
+        from sqlalchemy import create_engine, text
+        engine = create_engine(TestingConfig.SQLALCHEMY_DATABASE_URI)
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("DELETE FROM pi_internal WHERE name = 'enckey_check'"))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+        engine.dispose()
+
+    @staticmethod
+    def _set_enckey_check(value):
+        """Set enckey_check in the test DB without triggering app verification."""
+        from sqlalchemy import create_engine, text
+        engine = create_engine(TestingConfig.SQLALCHEMY_DATABASE_URI)
+        with engine.connect() as conn:
+            try:
+                conn.execute(text("DELETE FROM pi_internal WHERE name = 'enckey_check'"))
+                conn.execute(text("INSERT INTO pi_internal (name, check_value) VALUES ('enckey_check', :val)"),
+                             {"val": value})
+                conn.commit()
+            except Exception:
+                conn.rollback()
+        engine.dispose()
+
     def test_06_enckey_verification_succeeds_with_correct_key(self):
         """App starts successfully when the enckey check value in DB matches the current key."""
-        app = create_app(config_name='testing', initialize_hsm=True)
+        self._ensure_tables_exist()
+        self._clean_enckey_check()
+
+        # First app creation will init HSM and create the check value (table exists, no row)
+        app = create_app(config_name='testing', config_file=pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         with app.app_context():
-            db.create_all()
-            # Store a valid check value
-            check_value = encryptPassword(ENCKEY_CHECK_PLAINTEXT)
-            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
-            db.session.add(PiInternal(name="enckey_check", check_value=check_value))
-            db.session.commit()
+            row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
+            assert row is not None
 
-        # Creating the app again with initialize_hsm should not exit
-        app2 = create_app(config_name='testing', initialize_hsm=True)
-        self.assertIsInstance(app2, flask.app.Flask)
-
-        # Cleanup
-        with app2.app_context():
-            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
-            db.session.commit()
+        # Creating the app again should not exit (key matches)
+        app2 = create_app(config_name='testing', config_file=pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
+        assert isinstance(app2, flask.app.Flask)
 
     def test_07_enckey_verification_fails_with_wrong_check_value(self):
         """App exits when the enckey check value in DB does not match the current key."""
-        app = create_app(config_name='testing', initialize_hsm=True)
-        with app.app_context():
-            db.create_all()
-            # Store an invalid check value (simulating a different encryption key)
-            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
-            db.session.add(PiInternal(name="enckey_check", check_value="deadbeef:cafebabe"))
-            db.session.commit()
+        self._ensure_tables_exist()
+        self._set_enckey_check("deadbeef:cafebabe")
 
-        with self.assertRaises(SystemExit) as cm:
-            create_app(config_name='testing', initialize_hsm=True)
-        self.assertEqual(cm.exception.code, 1)
+        with pytest.raises(SystemExit) as exc_info:
+            create_app(config_name='testing', config_file=pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
+        assert exc_info.value.code == 1
 
         # Cleanup
-        app3 = create_app(config_name='testing', initialize_hsm=False)
-        with app3.app_context():
-            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
-            db.session.commit()
+        self._clean_enckey_check()
 
     def test_08_enckey_verification_skipped_when_no_check_value(self):
-        """App starts normally when no check value is stored in the database."""
-        app = create_app(config_name='testing', initialize_hsm=True)
-        with app.app_context():
-            db.create_all()
-            db.session.query(PiInternal).filter_by(name="enckey_check").delete()
-            db.session.commit()
+        """App starts normally and creates check value when none exists."""
+        self._ensure_tables_exist()
+        self._clean_enckey_check()
 
-        # Should start fine without any check value
-        app2 = create_app(config_name='testing', initialize_hsm=True)
-        self.assertIsInstance(app2, flask.app.Flask)
+        # App should start fine and create a new check value
+        app = create_app(config_name='testing', config_file=pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
+        assert isinstance(app, flask.app.Flask)
+
+        # Verify a check value was created
+        with app.app_context():
+            row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
+            assert row is not None

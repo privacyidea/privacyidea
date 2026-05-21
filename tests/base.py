@@ -1,4 +1,5 @@
 """Base test configuration to set up/teardown tests."""
+import os
 import pathlib
 import unittest
 import mock
@@ -66,6 +67,8 @@ class MyTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # Remove env var that could override the test config file
+        os.environ.pop("PRIVACYIDEA_CONFIGFILE", None)
         # Avoid warning when creating Flask-App without path to a config file
         # (And do not use the default config file here).
         cls.app = create_app('testing', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
