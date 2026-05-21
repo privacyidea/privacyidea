@@ -102,7 +102,7 @@ export interface TableUtilsServiceInterface {
 
   getDisplayText(columnKey: string, element: any): string;
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string;
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: number }): string;
 
   getDivClassForKey(key: string): string;
 
@@ -138,11 +138,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
-        const emptyRow: any = {};
+        const emptyRow: Record<string, string> = {};
         columnsKeyMap.forEach((column) => {
           emptyRow[column.key] = "";
         });
-        return emptyRow;
+        return emptyRow as T;
       })
     );
   }
@@ -250,7 +250,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return element[columnKey];
   }
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string {
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: number }): string {
     const { key, value, maxfail } = args;
     if (key === "success") {
       if (value === "" || value === null || value === undefined) {
@@ -282,7 +282,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         return "";
       } else if (value === 0) {
         return "highlight-true";
-      } else if (value >= 1 && value < maxfail) {
+      } else if (value >= 1 && maxfail !== undefined && value < maxfail) {
         return "highlight-warning";
       } else {
         return "highlight-false";
@@ -351,7 +351,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       case false:
         if (state === "active") {
           return "highlight-true";
-        } else if (state === "disabled") {
+        } else if (state === "disabled" || state === "damaged" || state === "lost") {
           return "highlight-false";
         } else {
           return "";
@@ -359,7 +359,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       case true:
         if (state === "active") {
           return "highlight-true-clickable";
-        } else if (state === "disabled") {
+        } else if (state === "disabled" || state === "damaged" || state === "lost") {
           return "highlight-false-clickable";
         } else {
           return "";
@@ -419,7 +419,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof ContainerDetailToken;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: ContainerDetailToken, b: ContainerDetailToken) => {
       const va = (a[key] ?? "").toString().toLowerCase();
       const vb = (b[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
