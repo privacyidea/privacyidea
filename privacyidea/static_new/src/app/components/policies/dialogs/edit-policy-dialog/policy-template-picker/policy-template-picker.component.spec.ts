@@ -30,10 +30,7 @@ describe("PolicyTemplatePickerComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PolicyTemplatePickerComponent],
-      providers: [
-        { provide: PolicyTemplatesService, useClass: MockPolicyTemplatesService },
-        provideNoopAnimations()
-      ]
+      providers: [{ provide: PolicyTemplatesService, useClass: MockPolicyTemplatesService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyTemplatePickerComponent);
