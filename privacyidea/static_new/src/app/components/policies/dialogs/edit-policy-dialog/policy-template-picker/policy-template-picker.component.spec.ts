@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { PolicyTemplatesService } from "@services/policy-templates/policy-templates.service";
 import { MockPolicyTemplatesService } from "@testing/mock-services/mock-policy-templates-service";
 import { PolicyTemplatePickerComponent } from "./policy-template-picker.component";
