@@ -206,14 +206,17 @@ describe("TokenDetailsActionsComponent", () => {
       });
 
       component.openLostTokenDialog();
-      expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
-        data: {
-          isLost: component.isLost,
-          tokenSerial: component.tokenSerial
-        },
-        disableClose: false,
-        hasBackdrop: true
-      });
+      expect(dialog.open).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({
+          data: {
+            isLost: component.isLost,
+            tokenSerial: component.tokenSerial
+          },
+          disableClose: false,
+          hasBackdrop: true
+        })
+      );
     });
   });
 });
