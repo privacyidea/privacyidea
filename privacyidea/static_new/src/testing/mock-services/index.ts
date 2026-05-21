@@ -1,4 +1,5 @@
 export * from './mock-utils';
+export * from './mock-auth-service';
 export * from './mock-validate-service';
 export * from './mock-realm-service';
 export * from './mock-table-utils-service';

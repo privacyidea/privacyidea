@@ -23,7 +23,8 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { HOTP_HASHLIB, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollTotpComponent } from "./enroll-totp.component";
 
@@ -40,7 +41,8 @@ describe("EnrollTotpComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: SystemService, useClass: MockSystemService }
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService }
       ]
     }).compileComponents();
 

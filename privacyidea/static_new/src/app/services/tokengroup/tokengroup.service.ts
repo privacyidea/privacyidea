@@ -47,9 +47,7 @@ export interface TokengroupServiceInterface {
   deleteTokengroup(groupname: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TokengroupService implements TokengroupServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

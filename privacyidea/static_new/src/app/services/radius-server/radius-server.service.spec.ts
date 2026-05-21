@@ -39,6 +39,7 @@ describe("RadiusServerService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        RadiusServerService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }

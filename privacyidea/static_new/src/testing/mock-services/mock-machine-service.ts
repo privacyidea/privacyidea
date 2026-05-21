@@ -19,7 +19,6 @@
 
 import { WritableSignal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   MachineServiceInterface,
@@ -27,13 +26,11 @@ import {
   TokenApplication,
   TokenApplications
 } from "@services/machine/machine.service";
-import { Observable, of } from "rxjs";
+import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockMachineService implements MachineServiceInterface {
-  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {
-    throw new Error("Method not implemented.");
-  }
+  getMachineTokens = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<TokenApplications>([])));
   baseUrl: string = "environment.mockProxyUrl + '/machine/'";
   filterValue: WritableSignal<Record<string, string>> = signal({});
   sshApiFilter: string[] = [];
@@ -50,12 +47,8 @@ export class MockMachineService implements MachineServiceInterface {
   machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Machines>([]));
   tokenApplicationResource = new MockHttpResourceRef(MockPiResponse.fromValue([]));
 
-  handleFilterInput(_$event: Event): void {
-    throw new Error("Method not implemented.");
-  }
-  clearFilter(): void {
-    throw new Error("Method not implemented.");
-  }
+  handleFilterInput = jest.fn();
+  clearFilter = jest.fn();
 
   deleteAssignMachineToToken() {
     return of({} as any);
@@ -100,4 +93,7 @@ export class MockMachineService implements MachineServiceInterface {
   deleteTokenById = jest.fn().mockReturnValue(of({} as any));
   onPageEvent = jest.fn();
   onSortEvent = jest.fn();
+  toggleFilter = jest.fn();
+  getFilterIconName = jest.fn().mockReturnValue("filter_list");
+  focusActiveInput = jest.fn();
 }

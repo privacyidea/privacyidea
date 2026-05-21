@@ -44,11 +44,13 @@ import {
   MockRealmService,
   MockTableUtilsService,
   MockTokenService,
+  MockUserService,
   MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { TokenDetailsComponent } from "./token-details.component";
+import { UserService } from "@services/user/user.service";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -90,6 +92,7 @@ describe("TokenDetailsComponent", () => {
         { provide: MachineService, useClass: MockMachineService },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService
       ]

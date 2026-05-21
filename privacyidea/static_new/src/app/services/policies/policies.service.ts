@@ -227,9 +227,7 @@ export interface PolicyServiceInterface {
   savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class PolicyService implements PolicyServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);

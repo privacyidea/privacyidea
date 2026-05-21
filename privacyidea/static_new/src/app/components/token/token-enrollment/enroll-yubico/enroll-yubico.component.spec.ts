@@ -21,6 +21,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollYubicoComponent } from "./enroll-yubico.component";
+import { SystemService } from "@services/system/system.service";
+import { MockContentService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("EnrollYubicoComponent", () => {
   let component: EnrollYubicoComponent;
@@ -29,7 +33,11 @@ describe("EnrollYubicoComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollYubicoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService}
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollYubicoComponent);

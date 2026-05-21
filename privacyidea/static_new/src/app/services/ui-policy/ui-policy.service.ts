@@ -37,9 +37,7 @@ export interface AppConfig {
   otpPinSetRandomUser?: number;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class UiPolicyService {
   private readonly config: AppConfig;
 

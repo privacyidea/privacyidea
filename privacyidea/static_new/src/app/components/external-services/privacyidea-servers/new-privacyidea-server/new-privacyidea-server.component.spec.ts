@@ -23,9 +23,11 @@ import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
-import { MockDialogService, MockPrivacyideaServerService } from "@testing/mock-services";
+import { MockAuthService, MockDialogService, MockPendingChangesService, MockPrivacyideaServerService } from "@testing/mock-services";
 import { BehaviorSubject } from "rxjs";
 import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
 
@@ -47,7 +49,9 @@ describe("NewPrivacyideaServerComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: ActivatedRoute, useValue: { paramMap: paramMapSubject.asObservable() } }
       ]
     }).compileComponents();

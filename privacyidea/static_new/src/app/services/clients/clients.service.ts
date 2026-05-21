@@ -39,9 +39,7 @@ export interface ClientsServiceInterface {
   requestClientsForAutocomplete(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ClientsService implements ClientsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

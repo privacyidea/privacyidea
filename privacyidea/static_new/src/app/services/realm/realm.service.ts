@@ -84,9 +84,7 @@ export interface RealmServiceInterface {
   setDefaultRealm(realm: string): Observable<PiResponse<number | any>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class RealmService implements RealmServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
