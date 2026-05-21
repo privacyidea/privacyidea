@@ -24,6 +24,7 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.github/workflows/migration-tests.yml'
+      - '.github/python-versions.env'
   workflow_dispatch:
 
 permissions:
@@ -35,7 +36,7 @@ concurrency:
 
 jobs:
   migration-tests:
-    name: Migration tests (${{ matrix.db.label }} / Python 3.13)
+    name: Migration tests (${{ matrix.db.label }})
     permissions:
       checks: write
     runs-on: ubuntu-latest
@@ -89,10 +90,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python 3.13
+      - name: Load Python versions
+        id: pyversions
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "migration=$MIGRATION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python ${{ steps.pyversions.outputs.migration }}
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: '3.13'
+          python-version: ${{ steps.pyversions.outputs.migration }}
           cache: 'pip'
           cache-dependency-path: |
             requirements.txt
