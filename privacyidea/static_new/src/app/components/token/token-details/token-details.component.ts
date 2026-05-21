@@ -40,6 +40,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -129,7 +130,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     CopyButtonComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
-    DetailsHeaderComponent
+    DetailsHeaderComponent,
+    MatCheckbox
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
@@ -430,6 +432,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     switch (type) {
       case "container_serial":
         this.containerService.selectedContainerSerial.set("");
+        this.containerService.filterContainersByTokenOwner.set(false);
         break;
       case "tokengroup":
         this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);

@@ -260,6 +260,18 @@ describe("TokenDetailsComponent", () => {
     expect(el.isEditing()).toBe(false);
   });
 
+  it("cancelTokenEdit('container_serial') resets filterContainersByTokenOwner", () => {
+    const element = {
+      keyMap: { key: "container_serial" },
+      isEditing: signal(true)
+    } as any;
+
+    containerSvc.filterContainersByTokenOwner.set(true);
+    component.cancelTokenEdit(element);
+
+    expect(containerSvc.filterContainersByTokenOwner()).toBe(false);
+  });
+
   it("isEditableElement defers to policy: true/false", () => {
     const spy = jest.spyOn((component as any).authService, "actionAllowed");
     spy.mockReturnValueOnce(true);

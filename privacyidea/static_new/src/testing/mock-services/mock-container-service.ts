@@ -37,6 +37,7 @@ export class MockContainerService implements ContainerServiceInterface {
   containersForTokenType: Signal<string[]> = signal([]);
   compareWithTemplate: () => Promise<void> = jest.fn().mockResolvedValue(undefined);
   compatibleWithSelectedTokenType = signal<string | null>(null);
+  filterContainersByTokenOwner = signal(false);
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];

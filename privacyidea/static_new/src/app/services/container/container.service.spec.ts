@@ -322,8 +322,8 @@ describe("ContainerService", () => {
 
   it("filterParams converts blank values and drops unknown keys", () => {
     containerService.containerFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
-    const fp = containerService.filterParams();
-    expect(fp).toEqual({ type: "generic" });
+    const filterParams = containerService.filterParams();
+    expect(filterParams).toEqual({ type: "generic" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
@@ -937,14 +937,74 @@ describe("ContainerService", () => {
       );
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
     });
+
+    describe("filterContainersByTokenOwner", () => {
+      beforeEach(() => {
+        jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
+        jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
+          result: { value: { tokens: [{ container_serial: "", username: "alice", user_realm: "realm1" }] } }
+        } as any);
+        contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
+      });
+
+      it("does not include user or realm when filter is off", () => {
+        TestBed.tick();
+        const httpRequest = httpMock.expectOne(
+          (request) =>
+            request.url === "/container/" &&
+            request.params.get("no_token") === "1" &&
+            !request.params.has("user") &&
+            !request.params.has("realm")
+        );
+        httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      });
+
+      it("includes user and realm when filter is on", () => {
+        containerService.filterContainersByTokenOwner.set(true);
+        TestBed.tick();
+        const httpRequest = httpMock.expectOne(
+          (request) =>
+            request.url === "/container/" &&
+            request.params.get("no_token") === "1" &&
+            request.params.get("user") === "alice" &&
+            request.params.get("realm") === "realm1"
+        );
+        httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      });
+
+      it("omits user and realm when filter is on but token has no username", () => {
+        jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
+          result: { value: { tokens: [{ container_serial: "", username: "", user_realm: "realm1" }] } }
+        } as any);
+        containerService.filterContainersByTokenOwner.set(true);
+        TestBed.tick();
+        const httpRequest = httpMock.expectOne(
+          (request) =>
+            request.url === "/container/" &&
+            request.params.get("no_token") === "1" &&
+            !request.params.has("user") &&
+            !request.params.has("realm")
+        );
+        httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      });
+
+      it("resets to false on route change", () => {
+        containerService.filterContainersByTokenOwner.set(true);
+        contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+        expect(containerService.filterContainersByTokenOwner()).toBe(false);
+        httpMock.match((request) => request.url === "/container/").forEach((pendingRequest) =>
+          pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
+        );
+      });
+    });
   });
 
   describe("userContainersResource", () => {
     let userServiceMock: MockUserService;
 
     const flushPending = () =>
-      httpMock.match((r) => r.url === "/container/").forEach((r) =>
-        r.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
+      httpMock.match((request) => request.url === "/container/").forEach((pendingRequest) =>
+        pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
       );
 
     beforeEach(() => {
@@ -972,12 +1032,15 @@ describe("ContainerService", () => {
     it("loads on user details page with no_token, user, and realm params", () => {
       contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
       TestBed.tick();
-      const req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("realm") === "realm1"
+      const httpRequest = httpMock.expectOne(
+        (request) =>
+          request.url === "/container/" &&
+          request.params.get("no_token") === "1" &&
+          request.params.get("realm") === "realm1"
       );
-      expect(req.request.method).toBe("GET");
-      expect(req.request.params.get("user")).toBe("alice");
-      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      expect(httpRequest.request.method).toBe("GET");
+      expect(httpRequest.request.params.get("user")).toBe("alice");
+      httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
       flushPending();
     });
 

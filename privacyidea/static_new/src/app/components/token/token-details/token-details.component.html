@@ -80,6 +80,12 @@
                         }
                       </mat-autocomplete>
                     </mat-form-field>
+                    <mat-checkbox
+                      [(ngModel)]="containerService.filterContainersByTokenOwner"
+                      [disabled]="!tokenDetails().username"
+                      i18n>
+                      Filter by token owner
+                    </mat-checkbox>
                   } @else {
                     <div class="flex-row flex-nowrap ali-center">
                       <a

@@ -177,6 +177,7 @@ export interface ContainerUnregisterData {
 
 export interface ContainerServiceInterface {
   compatibleWithSelectedTokenType: WritableSignal<string | null>;
+  filterContainersByTokenOwner: WritableSignal<boolean>;
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
@@ -256,7 +257,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
-    computation: (tt) => tt?.key ?? null
+    computation: (tokenType) => tokenType?.key ?? null
   });
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
@@ -286,6 +287,11 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
+
+  filterContainersByTokenOwner: WritableSignal<boolean> = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => false
+  });
 
   containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
@@ -323,21 +329,22 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
-    const tt = this.compatibleWithSelectedTokenType();
-    if (!tt) return null;
+    const compatibleTokenType = this.compatibleWithSelectedTokenType();
+    if (!compatibleTokenType) return null;
 
     const types = this.containerTypeOptions();
-    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt));
+    const compatible = types.filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType));
 
     return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
 
   private readonly compatibleTypes = computed<string[]>(() => {
-    const tt = this.compatibleWithSelectedTokenType();
-    if (!tt) return [];
+    const compatibleTokenType = this.compatibleWithSelectedTokenType();
+    if (!compatibleTokenType) return [];
     const types = this.containerTypeOptions();
-    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt)).map((t) => String(t.containerType));
-    return compatible;
+    return types
+      .filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType))
+      .map((containerType) => String(containerType.containerType));
   });
 
   private readonly serialFilterParam = computed(() =>
@@ -426,9 +433,14 @@ export class ContainerService implements ContainerServiceInterface {
       }
     }
 
+    const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
     const params: Record<string, any> = {
       no_token: 1,
-      ...this.serialFilterParam()
+      ...this.serialFilterParam(),
+      ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
+      ...(this.filterContainersByTokenOwner() && token?.username && token?.user_realm && {
+        realm: token.user_realm
+      })
     };
 
     const compatibleType = this.uniqueCompatibleType();
