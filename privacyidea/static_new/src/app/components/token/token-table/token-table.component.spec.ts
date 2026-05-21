@@ -53,9 +53,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tableFixture: ComponentFixture<TokenTableComponent>;
   let table: TokenTableComponent;
 
-  let selfFixture: ComponentFixture<TokenTableSelfServiceComponent>;
-  let component: TokenTableSelfServiceComponent;
-
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
   let dialogServiceMock: MockDialogService;
@@ -88,9 +85,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableFixture = TestBed.createComponent(TokenTableComponent);
     table = tableFixture.componentInstance;
 
-    selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
-    component = selfFixture.componentInstance;
-
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
@@ -106,7 +100,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     );
 
     tableFixture.detectChanges();
-    selfFixture.detectChanges();
   });
 
   afterEach(() => {
@@ -118,7 +111,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("TokenTableSelfServiceComponent should create", () => {
-    expect(component).toBeTruthy();
+    const selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
@@ -295,6 +289,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("pageSizeOptions should add custom page size if not included in default options", () => {
+    const component = TestBed.createComponent(TokenTableSelfServiceComponent).componentInstance;
     const defaultOptions = [5, 10, 25, 50];
     tableUtilsService.pageSizeOptions.set(defaultOptions);
     expect(component.pageSizeOptions()).toEqual(defaultOptions);

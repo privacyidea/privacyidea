@@ -56,8 +56,6 @@ class MockValidateService {
 describe("ContainerDetailsComponent", () => {
   let component: ContainerDetailsComponent;
   let fixture: ComponentFixture<ContainerDetailsComponent>;
-  let selfComponent: ContainerDetailsSelfServiceComponent;
-  let selfFixture: ComponentFixture<ContainerDetailsSelfServiceComponent>;
   let containerService: ContainerServiceInterface;
   let userService: UserServiceInterface;
   let pendingChangesService: MockPendingChangesService;
@@ -90,8 +88,6 @@ describe("ContainerDetailsComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(ContainerDetailsSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
 
     component.tokenSerial = signal("Mock serial");
     component.containerSerial = signal("Mock serial");
@@ -126,7 +122,8 @@ describe("ContainerDetailsComponent", () => {
   });
 
   it("creates the self service component", () => {
-    expect(selfComponent).toBeTruthy();
+    const selfFixture = TestBed.createComponent(ContainerDetailsSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("addTokenToContainer calls service with correct params", () => {

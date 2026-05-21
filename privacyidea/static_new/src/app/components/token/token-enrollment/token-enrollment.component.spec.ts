@@ -64,9 +64,6 @@ import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.compon
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
   let component: TokenEnrollmentComponent;
-  let selfFixture: ComponentFixture<TokenEnrollmentSelfServiceComponent>;
-  let selfComponent: TokenEnrollmentSelfServiceComponent;
-
   let tokenService: MockTokenService;
   let userSvc: MockUserService;
   let notificationServiceMock: MockNotificationService;
@@ -101,8 +98,6 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   beforeEach(async () => {
-    let mockVersioningService: MockVersioningService;
-
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
       providers: [
@@ -127,13 +122,10 @@ describe("TokenEnrollmentComponent", () => {
 
     fixture = TestBed.createComponent(TokenEnrollmentComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
@@ -152,7 +144,8 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   it("creates self service", () => {
-    expect(selfComponent).toBeTruthy();
+    const selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("formatDateTimeOffset builds the expected ISO-ish string", () => {
@@ -683,62 +676,6 @@ describe("TokenEnrollmentComponent", () => {
     });
   });
 
-  describe("token-enrollment constants", () => {
-    const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
-    const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
-    const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
-
-    it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
-      const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
-      expect(allIn).toBe(true);
-    });
-
-    it("NO_REGENERATE_TOKEN_TYPES contains WebAuthn and Passkey", () => {
-      expect(NO_REGENERATE_TOKEN_TYPES).toEqual(expect.arrayContaining(["webauthn", "passkey"]));
-    });
-
-    it("NO_QR_CODE_TOKEN_TYPES lists paper and tan; does not include hotp", () => {
-      expect(NO_QR_CODE_TOKEN_TYPES).toEqual(expect.arrayContaining(["paper", "tan"]));
-      expect(NO_QR_CODE_TOKEN_TYPES).not.toContain("hotp");
-    });
-
-    it("hotp → shows QR, can regenerate, label is 'QR Code'", () => {
-      expect(hasQr("hotp")).toBe(true);
-      expect(canRegenerate("hotp")).toBe(true);
-      expect(regenerateLabel("hotp")).toBe("QR Code");
-    });
-
-    it("paper → no QR, can regenerate, label is 'Values'", () => {
-      expect(hasQr("paper")).toBe(false);
-      expect(canRegenerate("paper")).toBe(true);
-      expect(regenerateLabel("paper")).toBe("Values");
-    });
-
-    it("tan → no QR, can regenerate, label is 'Values'", () => {
-      expect(hasQr("tan")).toBe(false);
-      expect(canRegenerate("tan")).toBe(true);
-      expect(regenerateLabel("tan")).toBe("Values");
-    });
-
-    it("indexedsecret → no QR and cannot regenerate", () => {
-      expect(hasQr("indexedsecret")).toBe(false);
-      expect(canRegenerate("indexedsecret")).toBe(false);
-      expect(regenerateLabel("indexedsecret")).toBe("QR Code"); // label ignored when cannot regenerate
-    });
-
-    it("webauthn → no QR, cannot regenerate; label would be 'QR Code'", () => {
-      expect(hasQr("webauthn")).toBe(false);
-      expect(canRegenerate("webauthn")).toBe(false);
-      expect(regenerateLabel("webauthn")).toBe("QR Code"); // label ignored when cannot regenerate
-    });
-
-    it("passkey → no QR, cannot regenerate; label would be 'QR Code'", () => {
-      expect(hasQr("passkey")).toBe(false);
-      expect(canRegenerate("passkey")).toBe(false);
-      expect(regenerateLabel("passkey")).toBe("QR Code"); // label ignored when cannot regenerate
-    });
-  });
-
   describe("wizard", () => {
     let wizardFixture: ComponentFixture<TokenEnrollmentWizardComponent>;
     let wizardComponent: TokenEnrollmentWizardComponent;
@@ -898,5 +835,61 @@ describe("TokenEnrollmentComponent", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     });
+  });
+});
+
+describe("token-enrollment constants", () => {
+  const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
+  const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
+  const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
+
+  it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
+    const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
+    expect(allIn).toBe(true);
+  });
+
+  it("NO_REGENERATE_TOKEN_TYPES contains WebAuthn and Passkey", () => {
+    expect(NO_REGENERATE_TOKEN_TYPES).toEqual(expect.arrayContaining(["webauthn", "passkey"]));
+  });
+
+  it("NO_QR_CODE_TOKEN_TYPES lists paper and tan; does not include hotp", () => {
+    expect(NO_QR_CODE_TOKEN_TYPES).toEqual(expect.arrayContaining(["paper", "tan"]));
+    expect(NO_QR_CODE_TOKEN_TYPES).not.toContain("hotp");
+  });
+
+  it("hotp → shows QR, can regenerate, label is 'QR Code'", () => {
+    expect(hasQr("hotp")).toBe(true);
+    expect(canRegenerate("hotp")).toBe(true);
+    expect(regenerateLabel("hotp")).toBe("QR Code");
+  });
+
+  it("paper → no QR, can regenerate, label is 'Values'", () => {
+    expect(hasQr("paper")).toBe(false);
+    expect(canRegenerate("paper")).toBe(true);
+    expect(regenerateLabel("paper")).toBe("Values");
+  });
+
+  it("tan → no QR, can regenerate, label is 'Values'", () => {
+    expect(hasQr("tan")).toBe(false);
+    expect(canRegenerate("tan")).toBe(true);
+    expect(regenerateLabel("tan")).toBe("Values");
+  });
+
+  it("indexedsecret → no QR and cannot regenerate", () => {
+    expect(hasQr("indexedsecret")).toBe(false);
+    expect(canRegenerate("indexedsecret")).toBe(false);
+    expect(regenerateLabel("indexedsecret")).toBe("QR Code");
+  });
+
+  it("webauthn → no QR, cannot regenerate; label would be 'QR Code'", () => {
+    expect(hasQr("webauthn")).toBe(false);
+    expect(canRegenerate("webauthn")).toBe(false);
+    expect(regenerateLabel("webauthn")).toBe("QR Code");
+  });
+
+  it("passkey → no QR, cannot regenerate; label would be 'QR Code'", () => {
+    expect(hasQr("passkey")).toBe(false);
+    expect(canRegenerate("passkey")).toBe(false);
+    expect(regenerateLabel("passkey")).toBe("QR Code");
   });
 });
