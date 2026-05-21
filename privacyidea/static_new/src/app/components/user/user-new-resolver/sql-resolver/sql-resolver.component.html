@@ -24,7 +24,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Driver</mat-label>
           <app-clearable-input
-            (onClick)="driverControl.setValue('')"
+            (clearButtonClick)="driverControl.setValue('')"
             [showClearButton]="!!driverControl.value">
             <input
               [formControl]="driverControl"
@@ -44,7 +44,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Database</mat-label>
           <app-clearable-input
-            (onClick)="databaseControl.setValue('')"
+            (clearButtonClick)="databaseControl.setValue('')"
             [showClearButton]="!!databaseControl.value">
             <input
               [formControl]="databaseControl"
@@ -58,7 +58,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Server</mat-label>
           <app-clearable-input
-            (onClick)="serverControl.setValue('')"
+            (clearButtonClick)="serverControl.setValue('')"
             [showClearButton]="!!serverControl.value">
             <input
               [formControl]="serverControl"
@@ -93,7 +93,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>User</mat-label>
           <app-clearable-input
-            (onClick)="userControl.setValue('')"
+            (clearButtonClick)="userControl.setValue('')"
             [showClearButton]="!!userControl.value">
             <input
               [formControl]="userControl"
@@ -105,7 +105,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Password</mat-label>
           <app-clearable-input
-            (onClick)="passwordControl.setValue('')"
+            (clearButtonClick)="passwordControl.setValue('')"
             [showClearButton]="!!passwordControl.value">
             <input
               [formControl]="passwordControl"
@@ -215,7 +215,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Table</mat-label>
           <app-clearable-input
-            (onClick)="tableControl.setValue('')"
+            (clearButtonClick)="tableControl.setValue('')"
             [showClearButton]="!!tableControl.value">
             <input
               [formControl]="tableControl"
@@ -270,7 +270,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Connection Parameters</mat-label>
           <app-clearable-input
-            (onClick)="conParamsControl.setValue('')"
+            (clearButtonClick)="conParamsControl.setValue('')"
             [showClearButton]="!!conParamsControl.value">
             <input
               [formControl]="conParamsControl"
@@ -281,7 +281,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Database Encoding</mat-label>
           <app-clearable-input
-            (onClick)="encodingControl.setValue('')"
+            (clearButtonClick)="encodingControl.setValue('')"
             [showClearButton]="!!encodingControl.value">
             <input
               [formControl]="encodingControl"
@@ -293,7 +293,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Where Statement</mat-label>
         <app-clearable-input
-          (onClick)="whereControl.setValue('')"
+          (clearButtonClick)="whereControl.setValue('')"
           [showClearButton]="!!whereControl.value">
           <input
             [formControl]="whereControl"

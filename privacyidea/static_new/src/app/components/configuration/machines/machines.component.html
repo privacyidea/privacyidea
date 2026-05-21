@@ -28,7 +28,7 @@
             class="table-filter">
             <mat-label i18n>Filter Machines...</mat-label>
             <app-clearable-input
-              (onClick)="resetFilter()"
+              (clearButtonClick)="resetFilter()"
               [showClearButton]="filterString().length > 0">
               <input
                 #filterHTMLInputElement

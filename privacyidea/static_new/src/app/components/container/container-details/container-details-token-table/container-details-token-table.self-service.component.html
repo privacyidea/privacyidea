@@ -33,7 +33,7 @@
           subscriptSizing="dynamic">
           <mat-label i18n>Filter Token...</mat-label>
           <app-clearable-input
-            (onClick)="clearFilter()"
+            (clearButtonClick)="clearFilter()"
             [showClearButton]="filterInput.value !== ''">
             <input
               #filterInput

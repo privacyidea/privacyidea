@@ -51,7 +51,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Endpoint (URL)</mat-label>
           <app-clearable-input
-            (onClick)="endpointControl.setValue('')"
+            (clearButtonClick)="endpointControl.setValue('')"
             [showClearButton]="!!endpointControl.value">
             <input
               [formControl]="endpointControl"
@@ -165,7 +165,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Realm</mat-label>
           <app-clearable-input
-            (onClick)="realmControl.setValue('')"
+            (clearButtonClick)="realmControl.setValue('')"
             [showClearButton]="!!realmControl.value">
             <input
               [formControl]="realmControl"
@@ -180,7 +180,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Base URL</mat-label>
         <app-clearable-input
-          (onClick)="baseUrlControl.setValue('')"
+          (clearButtonClick)="baseUrlControl.setValue('')"
           [showClearButton]="!!baseUrlControl.value">
           <input
             [formControl]="baseUrlControl"
@@ -253,7 +253,7 @@
               class="input-width-l"
               subscriptSizing="dynamic">
               <app-clearable-input
-                (onClick)="setCustomAttr(i, '')"
+                (clearButtonClick)="setCustomAttr(i, '')"
                 [showClearButton]="!!row.privacyideaAttr">
                 <input
                   (ngModelChange)="setCustomAttr(i, $event)"
@@ -282,7 +282,7 @@
             class="input-width-l"
             subscriptSizing="dynamic">
             <app-clearable-input
-              (onClick)="row.userStoreAttr = ''; onMappingChanged()"
+              (clearButtonClick)="row.userStoreAttr = ''; onMappingChanged()"
               [showClearButton]="!!row.userStoreAttr">
               <input
                 (ngModelChange)="onMappingChanged()"
@@ -396,7 +396,7 @@
             The file containing the CA certificate which signed the TLS certificate of the server.
           </mat-hint>
           <app-clearable-input
-            (onClick)="tlsCaPathControl.setValue('')"
+            (clearButtonClick)="tlsCaPathControl.setValue('')"
             [disabled]="!verifyTls()"
             [showClearButton]="!!tlsCaPathControl.value">
             <input
@@ -428,7 +428,7 @@
                 <mat-form-field class="input-width-xl">
                   <mat-label i18n>Authority</mat-label>
                   <app-clearable-input
-                    (onClick)="authorityControl.setValue('')"
+                    (clearButtonClick)="authorityControl.setValue('')"
                     [showClearButton]="!!authorityControl.value">
                     <input
                       [formControl]="authorityControl"
@@ -441,7 +441,7 @@
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Tenant ID</mat-label>
                     <app-clearable-input
-                      (onClick)="tenantControl.setValue('')"
+                      (clearButtonClick)="tenantControl.setValue('')"
                       [showClearButton]="!!tenantControl.value">
                       <input
                         [formControl]="tenantControl"
@@ -461,7 +461,7 @@
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Client ID</mat-label>
                     <app-clearable-input
-                      (onClick)="clientIdControl.setValue('')"
+                      (clearButtonClick)="clientIdControl.setValue('')"
                       [showClearButton]="!!clientIdControl.value">
                       <input
                         [formControl]="clientIdControl"
@@ -492,7 +492,7 @@
                     <mat-form-field class="input-width-l">
                       <mat-label i18n>Client Secret</mat-label>
                       <app-clearable-input
-                        (onClick)="clientSecretControl.setValue('')"
+                        (clearButtonClick)="clientSecretControl.setValue('')"
                         [showClearButton]="!!clientSecretControl.value">
                         <input
                           [formControl]="clientSecretControl"
@@ -529,7 +529,7 @@
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Path to the Private Key File</mat-label>
                         <app-clearable-input
-                          (onClick)="clientCertificateGroup.get('private_key_file')?.setValue('')"
+                          (clearButtonClick)="clientCertificateGroup.get('private_key_file')?.setValue('')"
                           [showClearButton]="!!clientCertificateGroup.get('private_key_file')?.value">
                           <input
                             formControlName="private_key_file"
@@ -541,7 +541,7 @@
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Password for the Private Key</mat-label>
                         <app-clearable-input
-                          (onClick)="clientCertificateGroup.get('private_key_password')?.setValue('')"
+                          (clearButtonClick)="clientCertificateGroup.get('private_key_password')?.setValue('')"
                           [showClearButton]="!!clientCertificateGroup.get('private_key_password')?.value">
                           <input
                             formControlName="private_key_password"
@@ -554,7 +554,7 @@
                     <mat-form-field class="input-width-l">
                       <mat-label i18n>Thumbprint of the Certificate</mat-label>
                       <app-clearable-input
-                        (onClick)="clientCertificateGroup.get('certificate_fingerprint')?.setValue('')"
+                        (clearButtonClick)="clientCertificateGroup.get('certificate_fingerprint')?.setValue('')"
                         [showClearButton]="!!clientCertificateGroup.get('certificate_fingerprint')?.value">
                         <input
                           formControlName="certificate_fingerprint"
@@ -577,7 +577,7 @@
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Username</mat-label>
                   <app-clearable-input
-                    (onClick)="usernameControl.setValue('')"
+                    (clearButtonClick)="usernameControl.setValue('')"
                     [showClearButton]="!!usernameControl.value">
                     <input
                       [formControl]="usernameControl"
@@ -589,7 +589,7 @@
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Password</mat-label>
                   <app-clearable-input
-                    (onClick)="passwordControl.setValue('')"
+                    (clearButtonClick)="passwordControl.setValue('')"
                     [showClearButton]="!!passwordControl.value">
                     <input
                       [formControl]="passwordControl"

@@ -48,7 +48,7 @@
       class="input-width-l">
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
-        (onClick)="userService.selectionFilter.set('')"
+        (clearButtonClick)="userService.selectionFilter.set('')"
         [showClearButton]="userService.selectionFilter() !== ''">
         <input
           [formControl]="userFilterControl"

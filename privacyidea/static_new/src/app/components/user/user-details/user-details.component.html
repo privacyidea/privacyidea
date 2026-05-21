@@ -190,7 +190,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Assign Token to User</mat-label>
       <app-clearable-input
-        (onClick)="tokenService.clearFilter()"
+        (clearButtonClick)="tokenService.clearFilter()"
         [showClearButton]="tokenService.tokenFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
