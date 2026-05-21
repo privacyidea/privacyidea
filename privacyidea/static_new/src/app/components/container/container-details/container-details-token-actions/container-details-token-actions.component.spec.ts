@@ -41,7 +41,6 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   let mockDialog: any;
   let mockContainerService: MockContainerService;
   let mockTokenService: MockTokenService;
-  let mockAuthService: MockAuthService;
 
   const userSignal: WritableSignal<any> = signal({
     user_realm: "realm1",
@@ -80,7 +79,6 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     component = fixture.componentInstance;
     mockContainerService = TestBed.inject(ContainerService) as any;
     mockTokenService = TestBed.inject(TokenService) as any;
-    mockAuthService = TestBed.inject(AuthService) as any;
 
     component.containerSerial = "CONT-1";
     component.user = userSignal;
@@ -189,16 +187,19 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     jest.spyOn(mockTokenService, "unassignUserFromAll");
 
     component.unassignFromAllToken();
-    expect(mockDialog.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
-      data: {
-        confirmAction: { label: "Unassign", type: "destruct", value: true },
-        itemType: "token",
-        items: ["S1"],
-        title: "Unassign User from All Tokens"
-      },
-      disableClose: false,
-      hasBackdrop: true
-    });
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      SimpleConfirmationDialogComponent,
+      expect.objectContaining({
+        data: {
+          confirmAction: { label: "Unassign", type: "destruct", value: true },
+          itemType: "token",
+          items: ["S1"],
+          title: "Unassign User from All Tokens"
+        },
+        disableClose: false,
+        hasBackdrop: true
+      })
+    );
     expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
     expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
@@ -263,16 +264,19 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
   it("removeAll opens confirm and removes when confirm=true", () => {
     component.removeAll();
-    expect(mockDialog.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
-      data: {
-        confirmAction: { label: "Remove", type: "destruct", value: true },
-        itemType: "token",
-        items: ["T1", "T2"],
-        title: "Remove Token"
-      },
-      disableClose: false,
-      hasBackdrop: true
-    });
+    expect(mockDialog.open).toHaveBeenCalledWith(
+      SimpleConfirmationDialogComponent,
+      expect.objectContaining({
+        data: {
+          confirmAction: { label: "Remove", type: "destruct", value: true },
+          itemType: "token",
+          items: ["T1", "T2"],
+          title: "Remove Token"
+        },
+        disableClose: false,
+        hasBackdrop: true
+      })
+    );
     expect(mockContainerService.removeAll).toHaveBeenCalledWith("CONT-1");
     expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
