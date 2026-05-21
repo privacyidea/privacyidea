@@ -62,8 +62,8 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select States</mat-label>
                       <mat-select
-                        [ngModel]="selectedStates()"
-                        (ngModelChange)="onStatesChange($event)"
+                        [value]="selectedStates()"
+                        (selectionChange)="onStatesChange($event.value)"
                         multiple>
                         @for (option of containerStateOptions; track option.value) {
                           <mat-option [value]="option.value">{{ option.label }}</mat-option>
