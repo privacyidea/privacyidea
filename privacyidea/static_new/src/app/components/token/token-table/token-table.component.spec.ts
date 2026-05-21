@@ -58,8 +58,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
-  let dialogServiceMock: MockDialogService;
-  let dialogMock: MatDialogMock;
   let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
@@ -93,8 +91,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
     tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
     tokenService.toggleActive.mockReturnValue(of({}));
