@@ -254,16 +254,16 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
   }
 
   loadAvailableCas(): void {
-    const m = this.caConnectorModel();
+    const model = this.caConnectorModel();
     const params = {
-      hostname: m.hostname,
-      port: m.port,
-      use_ssl: m.use_ssl,
-      ssl_ca_cert: m.ssl_ca_cert,
-      ssl_client_cert: m.ssl_client_cert,
-      ssl_client_key: m.ssl_client_key,
-      ssl_client_key_password: m.ssl_client_key_password,
-      http_proxy: m.http_proxy
+      hostname: model.hostname,
+      port: model.port,
+      use_ssl: model.use_ssl,
+      ssl_ca_cert: model.ssl_ca_cert,
+      ssl_client_cert: model.ssl_client_cert,
+      ssl_client_key: model.ssl_client_key,
+      ssl_client_key_password: model.ssl_client_key_password,
+      http_proxy: model.http_proxy
     };
 
     if (params.hostname && params.port) {
@@ -284,9 +284,9 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
     if (!this.caConnectorForm().valid()) {
       return false;
     }
-    const m = this.caConnectorModel();
-    const type = m.type;
-    const connectorname = m.connectorname;
+    const model = this.caConnectorModel();
+    const type = model.type;
+    const connectorname = model.connectorname;
 
     const data: Record<string, any> = { type };
 
@@ -303,10 +303,10 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
         "CRL_Validity_Period",
         "CRL_Overlap_Period"
       ] as const;
-      localFields.forEach((f) => {
-        const val = m[f];
-        if (val !== undefined && val !== "") {
-          data[f] = val;
+      localFields.forEach((field) => {
+        const value = model[field];
+        if (value !== undefined && value !== "") {
+          data[field] = value;
         }
       });
     } else if (type === "microsoft") {
@@ -321,10 +321,10 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
         "ssl_client_key_password",
         "ca"
       ] as const;
-      microsoftFields.forEach((f) => {
-        const val = m[f];
-        if (val !== undefined && val !== "") {
-          data[f] = val;
+      microsoftFields.forEach((field) => {
+        const value = model[field];
+        if (value !== undefined && value !== "") {
+          data[field] = value;
         }
       });
     }

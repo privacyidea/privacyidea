@@ -129,13 +129,13 @@ export class EnrollTotpComponent implements OnInit {
       if (hashlib) this.hashAlgorithm.set(hashlib);
       const otpLengthPolicy = this.authService.rightsWithValues()[TOTP_OTP_LENGTH];
       if (otpLengthPolicy) {
-        const v = parseInt(otpLengthPolicy, 10);
-        if (!isNaN(v)) this.otpLength.set(v);
+        const parsedLength = parseInt(otpLengthPolicy, 10);
+        if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
       }
       const timeStepPolicy = this.authService.rightsWithValues()[TOTP_TIME_STEP];
       if (timeStepPolicy) {
-        const v = parseInt(timeStepPolicy, 10);
-        if (!isNaN(v)) this.timeStep.set(v);
+        const parsedTimeStep = parseInt(timeStepPolicy, 10);
+        if (!isNaN(parsedTimeStep)) this.timeStep.set(parsedTimeStep);
       }
     });
 

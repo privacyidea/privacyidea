@@ -62,8 +62,8 @@ describe("NewPrivacyideaServerComponent", () => {
       ]
     }).compileComponents();
 
-    const authSvc = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authSvc.authData.set({ ...(authSvc.authData() as any), rights: ["privacyideaserver_write"] } as any);
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...(authService.authData() as any), rights: ["privacyideaserver_write"] } as any);
 
     privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
     router = TestBed.inject(Router);

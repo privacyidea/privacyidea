@@ -41,9 +41,8 @@ describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
   let component: TokenDetailsActionsComponent;
 
-  let tokenSvc: MockTokenService;
-  let machineSvc: MockMachineService;
-  let notifSvc: MockNotificationService;
+  let machineService: MockMachineService;
+  let notificationService: MockNotificationService;
   let dialog: jest.Mocked<MatDialog>;
 
   const matDialogOpen = jest.fn();
@@ -71,9 +70,8 @@ describe("TokenDetailsActionsComponent", () => {
       ]
     }).compileComponents();
 
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
-    notifSvc = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
@@ -91,22 +89,22 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("isAttachedToMachine is false when no applications; true when there is at least one", () => {
-    machineSvc.tokenApplications.set([]);
+    machineService.tokenApplications.set([]);
     expect(component.isAttachedToMachine()).toBe(false);
 
-    machineSvc.tokenApplications.set([{ id: 42 } as any]);
+    machineService.tokenApplications.set([{ id: 42 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
 
   it("testPasskey notifies on success", () => {
     component.testPasskey();
-    expect(notifSvc.success).toHaveBeenCalled();
-    const msg = (notifSvc.success as jest.Mock).mock.calls[0][0] as string;
+    expect(notificationService.success).toHaveBeenCalled();
+    const msg = (notificationService.success as jest.Mock).mock.calls[0][0] as string;
     expect(msg).toMatch(/Test successful/i);
   });
 
   it("attachSshToMachineDialog opens dialog, resolves request, and reloads tokenApplicationResource", async () => {
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     matDialogOpen.mockReturnValue({
@@ -121,7 +119,7 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("attachHotpToMachineDialog opens dialog, resolves request, and reloads (when request is provided)", async () => {
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     matDialogOpen.mockReturnValue({
@@ -136,7 +134,7 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("attachHotpToMachineDialog does not reload when request is null/undefined", async () => {
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     matDialogOpen.mockReturnValue({
@@ -151,8 +149,8 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("attachPasskeyToMachine posts assignment and reloads", () => {
-    const postSpy = jest.spyOn(machineSvc, "postAssignMachineToToken");
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken");
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.attachPasskeyToMachine();
@@ -167,10 +165,10 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("removePasskeyFromMachine deletes assignment using first token application id and reloads", () => {
-    machineSvc.tokenApplications.set([{ id: 77 } as any]);
+    machineService.tokenApplications.set([{ id: 77 } as any]);
 
-    const delSpy = jest.spyOn(machineSvc, "deleteAssignMachineToToken");
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const delSpy = jest.spyOn(machineService, "deleteAssignMachineToToken");
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.removePasskeyFromMachine();
@@ -200,7 +198,7 @@ describe("TokenDetailsActionsComponent", () => {
 
   describe("openLostTokenDialog()", () => {
     it("passes the isLost & tokenSerial signals to the dialog", () => {
-      const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+      const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
       reloadSpy.mockClear();
 
       matDialogOpen.mockReturnValue({

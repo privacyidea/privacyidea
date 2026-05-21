@@ -60,8 +60,8 @@ export class EventActionTabComponent {
   });
 
   showActionError = computed(() => {
-    const f = this.selectedActionForm();
-    return f.errors().some((e) => e.kind === "required") && f.touched();
+    const actionForm = this.selectedActionForm();
+    return actionForm.errors().some((error) => error.kind === "required") && actionForm.touched();
   });
 
   selectedOptions = signal<Record<string, any>>({});
@@ -79,10 +79,10 @@ export class EventActionTabComponent {
   });
 
   optionsAreValid = computed(() => {
-    const opts = this.actionOptions();
+    const optionDefinitions = this.actionOptions();
     const values = this.selectedOptions();
-    for (const name of Object.keys(opts)) {
-      if (opts[name].required && this.isEmpty(values[name])) {
+    for (const name of Object.keys(optionDefinitions)) {
+      if (optionDefinitions[name].required && this.isEmpty(values[name])) {
         return false;
       }
     }
@@ -97,15 +97,15 @@ export class EventActionTabComponent {
 
     // Rebuild option defaults when action or options input changes
     effect(() => {
-      const opts = this.actionOptions();
+      const optionDefinitions = this.actionOptions();
       const incoming = this.options();
       const rebuilt: Record<string, any> = {};
-      for (const name of Object.keys(opts)) {
-        const optAny = opts[name] as Record<string, any>;
+      for (const name of Object.keys(optionDefinitions)) {
+        const definition = optionDefinitions[name] as Record<string, any>;
         if (incoming[name] !== undefined) {
           rebuilt[name] = incoming[name];
-        } else if (optAny["default"] !== undefined) {
-          rebuilt[name] = optAny["default"];
+        } else if (definition["default"] !== undefined) {
+          rebuilt[name] = definition["default"];
         } else {
           rebuilt[name] = "";
         }
@@ -127,26 +127,26 @@ export class EventActionTabComponent {
   }
 
   private optionsToDict(values: Record<string, any>): Record<string, any> {
-    const out: Record<string, any> = {};
+    const result: Record<string, any> = {};
     for (const key of Object.keys(values)) {
-      const v = values[key];
-      if (v === null || v === undefined) continue;
-      out[key] = v;
+      const value = values[key];
+      if (value === null || value === undefined) continue;
+      result[key] = value;
     }
-    return out;
+    return result;
   }
 
   setOption(name: string, value: any): void {
-    this.selectedOptions.update((m) => ({ ...m, [name]: value }));
+    this.selectedOptions.update((current) => ({ ...current, [name]: value }));
   }
 
   markOptionTouched(name: string): void {
-    this.touchedOptions.update((m) => ({ ...m, [name]: true }));
+    this.touchedOptions.update((current) => ({ ...current, [name]: true }));
   }
 
   isOptionInvalid(name: string): boolean {
-    const opt = this.actionOptions()[name];
-    if (!opt || !opt.required) return false;
+    const definition = this.actionOptions()[name];
+    if (!definition || !definition.required) return false;
     return this.isEmpty(this.selectedOptions()[name]);
   }
 

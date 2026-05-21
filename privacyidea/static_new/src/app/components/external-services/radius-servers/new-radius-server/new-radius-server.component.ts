@@ -210,18 +210,18 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
     if (!this.radiusForm().valid()) {
       return false;
     }
-    const m = this.radiusModel();
+    const model = this.radiusModel();
     const server: RadiusServer = {
-      identifier: m.identifier,
-      server: m.server,
-      port: m.port,
-      timeout: m.timeout,
-      retries: m.retries,
-      secret: m.secret,
-      dictionary: m.dictionary,
-      description: m.description,
+      identifier: model.identifier,
+      server: model.server,
+      port: model.port,
+      timeout: model.timeout,
+      retries: model.retries,
+      secret: model.secret,
+      dictionary: model.dictionary,
+      description: model.description,
       options: {
-        message_authenticator: m.message_authenticator
+        message_authenticator: model.message_authenticator
       }
     };
     try {
@@ -237,11 +237,11 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
   test(): void {
     if (this.radiusForm().valid()) {
       this.isTesting.set(true);
-      const m = this.radiusModel();
+      const model = this.radiusModel();
       const params = {
-        ...m,
+        ...model,
         options: {
-          message_authenticator: m.message_authenticator
+          message_authenticator: model.message_authenticator
         }
       };
       this.radiusService.testRadiusServer(params).then(() => {

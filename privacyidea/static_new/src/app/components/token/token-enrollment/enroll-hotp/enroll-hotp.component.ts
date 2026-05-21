@@ -120,8 +120,8 @@ export class EnrollHotpComponent implements OnInit {
       if (hashlib) this.hashAlgorithm.set(hashlib);
       const otpLengthPolicy = this.authService.rightsWithValues()[HOTP_OTP_LENGTH];
       if (otpLengthPolicy) {
-        const v = parseInt(otpLengthPolicy, 10);
-        if (!isNaN(v)) this.otpLength.set(v);
+        const parsedLength = parseInt(otpLengthPolicy, 10);
+        if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
       }
     });
 

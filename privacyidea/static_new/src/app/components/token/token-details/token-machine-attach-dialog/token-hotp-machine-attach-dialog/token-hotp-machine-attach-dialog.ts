@@ -67,9 +67,9 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
   countForm = form(this.countValue, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
-      const n = Number(value);
-      if (!value || isNaN(n)) return [{ kind: "required" as any }];
-      if (n < 10) return [{ kind: "min" as any }];
+      const numericValue = Number(value);
+      if (!value || isNaN(numericValue)) return [{ kind: "required" as any }];
+      if (numericValue < 10) return [{ kind: "min" as any }];
       return [];
     });
   });
@@ -78,9 +78,9 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
   roundsForm = form(this.roundsValue, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
-      const n = Number(value);
-      if (!value || isNaN(n)) return [{ kind: "required" as any }];
-      if (n < 1000) return [{ kind: "min" as any }];
+      const numericValue = Number(value);
+      if (!value || isNaN(numericValue)) return [{ kind: "required" as any }];
+      if (numericValue < 1000) return [{ kind: "min" as any }];
       return [];
     });
   });

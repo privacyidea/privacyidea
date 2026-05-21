@@ -122,7 +122,7 @@ describe("ContainerCreateComponent", () => {
   let wizardComponent: ContainerCreateComponent;
 
   let containerServiceMock: MockContainerService;
-  let userSvc: MockUserService;
+  let userService: MockUserService;
   let authService: MockAuthService;
   let httpClientMock: any;
   let dialogServiceMock: MockDialogService;
@@ -167,7 +167,7 @@ describe("ContainerCreateComponent", () => {
     wizardComponent = wizardFixture.componentInstance;
 
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
-    userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     authService.actionAllowed.mockReturnValue(true);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
@@ -209,7 +209,7 @@ describe("ContainerCreateComponent", () => {
       expect.objectContaining({
         type: "generic",
         description: "",
-        user: userSvc.selectionUsernameFilter()
+        user: userService.selectionUsernameFilter()
       })
     );
     expect(regSpy).not.toHaveBeenCalled();
@@ -463,7 +463,7 @@ describe("ContainerCreateComponent", () => {
     });
 
     it("returns true when a user is selected", () => {
-      userSvc.selectionUsernameFilter.set("testuser");
+      userService.selectionUsernameFilter.set("testuser");
       expect(hasChangesFn()).toBe(true);
     });
   });

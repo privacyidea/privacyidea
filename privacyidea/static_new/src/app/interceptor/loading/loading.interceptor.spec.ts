@@ -26,7 +26,7 @@ import { loadingInterceptor } from "./loading.interceptor";
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }));
 
 describe("loadingInterceptor", () => {
-  let loadingSvc: MockLoadingService;
+  let loadingService: MockLoadingService;
 
   const run = (req: HttpRequest<any>, next: (req: HttpRequest<any>) => Observable<HttpEvent<any>>) =>
     TestBed.runInInjectionContext(() => loadingInterceptor(req, next));
@@ -37,7 +37,7 @@ describe("loadingInterceptor", () => {
       providers: [{ provide: LoadingService, useClass: MockLoadingService }]
     });
 
-    loadingSvc = TestBed.inject(LoadingService) as unknown as MockLoadingService;
+    loadingService = TestBed.inject(LoadingService) as unknown as MockLoadingService;
   });
 
   it("is creatable", () => {
@@ -55,9 +55,9 @@ describe("loadingInterceptor", () => {
     const shared$ = run(req, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(loadingSvc.addLoading).toHaveBeenCalledTimes(1);
+    expect(loadingService.addLoading).toHaveBeenCalledTimes(1);
 
-    const arg = loadingSvc.addLoading.mock.calls[0][0];
+    const arg = loadingService.addLoading.mock.calls[0][0];
     expect(arg.key).toBe("mock-uuid");
     expect(arg.url).toBe("/api/items");
     expect(arg.observable).toBe(shared$);
@@ -78,8 +78,8 @@ describe("loadingInterceptor", () => {
     src$.complete();
 
     expect(results).toEqual([ev]);
-    expect(loadingSvc.removeLoading).toHaveBeenCalledWith("mock-uuid");
-    expect(loadingSvc.removeLoading).toHaveBeenCalledTimes(1);
+    expect(loadingService.removeLoading).toHaveBeenCalledWith("mock-uuid");
+    expect(loadingService.removeLoading).toHaveBeenCalledTimes(1);
   });
 
   it("removes loading on error (finalize)", () => {
@@ -98,8 +98,8 @@ describe("loadingInterceptor", () => {
     src$.error(err);
 
     expect(errors[0]).toBe(err);
-    expect(loadingSvc.removeLoading).toHaveBeenCalledWith("mock-uuid");
-    expect(loadingSvc.removeLoading).toHaveBeenCalledTimes(1);
+    expect(loadingService.removeLoading).toHaveBeenCalledWith("mock-uuid");
+    expect(loadingService.removeLoading).toHaveBeenCalledTimes(1);
   });
 
   it("shares the underlying source across overlapping subscribers", () => {
@@ -125,6 +125,6 @@ describe("loadingInterceptor", () => {
     expect(a).toEqual([ev]);
     expect(b).toEqual([ev]);
     // finalize runs per subscription after share(), so two calls here
-    expect(loadingSvc.removeLoading).toHaveBeenCalledTimes(2);
+    expect(loadingService.removeLoading).toHaveBeenCalledTimes(2);
   });
 });

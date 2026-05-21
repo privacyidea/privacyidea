@@ -67,7 +67,7 @@ describe("TokenEnrollmentComponent", () => {
   let selfComponent: TokenEnrollmentSelfServiceComponent;
 
   let tokenService: MockTokenService;
-  let userSvc: MockUserService;
+  let userService: MockUserService;
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
   let authServiceMock: MockAuthService;
@@ -130,7 +130,7 @@ describe("TokenEnrollmentComponent", () => {
     selfComponent = selfFixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
@@ -200,12 +200,12 @@ describe("TokenEnrollmentComponent", () => {
 
     it("snacks when user is required but missing", async () => {
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
-      userSvc.selectedUser.set(null);
+      userService.selectedUser.set(null);
 
       component.setPin.set("1234");
       component.repeatPin.set("1234");
-      userSvc.selectedUserRealm.set("realm1");
-      userSvc.selectionFilter.set("alice");
+      userService.selectedUserRealm.set("realm1");
+      userService.selectionFilter.set("alice");
 
       await (component as any).enrollToken();
 
@@ -216,7 +216,7 @@ describe("TokenEnrollmentComponent", () => {
 
     it("snacks when form is invalid (e.g., PIN mismatch)", async () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      userSvc.selectedUser.set(null);
+      userService.selectedUser.set(null);
 
       component.setPin.set("1234");
       component.repeatPin.set("9999");

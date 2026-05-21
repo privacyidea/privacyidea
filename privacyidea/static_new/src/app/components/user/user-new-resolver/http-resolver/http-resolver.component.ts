@@ -215,25 +215,25 @@ export class HttpResolverComponent {
 
   // Expose nested sub-signals for sub-components
   configAuthorizationModel = computed(() => {
-    const m = this.model();
+    const currentModel = this.model();
     return {
-      get: () => m.config_authorization,
-      update: (fn: (v: HttpConfigModel) => HttpConfigModel) => {
+      get: () => currentModel.config_authorization,
+      update: (fn: (config: HttpConfigModel) => HttpConfigModel) => {
         this.model.update(model => ({ ...model, config_authorization: fn(model.config_authorization) }));
       }
     } as any;
   });
 
   isValid = () => {
-    const m = this.model();
+    const currentModel = this.model();
     const basic = this.basicSettings();
     if (!basic && this.isAdvanced) {
-      return !!m.base_url;
+      return !!currentModel.base_url;
     }
     if (basic) {
-      return !!m.endpoint && !!m.method && !!m.requestMapping && !!m.headers && !!m.responseMapping;
+      return !!currentModel.endpoint && !!currentModel.method && !!currentModel.requestMapping && !!currentModel.headers && !!currentModel.responseMapping;
     }
-    return !!m.base_url;
+    return !!currentModel.base_url;
   };
   isDirty = () => this.httpForm().dirty();
   getValue = () => this.model();

@@ -40,15 +40,15 @@ describe("TokenSshMachineAssignDialogComponent", () => {
   let component: TokenSshMachineAssignDialogComponent;
   let fixture: ComponentFixture<TokenSshMachineAssignDialogComponent>;
   let dialogRef: { close: jest.Mock };
-  let appSvc: MockApplicationService;
-  let machSvc: MockMachineService;
-  let userSvc: MockUserService;
+  let applicationService: MockApplicationService;
+  let machineService: MockMachineService;
+  let userService: MockUserService;
 
   beforeEach(async () => {
     dialogRef = { close: jest.fn() };
-    appSvc = new MockApplicationService();
-    machSvc = new MockMachineService();
-    userSvc = new MockUserService();
+    applicationService = new MockApplicationService();
+    machineService = new MockMachineService();
+    userService = new MockUserService();
 
     await TestBed.configureTestingModule({
       imports: [TokenSshMachineAssignDialogComponent, MatDialogModule],
@@ -57,21 +57,21 @@ describe("TokenSshMachineAssignDialogComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: { tokenSerial: "SER-SSH", tokenDetails: {}, tokenType: "ssh" } },
         { provide: MatDialogRef, useValue: dialogRef },
-        { provide: ApplicationService, useValue: appSvc },
-        { provide: MachineService, useValue: machSvc },
-        { provide: UserService, useValue: userSvc }
+        { provide: ApplicationService, useValue: applicationService },
+        { provide: MachineService, useValue: machineService },
+        { provide: UserService, useValue: userService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenSshMachineAssignDialogComponent);
     component = fixture.componentInstance;
 
-    machSvc.machines.set([
+    machineService.machines.set([
       { id: 1, hostname: ["host-1"], ip: "10.0.0.1", resolver_name: "resA" },
       { id: 2, hostname: ["host-2", "alias-2"], ip: "10.0.0.2", resolver_name: "resB" }
     ] as any);
 
-    userSvc.users.set([{ username: "alice" }, { username: "bob" }, { username: "carol" }] as any);
+    userService.users.set([{ username: "alice" }, { username: "bob" }, { username: "carol" }] as any);
 
     fixture.detectChanges();
   });
@@ -89,7 +89,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
   it("availableServiceIds mirrors application service IDs", () => {
     expect(component.availableServiceIds()).toEqual(["svc-1", "svc-2"]);
 
-    appSvc.applications.set({
+    applicationService.applications.set({
       ssh: { options: { sshkey: { service_id: { value: [] } } } }
     } as any);
     expect(component.availableApplications()).toEqual([]);
@@ -137,7 +137,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     component.selectedServiceIdValue.set("");
     component.selectedUserValue.set("");
 
-    const postSpy = jest.spyOn(machSvc, "postAssignMachineToToken");
+    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken");
 
     component.onAssign();
 
@@ -150,7 +150,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     component.selectedServiceIdValue.set("svc-1");
     component.selectedUserValue.set("alice");
 
-    const postSpy = jest.spyOn(machSvc, "postAssignMachineToToken");
+    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken");
 
     component.onAssign();
 
@@ -165,7 +165,7 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     component.selectedServiceIdValue.set("svc-2");
     component.selectedUserValue.set("bob");
 
-    const postSpy = jest.spyOn(machSvc, "postAssignMachineToToken").mockReturnValue(of({}) as any);
+    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken").mockReturnValue(of({}) as any);
 
     component.onAssign();
 
@@ -179,8 +179,8 @@ describe("TokenSshMachineAssignDialogComponent", () => {
       resolver: "resB"
     });
 
-    expect(machSvc.machinesResource.reload).toHaveBeenCalled();
-    expect(machSvc.tokenApplicationResource.reload).toHaveBeenCalled();
+    expect(machineService.machinesResource.reload).toHaveBeenCalled();
+    expect(machineService.tokenApplicationResource.reload).toHaveBeenCalled();
 
     const returned$ = postSpy.mock.results[0].value as Observable<any>;
     expect(dialogRef.close).toHaveBeenCalledWith(returned$);
