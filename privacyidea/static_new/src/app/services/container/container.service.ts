@@ -192,7 +192,6 @@ export interface ContainerServiceInterface {
   filterParams: Signal<Record<string, string>>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
-  loadAllContainers: Signal<boolean>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
@@ -323,8 +322,6 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(() => this.contentService.onUserDetails());
-
   private readonly uniqueCompatibleType = computed<string | null>(() => {
     const tt = this.compatibleWithSelectedTokenType();
     if (!tt) return null;
@@ -356,19 +353,21 @@ export class ContainerService implements ContainerServiceInterface {
     return String(assigned).trim() !== "";
   });
 
-  private paginatedContainerRequest(params: Record<string, any>) {
+  private containerRequest(params: Record<string, any>) {
     return {
       url: this.containerBaseUrl,
       method: "GET" as const,
       headers: this.authService.getHeaders(),
-      params: {
-        sortby: this.sort().active,
-        sortdir: this.sort().direction,
-        page: this.pageIndex() + 1,
-        pagesize: this.pageSize(),
-        ...params
-      }
+      params: { sortby: this.sort().active, sortdir: this.sort().direction, ...params }
     };
+  }
+
+  private paginatedContainerRequest(params: Record<string, any>) {
+    return this.containerRequest({
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      ...params
+    });
   }
 
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
@@ -401,7 +400,7 @@ export class ContainerService implements ContainerServiceInterface {
       return undefined;
     }
 
-    return this.paginatedContainerRequest({
+    return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
       ...(this.userService.detailsUsername() && { user: this.userService.detailsUsername() }),

@@ -57,7 +57,6 @@ export class MockContainerService implements ContainerServiceInterface {
   );
   pageSize = signal<number>(10);
   pageIndex = signal<number>(0);
-  loadAllContainers = signal<boolean>(false);
   containerResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
