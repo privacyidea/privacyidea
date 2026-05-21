@@ -211,7 +211,8 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>OTP Length</mat-label>
               <input
-                [value]="params()['DefaultOtpLen']" (input)="updateParam('DefaultOtpLen', $any($event.target).value)"
+                [value]="params()['DefaultOtpLen']"
+                (input)="updateParam('DefaultOtpLen', $any($event.target).value)"
                 matInput
                 placeholder="6" />
             </mat-form-field>
@@ -219,7 +220,8 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Count Window</mat-label>
               <input
-                [value]="params()['DefaultCountWindow']" (input)="updateParam('DefaultCountWindow', $any($event.target).value)"
+                [value]="params()['DefaultCountWindow']"
+                (input)="updateParam('DefaultCountWindow', $any($event.target).value)"
                 matInput
                 placeholder="10" />
             </mat-form-field>
@@ -227,7 +229,8 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Max Failcount</mat-label>
               <input
-                [value]="params()['DefaultMaxFailCount']" (input)="updateParam('DefaultMaxFailCount', $any($event.target).value)"
+                [value]="params()['DefaultMaxFailCount']"
+                (input)="updateParam('DefaultMaxFailCount', $any($event.target).value)"
                 matInput
                 placeholder="10" />
             </mat-form-field>
@@ -237,7 +240,8 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Sync Window</mat-label>
               <input
-                [value]="params()['DefaultSyncWindow']" (input)="updateParam('DefaultSyncWindow', $any($event.target).value)"
+                [value]="params()['DefaultSyncWindow']"
+                (input)="updateParam('DefaultSyncWindow', $any($event.target).value)"
                 matInput
                 placeholder="1000" />
             </mat-form-field>
@@ -245,7 +249,8 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Challenge Validity</mat-label>
               <input
-                [value]="params()['DefaultChallengeValidityTime']" (input)="updateParam('DefaultChallengeValidityTime', $any($event.target).value)"
+                [value]="params()['DefaultChallengeValidityTime']"
+                (input)="updateParam('DefaultChallengeValidityTime', $any($event.target).value)"
                 matInput
                 placeholder="120" />
               <mat-hint i18n>Time in seconds.</mat-hint>

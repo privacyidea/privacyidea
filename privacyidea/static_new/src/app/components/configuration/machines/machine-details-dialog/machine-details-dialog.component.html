@@ -229,7 +229,9 @@
             [matAutocomplete]="tokenSerialAuto"
             matInput
             placeholder="e.g. PIHOTP000001" />
-          <mat-autocomplete #tokenSerialAuto="matAutocomplete" (optionSelected)="onTokenSerialInput($event.option.value)">
+          <mat-autocomplete
+            #tokenSerialAuto="matAutocomplete"
+            (optionSelected)="onTokenSerialInput($event.option.value)">
             @for (serial of tokenService.filteredTokenOptions(); track serial) {
               <mat-option [value]="serial">{{ serial }}</mat-option>
             }
