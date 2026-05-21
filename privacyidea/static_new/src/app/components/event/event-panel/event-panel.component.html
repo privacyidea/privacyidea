@@ -78,13 +78,16 @@
             <mat-label i18n>Name</mat-label>
             <input
               (input)="updateEventHandler('name', $event['target']['value'])"
+              (blur)="nameTouched.set(true)"
               [value]="editEvent().name"
+              [appErrorState]="showNameError()"
               matInput
+              required
               type="text" />
-            @if (!sectionValidity()['name'] && editEvent().name === '') {
+            @if (showNameError() && editEvent().name === '') {
               <mat-error i18n>Name is <strong>required</strong>.</mat-error>
             }
-            @if (!sectionValidity()['name'] && editEvent().name !== '') {
+            @if (showNameError() && editEvent().name !== '') {
               <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
             }
           </mat-form-field>
@@ -93,6 +96,7 @@
             <mat-select
               (selectionChange)="setNewHandlerModule($event.value)"
               [value]="eventService.selectedHandlerModule()"
+              [appErrorState]="showHandlerModuleError()"
               required>
               @for (module of eventService.eventHandlerModules(); track module) {
                 <mat-option [value]="module">{{ module }}</mat-option>
@@ -111,6 +115,7 @@
           <mat-select
             (selectionChange)="updateEventHandler('position', $event.value)"
             [value]="editEvent().position"
+            [appErrorState]="showPositionError()"
             required>
             @for (position of eventService.modulePositions(); track position) {
               <mat-option [value]="position">{{ position }}</mat-option>
@@ -124,6 +129,7 @@
           <input
             (input)="updateEventHandler('ordering', +$event['target']['value'])"
             [value]="editEvent().ordering"
+            [appErrorState]="showOrderingError()"
             matInput
             required
             type="number" />

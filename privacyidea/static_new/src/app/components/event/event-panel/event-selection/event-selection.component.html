@@ -19,11 +19,11 @@
 <form>
   <mat-form-field
     class="input-width-xl height-unset"
-    [class.mat-form-field-invalid]="showError()"
     floatLabel="always">
     <mat-label>Events</mat-label>
     <mat-chip-grid
       #chipGrid
+      [appErrorState]="showError()"
       aria-label="Event selection">
       @for (event of selectedEvents(); track $index) {
         <mat-chip-row (removed)="removeEvent(event)">
@@ -70,7 +70,7 @@
     </mat-hint>
     @if (showError()) {
       <mat-error i18n>
-        At least one event must be selected.
+        At least one event must be <strong>selected</strong>.
       </mat-error>
     }
   </mat-form-field>

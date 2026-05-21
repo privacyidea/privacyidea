@@ -46,6 +46,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventService } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -81,7 +82,8 @@ export type eventTab = "events" | "action" | "conditions";
     MatButton,
     MatSlideToggle,
     MatTooltip,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ErrorStateDirective
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",
@@ -216,6 +218,14 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     return validity;
   });
   canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));
+
+  nameTouched = signal(false);
+  showNameError = computed(() => this.nameTouched() && !this.sectionValidity()["name"]);
+  showHandlerModuleError = computed(() => !this.sectionValidity()["handlerModule"]);
+  showPositionError = computed(() => !this.sectionValidity()["position"]);
+  showOrderingError = computed(
+    () => this.editEvent().ordering === null || (this.editEvent().ordering as unknown) === ""
+  );
 
   setNewAction(action: string): void {
     this.editEvent.set({ ...this.editEvent(), action });

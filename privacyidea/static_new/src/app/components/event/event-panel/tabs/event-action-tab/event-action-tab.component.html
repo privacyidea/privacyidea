@@ -21,7 +21,10 @@
   <mat-label i18n>Action</mat-label>
   <mat-select
     (selectionChange)="onActionSelectionChange($event.value)"
-    [value]="selectedAction()">
+    (openedChange)="$event === false && selectedActionForm().markAsTouched()"
+    [value]="selectedAction()"
+    [appErrorState]="showActionError()"
+    required>
     @for (action of Object.keys(eventService.moduleActions()); track action) {
       <mat-option [value]="action">
         {{ action }}
@@ -31,7 +34,7 @@
   <mat-hint i18n>Select an action to be executed on the specified events.</mat-hint>
   @if (selectedActionForm().errors().some(e => e.kind === "required") && selectedActionForm().touched()) {
     <mat-error i18n>
-      Selecting an action is required.
+      Selecting an action is <strong>required</strong>.
     </mat-error>
   }
 </mat-form-field>
@@ -60,6 +63,8 @@
               <mat-select
                 [value]="selectedOptions()[optionName]"
                 (selectionChange)="setOption(optionName, $event.value); markOptionTouched(optionName)"
+                (openedChange)="$event === false && markOptionTouched(optionName)"
+                [appErrorState]="showOptionError(optionName)"
                 [required]="actionOptions()[optionName].required || false">
                 @for (valueOption of actionOptions()[optionName].value; track valueOption) {
                   <mat-option [value]="valueOption">
@@ -74,6 +79,7 @@
                     [value]="selectedOptions()[optionName]"
                     (input)="setOption(optionName, $any($event.target).valueAsNumber)"
                     (blur)="markOptionTouched(optionName)"
+                    [appErrorState]="showOptionError(optionName)"
                     [required]="actionOptions()[optionName].required || false"
                     matInput
                     type="number" />
@@ -83,6 +89,7 @@
                     [value]="selectedOptions()[optionName]"
                     (input)="setOption(optionName, $any($event.target).value)"
                     (blur)="markOptionTouched(optionName)"
+                    [appErrorState]="showOptionError(optionName)"
                     [required]="actionOptions()[optionName].required || false"
                     matInput
                     rows="3"></textarea>
@@ -92,6 +99,7 @@
                     [value]="selectedOptions()[optionName]"
                     (input)="setOption(optionName, $any($event.target).value)"
                     (blur)="markOptionTouched(optionName)"
+                    [appErrorState]="showOptionError(optionName)"
                     [required]="actionOptions()[optionName].required || false"
                     matInput
                     type="text" />

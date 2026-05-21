@@ -24,6 +24,7 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ActionOptions, EventService } from "@services/event/event.service";
 
 @Component({
@@ -38,7 +39,8 @@ import { ActionOptions, EventService } from "@services/event/event.service";
     MatInput,
     MatCheckbox,
     MatError,
-    NgClass
+    NgClass,
+    ErrorStateDirective
   ],
   templateUrl: "./event-action-tab.component.html",
   styleUrl: "./event-action-tab.component.scss"
@@ -55,6 +57,11 @@ export class EventActionTabComponent {
   selectedAction = signal<string>("");
   selectedActionForm = form(this.selectedAction, (f) => {
     required(f);
+  });
+
+  showActionError = computed(() => {
+    const f = this.selectedActionForm();
+    return f.errors().some((e) => e.kind === "required") && f.touched();
   });
 
   selectedOptions = signal<Record<string, any>>({});

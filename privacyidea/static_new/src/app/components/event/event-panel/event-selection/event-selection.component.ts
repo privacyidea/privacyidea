@@ -42,6 +42,7 @@ import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-fi
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { EventService } from "@services/event/event.service";
 
 @Component({
@@ -56,7 +57,8 @@ import { EventService } from "@services/event/event.service";
     MatLabel,
     MatOption,
     MatInput,
-    ClearButtonComponent
+    ClearButtonComponent,
+    ErrorStateDirective
   ],
   templateUrl: "./event-selection.component.html",
   styleUrl: "./event-selection.component.scss",
@@ -95,6 +97,7 @@ export class EventSelectionComponent {
       const updated = [...current.slice(0, index), ...current.slice(index + 1)];
       this.selectedEvents.set(updated);
       this.newEvents.emit(updated);
+      this.markTouched();
     }
   }
 
