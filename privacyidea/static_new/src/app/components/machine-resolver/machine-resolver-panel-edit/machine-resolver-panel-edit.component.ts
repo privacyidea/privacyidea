@@ -27,7 +27,6 @@ import {
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
 
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
@@ -54,7 +53,6 @@ import { lastValueFrom } from "rxjs";
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    FormsModule,
     MatButtonModule,
     MatIcon,
     MachineResolverHostsTabComponent,

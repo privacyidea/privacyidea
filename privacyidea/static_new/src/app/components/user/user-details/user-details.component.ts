@@ -33,7 +33,6 @@ import {
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -80,7 +79,6 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
     NgClass,
     MatPaginator,
     UserDetailsContainerTableComponent,
-    FormsModule,
     MatSelectModule,
     MatTooltip,
     RouterLink,

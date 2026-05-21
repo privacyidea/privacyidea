@@ -12,15 +12,15 @@
       <mat-label>New Policy Name</mat-label>
       <input
         matInput
-        [formControl]="nameControl"
+        [formField]="nameField"
         cdkFocusInitial
         placeholder="e.g. New_Policy_Name"
-        (keyup.enter)="nameControl.valid && onAction('submit')" />
+        (keyup.enter)="!isInvalid() && onAction('submit')" />
 
-      @if (nameControl.hasError("required")) {
+      @if (nameField().errors().some(e => e.kind === 'required')) {
         <mat-error>Policy name is <strong>required</strong></mat-error>
       }
-      @if (nameControl.hasError("notChanged")) {
+      @if (nameField().errors().some(e => e.kind === 'notChanged')) {
         <mat-error>Policy name must be <strong>different</strong> from the original</mat-error>
       }
 

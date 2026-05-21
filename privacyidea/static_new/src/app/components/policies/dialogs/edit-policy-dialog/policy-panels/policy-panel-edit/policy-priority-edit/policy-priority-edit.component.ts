@@ -19,7 +19,6 @@
 
 import { TextFieldModule } from "@angular/cdk/text-field";
 import { Component, model } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
@@ -28,7 +27,7 @@ import { MatInputModule } from "@angular/material/input";
   templateUrl: "./policy-priority-edit.component.html",
   styleUrl: "./policy-priority-edit.component.scss",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
+  imports: [MatFormFieldModule, MatInputModule, TextFieldModule]
 })
 export class PolicyPriorityEditComponent {
   readonly priority = model.required<number>();

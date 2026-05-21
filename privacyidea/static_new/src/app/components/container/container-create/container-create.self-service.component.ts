@@ -19,7 +19,6 @@
 
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatFormField } from "@angular/material/form-field";
@@ -40,7 +39,6 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatIcon,
     MatOption,
     MatSelect,
-    FormsModule,
     MatIconButton,
     MatTooltip,
     ScrollToTopDirective,

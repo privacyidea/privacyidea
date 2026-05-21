@@ -18,7 +18,8 @@
 -->
 <div class="flex-column">
   <mat-button-toggle-group
-    [formControl]="intentionToggleControl"
+    [value]="intention()"
+    (change)="intention.set($event.value)"
     [hideSingleSelectionIndicator]="true"
     class="button-toggle-group">
     <mat-button-toggle
@@ -41,29 +42,33 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>CA Connector</mat-label>
       <mat-select
-        [errorStateMatcher]="certificateErrorStateMatcher"
-        [formControl]="caConnectorControl"
-        [value]="caConnectorControl.value"
+        [value]="caConnector()"
+        (selectionChange)="caConnector.set($event.value); caConnectorTouched.set(true)"
+        [disabled]="disabled()"
         required>
         @for (option of caConnectorOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-error i18n>CA Connector is <strong>required</strong></mat-error>
+      @if (!caConnector() && caConnectorTouched()) {
+        <mat-error i18n>CA Connector is <strong>required</strong></mat-error>
+      }
     </mat-form-field>
     <mat-form-field class="input-width-l">
       <mat-label i18n>Certificate Template</mat-label>
       <mat-select
-        [errorStateMatcher]="certificateErrorStateMatcher"
-        [formControl]="certTemplateControl"
-        [value]="certTemplateControl.value"
+        [value]="certTemplate()"
+        (selectionChange)="certTemplate.set($event.value); certTemplateTouched.set(true)"
+        [disabled]="disabled()"
         required>
         @for (option of certTemplateOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-error i18n>Certificate Template is <strong>required</strong></mat-error>
-      @if (certTemplateControl.value) {
+      @if (!certTemplate() && certTemplateTouched()) {
+        <mat-error i18n>Certificate Template is <strong>required</strong></mat-error>
+      }
+      @if (certTemplate()) {
         <app-clear-button
           (clearButtonClick)="clearTemplateSelection()"
           matSuffix></app-clear-button>
@@ -71,7 +76,7 @@
     </mat-form-field>
     <span class="input-width-l"></span>
   </div>
-  @switch (intentionToggleControl.value) {
+  @switch (intention()) {
     @case ("generate") {
       <span
         class="margin-bottom-16"
@@ -84,12 +89,10 @@
       <mat-form-field class="width-100">
         <mat-label i18n> Certificate Signing Request (PEM)</mat-label>
         <textarea
-          [errorStateMatcher]="certificateErrorStateMatcher"
-          [formControl]="pemControl"
+          [formField]="pemForm"
           i18n-placeholder
           matInput
           placeholder="Paste the Certificate Signing Request here"
-          required
           rows="3"></textarea>
         <mat-error i18n>Certificate Signing Request is <strong>required</strong></mat-error>
       </mat-form-field>
@@ -98,12 +101,10 @@
       <mat-form-field class="width-100">
         <mat-label i18n> Certificate (PEM)</mat-label>
         <textarea
-          [errorStateMatcher]="certificateErrorStateMatcher"
-          [formControl]="pemControl"
+          [formField]="pemForm"
           i18n-placeholder
           matInput
           placeholder="Paste the Certificate here"
-          required
           rows="3"></textarea>
         <mat-error i18n>Certificate is <strong>required</strong></mat-error>
       </mat-form-field>

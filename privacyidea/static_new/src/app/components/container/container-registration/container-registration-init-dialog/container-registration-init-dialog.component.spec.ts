@@ -75,13 +75,9 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should disable Register button when validInput is false", () => {
-      // Simulate invalid input by mocking the getter
-      Object.defineProperty(component, "validInput", { get: () => false });
+      component.onValidInputChange(false);
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
-        ?.nativeElement as HTMLButtonElement;
-      expect(button).toBeDefined();
-      expect(button.disabled).toBe(true);
+      expect(component.getAction().disabled).toBe(true);
     });
   });
 
@@ -137,13 +133,9 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should disable Rollover button when validInput is false", () => {
-      // Simulate invalid input by mocking the getter
-      Object.defineProperty(component, "validInput", { get: () => false });
+      component.onValidInputChange(false);
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
-        ?.nativeElement as HTMLButtonElement;
-      expect(button).toBeDefined();
-      expect(button.disabled).toBe(true);
+      expect(component.getAction().disabled).toBe(true);
     });
   });
 });

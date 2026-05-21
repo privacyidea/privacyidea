@@ -138,8 +138,8 @@
                                     (click)="$event.stopPropagation()"
                                     (keydown)="$event.stopPropagation()"
                                     (mousedown)="$event.stopPropagation()"
-                                    (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
-                                    [ngModel]="r.priority"
+                                    (input)="setEditResolverPriority(group.id, r.name, $event.target['value'])"
+                                    [value]="r.priority"
                                     class="resolver-priority-input"
                                     max="999"
                                     min="1"
@@ -253,13 +253,10 @@
                     subscriptSizing="dynamic">
                     <mat-label i18n>Realm Name</mat-label>
                     <input
-                      #newRealmNameInput="ngModel"
                       (input)="newRealmName.set($any($event.target).value)"
-                      [ngModel]="newRealmName()"
-                      matInput
-                      pattern="^[a-zA-Z0-9._-]*$"
-                      required />
-                    @if (newRealmNameInput.errors?.['pattern']) {
+                      [value]="newRealmName()"
+                      matInput />
+                    @if (newRealmNameHasPatternError()) {
                       <mat-error i18n>Invalid characters.</mat-error>
                     }
                   </mat-form-field>
@@ -296,8 +293,8 @@
                             <div class="resolver-priority-item">
                               <span class="priority-label">{{ r.name }}</span>
                               <input
-                                (ngModelChange)="setNewRealmResolverPriority(group.id, r.name, $event)"
-                                [ngModel]="r.priority"
+                                (input)="setNewRealmResolverPriority(group.id, r.name, $event.target['value'])"
+                                [value]="r.priority"
                                 class="resolver-priority-input"
                                 max="999"
                                 min="1"

@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, EventEmitter, Input, Output, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -33,7 +32,6 @@ import { AuthServiceInterface } from "@services/auth/auth.service";
   selector: "app-container-add-token",
   standalone: true,
   imports: [
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatCheckbox,

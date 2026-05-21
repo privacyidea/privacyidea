@@ -29,7 +29,7 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;
   let component: AssignTokenSelfServiceComponent;
 
-  let tokenSvc: MockTokenService;
+  let tokenService: MockTokenService;
   let routerMock: { navigateByUrl: jest.Mock };
 
   beforeEach(async () => {
@@ -49,8 +49,8 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
     component = fixture.componentInstance;
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    tokenSvc.assignUser.mockReturnValue(of(null));
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    tokenService.assignUser.mockReturnValue(of(null));
 
     fixture.detectChanges();
   });
@@ -72,8 +72,8 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     component.assignUserToToken();
 
-    expect(tokenSvc.assignUser).toHaveBeenCalledTimes(1);
-    expect(tokenSvc.assignUser).toHaveBeenCalledWith({
+    expect(tokenService.assignUser).toHaveBeenCalledTimes(1);
+    expect(tokenService.assignUser).toHaveBeenCalledWith({
       tokenSerial: serial,
       username: "",
       realm: "",
@@ -82,6 +82,6 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     expect(routerMock.navigateByUrl).toHaveBeenCalledTimes(1);
     expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringContaining(serial));
-    expect(tokenSvc.tokenSerial()).toBe(serial);
+    expect(tokenService.tokenSerial()).toBe(serial);
   });
 });

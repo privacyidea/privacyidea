@@ -34,15 +34,14 @@
         class="input-width-s">
         <mat-label i18n>Number of Answers</mat-label>
         <input
-          [ngModel]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
-          (ngModelChange)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event)"
-          #numAnswersInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #numAnswersInput
+          [value]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
+          (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $any($event.target).value)"
           matInput
           placeholder="5"
           required
           type="number">
-        @if (numAnswersInput.errors?.['required']) {
+        @if (numAnswersInput.validity.valueMissing) {
           <mat-error i18n>Number of Answers is <strong>required</strong></mat-error>
         }
       </mat-form-field>
@@ -87,7 +86,9 @@
         class="input-width-xl">
         <mat-label i18n>Question</mat-label>
         <input
-          [(ngModel)]="newQuestionText"
+          [value]="newQuestionText()"
+
+          (input)="newQuestionText.set($any($event.target).value)"
           matInput
           placeholder="Enter new question here">
       </mat-form-field>

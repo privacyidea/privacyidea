@@ -30,8 +30,7 @@ import {
   ViewChild
 } from "@angular/core";
 
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
-import { Field, form, FormField, validate } from "@angular/forms/signals";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -55,18 +54,16 @@ interface ClientSuggestion {
   selector: "app-edit-environment-conditions",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatIconModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
     MatFormFieldModule,
     MatExpansionModule,
-    ReactiveFormsModule,
     MultiSelectOnlyComponent,
     ClearButtonComponent,
-    MatAutocompleteModule,
-    FormField
+    MatAutocompleteModule
   ],
   templateUrl: "./edit-environment-conditions.component.html",
   styleUrl: "./edit-environment-conditions.component.scss"
@@ -81,12 +78,44 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  addUserAgentFormControl = new FormControl<string>("", this.userAgentValidator.bind(this));
-  validTimeFormControl = new FormControl<string>("", this.validTimeValidator.bind(this));
+  readonly addUserAgentSignal = signal("");
+  readonly addUserAgentField = form(this.addUserAgentSignal, (f) => {
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      return value && value.includes(",") ? [{ kind: "includesComma" }] : [];
+    });
+  });
 
-  readonly clientModel = signal<string>("");
-  readonly clientForm: Field<string> = form(this.clientModel, (path) => {
-    validate(path, ({ value }) => this.validateClientString(value()));
+  readonly validTimeSignal = signal("");
+  readonly validTimeField = form(this.validTimeSignal, (f) => {
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      if (!value) return [];
+      const regex =
+        /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
+      return regex.test(value) ? [] : [{ kind: "invalidValidTime" }];
+    });
+  });
+
+  readonly regexIpV4 =
+    /^!?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
+  readonly regexIpV6 =
+    /^!?(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?:\/(?:[0-9]|[1-9]\d|1[01]\d|12[0-8]))?$/;
+  readonly regexHostname =
+    /^!?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9])$/;
+
+  readonly clientSignal = signal("");
+  readonly clientField = form(this.clientSignal, (f) => {
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      if (!value) return [];
+      const invalidClients = value
+        .split(",")
+        .map((c: string) => c.trim())
+        .filter((c: string) => c !== "")
+        .filter((c: string) => !this.regexIpV4.test(c) && !this.regexIpV6.test(c) && !this.regexHostname.test(c));
+      return invalidClients.length > 0 ? [{ kind: "invalidClient" }] : [];
+    });
   });
 
   readonly knownClients = computed<ClientSuggestion[]>(() => {
@@ -108,7 +137,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   });
 
   readonly clientSearchTerm = computed<string>(() => {
-    const segment = this.currentClientSegment(this.clientModel()).raw;
+    const segment = this.currentClientSegment(this.clientSignal()).raw;
     return segment.trim().replace(/^!\s*/, "").toLowerCase();
   });
 
@@ -154,9 +183,14 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   private clientInitialized = false;
 
   constructor() {
-    this.validTimeFormControl.valueChanges.subscribe(() => this.setValidTime());
     effect(() => {
-      this.clientModel();
+      const value = this.validTimeSignal();
+      if (this.validTimeField().errors().length === 0) {
+        this.emitEdits({ time: value || "" });
+      }
+    });
+    effect(() => {
+      this.clientSignal();
       if (!this.clientInitialized) {
         this.clientInitialized = true;
         return;
@@ -166,8 +200,8 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.validTimeFormControl.setValue(this.policy().time || "", { emitEvent: false });
-    this.clientModel.set(this.policy().client?.join(", ") || "");
+    this.validTimeSignal.set(this.policy().time || "");
+    this.clientSignal.set(this.policy().client?.join(", ") || "");
     this.clientsService.requestClientsForAutocomplete();
   }
 
@@ -178,7 +212,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   buildClientSelection(ip: string): string {
-    const value = this.clientModel();
+    const value = this.clientSignal();
     const { before, raw } = this.currentClientSegment(value);
     const negation = /^\s*!/.test(raw) ? "!" : "";
     const separator = before ? " " : "";
@@ -207,13 +241,13 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   addUserAgent() {
-    const userAgent = this.addUserAgentFormControl.value?.trim();
-    if (this.addUserAgentFormControl.invalid || !userAgent) return;
+    const userAgent = this.addUserAgentSignal()?.trim();
+    if (this.addUserAgentField().errors().length > 0 || !userAgent) return;
     const oldUserAgents = this.selectedUserAgents();
     if (!oldUserAgents.includes(userAgent)) {
       this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
     }
-    this.addUserAgentFormControl.setValue("");
+    this.addUserAgentSignal.set("");
   }
 
   removeUserAgent(userAgent: string) {
@@ -224,20 +258,13 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     this.emitEdits({ user_agents: [] });
   }
 
-  setValidTime() {
-    const validTime = this.validTimeFormControl.value;
-    if (this.validTimeFormControl.valid) {
-      this.emitEdits({ time: validTime || "" });
-    }
-  }
-
   clearValidTimeControl() {
-    this.validTimeFormControl.setValue("");
+    this.validTimeSignal.set("");
   }
 
   setClients() {
-    const client = this.clientModel();
-    if (this.clientForm().valid()) {
+    const client = this.clientSignal();
+    if (this.clientField().valid()) {
       const clientsArray = client
         ? client
             .split(",")
@@ -249,38 +276,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   }
 
   clearClientControl() {
-    this.clientModel.set("");
-  }
-
-  validTimeValidator(control: AbstractControl): ValidationErrors | null {
-    const validTime = control.value;
-    if (!validTime) return null;
-    const regex =
-      /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
-    return regex.test(validTime) ? null : { invalidValidTime: { value: control.value } };
-  }
-  readonly regexIpV4 =
-    /^!?(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?:\/(?:[0-9]|[12]\d|3[0-2]))?$/;
-  readonly regexIpV6 =
-    /^!?(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))(?:\/(?:[0-9]|[1-9]\d|1[01]\d|12[0-8]))?$/;
-  readonly regexHostname =
-    /^!?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\.)+([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9-]*[A-Za-z0-9])$/;
-
-  private validateClientString(clients: string | null): { kind: string; message: string } | null {
-    if (!clients) return null;
-    const invalidClients = clients
-      .split(",")
-      .map((c) => c.trim())
-      .filter((c) => c !== "")
-      .filter((c) => !this.regexIpV4.test(c) && !this.regexIpV6.test(c) && !this.regexHostname.test(c));
-    return invalidClients.length > 0
-      ? { kind: "invalidClient", message: `Invalid client format: ${invalidClients.join(", ")}` }
-      : null;
-  }
-
-  userAgentValidator(control: AbstractControl): ValidationErrors | null {
-    const userAgent = control.value;
-    return userAgent && userAgent.includes(",") ? { includesComma: { value: control.value } } : null;
+    this.clientSignal.set("");
   }
 
   handleEnterOnSearch(event: Event, select: MatSelect): void {

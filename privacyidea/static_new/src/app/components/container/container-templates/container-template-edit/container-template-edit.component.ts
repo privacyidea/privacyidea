@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, inject, linkedSignal, model, Signal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -42,7 +41,6 @@ import { ContainerTemplateEditBodyComponent } from "./container-template-edit-bo
     MatInputModule,
     MatCardModule,
     MatIconModule,
-    FormsModule,
     MatTooltipModule,
     MatFormFieldModule,
     MatListModule,

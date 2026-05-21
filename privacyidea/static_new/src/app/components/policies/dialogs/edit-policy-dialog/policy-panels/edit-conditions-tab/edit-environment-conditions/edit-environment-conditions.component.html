@@ -38,12 +38,12 @@
       <mat-label i18n>Valid time</mat-label>
       <input
         matInput
-        [formControl]="validTimeFormControl"
+        [formField]="validTimeField"
         placeholder="Mon-Fri: 9-18, Sat: 10-15" />
-      @if (validTimeFormControl.touched && validTimeFormControl.invalid) {
+      @if (validTimeField().errors().some(e => e.kind === 'invalidValidTime')) {
         <mat-error i18n>Please enter a valid time format</mat-error>
       }
-      @if (validTimeFormControl.value !== "") {
+      @if (validTimeSignal() !== "") {
         <app-clear-button
           matSuffix
           (clearButtonClick)="clearValidTimeControl()"></app-clear-button>
@@ -56,7 +56,7 @@
       <mat-label i18n>Client</mat-label>
       <input
         matInput
-        [formField]="clientForm"
+        [formField]="clientField"
         [matAutocomplete]="clientAuto"
         placeholder="10.0.0.0/8, !10.0.0.124" />
       <mat-autocomplete
@@ -86,10 +86,10 @@
           </mat-option>
         }
       </mat-autocomplete>
-      @if (clientForm().touched() && clientForm().invalid()) {
+      @if (clientField().errors().some(e => e.kind === 'invalidClient')) {
         <mat-error i18n>Please enter a valid client format</mat-error>
       }
-      @if (clientModel() !== "") {
+      @if (clientSignal() !== "") {
         <app-clear-button
           matSuffix
           (clearButtonClick)="clearClientControl()"></app-clear-button>
@@ -165,17 +165,16 @@
       <mat-label i18n>Add Custom User Agent</mat-label>
       <input
         matInput
-        [formControl]="addUserAgentFormControl"
-        #userAgentInput
+        [formField]="addUserAgentField"
         (keyup.enter)="addUserAgent()" />
-      @if (addUserAgentFormControl.hasError("includesComma")) {
+      @if (addUserAgentField().errors().some(e => e.kind === 'includesComma')) {
         <mat-error i18n>User Agent must not contain commas.</mat-error>
       }
     </mat-form-field>
 
     <button
       class="input-attached-button"
-      [disabled]="!userAgentInput.value.trim() || addUserAgentFormControl.invalid"
+      [disabled]="!addUserAgentSignal().trim() || addUserAgentField().errors().length > 0"
       (click)="addUserAgent()">
       <mat-icon>add</mat-icon>
     </button>

@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { FormsModule, NgForm } from "@angular/forms";
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
@@ -43,7 +42,6 @@ import { SystemDocumentationDialogComponent } from "./system-documentation-dialo
   imports: [
     MatFormField,
     MatLabel,
-    FormsModule,
     MatInput,
     MatSelect,
     MatOption,
@@ -65,16 +63,16 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
-  @ViewChild("systemConfigForm", { static: true }) systemConfigForm!: NgForm;
 
-  params: any = {};
+  params = signal<any>({});
+  isDirty = signal(false);
   smtpIdentifiers: string[] = [];
 
   constructor() {
     effect(() => {
       const config = this.systemService.systemConfig();
       if (config && Object.keys(config).length > 0) {
-        this.params = { ...config };
+        const newParams = { ...config };
         const booleanKeys = [
           "splitAtSign",
           "IncFailCountOnFalsePin",
@@ -87,10 +85,12 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
           "UiLoginDisplayRealmBox"
         ];
         booleanKeys.forEach((key) => {
-          if (this.params[key] !== undefined) {
-            this.params[key] = isChecked(this.params[key]);
+          if (newParams[key] !== undefined) {
+            newParams[key] = isChecked(newParams[key]);
           }
         });
+        this.params.set(newParams);
+        this.isDirty.set(false);
       }
     });
 
@@ -104,11 +104,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadSystemConfig();
     this.smtpService.smtpServerResource.reload();
-    this.pendingChangesService.registerHasChanges(() => this.systemConfigForm?.dirty ?? false);
-    this.pendingChangesService.registerValidChanges(
-      () => this.hasConfigWritePermission() && (this.systemConfigForm?.valid ?? false),
-    );
+    this.pendingChangesService.registerHasChanges(() => this.isDirty());
+    this.pendingChangesService.registerValidChanges(() => this.hasConfigWritePermission());
     this.pendingChangesService.registerSave(() => this._saveAndReturn());
+  }
+
+  updateParam(key: string, value: any): void {
+    this.params.set({ ...this.params(), [key]: value });
+    this.isDirty.set(true);
   }
 
   loadSystemConfig(): void {
@@ -116,7 +119,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   }
 
   saveSystemConfig(): void {
-    const body = { ...this.params };
+    const body = { ...this.params() };
 
     this.systemService.saveSystemConfig(body).subscribe({
       next: (response: any) => {
@@ -135,7 +138,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
 
   private _saveAndReturn(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
-      this.systemService.saveSystemConfig({ ...this.params }).subscribe({
+      this.systemService.saveSystemConfig({ ...this.params() }).subscribe({
         next: (response: any) => {
           if (response.result.status) {
             this.notificationService.success("System configuration saved successfully.");

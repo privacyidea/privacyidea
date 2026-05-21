@@ -86,7 +86,7 @@ describe("TokenTableActionsComponent", () => {
         { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
-        { provide: DocumentationService, useClass: MockDocumentationService }
+        { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();

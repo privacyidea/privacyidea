@@ -29,7 +29,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -82,8 +81,6 @@ type ContainerDetailTokenData = {
     MatTableModule,
     MatIconButton,
     CopyableComponent,
-    ReactiveFormsModule,
-    FormsModule,
     MatPaginatorModule,
     NgClass,
     MatIconModule,

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, input, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
@@ -47,7 +46,6 @@ import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-re
     MatExpansionPanelTitle,
     MatExpansionModule,
     MatSlideToggle,
-    FormsModule,
     MatIcon,
     MatIconButton,
     PeriodicTaskReadComponent,

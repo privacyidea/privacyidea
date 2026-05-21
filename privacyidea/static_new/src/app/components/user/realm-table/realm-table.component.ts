@@ -30,7 +30,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
@@ -92,7 +91,6 @@ const columnKeysMap = [
   imports: [
     ClearableInputComponent,
     CopyableComponent,
-    FormsModule,
     MatButtonModule,
     MatCell,
     MatCellDef,
@@ -151,6 +149,9 @@ export class RealmTableComponent implements OnDestroy {
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
   isCreatingRealm = signal<boolean>(false);
+  newRealmNameHasPatternError = computed(
+    () => this.newRealmName().length > 0 && !/^[a-zA-Z0-9._-]*$/.test(this.newRealmName())
+  );
 
   // Edit Form State
   editingRealmName = signal<string | null>(null);

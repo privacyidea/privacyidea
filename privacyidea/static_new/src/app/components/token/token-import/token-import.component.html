@@ -36,8 +36,7 @@
         class="input-width-xl">
         <mat-label i18n>File Type</mat-label>
         <mat-select
-          [(ngModel)]="fileType"
-          [ngModelOptions]="{ standalone: true }"
+          (selectionChange)="fileType.set($event.value)"
           [panelClass]="'single-column-panel'"
           [value]="fileType()">
           @for (type of Object.keys(fileTypes); track type) {
@@ -50,7 +49,7 @@
       </mat-form-field>
       <button
         (click)="importTokens()"
-        [disabled]="!inputForm.valid"
+        [disabled]="!formValid()"
         class="action-button-primary button-width-m margin-left-auto"
         mat-stroked-button>
         <mat-icon>input</mat-icon>
@@ -97,12 +96,13 @@
           <mat-form-field class="input-width-xl margin-bottom-16">
             <mat-label>Pre Shared Key</mat-label>
             <input
-              [formControl]="preSharedKey"
+              [value]="preSharedKey()"
+              (input)="preSharedKey.set($any($event.target).value)"
               matInput
               placeholder="Pre Shared Key in hex format" />
             <mat-hint>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
             </mat-hint>
-            @if (!preSharedKey.valid) {
+            @if (!preSharedKeyValid()) {
               <mat-error>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
               </mat-error>
             }
@@ -112,8 +112,8 @@
           <mat-form-field class="input-width-xl">
             <mat-label>Password</mat-label>
             <input
-              [(ngModel)]="pskPassword"
               [value]="pskPassword()"
+              (input)="pskPassword.set($any($event.target).value)"
               matInput
               placeholder="Password" />
           </mat-form-field>
@@ -123,7 +123,7 @@
             class="input-width-xl">
             <mat-label>Verification Method for the Authenticity of Imported Tokens</mat-label>
             <mat-select
-              [(ngModel)]="pskValidation"
+              (selectionChange)="pskValidation.set($event.value)"
               [value]="pskValidation()">
               @for (key of Object.keys(pskValidationOptions); track key) {
                 <mat-option [value]="key">{{ pskValidationOptions[key] }}</mat-option>
@@ -141,7 +141,7 @@
       class="input-width-l">
       <mat-label>Select Realm for Tokens</mat-label>
       <mat-select
-        [(ngModel)]="selectedRealms"
+        (selectionChange)="selectedRealms.set($event.value)"
         [value]="selectedRealms()"
         multiple>
         <!--                <mat-option [value]="'-'"> -</mat-option>-->

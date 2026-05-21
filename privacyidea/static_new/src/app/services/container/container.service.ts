@@ -198,7 +198,7 @@ export interface ContainerServiceInterface {
   containerSelection: WritableSignal<ContainerDetailData[]>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
-  selectedContainerType: Signal<ContainerType | undefined>;
+  selectedContainerType: WritableSignal<ContainerType | undefined>;
   containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetails: WritableSignal<ContainerDetails>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;

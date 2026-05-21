@@ -81,17 +81,16 @@
       <mat-label i18n>Add User</mat-label>
       <input
         matInput
-        [formControl]="userFormControl"
-        #userInput
-        (keyup.enter)="addUser(userInput.value); !userFormControl.invalid && (userInput.value = '')" />
-      @if (userFormControl.hasError("includesComma")) {
+        [formField]="userField"
+        (keyup.enter)="addUser(userSignal())" />
+      @if (userField().errors().some(e => e.kind === 'includesComma')) {
         <mat-error i18n>User must not contain commas.</mat-error>
       }
     </mat-form-field>
     <button
       class="input-attached-button"
-      [disabled]="!userInput.value.trim() || userFormControl.invalid"
-      (click)="addUser(userInput.value); userInput.value = ''">
+      [disabled]="!userSignal().trim() || userField().errors().length > 0"
+      (click)="addUser(userSignal())">
       <mat-icon>add</mat-icon>
     </button>
   </div>

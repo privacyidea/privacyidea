@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, Input, signal, Signal, WritableSignal } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -46,11 +45,9 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatCell,
     MatFormField,
     MatInput,
-    ReactiveFormsModule,
     MatAutocompleteTrigger,
     MatAutocomplete,
     MatOption,
-    FormsModule,
     MatSelect,
     MatIconButton,
     MatIcon,

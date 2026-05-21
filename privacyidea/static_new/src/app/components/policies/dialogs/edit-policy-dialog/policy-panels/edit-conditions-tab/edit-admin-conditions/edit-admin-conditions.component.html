@@ -54,18 +54,18 @@
       <mat-label i18n>Admin Name</mat-label>
       <input
         matInput
-        [formControl]="adminFormControl"
+        [formField]="adminField"
         #adminInput
-        (keyup.enter)="addAdmin(adminInput.value)" />
-      @if (adminFormControl.hasError("includesComma")) {
+        (keyup.enter)="addAdmin(adminSignal())" />
+      @if (adminField().errors().some(e => e.kind === 'includesComma')) {
         <mat-error i18n>Admin must not contain commas.</mat-error>
       }
     </mat-form-field>
 
     <button
       class="input-attached-button"
-      [disabled]="!adminInput.value.trim() || adminFormControl.invalid"
-      (click)="addAdmin(adminInput.value)">
+      [disabled]="!adminSignal().trim() || adminField().errors().length > 0"
+      (click)="addAdmin(adminSignal())">
       <mat-icon>add</mat-icon>
     </button>
   </div>

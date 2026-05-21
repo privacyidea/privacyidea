@@ -28,7 +28,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
@@ -111,11 +110,9 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     MatRow,
     MatTable,
     NgClass,
-    FormsModule,
     MatInput,
     MatFormFieldModule,
     MatSelectModule,
-    ReactiveFormsModule,
     MatIconButton,
     TokenDetailsUserComponent,
     MatAutocomplete,

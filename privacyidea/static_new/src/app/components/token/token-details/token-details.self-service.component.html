@@ -70,7 +70,8 @@
                         (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
                         [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
-                          [(ngModel)]="containerService.selectedContainerSerial"
+                          [value]="containerService.selectedContainerSerial()"
+                          (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
                           [matAutocomplete]="containerAuto"
                           matInput />
                       </app-clearable-input>
@@ -124,8 +125,9 @@
                       class="input-width-m description height-136"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
-                        [maxlength]="80"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
+                        maxlength="80"
                         i18n-placeholder
                         matInput
                         placeholder="Enter description"
@@ -148,7 +150,8 @@
                       class="input-width-m height-52"
                       subscriptSizing="dynamic">
                       <input
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         matInput
                         type="number" />
                     </mat-form-field>
@@ -157,7 +160,8 @@
                       class="input-width-m"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         matInput
                         rows="1"></textarea>
                     </mat-form-field>

@@ -29,7 +29,6 @@ import {
   viewChildren,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -46,7 +45,6 @@ import { PolicyActionItemComponent, SelectableAction } from "./policy-action-ite
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     MatIconModule,
     MatButtonModule,
     MatExpansionModule,

@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
@@ -30,14 +29,7 @@ import { RADIUS_SERVER } from "@constants/token.constants";
 @Component({
   selector: "app-radius-config",
   standalone: true,
-  imports: [
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    RouterLink,
-    ClearButtonComponent
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./radius-config.component.html",
   styleUrl: "./radius-config.component.scss"
 })

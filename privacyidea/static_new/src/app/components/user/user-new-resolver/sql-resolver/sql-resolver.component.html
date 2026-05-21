@@ -24,15 +24,14 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Driver</mat-label>
           <app-clearable-input
-            (clearButtonClick)="driverControl.setValue('')"
-            [showClearButton]="!!driverControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, Driver: '' }))"
+            [showClearButton]="!!model().Driver">
             <input
-              [formControl]="driverControl"
+              [formField]="sqlForm.Driver"
               matInput
-              placeholder="mysql+pymysql"
-              required />
+              placeholder="mysql+pymysql" />
           </app-clearable-input>
-          @if (driverControl.hasError("required") && driverControl.touched) {
+          @if (sqlForm.Driver().errors().some(e => e.kind === 'required') && sqlForm.Driver().touched()) {
             <mat-error i18n>
               Driver is
               <strong>required</strong>
@@ -44,10 +43,10 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Database</mat-label>
           <app-clearable-input
-            (clearButtonClick)="databaseControl.setValue('')"
-            [showClearButton]="!!databaseControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, Database: '' }))"
+            [showClearButton]="!!model().Database">
             <input
-              [formControl]="databaseControl"
+              [formField]="sqlForm.Database"
               matInput
               placeholder="YourDatabase" />
           </app-clearable-input>
@@ -58,15 +57,14 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Server</mat-label>
           <app-clearable-input
-            (clearButtonClick)="serverControl.setValue('')"
-            [showClearButton]="!!serverControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, Server: '' }))"
+            [showClearButton]="!!model().Server">
             <input
-              [formControl]="serverControl"
+              [formField]="sqlForm.Server"
               matInput
-              placeholder="127.0.0.1"
-              required />
+              placeholder="127.0.0.1" />
           </app-clearable-input>
-          @if (serverControl.hasError("required") && serverControl.touched) {
+          @if (sqlForm.Server().errors().some(e => e.kind === 'required') && sqlForm.Server().touched()) {
             <mat-error i18n>
               Server is
               <strong>required</strong>
@@ -78,7 +76,7 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Port</mat-label>
           <input
-            [formControl]="portControl"
+            [formField]="sqlForm.Port"
             matInput
             placeholder="3306" />
         </mat-form-field>
@@ -93,10 +91,10 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>User</mat-label>
           <app-clearable-input
-            (clearButtonClick)="userControl.setValue('')"
-            [showClearButton]="!!userControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, User: '' }))"
+            [showClearButton]="!!model().User">
             <input
-              [formControl]="userControl"
+              [formField]="sqlForm.User"
               matInput
               placeholder="user" />
           </app-clearable-input>
@@ -105,10 +103,10 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Password</mat-label>
           <app-clearable-input
-            (clearButtonClick)="passwordControl.setValue('')"
-            [showClearButton]="!!passwordControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, Password: '' }))"
+            [showClearButton]="!!model().Password">
             <input
-              [formControl]="passwordControl"
+              [formField]="sqlForm.Password"
               matInput
               placeholder="topsecret"
               type="password" />
@@ -118,7 +116,8 @@
 
       <div class="flex-column">
         <mat-checkbox
-          [formControl]="editableControl"
+          [checked]="model().Editable"
+          (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
           i18n>
           Edit user store
         </mat-checkbox>
@@ -128,11 +127,12 @@
           The user data in this database can be modified from within privacyIDEA.
         </span>
 
-        @if (editableControl.value) {
+        @if (model().Editable) {
           <mat-form-field class="input-width-xl margin-bottom-16">
             <mat-label i18n>Password Hash for Editable Users</mat-label>
             <mat-select
-              [formControl]="passwordHashTypeControl"
+              [value]="model().Password_Hash_Type"
+              (selectionChange)="model.update(m => ({ ...m, Password_Hash_Type: $event.value }))"
               placeholder="">
               <mat-option
                 i18n
@@ -215,15 +215,14 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Table</mat-label>
           <app-clearable-input
-            (clearButtonClick)="tableControl.setValue('')"
-            [showClearButton]="!!tableControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, Table: '' }))"
+            [showClearButton]="!!model().Table">
             <input
-              [formControl]="tableControl"
+              [formField]="sqlForm.Table"
               matInput
-              placeholder="Users"
-              required />
+              placeholder="Users" />
           </app-clearable-input>
-          @if (tableControl.hasError("required") && tableControl.touched) {
+          @if (sqlForm.Table().errors().some(e => e.kind === 'required') && sqlForm.Table().touched()) {
             <mat-error i18n>
               Table is
               <strong>required</strong>
@@ -235,12 +234,11 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Limit</mat-label>
           <input
-            [formControl]="limitControl"
+            [formField]="sqlForm.Limit"
             matInput
             placeholder="500"
-            required
             type="number" />
-          @if (limitControl.hasError("required") && limitControl.touched) {
+          @if (sqlForm.Limit().errors().some(e => e.kind === 'required') && sqlForm.Limit().touched()) {
             <mat-error i18n>
               Limit is
               <strong>required</strong>
@@ -253,11 +251,10 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Mapping</mat-label>
         <textarea
-          [formControl]="mapControl"
+          [formField]="sqlForm.Map"
           matInput
-          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'
-          required></textarea>
-        @if (mapControl.hasError("required") && mapControl.touched) {
+          placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
+        @if (sqlForm.Map().errors().some(e => e.kind === 'required') && sqlForm.Map().touched()) {
           <mat-error i18n>
             Mapping is
             <strong>required</strong>
@@ -270,10 +267,10 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Connection Parameters</mat-label>
           <app-clearable-input
-            (clearButtonClick)="conParamsControl.setValue('')"
-            [showClearButton]="!!conParamsControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, conParams: '' }))"
+            [showClearButton]="!!model().conParams">
             <input
-              [formControl]="conParamsControl"
+              [formField]="sqlForm.conParams"
               matInput />
           </app-clearable-input>
         </mat-form-field>
@@ -281,10 +278,10 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Database Encoding</mat-label>
           <app-clearable-input
-            (clearButtonClick)="encodingControl.setValue('')"
-            [showClearButton]="!!encodingControl.value">
+            (clearButtonClick)="model.update(m => ({ ...m, Encoding: '' }))"
+            [showClearButton]="!!model().Encoding">
             <input
-              [formControl]="encodingControl"
+              [formField]="sqlForm.Encoding"
               matInput />
           </app-clearable-input>
         </mat-form-field>
@@ -293,10 +290,10 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Where Statement</mat-label>
         <app-clearable-input
-          (clearButtonClick)="whereControl.setValue('')"
-          [showClearButton]="!!whereControl.value">
+          (clearButtonClick)="model.update(m => ({ ...m, Where: '' }))"
+          [showClearButton]="!!model().Where">
           <input
-            [formControl]="whereControl"
+            [formField]="sqlForm.Where"
             matInput />
         </app-clearable-input>
       </mat-form-field>
@@ -305,7 +302,7 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Pool Size</mat-label>
           <input
-            [formControl]="poolSizeControl"
+            [formField]="sqlForm.poolSize"
             matInput
             type="number" />
         </mat-form-field>
@@ -313,7 +310,7 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Pool Timeout</mat-label>
           <input
-            [formControl]="poolTimeoutControl"
+            [formField]="sqlForm.poolTimeout"
             matInput
             type="number" />
         </mat-form-field>
@@ -321,7 +318,7 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Pool Recycle Timeout</mat-label>
           <input
-            [formControl]="poolRecycleControl"
+            [formField]="sqlForm.poolRecycle"
             matInput
             type="number" />
         </mat-form-field>

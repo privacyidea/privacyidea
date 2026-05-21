@@ -70,7 +70,8 @@
                         (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
                         [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
-                          [(ngModel)]="containerService.selectedContainerSerial"
+                          [value]="containerService.selectedContainerSerial()"
+                          (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
                           [matAutocomplete]="containerAuto"
                           matInput />
                       </app-clearable-input>
@@ -97,8 +98,8 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Realms</mat-label>
                       <mat-select
-                        [(ngModel)]="realmService.selectedRealms"
                         [value]="realmService.selectedRealms()"
+                        (selectionChange)="realmService.selectedRealms.set($event.value)"
                         multiple>
                         @for (option of realmService.realmOptions(); track option) {
                           @if (option === userRealm) {
@@ -134,8 +135,8 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Token Group</mat-label>
                       <mat-select
-                        [(ngModel)]="selectedTokengroup"
                         [value]="selectedTokengroup()"
+                        (selectionChange)="selectedTokengroup.set($event.value)"
                         multiple>
                         @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {
@@ -170,8 +171,9 @@
                       class="input-width-m description height-136"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
-                        [maxlength]="80"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
+                        maxlength="80"
                         i18n-placeholder
                         matInput
                         placeholder="Enter description"
@@ -194,7 +196,8 @@
                       class="input-width-m height-52"
                       subscriptSizing="dynamic">
                       <input
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         matInput
                         type="number" />
                     </mat-form-field>
@@ -203,7 +206,8 @@
                       class="input-width-m"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         matInput
                         rows="1"></textarea>
                     </mat-form-field>

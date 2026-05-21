@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -29,14 +28,7 @@ import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from 
 @Component({
   selector: "app-totp-config",
   standalone: true,
-  imports: [
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    ClearButtonComponent
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
   templateUrl: "./totp-config.component.html",
   styleUrl: "./totp-config.component.scss"
 })

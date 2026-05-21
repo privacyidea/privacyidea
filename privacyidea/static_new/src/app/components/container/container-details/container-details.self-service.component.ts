@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
@@ -47,11 +46,9 @@ import { ContainerDetailsComponent } from "./container-details.component";
     MatTableModule,
     MatCell,
     MatColumnDef,
-    ReactiveFormsModule,
     MatListItem,
     EditButtonsComponent,
     MatFormField,
-    FormsModule,
     MatSelectModule,
     MatInput,
     MatAutocomplete,

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   PaperApiPayloadMapper,
@@ -32,7 +31,7 @@ export interface PaperEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-paper",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-paper.component.html",
   styleUrl: "./enroll-paper.component.scss"
 })
@@ -41,9 +40,7 @@ export class EnrollPaperComponent implements OnInit {
   protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(PaperApiPayloadMapper);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PaperEnrollmentData;

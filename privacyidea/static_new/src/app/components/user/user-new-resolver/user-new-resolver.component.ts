@@ -31,7 +31,7 @@ import {
   viewChild
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { AbstractControl, FormsModule } from "@angular/forms";
+import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -56,11 +56,15 @@ import { PasswdResolverComponent } from "./passwd-resolver/passwd-resolver.compo
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
 
+interface ResolverNameModel {
+  resolverName: string;
+}
+
 @Component({
   selector: "app-user-new-resolver",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatFormField,
     MatLabel,
     MatError,
@@ -109,26 +113,36 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   entraidResolver = viewChild(EntraidResolverComponent);
   keycloakResolver = viewChild(KeycloakResolverComponent);
 
-  resolverName = "";
-  resolverType: ResolverType = "passwdresolver";
+  resolverType = signal<ResolverType>("passwdresolver");
   formData: Record<string, any> = { fileName: "/etc/passwd" };
-  testUsername = "";
-  testUserId = "";
+  testUsername = signal<string>("");
+  testUserId = signal<string>("");
 
   isSaving = signal(false);
   isTesting = signal(false);
+  isEditMode = signal(false);
 
-  additionalFormFields = computed<Record<string, AbstractControl>>(() => {
-    const resolver =
+  // Resolver name form
+  resolverNameModel = signal<ResolverNameModel>({ resolverName: "" });
+  resolverNameForm = form(this.resolverNameModel, (f) => {
+    required(f.resolverName);
+    pattern(f.resolverName, /^[a-zA-Z0-9._-]*$/);
+  });
+
+  get resolverName(): string {
+    return this.resolverNameModel().resolverName;
+  }
+
+  private _activeResolver = computed(() => {
+    return (
       this.ldapResolver() ||
       this.sqlResolver() ||
       this.passwdResolver() ||
       this.scimResolver() ||
       this.entraidResolver() ||
       this.keycloakResolver() ||
-      this.httpResolver();
-
-    return resolver ? resolver.controls() : {};
+      this.httpResolver()
+    );
   });
 
   constructor() {
@@ -143,6 +157,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const selectedName = this._resolverService.selectedResolverName();
       const resourceRef = this._resolverService.selectedResolverResource;
+
+      this.isEditMode.set(!!selectedName);
 
       if (!selectedName) {
         if (this._editInitialized) {
@@ -164,8 +180,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       if (resource?.result?.value && !this._editInitialized) {
         const resolver = resource.result.value[selectedName];
         if (resolver) {
-          this.resolverName = resolver.resolvername || selectedName;
-          this.resolverType = resolver.type;
+          this.resolverNameModel.set({ resolverName: resolver.resolvername || selectedName });
+          this.resolverType.set(resolver.type);
           this.formData = { ...(resolver.data || {}) };
           this._editInitialized = true;
         }
@@ -173,33 +189,32 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  get isEditMode(): boolean {
-    return !!this._resolverService.selectedResolverName();
-  }
-
   get isAdditionalFieldsInvalid(): boolean {
-    const fields = Object.values(this.additionalFormFields());
-    return fields.length > 0 && fields.some((control) => control.invalid);
+    const resolver = this._activeResolver();
+    if (!resolver) return false;
+    return !resolver.isValid();
   }
 
   get canSave(): boolean {
-    const nameValid = this.resolverName.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.resolverName);
-    return nameValid && !!this.resolverType && !this.isAdditionalFieldsInvalid && !this.isSaving();
+    const name = this.resolverNameModel().resolverName;
+    const nameValid = name.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(name);
+    return nameValid && !!this.resolverType() && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 
   get hasChanges(): boolean {
-    const fieldsDirty = Object.values(this.additionalFormFields()).some((control) => control.dirty);
-    if (fieldsDirty) {
+    const resolver = this._activeResolver();
+    const resolverDirty = resolver ? resolver.isDirty() : false;
+    if (resolverDirty || this.resolverNameForm().dirty()) {
       return true;
     }
-    if (this.isEditMode) {
-      return this.testUsername !== "" || this.testUserId !== "";
+    if (this.isEditMode()) {
+      return this.testUsername() !== "" || this.testUserId() !== "";
     }
     return (
-      this.resolverName !== "" ||
-      this.resolverType !== "passwdresolver" ||
-      this.testUsername !== "" ||
-      this.testUserId !== ""
+      this.resolverNameModel().resolverName !== "" ||
+      this.resolverType() !== "passwdresolver" ||
+      this.testUsername() !== "" ||
+      this.testUserId() !== ""
     );
   }
 
@@ -231,9 +246,11 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   onTypeChange(type: ResolverType): void {
-    if (this.isEditMode) {
+    if (this.isEditMode()) {
       return;
     }
+
+    this.resolverType.set(type);
 
     if (type === "passwdresolver") {
       this.formData = { fileName: "/etc/passwd" };
@@ -256,12 +273,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   async onSave(): Promise<boolean> {
-    const name = this.resolverName.trim();
+    const name = this.resolverNameModel().resolverName.trim();
     if (!name) {
       this._notificationService.warning($localize`Please enter a resolver name.`);
       return false;
     }
-    if (!this.resolverType) {
+    if (!this.resolverType()) {
       this._notificationService.warning($localize`Please select a resolver type.`);
       return false;
     }
@@ -272,7 +289,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
     this.isSaving.set(true);
     const payload = {
-      type: this.resolverType,
+      type: this.resolverType(),
       ...this.formData,
       ...this._getAdditionalData()
     };
@@ -285,7 +302,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
               this._notificationService.success(
-                this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
+                this.isEditMode() ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
               );
               this._resolverService.resolversResource.reload?.();
               this._closeOrReset();
@@ -342,19 +359,13 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   private _getAdditionalData(): Record<string, any> {
-    return Object.entries(this.additionalFormFields()).reduce(
-      (acc, [key, ctrl]) => {
-        if (ctrl) {
-          acc[key] = ctrl.value;
-        }
-        return acc;
-      },
-      {} as Record<string, any>
-    );
+    const resolver = this._activeResolver();
+    if (!resolver) return {};
+    return resolver.getValue() as Record<string, any>;
   }
 
   private _runTest(quick: boolean): void {
-    if (!this.resolverType) {
+    if (!this.resolverType()) {
       this._notificationService.warning($localize`Please select a resolver type.`);
       return;
     }
@@ -367,10 +378,10 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     this.isTesting.set(true);
 
     const payload: any = {
-      type: this.resolverType,
+      type: this.resolverType(),
       ...this.formData,
-      test_username: this.testUsername,
-      test_userid: this.testUserId,
+      test_username: this.testUsername(),
+      test_userid: this.testUserId(),
       ...this._getAdditionalData()
     };
 
@@ -378,8 +389,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       payload.SIZELIMIT = 1;
     }
 
-    if (this.isEditMode) {
-      payload.resolver = this.resolverName;
+    if (this.isEditMode()) {
+      payload.resolver = this.resolverNameModel().resolverName;
     }
 
     this._resolverService
@@ -419,15 +430,15 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   private _resetForm(): void {
-    this.resolverName = "";
-    this.resolverType = "passwdresolver";
+    this.resolverNameModel.set({ resolverName: "" });
+    this.resolverType.set("passwdresolver");
     this.formData = { fileName: "/etc/passwd" };
-    this.testUsername = "";
-    this.testUserId = "";
+    this.testUsername.set("");
+    this.testUserId.set("");
   }
 
   private _closeOrReset(): void {
-    if (!this.isEditMode) {
+    if (!this.isEditMode()) {
       this._resetForm();
     }
     this._closeCurrent();

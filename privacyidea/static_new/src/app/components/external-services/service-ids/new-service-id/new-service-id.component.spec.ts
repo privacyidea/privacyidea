@@ -72,15 +72,16 @@ describe("NewServiceIdComponent", () => {
   });
 
   it("should initialize form for create mode", () => {
-    expect(component.isEditMode).toBe(false);
-    expect(component.serviceIdForm.get("servicename")?.value).toBe("");
+    expect(component.isEditMode()).toBe(false);
+    expect(component.serviceIdModel().servicename).toBe("");
   });
 
   it("should call save when form is valid", async () => {
-    component.serviceIdForm.patchValue({
+    component.serviceIdModel.update(m => ({
+      ...m,
       servicename: "test",
       description: "desc"
-    });
+    }));
 
     const success = await component.save();
 
@@ -90,10 +91,11 @@ describe("NewServiceIdComponent", () => {
   });
 
   it("should keep on page if save fails", async () => {
-    component.serviceIdForm.patchValue({
+    component.serviceIdModel.update(m => ({
+      ...m,
       servicename: "test",
       description: "desc"
-    });
+    }));
     serviceIdServiceMock.postServiceId = jest.fn().mockRejectedValue(new Error("Save failed"));
 
     const success = await component.save();
@@ -122,11 +124,12 @@ describe("NewServiceIdComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.serviceIdForm.patchValue({
+      component.serviceIdModel.update(m => ({
+        ...m,
         servicename: "test",
         description: "desc"
-      });
-      component.serviceIdForm.markAsDirty();
+      }));
+      component.serviceIdForm().markAsDirty();
 
       component.onCancel();
 
@@ -142,11 +145,12 @@ describe("NewServiceIdComponent", () => {
 
     it("should navigate back when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.serviceIdForm.patchValue({
+      component.serviceIdModel.update(m => ({
+        ...m,
         servicename: "test",
         description: "desc"
-      });
-      component.serviceIdForm.markAsDirty();
+      }));
+      component.serviceIdForm().markAsDirty();
 
       component.onCancel();
 
@@ -157,11 +161,12 @@ describe("NewServiceIdComponent", () => {
     });
 
     it("should navigate back when user selects 'save-exit' and save succeeds", async () => {
-      component.serviceIdForm.patchValue({
+      component.serviceIdModel.update(m => ({
+        ...m,
         servicename: "test",
         description: "desc"
-      });
-      component.serviceIdForm.markAsDirty();
+      }));
+      component.serviceIdForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
       pendingChangesService.save.mockReturnValue(Promise.resolve(true));
 
@@ -174,11 +179,12 @@ describe("NewServiceIdComponent", () => {
     });
 
     it("should NOT navigate back when user selects 'save-exit' but save fails", async () => {
-      component.serviceIdForm.patchValue({
+      component.serviceIdModel.update(m => ({
+        ...m,
         servicename: "test",
         description: "desc"
-      });
-      component.serviceIdForm.markAsDirty();
+      }));
+      component.serviceIdForm().markAsDirty();
       serviceIdServiceMock.postServiceId = jest.fn().mockRejectedValue(new Error("Save failed"));
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
       pendingChangesService.save.mockReturnValue(Promise.resolve(false));
@@ -192,8 +198,8 @@ describe("NewServiceIdComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.serviceIdForm.patchValue({ servicename: "" });
-      component.serviceIdForm.markAsDirty();
+      component.serviceIdModel.update(m => ({ ...m, servicename: "" }));
+      component.serviceIdForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
       component.onCancel();
@@ -207,11 +213,12 @@ describe("NewServiceIdComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
-      component.serviceIdForm.patchValue({
+      component.serviceIdModel.update(m => ({
+        ...m,
         servicename: "test",
         description: "desc"
-      });
-      component.serviceIdForm.markAsDirty();
+      }));
+      component.serviceIdForm().markAsDirty();
 
       component.onCancel();
 

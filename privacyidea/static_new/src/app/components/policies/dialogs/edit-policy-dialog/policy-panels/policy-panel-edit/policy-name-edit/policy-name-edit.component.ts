@@ -18,8 +18,8 @@
  **/
 
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { Component, model } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, computed, model } from "@angular/core";
+import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -29,8 +29,12 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
   templateUrl: "./policy-name-edit.component.html",
   styleUrl: "./policy-name-edit.component.scss",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule, ClearableInputComponent]
+  imports: [MatFormFieldModule, MatInputModule, FormField, TextFieldModule, ClearableInputComponent]
 })
 export class PolicyNameEditComponent {
   readonly policyName = model.required<string>();
+  readonly nameField = form(this.policyName, (f) => {
+    required(f);
+    pattern(f, /^[a-zA-Z0-9._-]*$/);
+  });
 }

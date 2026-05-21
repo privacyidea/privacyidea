@@ -17,8 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
@@ -33,7 +31,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
-import { map, startWith } from "rxjs";
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -44,14 +41,12 @@ export interface SelectedUserAssignResult {
 @Component({
   selector: "app-selected-user-attach-dialog",
   imports: [
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatError,
     MatFormField,
     MatLabel,
     MatSelect,
-    ReactiveFormsModule,
     MatOption,
     MatInput,
     MatIcon,
@@ -71,31 +66,14 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<a
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);
+  selectedRealm = signal(this.userService.selectedUserRealm());
+  selectedUser = signal<UserData | null>(null);
+  userFilter = signal(this.userService.selectionFilter());
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
-  selectedUserRealmControl = new FormControl<string>(this.userService.selectedUserRealm(), {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
-  userFilterControl = new FormControl<string | UserData | null>(this.userService.selectionFilter(), {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
+  readonly realmInvalid = computed(() => !this.selectedRealm());
+  readonly userInvalid = computed(() => !this.selectedUser());
   selectionContainsAssignedToken = computed(() =>
     this.tokenService.tokenSelection().some((token) => token.username && token.username !== "")
-  );
-  private readonly realmInvalid = toSignal(
-    this.selectedUserRealmControl.statusChanges.pipe(
-      startWith(this.selectedUserRealmControl.status),
-      map(() => this.selectedUserRealmControl.invalid)
-    ),
-    { initialValue: this.selectedUserRealmControl.invalid }
-  );
-  private readonly userInvalid = toSignal(
-    this.userFilterControl.statusChanges.pipe(
-      startWith(this.userFilterControl.status),
-      map(() => this.userFilterControl.invalid)
-    ),
-    { initialValue: this.userFilterControl.invalid }
   );
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
@@ -108,22 +86,41 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<a
     }
   ]);
 
-  ngOnInit(): void {
-    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
-      if (value !== this.userService.selectedUserRealm()) {
-        this.userService.selectedUserRealm.set(value ?? "");
-      }
-    });
+  onRealmChange(realm: string): void {
+    this.selectedRealm.set(realm);
+    this.userService.selectedUserRealm.set(realm);
+    this.selectedUser.set(null);
+    this.userFilter.set("");
+    this.userService.selectionFilter.set("");
   }
+
+  onUserFilterInput(value: string): void {
+    this.userFilter.set(value);
+    this.userService.selectionFilter.set(value);
+    if (!value) {
+      this.selectedUser.set(null);
+    }
+  }
+
+  onUserSelected(user: UserData): void {
+    this.selectedUser.set(user);
+    this.userFilter.set(user.username);
+    this.userService.selectionFilter.set(user.username);
+  }
+
+  displayUser = (value: UserData | string | null): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.username;
+  };
 
   togglePinVisibility(): void {
     this.hidePin.update((prev) => !prev);
   }
 
   onConfirm(): void {
-    const realm = this.selectedUserRealmControl.value;
-    const userValue = this.userFilterControl.value;
-    const user = typeof userValue === "string" ? null : userValue;
+    const realm = this.selectedRealm();
+    const user = this.selectedUser();
 
     if (this.pinsMatch() && !!realm && !!user) {
       this.dialogRef.close({

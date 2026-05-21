@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
@@ -49,7 +48,6 @@ import { lastValueFrom } from "rxjs";
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    FormsModule,
     MatButtonModule,
     MatIcon,
     MachineResolverHostsTabComponent,
@@ -87,6 +85,10 @@ export class MachineResolverPanelNewComponent implements OnInit, OnDestroy {
     if (current.resolvername.trim() !== "") return true;
     if (Object.keys(current.data).length > 2) return true; // More than resolver and type fields
     return false;
+  });
+  readonly nameHasPatternError = computed(() => {
+    const name = this.newMachineResolver().resolvername;
+    return name.length > 0 && !/^[a-zA-Z0-9._-]*$/.test(name);
   });
   readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
 

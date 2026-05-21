@@ -20,7 +20,6 @@
 import {
   Component,
   computed,
-  DestroyRef,
   inject,
   linkedSignal,
   OnDestroy,
@@ -29,8 +28,7 @@ import {
   Signal,
   WritableSignal
 } from "@angular/core";
-import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -62,11 +60,10 @@ export interface CreateUserDialogData {
     MatLabel,
     MatOption,
     MatSelect,
-    FormsModule,
     MatHint,
     MatError,
     MatInput,
-    ReactiveFormsModule,
+    FormField,
     MatButtonModule,
     MatIconModule,
     ScrollToTopDirective
@@ -82,37 +79,27 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly destroyRef = inject(DestroyRef);
 
   realm = linkedSignal(() => this.userService.selectedUserRealm() || "");
-  username = new FormControl("", { nonNullable: true, validators: [Validators.required] });
-  resolverControl = new FormControl("", { nonNullable: true, validators: [Validators.required] });
-  selectedResolver = toSignal(this.resolverControl.valueChanges, { initialValue: this.resolverControl.value });
-  inputGroup = new FormGroup({
-    username: this.username,
-    resolver: this.resolverControl
-  });
 
-  canSave = signal(this.inputGroup.valid);
-  inputGroupPristine = signal(this.inputGroup.pristine);
-  isDirty = computed(() => !this.inputGroupPristine() || !this.editUserDataIsEmpty());
+  username = signal<string>("");
+  resolver = signal<string>("");
+
+  usernameForm = form(this.username, (f) => { required(f); });
+  resolverForm = form(this.resolver, (f) => { required(f); });
+
+  canSave = computed(() => this.usernameForm().valid() && this.resolverForm().valid());
+  isDirty = computed(() =>
+    this.usernameForm().dirty() || this.resolverForm().dirty() || !this.editUserDataIsEmpty()
+  );
 
   constructor() {
-    this.inputGroup.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.canSave.set(this.inputGroup.valid);
-      this.inputGroupPristine.set(this.inputGroup.pristine);
-    });
-    this.inputGroup.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.inputGroupPristine.set(this.inputGroup.pristine);
-    });
-
     const realm = this.realm();
-    let resolver: string | undefined;
     if (realm) {
       const realmConfig = this.realmService.realms()[realm];
-      resolver = realmConfig?.resolver[0]?.name;
+      const firstResolver = realmConfig?.resolver[0]?.name;
+      if (firstResolver) this.resolver.set(firstResolver);
     }
-    this.resolverControl.setValue(resolver || "");
   }
 
   ngOnInit(): void {
@@ -135,7 +122,7 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
     const realms = this.realmService.realms();
     const result: string[] = [];
     for (const [realmName, realmObj] of Object.entries(realms)) {
-      if (realmObj.resolver.some((resolver) => resolver.name === this.selectedResolver())) {
+      if (realmObj.resolver.some((r) => r.name === this.resolver())) {
         result.push(realmName);
       }
     }
@@ -143,14 +130,15 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
   });
 
   async onSave(): Promise<boolean> {
-    if (this.inputGroup.invalid) {
-      this.inputGroup.markAllAsTouched();
+    if (!this.canSave()) {
+      this.usernameForm().markAsTouched();
+      this.resolverForm().markAsTouched();
       this.notificationService.warning($localize`Please fill in all required fields.`);
       return false;
     }
-    this.editedUserData().username = this.username.value;
+    this.editedUserData().username = this.username();
     return new Promise((resolve) => {
-      this.userService.createUser(this.resolverControl.value, this.editedUserData()).subscribe({
+      this.userService.createUser(this.resolver(), this.editedUserData()).subscribe({
         next: (success) => {
           if (success) {
             this.userService.usersResource.reload();

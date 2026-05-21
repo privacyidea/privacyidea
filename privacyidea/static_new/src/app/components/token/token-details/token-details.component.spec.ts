@@ -29,7 +29,7 @@ import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
-import { MachineService, TokenApplication } from "@services/machine/machine.service";
+import { MachineService } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -59,9 +59,9 @@ describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
   let component: TokenDetailsComponent;
 
-  let tokenSvc: MockTokenService;
-  let containerSvc: MockContainerService;
-  let machineSvc: MockMachineService;
+  let tokenService: MockTokenService;
+  let containerService: MockContainerService;
+  let machineService: MockMachineService;
   let pendingChangesService: MockPendingChangesService;
 
   const matDialogOpen = jest.fn();
@@ -99,16 +99,16 @@ describe("TokenDetailsComponent", () => {
       ]
     }).compileComponents();
 
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
-    machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
-    jest
-      .mocked(tokenSvc.getTokengroups)
+    (tokenService.getTokengroups as any) = jest
+      .fn()
       .mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
-    jest.mocked(tokenSvc.setTokengroup).mockReturnValue(of({}));
-    jest.mocked(tokenSvc.setTokenRealm).mockReturnValue(of({}));
+    (tokenService.setTokengroup as any) = jest.fn().mockReturnValue(of({}));
+    (tokenService.setTokenRealm as any) = jest.fn().mockReturnValue(of({}));
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -137,31 +137,31 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("resetFailCount calls service and reloads", () => {
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
     component.resetFailCount();
-    expect(tokenSvc.resetFailCount).toHaveBeenCalledWith("Mock serial");
+    expect(tokenService.resetFailCount).toHaveBeenCalledWith("Mock serial");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer assigns when a container is selected", () => {
-    containerSvc.selectedContainerSerial.set("container1");
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    containerService.selectedContainerSerial.set("container1");
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveContainer();
 
-    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerService.addToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainerSerial.set("");
-    (containerSvc.addToken as jest.Mock).mockClear();
+    containerService.selectedContainerSerial.set("");
+    (containerService.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
 
-    expect(containerSvc.addToken).not.toHaveBeenCalled();
+    expect(containerService.addToken).not.toHaveBeenCalled();
   });
 
   it("removeFromContainer removes token and reloads when selected", () => {
@@ -171,12 +171,12 @@ describe("TokenDetailsComponent", () => {
       container_serial: "container1"
     });
 
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.removeFromContainer();
 
-    expect(containerSvc.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerService.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
@@ -187,11 +187,11 @@ describe("TokenDetailsComponent", () => {
       container_serial: ""
     });
 
-    (containerSvc.removeToken as jest.Mock).mockClear();
+    (containerService.removeToken as jest.Mock).mockClear();
 
     component.removeFromContainer();
 
-    expect(containerSvc.removeToken).not.toHaveBeenCalled();
+    expect(containerService.removeToken).not.toHaveBeenCalled();
   });
 
   it("toggleTokenEdit('tokengroup') loads tokengroups once and toggles editing", () => {
@@ -208,7 +208,7 @@ describe("TokenDetailsComponent", () => {
     component.tokengroupOptions.set([]);
     component.toggleTokenEdit(tgEl);
 
-    expect(tokenSvc.getTokengroups).toHaveBeenCalled();
+    expect(tokenService.getTokengroups as any).toHaveBeenCalled();
     expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
     expect(tgEl.isEditing()).toBe(true);
   });
@@ -220,12 +220,12 @@ describe("TokenDetailsComponent", () => {
       isEditing: signal(true)
     };
 
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveTokenEdit(el);
 
-    expect(tokenSvc.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
+    expect(tokenService.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
@@ -238,12 +238,12 @@ describe("TokenDetailsComponent", () => {
     };
 
     component.selectedTokengroup.set(["groupB"]);
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveTokenEdit(el as unknown as EditableElement<string>);
 
-    expect(tokenSvc.setTokengroup).toHaveBeenCalledWith("Mock serial", ["groupB"]);
+    expect(tokenService.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
@@ -255,10 +255,10 @@ describe("TokenDetailsComponent", () => {
       isEditing: signal(true)
     };
 
-    containerSvc.selectedContainerSerial.set("X");
+    containerService.selectedContainerSerial.set("X");
     component.cancelTokenEdit(el);
 
-    expect(containerSvc.selectedContainerSerial()).toBe("");
+    expect(containerService.selectedContainerSerial()).toBe("");
     expect(el.isEditing()).toBe(false);
   });
 
@@ -280,7 +280,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
     matDialogOpen.mockReturnValue({
       afterClosed: () => of(of({}))
@@ -313,10 +313,10 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("isAttachedToMachine is true when applications exist", () => {
-    machineSvc.tokenApplications.set([]);
+    machineService.tokenApplications.set([]);
     expect(component.isAttachedToMachine()).toBe(false);
 
-    machineSvc.tokenApplications.set([{ id: 1 } as unknown as TokenApplication]);
+    machineService.tokenApplications.set([{ id: 1 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
 

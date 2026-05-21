@@ -32,7 +32,8 @@
         <input
           class="action-value-input"
           matInput
-          [(ngModel)]="value"
+          [value]="value()"
+          (input)="value.set($any($event.target).value)"
           (keydown.enter)="addOption()" />
       </mat-form-field>
     }

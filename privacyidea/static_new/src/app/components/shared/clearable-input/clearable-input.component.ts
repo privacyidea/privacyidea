@@ -17,13 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 
 @Component({
   selector: "app-clearable-input",
   standalone: true,
-  imports: [ReactiveFormsModule, ClearButtonComponent],
+  imports: [ClearButtonComponent],
   templateUrl: "./clearable-input.component.html",
   styleUrl: "./clearable-input.component.scss"
 })

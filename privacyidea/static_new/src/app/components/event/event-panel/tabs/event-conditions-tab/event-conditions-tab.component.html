@@ -41,8 +41,8 @@
                 matInput
                 type="text"
                 placeholder="Search condition ..."
-                [ngModel]="searchTerm()"
-                (ngModelChange)="searchTerm.set($event)" />
+                [value]="searchTerm()"
+                (input)="searchTerm.set($event['target']['value'])" />
             </app-clearable-input>
           </mat-form-field>
 

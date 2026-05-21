@@ -45,7 +45,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
@@ -76,7 +75,6 @@ const columnKeysMap = [
 @Component({
   selector: "app-user-table",
   imports: [
-    FormsModule,
     MatCell,
     MatCellDef,
     MatFormField,

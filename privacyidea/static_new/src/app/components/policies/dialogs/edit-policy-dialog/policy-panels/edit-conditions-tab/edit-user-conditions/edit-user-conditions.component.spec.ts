@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
 import { PolicyService } from "@services/policies/policies.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -33,7 +32,7 @@ describe("EditUserConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditUserConditionsComponent, ReactiveFormsModule],
+      imports: [EditUserConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },
@@ -79,8 +78,8 @@ describe("EditUserConditionsComponent", () => {
   });
 
   it("should validate that user does not contain commas", () => {
-    component.userFormControl.setValue("user,name");
-    expect(component.userFormControl.invalid).toBe(true);
-    expect(component.userFormControl.hasError("includesComma")).toBe(true);
+    component.userSignal.set("user,name");
+    expect(component.userField().valid()).toBe(false);
+    expect(component.userField().errors().some((e) => e.kind === "includesComma")).toBe(true);
   });
 });

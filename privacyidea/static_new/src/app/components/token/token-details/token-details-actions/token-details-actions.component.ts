@@ -19,7 +19,6 @@
 
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, Input, input, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -53,7 +52,6 @@ import { lastValueFrom, switchMap } from "rxjs";
   selector: "app-token-details-actions",
   standalone: true,
   imports: [
-    FormsModule,
     MatIcon,
     MatDivider,
     NgClass,

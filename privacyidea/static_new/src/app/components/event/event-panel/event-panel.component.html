@@ -80,26 +80,27 @@
               (clearButtonClick)="updateEventHandler('name', '')"
               [showClearButton]="!!editEvent().name">
               <input
-                #nameInput="ngModel"
-                (ngModelChange)="updateEventHandler('name', $event)"
-                [(ngModel)]="editEvent().name"
+                (input)="updateEventHandler('name', $event['target']['value'])"
+                (blur)="nameTouched.set(true)"
+                [value]="editEvent().name"
+                [appErrorState]="showNameError()"
                 matInput
-                pattern="^[a-zA-Z0-9._-]*$"
                 required
                 type="text" />
             </app-clearable-input>
-            @if (nameInput.errors?.['required'] && (nameInput.dirty || nameInput.touched)) {
+            @if (showNameError() && editEvent().name === '') {
               <mat-error i18n>Name is <strong>required</strong>.</mat-error>
             }
-            @if (nameInput.errors?.['pattern'] && (nameInput.dirty || nameInput.touched)) {
+            @if (showNameError() && editEvent().name !== '') {
               <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
             }
           </mat-form-field>
           <mat-form-field class="input-width-l">
             <mat-label i18n>Handler Module</mat-label>
             <mat-select
-              (ngModelChange)="setNewHandlerModule($event)"
-              [ngModel]="eventService.selectedHandlerModule()"
+              (selectionChange)="setNewHandlerModule($event.value)"
+              [value]="eventService.selectedHandlerModule()"
+              [appErrorState]="showHandlerModuleError()"
               required>
               @for (module of eventService.eventHandlerModules(); track module) {
                 <mat-option [value]="module">{{ module }}</mat-option>
@@ -117,7 +118,8 @@
           <mat-label i18n>Position</mat-label>
           <mat-select
             (selectionChange)="updateEventHandler('position', $event.value)"
-            [ngModel]="editEvent().position"
+            [value]="editEvent().position"
+            [appErrorState]="showPositionError()"
             required>
             @for (position of eventService.modulePositions(); track position) {
               <mat-option [value]="position">{{ position }}</mat-option>
@@ -129,8 +131,9 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Ordering</mat-label>
           <input
-            (ngModelChange)="updateEventHandler('ordering', $event)"
-            [(ngModel)]="editEvent().ordering"
+            (input)="updateEventHandler('ordering', +$event['target']['value'])"
+            [value]="editEvent().ordering"
+            [appErrorState]="showOrderingError()"
             matInput
             required
             type="number" />

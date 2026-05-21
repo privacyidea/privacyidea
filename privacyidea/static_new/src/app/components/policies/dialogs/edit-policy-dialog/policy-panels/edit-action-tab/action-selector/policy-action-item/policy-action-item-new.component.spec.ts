@@ -19,7 +19,6 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
@@ -61,12 +60,12 @@ describe("PolicyActionItemComponent", () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [PolicyActionItemComponent, FormsModule, MatSelectModule],
+      imports: [PolicyActionItemComponent, MatSelectModule],
       providers: [{ provide: PolicyService, useValue: policyServiceMock }]
     })
       .overrideComponent(PolicyActionItemComponent, {
         set: {
-          imports: [MockSelectorButtonsComponent, FormsModule, MatSelectModule]
+          imports: [MockSelectorButtonsComponent, MatSelectModule]
         }
       })
       .compileComponents();

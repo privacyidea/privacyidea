@@ -61,8 +61,8 @@ class DummyPushApiPayloadMapper {
 describe("EnrollPushComponent", () => {
   let fixture: ComponentFixture<EnrollPushComponent>;
   let component: EnrollPushComponent;
-  let tokenSvc: jest.Mocked<MockTokenService>;
-  let dialogSvc: MockDialogService;
+  let tokenService: jest.Mocked<MockTokenService>;
+  let dialogService: MockDialogService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -78,8 +78,8 @@ describe("EnrollPushComponent", () => {
 
     fixture = TestBed.createComponent(EnrollPushComponent);
     component = fixture.componentInstance;
-    tokenSvc = TestBed.inject(TokenService) as unknown as jest.Mocked<MockTokenService>;
-    dialogSvc = TestBed.inject(DialogService) as unknown as MockDialogService;
+    tokenService = TestBed.inject(TokenService) as unknown as jest.Mocked<MockTokenService>;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -103,11 +103,11 @@ describe("EnrollPushComponent", () => {
     const initResp = makeInitResp("S-1");
     const pollResp = makePollResp("enrolled");
 
-    tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
-    tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
+    tokenService.enrollToken.mockReturnValue(of(initResp) as any);
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     const finalResponsePromise = component.onEnrollmentResponse(initResponse as EnrollmentResponse);
 
@@ -122,44 +122,44 @@ describe("EnrollPushComponent", () => {
       type: "push"
     });
 
-    expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(1);
-    expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
-    expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(1);
+    expect(tokenService.enrollToken).toHaveBeenCalledTimes(1);
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
+    expect(tokenService.pollTokenRolloutState).toHaveBeenCalledTimes(1);
 
     expect(component.pollResponse()).toBeUndefined();
   });
 
   it("keeps dialog open when rollout_state is clientwait", async () => {
     const pollResp = makePollResp("clientwait");
-    tokenSvc.enrollToken.mockReturnValue(of(makeInitResp()) as any);
-    tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
+    tokenService.enrollToken.mockReturnValue(of(makeInitResp()) as any);
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
     fixture.detectChanges();
 
-    expect(dialogSvc.openDialog).toHaveBeenCalled();
+    expect(dialogService.openDialog).toHaveBeenCalled();
     expect(component.pollResponse()).toEqual(pollResp);
   });
 
   it("reopenDialogChange provides a Promise callback that re-triggers polling when dialog is not open", async () => {
     const initResp = makeInitResp("S-2");
     const pollResp = makePollResp("done");
-    tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
-    tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
+    tokenService.enrollToken.mockReturnValue(of(initResp) as any);
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     let reopenFn: ReopenDialogFn;
     component.reopenDialogChange.subscribe((fn) => (reopenFn = fn));
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
     fixture.detectChanges();
     expect(typeof reopenFn!).toBe("function");
-    dialogSvc.closeAllDialogs();
+    dialogService.closeAllDialogs();
     fixture.detectChanges();
     const r2 = await reopenFn!();
 
@@ -170,22 +170,22 @@ describe("EnrollPushComponent", () => {
         rollout_state: "done"
       }
     });
-    expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(2);
+    expect(tokenService.pollTokenRolloutState).toHaveBeenCalledTimes(2);
   });
 
   it("stopPolling is invoked when dialog afterClosed emits", async () => {
     const initResp = makeInitResp("S-3");
     const pollResp = makePollResp("done");
-    tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
-    tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
+    tokenService.enrollToken.mockReturnValue(of(initResp) as any);
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(tokenSvc.stopPolling).toHaveBeenCalled();
+    expect(tokenService.stopPolling).toHaveBeenCalled();
   });
 });

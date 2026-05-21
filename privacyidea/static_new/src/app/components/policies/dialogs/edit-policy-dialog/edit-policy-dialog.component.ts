@@ -32,7 +32,6 @@ import {
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
-import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -48,13 +47,7 @@ import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-t
 @Component({
   selector: "app-edit-policy-dialog",
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    PolicyPanelEditComponent,
-    PolicyTemplatePickerComponent,
-    MatButtonModule,
-    MatIconModule
-  ],
+  imports: [PolicyPanelEditComponent, PolicyTemplatePickerComponent, MatButtonModule, MatIconModule],
   templateUrl: "./edit-policy-dialog.component.html",
   styleUrl: "./edit-policy-dialog.component.scss"
 })

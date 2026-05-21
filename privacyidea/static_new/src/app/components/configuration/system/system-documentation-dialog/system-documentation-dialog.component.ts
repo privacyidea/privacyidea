@@ -18,7 +18,7 @@
  **/
 import { CdkTextareaAutosize } from "@angular/cdk/text-field";
 import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+
 import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -32,7 +32,6 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
   standalone: true,
   imports: [
     MatDialogModule,
-    FormsModule,
     MatFormField,
     MatLabel,
     MatInput,

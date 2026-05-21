@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -68,7 +67,7 @@ describe("TokenEnrollmentComponent", () => {
   let selfComponent: TokenEnrollmentSelfServiceComponent;
 
   let tokenService: MockTokenService;
-  let userSvc: MockUserService;
+  let userService: MockUserService;
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
   let authServiceMock: MockAuthService;
@@ -131,7 +130,7 @@ describe("TokenEnrollmentComponent", () => {
     selfComponent = selfFixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
@@ -162,19 +161,18 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   it("no default values for validity period", () => {
-    expect(component.selectedStartDateControl.value).toBeNull();
-    expect(component.selectedEndDateControl.value).toBeNull();
+    expect(component.selectedStartDate()).toBeNull();
+    expect(component.selectedEndDate()).toBeNull();
   });
 
-  it("pinMismatchValidator: returns error when PINs differ; null when equal", () => {
-    const group = new FormGroup({
-      setPin: new FormControl("1234", { nonNullable: true }),
-      repeatPin: new FormControl("9999", { nonNullable: true })
-    });
-    expect(TokenEnrollmentComponent.pinMismatchValidator(group)).toEqual({ pinMismatch: true });
+  it("repeatPinForm is invalid when PINs differ and valid when equal", () => {
+    component.setPin.set("1234");
+    component.repeatPin.set("9999");
+    expect(component.repeatPinForm().valid()).toBe(false);
+    expect(component.repeatPinForm().errors().some((e) => e.kind === "pinMismatch")).toBe(true);
 
-    group.get("repeatPin")!.setValue("1234");
-    expect(TokenEnrollmentComponent.pinMismatchValidator(group)).toBeNull();
+    component.repeatPin.set("1234");
+    expect(component.repeatPinForm().valid()).toBe(true);
   });
 
   it("isUserRequired depends on selected token type", () => {
@@ -191,49 +189,6 @@ describe("TokenEnrollmentComponent", () => {
     expect(component.isUserRequired()).toBe(true);
   });
 
-  it("userExistsValidator flags unknown usernames and accepts existing ones", () => {
-    userSvc.users.set([
-      {
-        username: "alice",
-        resolver: "r1",
-        description: "",
-        editable: false,
-        email: "",
-        givenname: "",
-        mobile: "",
-        phone: "",
-        surname: "",
-        userid: "",
-        user_realm: ""
-      } as any,
-      {
-        username: "bob",
-        resolver: "r1",
-        description: "",
-        editable: false,
-        email: "",
-        givenname: "",
-        mobile: "",
-        phone: "",
-        surname: "",
-        userid: "",
-        user_realm: ""
-      } as any
-    ]);
-
-    const ctrl = new FormControl<string | any | null>("charlie", { nonNullable: true });
-    expect(component.userExistsValidator(ctrl as any)).toEqual({ userNotInRealm: { value: "charlie" } });
-
-    ctrl.setValue("alice");
-    expect(component.userExistsValidator(ctrl as any)).toBeNull();
-
-    ctrl.setValue({ username: "alice" });
-    expect(component.userExistsValidator(ctrl as any)).toBeNull();
-
-    ctrl.setValue("");
-    expect(component.userExistsValidator(ctrl as any)).toBeNull();
-  });
-
   describe("enrollToken()", () => {
     it("snacks and returns when no token type selected", async () => {
       (tokenService.selectedTokenType as any).set("");
@@ -245,12 +200,12 @@ describe("TokenEnrollmentComponent", () => {
 
     it("snacks when user is required but missing", async () => {
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
-      userSvc.selectedUser.set(null);
+      userService.selectedUser.set(null);
 
-      component.setPinControl.setValue("1234");
-      component.repeatPinControl.setValue("1234");
-      component.selectedUserRealmControl.setValue("realm1");
-      component.userFilterControl.setValue("alice");
+      component.setPin.set("1234");
+      component.repeatPin.set("1234");
+      userService.selectedUserRealm.set("realm1");
+      userService.selectionFilter.set("alice");
 
       await (component as any).enrollToken();
 
@@ -261,10 +216,10 @@ describe("TokenEnrollmentComponent", () => {
 
     it("snacks when form is invalid (e.g., PIN mismatch)", async () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      userSvc.selectedUser.set(null);
+      userService.selectedUser.set(null);
 
-      component.setPinControl.setValue("1234");
-      component.repeatPinControl.setValue("9999");
+      component.setPin.set("1234");
+      component.repeatPin.set("9999");
 
       await (component as any).enrollToken();
 
@@ -276,8 +231,8 @@ describe("TokenEnrollmentComponent", () => {
     it("snacks when clickEnroll is not provided", async () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
 
-      component.setPinControl.setValue("1234");
-      component.repeatPinControl.setValue("1234");
+      component.setPin.set("1234");
+      component.repeatPin.set("1234");
 
       component.enrollmentArgsGetter = undefined;
 
@@ -324,8 +279,8 @@ describe("TokenEnrollmentComponent", () => {
     it("Setting validity dates works", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
       component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
-      component.selectedStartDateControl.setValue(new Date("2026-01-01"));
-      component.selectedEndDateControl.setValue(new Date("2026-12-31"));
+      component.selectedStartDate.set(new Date("2026-01-01"));
+      component.selectedEndDate.set(new Date("2026-12-31"));
 
       component.enrollToken();
 
@@ -396,8 +351,8 @@ describe("TokenEnrollmentComponent", () => {
 
       it("handles clickEnroll rejection by showing error snack", async () => {
         tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-        component.setPinControl.setValue("1111");
-        component.repeatPinControl.setValue("1111");
+        component.setPin.set("1111");
+        component.repeatPin.set("1111");
 
         const error = { error: { result: { error: { message: "nope" } } } };
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({});
@@ -672,12 +627,13 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   describe("ngOnInit subscriptions", () => {
-    it("selectedContainerControl updates containerService.selectedContainer", () => {
+    it("selectedContainer signal updates containerService.selectedContainer", () => {
       const containers = TestBed.inject(ContainerService) as unknown as MockContainerService;
 
-      component.selectedContainerControl.setValue("CONT-9");
+      component.selectedContainer.set("CONT-9");
       component.ngOnInit();
-      component.selectedContainerControl.setValue("CONT-42");
+      component.selectedContainer.set("CONT-42");
+      fixture.detectChanges();
 
       expect(containers.selectedContainerSerial()).toBe("CONT-42");
     });
@@ -811,8 +767,7 @@ describe("TokenEnrollmentComponent", () => {
         req2.flush("");
       });
 
-      it("sets description validator correctly when description is required", () => {
-        // Set require_description for HOTP
+      it("description form reports required error when description is required and empty", () => {
         authServiceMock.authData.set({
           ...authServiceMock.authData()!,
           require_description: ["hotp"],
@@ -820,19 +775,14 @@ describe("TokenEnrollmentComponent", () => {
           default_tokentype: "hotp"
         });
         wizardFixture.detectChanges();
-        wizardComponent.setDescriptionValidators();
-        wizardFixture.detectChanges();
         expect(wizardComponent.descriptionRequired()).toBe(true);
-        expect(wizardComponent.descriptionControl.hasValidator(Validators.required)).toBe(true);
-        // Should have required error if empty
-        wizardComponent.descriptionControl.setValue("");
-        wizardComponent.descriptionControl.markAsTouched();
-        wizardComponent.descriptionControl.updateValueAndValidity();
-        expect(wizardComponent.descriptionControl.hasError("required")).toBe(true);
+        wizardComponent.description.set("");
+        wizardComponent.descriptionForm().markAsTouched();
+        wizardFixture.detectChanges();
+        expect(wizardComponent.descriptionForm().errors().some((e) => e.kind === "required")).toBe(true);
       });
 
-      it("does not set required validator if description is not required", () => {
-        // Remove require_description
+      it("description form is valid when description is not required", () => {
         authServiceMock.authData.set({
           ...authServiceMock.authData()!,
           require_description: ["totp"],
@@ -840,14 +790,12 @@ describe("TokenEnrollmentComponent", () => {
           default_tokentype: "hotp"
         });
         wizardFixture.detectChanges();
-        wizardComponent.setDescriptionValidators();
-        wizardFixture.detectChanges();
         expect(wizardComponent.descriptionRequired()).toBe(false);
-        expect(wizardComponent.descriptionControl.hasValidator(Validators.required)).toBe(false);
-        wizardComponent.descriptionControl.setValue("");
-        wizardComponent.descriptionControl.markAsTouched();
-        wizardComponent.descriptionControl.updateValueAndValidity();
-        expect(wizardComponent.descriptionControl.hasError("required")).toBe(false);
+        wizardComponent.description.set("");
+        wizardComponent.descriptionForm().markAsTouched();
+        wizardFixture.detectChanges();
+        expect(wizardComponent.descriptionForm().errors().some((e) => e.kind === "required")).toBe(false);
+        expect(wizardComponent.descriptionForm().valid()).toBe(true);
       });
 
       it("shows description input only if description is required", () => {
@@ -884,7 +832,7 @@ describe("TokenEnrollmentComponent", () => {
     it("hasChanges reflects the form's dirty state", () => {
       const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
       expect(fn()).toBe(false);
-      component.formGroupSignal().markAsDirty();
+      component.descriptionForm().markAsDirty();
       expect(fn()).toBe(true);
     });
 

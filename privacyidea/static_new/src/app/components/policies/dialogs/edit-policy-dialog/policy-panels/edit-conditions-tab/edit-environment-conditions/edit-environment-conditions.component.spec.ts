@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
 import { EditEnvironmentConditionsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
@@ -33,7 +32,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditEnvironmentConditionsComponent, ReactiveFormsModule],
+      imports: [EditEnvironmentConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: SystemService, useClass: MockSystemService },
@@ -59,8 +58,8 @@ describe("EditEnvironmentConditionsComponent", () => {
   });
 
   it("should initialize form controls with policy values", () => {
-    expect(component.validTimeFormControl.value).toBe("Mon-Fri: 9-18");
-    expect(component.clientModel()).toBe("10.0.0.0/8");
+    expect(component.validTimeSignal()).toBe("Mon-Fri: 9-18");
+    expect(component.clientSignal()).toBe("10.0.0.0/8");
   });
 
   it("falls back to empty strings when policy has no time or client", () => {
@@ -68,8 +67,8 @@ describe("EditEnvironmentConditionsComponent", () => {
     freshFixture.componentRef.setInput("policy", { name: "no-env-policy" });
     freshFixture.detectChanges();
     const fresh = freshFixture.componentInstance;
-    expect(fresh.validTimeFormControl.value).toBe("");
-    expect(fresh.clientModel()).toBe("");
+    expect(fresh.validTimeSignal()).toBe("");
+    expect(fresh.clientSignal()).toBe("");
   });
 
   it("requests known clients for autocomplete on init", () => {
@@ -77,16 +76,16 @@ describe("EditEnvironmentConditionsComponent", () => {
   });
 
   it("should validate client format correctly", () => {
-    component.clientModel.set("invalid-ip");
-    expect(component.clientForm().invalid()).toBe(true);
+    component.clientSignal.set("invalid-ip");
+    expect(component.clientField().valid()).toBe(false);
 
-    component.clientModel.set("192.168.1.1");
-    expect(component.clientForm().valid()).toBe(true);
+    component.clientSignal.set("192.168.1.1");
+    expect(component.clientField().valid()).toBe(true);
   });
 
   it("should emit edits when adding a user agent", () => {
     const spy = jest.spyOn(component.policyEdit, "emit");
-    component.addUserAgentFormControl.setValue("NewAgent");
+    component.addUserAgentSignal.set("NewAgent");
     component.addUserAgent();
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -97,7 +96,7 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   it("should clear valid time control", () => {
     component.clearValidTimeControl();
-    expect(component.validTimeFormControl.value).toBe("");
+    expect(component.validTimeSignal()).toBe("");
   });
 
   describe("knownClients", () => {
@@ -150,32 +149,32 @@ describe("EditEnvironmentConditionsComponent", () => {
     });
 
     it("returns all clients when no search term is entered", () => {
-      component.clientModel.set("");
+      component.clientSignal.set("");
       expect(component.filteredKnownClients()).toHaveLength(3);
     });
 
     it("filters by IP substring", () => {
-      component.clientModel.set("192.168");
+      component.clientSignal.set("192.168");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
     it("filters by hostname case-insensitively", () => {
-      component.clientModel.set("ROUTER");
+      component.clientSignal.set("ROUTER");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
     it("filters by application name", () => {
-      component.clientModel.set("otherapp");
+      component.clientSignal.set("otherapp");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["10.0.0.1"]);
     });
 
     it("strips a leading exclamation mark from the search term", () => {
-      component.clientModel.set("!192.168");
+      component.clientSignal.set("!192.168");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
     it("uses only the segment after the last comma", () => {
-      component.clientModel.set("10.0.0.0/8, !192");
+      component.clientSignal.set("10.0.0.0/8, !192");
       expect(component.filteredKnownClients().map((c) => c.ip)).toEqual(["192.168.1.1"]);
     });
 
@@ -185,7 +184,7 @@ describe("EditEnvironmentConditionsComponent", () => {
         dict["App"].push({ ip: `10.0.0.${i}` });
       }
       clientsMock.setClients(dict);
-      component.clientModel.set("");
+      component.clientSignal.set("");
       expect(component.filteredKnownClients()).toHaveLength(20);
     });
   });
@@ -300,20 +299,20 @@ describe("EditEnvironmentConditionsComponent", () => {
   describe("setClients", () => {
     it("does not emit when the client value is invalid", () => {
       const spy = jest.spyOn(component.policyEdit, "emit");
-      component.clientModel.set("not-an-ip");
+      component.clientSignal.set("not-an-ip");
       expect(spy).not.toHaveBeenCalled();
     });
 
     it("emits an empty client array when the model is cleared", () => {
       const spy = jest.spyOn(component.policyEdit, "emit");
-      component.clientModel.set("");
+      component.clientSignal.set("");
       fixture.detectChanges();
       expect(spy).toHaveBeenCalledWith({ client: [] });
     });
 
     it("splits, trims, and drops empty segments when emitting", () => {
       const spy = jest.spyOn(component.policyEdit, "emit");
-      component.clientModel.set("10.0.0.1 ,  192.168.1.1 , ");
+      component.clientSignal.set("10.0.0.1 ,  192.168.1.1 , ");
       fixture.detectChanges();
       expect(spy).toHaveBeenCalledWith({ client: ["10.0.0.1", "192.168.1.1"] });
     });
@@ -321,13 +320,13 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   describe("clearClientControl", () => {
     it("resets the client model to an empty string", () => {
-      component.clientModel.set("10.0.0.1");
+      component.clientSignal.set("10.0.0.1");
       component.clearClientControl();
-      expect(component.clientModel()).toBe("");
+      expect(component.clientSignal()).toBe("");
     });
   });
 
-  describe("clientModel effect", () => {
+  describe("clientSignal effect", () => {
     it("does not emit a client edit during initialization from policy.client", () => {
       const freshFixture = TestBed.createComponent(EditEnvironmentConditionsComponent);
       const fresh = freshFixture.componentInstance;
@@ -338,14 +337,14 @@ describe("EditEnvironmentConditionsComponent", () => {
       });
       freshFixture.detectChanges();
       expect(spy).not.toHaveBeenCalledWith(expect.objectContaining({ client: expect.anything() }));
-      expect(fresh.clientModel()).toBe("10.0.0.1, 192.168.1.1");
+      expect(fresh.clientSignal()).toBe("10.0.0.1, 192.168.1.1");
     });
 
-    it("re-emits on every subsequent clientModel change", () => {
+    it("re-emits on every subsequent clientSignal change", () => {
       const spy = jest.spyOn(component.policyEdit, "emit");
-      component.clientModel.set("10.0.0.1");
+      component.clientSignal.set("10.0.0.1");
       fixture.detectChanges();
-      component.clientModel.set("192.168.1.1");
+      component.clientSignal.set("192.168.1.1");
       fixture.detectChanges();
       const clientCalls = spy.mock.calls.filter((c) => "client" in (c[0] as object));
       expect(clientCalls).toEqual([[{ client: ["10.0.0.1"] }], [{ client: ["192.168.1.1"] }]]);
@@ -354,32 +353,32 @@ describe("EditEnvironmentConditionsComponent", () => {
 
   describe("buildClientSelection", () => {
     it("returns the IP with a trailing ', ' when the form control is empty", () => {
-      component.clientModel.set("");
+      component.clientSignal.set("");
       expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1, ");
     });
 
     it("replaces the current incomplete segment when there is no comma", () => {
-      component.clientModel.set("10.0");
+      component.clientSignal.set("10.0");
       expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1, ");
     });
 
     it("appends the IP after the last comma with a leading space", () => {
-      component.clientModel.set("10.0.0.0/8,");
+      component.clientSignal.set("10.0.0.0/8,");
       expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, 192.168.1.1, ");
     });
 
     it("preserves a leading '!' negation marker on the current segment", () => {
-      component.clientModel.set("10.0.0.0/8, !19");
+      component.clientSignal.set("10.0.0.0/8, !19");
       expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, !192.168.1.1, ");
     });
 
     it("preserves a '!' negation marker when it is the first character", () => {
-      component.clientModel.set("!19");
+      component.clientSignal.set("!19");
       expect(component.buildClientSelection("192.168.1.1")).toBe("!192.168.1.1, ");
     });
 
     it("keeps the space after the comma when a partial IP has already been typed", () => {
-      component.clientModel.set("127.0.0.1, 10");
+      component.clientSignal.set("127.0.0.1, 10");
       expect(component.buildClientSelection("10.0.0.1")).toBe("127.0.0.1, 10.0.0.1, ");
     });
 
@@ -391,7 +390,7 @@ describe("EditEnvironmentConditionsComponent", () => {
           { ip: "192.168.1.1" }
         ]
       });
-      component.clientModel.set(component.buildClientSelection("10.0.0.1"));
+      component.clientSignal.set(component.buildClientSelection("10.0.0.1"));
       expect(component.clientSearchTerm()).toBe("");
       expect(component.filteredKnownClients()).toHaveLength(3);
     });

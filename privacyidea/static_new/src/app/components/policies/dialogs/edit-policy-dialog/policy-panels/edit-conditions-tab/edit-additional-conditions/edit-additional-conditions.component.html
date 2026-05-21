@@ -85,7 +85,7 @@
       <div class="form-row">
         <mat-form-field appearance="outline">
           <mat-label>Section</mat-label>
-          <mat-select [(ngModel)]="conditionSection">
+          <mat-select [value]="conditionSection()" (selectionChange)="conditionSection.set($event.value)">
             @for (option of SECTION_OPTIONS; track option.key) {
               <mat-option [value]="option.key">{{ option.label }}</mat-option>
             }
@@ -94,7 +94,7 @@
 
         <mat-form-field appearance="outline">
           <mat-label>If Data Missing</mat-label>
-          <mat-select [(ngModel)]="conditionHandleMissingData">
+          <mat-select [value]="conditionHandleMissingData()" (selectionChange)="conditionHandleMissingData.set($event.value)">
             @for (opt of HANDLE_MISSING_DATA_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
@@ -108,9 +108,10 @@
             <input
               type="text"
               matInput
-              [(ngModel)]="conditionKey"
+              [value]="conditionKey()"
+              (input)="conditionKey.set($any($event.target).value)"
               [matAutocomplete]="auto" />
-            <mat-autocomplete #auto="matAutocomplete">
+            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="conditionKey.set($event.option.value)">
               @for (key of availableKeys(); track key) {
                 <mat-option [value]="key">{{ key }}</mat-option>
               }
@@ -119,13 +120,14 @@
             <input
               type="text"
               matInput
-              [(ngModel)]="conditionKey" />
+              [value]="conditionKey()"
+              (input)="conditionKey.set($any($event.target).value)" />
           }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Comparator</mat-label>
-          <mat-select [(ngModel)]="conditionComparator">
+          <mat-select [value]="conditionComparator()" (selectionChange)="conditionComparator.set($event.value)">
             @for (opt of COMPARATOR_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
@@ -136,7 +138,8 @@
           <mat-label i18n>Value</mat-label>
           <input
             matInput
-            [(ngModel)]="conditionValue" />
+            [value]="conditionValue()"
+            (input)="conditionValue.set($any($event.target).value)" />
         </mat-form-field>
       </div>
 

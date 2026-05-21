@@ -31,7 +31,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField } from "@angular/material/input";
@@ -81,7 +80,6 @@ import { firstValueFrom } from "rxjs";
     MatIcon,
     MatOption,
     MatSelect,
-    FormsModule,
     MatIconButton,
     MatTooltip,
     ScrollToTopDirective,
@@ -279,6 +277,7 @@ export class ContainerCreateComponent {
           this.notificationService.error("Container creation failed. No container serial returned.");
           return;
         }
+        this.pendingChangesService.clearAllRegistrations();
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
         } else {

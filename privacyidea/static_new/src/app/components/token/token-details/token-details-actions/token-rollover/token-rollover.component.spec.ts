@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormControl, Validators } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
 import { provideHttpClient } from "@angular/common/http";
@@ -120,31 +119,11 @@ describe("TokenRolloverComponent", () => {
     );
   });
 
-  it("should update dialogActions disabled state based on additional form validity", async () => {
-    const enrollControl1 = new FormControl("", {
-      nonNullable: true,
-      validators: [Validators.required, Validators.email]
-    });
-    const enrollControl2 = new FormControl(2, { nonNullable: true, validators: [Validators.max(3)] });
-
-    component.updateAdditionalFormFields({ control1: enrollControl1, control2: enrollControl2 });
-    fixture.detectChanges();
-
-    expect(component.formGroupInvalid()).toBe(true);
-    expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: true })]);
-
-    // Make the form valid
-    enrollControl1.setValue("test@example.com");
+  it("updateAdditionalFormFields keeps dialog actions enabled (child handles its own validation)", () => {
+    component.updateAdditionalFormFields({ anyChildField: {} });
     fixture.detectChanges();
 
     expect(component.formGroupInvalid()).toBe(false);
     expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: false })]);
-
-    // Invalidate other control
-    enrollControl2.setValue(4);
-    fixture.detectChanges();
-
-    expect(component.formGroupInvalid()).toBe(true);
-    expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: true })]);
   });
 });

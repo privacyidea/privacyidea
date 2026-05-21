@@ -17,31 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed } from "@angular/core";
+import { Component, computed, signal } from "@angular/core";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-import { toSignal } from "@angular/core/rxjs-interop";
-import {
-  AbstractControl,
-  FormControl,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn,
-  Validators
-} from "@angular/forms";
+import { form, FormField, required, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
-import { map } from "rxjs";
-
-export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const isSame = control.value === originalValue;
-    return isSame ? { notChanged: true } : null;
-  };
-}
 
 @Component({
   selector: "app-copy-policy-dialog",
@@ -51,14 +35,16 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
   host: {
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
-  imports: [DialogWrapperComponent, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
+  imports: [DialogWrapperComponent, FormField, MatFormFieldModule, MatInputModule]
 })
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
-  readonly nameControl = new FormControl(this.data, [Validators.required, mustBeDifferentValidator(this.data)]);
-
-  readonly isInvalid = toSignal(this.nameControl.statusChanges.pipe(map(() => this.nameControl.invalid)), {
-    initialValue: this.nameControl.invalid
+  readonly nameSignal = signal(this.data ?? "");
+  readonly nameField = form(this.nameSignal, (f) => {
+    validate(f, (ctx) => !ctx.value() ? [{ kind: "required" }] : []);
+    validate(f, (ctx) => ctx.value() === this.data ? [{ kind: "notChanged" }] : []);
   });
+
+  readonly isInvalid = computed(() => this.nameField().errors().length > 0);
 
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
@@ -70,8 +56,8 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
   ]);
 
   onAction(value: "submit" | null): void {
-    if (value === "submit" && this.nameControl.valid) {
-      this.close(this.nameControl.value);
+    if (value === "submit" && !this.isInvalid()) {
+      this.close(this.nameSignal());
     } else {
       this.close(null);
     }

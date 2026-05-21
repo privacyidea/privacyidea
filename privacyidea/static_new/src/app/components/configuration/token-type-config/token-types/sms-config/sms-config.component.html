@@ -36,8 +36,8 @@
         class="input-width-l">
         <mat-label i18n>SMS Gateway Configuration</mat-label>
         <mat-select
-          [ngModel]="formData()[SMS_GATEWAY]"
-          (ngModelChange)="updateFormData(SMS_GATEWAY, $event)">
+          [value]="formData()[SMS_GATEWAY]"
+          (valueChange)="updateFormData(SMS_GATEWAY, $event)">
           @for (gateway of smsGateways(); track gateway) {
             <mat-option [value]="gateway">{{ gateway }}</mat-option>
           }
@@ -56,8 +56,8 @@
         class="input-width-l">
         <mat-label i18n>OTP Validity Time</mat-label>
         <input
-          [ngModel]="formData()[SMS_PROVIDER_TIMEOUT]"
-          (ngModelChange)="updateFormData(SMS_PROVIDER_TIMEOUT, $event)"
+          [value]="formData()[SMS_PROVIDER_TIMEOUT]"
+          (input)="updateFormData(SMS_PROVIDER_TIMEOUT, $any($event.target).valueAsNumber)"
           matInput
           placeholder="300"
           type="number" />
