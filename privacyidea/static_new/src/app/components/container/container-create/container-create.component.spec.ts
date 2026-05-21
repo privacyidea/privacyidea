@@ -385,8 +385,6 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("smartphone without registration wizard policy does not open registration completed dialog", () => {
-    // Create + destroy these locally — destroying them triggers ngOnDestroy → stopPolling,
-    // which is what the spy below asserts on.
     TestBed.createComponent(ContainerCreateWizardComponent).destroy();
     TestBed.createComponent(ContainerCreateSelfServiceComponent).destroy();
     authService.authData.set({
@@ -412,8 +410,6 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("smartphone with registration wizard policy but without register right does not open registration completed dialog", () => {
-    // Create + destroy these locally — destroying them triggers ngOnDestroy → stopPolling,
-    // which is what the spy below asserts on.
     TestBed.createComponent(ContainerCreateWizardComponent).destroy();
     TestBed.createComponent(ContainerCreateSelfServiceComponent).destroy();
     authService.authData.set({

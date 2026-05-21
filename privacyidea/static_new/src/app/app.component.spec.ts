@@ -127,8 +127,6 @@ describe("AppComponent", () => {
   });
 });
 
-// Pure-object assertions on the exported appConfig — no TestBed needed, so
-// lifted out of the parent describe to skip its (expensive) router-loading setup.
 describe("appConfig", () => {
   it("defines providers array", () => {
     expect(Array.isArray(appConfig.providers)).toBe(true);
