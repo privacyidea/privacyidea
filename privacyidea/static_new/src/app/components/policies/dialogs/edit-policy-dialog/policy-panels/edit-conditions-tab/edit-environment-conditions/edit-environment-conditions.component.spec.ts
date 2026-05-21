@@ -353,34 +353,47 @@ describe("EditEnvironmentConditionsComponent", () => {
   });
 
   describe("buildClientSelection", () => {
-    it("returns just the IP when the form control is empty", () => {
+    it("returns the IP with a trailing ', ' when the form control is empty", () => {
       component.clientModel.set("");
-      expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1");
+      expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1, ");
     });
 
     it("replaces the current incomplete segment when there is no comma", () => {
       component.clientModel.set("10.0");
-      expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1");
+      expect(component.buildClientSelection("10.0.0.1")).toBe("10.0.0.1, ");
     });
 
     it("appends the IP after the last comma with a leading space", () => {
       component.clientModel.set("10.0.0.0/8,");
-      expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, 192.168.1.1");
+      expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, 192.168.1.1, ");
     });
 
     it("preserves a leading '!' negation marker on the current segment", () => {
       component.clientModel.set("10.0.0.0/8, !19");
-      expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, !192.168.1.1");
+      expect(component.buildClientSelection("192.168.1.1")).toBe("10.0.0.0/8, !192.168.1.1, ");
     });
 
     it("preserves a '!' negation marker when it is the first character", () => {
       component.clientModel.set("!19");
-      expect(component.buildClientSelection("192.168.1.1")).toBe("!192.168.1.1");
+      expect(component.buildClientSelection("192.168.1.1")).toBe("!192.168.1.1, ");
     });
 
     it("keeps the space after the comma when a partial IP has already been typed", () => {
       component.clientModel.set("127.0.0.1, 10");
-      expect(component.buildClientSelection("10.0.0.1")).toBe("127.0.0.1, 10.0.0.1");
+      expect(component.buildClientSelection("10.0.0.1")).toBe("127.0.0.1, 10.0.0.1, ");
+    });
+
+    it("clears the autocomplete filter so all known clients show again", () => {
+      clientsMock.setClients({
+        App: [
+          { ip: "10.0.0.1" },
+          { ip: "10.0.0.2" },
+          { ip: "192.168.1.1" }
+        ]
+      });
+      component.clientModel.set(component.buildClientSelection("10.0.0.1"));
+      expect(component.clientSearchTerm()).toBe("");
+      expect(component.filteredKnownClients()).toHaveLength(3);
     });
   });
 });

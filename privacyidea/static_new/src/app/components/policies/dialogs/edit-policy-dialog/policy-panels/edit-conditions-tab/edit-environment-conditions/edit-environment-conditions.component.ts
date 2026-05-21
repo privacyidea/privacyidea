@@ -182,7 +182,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     const { before, raw } = this.currentClientSegment(value);
     const negation = /^\s*!/.test(raw) ? "!" : "";
     const separator = before ? " " : "";
-    return `${before}${separator}${negation}${ip}`;
+    return `${before}${separator}${negation}${ip}, `;
   }
 
   emitEdits(edits: Partial<PolicyDetail>) {
