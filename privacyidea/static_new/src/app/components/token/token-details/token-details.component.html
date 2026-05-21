@@ -67,7 +67,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
-                        (onClick)="containerService.selectedContainerSerial.set(null)"
+                        (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
                         [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
                           [value]="containerService.selectedContainerSerial()"

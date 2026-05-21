@@ -50,7 +50,7 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Base DN</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, LDAPBASE: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, LDAPBASE: '' }))"
           [showClearButton]="!!model().LDAPBASE">
           <input
             [formField]="ldapForm.LDAPBASE"
@@ -68,7 +68,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Server URI</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, LDAPURI: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, LDAPURI: '' }))"
           [showClearButton]="!!model().LDAPURI">
           <input
             [formField]="ldapForm.LDAPURI"
@@ -139,7 +139,7 @@
             <mat-label i18n>CA Certificate</mat-label>
             <mat-hint i18n>The file containing the CA certificate which signed the LDAP TLS certificate.</mat-hint>
             <app-clearable-input
-              (onClick)="model.update(m => ({ ...m, TLS_CA_FILE: '' }))"
+              (clearButtonClick)="model.update(m => ({ ...m, TLS_CA_FILE: '' }))"
               [disabled]="tlsCaFileDisabled()"
               [showClearButton]="!!model().TLS_CA_FILE">
               <input
@@ -201,7 +201,7 @@
               {{ model().AUTHTYPE === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}
             </mat-label>
             <app-clearable-input
-              (onClick)="model.update(m => ({ ...m, BINDPW: '' }))"
+              (clearButtonClick)="model.update(m => ({ ...m, BINDPW: '' }))"
               [showClearButton]="!!model().BINDPW">
               <input
                 [formField]="ldapForm.BINDPW"
@@ -217,7 +217,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Bind DN</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, BINDDN: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, BINDDN: '' }))"
             [showClearButton]="!!model().BINDDN">
             <input
               [formField]="ldapForm.BINDDN"
@@ -307,7 +307,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Object Classes of a New Created User Object</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, OBJECT_CLASSES: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, OBJECT_CLASSES: '' }))"
             [showClearButton]="!!model().OBJECT_CLASSES">
             <input
               [formField]="ldapForm.OBJECT_CLASSES"
@@ -318,7 +318,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>DN of a New Created User Object</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, DN_TEMPLATE: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, DN_TEMPLATE: '' }))"
             [showClearButton]="!!model().DN_TEMPLATE">
             <input
               [formField]="ldapForm.DN_TEMPLATE"
@@ -358,7 +358,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Loginname Attribute</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, LOGINNAMEATTRIBUTE: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, LOGINNAMEATTRIBUTE: '' }))"
             [showClearButton]="!!model().LOGINNAMEATTRIBUTE">
             <input
               [formField]="ldapForm.LOGINNAMEATTRIBUTE"
@@ -377,7 +377,7 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>UID Type</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, UIDTYPE: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, UIDTYPE: '' }))"
             [showClearButton]="!!model().UIDTYPE">
             <input
               [formField]="ldapForm.UIDTYPE"
@@ -390,7 +390,7 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Search Filter</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, LDAPSEARCHFILTER: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, LDAPSEARCHFILTER: '' }))"
           [showClearButton]="!!model().LDAPSEARCHFILTER">
           <input
             [formField]="ldapForm.LDAPSEARCHFILTER"
@@ -425,7 +425,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Multivalue Attributes</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, MULTIVALUEATTRIBUTES: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, MULTIVALUEATTRIBUTES: '' }))"
           [showClearButton]="!!model().MULTIVALUEATTRIBUTES">
           <input
             [formField]="ldapForm.MULTIVALUEATTRIBUTES"
@@ -449,7 +449,7 @@
             as defined for the users above.
           </mat-hint>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, group_base_dn: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, group_base_dn: '' }))"
             [showClearButton]="!!model().group_base_dn">
             <input
               [formField]="ldapForm.group_base_dn"
@@ -462,7 +462,7 @@
           <mat-label i18n>Search Filter for User Groups</mat-label>
           <mat-hint>Possible tags: {{ "{" }}base_dn{{ "}" }}, {{ "{" }}username{{ "}" }}</mat-hint>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, group_search_filter: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, group_search_filter: '' }))"
             [showClearButton]="!!model().group_search_filter">
             <input
               [formField]="ldapForm.group_search_filter"
@@ -477,7 +477,7 @@
             <mat-label i18n>Group Name Attribute</mat-label>
             <mat-hint>Group attribute defining the group's name, which should be stored in the user info.</mat-hint>
             <app-clearable-input
-              (onClick)="model.update(m => ({ ...m, group_name_attribute: '' }))"
+              (clearButtonClick)="model.update(m => ({ ...m, group_name_attribute: '' }))"
               [showClearButton]="!!model().group_name_attribute">
               <input
                 [formField]="ldapForm.group_name_attribute"
@@ -490,7 +490,7 @@
             <mat-label i18n>User Info Key</mat-label>
             <mat-hint>The key to store the groups in the user info (attribute mapping key).</mat-hint>
             <app-clearable-input
-              (onClick)="model.update(m => ({ ...m, group_attribute_mapping_key: '' }))"
+              (clearButtonClick)="model.update(m => ({ ...m, group_attribute_mapping_key: '' }))"
               [showClearButton]="!!model().group_attribute_mapping_key">
               <input
                 [formField]="ldapForm.group_attribute_mapping_key"

@@ -68,7 +68,7 @@
             class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <app-clearable-input
-              (onClick)="smsModel.update(m => ({...m, name: ''}))"
+              (clearButtonClick)="smsModel.update(m => ({...m, name: ''}))"
               [showClearButton]="!isEditMode() && !!smsModel().name">
               <input
                 [formField]="smsForm.name"
@@ -110,7 +110,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="smsModel.update(m => ({...m, description: ''}))"
+            (clearButtonClick)="smsModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!smsModel().description">
             <input
               [formField]="smsForm.description"
@@ -157,7 +157,7 @@
 
               @if (!param.value.values && param.value.type !== 'text') {
                 <app-clearable-input
-                  (onClick)="clearParameter(param.key)"
+                  (clearButtonClick)="clearParameter(param.key)"
                   [showClearButton]="!!parametersModel()[param.key]">
                   <input
                     [value]="parametersModel()[param.key]"
@@ -249,7 +249,7 @@
                   class="input-width-m">
                   <mat-label i18n>Option Name</mat-label>
                   <app-clearable-input
-                    (onClick)="newOptionKey.set('')"
+                    (clearButtonClick)="newOptionKey.set('')"
                     [showClearButton]="!!newOptionKey()">
                     <input
                       [value]="newOptionKey()"
@@ -269,7 +269,7 @@
                   class="input-width-m">
                   <mat-label i18n>Value</mat-label>
                   <app-clearable-input
-                    (onClick)="newOptionValue.set('')"
+                    (clearButtonClick)="newOptionValue.set('')"
                     [showClearButton]="!!newOptionValue()">
                     <input
                       [value]="newOptionValue()"
@@ -376,7 +376,7 @@
                   class="input-width-m">
                   <mat-label i18n>Header Name</mat-label>
                   <app-clearable-input
-                    (onClick)="newHeaderKey.set('')"
+                    (clearButtonClick)="newHeaderKey.set('')"
                     [showClearButton]="!!newHeaderKey()">
                     <input
                       [value]="newHeaderKey()"
@@ -396,7 +396,7 @@
                   class="input-width-m">
                   <mat-label i18n>Value</mat-label>
                   <app-clearable-input
-                    (onClick)="newHeaderValue.set('')"
+                    (clearButtonClick)="newHeaderValue.set('')"
                     [showClearButton]="!!newHeaderValue()">
                     <input
                       [value]="newHeaderValue()"

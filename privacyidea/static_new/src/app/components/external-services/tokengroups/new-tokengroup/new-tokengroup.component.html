@@ -57,7 +57,7 @@
           class="input-width-l margin-bottom-16">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (onClick)="tokengroupModel.update(m => ({...m, groupname: ''}))"
+            (clearButtonClick)="tokengroupModel.update(m => ({...m, groupname: ''}))"
             [showClearButton]="!isEditMode() && !!tokengroupModel().groupname">
             <input
               [formField]="tokengroupForm.groupname"
@@ -80,7 +80,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="tokengroupModel.update(m => ({...m, description: ''}))"
+            (clearButtonClick)="tokengroupModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!tokengroupModel().description">
             <input
               [formField]="tokengroupForm.description"

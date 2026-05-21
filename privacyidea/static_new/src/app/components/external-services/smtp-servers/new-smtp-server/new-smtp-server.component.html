@@ -66,7 +66,7 @@
           class="input-width-l margin-bottom-32">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (onClick)="smtpModel.update(m => ({...m, identifier: ''}))"
+            (clearButtonClick)="smtpModel.update(m => ({...m, identifier: ''}))"
             [showClearButton]="!isEditMode() && !!smtpModel().identifier">
             <input
               [formField]="smtpForm.identifier"
@@ -92,7 +92,7 @@
             class="input-width-l">
             <mat-label i18n>IP or FQDN</mat-label>
             <app-clearable-input
-              (onClick)="smtpModel.update(m => ({...m, server: ''}))"
+              (clearButtonClick)="smtpModel.update(m => ({...m, server: ''}))"
               [showClearButton]="!!smtpModel().server">
               <input
                 [formField]="smtpForm.server"
@@ -124,7 +124,7 @@
             class="input-width-l">
             <mat-label i18n>Sender Email</mat-label>
             <app-clearable-input
-              (onClick)="smtpModel.update(m => ({...m, sender: ''}))"
+              (clearButtonClick)="smtpModel.update(m => ({...m, sender: ''}))"
               [showClearButton]="!!smtpModel().sender">
               <input
                 [formField]="smtpForm.sender"
@@ -161,7 +161,7 @@
             class="input-width-l margin-bottom-16">
             <mat-label i18n>Username</mat-label>
             <app-clearable-input
-              (onClick)="smtpModel.update(m => ({...m, username: ''}))"
+              (clearButtonClick)="smtpModel.update(m => ({...m, username: ''}))"
               [showClearButton]="!!smtpModel().username">
               <input
                 [formField]="smtpForm.username"
@@ -176,7 +176,7 @@
             class="input-width-l">
             <mat-label i18n>Password</mat-label>
             <app-clearable-input
-              (onClick)="smtpModel.update(m => ({...m, password: ''}))"
+              (clearButtonClick)="smtpModel.update(m => ({...m, password: ''}))"
               [showClearButton]="!!smtpModel().password">
               <input
                 [formField]="smtpForm.password"
@@ -192,7 +192,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="smtpModel.update(m => ({...m, description: ''}))"
+            (clearButtonClick)="smtpModel.update(m => ({...m, description: ''}))"
             [showClearButton]="!!smtpModel().description">
             <input
               [formField]="smtpForm.description"
@@ -233,7 +233,7 @@
               class="input-width-l">
               <mat-label i18n>Certificate</mat-label>
               <app-clearable-input
-                (onClick)="smtpModel.update(m => ({...m, certificate: ''}))"
+                (clearButtonClick)="smtpModel.update(m => ({...m, certificate: ''}))"
                 [showClearButton]="!!smtpModel().certificate">
                 <input
                   [formField]="smtpForm.certificate"
@@ -262,7 +262,7 @@
               class="input-width-l">
               <mat-label i18n>Private Key</mat-label>
               <app-clearable-input
-                (onClick)="smtpModel.update(m => ({...m, private_key: ''}))"
+                (clearButtonClick)="smtpModel.update(m => ({...m, private_key: ''}))"
                 [showClearButton]="!!smtpModel().private_key">
                 <input
                   [formField]="smtpForm.private_key"
@@ -276,7 +276,7 @@
               class="input-width-l">
               <mat-label i18n>Password for the Private Key</mat-label>
               <app-clearable-input
-                (onClick)="smtpModel.update(m => ({...m, private_key_password: ''}))"
+                (clearButtonClick)="smtpModel.update(m => ({...m, private_key_password: ''}))"
                 [showClearButton]="!!smtpModel().private_key_password">
                 <input
                   [formField]="smtpForm.private_key_password"
@@ -295,7 +295,7 @@
           class="input-width-l margin-top-16">
           <mat-label i18n>Recipient for Testing</mat-label>
           <app-clearable-input
-            (onClick)="smtpModel.update(m => ({...m, recipient: ''}))"
+            (clearButtonClick)="smtpModel.update(m => ({...m, recipient: ''}))"
             [showClearButton]="!!smtpModel().recipient">
             <input
               [formField]="smtpForm.recipient"

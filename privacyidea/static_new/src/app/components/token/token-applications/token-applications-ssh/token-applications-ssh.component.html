@@ -43,7 +43,7 @@
         class="application-table-filter">
         <mat-label i18n>Filter SSH Applications...</mat-label>
         <app-clearable-input
-          (onClick)="machineService.clearFilter()"
+          (clearButtonClick)="machineService.clearFilter()"
           [showClearButton]="machineService.machineFilter().isNotEmpty">
           <input
             #filterInput

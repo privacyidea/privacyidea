@@ -168,7 +168,7 @@
             class="input-width-l">
             <mat-label i18n>Override Authorization Clients</mat-label>
             <app-clearable-input
-              (onClick)="updateParam('OverrideAuthorizationClient', '')"
+              (clearButtonClick)="updateParam('OverrideAuthorizationClient', '')"
               [showClearButton]="!!params().OverrideAuthorizationClient">
               <input
                 [value]="params().OverrideAuthorizationClient ?? ''"

@@ -42,7 +42,7 @@
     class="input-width-l">
     <mat-label>Enter User</mat-label>
     <app-clearable-input
-      (onClick)="clearUser()"
+      (clearButtonClick)="clearUser()"
       [showClearButton]="userFilter() !== ''">
       <input
         [value]="userFilter()"

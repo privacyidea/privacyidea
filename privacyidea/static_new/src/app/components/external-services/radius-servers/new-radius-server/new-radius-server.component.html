@@ -67,7 +67,7 @@
         class="input-width-l margin-bottom-32">
         <mat-label i18n>Identifier</mat-label>
         <app-clearable-input
-          (onClick)="radiusModel.update(m => ({...m, identifier: ''}))"
+          (clearButtonClick)="radiusModel.update(m => ({...m, identifier: ''}))"
           [showClearButton]="!isEditMode() && !!radiusModel().identifier">
           <input
             [formField]="radiusForm.identifier"
@@ -93,7 +93,7 @@
           class="input-width-l">
           <mat-label i18n>IP or FQDN</mat-label>
           <app-clearable-input
-            (onClick)="radiusModel.update(m => ({...m, server: ''}))"
+            (clearButtonClick)="radiusModel.update(m => ({...m, server: ''}))"
             [showClearButton]="!!radiusModel().server">
             <input
               [formField]="radiusForm.server"
@@ -125,7 +125,7 @@
           class="input-width-l">
           <mat-label i18n>Secret</mat-label>
           <app-clearable-input
-            (onClick)="radiusModel.update(m => ({...m, secret: ''}))"
+            (clearButtonClick)="radiusModel.update(m => ({...m, secret: ''}))"
             [showClearButton]="!!radiusModel().secret">
             <input
               [formField]="radiusForm.secret"
@@ -157,7 +157,7 @@
           class="input-width-l">
           <mat-label i18n>RADIUS Dictionary</mat-label>
           <app-clearable-input
-            (onClick)="radiusModel.update(m => ({...m, dictionary: ''}))"
+            (clearButtonClick)="radiusModel.update(m => ({...m, dictionary: ''}))"
             [showClearButton]="!!radiusModel().dictionary">
             <input
               [formField]="radiusForm.dictionary"
@@ -183,7 +183,7 @@
         class="input-width-xl">
         <mat-label i18n>Description</mat-label>
         <app-clearable-input
-          (onClick)="radiusModel.update(m => ({...m, description: ''}))"
+          (clearButtonClick)="radiusModel.update(m => ({...m, description: ''}))"
           [showClearButton]="!!radiusModel().description">
           <input
             [formField]="radiusForm.description"
@@ -208,7 +208,7 @@
           class="input-width-m">
           <mat-label i18n>Username</mat-label>
           <app-clearable-input
-            (onClick)="radiusModel.update(m => ({...m, username: ''}))"
+            (clearButtonClick)="radiusModel.update(m => ({...m, username: ''}))"
             [showClearButton]="!!radiusModel().username">
             <input
               [formField]="radiusForm.username"
@@ -221,7 +221,7 @@
             class="input-width-m">
             <mat-label i18n>Password</mat-label>
             <app-clearable-input
-              (onClick)="radiusModel.update(m => ({...m, password: ''}))"
+              (clearButtonClick)="radiusModel.update(m => ({...m, password: ''}))"
               [showClearButton]="!!radiusModel().password">
               <input
                 [formField]="radiusForm.password"

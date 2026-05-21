@@ -25,7 +25,7 @@
     <mat-form-field class="input-width-xl">
       <mat-label i18n>Endpoint</mat-label>
       <app-clearable-input
-        (onClick)="model.update(m => ({ ...m, endpoint: '' }))"
+        (clearButtonClick)="model.update(m => ({ ...m, endpoint: '' }))"
         [showClearButton]="!!model().endpoint">
         <input
           [value]="model().endpoint"

@@ -17,7 +17,7 @@ import { PolicyFilterComponent } from "./policy-filter.component";
 
 @Component({ selector: "app-clearable-input", standalone: true, template: "<ng-content></ng-content>" })
 class MockClearableInput {
-  onClick = output<void>();
+  clearButtonClick = output<void>();
   @Input() showClearButton = false;
 }
 

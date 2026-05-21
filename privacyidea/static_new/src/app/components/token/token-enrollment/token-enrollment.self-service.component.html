@@ -76,7 +76,7 @@
             <h4 i18n>Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
-                (onClick)="selectedContainer.set(''); trackChange()"
+                (clearButtonClick)="selectedContainer.set(''); trackChange()"
                 [showClearButton]="selectedContainer() !== ''">
                 <input
                   [value]="selectedContainer()"

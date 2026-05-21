@@ -21,7 +21,7 @@
     <mat-form-field>
       <mat-label i18n>Name</mat-label>
       <app-clearable-input
-        (onClick)="editTask.update(t => ({...t, name: ''}))"
+        (clearButtonClick)="editTask.update(t => ({...t, name: ''}))"
         [showClearButton]="!!editTask().name">
         <input
           [formField]="editTaskForm.name"
@@ -54,7 +54,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Interval</mat-label>
         <app-clearable-input
-          (onClick)="editTask.update(t => ({...t, interval: ''})); emitAllowSave()"
+          (clearButtonClick)="editTask.update(t => ({...t, interval: ''})); emitAllowSave()"
           [showClearButton]="!!editTask().interval">
           <input
             matInput

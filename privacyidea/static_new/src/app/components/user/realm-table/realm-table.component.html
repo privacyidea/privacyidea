@@ -11,7 +11,7 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Filter Realms...</mat-label>
         <app-clearable-input
-          (onClick)="resetFilter()"
+          (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement

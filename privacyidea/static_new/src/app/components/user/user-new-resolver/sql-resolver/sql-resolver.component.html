@@ -24,7 +24,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Driver</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, Driver: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, Driver: '' }))"
             [showClearButton]="!!model().Driver">
             <input
               [formField]="sqlForm.Driver"
@@ -43,7 +43,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Database</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, Database: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, Database: '' }))"
             [showClearButton]="!!model().Database">
             <input
               [formField]="sqlForm.Database"
@@ -57,7 +57,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Server</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, Server: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, Server: '' }))"
             [showClearButton]="!!model().Server">
             <input
               [formField]="sqlForm.Server"
@@ -91,7 +91,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>User</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, User: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, User: '' }))"
             [showClearButton]="!!model().User">
             <input
               [formField]="sqlForm.User"
@@ -103,7 +103,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Password</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, Password: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, Password: '' }))"
             [showClearButton]="!!model().Password">
             <input
               [formField]="sqlForm.Password"
@@ -215,7 +215,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Table</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, Table: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, Table: '' }))"
             [showClearButton]="!!model().Table">
             <input
               [formField]="sqlForm.Table"
@@ -267,7 +267,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Connection Parameters</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, conParams: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, conParams: '' }))"
             [showClearButton]="!!model().conParams">
             <input
               [formField]="sqlForm.conParams"
@@ -278,7 +278,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Database Encoding</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, Encoding: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, Encoding: '' }))"
             [showClearButton]="!!model().Encoding">
             <input
               [formField]="sqlForm.Encoding"
@@ -290,7 +290,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Where Statement</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, Where: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, Where: '' }))"
           [showClearButton]="!!model().Where">
           <input
             [formField]="sqlForm.Where"

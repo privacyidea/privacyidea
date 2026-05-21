@@ -51,7 +51,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Endpoint (URL)</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, endpoint: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, endpoint: '' }))"
             [showClearButton]="!!model().endpoint">
             <input
               [formField]="httpForm.endpoint"
@@ -159,7 +159,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Realm</mat-label>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, realm: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, realm: '' }))"
             [showClearButton]="!!model().realm">
             <input
               [formField]="httpForm.realm"
@@ -174,7 +174,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Base URL</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, base_url: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, base_url: '' }))"
           [showClearButton]="!!model().base_url">
           <input
             [formField]="httpForm.base_url"
@@ -246,7 +246,7 @@
               class="input-width-l"
               subscriptSizing="dynamic">
               <app-clearable-input
-                (onClick)="setCustomAttr(i, '')"
+                (clearButtonClick)="setCustomAttr(i, '')"
                 [showClearButton]="!!row.privacyideaAttr">
                 <input
                   (input)="setCustomAttr(i, $any($event.target).value)"
@@ -275,7 +275,7 @@
             class="input-width-l"
             subscriptSizing="dynamic">
             <app-clearable-input
-              (onClick)="row.userStoreAttr = ''; onMappingChanged()"
+              (clearButtonClick)="row.userStoreAttr = ''; onMappingChanged()"
               [showClearButton]="!!row.userStoreAttr">
               <input
                 (input)="row.userStoreAttr = $any($event.target).value; onMappingChanged()"
@@ -392,7 +392,7 @@
             The file containing the CA certificate which signed the TLS certificate of the server.
           </mat-hint>
           <app-clearable-input
-            (onClick)="model.update(m => ({ ...m, tls_ca_path: '' }))"
+            (clearButtonClick)="model.update(m => ({ ...m, tls_ca_path: '' }))"
             [disabled]="!model().verify_tls"
             [showClearButton]="!!model().tls_ca_path">
             <input
@@ -424,7 +424,7 @@
                 <mat-form-field class="input-width-xl">
                   <mat-label i18n>Authority</mat-label>
                   <app-clearable-input
-                    (onClick)="model.update(m => ({ ...m, authority: '' }))"
+                    (clearButtonClick)="model.update(m => ({ ...m, authority: '' }))"
                     [showClearButton]="!!model().authority">
                     <input
                       [formField]="httpForm.authority"
@@ -437,7 +437,7 @@
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Tenant ID</mat-label>
                     <app-clearable-input
-                      (onClick)="model.update(m => ({ ...m, tenant: '' }))"
+                      (clearButtonClick)="model.update(m => ({ ...m, tenant: '' }))"
                       [showClearButton]="!!model().tenant">
                       <input
                         [formField]="httpForm.tenant"
@@ -456,7 +456,7 @@
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Client ID</mat-label>
                     <app-clearable-input
-                      (onClick)="model.update(m => ({ ...m, client_id: '' }))"
+                      (clearButtonClick)="model.update(m => ({ ...m, client_id: '' }))"
                       [showClearButton]="!!model().client_id">
                       <input
                         [formField]="httpForm.client_id"
@@ -488,7 +488,7 @@
                     <mat-form-field class="input-width-l">
                       <mat-label i18n>Client Secret</mat-label>
                       <app-clearable-input
-                        (onClick)="model.update(m => ({ ...m, client_secret: '' }))"
+                        (clearButtonClick)="model.update(m => ({ ...m, client_secret: '' }))"
                         [showClearButton]="!!model().client_secret">
                         <input
                           [formField]="httpForm.client_secret"
@@ -522,7 +522,7 @@
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Path to the Private Key File</mat-label>
                         <app-clearable-input
-                          (onClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_file: '' } }))"
+                          (clearButtonClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_file: '' } }))"
                           [showClearButton]="!!model().client_certificate.private_key_file">
                           <input
                             [value]="model().client_certificate.private_key_file"
@@ -535,7 +535,7 @@
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Password for the Private Key</mat-label>
                         <app-clearable-input
-                          (onClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_password: '' } }))"
+                          (clearButtonClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, private_key_password: '' } }))"
                           [showClearButton]="!!model().client_certificate.private_key_password">
                           <input
                             [value]="model().client_certificate.private_key_password"
@@ -549,7 +549,7 @@
                     <mat-form-field class="input-width-l">
                       <mat-label i18n>Thumbprint of the Certificate</mat-label>
                       <app-clearable-input
-                        (onClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, certificate_fingerprint: '' } }))"
+                        (clearButtonClick)="model.update(m => ({ ...m, client_certificate: { ...m.client_certificate, certificate_fingerprint: '' } }))"
                         [showClearButton]="!!model().client_certificate.certificate_fingerprint">
                         <input
                           [value]="model().client_certificate.certificate_fingerprint"
@@ -573,7 +573,7 @@
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Username</mat-label>
                   <app-clearable-input
-                    (onClick)="model.update(m => ({ ...m, username: '' }))"
+                    (clearButtonClick)="model.update(m => ({ ...m, username: '' }))"
                     [showClearButton]="!!model().username">
                     <input
                       [formField]="httpForm.username"
@@ -585,7 +585,7 @@
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Password</mat-label>
                   <app-clearable-input
-                    (onClick)="model.update(m => ({ ...m, password: '' }))"
+                    (clearButtonClick)="model.update(m => ({ ...m, password: '' }))"
                     [showClearButton]="!!model().password">
                     <input
                       [formField]="httpForm.password"

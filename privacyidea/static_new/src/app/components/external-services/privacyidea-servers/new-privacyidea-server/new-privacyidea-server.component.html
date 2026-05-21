@@ -69,7 +69,7 @@
           class="input-width-l">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (onClick)="privacyideaModel.update(m => ({...m, identifier: ''}))"
+            (clearButtonClick)="privacyideaModel.update(m => ({...m, identifier: ''}))"
             [showClearButton]="!isEditMode() && !!privacyideaModel().identifier">
             <input
               [formField]="privacyideaForm.identifier"
@@ -92,7 +92,7 @@
           class="input-width-l">
           <mat-label i18n>URL of the privacyIDEA Server</mat-label>
           <app-clearable-input
-            (onClick)="privacyideaModel.update(m => ({...m, url: ''}))"
+            (clearButtonClick)="privacyideaModel.update(m => ({...m, url: ''}))"
             [showClearButton]="!!privacyideaModel().url">
             <input
               [formField]="privacyideaForm.url"
@@ -126,7 +126,7 @@
         class="input-width-xl margin-top-16">
         <mat-label i18n>Description</mat-label>
         <app-clearable-input
-          (onClick)="privacyideaModel.update(m => ({...m, description: ''}))"
+          (clearButtonClick)="privacyideaModel.update(m => ({...m, description: ''}))"
           [showClearButton]="!!privacyideaModel().description">
           <input
             [formField]="privacyideaForm.description"
@@ -141,7 +141,7 @@
             class="input-width-l">
             <mat-label i18n>User</mat-label>
             <app-clearable-input
-              (onClick)="privacyideaModel.update(m => ({...m, username: ''}))"
+              (clearButtonClick)="privacyideaModel.update(m => ({...m, username: ''}))"
               [showClearButton]="!!privacyideaModel().username">
               <input
                 [formField]="privacyideaForm.username"
@@ -154,7 +154,7 @@
             class="input-width-l">
             <mat-label i18n>Password</mat-label>
             <app-clearable-input
-              (onClick)="privacyideaModel.update(m => ({...m, password: ''}))"
+              (clearButtonClick)="privacyideaModel.update(m => ({...m, password: ''}))"
               [showClearButton]="!!privacyideaModel().password">
               <input
                 autocomplete="new-password"

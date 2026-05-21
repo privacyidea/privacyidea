@@ -51,7 +51,7 @@
           }
         </mat-hint>
         <app-clearable-input
-          (onClick)="resolverNameModel.update(m => ({ ...m, resolverName: '' }))"
+          (clearButtonClick)="resolverNameModel.update(m => ({ ...m, resolverName: '' }))"
           [showClearButton]="!isEditMode() && !!resolverNameModel().resolverName">
           <input
             [formField]="resolverNameForm.resolverName"
@@ -104,7 +104,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
-                (onClick)="testUsername.set('')"
+                (clearButtonClick)="testUsername.set('')"
                 [showClearButton]="!!testUsername()">
                 <input
                   [value]="testUsername()"
@@ -117,7 +117,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
-                (onClick)="testUserId.set('')"
+                (clearButtonClick)="testUserId.set('')"
                 [showClearButton]="!!testUserId()">
                 <input
                   [value]="testUserId()"

@@ -23,7 +23,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Authentication Server URI</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, Authserver: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, Authserver: '' }))"
           [showClearButton]="!!model().Authserver">
           <input
             [formField]="scimForm.Authserver"
@@ -42,7 +42,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resource Server Uri</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, Resourceserver: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, Resourceserver: '' }))"
           [showClearButton]="!!model().Resourceserver">
           <input
             [formField]="scimForm.Resourceserver"
@@ -63,7 +63,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Client</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, Client: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, Client: '' }))"
           [showClearButton]="!!model().Client">
           <input
             [formField]="scimForm.Client"
@@ -82,7 +82,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Secret</mat-label>
         <app-clearable-input
-          (onClick)="model.update(m => ({ ...m, Secret: '' }))"
+          (clearButtonClick)="model.update(m => ({ ...m, Secret: '' }))"
           [showClearButton]="!!model().Secret">
           <input
             [formField]="scimForm.Secret"
