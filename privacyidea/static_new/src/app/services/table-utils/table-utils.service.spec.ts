@@ -302,4 +302,76 @@ describe("TableUtilsService", () => {
   ])('getDisplayTextForState("%s") → %s', (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);
   });
+
+  describe("clientsideSortTokenData", () => {
+    const makeToken = (overrides: any = {}) =>
+      ({
+        active: true,
+        container_serial: "C1",
+        count: 0,
+        count_window: 0,
+        description: "",
+        failcount: 0,
+        id: 0,
+        revoked: false,
+        serial: "",
+        sync_window: 0,
+        tokengroup: [],
+        tokentype: "hotp",
+        user_editable: false,
+        user_id: "",
+        user_realm: "",
+        username: "",
+        ...overrides
+      }) as any;
+
+    it("returns the input untouched when direction is empty", () => {
+      const data = [makeToken({ serial: "B" }), makeToken({ serial: "A" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "" });
+      expect(result).toBe(data);
+      expect(result.map((t) => t.serial)).toEqual(["B", "A"]);
+    });
+
+    it("sorts ascending by the chosen key (case-insensitive)", () => {
+      const data = [
+        makeToken({ serial: "beta" }),
+        makeToken({ serial: "Alpha" }),
+        makeToken({ serial: "gamma" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
+      expect(result.map((t) => t.serial)).toEqual(["Alpha", "beta", "gamma"]);
+    });
+
+    it("sorts descending by the chosen key", () => {
+      const data = [
+        makeToken({ description: "banana" }),
+        makeToken({ description: "apple" }),
+        makeToken({ description: "cherry" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "description", direction: "desc" });
+      expect(result.map((t) => t.description)).toEqual(["cherry", "banana", "apple"]);
+    });
+
+    it("treats undefined / null values as empty strings (sorted first ascending)", () => {
+      const data = [
+        makeToken({ serial: "x", resolver: "zeta" }),
+        makeToken({ serial: "y", resolver: undefined }),
+        makeToken({ serial: "z", resolver: "alpha" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "resolver", direction: "asc" });
+      expect(result.map((t) => t.serial)).toEqual(["y", "z", "x"]);
+    });
+
+    it("sorts numeric fields by their stringified value", () => {
+      const data = [makeToken({ failcount: 2 }), makeToken({ failcount: 10 }), makeToken({ failcount: 1 })];
+      const result = service.clientsideSortTokenData(data, { active: "failcount", direction: "asc" });
+      expect(result.map((t) => t.failcount)).toEqual([1, 10, 2]);
+    });
+
+    it("mutates and returns the same array reference", () => {
+      const data = [makeToken({ serial: "b" }), makeToken({ serial: "a" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
+      expect(result).toBe(data);
+    });
+  });
 });

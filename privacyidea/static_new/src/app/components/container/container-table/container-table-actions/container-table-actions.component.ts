@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject } from "@angular/core";
+import { Component, DOCUMENT, inject, viewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -56,6 +56,7 @@ export class ContainerTableActionsComponent {
   containerSelection = this.containerService.containerSelection;
   selectedContainer = this.containerService.selectedContainerSerial;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
+  readonly advancedFilterTrigger = viewChild<MatMenuTrigger>("advancedFilterTrigger");
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
@@ -118,16 +119,15 @@ export class ContainerTableActionsComponent {
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
-  onAdvancedFilterClick(filterKeyword: string, event?: MouseEvent): void {
-    if (filterKeyword === "assigned") {
-      event?.stopPropagation();
-    }
+  onAdvancedFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
-    if (filterKeyword !== "assigned") {
-      setTimeout(() => {
-        const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
-        elementById?.focus();
-      });
+    if (filterKeyword === "assigned") {
+      setTimeout(() => this.advancedFilterTrigger()?.openMenu());
+      return;
     }
+    setTimeout(() => {
+      const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
+      elementById?.focus();
+    });
   }
 }

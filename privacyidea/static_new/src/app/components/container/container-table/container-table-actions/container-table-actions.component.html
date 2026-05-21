@@ -26,6 +26,7 @@
     Create Container
   </button>
   <button
+    #advancedFilterTrigger="matMenuTrigger"
     data-overflow-pinned
     [matMenuTriggerFor]="advancedFilterMenu"
     class="action-button-secondary button-width-m"
@@ -39,7 +40,7 @@
     class="button-width-m">
     @for (keyword of containerService.advancedApiFilter; track keyword) {
       <button
-        (click)="onAdvancedFilterClick(keyword, $event)"
+        (click)="onAdvancedFilterClick(keyword)"
         mat-menu-item>
         <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
         {{ keyword }}

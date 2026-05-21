@@ -1071,6 +1071,17 @@ describe("ContainerService", () => {
         expect.stringContaining("Failed to set container states.")
       );
     });
+
+    it("rejects with an error and notifies when states array is empty", async () => {
+      const post = jest.spyOn(http, "post");
+      await expect(lastValueFrom(containerService.setStates("cS", []))).rejects.toThrow(
+        "setStates called with empty states array"
+      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(
+        "Cannot save container states: at least one state must be selected."
+      );
+      expect(post).not.toHaveBeenCalled();
+    });
   });
 
   describe("templateComparison", () => {
