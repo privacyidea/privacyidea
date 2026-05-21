@@ -356,6 +356,21 @@ export class ContainerService implements ContainerServiceInterface {
     return String(assigned).trim() !== "";
   });
 
+  private paginatedContainerRequest(params: Record<string, any>) {
+    return {
+      url: this.containerBaseUrl,
+      method: "GET" as const,
+      headers: this.authService.getHeaders(),
+      params: {
+        sortby: this.sort().active,
+        sortdir: this.sort().direction,
+        page: this.pageIndex() + 1,
+        pagesize: this.pageSize(),
+        ...params
+      }
+    };
+  }
+
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed.
     if (!this.authService.actionAllowed("container_list")) {
@@ -364,7 +379,6 @@ export class ContainerService implements ContainerServiceInterface {
 
     // Only load containers on routes with a container list or selection.
     const onAllowedRoute = this.contentService.onContainers() || this.contentService.onTokens();
-
     if (!onAllowedRoute) {
       return undefined;
     }
@@ -374,24 +388,10 @@ export class ContainerService implements ContainerServiceInterface {
       return undefined;
     }
 
-    const baseParams: Record<string, any> = {
-      page: this.pageIndex() + 1,
-      pagesize: this.pageSize(),
-      sortby: this.sort().active,
-      sortdir: this.sort().direction,
-      ...this.filterParams()
-    };
-
-    return {
-      url: this.containerBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: baseParams
-    };
+    return this.paginatedContainerRequest(this.filterParams());
   });
 
   userContainersResource = httpResource<PiResponse<ContainerDetails>>(() => {
-    // Do not load containers if the action is not allowed.
     if (!this.authService.actionAllowed("container_list")) {
       return undefined;
     }
@@ -401,21 +401,12 @@ export class ContainerService implements ContainerServiceInterface {
       return undefined;
     }
 
-    const baseParams: Record<string, any> = {
+    return this.paginatedContainerRequest({
       no_token: 1,
+      ...this.filterParams(),
       ...(this.userService.detailsUsername() && { user: this.userService.detailsUsername() }),
-      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() }),
-      sortby: this.sort().active,
-      sortdir: this.sort().direction,
-      ...this.filterParams()
-    };
-
-    return {
-      url: this.containerBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: baseParams
-    };
+      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+    });
   });
 
   containersForTokenTypeResource = httpResource<PiResponse<ContainerDetails>>(() => {
@@ -431,36 +422,22 @@ export class ContainerService implements ContainerServiceInterface {
 
     // for token details: only load containers if details are available and the token is not already in a container.
     if (this.contentService.onTokenDetails()) {
-      if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
-      const tokenRes = this.tokenService.tokenDetailResource.value();
-      if (!tokenRes) {
-        return undefined;
-      }
-      if (this.tokenInContainer()) {
+      if (!this.tokenService.tokenDetailResource.hasValue() || this.tokenInContainer()) {
         return undefined;
       }
     }
 
-    const baseParams: Record<string, any> = {
-      page: this.pageIndex() + 1,
-      pagesize: this.pageSize(),
+    const params: Record<string, any> = {
       no_token: 1,
-      sortby: this.sort().active,
-      sortdir: this.sort().direction,
       ...this.serialFilterParam()
     };
 
     const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
-      baseParams["type"] = compatibleType;
+    if (compatibleType) {
+      params["type"] = compatibleType;
     }
 
-    return {
-      url: this.containerBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: baseParams
-    };
+    return this.paginatedContainerRequest(params);
   });
 
   containersForTokenType: WritableSignal<string[]> = linkedSignal({
