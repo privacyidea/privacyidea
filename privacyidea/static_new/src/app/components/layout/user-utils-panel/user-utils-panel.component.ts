@@ -196,7 +196,7 @@ export class UserUtilsPanelComponent {
       this.userService.usersResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.userContainersResource.reload();
       return;
     }
 

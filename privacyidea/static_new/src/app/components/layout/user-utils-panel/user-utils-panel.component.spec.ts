@@ -207,7 +207,7 @@ describe("UserUtilsPanelComponent", () => {
       content.routeUrl.set(`${ROUTE_PATHS.TOKENS_DETAILS}/123`);
       component.refreshPage();
       expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
-      expect(containerService.containerResource.reload).toHaveBeenCalled();
+      expect(containerService.containersForTokenTypeResource.reload).toHaveBeenCalled();
     });
 
     it("refreshes tokens containers details route", () => {
@@ -244,7 +244,7 @@ describe("UserUtilsPanelComponent", () => {
     it("refreshes tokens enrollment route", () => {
       content.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       component.refreshPage();
-      expect(containerService.containerResource.reload).toHaveBeenCalled();
+      expect(containerService.containersForTokenTypeResource.reload).toHaveBeenCalled();
       expect(userService.usersResource.reload).toHaveBeenCalled();
     });
 
