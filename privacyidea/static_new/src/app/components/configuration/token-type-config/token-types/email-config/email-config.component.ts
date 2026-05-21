@@ -25,6 +25,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token.constants";
 
 @Component({
@@ -36,7 +37,8 @@ import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    RouterLink
+    RouterLink,
+    ClearButtonComponent
   ],
   templateUrl: "./email-config.component.html",
   styleUrl: "./email-config.component.scss"
@@ -51,6 +53,10 @@ export class EmailConfigComponent {
   updateFormData(fieldName: string, value: any): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
+  }
+
+  clearField(fieldName: string): void {
+    this.updateFormData(fieldName, "");
   }
 
   protected readonly EMAIL_SMTP_SERVER_KEY = EMAIL_SMTP_SERVER_KEY;

@@ -25,6 +25,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
 
 @Component({
@@ -36,7 +37,8 @@ import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    RouterLink
+    RouterLink,
+    ClearButtonComponent
   ],
   templateUrl: "./sms-config.component.html",
   styleUrl: "./sms-config.component.scss"
@@ -54,5 +56,9 @@ export class SmsConfigComponent {
   updateFormData(fieldName: string, value: any): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
+  }
+
+  clearField(fieldName: string): void {
+    this.updateFormData(fieldName, "");
   }
 }

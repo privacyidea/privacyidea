@@ -45,6 +45,9 @@
             <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(HOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
     </div>
   </div>

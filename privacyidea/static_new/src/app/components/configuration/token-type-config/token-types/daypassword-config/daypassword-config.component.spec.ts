@@ -48,4 +48,9 @@ describe("DaypasswordConfigComponent", () => {
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [DAYPASSWORD_HASHLIB]: newValue });
   });
 
+  it("should call updateFormData with empty value when clearField is called", () => {
+    jest.spyOn(component, "updateFormData");
+    component.clearField(DAYPASSWORD_HASHLIB);
+    expect(component.updateFormData).toHaveBeenCalledWith(DAYPASSWORD_HASHLIB, "");
+  });
 });

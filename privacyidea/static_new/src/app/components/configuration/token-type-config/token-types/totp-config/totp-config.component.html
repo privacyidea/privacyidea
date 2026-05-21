@@ -47,6 +47,9 @@
             <mat-option [value]="step">{{ step }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(TOTP_TIME_STEP); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
 
       <mat-form-field
@@ -74,6 +77,9 @@
             <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(TOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
 
       <mat-form-field

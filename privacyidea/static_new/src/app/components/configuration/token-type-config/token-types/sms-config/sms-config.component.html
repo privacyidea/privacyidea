@@ -41,6 +41,9 @@
             <mat-option [value]="gateway">{{ gateway }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(SMS_GATEWAY); $event.stopPropagation()"></app-clear-button>
         <mat-hint i18n>Select a predefined
           <a
             [routerLink]=[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]><strong>SMS Gateway configuration</strong>.
