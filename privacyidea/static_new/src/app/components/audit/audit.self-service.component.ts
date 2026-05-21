@@ -40,7 +40,7 @@ import {
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuditComponent } from "./audit.component";
 
@@ -65,7 +65,7 @@ import { AuditComponent } from "./audit.component";
     MatRow,
     MatColumnDef,
     MatLabel,
-    CopyButtonComponent,
+    CopyableComponent,
     RouterLink,
     MatButtonModule,
     MatIcon,

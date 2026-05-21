@@ -67,7 +67,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
-                        (onClick)="containerService.selectedContainerSerial.set(null)"
+                        (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
                         [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
                           [(ngModel)]="containerService.selectedContainerSerial"
@@ -81,7 +81,7 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <div class="flex-row flex-nowrap ali-center">
+                    <app-copyable [copyText]="element.value">
                       @if (containerService.containerBelongsToUser(element.value)) {
                         <a
                           attr.aria-label="{{ element.keyMap.label }} Link"
@@ -91,10 +91,7 @@
                       } @else {
                         {{ element.value }}
                       }
-                      @if (element.value !== "") {
-                        <app-copy-button [copyText]="element.value"></app-copy-button>
-                      }
-                    </div>
+                    </app-copyable>
                   }
                 }
                 @case ("realms") {

@@ -28,31 +28,69 @@ import { ActivatedRoute, provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { ClientsService } from "@services/clients/clients.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { EventService } from "@services/event/event.service";
+import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
 import { MachineService } from "@services/machine/machine.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { ServiceIdService } from "@services/service-id/service-id.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
+import { SystemService } from "@services/system/system.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
 import { TokenService } from "@services/token/token.service";
+import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
 import {
   MockAuditService,
+  MockCaConnectorService,
   MockChallengesService,
+  MockClientsService,
   MockContainerService,
+  MockContainerTemplateService,
   MockContentService,
   MockDialogService,
+  MockDocumentationService,
   MockLocalService,
+  MockMachineResolverService,
   MockMachineService,
   MockNotificationService,
   MockPendingChangesService,
+  MockPeriodicTaskService,
+  MockPolicyService,
+  MockPrivacyideaServerService,
+  MockRadiusService,
+  MockRealmService,
+  MockServiceIdService,
   MockSessionTimerService,
+  MockSmsGatewayService,
+  MockSmtpService,
+  MockSystemService,
   MockTokenService,
-  MockUserService
+  MockTokengroupService,
+  MockUserService,
+  MockVersioningService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
 import { of } from "rxjs";
 import { UserUtilsPanelComponent } from "./user-utils-panel.component";
 
@@ -103,13 +141,32 @@ describe("UserUtilsPanelComponent", () => {
         { provide: ChallengesService, useClass: MockChallengesService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: VersioningService, useClass: MockVersioningService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: ClientsService, useClass: MockClientsService },
+        { provide: PolicyService, useClass: MockPolicyService },
+        { provide: SubscriptionService, useClass: MockSubscriptionService },
+        { provide: MachineResolverService, useClass: MockMachineResolverService },
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: SmtpService, useClass: MockSmtpService },
+        { provide: RadiusServerService, useClass: MockRadiusService },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService },
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: TokengroupService, useClass: MockTokengroupService },
+        { provide: CaConnectorService, useClass: MockCaConnectorService },
+        { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: EventService, useClass: MockEventService },
+        { provide: SystemService, useClass: MockSystemService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
         provideZonelessChangeDetection(),
         MockLocalService,

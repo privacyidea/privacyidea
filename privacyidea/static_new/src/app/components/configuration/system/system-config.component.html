@@ -169,11 +169,15 @@
           <mat-form-field
             class="input-width-l">
             <mat-label i18n>Override Authorization Clients</mat-label>
-            <input
-              [(ngModel)]="params.OverrideAuthorizationClient"
-              matInput
-              name="OverrideAuthorizationClient"
-              placeholder="127.0.0.1, 10.0.0.8" />
+            <app-clearable-input
+              (clearButtonClick)="params.OverrideAuthorizationClient = ''"
+              [showClearButton]="!!params.OverrideAuthorizationClient">
+              <input
+                [(ngModel)]="params.OverrideAuthorizationClient"
+                matInput
+                name="OverrideAuthorizationClient"
+                placeholder="127.0.0.1, 10.0.0.8" />
+            </app-clearable-input>
             <mat-hint i18n>
               These client IP addresses or subnets are allowed to masquerade as another client
             </mat-hint>

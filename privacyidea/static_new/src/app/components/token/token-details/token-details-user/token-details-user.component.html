@@ -46,7 +46,7 @@
                 subscriptSizing="dynamic">
                 <mat-label i18n>Enter User</mat-label>
                 <app-clearable-input
-                  (onClick)="userService.selectionFilter.set('')"
+                  (clearButtonClick)="userService.selectionFilter.set('')"
                   [showClearButton]="userService.selectionFilter() !== ''">
                   <input
                     [(ngModel)]="userService.selectionFilter"
@@ -60,11 +60,13 @@
                 </mat-autocomplete>
               </mat-form-field>
             } @else {
-              <a
-                (click)="contentService.userSelected(element.value, element['user_realm'])"
-                i18n-aria-label="{{ element.keyMap.label }} Link">
-                {{ element.value }}
-              </a>
+              <app-copyable [copyText]="element.value">
+                <a
+                  (click)="contentService.userSelected(element.value, element['user_realm'])"
+                  i18n-aria-label="{{ element.keyMap.label }} Link">
+                  {{ element.value }}
+                </a>
+              </app-copyable>
             }
           }
           @case ("user_realm") {
@@ -82,10 +84,12 @@
                 </mat-select>
               </mat-form-field>
             } @else {
-              <span
-                i18n-aria-label="{{ element.keyMap.label }} Link">
-                {{ element.value }}
-              </span>
+              <app-copyable [copyText]="element.value">
+                <span
+                  i18n-aria-label="{{ element.keyMap.label }} Link">
+                  {{ element.value }}
+                </span>
+              </app-copyable>
             }
           }
           @default {

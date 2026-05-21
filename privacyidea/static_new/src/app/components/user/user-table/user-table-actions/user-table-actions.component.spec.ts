@@ -24,9 +24,11 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogService } from "@services/dialog/dialog.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserService } from "@services/user/user.service";
-import { MockDialogService, MockUserService } from "@testing/mock-services";
+import { MockContentService, MockDialogService, MockRealmService, MockUserService } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { UserTableActionsComponent } from "./user-table-actions.component";
+import { ContentService } from "@services/content/content.service";
+import { RealmService } from "@services/realm/realm.service";
 
 describe("UserTableActionsComponent", () => {
   let component: UserTableActionsComponent;
@@ -43,7 +45,9 @@ describe("UserTableActionsComponent", () => {
         provideRouter([]),
         { provide: ResolverService, useClass: MockResolverService },
         { provide: UserService, useClass: MockUserService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: RealmService, useClass: MockRealmService },
       ],
       imports: [UserTableActionsComponent]
     }).compileComponents();

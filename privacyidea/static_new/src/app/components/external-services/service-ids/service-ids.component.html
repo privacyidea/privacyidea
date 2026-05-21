@@ -26,7 +26,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Filter Service IDs...</mat-label>
       <app-clearable-input
-        (onClick)="resetFilter()"
+        (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
         <input
           #filterHTMLInputElement
@@ -95,14 +95,13 @@
       <td
         *matCellDef="let service"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="service.servicename">
           <a
             (click)="onEditServiceId(service)"
             class="flex ali-center">
             {{ service.servicename }}
           </a>
-          <app-copy-button [copyText]="service.servicename" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 

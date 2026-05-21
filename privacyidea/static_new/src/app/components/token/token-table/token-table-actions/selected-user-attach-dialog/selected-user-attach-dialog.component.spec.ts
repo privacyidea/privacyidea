@@ -21,8 +21,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { UserData } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
+import { MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { RealmService } from "@services/realm/realm.service";
 
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;
@@ -35,7 +38,10 @@ describe("SelectedUserAssignDialogComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MatDialogRef, useValue: { close: jest.fn() } },
-        { provide: MAT_DIALOG_DATA, useValue: {} }
+        { provide: MAT_DIALOG_DATA, useValue: {} },
+        { provide: UserService, useClass: MockUserService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: RealmService, useClass: MockRealmService }
       ]
     }).compileComponents();
 

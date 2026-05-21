@@ -1,4 +1,4 @@
-name: GitLab
+name: GitLab Tag Master Branch
 
 on:
   push:
@@ -20,6 +20,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Fetch branch-* heads
+        # actions/checkout only fetches the triggering tag ref; the
+        # `branch-*` remote-tracking refs need to be fetched explicitly
+        # before `git branch -r --contains` can see them.
+        run: git fetch --no-tags origin '+refs/heads/branch-*:refs/remotes/origin/branch-*'
 
       - name: Skip if tag is on a branch-* branch
         id: check

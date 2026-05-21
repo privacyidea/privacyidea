@@ -65,7 +65,7 @@
             class="input-width-l  margin-bottom-16">
             <mat-label i18n>Identifier</mat-label>
             <app-clearable-input
-              (onClick)="serviceIdForm.get('servicename')?.setValue('')"
+              (clearButtonClick)="serviceIdForm.get('servicename')?.setValue('')"
               [showClearButton]="!isEditMode && !!serviceIdForm.get('servicename')?.value">
               <input
                 formControlName="servicename"
@@ -87,7 +87,7 @@
             class="input-width-xl">
             <mat-label i18n>Description</mat-label>
             <app-clearable-input
-              (onClick)="serviceIdForm.get('description')?.setValue('')"
+              (clearButtonClick)="serviceIdForm.get('description')?.setValue('')"
               [showClearButton]="!!serviceIdForm.get('description')?.value">
               <input
                 formControlName="description"

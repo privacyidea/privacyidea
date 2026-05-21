@@ -24,10 +24,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 
 describe("SmtpServersComponent", () => {
@@ -54,7 +56,9 @@ describe("SmtpServersComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: SmtpService, useValue: smtpServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 

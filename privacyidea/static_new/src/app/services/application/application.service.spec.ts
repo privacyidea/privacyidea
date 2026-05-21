@@ -30,7 +30,7 @@ describe("ApplicationService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(), ApplicationService]
     });
     applicationService = TestBed.inject(ApplicationService);
     httpMock = TestBed.inject(HttpTestingController);

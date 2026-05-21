@@ -33,7 +33,7 @@
           subscriptSizing="dynamic">
           <mat-label i18n>Filter Token...</mat-label>
           <app-clearable-input
-            (onClick)="clearFilter()"
+            (clearButtonClick)="clearFilter()"
             [showClearButton]="filterInput.value !== ''">
             <input
               #filterInput
@@ -88,7 +88,7 @@
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
                     @if (
                       element.status !== "missing" &&
                       (element.token.username === authService.username() || authService.role() === "admin")
@@ -102,10 +102,7 @@
                     } @else {
                       <span> {{ element.token[column.key] }} </span>
                     }
-                    @if (element.status !== "missing") {
-                      <app-copy-button [copyText]="element.token.serial"></app-copy-button>
-                    }
-                  </div>
+                  </app-copyable>
                 }
                 @case ("active") {
                   @if (element.status !== "missing") {

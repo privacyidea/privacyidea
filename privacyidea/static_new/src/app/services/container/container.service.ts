@@ -36,22 +36,30 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm"];
-const advancedApiFilter = ["token_serial"];
+const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
+const advancedApiFilter = ["token_serial", "template", "assigned"];
 
-export interface TemplateComparisonResult {
-  [containerSerial: string]: {
+export const CONTAINER_STATE_OPTIONS = [
+  { value: "active", label: $localize`active` },
+  { value: "disabled", label: $localize`deactivated` },
+  { value: "lost", label: $localize`lost` },
+  { value: "damaged", label: $localize`damaged` }
+] as const;
+
+export type TemplateComparisonResult = Record<
+  string,
+  {
     tokens: {
       additional: string[];
       equal: boolean;
       missing: string[];
     };
-  };
-}
+  }
+>;
 
 export interface ContainerDetails {
   count?: number;
-  containers: Array<ContainerDetailData>;
+  containers: ContainerDetailData[];
 }
 type ContainerRegistrationState = "registered" | "client_wait";
 
@@ -139,7 +147,7 @@ export interface ContainerTemplate {
   default: boolean;
   name: string;
   template_options: {
-    tokens: Array<TokenEnrollmentPayload>;
+    tokens: TokenEnrollmentPayload[];
   };
 }
 
@@ -202,10 +210,11 @@ export interface ContainerServiceInterface {
     containerSerial: string,
     states: string[]
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
+  setStates: (containerSerial: string, states: string[]) => Observable<any>;
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
   assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
   compareWithTemplate: () => Promise<void>;
-  setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
+  setContainerInfos: (containerSerial: string, infos: any) => Observable<object>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<any>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
   removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
@@ -235,9 +244,7 @@ export interface ContainerServiceInterface {
   startPolling(containerSerial: string): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ContainerService implements ContainerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -287,7 +294,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type"]);
+    const plainKeys = new Set(["user", "type", "state", "assigned"]);
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
@@ -651,6 +658,26 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
+  setStates(containerSerial: string, states: string[]) {
+    if (states.length === 0) {
+      this.notificationService.error("Cannot save container states: at least one state must be selected.");
+      return throwError(() => new Error("setStates called with empty states array"));
+    }
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<
+        PiResponse<Record<string, boolean>>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: states.join(",") }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to set container states.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to set container states. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
   unassignUser(containerSerial: string, username: string, userRealm: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
@@ -687,7 +714,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerInfos(containerSerial: string, infos: any): Observable<Object>[] {
+  setContainerInfos(containerSerial: string, infos: any): Observable<object>[] {
     const headers = this.authService.getHeaders();
     const info_url = `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info`;
     return Object.keys(infos).map((info) => {
@@ -921,7 +948,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  startPolling(containerSerial: string, isRollover: boolean = false): void {
+  startPolling(containerSerial: string, isRollover = false): void {
     if (this.isPollingActive()) {
       return;
     }

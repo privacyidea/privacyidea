@@ -48,6 +48,7 @@ describe("ServiceIdService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        ServiceIdService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }

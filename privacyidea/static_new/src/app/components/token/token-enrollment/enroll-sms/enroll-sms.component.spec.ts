@@ -21,6 +21,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollSmsComponent } from "./enroll-sms.component";
+import { SystemService } from "@services/system/system.service";
+import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { ContentService } from "@services/content/content.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 
 describe("EnrollSmsComponent", () => {
   let component: EnrollSmsComponent;
@@ -29,7 +34,14 @@ describe("EnrollSmsComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollSmsComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService}
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollSmsComponent);

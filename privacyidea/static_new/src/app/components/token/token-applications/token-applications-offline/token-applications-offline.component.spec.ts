@@ -27,12 +27,14 @@ import { MachineService, TokenApplication } from "@services/machine/machine.serv
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import {
+  MockContentService,
   MockLocalService,
   MockMachineService,
   MockNotificationService,
   MockTableUtilsService
 } from "@testing/mock-services";
 import { TokenApplicationsOfflineComponent } from "./token-applications-offline.component";
+import { ContentService } from "@services/content/content.service";
 
 describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
@@ -50,6 +52,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
         { provide: MachineService, useClass: MockMachineService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: TokenService, useValue: mockTokenService },
+        { provide: ContentService, useClass: MockContentService },
         { provide: TokenApplicationsComponent, useValue: TokenApplicationsComponent },
         MockLocalService,
         MockNotificationService

@@ -24,10 +24,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ServiceIdsComponent } from "@components/external-services/service-ids/service-ids.component";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 
 describe("ServiceIdsComponent", () => {
@@ -54,7 +56,9 @@ describe("ServiceIdsComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: ServiceIdService, useValue: serviceIdServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 
