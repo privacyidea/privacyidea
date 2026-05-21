@@ -21,6 +21,7 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import {
+  CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerService,
   ContainerServiceInterface
@@ -39,14 +40,13 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
-
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -99,6 +99,8 @@ export class ContainerTableComponent {
   sort = this.containerService.sort;
   containerResource = this.containerService.containerResource;
 
+  readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
+
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
     computation: (containerResource, previous) => {
@@ -134,6 +136,7 @@ export class ContainerTableComponent {
   readonly apiFilterKeyMap: Record<string, string> = {
     serial: "container_serial",
     type: "type",
+    states: "state",
     description: "description",
     user_name: "user",
     realms: "container_realm"

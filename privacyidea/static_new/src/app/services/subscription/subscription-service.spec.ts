@@ -23,12 +23,14 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SubscriptionService } from "./subscription.service";
+import { MockContentService } from "@testing/mock-services";
+import { ContentService } from "@services/content/content.service";
 
 describe("SubscriptionService", () => {
   let service: SubscriptionService;
   let httpMock: HttpTestingController;
   let authMock: { getHeaders: jest.Mock };
-  let notifyMock: { warning: jest.Mock };
+  let notifyMock: { warning: jest.Mock, error: jest.Mock };
 
   beforeEach(() => {
     authMock = { getHeaders: jest.fn(() => ({}) as any) } as any;
@@ -40,7 +42,8 @@ describe("SubscriptionService", () => {
         provideHttpClientTesting(),
         SubscriptionService,
         { provide: AuthService, useValue: authMock },
-        { provide: NotificationService, useValue: notifyMock }
+        { provide: NotificationService, useValue: notifyMock },
+        { provide: ContentService, useClass: MockContentService },
       ]
     });
 

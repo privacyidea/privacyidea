@@ -56,12 +56,40 @@
       <mat-label i18n>Client</mat-label>
       <input
         matInput
-        [formControl]="clientFormControl"
+        [formField]="clientForm"
+        [matAutocomplete]="clientAuto"
         placeholder="10.0.0.0/8, !10.0.0.124" />
-      @if (clientFormControl.touched && clientFormControl.invalid) {
+      <mat-autocomplete
+        #clientAuto="matAutocomplete"
+        class="known-clients-autocomplete-panel">
+        @for (client of filteredKnownClients(); track client.ip) {
+          <mat-option
+            [value]="buildClientSelection(client.ip)"
+            class="known-client-option">
+            <span class="known-client-ip">{{ client.ip }}</span>
+            <span class="known-client-details">
+              @if (client.applications.length) {
+                <span class="known-client-apps">
+                  @for (app of client.applications; track app) {
+                    <span
+                      class="known-client-app-chip"
+                      [title]="app"
+                      >{{ app }}</span
+                    >
+                  }
+                </span>
+              }
+              @if (client.hostname) {
+                <span class="known-client-hostname">{{ client.hostname }}</span>
+              }
+            </span>
+          </mat-option>
+        }
+      </mat-autocomplete>
+      @if (clientForm().touched() && clientForm().invalid()) {
         <mat-error i18n>Please enter a valid client format</mat-error>
       }
-      @if (clientFormControl.value !== "") {
+      @if (clientModel() !== "") {
         <app-clear-button
           matSuffix
           (clearButtonClick)="clearClientControl()"></app-clear-button>

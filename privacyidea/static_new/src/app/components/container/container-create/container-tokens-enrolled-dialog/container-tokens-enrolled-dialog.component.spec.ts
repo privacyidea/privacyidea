@@ -26,6 +26,8 @@ import {
   ContainerTokensEnrolledDialogComponent,
   ContainerTokensEnrolledDialogData
 } from "./container-tokens-enrolled-dialog.component";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 const dialogClose = jest.fn();
 const dialogRefMock = { close: dialogClose };
@@ -53,7 +55,8 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
       providers: [
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: threeTokens },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        { provide: TokenService, useClass: MockTokenService }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();

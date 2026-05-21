@@ -68,9 +68,7 @@ export interface ChallengesServiceInterface {
   deleteExpiredChallenges(): Observable<PiResponse<unknown>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ChallengesService implements ChallengesServiceInterface {
   private readonly http = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);

@@ -57,9 +57,7 @@ export interface CaConnectorServiceInterface {
   ): Promise<any>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class CaConnectorService implements CaConnectorServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

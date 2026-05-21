@@ -58,9 +58,7 @@ export interface SmtpServiceInterface {
   deleteSmtpServer(identifier: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SmtpService implements SmtpServiceInterface {
   readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
 

@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject } from "@angular/core";
+import { Component, DOCUMENT, inject, viewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -56,6 +56,7 @@ export class ContainerTableActionsComponent {
   containerSelection = this.containerService.containerSelection;
   selectedContainer = this.containerService.selectedContainerSerial;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
+  readonly advancedFilterTrigger = viewChild<MatMenuTrigger>("advancedFilterTrigger");
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
@@ -93,20 +94,37 @@ export class ContainerTableActionsComponent {
   }
 
   private toggleFilter(filterKeyword: string): void {
-    const newValue = this.tableUtilsService.toggleKeywordInFilter({
-      keyword: filterKeyword,
-      currentValue: this.containerService.containerFilter()
-    });
+    const newValue =
+      filterKeyword === "assigned"
+        ? this.tableUtilsService.toggleBooleanInFilter({
+            keyword: filterKeyword,
+            currentValue: this.containerService.containerFilter()
+          })
+        : this.tableUtilsService.toggleKeywordInFilter({
+            keyword: filterKeyword,
+            currentValue: this.containerService.containerFilter()
+          });
     this.containerService.containerFilter.set(newValue);
   }
 
   getFilterIconName(keyword: string): string {
+    if (keyword === "assigned") {
+      const value = this.containerService.containerFilter()?.getValueOfKey(keyword)?.toLowerCase();
+      if (!value) {
+        return "filter_alt";
+      }
+      return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
+    }
     const isSelected = this.containerService.containerFilter().hasKey(keyword);
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
   onAdvancedFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
+    if (filterKeyword === "assigned") {
+      setTimeout(() => this.advancedFilterTrigger()?.openMenu());
+      return;
+    }
     setTimeout(() => {
       const elementById = this.document.getElementById("container-filter-input") as HTMLInputElement | null;
       elementById?.focus();

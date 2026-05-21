@@ -49,9 +49,7 @@ export interface Subscription {
   by_phone: string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SubscriptionService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);

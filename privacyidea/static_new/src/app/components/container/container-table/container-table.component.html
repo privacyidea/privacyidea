@@ -93,6 +93,17 @@
                         type="button">
                         <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                       </button>
+                    } @else if (apiFilterKeyMap[column.key] === "state") {
+                      <button
+                        [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                        [matMenuTriggerFor]="statesMenu"
+                        class="filter-button"
+                        i18n-matTooltip
+                        mat-icon-button
+                        matTooltip="Filter by state"
+                        type="button">
+                        <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                      </button>
                     } @else {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
@@ -141,7 +152,11 @@
                   <app-copyable [copyText]="element.serial">
                     <a
                       (click)="contentService.navigateContainerDetails(element.serial)"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                      (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(element.serial)"
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ element[column.key] }}
                     </a>
                   </app-copyable>
@@ -159,17 +174,36 @@
                   </div>
                 }
                 @case ("states") {
-                  <span
-                    (click)="handleStateClick(element)"
-                    [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
-                    {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
-                  </span>
+                  @if (element[column.key]?.length) {
+                    <div
+                      (click)="handleStateClick(element); $event.stopPropagation()"
+                      (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
+                      (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
+                      class="flex-row gap-8 flex-wrap cursor-pointer"
+                      role="button"
+                      tabindex="0">
+                      @for (state of element[column.key]; track state) {
+                        <span
+                          [ngClass]="
+                            tableUtilsService.getSpanClassForState(state, state === 'active' || state === 'disabled')
+                          ">
+                          {{ tableUtilsService.getDisplayTextForState(state) }}
+                        </span>
+                      }
+                    </div>
+                  }
                 }
                 @case ("user_name") {
                   <app-copyable [copyText]="element[column.key]">
                     <a
                       (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ element[column.key] }}
                     </a>
                   </app-copyable>
@@ -204,7 +238,14 @@
                 <div class="expanded-token-list">
                   @for (token of element.tokens; track token) {
                     <div class="token-item flex-row flex-nowrap ali-center">
-                      <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }}</a>
+                      <a
+                        (click)="contentService.tokenSelected(token.serial)"
+                        (keydown.enter)="contentService.tokenSelected(token.serial)"
+                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(token.serial)"
+                        role="button"
+                        tabindex="0">
+                        {{ token.serial }}
+                      </a>
                       <app-copy-button [copyText]="token.serial"></app-copy-button>
                       [{{ token.tokentype }}]
                     </div>
@@ -250,6 +291,27 @@
     <div i18n>You do not have the permission to view the container list.</div>
   }
 </div>
+
+<mat-menu #statesMenu="matMenu">
+  <ng-template
+    let-keyword="keyword"
+    matMenuContent>
+    <button
+      (click)="onItemSelected(keyword, undefined)"
+      mat-menu-item>
+      <mat-icon>filter_alt_off</mat-icon>
+      <span i18n>Clear Filter</span>
+    </button>
+    <mat-divider />
+    @for (option of containerStateOptions; track option.value) {
+      <button
+        (click)="onItemSelected(keyword, option.value)"
+        mat-menu-item>
+        {{ option.label }}
+      </button>
+    }
+  </ng-template>
+</mat-menu>
 
 <mat-menu #typeMenu="matMenu">
   <ng-template

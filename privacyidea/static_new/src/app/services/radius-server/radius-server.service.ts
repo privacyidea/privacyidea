@@ -54,9 +54,7 @@ export interface RadiusServerServiceInterface {
   deleteRadiusServer(identifier: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class RadiusServerService implements RadiusServerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

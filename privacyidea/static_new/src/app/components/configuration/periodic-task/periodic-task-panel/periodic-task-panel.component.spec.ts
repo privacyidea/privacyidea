@@ -30,6 +30,8 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
 import { of } from "rxjs";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService } from "@testing/mock-services";
 
 describe("PeriodicTaskPanelComponent", () => {
   let component: PeriodicTaskPanelComponent;
@@ -57,7 +59,8 @@ describe("PeriodicTaskPanelComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
         { provide: DialogService, useClass: MockDialogService },
-        { provide: PendingChangesService, useClass: MockPendingChangesService }
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 

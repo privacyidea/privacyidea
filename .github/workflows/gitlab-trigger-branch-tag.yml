@@ -1,4 +1,4 @@
-name: GitLab (branch tag)
+name: GitLab Tag on Branch
 
 on:
   push:

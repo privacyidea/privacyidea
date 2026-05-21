@@ -137,9 +137,7 @@ export interface AuditServiceInterface {
   downloadCSV(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -58,9 +58,7 @@ export interface ContainerTemplateServiceInterface {
   postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ContainerTemplateService implements ContainerTemplateServiceInterface {
   // --- Constants & Data ---
   readonly containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";

@@ -33,9 +33,7 @@ export interface SessionTimerServiceInterface {
   startRefreshingRemainingTime(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly router: Router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);

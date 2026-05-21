@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+name: Python requirements sync
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+    paths:
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - 'tests/requirements.txt'
+      - 'doc/requirements.txt'
+      - '.github/python-versions.env'
+      - '.github/workflows/python-requirements-sync.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check-requirements-sync:
+    name: pip-compile drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Load Python versions
+        id: pyversions
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "min=$MIN" >> "$GITHUB_OUTPUT"
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ steps.pyversions.outputs.min }}
+      - name: Install pip-tools
+        # Pin both pip and pip-tools so the drift check is reproducible.
+        # pip-compile output can change between pip-tools releases (spurious
+        # diffs), and pip-tools 7.4.1 is incompatible with pip>=25 (which
+        # dropped PackageFinder.allow_all_prereleases).
+        run: pip install "pip==24.3.1" "pip-tools==7.4.1"
+      - name: Recompile runtime requirements
+        run: pip-compile --allow-unsafe --generate-hashes --output-file=requirements.txt pyproject.toml
+      - name: Recompile test requirements
+        run: pip-compile --allow-unsafe --extra=test --generate-hashes --output-file=tests/requirements.txt pyproject.toml
+      - name: Recompile doc requirements
+        run: pip-compile --allow-unsafe --extra=doc --generate-hashes --output-file=doc/requirements.txt pyproject.toml
+      - name: Fail on drift
+        # -I ignores hunks whose changed lines all match the pattern. The
+        # pip-compile invocation header records default-valued CLI flags
+        # (--cert=None etc.) which differ between local and CI without
+        # reflecting any real dependency change.
+        run: |
+          if ! git diff --exit-code -I '^#    pip-compile' \
+                requirements.txt tests/requirements.txt doc/requirements.txt; then
+            echo "::error::pyproject.toml and the pinned requirements files are out of sync."
+            echo "Run pip-compile locally (see each file's header) and commit the result."
+            exit 1
+          fi

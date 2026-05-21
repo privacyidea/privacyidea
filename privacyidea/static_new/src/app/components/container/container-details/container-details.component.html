@@ -56,12 +56,30 @@
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("states") {
-                  @for (state of element.value; track state; let idx = $index) {
-                    <span
-                      [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
-                      class="font-14">
-                      {{ tableUtilsService.getDisplayTextForState(state) }}
-                    </span>
+                  @if (element.isEditing()) {
+                    <mat-form-field
+                      class="input-width-m"
+                      subscriptSizing="dynamic">
+                      <mat-label i18n>Select States</mat-label>
+                      <mat-select
+                        [ngModel]="selectedStates()"
+                        (ngModelChange)="onStatesChange($event)"
+                        multiple>
+                        @for (option of containerStateOptions; track option.value) {
+                          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    <div class="flex-row gap-8 flex-wrap">
+                      @for (state of element.value; track state; let idx = $index) {
+                        <span
+                          [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
+                          class="font-14">
+                          {{ tableUtilsService.getDisplayTextForState(state) }}
+                        </span>
+                      }
+                    </div>
                   }
                 }
                 @case ("realms") {
@@ -197,7 +215,11 @@
                     <app-copyable [copyText]="element.value">
                       <a
                         (click)="contentService.userSelected(element.value, element['user_realm'])"
-                        i18n-aria-label="{{ element.keyMap.label }} Link">
+                        (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
+                        (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])"
+                        i18n-aria-label="{{ element.keyMap.label }} Link"
+                        role="button"
+                        tabindex="0">
                         {{ element.value }}
                       </a>
                     </app-copyable>
