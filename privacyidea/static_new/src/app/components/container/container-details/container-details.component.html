@@ -196,7 +196,7 @@
                       subscriptSizing="dynamic">
                       <mat-label>Enter User</mat-label>
                       <app-clearable-input
-                        (onClick)="userService.selectionFilter.set('')"
+                        (cleared)="userService.selectionFilter.set('')"
                         [showClearButton]="userService.selectionFilter() !== ''">
                         <input
                           [(ngModel)]="userService.selectionFilter"

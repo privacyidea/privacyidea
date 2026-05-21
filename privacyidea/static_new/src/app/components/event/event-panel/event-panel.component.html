@@ -77,7 +77,7 @@
           <mat-form-field class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <app-clearable-input
-              (onClick)="updateEventHandler('name', '')"
+              (cleared)="updateEventHandler('name', '')"
               [showClearButton]="!!editEvent().name">
               <input
                 #nameInput="ngModel"

@@ -35,7 +35,7 @@
           <mat-form-field>
             <mat-label i18n>Search condition ...</mat-label>
             <app-clearable-input
-              (onClick)="searchTerm.set('')"
+              (cleared)="searchTerm.set('')"
               [showClearButton]="searchTerm().length > 0">
               <input
                 matInput

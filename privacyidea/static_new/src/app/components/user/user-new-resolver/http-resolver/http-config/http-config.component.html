@@ -27,7 +27,7 @@
     <mat-form-field class="input-width-xl">
       <mat-label i18n>Endpoint</mat-label>
       <app-clearable-input
-        (onClick)="formGroup.get('endpoint')?.setValue('')"
+        (cleared)="formGroup.get('endpoint')?.setValue('')"
         [showClearButton]="!!formGroup.get('endpoint')?.value">
         <input
           formControlName="endpoint"

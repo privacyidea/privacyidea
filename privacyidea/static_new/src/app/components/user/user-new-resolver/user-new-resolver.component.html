@@ -51,7 +51,7 @@
           }
         </mat-hint>
         <app-clearable-input
-          (onClick)="resolverName = ''"
+          (cleared)="resolverName = ''"
           [showClearButton]="!isEditMode && !!resolverName">
           <input
             #nameInput="ngModel"
@@ -108,7 +108,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
-                (onClick)="testUsername = ''"
+                (cleared)="testUsername = ''"
                 [showClearButton]="!!testUsername">
                 <input
                   [(ngModel)]="testUsername"
@@ -120,7 +120,7 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
-                (onClick)="testUserId = ''"
+                (cleared)="testUserId = ''"
                 [showClearButton]="!!testUserId">
                 <input
                   [(ngModel)]="testUserId"

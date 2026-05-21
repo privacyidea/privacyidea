@@ -26,7 +26,7 @@
       class="challenges-table-filter">
       <mat-label i18n>Filter Challenges...</mat-label>
       <app-clearable-input
-        (onClick)="challengesService.clearFilter()"
+        (cleared)="challengesService.clearFilter()"
         [showClearButton]="challengesService.challengesFilter().isNotEmpty">
         <input
           #filterHTMLInputElement

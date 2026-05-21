@@ -21,7 +21,7 @@
     <mat-form-field>
       <mat-label i18n>Name</mat-label>
       <app-clearable-input
-        (onClick)="editTask().name = ''; emitAllowSave()"
+        (cleared)="editTask().name = ''; emitAllowSave()"
         [showClearButton]="!!editTask().name">
         <input
           #nameInput="ngModel"
@@ -59,7 +59,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Interval</mat-label>
         <app-clearable-input
-          (onClick)="editTask().interval = ''; emitAllowSave()"
+          (cleared)="editTask().interval = ''; emitAllowSave()"
           [showClearButton]="!!editTask().interval">
           <input
             matInput

@@ -67,7 +67,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
-                        (onClick)="containerService.selectedContainerSerial.set(null)"
+                        (cleared)="containerService.selectedContainerSerial.set(null)"
                         [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
                           [(ngModel)]="containerService.selectedContainerSerial"

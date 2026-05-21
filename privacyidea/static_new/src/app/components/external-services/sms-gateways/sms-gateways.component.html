@@ -26,7 +26,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Filter SMS Gateways...</mat-label>
       <app-clearable-input
-        (onClick)="resetFilter()"
+        (cleared)="resetFilter()"
         [showClearButton]="filterString().length > 0">
         <input
           #filterHTMLInputElement

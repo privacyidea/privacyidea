@@ -70,7 +70,7 @@
             class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <app-clearable-input
-              (onClick)="smsForm.get('name')?.setValue('')"
+              (cleared)="smsForm.get('name')?.setValue('')"
               [showClearButton]="!isEditMode && !!smsForm.get('name')?.value">
               <input
                 formControlName="name"
@@ -110,7 +110,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="smsForm.get('description')?.setValue('')"
+            (cleared)="smsForm.get('description')?.setValue('')"
             [showClearButton]="!!smsForm.get('description')?.value">
             <input
               formControlName="description"
@@ -157,7 +157,7 @@
 
               @if (!param.value.values && param.value.type !== 'text') {
                 <app-clearable-input
-                  (onClick)="parametersForm.get(param.key)?.setValue('')"
+                  (cleared)="parametersForm.get(param.key)?.setValue('')"
                   [showClearButton]="!!parametersForm.get(param.key)?.value">
                   <input
                     [formControlName]="param.key"
@@ -248,7 +248,7 @@
                   class="input-width-m">
                   <mat-label i18n>Option Name</mat-label>
                   <app-clearable-input
-                    (onClick)="newOptionKey = ''"
+                    (cleared)="newOptionKey = ''"
                     [showClearButton]="!!newOptionKey">
                     <input
                       [(ngModel)]="newOptionKey"
@@ -267,7 +267,7 @@
                   class="input-width-m">
                   <mat-label i18n>Value</mat-label>
                   <app-clearable-input
-                    (onClick)="newOptionValue = ''"
+                    (cleared)="newOptionValue = ''"
                     [showClearButton]="!!newOptionValue">
                     <input
                       [(ngModel)]="newOptionValue"
@@ -373,7 +373,7 @@
                   class="input-width-m">
                   <mat-label i18n>Header Name</mat-label>
                   <app-clearable-input
-                    (onClick)="newHeaderKey = ''"
+                    (cleared)="newHeaderKey = ''"
                     [showClearButton]="!!newHeaderKey">
                     <input
                       [(ngModel)]="newHeaderKey"
@@ -392,7 +392,7 @@
                   class="input-width-m">
                   <mat-label i18n>Value</mat-label>
                   <app-clearable-input
-                    (onClick)="newHeaderValue = ''"
+                    (cleared)="newHeaderValue = ''"
                     [showClearButton]="!!newHeaderValue">
                     <input
                       [(ngModel)]="newHeaderValue"

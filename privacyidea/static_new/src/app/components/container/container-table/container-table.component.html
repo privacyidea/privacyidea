@@ -28,7 +28,7 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
-          (onClick)="containerService.clearFilter()"
+          (cleared)="containerService.clearFilter()"
           [showClearButton]="containerService.containerFilter().isNotEmpty">
           <input
             #filterHTMLInputElement

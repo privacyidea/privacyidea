@@ -36,7 +36,7 @@
     <mat-form-field [class]="inputClass">
       <mat-label i18n>Add Token to Container</mat-label>
       <app-clearable-input
-        (onClick)="clearFilter.emit()"
+        (cleared)="clearFilter.emit()"
         [showClearButton]="filterIsNotEmpty">
         <input
           #filterHTMLInputElement

@@ -48,7 +48,7 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Base DN</mat-label>
         <app-clearable-input
-          (onClick)="ldapBaseControl.setValue('')"
+          (cleared)="ldapBaseControl.setValue('')"
           [showClearButton]="!!ldapBaseControl.value">
           <input
             [formControl]="ldapBaseControl"
@@ -67,7 +67,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Server URI</mat-label>
         <app-clearable-input
-          (onClick)="ldapUriControl.setValue('')"
+          (cleared)="ldapUriControl.setValue('')"
           [showClearButton]="!!ldapUriControl.value">
           <input
             [formControl]="ldapUriControl"
@@ -132,7 +132,7 @@
             <mat-label i18n>CA Certificate</mat-label>
             <mat-hint i18n>The file containing the CA certificate which signed the LDAP TLS certificate.</mat-hint>
             <app-clearable-input
-              (onClick)="tlsCaFileControl.setValue('')"
+              (cleared)="tlsCaFileControl.setValue('')"
               [disabled]="tlsCaFileControl.disabled"
               [showClearButton]="!!tlsCaFileControl.value">
               <input
@@ -192,7 +192,7 @@
               {{ bindTypeControl.value === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}
             </mat-label>
             <app-clearable-input
-              (onClick)="bindPwControl.setValue('')"
+              (cleared)="bindPwControl.setValue('')"
               [showClearButton]="!!bindPwControl.value">
               <input
                 [formControl]="bindPwControl"
@@ -208,7 +208,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Bind DN</mat-label>
           <app-clearable-input
-            (onClick)="bindDnControl.setValue('')"
+            (cleared)="bindDnControl.setValue('')"
             [showClearButton]="!!bindDnControl.value">
             <input
               [formControl]="bindDnControl"
@@ -296,7 +296,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>Object Classes of a New Created User Object</mat-label>
           <app-clearable-input
-            (onClick)="objectClassesControl.setValue('')"
+            (cleared)="objectClassesControl.setValue('')"
             [showClearButton]="!!objectClassesControl.value">
             <input
               [formControl]="objectClassesControl"
@@ -307,7 +307,7 @@
         <mat-form-field class="input-width-xl">
           <mat-label i18n>DN of a New Created User Object</mat-label>
           <app-clearable-input
-            (onClick)="dnTemplateControl.setValue('')"
+            (cleared)="dnTemplateControl.setValue('')"
             [showClearButton]="!!dnTemplateControl.value">
             <input
               [formControl]="dnTemplateControl"
@@ -347,7 +347,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n>Loginname Attribute</mat-label>
           <app-clearable-input
-            (onClick)="loginNameAttributeControl.setValue('')"
+            (cleared)="loginNameAttributeControl.setValue('')"
             [showClearButton]="!!loginNameAttributeControl.value">
             <input
               [formControl]="loginNameAttributeControl"
@@ -367,7 +367,7 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>UID Type</mat-label>
           <app-clearable-input
-            (onClick)="uidTypeControl.setValue('')"
+            (cleared)="uidTypeControl.setValue('')"
             [showClearButton]="!!uidTypeControl.value">
             <input
               [formControl]="uidTypeControl"
@@ -380,7 +380,7 @@
       <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Search Filter</mat-label>
         <app-clearable-input
-          (onClick)="ldapSearchFilterControl.setValue('')"
+          (cleared)="ldapSearchFilterControl.setValue('')"
           [showClearButton]="!!ldapSearchFilterControl.value">
           <input
             [formControl]="ldapSearchFilterControl"
@@ -417,7 +417,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n>Multivalue Attributes</mat-label>
         <app-clearable-input
-          (onClick)="multivalueAttributesControl.setValue('')"
+          (cleared)="multivalueAttributesControl.setValue('')"
           [showClearButton]="!!multivalueAttributesControl.value">
           <input
             [formControl]="multivalueAttributesControl"
@@ -440,7 +440,7 @@
             as defined for the users above.
           </mat-hint>
           <app-clearable-input
-            (onClick)="groupBaseDNControl.setValue('')"
+            (cleared)="groupBaseDNControl.setValue('')"
             [showClearButton]="!!groupBaseDNControl.value">
             <input
               [formControl]="groupBaseDNControl"
@@ -453,7 +453,7 @@
           <mat-label i18n>Search Filter for User Groups</mat-label>
           <mat-hint>Possible tags: {{ "{" }}base_dn{{ "}" }}, {{ "{" }}username{{ "}" }}</mat-hint>
           <app-clearable-input
-            (onClick)="groupSearchFilterControl.setValue('')"
+            (cleared)="groupSearchFilterControl.setValue('')"
             [showClearButton]="!!groupSearchFilterControl.value">
             <input
               [formControl]="groupSearchFilterControl"
@@ -468,7 +468,7 @@
             <mat-label i18n>Group Name Attribute</mat-label>
             <mat-hint>Group attribute defining the group's name, which should be stored in the user info.</mat-hint>
             <app-clearable-input
-              (onClick)="groupNameAttributeControl.setValue('')"
+              (cleared)="groupNameAttributeControl.setValue('')"
               [showClearButton]="!!groupNameAttributeControl.value">
               <input
                 [formControl]="groupNameAttributeControl"
@@ -481,7 +481,7 @@
             <mat-label i18n>User Info Key</mat-label>
             <mat-hint>The key to store the groups in the user info (attribute mapping key).</mat-hint>
             <app-clearable-input
-              (onClick)="groupAttributeMappingKeyControl.setValue('')"
+              (cleared)="groupAttributeMappingKeyControl.setValue('')"
               [showClearButton]="!!groupAttributeMappingKeyControl.value">
               <input
                 [formControl]="groupAttributeMappingKeyControl"

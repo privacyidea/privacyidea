@@ -29,7 +29,7 @@
         class="table-filter">
         <mat-label i18n>Filter Resolvers...</mat-label>
         <app-clearable-input
-          (onClick)="resetFilter()"
+          (cleared)="resetFilter()"
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement

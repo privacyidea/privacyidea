@@ -21,7 +21,7 @@
   subscriptSizing="dynamic">
   <mat-label i18n>Filter Templates...</mat-label>
   <app-clearable-input
-    (onClick)="clearFilter()"
+    (cleared)="clearFilter()"
     [showClearButton]="!isEmpty()">
     <input
       #filterHTMLInputElement

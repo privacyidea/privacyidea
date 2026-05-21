@@ -31,7 +31,7 @@
       class="user-details-container-table-filter">
       <mat-label i18n>Filter Containers...</mat-label>
       <app-clearable-input
-        (onClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
+        (cleared)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
         [showClearButton]="filterValue.length > 0">
         <input
           #filterInput

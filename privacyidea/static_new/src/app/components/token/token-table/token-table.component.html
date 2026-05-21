@@ -29,7 +29,7 @@
         class="token-table-filter">
         <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
-          (onClick)="tokenService.clearFilter()"
+          (cleared)="tokenService.clearFilter()"
           [showClearButton]="tokenService.tokenFilter().isNotEmpty">
           <input
             #filterHTMLInputElement

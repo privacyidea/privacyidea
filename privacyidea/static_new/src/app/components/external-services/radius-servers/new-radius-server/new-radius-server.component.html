@@ -70,7 +70,7 @@
           class="input-width-l margin-bottom-32">
           <mat-label i18n>Identifier</mat-label>
           <app-clearable-input
-            (onClick)="radiusForm.get('identifier')?.setValue('')"
+            (cleared)="radiusForm.get('identifier')?.setValue('')"
             [showClearButton]="!isEditMode && !!radiusForm.get('identifier')?.value">
             <input
               formControlName="identifier"
@@ -97,7 +97,7 @@
             class="input-width-l">
             <mat-label i18n>IP or FQDN</mat-label>
             <app-clearable-input
-              (onClick)="radiusForm.get('server')?.setValue('')"
+              (cleared)="radiusForm.get('server')?.setValue('')"
               [showClearButton]="!!radiusForm.get('server')?.value">
               <input
                 formControlName="server"
@@ -130,7 +130,7 @@
             class="input-width-l">
             <mat-label i18n>Secret</mat-label>
             <app-clearable-input
-              (onClick)="radiusForm.get('secret')?.setValue('')"
+              (cleared)="radiusForm.get('secret')?.setValue('')"
               [showClearButton]="!!radiusForm.get('secret')?.value">
               <input
                 formControlName="secret"
@@ -163,7 +163,7 @@
             class="input-width-l">
             <mat-label i18n>RADIUS Dictionary</mat-label>
             <app-clearable-input
-              (onClick)="radiusForm.get('dictionary')?.setValue('')"
+              (cleared)="radiusForm.get('dictionary')?.setValue('')"
               [showClearButton]="!!radiusForm.get('dictionary')?.value">
               <input
                 formControlName="dictionary"
@@ -189,7 +189,7 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="radiusForm.get('description')?.setValue('')"
+            (cleared)="radiusForm.get('description')?.setValue('')"
             [showClearButton]="!!radiusForm.get('description')?.value">
             <input
               formControlName="description"
@@ -213,7 +213,7 @@
             class="input-width-m">
             <mat-label i18n>Username</mat-label>
             <app-clearable-input
-              (onClick)="radiusForm.get('username')?.setValue('')"
+              (cleared)="radiusForm.get('username')?.setValue('')"
               [showClearButton]="!!radiusForm.get('username')?.value">
               <input
                 formControlName="username"
@@ -226,7 +226,7 @@
               class="input-width-m">
               <mat-label i18n>Password</mat-label>
               <app-clearable-input
-                (onClick)="radiusForm.get('password')?.setValue('')"
+                (cleared)="radiusForm.get('password')?.setValue('')"
                 [showClearButton]="!!radiusForm.get('password')?.value">
                 <input
                   formControlName="password"
