@@ -43,11 +43,18 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-template-picker.component";
 
 @Component({
   selector: "app-edit-policy-dialog",
   standalone: true,
-  imports: [ReactiveFormsModule, PolicyPanelEditComponent, MatButtonModule, MatIconModule],
+  imports: [
+    ReactiveFormsModule,
+    PolicyPanelEditComponent,
+    PolicyTemplatePickerComponent,
+    MatButtonModule,
+    MatIconModule
+  ],
   templateUrl: "./edit-policy-dialog.component.html",
   styleUrl: "./edit-policy-dialog.component.scss"
 })
