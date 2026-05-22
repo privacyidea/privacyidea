@@ -24,6 +24,7 @@ import { of } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
@@ -33,6 +34,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
   MockAuditService,
@@ -49,18 +51,17 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
+import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import { TokenDetailsComponent } from "./token-details.component";
-import { UserService } from "@services/user/user.service";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
   let component: TokenDetailsComponent;
 
-  let tokenSvc: MockTokenService;
-  let containerSvc: MockContainerService;
-  let realmSvc: MockRealmService;
-  let contentSvc: MockContentService;
-  let machineSvc: MockMachineService;
+  let tokenService: MockTokenService;
+  let containerService: MockContainerService;
+  let machineService: MockMachineService;
   let pendingChangesService: MockPendingChangesService;
 
   const matDialogOpen = jest.fn();
@@ -98,19 +99,16 @@ describe("TokenDetailsComponent", () => {
       ]
     }).compileComponents();
 
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
-    realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
-    contentSvc = TestBed.inject(ContentService) as unknown as MockContentService;
-    machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
-    // Monkey-patch unimplemented service methods we’ll hit via the component.
-    (tokenSvc.getTokengroups as any) = jest
+    (tokenService.getTokengroups as any) = jest
       .fn()
       .mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
-    (tokenSvc.setTokengroup as any) = jest.fn().mockReturnValue(of({}));
-    (tokenSvc.setTokenRealm as any) = jest.fn().mockReturnValue(of({}));
+    (tokenService.setTokengroup as any) = jest.fn().mockReturnValue(of({}));
+    (tokenService.setTokenRealm as any) = jest.fn().mockReturnValue(of({}));
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -134,36 +132,36 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header .serial");
+    const header = fixture.nativeElement.querySelector(".details-header .token-serial");
     expect(header.textContent).toContain("Mock serial");
   });
 
   it("resetFailCount calls service and reloads", () => {
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
     component.resetFailCount();
-    expect(tokenSvc.resetFailCount).toHaveBeenCalledWith("Mock serial");
+    expect(tokenService.resetFailCount).toHaveBeenCalledWith("Mock serial");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer assigns when a container is selected", () => {
-    containerSvc.selectedContainerSerial.set("container1");
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    containerService.selectedContainerSerial.set("container1");
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveContainer();
 
-    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerService.addToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainerSerial.set("");
-    (containerSvc.addToken as jest.Mock).mockClear();
+    containerService.selectedContainerSerial.set("");
+    (containerService.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
 
-    expect(containerSvc.addToken).not.toHaveBeenCalled();
+    expect(containerService.addToken).not.toHaveBeenCalled();
   });
 
   it("removeFromContainer removes token and reloads when selected", () => {
@@ -173,12 +171,12 @@ describe("TokenDetailsComponent", () => {
       container_serial: "container1"
     });
 
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.removeFromContainer();
 
-    expect(containerSvc.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerService.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
@@ -189,74 +187,78 @@ describe("TokenDetailsComponent", () => {
       container_serial: ""
     });
 
-    (containerSvc.removeToken as jest.Mock).mockClear();
+    (containerService.removeToken as jest.Mock).mockClear();
 
     component.removeFromContainer();
 
-    expect(containerSvc.removeToken).not.toHaveBeenCalled();
+    expect(containerService.removeToken).not.toHaveBeenCalled();
   });
 
   it("toggleTokenEdit('tokengroup') loads tokengroups once and toggles editing", () => {
-    const tgEl = {
-      keyMap: { key: "tokengroup", label: "Token Groups" },
+    const tgEl: EditableElement<string[]> = {
+      keyMap: { key: "tokengroup" },
       value: [],
       isEditing: signal(false)
-    } as any;
+    };
 
-    component.tokenDetailData.set([...component.tokenDetailData(), tgEl]);
+    component.tokenDetailData.set([
+      ...component.tokenDetailData(),
+      tgEl as ReturnType<typeof component.tokenDetailData>[number]
+    ]);
     component.tokengroupOptions.set([]);
     component.toggleTokenEdit(tgEl);
 
-    expect(tokenSvc.getTokengroups as any).toHaveBeenCalled();
+    expect(tokenService.getTokengroups as any).toHaveBeenCalled();
     expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
     expect(tgEl.isEditing()).toBe(true);
   });
 
   it("saveTokenEdit('description') calls saveTokenDetail and toggles editing off", () => {
-    const el = {
+    const el: EditableElement<string> = {
       keyMap: { key: "description" },
       value: "newdesc",
       isEditing: signal(true)
-    } as any;
+    };
 
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveTokenEdit(el);
 
-    expect(tokenSvc.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
+    expect(tokenService.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
 
   it("saveTokenEdit('tokengroup') uses setTokengroup and reloads", () => {
-    const el = {
+    const el: EditableElement<string[]> = {
       keyMap: { key: "tokengroup" },
       value: ["groupA"],
       isEditing: signal(true)
-    } as any;
+    };
 
     component.selectedTokengroup.set(["groupB"]);
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
-    component.saveTokenEdit(el);
+    component.saveTokenEdit(el as unknown as EditableElement<string>);
 
-    expect(tokenSvc.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
+    expect(tokenService.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
 
   it("cancelTokenEdit('container_serial') clears selection and toggles editing", () => {
-    const el = {
+    const el: EditableElement<string> = {
       keyMap: { key: "container_serial" },
+      value: "",
       isEditing: signal(true)
-    } as any;
+    };
 
-    containerSvc.selectedContainerSerial.set("X");
+    containerService.selectedContainerSerial.set("X");
     component.cancelTokenEdit(el);
 
-    expect(containerSvc.selectedContainerSerial()).toBe("");
+    expect(containerService.selectedContainerSerial()).toBe("");
     expect(el.isEditing()).toBe(false);
   });
 
@@ -273,7 +275,8 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("isEditableElement defers to policy: true/false", () => {
-    const spy = jest.spyOn((component as any).authService, "actionAllowed");
+    const authSvc = TestBed.inject(AuthService) as unknown as MockAuthService;
+    const spy = jest.spyOn(authSvc, "actionAllowed");
     spy.mockReturnValueOnce(true);
     expect(component.isEditableElement("description")).toBe(true);
 
@@ -289,7 +292,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {
-    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
     matDialogOpen.mockReturnValue({
       afterClosed: () => of(of({}))
@@ -322,10 +325,10 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("isAttachedToMachine is true when applications exist", () => {
-    machineSvc.tokenApplications.set([]);
+    machineService.tokenApplications.set([]);
     expect(component.isAttachedToMachine()).toBe(false);
 
-    machineSvc.tokenApplications.set([{ id: 1 } as any]);
+    machineService.tokenApplications.set([{ id: 1 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
 
@@ -363,18 +366,21 @@ describe("TokenDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
-      const editingRow = {
-        keyMap: { key: "description", label: "Description" },
+      const editingRow: EditableElement<string> = {
+        keyMap: { key: "description" },
         value: "new",
         isEditing: signal(true)
-      } as any;
-      const idleRow = {
-        keyMap: { key: "maxfail", label: "Max" },
+      };
+      const idleRow: EditableElement<number> = {
+        keyMap: { key: "maxfail" },
         value: 5,
         isEditing: signal(false)
-      } as any;
-      (component as any).tokenDetailData = () => [editingRow, idleRow];
-      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => {});
+      };
+      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [
+        editingRow,
+        idleRow
+      ];
+      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => undefined);
 
       const result = await component.saveAllInlineEdits();
 
@@ -384,10 +390,10 @@ describe("TokenDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits delegates user save to userChild when isEditingUser", async () => {
-      (component as any).tokenDetailData = () => [];
+      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
       component.isEditingUser.set(true);
       const userSaveSpy = jest.fn();
-      component.userChild = { saveUser: userSaveSpy } as any;
+      component.userChild = { saveUser: userSaveSpy } as unknown as TokenDetailsUserComponent;
 
       await component.saveAllInlineEdits();
 
@@ -395,16 +401,20 @@ describe("TokenDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
-      (component as any).tokenDetailData = () => [];
-      const infoEl = {
-        keyMap: { key: "info", label: "Information" },
+      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
+      const infoEl: EditableElement<Record<string, string>> = {
+        keyMap: { key: "info" },
         value: { foo: "bar" },
         isEditing: signal(true)
-      } as any;
-      (component as any).infoData = () => [infoEl];
+      };
+      (
+        component as unknown as {
+          infoData: () => EditableElement<Record<string, string>>[];
+        }
+      ).infoData = () => [infoEl];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as any;
+      component.infoChild = { saveInfo: infoSaveSpy } as unknown as TokenDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 
@@ -417,13 +427,13 @@ describe("TokenDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
-      (component as any).tokenDetailData = () => [];
-      (component as any).infoData = () => [];
+      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
+      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingUser.set(false);
       component.isEditingInfo.set(false);
-      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => {});
-      component.userChild = { saveUser: jest.fn() } as any;
-      component.infoChild = { saveInfo: jest.fn() } as any;
+      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => undefined);
+      component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsUserComponent;
+      component.infoChild = { saveInfo: jest.fn() } as unknown as TokenDetailsInfoComponent;
 
       const result = await component.saveAllInlineEdits();
 
@@ -434,11 +444,11 @@ describe("TokenDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
-      (component as any).tokenDetailData = () => [];
-      (component as any).infoData = () => [];
+      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
+      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as any;
+      component.infoChild = { saveInfo: infoSaveSpy } as unknown as TokenDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 

@@ -32,7 +32,6 @@ import {
   ViewChild
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
 import { MatChipsModule } from "@angular/material/chips";
@@ -45,8 +44,10 @@ import { MatTab, MatTabGroup } from "@angular/material/tabs";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventService } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -68,8 +69,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatHint,
     MatInput,
     MatLabel,
-    ReactiveFormsModule,
-    FormsModule,
     MatSelect,
     MatOption,
     MatAutocompleteModule,
@@ -77,8 +76,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatChipsModule,
     MatSelectModule,
     MatIconModule,
-    FormsModule,
-    ReactiveFormsModule,
     EventSelectionComponent,
     MatTabGroup,
     MatTab,
@@ -86,7 +83,9 @@ export type eventTab = "events" | "action" | "conditions";
     MatButton,
     MatSlideToggle,
     MatTooltip,
-    CopyButtonComponent
+    CopyButtonComponent,
+    ErrorStateDirective,
+    ClearableInputComponent
   ],
   standalone: true,
   templateUrl: "./event-panel.component.html",
@@ -222,12 +221,22 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   });
   canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));
 
+  nameTouched = signal(false);
+  showNameError = computed(() => this.nameTouched() && !this.sectionValidity()["name"]);
+  showHandlerModuleError = computed(() => !this.sectionValidity()["handlerModule"]);
+  showPositionError = computed(() => !this.sectionValidity()["position"]);
+  showOrderingError = computed(
+    () => this.editEvent().ordering === null || (this.editEvent().ordering as unknown) === ""
+  );
+
   setNewAction(action: string): void {
     this.editEvent.set({ ...this.editEvent(), action });
     this.hasChanges.set(true);
   }
 
   setNewOptions(options: any): void {
+    const current = this.editEvent().options || {};
+    if (JSON.stringify(options) === JSON.stringify(current)) return;
     this.editEvent.set({ ...this.editEvent(), options });
     this.hasChanges.set(true);
   }

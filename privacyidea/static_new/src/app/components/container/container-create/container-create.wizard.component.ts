@@ -19,7 +19,6 @@
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -46,7 +45,6 @@ import { ContainerCreateComponent } from "./container-create.component";
   imports: [
     MatButton,
     MatIcon,
-    FormsModule,
     MatIconButton,
     AsyncPipe,
     ScrollToTopDirective,

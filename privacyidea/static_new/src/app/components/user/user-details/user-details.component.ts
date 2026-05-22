@@ -33,7 +33,6 @@ import {
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -45,7 +44,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
@@ -80,11 +79,10 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
     NgClass,
     MatPaginator,
     UserDetailsContainerTableComponent,
-    FormsModule,
     MatSelectModule,
     MatTooltip,
     RouterLink,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"

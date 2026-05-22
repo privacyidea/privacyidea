@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -40,7 +39,7 @@ import {
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuditComponent } from "./audit.component";
 
@@ -50,7 +49,6 @@ import { AuditComponent } from "./audit.component";
     MatCardModule,
     MatCell,
     MatFormField,
-    FormsModule,
     MatInput,
     MatPaginator,
     MatHeaderCellDef,
@@ -65,7 +63,7 @@ import { AuditComponent } from "./audit.component";
     MatRow,
     MatColumnDef,
     MatLabel,
-    CopyButtonComponent,
+    CopyableComponent,
     RouterLink,
     MatButtonModule,
     MatIcon,

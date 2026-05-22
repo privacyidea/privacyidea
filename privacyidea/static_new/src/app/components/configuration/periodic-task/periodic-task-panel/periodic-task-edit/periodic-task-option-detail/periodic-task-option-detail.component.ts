@@ -18,7 +18,6 @@
  **/
 
 import { Component, EventEmitter, input, linkedSignal, Output, ViewEncapsulation } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -27,7 +26,7 @@ import { PeriodicTaskOption } from "@services/periodic-task/periodic-task.servic
 
 @Component({
   selector: "app-periodic-task-option-detail",
-  imports: [MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon],
+  imports: [MatFormField, MatLabel, MatInput, MatButton, MatIcon],
   templateUrl: "./periodic-task-option-detail.component.html",
   styleUrl: "./periodic-task-option-detail.component.scss",
   encapsulation: ViewEncapsulation.None

@@ -23,10 +23,9 @@
     <mat-label>Events</mat-label>
     <mat-chip-grid
       #chipGrid
-      required
-      [formControl]="selectedEvents"
+      [appErrorState]="showError()"
       aria-label="Event selection">
-      @for (event of selectedEvents.value; track $index) {
+      @for (event of selectedEvents(); track $index) {
         <mat-chip-row (removed)="removeEvent(event)">
           {{ event }}
           <button
@@ -42,6 +41,7 @@
       placeholder="New Event..."
       [value]="searchTerm()"
       (input)="onSearchInputChanges($event)"
+      (blur)="markTouched()"
       [matChipInputFor]="chipGrid"
       [matAutocomplete]="auto"
       [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
@@ -54,7 +54,7 @@
         class="suffix-bottom"
         matSuffix
         [toolTipText]="toolTipClearSearch"
-        (onClick)="clearSearchTerm()"></app-clear-button>
+        (clearButtonClick)="clearSearchTerm()"></app-clear-button>
     }
     <mat-autocomplete
       #auto="matAutocomplete"
@@ -68,8 +68,10 @@
     <mat-hint i18n>
       Events that should trigger this event handler.
     </mat-hint>
-    <mat-error i18n>
-      At least one event must be selected.
-    </mat-error>
+    @if (showError()) {
+      <mat-error i18n>
+        At least one event must be <strong>selected</strong>.
+      </mat-error>
+    }
   </mat-form-field>
 </form>

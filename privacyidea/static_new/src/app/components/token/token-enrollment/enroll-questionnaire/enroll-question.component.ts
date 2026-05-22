@@ -20,24 +20,15 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   EventEmitter,
   inject,
   input,
   linkedSignal,
   OnInit,
   Output,
+  signal,
   Signal
 } from "@angular/core";
-import {
-  AbstractControl,
-  FormControl,
-  FormRecord,
-  FormsModule,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn
-} from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -51,7 +42,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { Subscription } from "rxjs";
 
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
@@ -61,7 +51,7 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-question",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, MatFormField, MatInput, MatLabel, MatError],
+  imports: [MatFormField, MatInput, MatLabel, MatError],
   templateUrl: "./enroll-question.component.html",
   styleUrl: "./enroll-question.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -79,9 +69,8 @@ export class EnrollQuestionComponent implements OnInit {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return cfg && cfg[QUESTION_NUMBER_OF_ANSWERS] ? parseInt(cfg[QUESTION_NUMBER_OF_ANSWERS], 10) : defaultQuestions;
   });
-  private readonly guardControl = new FormControl<boolean>(false, { nonNullable: true });
-  private valueSubscription?: Subscription;
-  @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<unknown> }>();
+
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: QuestionEnrollmentData;
@@ -89,6 +78,7 @@ export class EnrollQuestionComponent implements OnInit {
     } | null
   >();
   disabled = input<boolean>(false);
+
   configQuestions = computed(() => {
     if (!this.systemService.systemConfigResource.hasValue()) return [];
     const cfg = this.systemService.systemConfigResource.value()?.result?.value || {};
@@ -97,42 +87,29 @@ export class EnrollQuestionComponent implements OnInit {
       .map(([, v]) => ({ question: String(v) }));
   });
 
-  questionControlNames = computed(() => this.configQuestions().map((q) => `answer_${q.question.replace(/\s+/g, "_")}`));
-
-  questionForm = linkedSignal({
-    source: () => this.questionControlNames(),
-    computation: (names) => {
-      if (this.valueSubscription) {
-        this.valueSubscription.unsubscribe();
-        this.valueSubscription = undefined;
-      }
-      const form = new FormRecord<FormControl<string>>({});
-      names.forEach((n) => form.addControl(n, new FormControl<string>("", { nonNullable: true })));
-      const validator = this.minAnswersValidatorFor(form);
-      form.setValidators(validator);
-      this.guardControl.setValidators(validator);
-      form.updateValueAndValidity({ emitEvent: false });
-      this.guardControl.updateValueAndValidity({ emitEvent: false });
-      this.valueSubscription = form.valueChanges.subscribe(() => {
-        this.guardControl.updateValueAndValidity({ emitEvent: false });
-        this.additionalFormFieldsChange.emit({ __questionsGuard: this.guardControl });
+  answers = linkedSignal<{ question: string }[], Record<string, string>>({
+    source: this.configQuestions,
+    computation: (questions, prev) => {
+      const prevAnswers: Record<string, string> = prev?.value ?? {};
+      const next: Record<string, string> = {};
+      questions.forEach((q) => {
+        next[q.question] = prevAnswers[q.question] ?? "";
       });
-      this.additionalFormFieldsChange.emit({ __questionsGuard: this.guardControl });
-      return form;
+      return next;
     }
   });
 
-  constructor() {
-    effect(() =>
-      this.disabled()
-        ? this.questionForm().disable({ emitEvent: false })
-        : this.questionForm().enable({ emitEvent: false })
-    );
+  formTouched = signal<boolean>(false);
+
+  answeredCount = computed(() => Object.values(this.answers()).filter((v) => v.trim() !== "").length);
+
+  setAnswer(question: string, value: string): void {
+    this.answers.update((prev) => ({ ...prev, [question]: value }));
   }
 
   ngOnInit(): void {
+    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    // this.additionalFormFieldsChange.emit({ __questionsGuard: this.guardControl });
   }
 
   enrollmentArgsGetter = (
@@ -141,37 +118,25 @@ export class EnrollQuestionComponent implements OnInit {
     data: QuestionEnrollmentData;
     mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
   } | null => {
-    const form = this.questionForm();
-    if (form.invalid) {
-      form.markAllAsTouched();
+    if (this.answeredCount() < this.configMinNumberOfAnswers()) {
+      this.formTouched.set(true);
       return null;
     }
 
     const answers: Record<string, string> = {};
     this.configQuestions().forEach((q) => {
-      const controlName = `answer_${q.question.replace(/\s+/g, "_")}`;
-      if (this.questionForm().get(controlName)?.value !== "") {
-        answers[q.question] = this.questionForm().get(controlName)?.value;
+      const answer = this.answers()[q.question];
+      if (answer && answer.trim() !== "") {
+        answers[q.question] = answer;
       }
     });
+
     const enrollmentData: QuestionEnrollmentOptions = { ...basicOptions, type: "question", answers };
     return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
   };
-
-  private answeredCount(form: FormRecord<FormControl<string>>): number {
-    return Object.values(form.controls).filter((c) => (c.value ?? "").toString().trim() !== "").length;
-  }
-
-  private minAnswersValidatorFor(form: FormRecord<FormControl<string>>): ValidatorFn {
-    return (_: AbstractControl): ValidationErrors | null => {
-      const required = this.configMinNumberOfAnswers();
-      const actual = this.answeredCount(form);
-      return actual >= required ? null : { minAnswers: { required, actual } };
-    };
-  }
 
   goToQuestionConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "questionnaire" });

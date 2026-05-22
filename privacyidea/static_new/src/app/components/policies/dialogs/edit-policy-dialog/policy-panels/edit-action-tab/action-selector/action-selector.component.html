@@ -59,15 +59,15 @@
       </div>
 
       <app-clearable-input
-        (onClick)="actionFilter.set('')"
+        (clearButtonClick)="actionFilter.set('')"
         [showClearButton]="actionFilter() !== ''">
         <input
           clearableInput
           type="text"
           placeholder="Search actions..."
           i18n-placeholder
-          [ngModel]="actionFilter()"
-          (ngModelChange)="actionFilter.set($event)"
+          [value]="actionFilter()"
+          (input)="actionFilter.set($any($event.target).value)"
           class="search-input" />
       </app-clearable-input>
 

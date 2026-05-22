@@ -26,7 +26,8 @@
   <mat-form-field class="input-width-s">
     <mat-label i18n>PIN and/or OTP</mat-label>
     <input
-      [(ngModel)]="otpOrPinToTest"
+      [value]="otpOrPinToTest()"
+      (input)="otpOrPinToTest.set($any($event.target).value)"
       [type]="hide ? 'password' : 'text'"
       autocomplete="one-time-code"
       matInput />

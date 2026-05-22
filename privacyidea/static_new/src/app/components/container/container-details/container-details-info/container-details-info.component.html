@@ -46,7 +46,8 @@
                         subscriptSizing="dynamic">
                         <mat-label>{{ key }}</mat-label>
                         <textarea
-                          [(ngModel)]="element.value[key]"
+                          [value]="element.value[key]"
+                          (input)="element.value[key] = $any($event.target).value"
                           class="info-input"
                           matInput
                           rows="1"></textarea>
@@ -78,7 +79,8 @@
                     class="input-width-s"
                     subscriptSizing="dynamic">
                     <input
-                      [(ngModel)]="newInfo().key"
+                      [value]="newInfo().key"
+                      (input)="newInfo.set({ key: $any($event.target).value, value: newInfo().value })"
                       i18n-placeholder
                       matInput
                       placeholder="Add new key" />
@@ -87,7 +89,8 @@
                     class="input-width-s"
                     subscriptSizing="dynamic">
                     <textarea
-                      [(ngModel)]="newInfo().value"
+                      [value]="newInfo().value"
+                      (input)="newInfo.set({ key: newInfo().key, value: $any($event.target).value })"
                       i18n-placeholder
                       matInput
                       placeholder="Add new info"

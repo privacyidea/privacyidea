@@ -49,6 +49,12 @@
     </div>
   </div>
 
+  @if (mode() === "create") {
+    <app-policy-template-picker
+      [currentPriority]="editedPolicy().priority"
+      (templateApplied)="addPolicyEdit($event)"></app-policy-template-picker>
+  }
+
   <app-policy-panel-edit
     [policy]="editedPolicy()"
     (onPolicyEdit)="addPolicyEdit($event)"></app-policy-panel-edit>

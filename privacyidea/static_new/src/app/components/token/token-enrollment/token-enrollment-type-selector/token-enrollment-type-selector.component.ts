@@ -29,7 +29,6 @@ import {
   Renderer2,
   ViewChild
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -45,7 +44,6 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
   styleUrl: "./token-enrollment-type-selector.component.scss",
   standalone: true,
   imports: [
-    FormsModule,
     MatFormField,
     MatSelect,
     MatOption,

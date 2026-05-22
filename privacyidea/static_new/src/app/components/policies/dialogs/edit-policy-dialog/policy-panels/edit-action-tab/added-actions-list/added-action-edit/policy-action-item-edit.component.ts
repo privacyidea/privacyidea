@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, inject, input, output } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -44,7 +43,6 @@ import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@serv
     MatSelectModule,
     MatFormFieldModule,
     MatAutocompleteModule,
-    FormsModule,
     MultiSelectOnlyComponent
   ],
   templateUrl: "./policy-action-item-edit.component.html",

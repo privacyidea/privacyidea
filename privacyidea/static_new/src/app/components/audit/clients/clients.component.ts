@@ -137,8 +137,8 @@ export class ClientsComponent {
       clientDataArr.forEach((client, idx) => {
         rows.push({
           application,
-          hostname: client.hostname,
-          ip: client.ip,
+          hostname: client.hostname ?? undefined,
+          ip: client.ip ?? undefined,
           lastseen: client.lastseen ? new Date(client.lastseen) : undefined,
           isFirst: idx === 0,
           rowspan: idx === 0 ? len : 1
@@ -168,7 +168,7 @@ export class ClientsComponent {
     }
   });
 
-  filterValue: string = "";
+  filterValue = "";
 
   clearFilter(): void {
     this.filterValue = "";

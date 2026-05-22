@@ -39,7 +39,7 @@ import {
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
@@ -53,7 +53,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 @Component({
   selector: "app-user-details-container-table",
   imports: [
-    CopyButtonComponent,
+    CopyableComponent,
     ClearableInputComponent,
     MatHeaderRowDef,
     MatRowDef,

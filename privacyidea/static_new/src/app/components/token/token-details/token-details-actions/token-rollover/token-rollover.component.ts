@@ -18,7 +18,6 @@
  **/
 
 import { Component, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
-import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -65,7 +64,6 @@ import { Observable, lastValueFrom } from "rxjs";
 @Component({
   selector: "app-token-rollover",
   imports: [
-    ReactiveFormsModule,
     EnrollApplspecComponent,
     EnrollDaypasswordComponent,
     EnrollEmailComponent,
@@ -107,9 +105,9 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   serial = signal(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
-  formGroup = new FormGroup({});
+  childValid = signal<boolean>(true);
 
-  formGroupInvalid = signal(true);
+  formGroupInvalid = signal(false);
 
   dialogActions = linkedSignal({
     source: this.formGroupInvalid,
@@ -141,10 +139,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
     this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
-    this.formGroupInvalid.set(this.formGroup.invalid);
-    this.formGroup.statusChanges.subscribe(() => {
-      this.formGroupInvalid.set(this.formGroup.invalid);
-    });
+    this.formGroupInvalid.set(!this.childValid());
     this.serial.set(this.token().serial);
   }
 
@@ -301,20 +296,11 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.openLastStepDialog(response);
   }
 
-  updateAdditionalFormFields(event: { [key: string]: any }): void {
-    // Remove all existing controls from the formGroup
-    Object.keys(this.formGroup.controls).forEach((key) => {
-      this.formGroup.removeControl(key);
-    });
-    // Add new controls from the event
-    for (const key in event) {
-      if (event.hasOwnProperty(key) && event[key] && typeof event[key].setValue === "function") {
-        this.formGroup.addControl(key, event[key]);
-      } else {
-        console.warn(`Ignoring invalid form control for key "${key}" emitted by child component.`);
-      }
-    }
-    this.formGroupInvalid.set(this.formGroup.invalid);
+  updateAdditionalFormFields(_event: { [key: string]: any }): void {
+    // Child validation happens in the child components themselves.
+    // Treat parent form as always valid; child validity state is managed per-child.
+    this.childValid.set(true);
+    this.formGroupInvalid.set(false);
   }
 
   updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {

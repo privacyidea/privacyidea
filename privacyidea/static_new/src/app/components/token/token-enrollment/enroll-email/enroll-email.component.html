@@ -42,18 +42,18 @@
     }
   }
   <mat-checkbox
-    [formControl]="readEmailDynamicallyControl"
+    [checked]="readEmailDynamically()"
+    (change)="readEmailDynamically.set($event.checked)"
     i18n>
     Read email dynamically from user source on each request
   </mat-checkbox>
   <div class="flex-row gap-16">
-    @if (!readEmailDynamicallyControl.value) {
+    @if (!readEmailDynamically()) {
       <mat-form-field class="input-width-l">
         <mat-label i18n>Email Address</mat-label>
         <input
-          [formControl]="emailAddressControl"
-          matInput
-          required />
+          [formField]="emailAddressForm"
+          matInput />
         <mat-error i18n>Email Address is <strong>required</strong></mat-error>
       </mat-form-field>
     } @else {

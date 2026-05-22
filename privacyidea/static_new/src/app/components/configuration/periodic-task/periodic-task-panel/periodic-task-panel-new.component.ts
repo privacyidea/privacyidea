@@ -75,7 +75,6 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent im
     if (!this.isEdited()) {
       this.isEditMode.set(false);
       this.editComponent?.editTask.set(deepCopy(EMPTY_PERIODIC_TASK));
-      this.editComponent?.resetFormState();
       this.panel.close();
       return;
     }
@@ -97,7 +96,6 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent im
           } else if (result === "discard") {
             this.isEditMode.set(false);
             this.editComponent?.editTask.set(deepCopy(EMPTY_PERIODIC_TASK));
-            this.editComponent?.resetFormState();
             this.panel.close();
           }
         }
@@ -115,7 +113,6 @@ export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent im
         this.panel.close();
         this.taskSaved.emit();
         this.editComponent?.editTask.set(deepCopy(EMPTY_PERIODIC_TASK));
-        this.editComponent?.resetFormState();
         return true;
       }
       return false;

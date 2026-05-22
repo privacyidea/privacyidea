@@ -12,7 +12,7 @@
  GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 
  You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -47,7 +47,8 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Resolver</mat-label>
       <mat-select
-        [formControl]="resolverControl"
+        [value]="resolver()"
+        (selectionChange)="resolver.set($event.value)"
         required>
         @for (option of resolverService.editableResolvers(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
@@ -57,7 +58,7 @@
         <span i18n>Corresponding Realms:</span>
         {{ correspondingRealms().join(", ") }}
       </mat-hint>
-      @if (resolverControl.hasError("required")) {
+      @if (resolverForm().errors().some(e => e.kind === 'required') && resolverForm().touched()) {
         <mat-error i18n>
           Resolver is <strong>required</strong>
         </mat-error>
@@ -67,10 +68,9 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Username</mat-label>
       <input
-        [formControl]="username"
-        matInput
-        required />
-      @if (username.hasError("required")) {
+        [formField]="usernameForm"
+        matInput />
+      @if (usernameForm().errors().some(e => e.kind === 'required') && usernameForm().touched()) {
         <mat-error i18n>
           Username is <strong>required</strong>
         </mat-error>
@@ -79,6 +79,6 @@
   </div>
 
   <app-user-details-edit
-    [resolver]="resolverControl.value"
+    [resolver]="resolver()"
     (updateData)="editedUserData.set($event)"></app-user-details-edit>
 </div>

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, Input, Output, Signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import {
@@ -40,7 +39,6 @@ import { TokenServiceInterface } from "@services/token/token.service";
   selector: "app-container-create-form",
   standalone: true,
   imports: [
-    FormsModule,
     MatFormField,
     MatLabel,
     MatInput,

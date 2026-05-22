@@ -29,7 +29,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -47,7 +46,7 @@ import {
 } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -81,9 +80,7 @@ type ContainerDetailTokenData = {
     MatTable,
     MatTableModule,
     MatIconButton,
-    CopyButtonComponent,
-    ReactiveFormsModule,
-    FormsModule,
+    CopyableComponent,
     MatPaginatorModule,
     NgClass,
     MatIconModule,

@@ -22,16 +22,15 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Filename</mat-label>
       <app-clearable-input
-        (onClick)="filenameControl.setValue('')"
-        [showClearButton]="!!filenameControl.value">
+        (clearButtonClick)="model.update(m => ({ ...m, fileName: '' }))"
+        [showClearButton]="!!model().fileName">
         <input
-          [formControl]="filenameControl"
+          [formField]="passwdForm.fileName"
           matInput
-          placeholder="/etc/passwd"
-          required />
+          placeholder="/etc/passwd" />
       </app-clearable-input>
 
-      @if (filenameControl.hasError("required") && filenameControl.touched) {
+      @if (passwdForm.fileName().errors().some(e => e.kind === 'required') && passwdForm.fileName().touched()) {
         <mat-error i18n>
           Filename is
           <strong>required</strong>

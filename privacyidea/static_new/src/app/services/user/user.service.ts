@@ -281,8 +281,8 @@ export class UserService implements UserServiceInterface {
     }
   });
 
-  selectionFilter = linkedSignal<string, UserData | string>({
-    source: this.selectedUserRealm,
+  selectionFilter = linkedSignal<{ realm: string; routeUrl: string }, UserData | string>({
+    source: () => ({ realm: this.selectedUserRealm(), routeUrl: this.contentService.routeUrl() }),
     computation: () => ""
   });
 

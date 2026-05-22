@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormField } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -36,7 +35,7 @@ describe("ContainerRegistrationConfigComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FormsModule, MatCheckbox, MatFormField, MatInput]
+      imports: [MatCheckbox, MatFormField, MatInput]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerRegistrationConfigComponent);
@@ -74,14 +73,14 @@ describe("ContainerRegistrationConfigComponent", () => {
   });
 
   it("should disable checkbox if containerHasOwner is false", async () => {
-    component.containerHasOwner = false;
+    fixture.componentRef.setInput("containerHasOwner", false);
     await detectChangesStable(fixture);
     const checkboxDebug = fixture.debugElement.query(By.directive(MatCheckbox));
     expect(checkboxDebug.componentInstance.disabled).toBe(true);
   });
 
   it("should enable checkbox if containerHasOwner is true", async () => {
-    component.containerHasOwner = true;
+    fixture.componentRef.setInput("containerHasOwner", true);
     await detectChangesStable(fixture);
     const checkboxDebug = fixture.debugElement.query(By.directive(MatCheckbox));
     expect(checkboxDebug.componentInstance.disabled).toBe(false);

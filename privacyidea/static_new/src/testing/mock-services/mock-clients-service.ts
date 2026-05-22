@@ -18,10 +18,13 @@
  **/
 import { PiResponse } from "@app/app.component";
 import { ClientsDict, ClientsServiceInterface } from "@services/clients/clients.service";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
 export class MockClientsService implements ClientsServiceInterface {
-  clientsResource = new MockHttpResourceRef<PiResponse<ClientsDict> | undefined>(
-    MockPiResponse.fromValue<ClientsDict>({})
-  );
+  clientsResource = new MockHttpResourceRef<PiResponse<ClientsDict> | undefined>(undefined);
+  requestClientsForAutocomplete = jest.fn();
+
+  setClients(dict: ClientsDict): void {
+    this.clientsResource.set(MockPiResponse.fromValue<ClientsDict>(dict));
+  }
 }

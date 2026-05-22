@@ -22,6 +22,6 @@
     matInput
     [disabled]="!isEditMode()"
     placeholder="/etc/hosts"
-    [ngModel]="hostsData().filename"
-    (ngModelChange)="updateData({ filename: $event })" />
+    [value]="hostsData().filename"
+    (input)="updateData({ filename: $event.target['value'] })" />
 </mat-form-field>

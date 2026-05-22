@@ -83,29 +83,29 @@ describe("SystemConfigComponent", () => {
 
   it("should load system config on init", () => {
     expect(component.params).toBeDefined();
-    expect(component.params.splitAtSign).toBe(true);
-    expect(component.params.IncFailCountOnFalsePin).toBe(false);
-    expect(component.params.no_auth_counter).toBe(true);
-    expect(component.params.PrependPin).toBe(false);
-    expect(component.params.ReturnSamlAttributes).toBe(true);
-    expect(component.params.ReturnSamlAttributesOnFail).toBe(false);
-    expect(component.params.AutoResync).toBe(true);
-    expect(component.params.UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params.UiLoginDisplayRealmBox).toBe(true);
-    expect(component.params.someOtherConfig).toBe("test_value");
+    expect(component.params().splitAtSign).toBe(true);
+    expect(component.params().IncFailCountOnFalsePin).toBe(false);
+    expect(component.params().no_auth_counter).toBe(true);
+    expect(component.params().PrependPin).toBe(false);
+    expect(component.params().ReturnSamlAttributes).toBe(true);
+    expect(component.params().ReturnSamlAttributesOnFail).toBe(false);
+    expect(component.params().AutoResync).toBe(true);
+    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
+    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
+    expect(component.params().someOtherConfig).toBe("test_value");
   });
 
   it("should convert boolean config values correctly", () => {
     // Test that boolean values are properly converted
-    expect(component.params.splitAtSign).toBe(true);
-    expect(component.params.IncFailCountOnFalsePin).toBe(false);
-    expect(component.params.no_auth_counter).toBe(true);
-    expect(component.params.PrependPin).toBe(false);
-    expect(component.params.ReturnSamlAttributes).toBe(true);
-    expect(component.params.ReturnSamlAttributesOnFail).toBe(false);
-    expect(component.params.AutoResync).toBe(true);
-    expect(component.params.UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params.UiLoginDisplayRealmBox).toBe(true);
+    expect(component.params().splitAtSign).toBe(true);
+    expect(component.params().IncFailCountOnFalsePin).toBe(false);
+    expect(component.params().no_auth_counter).toBe(true);
+    expect(component.params().PrependPin).toBe(false);
+    expect(component.params().ReturnSamlAttributes).toBe(true);
+    expect(component.params().ReturnSamlAttributesOnFail).toBe(false);
+    expect(component.params().AutoResync).toBe(true);
+    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
+    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
   });
 
   it("should load SMTP identifiers on init", () => {
@@ -175,10 +175,10 @@ describe("SystemConfigComponent", () => {
     expect(pendingChangesService.registerSave).toHaveBeenCalled();
   });
 
-  it("should report hasChanges based on form dirty state", () => {
+  it("should report hasChanges based on isDirty signal", () => {
     const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
     expect(fn()).toBe(false);
-    component.systemConfigForm.form.markAsDirty();
+    component.isDirty.set(true);
     expect(fn()).toBe(true);
   });
 

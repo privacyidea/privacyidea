@@ -18,15 +18,16 @@
 -->
 <div class="flex-column expansion-well margin-bottom-16">
   <mat-checkbox
-    (change)="onUserStorePassphraseChange()"
-    [(ngModel)]="userStorePassphrase"
+    [checked]="userStorePassphrase()"
+    (change)="userStorePassphrase.set($event.checked); onUserStorePassphraseChange()"
     [disabled]="!containerHasOwner">
     <span>Validate the passphrase against the user store.</span>
   </mat-checkbox>
   <mat-form-field class="input-width-xl">
     <mat-label i18n>Passphrase Prompt</mat-label>
     <textarea
-      [(ngModel)]="passphrasePrompt"
+      [value]="passphrasePrompt()"
+      (input)="passphrasePrompt.set($any($event.target).value)"
       matInput
       rows="2"></textarea>
     <mat-hint
@@ -40,7 +41,8 @@
   <mat-form-field class="input-width-xl margin-top-32 margin-bottom-32">
     <mat-label i18n> Passphrase Response</mat-label>
     <input
-      [(ngModel)]="passphraseResponse"
+      [value]="passphraseResponse()"
+      (input)="passphraseResponse.set($any($event.target).value)"
       [disabled]="userStorePassphrase()"
       [type]="showPassphrase ? 'text' : 'password'"
       matInput>
@@ -61,7 +63,8 @@
   <mat-form-field class="input-width-xl">
     <mat-label i18n> Repeat Passphrase Response</mat-label>
     <input
-      [(ngModel)]="repeatPassphraseResponse"
+      [value]="repeatPassphraseResponse()"
+      (input)="repeatPassphraseResponse.set($any($event.target).value)"
       [disabled]="userStorePassphrase()"
       [type]="showRepeatPassphrase ? 'text' : 'password'"
       matInput>

@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -42,7 +41,6 @@ import { Observable, switchMap } from "rxjs";
     MatListItem,
     MatFormField,
     MatInput,
-    FormsModule,
     MatIconButton,
     MatLabel,
     MatIcon,

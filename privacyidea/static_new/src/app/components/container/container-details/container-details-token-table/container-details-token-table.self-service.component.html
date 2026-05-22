@@ -27,13 +27,13 @@
       Tokens in Container
     </h3>
     <div class="flex-row filter-paginator-container">
-      @if (dataSource.data.length > 1) {
+      @if (dataSource().data.length > 1) {
         <mat-form-field
           class="container-details-token-table-filter width-50"
           subscriptSizing="dynamic">
           <mat-label i18n>Filter Token...</mat-label>
           <app-clearable-input
-            (onClick)="clearFilter()"
+            (clearButtonClick)="clearFilter()"
             [showClearButton]="filterInput.value !== ''">
             <input
               #filterInput
@@ -53,7 +53,7 @@
   </div>
   <div class="responsive-flex-row-1580">
     <table
-      [dataSource]="dataSource"
+      [dataSource]="dataSource()"
       aria-label="Token of Container Data Table"
       class="container-details-token-table"
       i18n-aria-label
@@ -85,16 +85,17 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (element.username === authService.username()) {
-                      <a
-                        attr.aria-label="{{ column.label }} Link"
-                        (click)="contentService.tokenSelected(element.serial)">
-                        {{ element[column.key] }}
-                      </a>
-                    } @else {
-                      <span> {{ element[column.key] }} </span>
-                    }
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
+                    <app-copyable [copyText]="element.serial">
+                      @if (element.username === authService.username()) {
+                        <a
+                          attr.aria-label="{{ column.label }} Link"
+                          (click)="contentService.tokenSelected(element.serial)">
+                          {{ element[column.key] }}
+                        </a>
+                      } @else {
+                        <span> {{ element[column.key] }} </span>
+                      }
+                    </app-copyable>
                   }
                   @case ("active") {
                     <span

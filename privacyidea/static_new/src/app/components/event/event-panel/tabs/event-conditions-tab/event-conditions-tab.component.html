@@ -35,14 +35,14 @@
           <mat-form-field>
             <mat-label i18n>Search condition ...</mat-label>
             <app-clearable-input
-              (onClick)="searchTerm.set('')"
+              (clearButtonClick)="searchTerm.set('')"
               [showClearButton]="searchTerm().length > 0">
               <input
                 matInput
                 type="text"
                 placeholder="Search condition ..."
-                [ngModel]="searchTerm()"
-                (ngModelChange)="searchTerm.set($event)" />
+                [value]="searchTerm()"
+                (input)="searchTerm.set($event['target']['value'])" />
             </app-clearable-input>
           </mat-form-field>
 

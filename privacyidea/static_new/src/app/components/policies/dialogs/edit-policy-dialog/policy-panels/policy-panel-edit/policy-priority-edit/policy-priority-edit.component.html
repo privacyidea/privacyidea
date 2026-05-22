@@ -23,7 +23,7 @@
     <input
       matInput
       type="number"
-      [ngModel]="priority()"
-      (ngModelChange)="priority.set($event)" />
+      [value]="priority()"
+      (input)="priority.set(+$any($event.target).value)" />
   </mat-form-field>
 </div>

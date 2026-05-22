@@ -18,7 +18,6 @@
  **/
 
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
@@ -44,7 +43,7 @@ import { lastValueFrom } from "rxjs";
 @Component({
   selector: "app-enroll-passkey",
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [],
   templateUrl: "./enroll-passkey.component.html",
   styleUrl: "./enroll-passkey.component.scss"
 })
@@ -57,9 +56,7 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PasskeyEnrollmentData;
@@ -70,8 +67,6 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() onEnrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
-
-  passkeyForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

@@ -18,7 +18,6 @@
  **/
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { AfterViewInit, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
@@ -73,7 +72,6 @@ export interface SubNavSection {
     RouterLink,
     NgClass,
     MatTooltipModule,
-    FormsModule,
     UserUtilsPanelComponent,
     NgTemplateOutlet,
     MatMenuModule,

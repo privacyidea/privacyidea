@@ -64,21 +64,21 @@ describe("TokenVerifyEnrollmentComponent", () => {
   });
 
   it("should disable verify action if input is invalid", () => {
-    component.verifyOTPControl.setValue("");
+    component.verifyOTP_value.set("");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(true);
     expect(component.dialogActions()[0].disabled).toBe(true);
   });
 
   it("should enable verify action if input is valid", () => {
-    component.verifyOTPControl.setValue("123456");
+    component.verifyOTP_value.set("123456");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(false);
     expect(component.dialogActions()[0].disabled).toBe(false);
   });
 
   it("should call verifyToken and close dialog on successful verify", () => {
-    component.verifyOTPControl.setValue("123456");
+    component.verifyOTP_value.set("123456");
     component.onDialogAction("verify");
     expect(mockTokenService.verifyToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).toHaveBeenCalled();
@@ -92,7 +92,7 @@ describe("TokenVerifyEnrollmentComponent", () => {
         type: "hotp"
       })
     );
-    component.verifyOTPControl.setValue("123456");
+    component.verifyOTP_value.set("123456");
     component.onDialogAction("verify");
     expect(mockTokenService.verifyToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();

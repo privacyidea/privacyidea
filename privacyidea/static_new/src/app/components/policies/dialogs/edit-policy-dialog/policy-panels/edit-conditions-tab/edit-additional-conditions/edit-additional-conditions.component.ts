@@ -19,7 +19,6 @@
 
 import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -53,7 +52,6 @@ import {
     MatInputModule,
     MatSelectModule,
     MatCheckboxModule,
-    FormsModule,
     MatButtonModule,
     MatIconModule,
     MatIconButton,

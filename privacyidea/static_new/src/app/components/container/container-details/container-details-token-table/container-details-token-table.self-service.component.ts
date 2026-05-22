@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -27,7 +26,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatCell, MatHeaderCell, MatHeaderRow, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -52,9 +51,7 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
     MatTableModule,
     MatIcon,
     MatIconButton,
-    CopyButtonComponent,
-    ReactiveFormsModule,
-    FormsModule,
+    CopyableComponent,
     MatTooltip,
     ClearableInputComponent
   ],

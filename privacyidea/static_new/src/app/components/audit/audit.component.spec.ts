@@ -40,8 +40,6 @@ import { AuditSelfServiceComponent } from "./audit.self-service.component";
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
   let component: AuditComponent;
-  let selfFixture: ComponentFixture<AuditSelfServiceComponent>;
-  let selfComponent: AuditSelfServiceComponent;
   let mockAuditService: MockAuditService;
   let mockTableUtilsService: MockTableUtilsService;
 
@@ -84,8 +82,6 @@ describe("AuditComponent (unit)", () => {
 
     fixture = TestBed.createComponent(AuditComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
     mockAuditService = TestBed.inject(MockAuditService as any);
     mockTableUtilsService = TestBed.inject(MockTableUtilsService as any);
     fixture.detectChanges();
@@ -102,7 +98,8 @@ describe("AuditComponent (unit)", () => {
   });
 
   it("creates self service", () => {
-    expect(selfComponent).toBeTruthy();
+    const selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   describe("page‑related derived signals", () => {

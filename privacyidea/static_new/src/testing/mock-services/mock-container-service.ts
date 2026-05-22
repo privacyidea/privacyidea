@@ -102,6 +102,7 @@ export class MockContainerService implements ContainerServiceInterface {
   setContainerRealm = jest.fn().mockReturnValue(of(null));
   setContainerDescription = jest.fn().mockReturnValue(of(null));
   toggleActive = jest.fn().mockReturnValue(of({}));
+  setStates = jest.fn().mockReturnValue(of({}));
   unassignUser = jest.fn().mockReturnValue(of(null));
   assignUser = jest.fn().mockReturnValue(of(null));
   setContainerInfos = jest.fn().mockReturnValue(of({}));

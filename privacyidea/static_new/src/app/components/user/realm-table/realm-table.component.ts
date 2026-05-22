@@ -30,7 +30,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
@@ -59,6 +58,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -90,7 +90,7 @@ const columnKeysMap = [
   standalone: true,
   imports: [
     ClearableInputComponent,
-    FormsModule,
+    CopyableComponent,
     MatButtonModule,
     MatCell,
     MatCellDef,
@@ -149,6 +149,9 @@ export class RealmTableComponent implements OnDestroy {
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
   isCreatingRealm = signal<boolean>(false);
+  newRealmNameHasPatternError = computed(
+    () => this.newRealmName().length > 0 && !/^[a-zA-Z0-9._-]*$/.test(this.newRealmName())
+  );
 
   // Edit Form State
   editingRealmName = signal<string | null>(null);

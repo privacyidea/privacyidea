@@ -38,9 +38,16 @@ describe("ClearButtonComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit onClick event when clearInput is called", () => {
-    jest.spyOn(component.onClick, "emit");
-    component.clearInput();
-    expect(component.onClick.emit).toHaveBeenCalled();
+  it("should emit clearButtonClick event when clearInput is called", () => {
+    jest.spyOn(component.clearButtonClick, "emit");
+    component.clearInput(new MouseEvent("click"));
+    expect(component.clearButtonClick.emit).toHaveBeenCalled();
+  });
+
+  it("should not emit clearButtonClick when disabled", () => {
+    fixture.componentRef.setInput("disabled", true);
+    jest.spyOn(component.clearButtonClick, "emit");
+    component.clearInput(new MouseEvent("click"));
+    expect(component.clearButtonClick.emit).not.toHaveBeenCalled();
   });
 });

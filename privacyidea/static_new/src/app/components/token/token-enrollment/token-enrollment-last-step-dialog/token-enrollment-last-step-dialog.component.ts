@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, inject, Signal } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -38,7 +37,6 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
     DialogWrapperComponent,
     MatIconModule,
     MatButtonModule,
-    ReactiveFormsModule,
     TokenEnrollmentDataComponent,
     TokenEnrolledTextComponent
   ]

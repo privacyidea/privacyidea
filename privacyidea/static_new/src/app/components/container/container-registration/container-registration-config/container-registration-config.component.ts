@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, EventEmitter, Input, Output, Signal, signal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
@@ -31,7 +30,6 @@ import { MatInput } from "@angular/material/input";
   imports: [
     MatFormField,
     MatInput,
-    FormsModule,
     MatHint,
     MatLabel,
     MatCheckbox,

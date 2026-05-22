@@ -20,27 +20,27 @@
 import {
   Component,
   computed,
+  effect,
   EventEmitter,
   inject,
   input,
   linkedSignal,
   Output,
-  QueryList,
   Signal,
   signal,
   ViewChild,
-  ViewChildren,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, NgModel } from "@angular/forms";
+import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatOption, MatSelect } from "@angular/material/select";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import {
   EMPTY_PERIODIC_TASK,
   EMPTY_PERIODIC_TASK_OPTION,
@@ -60,12 +60,12 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
   imports: [
     MatFormField,
     MatInput,
-    FormsModule,
     MatOption,
     MatSelect,
     MatLabel,
     MatCheckbox,
     MatHint,
+    MatError,
     MatIcon,
     MatIconButton,
     PeriodicTaskOptionDetailComponent,
@@ -73,7 +73,9 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     MatExpansionPanel,
     MatExpansionPanelTitle,
     MatExpansionPanelHeader,
-    MatError
+    FormField,
+    ClearableInputComponent
+
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
@@ -92,18 +94,26 @@ export class PeriodicTaskEditComponent {
   }
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
-  @ViewChildren(NgModel) ngModelControls?: QueryList<NgModel>;
 
-  resetFormState(): void {
-    this.ngModelControls?.forEach((m) => {
-      m.control.markAsPristine();
-      m.control.markAsUntouched();
+  editTask = linkedSignal(() => deepCopy(this.task()));
+  editTaskForm = form(this.editTask, (f) => {
+    required(f.name);
+    pattern(f.name, /^[a-zA-Z0-9._-]*$/);
+  });
+
+  constructor() {
+    effect(() => {
+      this.editTaskForm().value();
+      this.emitAllowSave();
     });
   }
 
-  editTask = linkedSignal(() => deepCopy(this.task()));
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
+
+  updateNewOptionValue(option: string, value: string): void {
+    this.newOptionValues.set({ ...this.newOptionValues(), [option]: value });
+  }
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;

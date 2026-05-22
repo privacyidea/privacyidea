@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, inject, signal } from "@angular/core";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -28,7 +28,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 
 @Component({
   selector: "app-verify-enrollment",
-  imports: [FormsModule, MatFormField, MatInput, MatLabel, ReactiveFormsModule, MatButton, MatIcon],
+  imports: [MatFormField, MatInput, MatLabel, MatButton, MatIcon, FormField],
   templateUrl: "./verify-enrollment.component.html",
   styleUrl: "./verify-enrollment.component.scss"
 })
@@ -36,13 +36,16 @@ export class VerifyEnrollmentComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  otpControl = new FormControl("", { nonNullable: true, validators: [Validators.required] });
+  otpValue = signal("");
+  otpForm = form(this.otpValue, (f) => {
+    required(f);
+  });
 
   verifyOTP() {
     const verifyData: TokenEnrollmentData = {
       serial: this.tokenService.tokenSerial(),
       type: this.tokenService.selectedTokenType().key,
-      verify: this.otpControl.value
+      verify: this.otpValue()
     };
     this.tokenService.verifyToken(verifyData).subscribe({
       next: (response) => {

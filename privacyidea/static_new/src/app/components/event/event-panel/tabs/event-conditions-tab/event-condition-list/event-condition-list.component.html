@@ -62,7 +62,6 @@
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [multiple]="true"
-                [ngModel]="multiValueConditions()[conditionName] || []"
                 [placeholder]="'Select values ...'"
                 [required]="inputRequired()"
                 [value]="multiValueConditions()[conditionName] || []">
@@ -83,7 +82,6 @@
               <mat-select
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
-                [ngModel]="editConditions()[conditionName]"
                 [required]="inputRequired()"
                 [value]="editConditions()[conditionName]"
                 placeholder="Select one option ...">
@@ -105,11 +103,11 @@
               @case ("int") {
                 <input
                   #selectedConditionInput
+                  (input)="onConditionValueChange(conditionName, +$event['target']['value'])"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
-                  (ngModelChange)="onConditionValueChange(conditionName, $event)"
                   [name]="'conditionInput_' + conditionName"
-                  [ngModel]="editConditions()[conditionName]"
                   [required]="inputRequired()"
+                  [value]="editConditions()[conditionName]"
                   class="font-size-16"
                   matInput
                   placeholder="Enter a Number ..."
@@ -119,11 +117,11 @@
                 <!-- str, regex -->
                 <input
                   #selectedConditionInput
+                  (input)="onConditionValueChange(conditionName, $event['target']['value'])"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
-                  (ngModelChange)="onConditionValueChange(conditionName, $event)"
                   [name]="'conditionInput_' + conditionName"
-                  [ngModel]="editConditions()[conditionName] || ''"
                   [required]="inputRequired()"
+                  [value]="editConditions()[conditionName] || ''"
                   class="font-size-16"
                   matInput
                   placeholder="Enter value ..."

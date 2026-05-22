@@ -30,8 +30,7 @@
     <div class="sticky-controls ali-center">
       <mat-form-field class="input-width-xl type-select">
         <mat-select
-          [(ngModel)]="containerService.selectedContainerType"
-          [ngModelOptions]="{ standalone: true }"
+          (selectionChange)="containerService.selectedContainerType.set($event.value)"
           [panelClass]="'single-column-panel'"
           [value]="containerService.selectedContainerType()">
           @for (type of containerService.containerTypeOptions(); track type) {

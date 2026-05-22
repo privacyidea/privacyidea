@@ -136,9 +136,9 @@ describe("UserNewResolverComponent", () => {
 
     await detectChangesStable();
 
-    expect(component.isEditMode).toBeTruthy();
-    expect(component.resolverName).toBe(resolverName);
-    expect(component.resolverType).toBe("passwdresolver");
+    expect(component.isEditMode()).toBeTruthy();
+    expect(component.resolverNameModel().resolverName).toBe(resolverName);
+    expect(component.resolverType()).toBe("passwdresolver");
     expect(component.formData["fileName"]).toBe("/tmp/test");
 
     const inputElement = fixture.nativeElement.querySelector('input[placeholder="/etc/passwd"]');
@@ -175,8 +175,8 @@ describe("UserNewResolverComponent", () => {
 
     await detectChangesStable();
 
-    expect(component.isEditMode).toBeTruthy();
-    expect(component.resolverType).toBe("sqlresolver");
+    expect(component.isEditMode()).toBeTruthy();
+    expect(component.resolverType()).toBe("sqlresolver");
 
     const dbInput = fixture.nativeElement.querySelector('input[placeholder="YourDatabase"]');
     expect(dbInput?.value).toBe("testdb");
@@ -230,8 +230,8 @@ describe("UserNewResolverComponent", () => {
     await detectChangesStable();
 
     const resolverName = "test-error";
-    component.resolverName = resolverName;
-    component.resolverType = "sqlresolver";
+    component.resolverNameModel.set({ resolverName });
+    component.resolverType.set("sqlresolver");
 
     const errorResponse = new MockPiResponse<number, { description: string }>({
       result: {
@@ -251,13 +251,13 @@ describe("UserNewResolverComponent", () => {
 
     expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Unable to connect to database."));
     expect(router.navigateByUrl).not.toHaveBeenCalled();
-    expect(component.resolverName).toBe(resolverName);
+    expect(component.resolverNameModel().resolverName).toBe(resolverName);
   });
 
   it("should show error when postResolverTest returns status true but value -1", async () => {
     await detectChangesStable();
 
-    component.resolverType = "sqlresolver";
+    component.resolverType.set("sqlresolver");
 
     const errorResponse = new MockPiResponse<number, { description: string }>({
       result: {
@@ -280,8 +280,8 @@ describe("UserNewResolverComponent", () => {
 
   it("should show success on save and navigate to resolvers list", async () => {
     await detectChangesStable();
-    component.resolverName = "new-res";
-    component.resolverType = "passwdresolver";
+    component.resolverNameModel.set({ resolverName: "new-res" });
+    component.resolverType.set("passwdresolver");
 
     const successResponse = new MockPiResponse<number, any>({
       result: { status: true, value: 1 }
@@ -329,8 +329,8 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should show error on save when subscription fails", async () => {
-    component.resolverName = "err-res";
-    component.resolverType = "passwdresolver";
+    component.resolverNameModel.set({ resolverName: "err-res" });
+    component.resolverType.set("passwdresolver");
     fixture.detectChanges();
 
     const errorResponse = {
@@ -350,30 +350,30 @@ describe("UserNewResolverComponent", () => {
   it("should validate before save", async () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    component.resolverName = "";
+    component.resolverNameModel.set({ resolverName: "" });
     let success = await component.onSave();
     expect(success).toBe(false);
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
 
-    component.resolverName = "res";
-    component.resolverType = "" as any;
+    component.resolverNameModel.set({ resolverName: "res" });
+    component.resolverType.set("" as any);
     success = await component.onSave();
     expect(success).toBe(false);
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
-    component.resolverType = "passwdresolver";
+    component.resolverType.set("passwdresolver");
     await detectChangesStable();
-    component.passwdResolver()?.filenameControl.setValue("");
+    component.passwdResolver()?.model.set({ fileName: "" });
     success = await component.onSave();
     expect(success).toBe(false);
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
   it("should include additional fields in save payload", async () => {
-    component.resolverName = "res";
-    component.resolverType = "passwdresolver";
+    component.resolverNameModel.set({ resolverName: "res" });
+    component.resolverType.set("passwdresolver");
     await detectChangesStable();
-    component.passwdResolver()?.filenameControl.setValue("/etc/passwd");
+    component.passwdResolver()?.model.set({ fileName: "/etc/passwd" });
 
     resolverService.postResolver.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
     component.onSave();
@@ -387,7 +387,7 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should execute test successfully", async () => {
-    component.resolverType = "passwdresolver";
+    component.resolverType.set("passwdresolver");
     fixture.detectChanges();
     const successResponse = new MockPiResponse<number, any>({
       result: { status: true, value: 1 }
@@ -407,7 +407,7 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should show error on test when subscription fails", async () => {
-    component.resolverType = "passwdresolver";
+    component.resolverType.set("passwdresolver");
     fixture.detectChanges();
 
     const errorResponse = { message: "Network error" };
@@ -424,13 +424,13 @@ describe("UserNewResolverComponent", () => {
   it("should validate before test", async () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    component.resolverType = "" as any;
+    component.resolverType.set("" as any);
     component.onTest();
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
-    component.resolverType = "passwdresolver";
+    component.resolverType.set("passwdresolver");
     await detectChangesStable();
-    component.passwdResolver()?.filenameControl.setValue("");
+    component.passwdResolver()?.model.set({ fileName: "" });
     component.onTest();
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
@@ -460,28 +460,22 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should handle type change", () => {
-    component.resolverType = "sqlresolver";
     component.onTypeChange("sqlresolver");
-    expect(component.resolverType).toBe("sqlresolver");
+    expect(component.resolverType()).toBe("sqlresolver");
 
-    component.resolverType = "ldapresolver";
     component.onTypeChange("ldapresolver");
-    expect(component.resolverType).toBe("ldapresolver");
+    expect(component.resolverType()).toBe("ldapresolver");
     expect(component.formData["TLS_VERSION"]).toBe("TLSv1_3");
 
-    component.resolverType = "entraidresolver";
     component.onTypeChange("entraidresolver");
     expect(component.formData).toEqual({});
 
-    component.resolverType = "keycloakresolver";
     component.onTypeChange("keycloakresolver");
     expect(component.formData).toEqual({});
 
-    component.resolverType = "httpresolver";
     component.onTypeChange("httpresolver");
     expect(component.formData["responseMapping"]).toBeUndefined();
 
-    component.resolverType = "passwdresolver";
     component.onTypeChange("passwdresolver");
     expect(component.formData["fileName"]).toBe("/etc/passwd");
   });
@@ -490,7 +484,7 @@ describe("UserNewResolverComponent", () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
-    component.resolverName = "changed";
+    component.resolverNameModel.set({ resolverName: "changed" });
     await detectChangesStable();
 
     component.onCancel();
@@ -515,7 +509,7 @@ describe("UserNewResolverComponent", () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
-    component.resolverName = "changed";
+    component.resolverNameModel.set({ resolverName: "changed" });
     await detectChangesStable();
 
     component.onCancel();
@@ -525,8 +519,8 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should navigate to resolvers list when user selects 'save-exit' and save succeeds", async () => {
-    component.resolverName = "test-res";
-    component.resolverType = "passwdresolver";
+    component.resolverNameModel.set({ resolverName: "test-res" });
+    component.resolverType.set("passwdresolver");
     await detectChangesStable();
 
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
@@ -547,8 +541,8 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should NOT navigate when user selects 'save-exit' but save fails", async () => {
-    component.resolverName = "test-res";
-    component.resolverType = "passwdresolver";
+    component.resolverNameModel.set({ resolverName: "test-res" });
+    component.resolverType.set("passwdresolver");
     await detectChangesStable();
 
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
@@ -572,13 +566,13 @@ describe("UserNewResolverComponent", () => {
   });
 
   it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-    component.resolverName = "";
+    component.resolverNameModel.set({ resolverName: "" });
     await detectChangesStable();
 
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
-    component.testUsername = "test";
+    component.testUsername.set("test");
     await detectChangesStable();
 
     component.onCancel();
@@ -594,7 +588,7 @@ describe("UserNewResolverComponent", () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
-    component.resolverName = "changed";
+    component.resolverNameModel.set({ resolverName: "changed" });
     await detectChangesStable();
 
     component.onCancel();

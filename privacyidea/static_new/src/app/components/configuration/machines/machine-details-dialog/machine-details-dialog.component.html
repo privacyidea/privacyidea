@@ -25,10 +25,9 @@
         i18n>
         Details for Machine:
       </h3>
-      <div class="flex-row flex-nowrap ali-center">
+      <app-copyable [copyText]="machine.hostname[0]">
         <h3 class="h3-color margin-0">{{ machine.hostname }}</h3>
-        <app-copy-button [copyText]="machine.hostname[0]" />
-      </div>
+      </app-copyable>
     </div>
 
     <div class="details-section">
@@ -36,13 +35,17 @@
       <span
         class="label"
         i18n>Hostname:</span>
-        <span class="value">{{ machine.hostname }}</span>
+        <app-copyable [copyText]="machine.hostname[0]">
+          <span class="value">{{ machine.hostname }}</span>
+        </app-copyable>
       </div>
       <div class="detail-row">
       <span
         class="label"
         i18n>IP Address:</span>
-        <span class="value">{{ machine.ip }}</span>
+        <app-copyable [copyText]="machine.ip">
+          <span class="value">{{ machine.ip }}</span>
+        </app-copyable>
       </div>
       <div class="detail-row">
       <span
@@ -54,13 +57,12 @@
       <span
         class="label"
         i18n>Machine Resolver:</span>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="machine.resolver_name">
           <a
             (click)="onMachineResolverClick(machine.resolver_name)"
             class="value">{{ machine.resolver_name }}
           </a>
-          <app-copy-button [copyText]="machine.resolver_name" />
-        </div>
+        </app-copyable>
       </div>
     </div>
 
@@ -134,7 +136,9 @@
                   <mat-form-field
                     appearance="fill">
                     <mat-label i18n>Service ID</mat-label>
-                    <mat-select [(ngModel)]="editedOptions[token.id]['service_id']">
+                    <mat-select
+                      [value]="editedOptions[token.id]['service_id']"
+                      (selectionChange)="editedOptions[token.id]['service_id'] = $event.value">
                       @for (v of applicationsDef().ssh.options.sshkey.service_id.value; track v) {
                         <mat-option [value]="v">
                           {{ v }}
@@ -146,7 +150,8 @@
                     appearance="fill">
                     <mat-label i18n>User</mat-label>
                     <input
-                      [(ngModel)]="editedOptions[token.id]['user']"
+                      [value]="editedOptions[token.id]['user'] ?? ''"
+                      (input)="editedOptions[token.id]['user'] = $any($event.target).value"
                       matInput />
                   </mat-form-field>
                 </div>
@@ -213,7 +218,7 @@
       </table>
     </div>
 
-    <form (ngSubmit)="attachToken()">
+    <div>
       <h3 i18n>Attach a New Token</h3>
       <div class="flex-row ali-center gap-16">
         <mat-form-field
@@ -221,13 +226,14 @@
           class="input-width-l">
           <mat-label i18n>Token Serial</mat-label>
           <input
-            [(ngModel)]="newTokenSerial"
-            (ngModelChange)="onTokenSerialInput($event)"
+            [value]="newTokenSerial()"
+            (input)="onTokenSerialInput($any($event.target).value)"
             [matAutocomplete]="tokenSerialAuto"
             matInput
-            name="newTokenSerial"
             placeholder="e.g. PIHOTP000001" />
-          <mat-autocomplete #tokenSerialAuto="matAutocomplete">
+          <mat-autocomplete
+            #tokenSerialAuto="matAutocomplete"
+            (optionSelected)="onTokenSerialInput($event.option.value)">
             @for (serial of tokenService.filteredTokenOptions(); track serial) {
               <mat-option [value]="serial">{{ serial }}</mat-option>
             }
@@ -239,8 +245,8 @@
           class="input-width-s">
           <mat-label i18n>Application</mat-label>
           <mat-select
-            [(ngModel)]="selectedApplication"
-            name="selectedApplication">
+            [value]="selectedApplication()"
+            (selectionChange)="selectedApplication.set($event.value)">
             @for (app of applicationOptions; track app) {
               <mat-option [value]="app">
                 {{ app }}
@@ -250,14 +256,14 @@
         </mat-form-field>
 
         <button
-          [disabled]="!newTokenSerial || !selectedApplication"
+          [disabled]="!newTokenSerial() || !selectedApplication()"
           class="action-button-primary button-width-s margin-bottom-16"
           mat-stroked-button
-          type="submit">
+          (click)="attachToken()">
           <mat-icon>add</mat-icon>
           <span i18n>Attach</span>
         </button>
       </div>
-    </form>
+    </div>
   </div>
 }

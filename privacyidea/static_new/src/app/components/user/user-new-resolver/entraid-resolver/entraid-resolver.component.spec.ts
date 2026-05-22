@@ -29,7 +29,6 @@ describe("EntraidResolverComponent", () => {
   let component: EntraidResolverComponent;
   let componentRef: ComponentRef<EntraidResolverComponent>;
   let fixture: ComponentFixture<EntraidResolverComponent>;
-  let resolverService: MockResolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -41,7 +40,6 @@ describe("EntraidResolverComponent", () => {
       imports: [EntraidResolverComponent]
     }).compileComponents();
 
-    resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     fixture = TestBed.createComponent(EntraidResolverComponent);
     component = fixture.componentInstance;
     componentRef = fixture.componentRef;
@@ -60,8 +58,8 @@ describe("EntraidResolverComponent", () => {
     };
     componentRef.setInput("data", defaultData);
     fixture.detectChanges();
-    expect(component.baseUrlControl.value).toBe("https://graph.microsoft.com/v1.0");
-    expect(component.authorityControl.value).toBe("https://login.microsoftonline.com/{tenant}");
-    expect(component.configGetUserListGroup.value.endpoint).toBe("/users");
+    expect(component.model().base_url).toBe("https://graph.microsoft.com/v1.0");
+    expect(component.model().authority).toBe("https://login.microsoftonline.com/{tenant}");
+    expect(component.configGetUserListModel().endpoint).toBe("/users");
   });
 });
