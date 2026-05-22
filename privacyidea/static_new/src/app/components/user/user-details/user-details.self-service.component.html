@@ -33,11 +33,28 @@
             <div class="label">{{ item.label }}:</div>
             @if (Array.isArray(item.value) && item.value.length > 1) {
               <div class="value">
-                <ul class="no-indention margin-0">
-                  @for (val of item.value; track val) {
-                    <li>{{ val }}</li>
+                <ul class="value-list">
+                  @if (isExpanded(item.key)) {
+                    @for (val of item.value; track val) {
+                      <li>{{ val }}</li>
+                    }
+                  } @else {
+                    <li>{{ item.value[0] }}</li>
                   }
                 </ul>
+                <button
+                  (click)="toggleExpanded(item.key)"
+                  [attr.aria-expanded]="isExpanded(item.key)"
+                  class="value-toggle"
+                  type="button">
+                  @if (isExpanded(item.key)) {
+                    <mat-icon>expand_less</mat-icon>
+                    <span i18n>Show less</span>
+                  } @else {
+                    <mat-icon>expand_more</mat-icon>
+                    <span i18n>Show {{ item.value.length - 1 }} more</span>
+                  }
+                </button>
               </div>
             } @else {
               <div class="value">{{ item.value }}</div>
