@@ -78,9 +78,10 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea authenticator": 10,
                 "privacyidea": 50}
 
-# Plugins shown on the dashboard subscription overview. Order is preserved
-# in the API response so the frontend can render them as-is. Display names
-# live on the frontend (see ``pluginDisplayName`` in dashboardControllers.js).
+# Plugins shown on the dashboard subscription overview. The API response
+# preserves this order; the frontend re-sorts by status and uses this as
+# the per-bucket tiebreaker. Display names live on the frontend (see
+# ``pluginDisplayName`` in dashboardControllers.js).
 DASHBOARD_PLUGINS = [
     "privacyidea-cp",
     "privacyidea-adfs",
@@ -171,6 +172,11 @@ def get_plugin_subscription_status() -> list[dict]:
     )
     last_seen_by_plugin: dict[str, datetime.datetime] = {}
     for clienttype, max_lastseen in db.session.execute(stmt).all():
+        # MAX() can return NULL when every row for a clienttype has a NULL
+        # lastseen; skip those so a later real timestamp doesn't compare
+        # against None.
+        if max_lastseen is None:
+            continue
         plugin = get_plugin_info_from_useragent(clienttype)[0]
         if not plugin:
             continue
