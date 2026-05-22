@@ -67,8 +67,8 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
 "<li>Support and\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Service Level Agreements by NetKnights</a>, "
 "Germany.\n"
 "                    </li>\n"
@@ -85,8 +85,8 @@ msgid ""
 "                    <li>Depending on the support level you get help with "
 "updates and yearly consultancy.</li>\n"
 "                    <li>By buying the\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        you ensure that professional developers can work "
 "full time\n"
 "                        on privacyIDEA, add new features and fix bugs in a "
@@ -96,8 +96,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li> Підтримка та\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Угоди про рівень обслуговування від NetKnights </"
 "a>, Німеччина.\n"
 "                    </li>\n"
@@ -115,8 +115,9 @@ msgstr ""
 "                    <li> Залежно від рівня підтримки ви отримуєте допомогу з "
 "оновленням та щорічні консультації. </li>\n"
 "                    <li> Купуючи\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\"> PrivacyIDEA Enterprise Edition </a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\"> PrivacyIDEA Enterprise Edition </"
+"a>\n"
 "                        ви гарантуєте, що професійні розробники мають змогу "
 "працювати повний робочий день\n"
 "                        над privacyIDEA, додавати новий функціонал та "
@@ -327,7 +328,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:252
 #: privacyidea/static/components/config/views/config.events.list.html:27
 #: privacyidea/static/components/config/views/config.policies.details.html:158
-#: privacyidea/static/components/config/views/config.policies.details.html:355
+#: privacyidea/static/components/config/views/config.policies.details.html:354
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
@@ -352,7 +353,7 @@ msgstr "Активні події"
 msgid "Active Policies"
 msgstr "Активні політики"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:327
+#: privacyidea/static/components/config/views/config.policies.details.html:326
 #: privacyidea/static/components/token/views/token.containerdetails.html:760
 msgid "Add"
 msgstr "Додати"
@@ -399,7 +400,7 @@ msgstr "Додати користувача"
 msgid "Additional"
 msgstr "Додатковий"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:338
+#: privacyidea/static/components/config/views/config.policies.details.html:337
 msgid "Additional conditions"
 msgstr "Додаткові умови"
 
@@ -917,7 +918,7 @@ msgid "Close all containers"
 msgstr "Закрийте всі контейнери"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.policies.details.html:389
+#: privacyidea/static/components/config/views/config.policies.details.html:388
 msgid "Close all groups"
 msgstr "Закрити всі групи"
 
@@ -1116,7 +1117,7 @@ msgstr "Лічильник"
 msgid "Count Window"
 msgstr "Проміжок лічильника"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:164
+#: privacyidea/static/components/config/views/config.system.edit.html:166
 msgid ""
 "Count Window of\n"
 "                newly enrolled tokens"
@@ -1503,11 +1504,11 @@ msgstr "Не перевіряйте справжність"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
-"Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
-"username }}?"
+"Do you really want to delete the Token {{ tokenSerial }} from user "
+"{{ token.username }}?"
 msgstr ""
-"Ви дійсно хочете видалити токен {{tokenSerial}} для користувача {{token."
-"username}}?"
+"Ви дійсно хочете видалити токен {{tokenSerial}} для користувача "
+"{{token.username}}?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:18
 msgid "Do you really want to delete the Token {{ tokenSerial }}?"
@@ -2701,7 +2702,7 @@ msgstr "Відображення"
 msgid "Mark the token as lost"
 msgstr "Позначити токен як втрачений"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:177
+#: privacyidea/static/components/config/views/config.system.edit.html:179
 msgid ""
 "Max Failcount of\n"
 "                newly enrolled tokens"
@@ -2951,7 +2952,7 @@ msgstr "Значення OTP"
 msgid "OTP length"
 msgstr "Довжина OTP"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:150
+#: privacyidea/static/components/config/views/config.system.edit.html:152
 msgid ""
 "OTP length of\n"
 "                newly enrolled tokens"
@@ -3019,7 +3020,7 @@ msgid "Open all containers"
 msgstr "Відкрийте всі контейнери"
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
-#: privacyidea/static/components/config/views/config.policies.details.html:383
+#: privacyidea/static/components/config/views/config.policies.details.html:382
 msgid "Open all groups"
 msgstr "Відкрийте всі групи"
 
@@ -3250,7 +3251,7 @@ msgstr ""
 "введіть\n"
 "            згенерований код нижче."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:358
+#: privacyidea/static/components/config/views/config.policies.details.html:357
 msgid "Please select a Scope in the top section first to configure actions."
 msgstr ""
 
@@ -3813,7 +3814,7 @@ msgstr "Конфігурацію SMTP збережено."
 msgid "SMTP server configuration"
 msgstr "Конфігурація сервера SMTP"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:133
+#: privacyidea/static/components/config/views/config.system.edit.html:135
 msgid "SMTP server for password recovery"
 msgstr "SMTP сервер для відновлення пароля"
 
@@ -3880,7 +3881,7 @@ msgstr "Зберегти визначення обробника подій"
 msgid "Save Options"
 msgstr "Параметри збереження"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:534
+#: privacyidea/static/components/config/views/config.policies.details.html:533
 msgid "Save Policy"
 msgstr "Політика збереження"
 
@@ -3913,7 +3914,7 @@ msgstr "Зберегти ID послуги"
 msgid "Save States"
 msgstr "Зберегти штати"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:244
+#: privacyidea/static/components/config/views/config.system.edit.html:246
 msgid "Save System Config"
 msgstr "Зберегти конфігурацію системи"
 
@@ -4002,7 +4003,7 @@ msgstr "Виберіть атрибут PrivacyIDEA"
 msgid "Select Realm"
 msgstr "Виберіть Realm"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:142
+#: privacyidea/static/components/config/views/config.system.edit.html:144
 msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -4142,8 +4143,8 @@ msgid ""
 msgstr ""
 "Ідентифікатори послуг можна використовувати, наприклад, для прикріплення. "
 "Ключі SSH для певних машин і служб.\n"
-"Щоб переглянути вкладені маркери, перейдіть до <a ui-sref=\"token."
-"applications\">додатків маркерів</a>."
+"Щоб переглянути вкладені маркери, перейдіть до <a ui-"
+"sref=\"token.applications\">додатків маркерів</a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
 msgid "Set Default"
@@ -4192,7 +4193,7 @@ msgstr "Показати пароль PKCS12"
 msgid "Show Policy templates"
 msgstr "Показати шаблони політики"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:375
+#: privacyidea/static/components/config/views/config.policies.details.html:374
 msgid "Show all actions"
 msgstr "Показати всі дії"
 
@@ -4204,7 +4205,7 @@ msgstr "Показати всі умови"
 msgid "Show password"
 msgstr "Показати пароль"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:369
+#: privacyidea/static/components/config/views/config.policies.details.html:368
 msgid "Show selected actions only"
 msgstr "Показати лише вибрані дії"
 
@@ -4344,7 +4345,7 @@ msgstr "Прізвище"
 msgid "Sync Window"
 msgstr "Вікно синхронізації"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:189
+#: privacyidea/static/components/config/views/config.system.edit.html:191
 msgid ""
 "Sync Window of\n"
 "                newly enrolled tokens"
@@ -4955,8 +4956,9 @@ msgid ""
 "validate.html\" target=\"_blank\">\n"
 "        validate API</a> but can also be handled by the\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Запит на автентифікацію може оброблятися за замовчуванням privacyIDEA\n"
@@ -4964,8 +4966,9 @@ msgstr ""
 "validate.html\" target=\"_blank\">\n"
 "        перевірити API</a>, але також може бути оброблено\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Протокол перевірки Yubico</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -5003,7 +5006,7 @@ msgstr ""
 "                надійний сертифікат. Не знімайте цей прапорець під час "
 "продуктивного використання!"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:202
+#: privacyidea/static/components/config/views/config.system.edit.html:204
 msgid "The challenge validity time"
 msgstr "Час дії виклику"
 
@@ -5369,8 +5372,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
 "The token is currently assigned to container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5378,8 +5381,8 @@ msgid ""
 "    ."
 msgstr ""
 "Маркер наразі призначено контейнеру\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5415,33 +5418,33 @@ msgstr "Маркер позначено як втрачений."
 #: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
 "Маркер успішно зареєстровано з серійним номером\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            для користувача\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> в області\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> в області\n"
 "            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 "Маркер успішно зареєстровано з серійним номером\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
@@ -5514,7 +5517,7 @@ msgstr ""
 "                        які\n"
 "                        містять цей перетворювач."
 
-#: privacyidea/static/components/config/views/config.system.edit.html:125
+#: privacyidea/static/components/config/views/config.system.edit.html:127
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
@@ -5834,8 +5837,8 @@ msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
 msgstr ""
-"Щоб визначити ідентифікатори служб, перейдіть до <a ui-sref=\"config."
-"serviceid\">Налаштування ідентифікаторів служб</a>"
+"Щоб визначити ідентифікатори служб, перейдіть до <a ui-"
+"sref=\"config.serviceid\">Налаштування ідентифікаторів служб</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5929,7 +5932,7 @@ msgstr "Помилка повторної синхронізації марке�
 msgid "Token resync successful."
 msgstr "Повторна синхронізація маркера успішна."
 
-#: privacyidea/static/components/directives/controllers/directives.js:1012
+#: privacyidea/static/components/directives/controllers/directives.js:1083
 #: privacyidea/static/components/token/controllers/tokenControllers.js:692
 msgid "Token successfully verified"
 msgstr "Маркер успішно перевірено"
@@ -6141,7 +6144,7 @@ msgstr ""
 msgid "User"
 msgstr "Користувач"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:308
+#: privacyidea/static/components/config/views/config.policies.details.html:307
 msgid "User Agent"
 msgstr "Агент користувача"
 
@@ -6694,7 +6697,7 @@ msgstr "не вдалося"
 msgid "failed users / tokens"
 msgstr "невдалі користувачі / токени"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:398
+#: privacyidea/static/components/config/views/config.policies.details.html:397
 msgid "filter action..."
 msgstr "дія фільтра..."
 
