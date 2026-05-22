@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { AfterViewInit, Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -80,7 +80,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
-export class UserDetailsContainerTableComponent {
+export class UserDetailsContainerTableComponent implements AfterViewInit {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -131,7 +131,7 @@ export class UserDetailsContainerTableComponent {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    (this.dataSource as any)._sort = this.sort;
+    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
     this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
       const currentState = (row.states?.[0] ?? "").toString();

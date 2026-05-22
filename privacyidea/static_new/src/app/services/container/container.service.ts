@@ -212,26 +212,30 @@ export interface ContainerServiceInterface {
   containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerDetails: WritableSignal<ContainerDetails>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;
-  addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
-  removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
-  setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
-  setContainerDescription: (containerSerial: string, value: string) => Observable<any>;
+  addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
+  removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
+  setContainerRealm: (containerSerial: string, value: string[]) => Observable<PiResponse<boolean>>;
+  setContainerDescription: (containerSerial: string, value: string) => Observable<PiResponse<boolean>>;
   toggleActive: (
     containerSerial: string,
     states: string[]
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
-  setStates: (containerSerial: string, states: string[]) => Observable<any>;
-  unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
-  assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
+  setStates: (containerSerial: string, states: string[]) => Observable<PiResponse<Record<string, boolean>>>;
+  unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<PiResponse<boolean>>;
+  assignUser: (args: {
+    containerSerial: string;
+    username: string;
+    userRealm: string;
+  }) => Observable<PiResponse<boolean>>;
   compareWithTemplate: () => Promise<void>;
-  setContainerInfos: (containerSerial: string, infos: any) => Observable<object>[];
-  deleteInfo: (containerSerial: string, key: string) => Observable<any>;
-  addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
-  removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
-  toggleAll: (action: "activate" | "deactivate") => Observable<any>;
-  removeAll: (containerSerial: string) => Observable<any>;
-  deleteContainer: (containerSerial: string) => Observable<any>;
-  deleteAllTokens: (param: { containerSerial: string; serialList: string }) => Observable<any>;
+  setContainerInfos: (containerSerial: string, infos: Record<string, string>) => Observable<PiResponse<boolean>>[];
+  deleteInfo: (containerSerial: string, key: string) => Observable<PiResponse<boolean>>;
+  addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
+  removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
+  toggleAll: (action: "activate" | "deactivate") => Observable<(PiResponse<boolean> | null)[] | null>;
+  removeAll: (containerSerial: string) => Observable<PiResponse<boolean> | null>;
+  deleteContainer: (containerSerial: string) => Observable<PiResponse<boolean>>;
+  deleteAllTokens: (param: { containerSerial: string; serialList: string }) => Observable<PiResponse<boolean>>;
   registerContainer: (params: {
     container_serial: string;
     passphrase_user: boolean;
@@ -446,9 +450,11 @@ export class ContainerService implements ContainerServiceInterface {
       no_token: 1,
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
-      ...(this.filterContainersByTokenOwner() && token?.username && token?.user_realm && {
-        realm: token.user_realm
-      })
+      ...(this.filterContainersByTokenOwner() &&
+        token?.username &&
+        token?.user_realm && {
+          realm: token.user_realm
+        })
     };
 
     const compatibleType = this.uniqueCompatibleType();
@@ -520,7 +526,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   selectedContainerType = linkedSignal<string, ContainerType | undefined>({
     source: this.contentService.routeUrl,
-    computation: (routeUrl) => {
+    computation: () => {
       let containerType = this.authService.defaultContainerType();
 
       if (this.contentService.onContainersWizard()) {
@@ -569,7 +575,7 @@ export class ContainerService implements ContainerServiceInterface {
     }
   });
 
-  addToken(tokenSerial: string, containerSerial: string): Observable<any> {
+  addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<
@@ -585,7 +591,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  removeToken(tokenSerial: string, containerSerial: string): Observable<any> {
+  removeToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<
@@ -601,15 +607,13 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerRealm(containerSerial: string, value: string[]): Observable<any> {
+  setContainerRealm(containerSerial: string, value: string[]): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`,
-        { realms: valueString },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`, { realms: valueString }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to set container realm.", error);
@@ -620,14 +624,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerDescription(containerSerial: string, value: string): Observable<any> {
+  setContainerDescription(containerSerial: string, value: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`,
-        { description: value },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`, { description: value }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to set container description.", error);
@@ -691,14 +693,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unassignUser(containerSerial: string, username: string, userRealm: string): Observable<any> {
+  unassignUser(containerSerial: string, username: string, userRealm: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`,
-        { user: username, realm: userRealm },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, { user: username, realm: userRealm }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -709,14 +709,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<any> {
+  assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`,
-        { user: args.username, realm: args.userRealm },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, { user: args.username, realm: args.userRealm }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to assign user.", error);
@@ -727,28 +725,30 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerInfos(containerSerial: string, infos: any): Observable<object>[] {
+  setContainerInfos(containerSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>>[] {
     const headers = this.authService.getHeaders();
     const info_url = `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info`;
     return Object.keys(infos).map((info) => {
       const infoValue = infos[info];
-      return this.http.post(`${info_url}/${encodeURIComponent(info)}`, { value: infoValue }, { headers }).pipe(
-        catchError((error) => {
-          console.error("Failed to save container infos.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to save container infos. " + message);
-          return throwError(() => error);
-        })
-      );
+      return this.http
+        .post<PiResponse<boolean>>(`${info_url}/${encodeURIComponent(info)}`, { value: infoValue }, { headers })
+        .pipe(
+          catchError((error) => {
+            console.error("Failed to save container infos.", error);
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error("Failed to save container infos. " + message);
+            return throwError(() => error);
+          })
+        );
     });
   }
 
-  deleteInfo(containerSerial: string, key: string): Observable<any> {
+  deleteInfo(containerSerial: string, key: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, {
-        headers
-      })
+      .delete<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete info.", error);
@@ -759,10 +759,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<any> {
+  addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to add token to container.", error);
@@ -773,14 +775,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<any> {
+  removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
-        { serial: tokenSerial },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
@@ -855,26 +855,26 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  deleteContainer(containerSerial: string): Observable<any> {
-    const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}`, { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to delete container.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to delete container. " + message);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<any> {
+  deleteContainer(containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`,
-        { serial: param.serialList },
-        { headers }
-      )
+      .delete<PiResponse<boolean>>(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}`, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to delete container. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<PiResponse<boolean>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`, { serial: param.serialList }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
