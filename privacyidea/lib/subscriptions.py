@@ -195,6 +195,39 @@ def get_plugin_subscription_status():
     return overview
 
 
+def get_server_subscription_status():
+    """
+    Dashboard status entry for the privacyIDEA server itself. Same shape as
+    entries from :func:`get_plugin_subscription_status` plus ``is_server: True``.
+    Lets the frontend render the server row without duplicating the
+    :data:`EXPIRING_THRESHOLD_DAYS` rule.
+
+    :rtype: dict
+    """
+    entry = {"application": "privacyidea",
+             "is_server": True,
+             "last_seen": None,
+             "date_till": None,
+             "days_left": None,
+             "status": "no_subscription"}
+    subscriptions = get_subscription("privacyidea")
+    subscription = subscriptions[0] if subscriptions else None
+    date_till = subscription.get("date_till") if subscription else None
+    if not date_till:
+        return entry
+    now = datetime.datetime.now()
+    days_left = (date_till - now).days
+    entry["date_till"] = date_till
+    entry["days_left"] = days_left
+    if date_till < now:
+        entry["status"] = "expired"
+    elif days_left < EXPIRING_THRESHOLD_DAYS:
+        entry["status"] = "expiring"
+    else:
+        entry["status"] = "ok"
+    return entry
+
+
 def subscription_status(component="privacyidea", tokentype=None):
     """
     Return the status of the subscription

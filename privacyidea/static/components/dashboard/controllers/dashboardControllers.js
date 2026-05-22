@@ -136,39 +136,9 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
 
 
-     // Map a server-subscription row (as returned by GET /subscriptions/)
-     // to the same shape as a plugin status entry. The server is always
-     // "used" — there's no unused state for it.
-     $scope.buildServerStatusEntry = function(subscriptions) {
-        var serverSub = null;
-        angular.forEach(subscriptions || [], function(s) {
-            if (s.application === "privacyidea") { serverSub = s; }
-        });
-        var entry = {"application": "privacyidea",
-                     "status": "no_subscription",
-                     "last_seen": null,
-                     "date_till": null,
-                     "days_left": null};
-        if (serverSub) {
-            var till = new Date(serverSub.date_till);
-            var msPerDay = 24 * 60 * 60 * 1000;
-            var daysLeft = Math.floor((till - new Date()) / msPerDay);
-            entry.date_till = serverSub.date_till;
-            entry.days_left = daysLeft;
-            if (daysLeft < 0) {
-                entry.status = "expired";
-            } else if (daysLeft < 30) {
-                entry.status = "expiring";
-            } else {
-                entry.status = "ok";
-            }
-        }
-        return entry;
-     };
-
      // Sort priority per status: subscribed first, then used-but-unsubscribed,
-     // then never-used. The server entry is always pinned to position 0 above
-     // any plugin entries.
+     // then never-used. The server entry (is_server) is always pinned to the
+     // top, regardless of status.
      var PLUGIN_STATUS_ORDER = {
          "ok": 1, "expiring": 1, "expired": 1,
          "no_subscription": 2, "exceeded": 2,
@@ -177,17 +147,19 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
 
      $scope.getPluginStatus = function() {
         SubscriptionFactory.getStatus(function (data) {
-            var pluginEntries = data.result.value;
-            SubscriptionFactory.get(function (subData) {
-                var serverEntry = $scope.buildServerStatusEntry(subData.result.value);
-                serverEntry.is_server = true;
-                // Array.prototype.sort is stable, so DASHBOARD_PLUGINS order is
-                // preserved within each status bucket.
-                var sortedPlugins = pluginEntries.slice().sort(function(a, b) {
-                    return PLUGIN_STATUS_ORDER[a.status] - PLUGIN_STATUS_ORDER[b.status];
-                });
-                $scope.pluginStatus = [serverEntry].concat(sortedPlugins);
-            });
+            var entries = data.result.value;
+            // Decorate with the original index so the sort tiebreaker preserves
+            // the backend's DASHBOARD_PLUGINS order regardless of whether the
+            // JS engine's sort is stable.
+            var sorted = entries.map(function(entry, idx) {
+                    return {entry: entry, idx: idx};
+                }).sort(function(a, b) {
+                    if (a.entry.is_server) return -1;
+                    if (b.entry.is_server) return 1;
+                    var diff = PLUGIN_STATUS_ORDER[a.entry.status] - PLUGIN_STATUS_ORDER[b.entry.status];
+                    return diff !== 0 ? diff : a.idx - b.idx;
+                }).map(function(item) { return item.entry; });
+            $scope.pluginStatus = sorted;
         });
      };
 
@@ -283,7 +255,6 @@ $scope.getAuthentication = function () {
             $scope.get_events();
         }
         if (AuthFactory.checkRight('managesubscription')) {
-            $scope.getSubscriptions();
             $scope.getPluginStatus();
         }
         if (AuthFactory.checkRight('auditlog')) {

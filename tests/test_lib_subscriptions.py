@@ -180,10 +180,11 @@ class SubscriptionApplicationTestCase(MyTestCase):
 
 class PluginSubscriptionStatusTestCase(MyTestCase):
     """
-    Tests for :func:`get_plugin_subscription_status`. The five status branches
-    (ok / expiring / no_subscription / exceeded / unused) are each covered by
-    setting up a ``ClientApplication`` row, optionally a ``Subscription``
-    row, and (for the exceeded case) mocking the active-token-user count.
+    Tests for :func:`get_plugin_subscription_status`. The six status branches
+    (ok / expiring / expired / no_subscription / exceeded / unused) are each
+    covered by setting up a ``ClientApplication`` row, optionally a
+    ``Subscription`` row, and (for the exceeded case) mocking the
+    active-token-user count.
     """
 
     def setUp(self):

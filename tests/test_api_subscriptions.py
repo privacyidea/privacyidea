@@ -101,8 +101,11 @@ class APISubscriptionsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             value = res.json.get("result").get("value")
 
-        self.assertEqual([e["application"] for e in value], DASHBOARD_PLUGINS)
-        by_app = {e["application"]: e for e in value}
+        # First entry is always the server row, followed by DASHBOARD_PLUGINS in order.
+        self.assertTrue(value[0].get("is_server"))
+        self.assertEqual(value[0]["application"], "privacyidea")
+        self.assertEqual([e["application"] for e in value[1:]], DASHBOARD_PLUGINS)
+        by_app = {e["application"]: e for e in value[1:]}
         self.assertEqual(by_app["privacyidea-keycloak"]["status"], "ok")
         # Everything else stays unused on a fresh test DB.
         for plugin in DASHBOARD_PLUGINS:
