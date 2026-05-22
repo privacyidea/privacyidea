@@ -165,7 +165,7 @@ export class UserDetailsContainerTableComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof ContainerDetailData;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: ContainerDetailData, b: ContainerDetailData) => {
       const va = (a[key] ?? "").toString().toLowerCase();
       const vb = (b[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
