@@ -191,8 +191,11 @@ def get_plugin_subscription_status() -> list[dict]:
     # date_till — deterministic regardless of DB iteration order.
     all_subscriptions = sorted(get_subscription(),
                                key=lambda s: s.get("date_till") or datetime.datetime.min)
+    # Subscription.application is nullable and Subscription.get() omits None
+    # fields, so a row with application=NULL has no "application" key.
     subscriptions_by_app = {sub["application"].lower(): sub
-                            for sub in all_subscriptions}
+                            for sub in all_subscriptions
+                            if sub.get("application")}
 
     # Lazily computed — only the no_subscription/exceeded branch needs it.
     token_users: int | None = None
