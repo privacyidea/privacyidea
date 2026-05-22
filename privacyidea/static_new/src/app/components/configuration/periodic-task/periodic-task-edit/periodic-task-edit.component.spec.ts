@@ -117,44 +117,74 @@ describe("PeriodicTaskEditComponent", () => {
       });
     };
 
-    it("selects an option", async () => {
+    it("toggleOption adds a bool option with value 'true' when checked", async () => {
       const { component } = await createComponent({});
       seedTask(component);
-      component.onOptionSelection("total_tokens", { name: "total_tokens", description: "", type: "bool" });
-      expect(component.selectedOption().name).toBe("total_tokens");
-      expect(component.selectedOption().value).toBe("");
+      const before = { ...component.editTask().options };
+      component.toggleOption("new_bool", { name: "new_bool", description: "", type: "bool" }, true);
+      expect(component.editTask().options["new_bool"]).toBe("true");
+      // existing options are preserved
+      expect(component.editTask().options["hardware_tokens"]).toBe(before["hardware_tokens"]);
     });
 
-    it("adds an option", async () => {
+    it("toggleOption adds a non-bool option with the option's default value", async () => {
       const { component } = await createComponent({});
       seedTask(component);
-      component.selectedOption.set({ name: "total_tokens", description: "", type: "bool" });
-      component.addOption("true");
-      expect(component.editTask().options["total_tokens"]).toBe("true");
+      component.toggleOption(
+        "stats_key",
+        { name: "stats_key", description: "", type: "str", value: "default-key" },
+        true
+      );
+      expect(component.editTask().options["stats_key"]).toBe("default-key");
     });
 
-    it("deletes an option", async () => {
+    it("toggleOption falls back to empty string for non-bool options without a default", async () => {
       const { component } = await createComponent({});
       seedTask(component);
-      component.deleteOption("hardware_tokens");
-      expect(component.editTask().options["hardware_tokens"]).toBeUndefined();
+      component.toggleOption("stats_key", { name: "stats_key", description: "", type: "str" }, true);
+      expect(component.editTask().options["stats_key"]).toBe("");
     });
 
-    it("detects boolean values", async () => {
-      const { component } = await createComponent({});
-      expect(component.isBooleanAction("true")).toBe(true);
-      expect(component.isBooleanAction("false")).toBe(true);
-      expect(component.isBooleanAction("TRUE")).toBe(true);
-      expect(component.isBooleanAction("False")).toBe(true);
-      expect(component.isBooleanAction("yes")).toBe(false);
-      expect(component.isBooleanAction("")).toBe(false);
-    });
-
-    it("updates nodes on selection change", async () => {
+    it("toggleOption removes the option when unchecked", async () => {
       const { component } = await createComponent({});
       seedTask(component);
-      component.onNodeSelectionChange(["node1", "node2"]);
-      expect(component.editTask().nodes).toEqual(["node1", "node2"]);
+      component.toggleOption(
+        "hardware_tokens",
+        { name: "hardware_tokens", description: "", type: "bool" },
+        false
+      );
+      expect(component.editTask().options).not.toHaveProperty("hardware_tokens");
+    });
+
+    it("toggleOption refuses to toggle a required option (lock-on)", async () => {
+      const { component } = await createComponent({});
+      component.editTask.set({
+        ...EMPTY_PERIODIC_TASK,
+        taskmodule: "EventCounter",
+        options: { event_counter: "logins" }
+      });
+      component.toggleOption(
+        "event_counter",
+        { name: "event_counter", description: "", type: "str", required: true },
+        false
+      );
+      expect(component.editTask().options["event_counter"]).toBe("logins");
+    });
+
+    it("updateOptionValue sets the value for a single option without disturbing the rest", async () => {
+      const { component } = await createComponent({});
+      seedTask(component);
+      const before = { ...component.editTask().options };
+      component.updateOptionValue("hardware_tokens", "false");
+      expect(component.editTask().options["hardware_tokens"]).toBe("false");
+      expect(component.editTask().options["user_with_token"]).toBe(before["user_with_token"]);
+    });
+
+    it("isOptionSet returns true only for keys present in editTask.options", async () => {
+      const { component } = await createComponent({});
+      seedTask(component);
+      expect(component.isOptionSet("hardware_tokens")).toBe(true);
+      expect(component.isOptionSet("not_in_options")).toBe(false);
     });
 
     it("updates taskmodule on change", async () => {

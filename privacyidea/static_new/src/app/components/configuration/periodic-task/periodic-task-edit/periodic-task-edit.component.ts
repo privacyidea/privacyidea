@@ -25,14 +25,13 @@ import {
   inject,
   linkedSignal,
   OnDestroy,
-  Signal,
   signal,
   untracked,
   WritableSignal
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, pattern, required } from "@angular/forms/signals";
-import { MatButtonModule, MatIconButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
@@ -52,7 +51,6 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   EMPTY_PERIODIC_TASK,
-  EMPTY_PERIODIC_TASK_OPTION,
   PERIODIC_TASK_MODULE_MAPPING,
   PeriodicTask,
   PeriodicTaskModule,
@@ -64,7 +62,6 @@ import { SystemService } from "@services/system/system.service";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { firstValueFrom } from "rxjs";
-import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail/periodic-task-option-detail.component";
 
 @Component({
   selector: "app-periodic-task-edit",
@@ -84,7 +81,6 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     MatHint,
     MatError,
     MatIcon,
-    MatIconButton,
     MatTooltip,
     MatExpansionPanel,
     MatExpansionPanelTitle,
@@ -92,7 +88,6 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     FormField,
     ClearableInputComponent,
     CopyButtonComponent,
-    PeriodicTaskOptionDetailComponent,
     DatePipe
   ],
   templateUrl: "./periodic-task-edit.component.html",
@@ -114,8 +109,6 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   editTask: WritableSignal<PeriodicTask> = signal<PeriodicTask>({ ...EMPTY_PERIODIC_TASK });
 
   readonly title = computed(() => (this.isNewTask() ? $localize`Create Periodic Task` : $localize`Edit Periodic Task`));
-  newOptionValues: WritableSignal<Record<string, string>> = signal({});
-  editOption = signal("");
 
   private originalTask: PeriodicTask = { ...EMPTY_PERIODIC_TASK };
   private editName: string | null = null;
@@ -138,24 +131,27 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     return Object.fromEntries(Object.entries(options).filter(([, opt]) => opt.required));
   });
 
-  notUsedOptions: Signal<Record<string, PeriodicTaskOption>> = computed(() => {
-    const allOptions = this.taskModuleOptions() || {};
-    const usedOptionKeys = Object.keys(this.editTask().options || {});
-    return Object.fromEntries(Object.entries(allOptions).filter(([key]) => !usedOptionKeys.includes(key)));
-  });
+  isOptionSet(key: string): boolean {
+    return Object.prototype.hasOwnProperty.call(this.editTask().options, key);
+  }
 
-  selectedOption = linkedSignal(() => {
-    if (Object.keys(this.editTask().options).length > 0) {
-      const firstKey = Object.keys(this.editTask().options)[0];
-      const options = this.taskModuleOptions()[firstKey];
-      options["value"] = this.editTask().options[firstKey];
-      return options;
-    } else if (Object.keys(this.notUsedOptions()).length > 0) {
-      const firstKey = Object.keys(this.notUsedOptions())[0];
-      return this.notUsedOptions()[firstKey];
+  toggleOption(key: string, opt: PeriodicTaskOption, checked: boolean): void {
+    if (opt.required) return;
+    const options = { ...this.editTask().options };
+    if (checked) {
+      options[key] = opt.type === "bool" ? "true" : opt.value ?? "";
+    } else {
+      delete options[key];
     }
-    return EMPTY_PERIODIC_TASK_OPTION;
-  });
+    this.editTask.set({ ...this.editTask(), options });
+  }
+
+  updateOptionValue(key: string, value: string): void {
+    this.editTask.set({
+      ...this.editTask(),
+      options: { ...this.editTask().options, [key]: value }
+    });
+  }
 
   canSave = computed(() => {
     const t = this.editTask();
@@ -300,31 +296,6 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     } else {
       this.editTask.set({ ...this.editTask(), taskmodule: module });
     }
-  }
-
-  onOptionSelection(optionName: string, option: PeriodicTaskOption, value?: string): void {
-    this.selectedOption.set({ ...option, name: optionName, value: value || "" });
-  }
-
-  isBooleanAction(param: any): boolean {
-    return ["true", "false"].includes(String(param).toLowerCase());
-  }
-
-  addOption(value: string): void {
-    const optionName = this.selectedOption().name;
-    if (!optionName) return;
-    const newOptions = { ...this.editTask().options, [optionName]: value };
-    this.editTask.set({ ...this.editTask(), options: newOptions });
-  }
-
-  deleteOption(optionKey: string): void {
-    const options = { ...this.editTask().options };
-    delete options[optionKey];
-    this.editTask.set({ ...this.editTask(), options });
-  }
-
-  updateNewOptionValue(option: string, value: string): void {
-    this.newOptionValues.set({ ...this.newOptionValues(), [option]: value });
   }
 
   getModuleLabel(module: string): string {

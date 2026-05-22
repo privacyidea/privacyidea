@@ -208,82 +208,47 @@
     </mat-checkbox>
   </div>
 
-  <h3>Options</h3>
-  <div class="options-flex-row">
-    <div class="flex-size-2">
-      @if (Object.keys(editTask().options).length === 0) {
-        <span
-          class="italic"
-          i18n>
-          No options have been set for this periodic task yet.
-        </span>
-      }
-      <div class="added-actions-container">
-        @for (option of Object.keys(editTask().options); track option) {
-          <div
-            class="action-card"
-            [class.action-card-selected]="selectedOption().name === option"
-            (click)="onOptionSelection(option, taskModuleOptions()[option], editTask().options[option])">
-            <div class="action-card-row">
-              <span class="action-label">
-                {{ option }}
-                @if (taskModuleOptions()[option].required) {
-                  <span>*</span>
-                }
-              </span>
-              @if (!isBooleanAction(editTask().options[option])) {
-                <div class="action-value">
-                  {{ editTask().options[option] }}
-                </div>
+  <h3 i18n>Options</h3>
+  @if (taskModuleOptions() && Object.keys(taskModuleOptions()).length > 0) {
+    <div class="options-list">
+      @for (entry of Object.entries(taskModuleOptions()); track entry[0]) {
+        <div class="option-card">
+          <div class="option-row">
+            <mat-checkbox
+              (change)="toggleOption(entry[0], entry[1], $event.checked)"
+              [checked]="isOptionSet(entry[0])"
+              [disabled]="entry[1].required || !authService.actionAllowed('periodictask_write')"
+              [disableRipple]="true"></mat-checkbox>
+            <span class="option-name">
+              {{ entry[0] }}
+              @if (entry[1].required) {
+                <span class="option-required">*</span>
               }
-              <div class="actions margin-left-16 height-48">
-                @if (taskModuleOptions()[option] && !taskModuleOptions()[option].required) {
-                  <button
-                    (click)="deleteOption(option)"
-                    mat-icon-button
-                    matTooltip="Remove Option">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                }
-              </div>
-            </div>
+            </span>
           </div>
-        }
-      </div>
-
-      @if (Object.keys(notUsedOptions()).length > 0) {
-        <h4 i18n>Add Option</h4>
-      }
-      <div class="added-actions-container">
-        @for (option of Object.keys(notUsedOptions()); track option) {
-          <div
-            class="action-card"
-            [class.action-card-selected]="selectedOption().name === option"
-            (click)="onOptionSelection(option, notUsedOptions()[option])">
-            <div class="action-card-row">
-              <span class="action-label">{{ option }}</span>
-              @if (editOption() === option && notUsedOptions()[option].type === "str") {
-                <div class="action-value">
-                  <mat-form-field>
-                    <input
-                      matInput
-                      [value]="newOptionValues()[option]"
-                      (input)="updateNewOptionValue(option, $any($event.target).value)" />
-                  </mat-form-field>
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-    <div class="flex-size-1">
-      @if (selectedOption().name) {
-        <app-periodic-task-option-detail
-          [option]="selectedOption()"
-          [showAddButton]="Object.prototype.hasOwnProperty.call(notUsedOptions(), selectedOption().name)"
-          (newValue)="addOption($event)"></app-periodic-task-option-detail>
+          @if (entry[1].description) {
+            <div class="option-description">{{ entry[1].description }}</div>
+          }
+          @if (isOptionSet(entry[0]) && entry[1].type !== "bool") {
+            <mat-form-field
+              class="input-width-m"
+              subscriptSizing="dynamic">
+              <mat-label i18n>Value</mat-label>
+              <input
+                matInput
+                [required]="entry[1].required ?? false"
+                [value]="editTask().options[entry[0]]"
+                (input)="updateOptionValue(entry[0], $any($event.target).value)" />
+            </mat-form-field>
+          }
+        </div>
       }
     </div>
-  </div>
+  } @else {
+    <span
+      class="italic"
+      i18n>
+      No options are available for this task module.
+    </span>
+  }
 </div>
