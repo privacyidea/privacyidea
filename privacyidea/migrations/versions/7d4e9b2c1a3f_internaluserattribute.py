@@ -97,7 +97,6 @@ def upgrade():
             print("Could not add table 'internaluserattribute' to database.")
             raise
 
-    # --- Data migration: move internal entries from customuserattribute ---
     _run_data_migration(op.get_bind())
 
 

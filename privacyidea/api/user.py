@@ -64,7 +64,6 @@ from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -199,13 +198,6 @@ def set_user_attribute():
     attrkey = get_required(request.all_data, "key")
     attrvalue = get_required(request.all_data, "value")
     attrtype = get_optional(request.all_data, "type")
-
-    # Check if the attribute starts with an internally used prefix
-    internal_prefixes = InternalUserAttributes.get_internal_prefixes()
-    for prefix in internal_prefixes:
-        if attrkey.startswith(prefix):
-            raise ParameterError(_("Invalid attribute name! The name shall not start with {prefix}. "
-                                   "This is an internally used prefix.").format(prefix=prefix))
 
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     g.audit_object.log({"success": True,

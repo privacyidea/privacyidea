@@ -50,6 +50,8 @@ import hashlib
 import logging
 import traceback
 
+from typing import Any
+
 from sqlalchemy import select, delete
 
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
@@ -411,11 +413,16 @@ class User:
         return get_internal_attributes(self.uid, self.resolver, self.realm_id)
 
     @log_with(log)
-    def set_internal_attribute(self, key: str, value, node: str = None) -> int:
+    def set_internal_attribute(self, key: str, value: Any, node: str | None = None) -> int:
         """
         Set an internal attribute for this user. ``value`` may be any
         JSON-serializable Python object. ``node`` is reserved for future
         node-local state and should be left as None for global values.
+
+        Not safe against concurrent writes on the same ``key`` for the same
+        user: two callers can both miss the SELECT and race on the INSERT,
+        with one hitting the UNIQUE constraint. Acceptable for the current
+        callers (hint-style values, low contention).
         """
         self._require_resolved_for_write()
         stmt = select(InternalUserAttribute).filter_by(
@@ -439,7 +446,7 @@ class User:
         return attribute_id
 
     @log_with(log)
-    def delete_internal_attribute(self, key: str = None) -> int:
+    def delete_internal_attribute(self, key: str | None = None) -> int:
         """
         Delete an internal attribute. If ``key`` is None, all internal
         attributes for this user are deleted.
@@ -1005,6 +1012,11 @@ def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[t
     :param orphaned_on_error: If the resolver raises while looking up the
         user, treat that row as orphaned. Mirrors the semantics of
         :meth:`TokenClass.is_orphaned`.
+
+    The returned tuples may contain empty strings for ``user_id`` or
+    ``resolver`` for legacy rows that predate the write-side guard against
+    empty identifiers — those rows are also reported as orphaned so the
+    janitor can prune them.
     """
     from privacyidea.lib.resolver import get_resolver_object
 
@@ -1013,11 +1025,12 @@ def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[t
     rows = db.session.execute(stmt).all()
 
     orphans: list[tuple[str, str, int | None]] = []
-    resolver_cache: dict[str, object] = {}
+    resolver_cache: dict[str, Any] = {}
     for user_id, resolver_name, realm_id in rows:
         if not user_id or not resolver_name:
-            # Pre-#5 garbage rows: empty identifiers can never be reached
-            # through the User API. Treat as orphaned.
+            # Rows with empty identifiers can never be reached through the
+            # User API, so we treat them as orphaned and let the janitor
+            # delete them.
             orphans.append((user_id, resolver_name, realm_id))
             continue
         if resolver_name not in resolver_cache:

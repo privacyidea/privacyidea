@@ -631,41 +631,37 @@ class APIUsersTestCase(MyApiTestCase):
         delete_policy("custom_create_user")
 
     def test_11_internal_custom_user_attributes(self):
+        """The ``last_used_token_`` prefix used to be reserved in
+        customuserattribute because internal state was stored there. Now
+        that internal state lives in a separate table, admins are free to
+        use the prefix as a regular custom-attribute name."""
         self.setUp_user_realms()
-        # Allow to set custom attributes
         set_policy("custom_attribute", scope=SCOPE.ADMIN,
                    action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:*:*,{PolicyAction.DELETE_USER_ATTRIBUTES}='*'")
 
-        # try to set an internal custom user attribute
+        attrkey = f"{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp"
+
+        # Setting a key with the (formerly reserved) prefix is now allowed.
         with self.app.test_request_context("/user/attribute",
                                            method="POST",
                                            data={"user": "hans",
                                                  "realm": self.realm1,
-                                                 "key": f"{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp",
+                                                 "key": attrkey,
                                                  "value": "push"},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
-            result = res.json.get("result")
-            self.assertFalse(result.get("status"), res.data)
-            error = result.get("error")
-            self.assertEqual(905, error.get("code"))
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result", {}).get("status"), res.data)
 
-        # set an internal attribute
-        user = User("hans", self.realm1)
-        # Seed a legacy/orphaned internal-prefix row in customuserattribute to verify the admin
-        # API can still delete such entries (the prefix is now reserved but old rows may exist).
-        user.set_attribute(f"{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push")
-        # Delete internal attribute is allowed
+        # And deleting it works the same as any other custom attribute.
         with self.app.test_request_context(
-                f"/user/attribute/{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp/hans/{self.realm1}",
+                f"/user/attribute/{attrkey}/hans/{self.realm1}",
                 method="DELETE",
                 data={},
                 headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result", {}).get("status"), res.data)
 
         delete_policy("custom_attribute")
 

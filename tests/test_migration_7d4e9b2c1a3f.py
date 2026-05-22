@@ -48,8 +48,6 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
     REVISION = "7d4e9b2c1a3f"
     PARENT_REVISION = "b1a2c3d4e5f6"
 
-    # ---- helpers ----------------------------------------------------------
-
     def _insert_custom(self, engine, rows: list[dict]) -> None:
         """Insert rows into customuserattribute. Each row needs at least
         user_id, resolver, Key, Value; realm_id defaults to NULL."""
@@ -107,8 +105,6 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
             f"WHERE user_id = :uid AND {_q('Key')} = :key",
             {"uid": user_id, "key": key},
         )
-
-    # ---- upgrade ----------------------------------------------------------
 
     def test_upgrade_moves_fido2_user_id(self, flask_app):
         """upgrade() must copy fido2_user_id rows into internaluserattribute and
@@ -246,8 +242,6 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         assert self._fetch_custom_count(engine, "u1", "fido2_user_id") == 0
         assert self._fetch_custom_count(engine, "u1", "last_used_token_app-a") == 0
         engine.dispose()
-
-    # ---- downgrade --------------------------------------------------------
 
     def test_downgrade_restores_fido2_user_id(self, flask_app):
         """downgrade() must copy fido2_user_id back into customuserattribute."""
