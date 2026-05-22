@@ -925,15 +925,52 @@ class UserTestCase(MyTestCase):
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 
-    def test_51b_internal_attributes_refuse_unresolved_user(self):
-        """An unresolved User (empty uid) must not read or write internal
-        attributes — otherwise all unresolved users share a single bucket."""
+    def test_51b_internal_attributes_unresolved_user(self):
+        """Unresolved User (empty uid) reads return {} (callers like
+        preferred_client_mode run on every auth response); writes/deletes
+        refuse to create empty-uid rows that would be shared across users."""
         from privacyidea.lib.error import UserError
         unresolved = User()
         self.assertFalse(unresolved.uid)
-        self.assertRaises(UserError, lambda: unresolved.internal_attributes)
+        self.assertEqual({}, unresolved.internal_attributes)
         self.assertRaises(UserError, unresolved.set_internal_attribute, "k", "v")
         self.assertRaises(UserError, unresolved.delete_internal_attribute)
+
+    def test_53_find_and_delete_orphaned_internal_attributes(self):
+        """find_orphaned_internal_attributes() flags rows whose user has
+        vanished from the resolver; delete_orphaned_internal_attributes()
+        prunes them and leaves resolvable users untouched."""
+        from privacyidea.lib.user import (
+            delete_orphaned_internal_attributes,
+            find_orphaned_internal_attributes,
+        )
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        live_user = User(login="root", realm=self.realm1)
+        live_user.set_internal_attribute("k", "v-live")
+
+        # Inject a row keyed on a uid that the resolver does not know.
+        ghost = InternalUserAttribute(user_id="ghost-uid-9999",
+                                      resolver=self.resolvername1,
+                                      realm_id=live_user.realm_id,
+                                      Key="k", Value="v-ghost")
+        db.session.add(ghost)
+        db.session.commit()
+
+        orphans = find_orphaned_internal_attributes()
+        self.assertEqual([("ghost-uid-9999", self.resolvername1, live_user.realm_id)], orphans)
+
+        deleted = delete_orphaned_internal_attributes(orphans)
+        self.assertEqual(1, deleted)
+
+        # Live user's row survives, ghost row is gone, second pass is empty.
+        self.assertEqual({"k": "v-live"}, live_user.internal_attributes)
+        self.assertEqual([], find_orphaned_internal_attributes())
+
+        live_user.delete_internal_attribute()
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
 
     def test_52_internal_user_attribute_node_column(self):
         """The ``node`` column is reserved for future per-node state.
