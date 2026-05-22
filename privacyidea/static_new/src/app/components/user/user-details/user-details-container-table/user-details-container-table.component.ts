@@ -157,7 +157,7 @@ export class UserDetailsContainerTableComponent {
 
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
-      next: () => this.containerService.containerResource.reload()
+      next: () => this.containerService.userContainersResource.reload()
     });
   }
 

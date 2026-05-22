@@ -393,8 +393,7 @@ export class ContainerService implements ContainerServiceInterface {
     }
 
     // Only load containers on routes with a container list or selection.
-    const onAllowedRoute = this.contentService.onContainers() || this.contentService.onTokens();
-    if (!onAllowedRoute) {
+    if (!this.contentService.onContainers()) {
       return undefined;
     }
 
