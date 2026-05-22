@@ -39,7 +39,9 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
+import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -52,10 +54,10 @@ import { DetailsHeaderComponent } from "@components/shared/details-shared/detail
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
@@ -124,7 +126,9 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     ScrollToTopDirective,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
-    DetailsHeaderComponent
+    DetailsHeaderComponent,
+    MatCheckbox,
+    FormsModule
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
@@ -279,9 +283,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
-        this.tokenDetailData().some((element) => element.isEditing()) ||
-        this.isEditingUser() ||
-        this.isEditingInfo(),
+        this.tokenDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
     );
     this.pendingChangesService.registerValidChanges(() => true);
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
@@ -425,6 +427,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     switch (type) {
       case "container_serial":
         this.containerService.selectedContainerSerial.set("");
+        this.containerService.filterContainersByTokenOwner.set(false);
         break;
       case "tokengroup":
         this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);
