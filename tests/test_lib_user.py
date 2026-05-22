@@ -22,7 +22,7 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_from_param,
                                   UserError, get_attributes)
 from privacyidea.lib.user import log as user_log
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from privacyidea.models import InternalUserAttribute, NodeName, db
 from . import ldap3mock
@@ -969,6 +969,51 @@ class UserTestCase(MyTestCase):
         self.assertEqual([], find_orphaned_internal_attributes())
 
         live_user.delete_internal_attribute()
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_53b_find_orphaned_edge_cases(self):
+        """Cover the remaining orphan-detection branches:
+        empty identifiers, deleted resolver, and resolver raising on lookup."""
+        from privacyidea.lib.user import find_orphaned_internal_attributes
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        live_user = User(login="root", realm=self.realm1)
+
+        # Branch 1: row with an empty user_id or empty resolver. Bypass the
+        # write-side guard via the raw model.
+        db.session.add(InternalUserAttribute(user_id="", resolver=self.resolvername1,
+                                             realm_id=None, Key="k", Value="v"))
+        db.session.add(InternalUserAttribute(user_id="uid-X", resolver="",
+                                             realm_id=None, Key="k", Value="v"))
+        # Branch 2: row pointing at a resolver name that does not exist.
+        db.session.add(InternalUserAttribute(user_id="uid-Y", resolver="never-existed",
+                                             realm_id=None, Key="k", Value="v"))
+        # Branch 3 setup: a row on the live resolver whose lookup we will force
+        # to raise via a mocked getUsername.
+        db.session.add(InternalUserAttribute(user_id="uid-Z", resolver=self.resolvername1,
+                                             realm_id=live_user.realm_id, Key="k", Value="v"))
+        db.session.commit()
+
+        from privacyidea.lib.resolver import get_resolver_object
+        real_resolver = get_resolver_object(self.resolvername1)
+        with mock.patch.object(real_resolver, "getUsername",
+                               side_effect=RuntimeError("resolver unreachable")):
+            # Default orphaned_on_error=False: errored row is skipped (not reported).
+            orphans = set(find_orphaned_internal_attributes())
+            self.assertIn(("", self.resolvername1, None), orphans)        # branch 1a
+            self.assertIn(("uid-X", "", None), orphans)                   # branch 1b
+            self.assertIn(("uid-Y", "never-existed", None), orphans)      # branch 2
+            self.assertNotIn(("uid-Z", self.resolvername1, live_user.realm_id), orphans)
+
+            # orphaned_on_error=True: errored row is reported.
+            orphans_strict = set(find_orphaned_internal_attributes(orphaned_on_error=True))
+            self.assertIn(("uid-Z", self.resolvername1, live_user.realm_id), orphans_strict)
+
+        # Cleanup
+        db.session.execute(delete(InternalUserAttribute))
+        db.session.commit()
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 
