@@ -176,14 +176,26 @@ describe("TokenService", () => {
       );
     });
 
-    it("passes other keys through unchanged", () => {
+    it("routes 'description' to /token/description so self-service users can use it", () => {
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.saveTokenDetail("serial", "description", "A token").subscribe();
+      tokenService.saveTokenDetail("serial/1", "description", "A token").subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}description/${encodeURIComponent("serial/1")}`,
+        { description: "A token" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("passes other keys through to /token/set unchanged", () => {
+      postSpy.mockReturnValue(of({ success: true } as any));
+
+      tokenService.saveTokenDetail("serial", "count_window", 10).subscribe();
 
       expect(postSpy).toHaveBeenCalledWith(
         `${tokenService.tokenBaseUrl}set`,
-        { serial: "serial", description: "A token" },
+        { serial: "serial", count_window: 10 },
         { headers: authService.getHeaders() }
       );
     });

@@ -750,12 +750,22 @@ export class TokenService implements TokenServiceInterface {
 
   saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    const set_url = `${this.tokenBaseUrl}set`;
 
-    const params =
-      key === "maxfail" ? { serial: tokenSerial, max_failcount: value } : { serial: tokenSerial, [key]: value };
+    let url: string;
+    let params: Record<string, any>;
+    if (key === "description") {
+      // /token/set is admin-only; /token/description is gated by the setdescription policy and works for users too.
+      url = `${this.tokenBaseUrl}description/${encodeURIComponent(tokenSerial)}`;
+      params = { description: value };
+    } else if (key === "maxfail") {
+      url = `${this.tokenBaseUrl}set`;
+      params = { serial: tokenSerial, max_failcount: value };
+    } else {
+      url = `${this.tokenBaseUrl}set`;
+      params = { serial: tokenSerial, [key]: value };
+    }
 
-    return this.http.post<PiResponse<boolean>>(set_url, params, { headers }).pipe(
+    return this.http.post<PiResponse<boolean>>(url, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to set token detail.", error);
         const message = error.error?.result?.error?.message || "";
