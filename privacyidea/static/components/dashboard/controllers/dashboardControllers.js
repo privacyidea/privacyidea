@@ -32,6 +32,8 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
     $scope.pluginStatus = [];
+    // null = still loading, "ok" = loaded, "error" = request failed
+    $scope.pluginStatusLoadState = null;
     // Maps plugin status to the bootstrap text-color class for the traffic-light dot.
     $scope.pluginStatusDot = {
         "ok": "text-success",
@@ -146,6 +148,7 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
      };
 
      $scope.getPluginStatus = function() {
+        $scope.pluginStatusLoadState = null;
         SubscriptionFactory.getStatus(function (data) {
             var entries = data.result.value;
             // Decorate with the original index so the sort tiebreaker preserves
@@ -160,6 +163,10 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                     return diff !== 0 ? diff : a.idx - b.idx;
                 }).map(function(item) { return item.entry; });
             $scope.pluginStatus = sorted;
+            $scope.pluginStatusLoadState = "ok";
+        }, function () {
+            $scope.pluginStatus = [];
+            $scope.pluginStatusLoadState = "error";
         });
      };
 

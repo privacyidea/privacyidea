@@ -115,6 +115,25 @@ def get_users_with_active_tokens():
     return len(rows)
 
 
+def _classify_subscription_date(date_till, now):
+    """
+    Map a subscription's ``date_till`` to a dashboard status.
+
+    :return: ``(status, days_left)`` where status is one of ``"ok"``,
+        ``"expiring"`` or ``"expired"``, and ``days_left`` is the integer
+        day delta (negative when expired). Returns ``(None, None)`` if
+        ``date_till`` is falsy.
+    """
+    if not date_till:
+        return None, None
+    days_left = (date_till - now).days
+    if date_till < now:
+        return "expired", days_left
+    if days_left < EXPIRING_THRESHOLD_DAYS:
+        return "expiring", days_left
+    return "ok", days_left
+
+
 def get_plugin_subscription_status():
     """
     Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
@@ -159,6 +178,15 @@ def get_plugin_subscription_status():
         if current is None or max_lastseen > current:
             last_seen_by_plugin[key] = max_lastseen
 
+    # Batch-load every subscription once instead of per-plugin lookups.
+    # Sort by date_till ascending so that, when multiple rows exist for the
+    # same application, the dict ends up keyed to the row with the latest
+    # date_till — deterministic regardless of DB iteration order.
+    all_subscriptions = sorted(get_subscription(),
+                               key=lambda s: s.get("date_till") or datetime.datetime.min)
+    subscriptions_by_app = {sub["application"].lower(): sub
+                            for sub in all_subscriptions}
+
     token_users = get_users_with_active_tokens()
     now = datetime.datetime.now()
     overview = []
@@ -175,19 +203,13 @@ def get_plugin_subscription_status():
             overview.append(entry)
             continue
 
-        subscriptions = get_subscription(plugin)
-        subscription = subscriptions[0] if subscriptions else None
+        subscription = subscriptions_by_app.get(plugin.lower())
         date_till = subscription.get("date_till") if subscription else None
-        if subscription and date_till and date_till >= now:
-            days_left = (date_till - now).days
+        status, days_left = _classify_subscription_date(date_till, now)
+        if status:
             entry["date_till"] = date_till
             entry["days_left"] = days_left
-            entry["status"] = "expiring" if days_left < EXPIRING_THRESHOLD_DAYS else "ok"
-        elif subscription:
-            # Subscription on file but expired — distinct from never-subscribed.
-            entry["date_till"] = date_till
-            entry["days_left"] = (date_till - now).days if date_till else None
-            entry["status"] = "expired"
+            entry["status"] = status
         else:
             free_limit = APPLICATIONS[plugin.lower()]
             entry["status"] = "exceeded" if token_users > free_limit else "no_subscription"
@@ -210,21 +232,18 @@ def get_server_subscription_status():
              "date_till": None,
              "days_left": None,
              "status": "no_subscription"}
-    subscriptions = get_subscription("privacyidea")
+    # Pick the row with the latest date_till for determinism when multiple
+    # server subscriptions exist.
+    subscriptions = sorted(get_subscription("privacyidea"),
+                           key=lambda s: s.get("date_till") or datetime.datetime.min,
+                           reverse=True)
     subscription = subscriptions[0] if subscriptions else None
     date_till = subscription.get("date_till") if subscription else None
-    if not date_till:
-        return entry
-    now = datetime.datetime.now()
-    days_left = (date_till - now).days
-    entry["date_till"] = date_till
-    entry["days_left"] = days_left
-    if date_till < now:
-        entry["status"] = "expired"
-    elif days_left < EXPIRING_THRESHOLD_DAYS:
-        entry["status"] = "expiring"
-    else:
-        entry["status"] = "ok"
+    status, days_left = _classify_subscription_date(date_till, datetime.datetime.now())
+    if status:
+        entry["date_till"] = date_till
+        entry["days_left"] = days_left
+        entry["status"] = status
     return entry
 
 

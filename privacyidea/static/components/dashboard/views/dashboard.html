@@ -197,8 +197,11 @@
                     <span translate>Subscriptions</span></a>
 		 </div>
                  <div class="panel-body">
-                     <p ng-if="!pluginStatus.length" translate>Loading…</p>
-                     <table class="table" ng-if="pluginStatus.length">
+                     <p ng-if="pluginStatusLoadState === null" translate>Loading…</p>
+                     <p ng-if="pluginStatusLoadState === 'error'" class="text-danger" translate>
+                         Could not load subscription status.
+                     </p>
+                     <table class="table" ng-if="pluginStatusLoadState === 'ok'">
                          <thead>
                              <tr>
                                  <th translate>Application</th>
@@ -211,8 +214,8 @@
                              <tr ng-repeat="entry in pluginStatus"
                                  ng-class="{'info': entry.is_server}">
                                  <td>
-                                     <strong ng-if="entry.is_server">{{ pluginDisplayName[entry.application] | translate }}</strong>
-                                     <span ng-if="!entry.is_server">{{ (pluginDisplayName[entry.application] || entry.application) | translate }}</span>
+                                     <strong ng-if="entry.is_server">{{ pluginDisplayName[entry.application] }}</strong>
+                                     <span ng-if="!entry.is_server">{{ pluginDisplayName[entry.application] || entry.application }}</span>
                                  </td>
                                  <td>
                                      <span ng-class="pluginStatusDot[entry.status]"

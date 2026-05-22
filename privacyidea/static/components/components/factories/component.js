@@ -117,11 +117,14 @@ myApp.factory("SubscriptionFactory", ["AuthFactory", "$http", "$state",
                 function(error) { AuthFactory.authError(error.data) });
 
         },
-        getStatus: function(callback) {
+        getStatus: function(callback, errorCallback) {
             $http.get(subscriptionsUrl + "/status", {
                 headers: {'PI-Authorization': AuthFactory.getAuthToken()}
             }).then(function(response) { callback(response.data) },
-                function(error) { AuthFactory.authError(error.data) });
+                function(error) {
+                    AuthFactory.authError(error.data);
+                    if (errorCallback) { errorCallback(error); }
+                });
         }
     }
 }]);

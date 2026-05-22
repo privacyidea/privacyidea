@@ -13,6 +13,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            SubscriptionError,
                                            subscription_status,
                                            get_plugin_subscription_status,
+                                           get_server_subscription_status,
                                            DASHBOARD_PLUGINS)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
@@ -303,3 +304,64 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         overview = get_plugin_subscription_status()
         for entry in overview:
             self.assertEqual(entry["status"], "unused")
+
+
+class ServerSubscriptionStatusTestCase(MyTestCase):
+    """
+    Tests for :func:`get_server_subscription_status`. Covers the four
+    branches (no_subscription / ok / expiring / expired) plus the
+    duplicate-row tiebreaker.
+    """
+
+    def setUp(self):
+        super().setUp()
+        db.session.query(Subscription).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _add_server_subscription(days_left, by_email="v@x"):
+        db.session.add(Subscription(
+            application="privacyidea",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email=by_email,
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=days_left),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+    def test_01_no_subscription(self):
+        entry = get_server_subscription_status()
+        self.assertTrue(entry["is_server"])
+        self.assertEqual(entry["application"], "privacyidea")
+        self.assertEqual(entry["status"], "no_subscription")
+        self.assertIsNone(entry["date_till"])
+        self.assertIsNone(entry["days_left"])
+
+    def test_02_ok(self):
+        self._add_server_subscription(days_left=100)
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "ok")
+        self.assertGreaterEqual(entry["days_left"], 30)
+
+    def test_03_expiring(self):
+        self._add_server_subscription(days_left=5)
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "expiring")
+        self.assertLess(entry["days_left"], 30)
+        self.assertGreaterEqual(entry["days_left"], 0)
+
+    def test_04_expired(self):
+        self._add_server_subscription(days_left=-5)
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "expired")
+        self.assertLess(entry["days_left"], 0)
+
+    def test_05_picks_latest_date_till_when_duplicates_exist(self):
+        # Two rows for the same application — the one with the latest
+        # date_till must win so the dashboard does not flap.
+        self._add_server_subscription(days_left=-5, by_email="old@x")
+        self._add_server_subscription(days_left=100, by_email="new@x")
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "ok")
+        self.assertGreaterEqual(entry["days_left"], 30)
