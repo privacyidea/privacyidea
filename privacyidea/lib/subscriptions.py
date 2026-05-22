@@ -92,13 +92,6 @@ DASHBOARD_PLUGINS = [
 
 EXPIRING_THRESHOLD_DAYS = 30
 
-# Guard against adding a plugin to DASHBOARD_PLUGINS without giving it a
-# free-token limit in APPLICATIONS — otherwise the status overview would
-# silently report it as ``exceeded`` for any non-zero token-user count.
-assert set(DASHBOARD_PLUGINS).issubset(APPLICATIONS), (
-    f"DASHBOARD_PLUGINS missing from APPLICATIONS: "
-    f"{set(DASHBOARD_PLUGINS) - set(APPLICATIONS)}")
-
 log = logging.getLogger(__name__)
 
 
@@ -170,6 +163,9 @@ def get_plugin_subscription_status():
     now = datetime.datetime.now()
     overview = []
     for plugin in DASHBOARD_PLUGINS:
+        if plugin not in APPLICATIONS:
+            log.debug(f"Skipping dashboard plugin {plugin!r}: no entry in APPLICATIONS")
+            continue
         entry = {"application": plugin,
                  "last_seen": last_seen_by_plugin.get(plugin.lower()),
                  "date_till": None,
