@@ -221,7 +221,7 @@
                                      <span ng-class="pluginStatusDot[entry.status]"
                                            style="font-size: 1.2em; line-height: 1;"
                                            aria-hidden="true">●</span>
-                                     {{ pluginStatusText[entry.status] }}
+                                     {{ pluginStatusText[entry.status] | translate }}
                                  </td>
                                  <td>
                                      {{ entry.date_till | date: "y-MM-dd" }}
@@ -232,7 +232,10 @@
                                          ({{ -entry.days_left }} <span translate>days ago</span>)
                                      </span>
                                  </td>
-                                 <td>{{ entry.last_seen | date: "y-MM-dd HH:mm" }}</td>
+                                 <td>
+                                     <span ng-if="entry.is_server">—</span>
+                                     <span ng-if="!entry.is_server">{{ entry.last_seen | date: "y-MM-dd HH:mm" }}</span>
+                                 </td>
                              </tr>
                          </tbody>
                      </table>

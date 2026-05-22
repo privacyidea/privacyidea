@@ -22,11 +22,9 @@
 myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                          "SubscriptionFactory", "AuditFactory",
                                          "$scope", "$location", "AuthFactory",
-                                         "gettextCatalog",
                                          function (ConfigFactory, TokenFactory,
                                                    SubscriptionFactory, AuditFactory,
-                                                   $scope, $location, AuthFactory,
-                                                   gettextCatalog) {
+                                                   $scope, $location, AuthFactory) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.policies = {"active": [], "num_active": 0,
@@ -45,16 +43,16 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
         "expired": "text-danger",
         "unused": "text-muted"
     };
-    // Localized label per status. Built via gettextCatalog so the strings are
-    // picked up by the nggettext extractor (plain JS literals routed through
-    // `| translate` in the template are not).
+    // Status label per status key. `gettext()` is the angular-gettext no-op
+    // marker so the extractor picks the strings up; the template applies the
+    // `translate` filter so the rendered label reacts to language changes.
     $scope.pluginStatusText = {
-        "active": gettextCatalog.getString("Active"),
-        "expiring": gettextCatalog.getString("Expiring soon"),
-        "no_subscription": gettextCatalog.getString("No subscription"),
-        "exceeded": gettextCatalog.getString("Subscription required"),
-        "expired": gettextCatalog.getString("Expired"),
-        "unused": gettextCatalog.getString("Not used")
+        "active": gettext("Active"),
+        "expiring": gettext("Expiring soon"),
+        "no_subscription": gettext("No subscription"),
+        "exceeded": gettext("Subscription required"),
+        "expired": gettext("Expired"),
+        "unused": gettext("Not used")
     };
     // Display name per plugin application key. The privacyidea- prefix is
     // dropped — context already makes it obvious. Unknown keys fall back to
@@ -162,7 +160,9 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                 }).sort(function(a, b) {
                     if (a.entry.is_server && !b.entry.is_server) return -1;
                     if (b.entry.is_server && !a.entry.is_server) return 1;
-                    var diff = PLUGIN_STATUS_ORDER[a.entry.status] - PLUGIN_STATUS_ORDER[b.entry.status];
+                    // Unknown statuses sort to the bottom rather than producing NaN.
+                    var diff = (PLUGIN_STATUS_ORDER[a.entry.status] || 99) -
+                               (PLUGIN_STATUS_ORDER[b.entry.status] || 99);
                     return diff !== 0 ? diff : a.idx - b.idx;
                 }).map(function(item) { return item.entry; });
             $scope.pluginStatus = sorted;

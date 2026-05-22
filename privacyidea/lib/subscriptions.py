@@ -202,9 +202,6 @@ def get_plugin_subscription_status() -> list[dict]:
     now = datetime.datetime.now()
     overview = []
     for plugin in DASHBOARD_PLUGINS:
-        if plugin not in APPLICATIONS:
-            log.debug(f"Skipping dashboard plugin {plugin!r}: no entry in APPLICATIONS")
-            continue
         entry = {"application": plugin,
                  "last_seen": last_seen_by_plugin.get(plugin.lower()),
                  "date_till": None,

@@ -305,6 +305,42 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
         for entry in overview:
             self.assertEqual(entry["status"], "unused")
 
+    def test_06_null_lastseen_does_not_crash(self):
+        # ClientApplication.lastseen is nullable. If every row for a clienttype
+        # has lastseen=NULL the SQL MAX() is NULL and must not be compared
+        # against a real datetime from another iteration. The column has a
+        # default=datetime.now, so set it to NULL explicitly after insert.
+        row = ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-keycloak/1.0 test/1",
+            node="localnode")
+        db.session.add(row)
+        db.session.commit()
+        row.lastseen = None
+        db.session.commit()
+
+        overview = {e["application"]: e
+                    for e in get_plugin_subscription_status()}
+        self.assertEqual(overview["privacyidea-keycloak"]["status"], "unused")
+
+    def test_07_null_application_subscription_is_skipped(self):
+        # Subscription.application is nullable and Subscription.get() drops
+        # None fields. Such rows must not crash the dict comprehension.
+        db.session.add(Subscription(
+            application=None,
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=100),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        overview = get_plugin_subscription_status()
+        # All plugins still report unused (no ClientApplication rows seeded).
+        for entry in overview:
+            self.assertEqual(entry["status"], "unused")
+
 
 class ServerSubscriptionStatusTestCase(MyTestCase):
     """
