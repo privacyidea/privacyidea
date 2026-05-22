@@ -167,6 +167,6 @@ describe("UserDetailsContainerTableComponent", () => {
     const element = { serial: "C-123", states: ["active"] } as any;
     component.handleStateClick(element);
     expect(containerServiceMock.toggleActive).toHaveBeenCalledWith("C-123", ["active"]);
-    expect(containerServiceMock.containerResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerServiceMock.userContainersResource.reload).toHaveBeenCalledTimes(1);
   });
 });

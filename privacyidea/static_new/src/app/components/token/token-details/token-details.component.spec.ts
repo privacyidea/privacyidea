@@ -268,10 +268,10 @@ describe("TokenDetailsComponent", () => {
       isEditing: signal(true)
     } as any;
 
-    containerSvc.filterContainersByTokenOwner.set(true);
+    containerService.filterContainersByTokenOwner.set(true);
     component.cancelTokenEdit(element);
 
-    expect(containerSvc.filterContainersByTokenOwner()).toBe(false);
+    expect(containerService.filterContainersByTokenOwner()).toBe(false);
   });
 
   it("isEditableElement defers to policy: true/false", () => {
