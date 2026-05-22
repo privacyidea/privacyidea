@@ -17,10 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { YubicoConfigComponent } from "@components/configuration/token-type-config/token-types/yubico-config/yubico-config.component";
 import { provideRouter } from "@angular/router";
-import { provideAnimations } from "@angular/platform-browser/animations";
-import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "../../../../../constants/token.constants";
+import { YubicoConfigComponent } from "@components/configuration/token-type-config/token-types/yubico-config/yubico-config.component";
+import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
 
 describe("YubicoConfigComponent", () => {
   let fixture: ComponentFixture<YubicoConfigComponent>;
@@ -29,7 +28,7 @@ describe("YubicoConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [YubicoConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(YubicoConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -82,7 +81,7 @@ describe("YubicoConfigComponent", () => {
 
   it("should handle empty field values", () => {
     jest.spyOn(component.formDataChange, "emit");
-    
+
     component.updateFormData(YUBICO_ID, "");
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [YUBICO_ID]: "" });
 
@@ -100,4 +99,3 @@ describe("YubicoConfigComponent", () => {
     expect(component.expanded()).toBe(false);
   });
 });
-

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-  TanApiPayloadMapper,
-  TanEnrollmentData
-} from "../../../../mappers/token-api-payload/tan-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TanApiPayloadMapper, TanEnrollmentData } from "@app/mappers/token-api-payload/tan-token-api-payload.mapper";
 
 export interface TanEnrollmentOptions extends TokenEnrollmentData {
   type: "tan";
@@ -36,7 +29,7 @@ export interface TanEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-tan",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-tan.component.html",
   styleUrl: "./enroll-tan.component.scss"
 })
@@ -45,9 +38,7 @@ export class EnrollTanComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: TanEnrollmentData;

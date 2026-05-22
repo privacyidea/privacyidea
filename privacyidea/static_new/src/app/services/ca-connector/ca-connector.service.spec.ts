@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { CaConnectorService } from "./ca-connector.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { CaConnectorService } from "./ca-connector.service";
 
 describe("CaConnectorService", () => {
   let service: CaConnectorService;
@@ -35,20 +35,22 @@ describe("CaConnectorService", () => {
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
-      handleResourceError: jest.fn(),
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        CaConnectorService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
-        { provide: ContentService, useClass: MockContentService}
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(CaConnectorService);
@@ -67,32 +69,61 @@ describe("CaConnectorService", () => {
   });
 
   it("should post CA connector", async () => {
-    const connector = { connectorname: "test", type: "local", data: {} } as any;
+    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
     const promise = service.postCaConnector(connector);
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("POST");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved CA connector.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved CA connector.");
+  });
+
+  it("should show error notification when posting CA connector fails", async () => {
+    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
+    const promise = service.postCaConnector(connector);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save CA connector. Something went wrong");
   });
 
   it("should delete CA connector", async () => {
-    const promise = service.deleteCaConnector("test");
+    const promise = service.deleteCaConnector("test/1");
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted CA connector: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted CA connector: test/1.");
+  });
+
+  it("should show error notification when deleting CA connector fails", async () => {
+    const promise = service.deleteCaConnector("test/1");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete CA connector. Something went wrong");
   });
 
   it("should get CA specific options", async () => {
-    const promise = service.getCaSpecificOptions("microsoft", { hostname: "test" });
+    const promise = service.getCaSpecificOptions("microsoft/1", { hostname: "test" });
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/specific/microsoft?hostname=test`);
+    const req = httpMock.expectOne(
+      `${environment.proxyUrl}/caconnector/specific/${encodeURIComponent("microsoft/1")}?hostname=test`
+    );
     expect(req.request.method).toBe("GET");
     req.flush({ result: { value: { available_cas: ["CA1"] } } });
 
@@ -100,10 +131,25 @@ describe("CaConnectorService", () => {
     expect(result).toEqual({ available_cas: ["CA1"] });
   });
 
+  it("should show error notification when fetching CA specific options fails", async () => {
+    const promise = service.getCaSpecificOptions("microsoft/1", { hostname: "test" });
+
+    const req = httpMock.expectOne(
+      `${environment.proxyUrl}/caconnector/specific/${encodeURIComponent("microsoft/1")}?hostname=test`
+    );
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to fetch CA specific options. Something went wrong");
+  });
+
   it("should get caConnectors", async () => {
     TestBed.tick();
     let req = httpMock.expectOne((req) => req.url.includes(service.caConnectorBaseUrl));
-    let caConnectors = [{connectorname: "test", type: "local", data: {}}];
+    let caConnectors = [{ connectorname: "test", type: "local", data: {} }];
     req.flush(MockPiResponse.fromValue(caConnectors));
     await Promise.resolve();
     expect(service.caConnectors()).toEqual(caConnectors);
@@ -112,24 +158,27 @@ describe("CaConnectorService", () => {
     service.caConnectorResource.reload();
     TestBed.tick();
     req = httpMock.expectOne((req) => req.url.includes(service.caConnectorBaseUrl));
-    caConnectors = [{connectorname: "test", type: "local", data: {}}, {connectorname: "test2", type: "local", data: {}}];
+    caConnectors = [
+      { connectorname: "test", type: "local", data: {} },
+      { connectorname: "test2", type: "local", data: {} }
+    ];
     req.flush(MockPiResponse.fromValue(caConnectors));
     await Promise.resolve();
     expect(service.caConnectors()).toEqual(caConnectors);
 
-    // Return previous value for failed response
+    // Return empty array for failed response
     service.caConnectorResource.reload();
     TestBed.tick();
     req = httpMock.expectOne((req) => req.url.includes(service.caConnectorBaseUrl));
-    req.flush("Error", { status: 500, statusText: "Unexpected error occurred"});
+    req.flush("Error", { status: 500, statusText: "Unexpected error occurred" });
     await Promise.resolve();
-    expect(service.caConnectors()).toEqual(caConnectors);
+    expect(service.caConnectors()).toEqual([]);
   });
 
   it("should handle error for caConnectorResource", async () => {
     TestBed.tick();
     const req = httpMock.expectOne((req) => req.url.includes(service.caConnectorBaseUrl));
-    req.flush("Error", { status: 403, statusText: "Permission denied"});
+    req.flush("Error", { status: 403, statusText: "Permission denied" });
     await Promise.resolve();
     expect(service.caConnectors()).toEqual([]);
   });

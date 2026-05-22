@@ -16,24 +16,25 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnInit, ViewChild } from "@angular/core";
-import { FormsModule, NgForm } from "@angular/forms";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatDialog } from "@angular/material/dialog";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { isChecked } from "@utils/parse-boolean-value";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
-import { isChecked, parseBooleanValue } from "../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-system-config",
@@ -41,7 +42,6 @@ import { isChecked, parseBooleanValue } from "../../../utils/parse-boolean-value
   imports: [
     MatFormField,
     MatLabel,
-    FormsModule,
     MatInput,
     MatSelect,
     MatOption,
@@ -50,27 +50,29 @@ import { isChecked, parseBooleanValue } from "../../../utils/parse-boolean-value
     MatCheckbox,
     ScrollToTopDirective,
     MatButton,
-    MatIcon
+    MatIcon,
+    ClearableInputComponent
   ],
   styleUrls: ["./system-config.component.scss"]
 })
-export class SystemConfigComponent implements OnInit {
+export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly authService: AuthService = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
-  @ViewChild("systemConfigForm", { static: true }) systemConfigForm!: NgForm;
 
-  params: any = {};
+  params = signal<any>({});
+  isDirty = signal(false);
   smtpIdentifiers: string[] = [];
 
   constructor() {
     effect(() => {
       const config = this.systemService.systemConfig();
       if (config && Object.keys(config).length > 0) {
-        this.params = { ...config };
+        const newParams = { ...config };
         const booleanKeys = [
           "splitAtSign",
           "IncFailCountOnFalsePin",
@@ -82,25 +84,34 @@ export class SystemConfigComponent implements OnInit {
           "UiLoginDisplayHelpButton",
           "UiLoginDisplayRealmBox"
         ];
-        booleanKeys.forEach(key => {
-          if (this.params[key] !== undefined) {
-            this.params[key] = isChecked(this.params[key]);
+        booleanKeys.forEach((key) => {
+          if (newParams[key] !== undefined) {
+            newParams[key] = isChecked(newParams[key]);
           }
         });
+        this.params.set(newParams);
+        this.isDirty.set(false);
       }
     });
 
     // Keep SMTP identifiers in sync with the SMTP servers service
     effect(() => {
       const servers = this.smtpService.smtpServers();
-      this.smtpIdentifiers = servers.map(s => s.identifier);
+      this.smtpIdentifiers = servers.map((s) => s.identifier);
     });
   }
 
   ngOnInit(): void {
     this.loadSystemConfig();
-    // Trigger loading SMTP servers; the effect above will populate smtpIdentifiers when loaded
     this.smtpService.smtpServerResource.reload();
+    this.pendingChangesService.registerHasChanges(() => this.isDirty());
+    this.pendingChangesService.registerValidChanges(() => this.hasConfigWritePermission());
+    this.pendingChangesService.registerSave(() => this._saveAndReturn());
+  }
+
+  updateParam(key: string, value: any): void {
+    this.params.set({ ...this.params(), [key]: value });
+    this.isDirty.set(true);
   }
 
   loadSystemConfig(): void {
@@ -108,20 +119,40 @@ export class SystemConfigComponent implements OnInit {
   }
 
   saveSystemConfig(): void {
-    const body = { ...this.params };
+    const body = { ...this.params() };
 
     this.systemService.saveSystemConfig(body).subscribe({
       next: (response: any) => {
         if (response.result.status) {
-          this.notificationService.openSnackBar("System configuration saved successfully.");
+          this.notificationService.success("System configuration saved successfully.");
         } else {
-          this.notificationService.openSnackBar("Failed to save system configuration.");
+          this.notificationService.error("Failed to save system configuration.");
         }
       },
       error: (error: any) => {
         console.error("Error saving system configuration:", error);
-        this.notificationService.openSnackBar("Error saving system configuration.");
+        this.notificationService.error("Error saving system configuration.");
       }
+    });
+  }
+
+  private _saveAndReturn(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      this.systemService.saveSystemConfig({ ...this.params() }).subscribe({
+        next: (response: any) => {
+          if (response.result.status) {
+            this.notificationService.success("System configuration saved successfully.");
+            resolve(true);
+          } else {
+            this.notificationService.error("Failed to save system configuration.");
+            resolve(false);
+          }
+        },
+        error: () => {
+          this.notificationService.error("Error saving system configuration.");
+          resolve(false);
+        }
+      });
     });
   }
 
@@ -129,14 +160,14 @@ export class SystemConfigComponent implements OnInit {
     this.systemService.deleteUserCache().subscribe({
       next: (response: any) => {
         if (response.result.status) {
-          this.notificationService.openSnackBar("User cache deleted successfully.");
+          this.notificationService.success("User cache deleted successfully.");
         } else {
-          this.notificationService.openSnackBar("Failed to delete user cache.");
+          this.notificationService.error("Failed to delete user cache.");
         }
       },
       error: (error: any) => {
         console.error("Error deleting user cache:", error);
-        this.notificationService.openSnackBar("Error deleting user cache.");
+        this.notificationService.error("Error deleting user cache.");
       }
     });
   }
@@ -151,13 +182,17 @@ export class SystemConfigComponent implements OnInit {
     this.systemService.getDocumentation().subscribe({
       next: (documentation) => {
         this.dialog.open(SystemDocumentationDialogComponent, {
-          data: { documentation },
+          data: { documentation }
         });
       },
       error: (error: any) => {
         console.error("Error loading system documentation:", error);
-        this.notificationService.openSnackBar("Error loading system documentation.");
+        this.notificationService.error("Error loading system documentation.");
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 }

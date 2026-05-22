@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,31 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { Router } from "@angular/router";
-import { of, throwError } from "rxjs";
-import {
-  MockAuthDetail,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse,
-  MockSessionTimerService,
-  MockValidateService
-} from "../../../testing/mock-services";
-import { AuthData, AuthDetail, AuthService } from "../../services/auth/auth.service";
-import { LocalService } from "../../services/local/local.service";
-import { NotificationService } from "../../services/notification/notification.service";
-import { SessionTimerService } from "../../services/session-timer/session-timer.service";
-import { ValidateService } from "../../services/validate/validate.service";
-import { LoginComponent } from "./login.component";
-import { ROUTE_PATHS } from "../../route_paths";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { ConfigService } from "../../services/config/config.service";
 import { By } from "@angular/platform-browser";
-import { MockConfigService } from "../../../testing/mock-services/mock-config-service";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthData, AuthDetail, AuthService } from "@services/auth/auth.service";
+import { ConfigService } from "@services/config/config.service";
+import { LocalService } from "@services/local/local.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { ValidateService } from "@services/validate/validate.service";
+import {
+    MockAuthDetail,
+    MockLocalService,
+    MockNotificationService,
+    MockPiResponse,
+    MockSessionTimerService,
+    MockValidateService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockConfigService } from "@testing/mock-services/mock-config-service";
+import { of, throwError } from "rxjs";
+import { LoginComponent } from "./login.component";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
@@ -60,7 +60,7 @@ describe("LoginComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [LoginComponent, BrowserAnimationsModule],
+      imports: [LoginComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -104,7 +104,7 @@ describe("LoginComponent", () => {
       const loggedInFixture = TestBed.createComponent(LoginComponent);
       loggedInFixture.detectChanges();
 
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
+      expect(notificationService.warning).toHaveBeenCalledWith("User is already logged in.");
       expect(warn).toHaveBeenCalledWith("User is already logged in.");
 
       warn.mockRestore();
@@ -146,7 +146,7 @@ describe("LoginComponent", () => {
       });
       component.onSubmit();
 
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_WIZARD);
     });
   });
 
@@ -542,7 +542,7 @@ describe("LoginComponent", () => {
     it("remoteLogin should show error if remote_user is not set", () => {
       configService.config.set({ ...configService.config(), remote_user: "" });
       fixture.detectChanges();
-      const spy = jest.spyOn(notificationService, "openSnackBar");
+      const spy = jest.spyOn(notificationService, "warning");
       component.remoteLogin();
       expect(spy).toHaveBeenCalledWith(expect.stringContaining("Remote user not available"));
     });

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { CommonModule } from "@angular/common";
 import {
   Component,
   computed,
@@ -28,26 +29,24 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
-import { AuthService } from "../../services/auth/auth.service";
-import { EMPTY_EVENT, EventHandler, EventService } from "../../services/event/event.service";
-import { EventPanelComponent } from "./event-panel/event-panel.component";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
+import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { animate, state, style, transition, trigger } from "@angular/animations";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatTooltip } from "@angular/material/tooltip";
-import { MatDialog } from "@angular/material/dialog";
-import { Sort } from "@angular/material/sort";
-import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../services/table-utils/table-utils.service";
-import { MatFormField } from "@angular/material/form-field";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatTooltip } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
-import { HighlightPipe } from "../shared/pipes/highlight.pipe";
 
 @Component({
   selector: "app-event",
@@ -68,20 +67,13 @@ import { HighlightPipe } from "../shared/pipes/highlight.pipe";
   ],
   standalone: true,
   templateUrl: "./event.component.html",
-  styleUrl: "./event.component.scss",
-  animations: [
-    trigger("detailExpand", [
-      state("collapsed", style({ height: "0px", minHeight: "0" })),
-      state("expanded", style({ height: "*" })),
-      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
-    ])
-  ]
+  styleUrl: "./event.component.scss"
 })
 export class EventComponent {
   protected readonly authService = inject(AuthService);
   protected readonly eventService = inject(EventService);
   protected readonly EMPTY_EVENT = EMPTY_EVENT;
-  protected readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
   columnKeysMap: Record<string, string> = {
@@ -208,23 +200,12 @@ export class EventComponent {
     ds.filter = value.trim().toLowerCase();
   }
 
-  private openEventHandlerDialog(eventHandler?: EventHandler, isNew?: boolean): void {
-    const dialogData = {
-      data: { eventHandler, isNewEvent: isNew },
-      width: "auto",
-      height: "auto",
-      maxWidth: "100vw",
-      maxHeight: "100vh"
-    };
-    this.dialog.open(EventPanelComponent, dialogData);
-  }
-
   onEditEventHandler(eventHandler: EventHandler) {
-    this.openEventHandlerDialog(eventHandler, false);
+    this.router.navigateByUrl(ROUTE_PATHS.EVENTS_DETAILS + eventHandler.id);
   }
 
   onCreateNewEventHandler() {
-    this.openEventHandlerDialog(EMPTY_EVENT, true);
+    this.router.navigateByUrl(ROUTE_PATHS.EVENTS_NEW);
   }
 
   async onDeleteEventHandler(eventHandler: EventHandler) {

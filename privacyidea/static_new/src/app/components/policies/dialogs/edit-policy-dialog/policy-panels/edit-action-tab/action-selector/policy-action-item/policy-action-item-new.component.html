@@ -18,12 +18,16 @@
 -->
 <div
   class="policy-action-item"
-  (click)="selectActionByName.emit(actionName())">
-  <span class="detail-label">{{ actionName() }}</span>
+  (click)="selectActionByName.emit(selectableAction().actionName)">
+  <span
+    class="detail-label"
+    [matTooltip]="selectableAction().actionName">
+    {{ selectableAction().label }}
+  </span>
 
   <div class="detail-input">
-    @if (actionDetail()?.value; as actionValues) {
-      @if (actionDetail()?.multiple) {
+    @if (selectableAction().detail.value; as actionValues) {
+      @if (selectableAction().detail.multiple) {
         <app-multi-select-only
           class="flex-2"
           subscriptSizing="dynamic"
@@ -59,14 +63,14 @@
         }
       }
     } @else {
-      @switch (actionDetail()?.type) {
+      @switch (selectableAction().detail.type) {
         @case ("str") {
           <input
             #inputElement
             type="text"
             class="action-value-input flex-2"
-            [ngModel]="currentAction().value"
-            (ngModelChange)="updateSelectedActionValue($event)"
+            [value]="currentAction().value"
+            (input)="updateSelectedActionValue($any($event.target).value)"
             (keydown.enter)="onEnter()" />
         }
         @case ("int") {
@@ -74,21 +78,21 @@
             #inputElement
             type="number"
             class="action-value-input flex-2"
-            [ngModel]="currentAction().value"
-            (ngModelChange)="updateSelectedActionValue($event)"
+            [value]="currentAction().value"
+            (input)="updateSelectedActionValue(+$any($event.target).value)"
             (keydown.enter)="onEnter()" />
         }
         @case ("text") {
           <textarea
             #inputElement
             class="action-value-textarea flex-2"
-            [ngModel]="currentAction().value"
-            (ngModelChange)="updateSelectedActionValue($event)"></textarea>
+            [value]="currentAction().value"
+            (input)="updateSelectedActionValue($any($event.target).value)"></textarea>
         }
       }
     }
 
-    @if (actionDetail()?.multiple || !actionDetail()?.value) {
+    @if (selectableAction().detail.multiple || !selectableAction().detail.value) {
       <button
         #buttonElement
         class="add-action-button flex-1"
@@ -99,5 +103,5 @@
     }
   </div>
 
-  <span class="detail-description">{{ actionDetail()?.desc }}</span>
+  <span class="detail-description">{{ selectableAction().detail.desc }}</span>
 </div>

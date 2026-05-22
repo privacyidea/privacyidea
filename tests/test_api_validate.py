@@ -52,7 +52,7 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
@@ -1769,7 +1769,7 @@ class ValidateAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0], _("Enter the OTP from the Email"))
             # check the send message
-            sent_message = smtpmock.get_sent_message().decode('utf-8')
+            sent_message = smtpmock.get_sent_message()
             self.assertTrue("RGVpbiAyODcwODI=" in sent_message)
             self.assertTrue("Subject: Dein OTP" in sent_message)
 

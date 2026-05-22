@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { BreakpointObserver } from "@angular/cdk/layout";
+import { NgClass } from "@angular/common";
 import {
   Component,
   computed,
@@ -23,41 +25,41 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
+  OnInit,
   Signal,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { BreakpointObserver } from "@angular/cdk/layout";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MatButtonModule } from "@angular/material/button";
-import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { NgClass } from "@angular/common";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { MatTableDataSource } from "@angular/material/table";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
-import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
-import { filter, map } from "rxjs";
-import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { MatTableDataSource } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { filter, firstValueFrom, map } from "rxjs";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
+import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
 
 @Component({
   selector: "app-user-details",
@@ -77,16 +79,15 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
     NgClass,
     MatPaginator,
     UserDetailsContainerTableComponent,
-    FormsModule,
     MatSelectModule,
     MatTooltip,
     RouterLink,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
 })
-export class UserDetailsComponent {
+export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -96,6 +97,7 @@ export class UserDetailsComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private router = inject(Router);
   private breakpointObserver = inject(BreakpointObserver);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
   private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
@@ -224,6 +226,28 @@ export class UserDetailsComponent {
     return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
   });
 
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        !!this.addKeyInput() ||
+        !!this.addValueInput() ||
+        !!this.selectedKey() ||
+        !!this.selectedValue(),
+    );
+    this.pendingChangesService.registerValidChanges(
+      () => {
+        const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+        const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+        return !!key && !!value;
+      },
+    );
+    this.pendingChangesService.registerSave(() => this.addCustomAttribute());
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
   switchToCustomKey() {
     this.keyMode.set("input");
     this.selectedKey.set(null);
@@ -234,26 +258,32 @@ export class UserDetailsComponent {
     this.addKeyInput.set("");
   }
 
-  addCustomAttribute() {
+  async addCustomAttribute(): Promise<boolean> {
     const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
     const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
 
-    if (!key || !value) return;
+    if (!key || !value) return false;
 
-    this.userService.setUserAttribute(key, value).subscribe({
-      next: () => {
-        this.userService.userAttributesResource.reload();
-        this.addKeyInput.set("");
-        this.addValueInput.set("");
-        this.selectedKey.set(null);
-        this.selectedValue.set(null);
-      }
-    });
+    try {
+      await firstValueFrom(this.userService.setUserAttribute(key, value));
+      this.userService.userAttributesResource.reload();
+      this.userService.userResource.reload();
+      this.addKeyInput.set("");
+      this.addValueInput.set("");
+      this.selectedKey.set(null);
+      this.selectedValue.set(null);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   deleteCustomAttribute(key: string) {
     this.userService.deleteUserAttribute(key).subscribe({
-      next: () => this.userService.userAttributesResource.reload()
+      next: () => {
+        this.userService.userAttributesResource.reload();
+        this.userService.userResource.reload();
+      }
     });
   }
 

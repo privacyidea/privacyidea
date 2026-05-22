@@ -25,14 +25,19 @@
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
         @if (panel.expanded) {
-          <input
-            type="text"
-            class="machine-resolver-name-input"
-            placeholder="Name"
-            [ngModel]="newMachineResolver().resolvername"
-            (ngModelChange)="onResolvernameChange($event)"
-            (click)="$event.stopPropagation(); panel.expanded = true"
-            (keydown)="$event.stopPropagation()" />
+          <div class="flex-column">
+            <input
+              type="text"
+              class="machine-resolver-name-input"
+              placeholder="Name"
+              [value]="newMachineResolver().resolvername"
+              (input)="onResolvernameChange($event.target['value'])"
+              (click)="$event.stopPropagation(); panel.expanded = true"
+              (keydown)="$event.stopPropagation()" />
+            @if (nameHasPatternError()) {
+              <mat-error i18n style="font-size: 10px;">Invalid characters.</mat-error>
+            }
+          </div>
         } @else {
           <p i18n>New Machine Resolver</p>
         }

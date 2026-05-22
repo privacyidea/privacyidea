@@ -20,8 +20,10 @@
   class="input-width-l margin-bottom-32">
   <mat-label i18n>Action</mat-label>
   <mat-select
-    (selectionChange)="onActionSelectionChange()"
-    [formControl]="selectedAction"
+    (selectionChange)="onActionSelectionChange($event.value)"
+    (openedChange)="$event === false && selectedActionForm().markAsTouched()"
+    [value]="selectedAction()"
+    [appErrorState]="showActionError()"
     required>
     @for (action of Object.keys(eventService.moduleActions()); track action) {
       <mat-option [value]="action">
@@ -30,21 +32,22 @@
     }
   </mat-select>
   <mat-hint i18n>Select an action to be executed on the specified events.</mat-hint>
-  <mat-error i18n>
-    Selecting an action is required.
-  </mat-error>
+  @if (selectedActionForm().errors().some(e => e.kind === "required") && selectedActionForm().touched()) {
+    <mat-error i18n>
+      Selecting an action is <strong>required</strong>.
+    </mat-error>
+  }
 </mat-form-field>
 
-<form
-  [formGroup]="selectedOptions"
-  class="flex-column gap-16">
+<div class="flex-column gap-16">
   @for (optionName of Object.keys(actionOptions()); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0">
         @if (actionOptions()[optionName].type == "bool") {
           <mat-checkbox
-            [formControlName]="optionName"
-            class="margin-0">
+            class="margin-0"
+            [checked]="!!selectedOptions()[optionName]"
+            (change)="setOption(optionName, $event.checked)">
             {{ optionName }}
           </mat-checkbox>
         } @else {
@@ -58,7 +61,10 @@
             </mat-label>
             @if (actionOptions()[optionName].value) {
               <mat-select
-                [formControlName]="optionName"
+                [value]="selectedOptions()[optionName]"
+                (selectionChange)="setOption(optionName, $event.value); markOptionTouched(optionName)"
+                (openedChange)="$event === false && markOptionTouched(optionName)"
+                [appErrorState]="showOptionError(optionName)"
                 [required]="actionOptions()[optionName].required || false">
                 @for (valueOption of actionOptions()[optionName].value; track valueOption) {
                   <mat-option [value]="valueOption">
@@ -70,34 +76,44 @@
               @switch (actionOptions()[optionName].type) {
                 @case ("int") {
                   <input
-                    [formControlName]="optionName"
+                    [value]="selectedOptions()[optionName]"
+                    (input)="setOption(optionName, $any($event.target).valueAsNumber)"
+                    (blur)="markOptionTouched(optionName)"
+                    [appErrorState]="showOptionError(optionName)"
                     [required]="actionOptions()[optionName].required || false"
                     matInput
                     type="number" />
                 }
                 @case ("text") {
                   <textarea
-                    [formControlName]="optionName"
+                    [value]="selectedOptions()[optionName]"
+                    (input)="setOption(optionName, $any($event.target).value)"
+                    (blur)="markOptionTouched(optionName)"
+                    [appErrorState]="showOptionError(optionName)"
                     [required]="actionOptions()[optionName].required || false"
                     matInput
                     rows="3"></textarea>
                 }
                 @default {
                   <input
-                    [formControlName]="optionName"
+                    [value]="selectedOptions()[optionName]"
+                    (input)="setOption(optionName, $any($event.target).value)"
+                    (blur)="markOptionTouched(optionName)"
+                    [appErrorState]="showOptionError(optionName)"
                     [required]="actionOptions()[optionName].required || false"
                     matInput
                     type="text" />
                 }
               }
             }
-            <mat-error>
-              {{ optionName }} is <strong>required</strong>.
-            </mat-error>
+            @if (showOptionError(optionName)) {
+              <mat-error>
+                {{ optionName }} is <strong>required</strong>.
+              </mat-error>
+            }
           </mat-form-field>
         }
-        @if (!(selectedOptions.get(optionName)?.invalid && (selectedOptions.get(optionName)?.dirty ||
-          selectedOptions.get(optionName)?.touched))) {
+        @if (!showOptionError(optionName)) {
           <div
             class="checkbox-hint input-width-xl"
             [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"
@@ -107,4 +123,4 @@
       </div>
     }
   }
-</form>
+</div>

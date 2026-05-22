@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { WelcomeDialogComponent } from "./welcome-dialog.component";
-import { MatDialogRef } from "@angular/material/dialog";
-import { AuthService } from "../../../services/auth/auth.service";
 import { signal } from "@angular/core";
-import { WelcomeDialogServiceMock } from "../../../../testing/mock-services/mock-welcome-dialog-service";
-import { WelcomeDialogService } from "../../../services/welcome/welcome-dialog.service";
+import { TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
+import { WelcomeDialogServiceMock } from "@testing/mock-services/mock-welcome-dialog-service";
+import { WelcomeDialogComponent } from "./welcome-dialog.component";
 
 describe("WelcomeDialogComponent", () => {
   let component: WelcomeDialogComponent;
@@ -44,7 +43,7 @@ describe("WelcomeDialogComponent", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: AuthService, useValue: authMock },
+        { provide: AuthService, useValue: authMock }
       ]
     });
 

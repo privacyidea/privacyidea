@@ -59,26 +59,25 @@
       </div>
 
       <app-clearable-input
-        (onClick)="actionFilter.set('')"
+        (clearButtonClick)="actionFilter.set('')"
         [showClearButton]="actionFilter() !== ''">
         <input
           clearableInput
           type="text"
           placeholder="Search actions..."
           i18n-placeholder
-          [ngModel]="actionFilter()"
-          (ngModelChange)="actionFilter.set($event)"
+          [value]="actionFilter()"
+          (input)="actionFilter.set($any($event.target).value)"
           class="search-input" />
       </app-clearable-input>
 
-      @if ((actionsFiltered() | keyvalue).length > 0) {
+      @if (actionsFiltered().length > 0) {
         <div class="add-action-details">
           <div class="policy-action-items">
-            @for (action of actionsFiltered() | keyvalue; track action.key) {
+            @for (action of actionsFiltered(); track action.label) {
               <app-policy-action-item-new
-                [actionName]="action.key"
-                [actionDetail]="action.value"
-                (actionAdd)="addPolicyAction($event)" />
+                [selectableAction]="action"
+                (actionAdd)="addPolicyAction($event, action.scope)" />
             }
           </div>
         </div>

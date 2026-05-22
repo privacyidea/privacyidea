@@ -17,19 +17,24 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, Input, OnDestroy, OnInit, signal } from "@angular/core";
-import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { Subscription } from "rxjs";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { Component, computed, Input, WritableSignal } from "@angular/core";
 import { MatFormField, MatHint } from "@angular/material/form-field";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
+
+export interface UserGroupsModel {
+  active: boolean;
+  pi_user_groups_key: string;
+  user_groups_attribute: string;
+  method: string;
+  endpoint: string;
+}
 
 @Component({
   selector: "app-http-groups-attribute",
   imports: [
-    FormsModule,
     MatFormField,
     MatHint,
     MatInput,
@@ -37,61 +42,16 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatOption,
     MatSelect,
     MatSlideToggle,
-    ReactiveFormsModule,
     MatTooltip
   ],
   templateUrl: "./http-groups-attribute.component.html",
   styleUrl: "./http-groups-attribute.component.scss"
 })
-export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
-  // Signal for the 'active' value
-  readonly activeSignal = signal<boolean>(false);
-  // Computed signal for the tooltip
-  readonly slideToggleTooltipSignal = computed(() =>
-    this.activeSignal() ? $localize`Disable user groups retrieval` : $localize`Enable user groups retrieval`
-  );
-  private activeSubscription?: Subscription;
-  private methodSubscription?: Subscription;
-  @Input({ required: true }) userGroupsControl!: FormGroup;
+export class HttpGroupsAttributeComponent {
+  @Input({ required: true }) model!: WritableSignal<UserGroupsModel>;
   @Input({ required: true }) resolverType!: string;
 
-  ngOnInit() {
-    if (this.userGroupsControl) {
-      this.activeSubscription?.unsubscribe();
-      const activeControl = this.userGroupsControl.get("active");
-      if (activeControl) {
-        const controls = ["pi_user_groups_key", "user_groups_attribute", "method", "endpoint"];
-
-        const updateControls = (active: boolean) => {
-          this.activeSignal.set(active);
-          controls.forEach((ctrl) => {
-            const control = this.userGroupsControl.get(ctrl);
-            if (active) {
-              control?.enable({ emitEvent: false });
-            } else {
-              control?.disable({ emitEvent: false });
-            }
-          });
-        };
-
-        this.activeSubscription = activeControl.valueChanges.subscribe(updateControls);
-        updateControls(!!activeControl.value);
-
-        const methodControl = this.userGroupsControl.get("method");
-        if (methodControl) {
-          this.methodSubscription?.unsubscribe();
-          this.methodSubscription = methodControl.valueChanges.subscribe((value) => {
-            if (value) {
-              methodControl.setValue(value.toUpperCase(), { emitEvent: false });
-            }
-          });
-        }
-      }
-    }
-  }
-
-  ngOnDestroy() {
-    this.activeSubscription?.unsubscribe();
-    this.methodSubscription?.unsubscribe();
-  }
+  readonly slideToggleTooltipSignal = computed(() =>
+    this.model().active ? $localize`Disable user groups retrieval` : $localize`Enable user groups retrieval`
+  );
 }

@@ -26,7 +26,8 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_verify_enrollment, preferred_client_mode,
                                             multichallenge_enroll_via_validate)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
-                                           check_base_action, check_token_init,
+                                           check_base_action, check_admin_base_action,
+                                           check_token_init,
                                            check_max_token_user,
                                            check_anonymous_user,
                                            check_max_token_realm, set_realm,
@@ -96,7 +97,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.user import User
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
                                    CHARLIST_CONTENTPOLICY, check_pin_contents)
 from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
@@ -209,6 +210,43 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("pol2")
         remove_token("POL001")
         remove_token("POL002")
+
+    def test_01b_check_admin_base_action(self):
+        builder = EnvironBuilder(method='GET', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {}
+        req.User = User()
+
+        # An admin policy that does *not* grant configread is in place.
+        set_policy(name="pol_admin", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        # A user policy that does *not* grant configread either — this is
+        # the situation where the plain check_base_action would deny a user
+        # because user-scope policies exist but none match the action.
+        set_policy(name="pol_user", scope=SCOPE.USER, action=PolicyAction.DISABLE)
+        g.policy_object = PolicyClass()
+
+        # Admin without configread is denied.
+        g.logged_in_user = {"username": "admin1", "realm": "", "role": "admin"}
+        self.assertRaises(PolicyError, check_admin_base_action, req,
+                          action=PolicyAction.SYSTEMREAD)
+
+        # Admin with configread is allowed.
+        set_policy(name="pol_admin", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.ENABLE},{PolicyAction.SYSTEMREAD}")
+        g.policy_object = PolicyClass()
+        self.assertTrue(check_admin_base_action(req, action=PolicyAction.SYSTEMREAD))
+
+        # User callers are passed through regardless of whether any
+        # user-scope policy grants the action — this is the regression
+        # the wrapper exists to prevent.
+        g.logged_in_user = {"username": "user1", "realm": "", "role": "user"}
+        self.assertTrue(check_admin_base_action(req, action=PolicyAction.SYSTEMREAD))
+
+        delete_policy("pol_admin")
+        delete_policy("pol_user")
 
     def test_01a_admin_realms(self):
         admin1 = {"username": "admin1",

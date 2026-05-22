@@ -18,12 +18,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This endpoint is used to get the information from the server,
-which application types are known and which options these applications provide.
+The application REST API exposes which machine application plugins
+(``ssh``, ``luks``, ``offline``, ...) are known to this server and which
+configuration options each plugin accepts per token type.
 
-Applications are used to attach tokens to machines.
-
-The code of this module is tested in tests/test_api_applications.py
+Application plugins are used to attach tokens to machines so the token
+can authenticate the user against the machine in a specific context (SSH
+login, LUKS unlock, offline OTP, ...). See :ref:`application_plugins` for
+the conceptual chapter and :ref:`rest_machine` for the endpoints that
+actually create the attachments.
 """
 from flask import (Blueprint)
 from .lib.utils import (send_result)
@@ -43,13 +46,22 @@ application_blueprint = Blueprint('application_blueprint', __name__)
 @log_with(log)
 def get_applications():
     """
-    returns a json dict of the available applications
+    Return the application plugins available on this server and the
+    configuration options each plugin accepts per token type.
+
+    The response is a dictionary keyed by application name (``ssh``, ``luks``,
+    ``offline``, ...). Each entry has an ``options`` sub-dictionary that is
+    keyed by token type, and each token-type entry maps option names to a
+    type descriptor. This is consumed by the WebUI when an admin attaches a
+    token to a machine.
+
+    Requires admin authentication.
 
     **Example request**:
 
     .. sourcecode:: http
 
-       GET /application HTTP/1.1
+       GET /application/ HTTP/1.1
        Host: example.com
        Accept: application/json
 
@@ -60,33 +72,33 @@ def get_applications():
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "luks": {
-            "options": {
-              "slot": {
-                "type": "int"
-              },
-              "partition": {
-                "type": "str"
-              }
-            }
-          },
-          "ssh": {
-            "options": {
-              "user": {
-                "type": "str"
-              }
-            }
-          },
-          "otherapplication": {
-            "options": {
-              "optionA": {
-                "type": "int",
-                "required": true
-              }
-            }
-          }
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "luks": {
+               "options": {
+                 "totp": {
+                   "slot": {"type": "int"},
+                   "partition": {"type": "str"}
+                 }
+               }
+             },
+             "ssh": {
+               "options": {
+                 "sshkey": {
+                   "user": {"type": "str"}
+                 }
+               }
+             }
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
+
+    :status 200: applications dict in ``result.value``.
     """
     res = get_application_types()
     g.audit_object.log({"success": True})

@@ -18,11 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { MockDocumentationService } from "@testing/mock-services/mock-documentation-service";
 import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
-import { FormsModule } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { DocumentationService } from "../../../../../../../services/documentation/documentation.service";
-import { MockDocumentationService } from "src/testing/mock-services/mock-documentation-service";
 
 describe("PolicyDescriptionEditComponent", () => {
   let component: PolicyDescriptionEditComponent;
@@ -31,7 +29,7 @@ describe("PolicyDescriptionEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyDescriptionEditComponent, FormsModule, NoopAnimationsModule],
+      imports: [PolicyDescriptionEditComponent],
       providers: [{ provide: DocumentationService, useClass: MockDocumentationService }]
     }).compileComponents();
 

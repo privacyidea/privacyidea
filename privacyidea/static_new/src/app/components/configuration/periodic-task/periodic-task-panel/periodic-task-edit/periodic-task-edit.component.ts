@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,6 +20,7 @@
 import {
   Component,
   computed,
+  effect,
   EventEmitter,
   inject,
   input,
@@ -30,6 +31,16 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
+import { form, FormField, pattern, required } from "@angular/forms/signals";
+import { MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import {
   EMPTY_PERIODIC_TASK,
   EMPTY_PERIODIC_TASK_OPTION,
@@ -38,38 +49,33 @@ import {
   PeriodicTaskModule,
   PeriodicTaskOption,
   PeriodicTaskService
-} from "../../../../../services/periodic-task/periodic-task.service";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
-import { FormsModule } from "@angular/forms";
-import { SystemService } from "../../../../../services/system/system.service";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
+} from "@services/periodic-task/periodic-task.service";
+import { SystemService } from "@services/system/system.service";
+import { deepCopy } from "@utils/deep-copy.utils";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail/periodic-task-option-detail.component";
-import { MatTooltip } from "@angular/material/tooltip";
-import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } from "@angular/material/expansion";
 
 @Component({
   selector: "app-periodic-task-edit",
   imports: [
     MatFormField,
     MatInput,
-    FormsModule,
     MatOption,
     MatSelect,
     MatLabel,
     MatCheckbox,
     MatHint,
+    MatError,
     MatIcon,
     MatIconButton,
     PeriodicTaskOptionDetailComponent,
     MatTooltip,
     MatExpansionPanel,
     MatExpansionPanelTitle,
-    MatExpansionPanelHeader
+    MatExpansionPanelHeader,
+    FormField,
+    ClearableInputComponent
+
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
@@ -89,9 +95,25 @@ export class PeriodicTaskEditComponent {
 
   @ViewChild(PeriodicTaskOptionDetailComponent) optionDetailComponent!: PeriodicTaskOptionDetailComponent;
 
-  editTask = linkedSignal(() => this.task());
+  editTask = linkedSignal(() => deepCopy(this.task()));
+  editTaskForm = form(this.editTask, (f) => {
+    required(f.name);
+    pattern(f.name, /^[a-zA-Z0-9._-]*$/);
+  });
+
+  constructor() {
+    effect(() => {
+      this.editTaskForm().value();
+      this.emitAllowSave();
+    });
+  }
+
   newOptionValues: WritableSignal<Record<string, string>> = signal({});
   editOption = signal("");
+
+  updateNewOptionValue(option: string, value: string): void {
+    this.newOptionValues.set({ ...this.newOptionValues(), [option]: value });
+  }
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;
@@ -99,13 +121,11 @@ export class PeriodicTaskEditComponent {
   // Add this computed signal for required options
   requiredOptions = computed(() => {
     const options = this.taskModuleOptions() || {};
-    return Object.fromEntries(
-      Object.entries(options).filter(([_, opt]) => opt.required)
-    );
+    return Object.fromEntries(Object.entries(options).filter(([_, opt]) => opt.required));
   });
 
   get allowSave() {
-    if (this.editTask().name === "") return false;
+    if (this.editTask().name === "" || !/^[a-zA-Z0-9._-]*$/.test(this.editTask().name)) return false;
     if (this.editTask().taskmodule === "") return false;
     if (this.editTask().interval === "") return false;
     if (this.editTask().nodes.length === 0) return false;
@@ -124,13 +144,10 @@ export class PeriodicTaskEditComponent {
   }
 
   notUsedOptions: Signal<Record<string, PeriodicTaskOption>> = computed(() => {
-      const allOptions = this.taskModuleOptions() || {};
-      const usedOptionKeys = Object.keys(this.editTask().options || {});
-      return Object.fromEntries(
-        Object.entries(allOptions)
-          .filter(([key]) => !usedOptionKeys.includes(key)));
-    }
-  );
+    const allOptions = this.taskModuleOptions() || {};
+    const usedOptionKeys = Object.keys(this.editTask().options || {});
+    return Object.fromEntries(Object.entries(allOptions).filter(([key]) => !usedOptionKeys.includes(key)));
+  });
 
   selectedOption = linkedSignal(() => {
     if (Object.keys(this.editTask().options).length > 0) {

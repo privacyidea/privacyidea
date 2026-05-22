@@ -16,34 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
+
 import {
-  AfterViewInit,
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   Injectable,
   linkedSignal,
   OnDestroy,
-  Renderer2,
+  OnInit,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn,
-  Validators
-} from "@angular/forms";
+import { form, FormField, validate, ValidationError } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatButton, MatIconButton } from "@angular/material/button";
 import {
   DateAdapter,
   MAT_DATE_FORMATS,
@@ -59,64 +47,42 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
   TokenServiceInterface,
   TokenType
-} from "../../../services/token/token.service";
-import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
-import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
-import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "./enroll-email/enroll-email.component";
-import { EnrollFoureyesComponent } from "./enroll-foureyes/enroll-foureyes.component";
-import { EnrollHotpComponent } from "./enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "./enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollMotpComponent } from "./enroll-motp/enroll-motp.component";
-import { EnrollPaperComponent } from "./enroll-paper/enroll-paper.component";
-import { EnrollPasskeyComponent } from "./enroll-passkey/enroll-passkey.component";
-import { EnrollPushComponent } from "./enroll-push/enroll-push.component";
-import { EnrollQuestionComponent } from "./enroll-questionnaire/enroll-question.component";
-import { EnrollRadiusComponent } from "./enroll-radius/enroll-radius.component";
-import { EnrollRegistrationComponent } from "./enroll-registration/enroll-registration.component";
-import { EnrollRemoteComponent } from "./enroll-remote/enroll-remote.component";
-import { EnrollSmsComponent } from "./enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "./enroll-spass/enroll-spass.component";
-import { EnrollSshkeyComponent } from "./enroll-sshkey/enroll-sshkey.component";
-import { EnrollTanComponent } from "./enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "./enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "./enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "./enroll-u2f/enroll-u2f.component";
-import { EnrollVascoComponent } from "./enroll-vasco/enroll-vasco.component";
-import { EnrollWebauthnComponent } from "./enroll-webauthn/enroll-webauthn.component";
-import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
-import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
+} from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { lastValueFrom, Observable } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
-import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment/token-verify-enrollment.component";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
+import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -131,14 +97,6 @@ export type OnEnrollmentResponseFn = (
   enrollmentResponse: EnrollmentResponse,
   enrollmentData: TokenEnrollmentData
 ) => Promise<EnrollmentResponse | null>;
-
-export const CUSTOM_TOOLTIP_OPTIONS: MatTooltipDefaultOptions = {
-  showDelay: 500,
-  touchLongPressShowDelay: 500,
-  hideDelay: 0,
-  touchendHideDelay: 0,
-  disableTooltipInteractivity: true
-};
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -189,10 +147,8 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatFormField,
     MatSelect,
     MatOption,
-    ReactiveFormsModule,
-    FormsModule,
+    FormField,
     MatHint,
-    EnrollHotpComponent,
     MatInput,
     MatLabel,
     MatAutocomplete,
@@ -204,40 +160,14 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatNativeDateModule,
     MatDatepickerModule,
     MatSuffix,
-    MatButton,
-    MatIcon,
-    EnrollTotpComponent,
-    MatIconButton,
-    EnrollSpassComponent,
-    EnrollMotpComponent,
-    NgClass,
-    EnrollSshkeyComponent,
-    EnrollYubikeyComponent,
-    EnrollRemoteComponent,
-    EnrollYubicoComponent,
-    EnrollRadiusComponent,
-    EnrollSmsComponent,
-    EnrollFoureyesComponent,
-    EnrollApplspecComponent,
-    EnrollDaypasswordComponent,
-    EnrollCertificateComponent,
-    EnrollEmailComponent,
-    EnrollIndexedsecretComponent,
-    EnrollPaperComponent,
-    EnrollPushComponent,
-    EnrollQuestionComponent,
-    EnrollRegistrationComponent,
-    EnrollTanComponent,
-    EnrollTiqrComponent,
-    EnrollU2fComponent,
-    EnrollVascoComponent,
-    EnrollWebauthnComponent,
-    MatError,
-    EnrollPasskeyComponent,
     MatTooltipModule,
     ClearableInputComponent,
     ScrollToTopDirective,
-    UserAssignmentComponent
+    UserAssignmentComponent,
+    EnrollTokenTypeSwitchComponent,
+    EnrollmentPinComponent,
+    MatError,
+    TokenEnrollmentTypeSelectorComponent
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -249,7 +179,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
   styleUrls: ["./token-enrollment.component.scss"],
   standalone: true
 })
-export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
+export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -258,10 +188,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  private observer!: IntersectionObserver;
   timezoneOptions = TIMEZONE_OFFSETS;
   enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -274,9 +203,6 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   });
   serial = signal<string | null>(null);
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
   enrollmentArgsGetter?: enrollmentArgsGetterFn;
@@ -285,46 +211,49 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     computation: () => undefined
   });
 
-  additionalFormFields: WritableSignal<{
-    [key: string]: FormControl<any>;
-  }> = signal({});
-
   onEnrollmentResponse = linkedSignal<TokenType, OnEnrollmentResponseFn | undefined>({
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });
 
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
-  descriptionControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.maxLength(80)]
-  });
 
   descriptionRequired = computed(() => {
     const selectedTokenType = this.tokenService.selectedTokenType();
     return this.authService.requireDescription().includes(selectedTokenType.key);
   });
 
-  setPinControl = new FormControl<string>("", { nonNullable: true });
-  repeatPinControl = new FormControl<string>("", { nonNullable: true });
-  selectedContainerControl = new FormControl(this.containerService.selectedContainer(), { nonNullable: true });
-  selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
-    nonNullable: true
+  isUserRequired = computed(() =>
+    ["tiqr", "webauthn", "passkey", "certificate"].includes(this.tokenService.selectedTokenType()?.key ?? "")
+  );
+
+  description = signal<string>("");
+  setPin = signal<string>("");
+  repeatPin = signal<string>("");
+  selectedContainer = signal<string>(this.containerService.selectedContainerSerial() ?? "");
+  selectedTimezoneOffset = signal<string>("+00:00");
+  selectedStartDate = signal<Date | null>(null);
+  selectedStartTime = signal<string>("00:00");
+  selectedEndDate = signal<Date | null>(null);
+  selectedEndTime = signal<string>("23:59");
+  isDirty = signal<boolean>(false);
+
+  descriptionForm = form(this.description, (f) => {
+    validate(f, (ctx) => {
+      const v = ctx.value();
+      const errors: ValidationError[] = [];
+      if (this.descriptionRequired() && !v.trim()) errors.push({ kind: "required" });
+      if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: "maxlength" });
+      return errors;
+    });
   });
-  selectedStartDateControl = new FormControl<Date | null>(null, {
-    nonNullable: false
+
+  setPinForm = form(this.setPin);
+  repeatPinForm = form(this.repeatPin, (f) => {
+    validate(f, (ctx) => (ctx.value() !== this.setPin() ? [{ kind: "pinMismatch" }] : []));
   });
-  selectedStartTimeControl = new FormControl<string>("00:00", {
-    nonNullable: false
-  });
-  selectedEndDateControl = new FormControl<Date | null>(null, {
-    nonNullable: false
-  });
-  selectedEndTimeControl = new FormControl<string>("23:59", {
-    nonNullable: false
-  });
-  selectedUserRealmControl = new FormControl<string>("", { nonNullable: true });
-  userFilterControl = new FormControl<string | UserData | null>("", { nonNullable: true });
+
+  isFormInvalid = computed(() => !this.descriptionForm().valid() || !this.repeatPinForm().valid());
 
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -332,73 +261,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   });
   canReopenEnrollmentDialog = computed(() => !!this.reopenDialog() || !!this.enrolledDialogData());
 
-  isUserRequired = computed(() =>
-    ["tiqr", "webauthn", "passkey", "certificate"].includes(this.tokenService.selectedTokenType()?.key ?? "")
-  );
-
-  userExistsValidator: ValidatorFn = (control: AbstractControl<string | UserData | null>): ValidationErrors | null => {
-    const value = control.value;
-    // logged-in users always exist, no need for an additional check (and also not possible)
-    if (typeof value === "string" && value !== "" && this.authService.role() == "admin") {
-      const users = this.userService.users();
-      const userFound = users.some((user) => user.username === value);
-      return userFound ? null : { userNotInRealm: { value: value } };
-    }
-
-    return null;
-  };
-
-  formGroupSignal: WritableSignal<FormGroup> = linkedSignal({
-    source: () => ({
-      additionalFormFields: this.additionalFormFields(),
-      selectedUser: this.userService.selectedUser(),
-      selectedTokenType: this.tokenService.selectedTokenType()
-    }),
-    computation: (source, _previous) => {
-      const { additionalFormFields } = source;
-
-      this.selectedUserRealmControl.setValidators(this.isUserRequired() ? [Validators.required] : []);
-
-      this.userFilterControl.setValidators(
-        this.authService.role() == "user"
-          ? []
-          : this.isUserRequired()
-            ? [Validators.required, this.userExistsValidator]
-            : [this.userExistsValidator]
-      );
-
-      return new FormGroup(
-        {
-          description: this.descriptionControl,
-          selectedUserRealm: this.selectedUserRealmControl,
-          userFilter: this.userFilterControl,
-          setPin: this.setPinControl,
-          repeatPin: this.repeatPinControl,
-          selectedContainer: this.selectedContainerControl,
-          selectedStartDate: this.selectedStartDateControl,
-          selectedStartTime: this.selectedStartTimeControl,
-          selectedTimezoneOffset: this.selectedTimezoneOffsetControl,
-          selectedEndDate: this.selectedEndDateControl,
-          selectedEndTime: this.selectedEndTimeControl,
-          ...additionalFormFields
-        },
-        { validators: TokenEnrollmentComponent.pinMismatchValidator }
-      );
-    }
-  });
-
   protected wizard = false;
 
   constructor() {
     effect(() => {
-      this.setDescriptionValidators();
+      this.containerService.selectedContainerSerial.set(this.selectedContainer());
     });
-  }
-
-  static pinMismatchValidator(group: AbstractControl): { [key: string]: boolean } | null {
-    const setPin = group.get("setPin");
-    const repeatPin = group.get("repeatPin");
-    return setPin && repeatPin && setPin.value !== repeatPin.value ? { pinMismatch: true } : null;
   }
 
   updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
@@ -409,68 +277,26 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.reopenDialog.set(event);
   }
 
-  updateAdditionalFormFields(event: { [key: string]: FormControl<any> | undefined | null }): void {
-    const validControls: { [key: string]: FormControl<any> } = {};
-    for (const key in event) {
-      if (event.hasOwnProperty(key) && event[key] instanceof FormControl) {
-        validControls[key] = event[key];
-      } else {
-        console.warn(`Ignoring invalid form control for key "${key}" emitted by child component.`);
-      }
-    }
-    this.additionalFormFields.set(validControls);
-  }
-
   updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
     this.onEnrollmentResponse.set(event);
   }
 
-  setDescriptionValidators(): void {
-    const isRequired = this.descriptionRequired();
-    const currentValidators = [Validators.maxLength(80)];
-    if (isRequired) {
-      currentValidators.push(Validators.required);
-    }
-    this.descriptionControl.setValidators(currentValidators);
-    this.descriptionControl.updateValueAndValidity();
-  }
-
   ngOnInit(): void {
-    this.selectedContainerControl.valueChanges.subscribe((value) =>
-      this.containerService.selectedContainer.set(value ?? "")
+    this.pendingChangesService.registerHasChanges(
+      () => this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
     );
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
+    this.pendingChangesService.registerValidChanges(
+      () =>
+        !!this.tokenService.selectedTokenType()?.key &&
+        !this.isFormInvalid() &&
+        (!this.isUserRequired() || !!this.userService.selectedUser())
+    );
+    this.pendingChangesService.registerSave(() => this.enrollToken());
   }
 
   ngOnDestroy(): void {
     this.containerService.compatibleWithSelectedTokenType.set(null);
-    if (this.observer) {
-      this.observer.disconnect();
-    }
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   formatDateTimeOffset(date: Date, time: string, offset: string): string {
@@ -497,9 +323,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   async reopenEnrollmentDialog() {
     const reopenFunction = this.reopenDialog();
     if (reopenFunction) {
-      let enrollPromise = this._toPromise(reopenFunction());
+      const enrollPromise = this._toPromise(reopenFunction());
       if (!enrollPromise) return;
-      let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+      const enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
       this.enrollResponse.set(enrollmentResponse);
       if (enrollmentResponse) {
         this._handleEnrollmentResponse(enrollmentResponse);
@@ -511,12 +337,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  async enrollToken(): Promise<void> {
+  async enrollToken(): Promise<boolean> {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.openSnackBar("Please select a token type.");
-      return;
+      this.notificationService.warning("Please select a token type.");
+      return false;
     }
 
     const user = this.userService.selectedUser();
@@ -524,60 +350,61 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       everythingIsValid = false;
     }
 
-    if (this.formGroupSignal().invalid) {
-      this.formGroupSignal().markAllAsTouched();
+    if (this.isFormInvalid()) {
+      this.descriptionForm().markAsTouched();
+      this.repeatPinForm().markAsTouched();
       everythingIsValid = false;
     }
 
     if (!everythingIsValid) {
-      this.notificationService.openSnackBar("Please fill in all required fields or correct invalid entries.");
-      return;
+      this.notificationService.warning("Please fill in all required fields or correct invalid entries.");
+      return false;
     }
 
     if (!this.enrollmentArgsGetter) {
-      this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
-      return;
+      this.notificationService.warning("Enrollment action is not available for the selected token type.");
+      return false;
     }
 
     let validityPeriodStart = "";
-    if (this.selectedStartDateControl.value && this.selectedStartTimeControl.value) {
+    if (this.selectedStartDate() && this.selectedStartTime()) {
       validityPeriodStart = this.formatDateTimeOffset(
-        this.selectedStartDateControl.value,
-        this.selectedStartTimeControl.value ?? "00:00",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+        this.selectedStartDate()!,
+        this.selectedStartTime() ?? "00:00",
+        this.selectedTimezoneOffset() ?? "+00:00"
       );
     }
     let validityPeriodEnd = "";
-    if (this.selectedEndDateControl.value && this.selectedEndTimeControl.value) {
+    if (this.selectedEndDate() && this.selectedEndTime()) {
       validityPeriodEnd = this.formatDateTimeOffset(
-        this.selectedEndDateControl.value,
-        this.selectedEndTimeControl.value ?? "23:59",
-        this.selectedTimezoneOffsetControl.value ?? "+00:00"
+        this.selectedEndDate()!,
+        this.selectedEndTime() ?? "23:59",
+        this.selectedTimezoneOffset() ?? "+00:00"
       );
     }
 
     const basicOptions: TokenEnrollmentData = {
       type: currentTokenType.key,
-      description: this.descriptionControl.value.trim(),
-      containerSerial: this.selectedContainerControl.value?.trim() ?? "",
+      description: this.description().trim(),
+      containerSerial: this.selectedContainer().trim(),
       validityPeriodStart: validityPeriodStart,
       validityPeriodEnd: validityPeriodEnd,
       user: user?.username ?? "",
-      realm: this.selectedUserRealmControl.value ?? "",
+      realm: this.userService.selectedUserRealm() ?? "",
       onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
-      pin: this.setPinControl.value ?? "",
+      pin: this.setPin() ?? "",
       serial: this.serial()
     };
 
     const enrollmentArgs: EnrollTokenArguments | null = this.enrollmentArgsGetter(basicOptions);
-    if (!enrollmentArgs) return;
+    if (!enrollmentArgs) return false;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
-    let enrollPromise = this._toPromise(enrollResponse);
+    const enrollPromise = this._toPromise(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -599,6 +426,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
+    return true;
   }
 
   handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
@@ -618,7 +446,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       component: TokenCompleteEnrollmentComponent,
       data: this.enrolledDialogData()
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.enrollResponse.set(result);
         this.enrolledDialogData.set({
@@ -649,7 +477,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       component: TokenVerifyEnrollmentComponent,
       data: this.enrolledDialogData()
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.enrollResponse.set(result);
         this._handleEnrollmentResponse(result);
@@ -657,9 +485,13 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  protected trackChange(): void {
+    this.isDirty.set(true);
+  }
+
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
+      this.notificationService.warning("No enrollment response available.");
       return;
     }
 
@@ -683,7 +515,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.openSnackBar("User is required for this token type, but no user was provided.");
+      this.notificationService.warning("User is required for this token type, but no user was provided.");
       return;
     }
 

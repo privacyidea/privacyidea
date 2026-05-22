@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,12 +18,13 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollRadiusComponent } from "./enroll-radius.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { SystemService } from "../../../../services/system/system.service";
-import { MockSystemService } from "../../../../../testing/mock-services";
+import { SystemService } from "@services/system/system.service";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService, MockContentService} from "@testing/mock-services";
+import { EnrollRadiusComponent } from "./enroll-radius.component";
+import { ContentService } from "@services/content/content.service";
 
 describe("EnrollRadiusComponent", () => {
   let component: EnrollRadiusComponent;
@@ -31,9 +32,14 @@ describe("EnrollRadiusComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollRadiusComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        {provide: SystemService, useClass: MockSystemService}]
+      imports: [EnrollRadiusComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollRadiusComponent);

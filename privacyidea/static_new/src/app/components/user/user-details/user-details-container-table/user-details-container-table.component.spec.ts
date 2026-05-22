@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,22 +17,25 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
-import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { UserService } from "@services/user/user.service";
 import {
+  MockAuthService,
   MockContainerService,
+  MockContentService,
   MockLoadingService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService,
   MockUserService
-} from "../../../../../testing/mock-services";
-import { ContainerService } from "../../../../services/container/container.service";
-import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { UserService } from "../../../../services/user/user.service";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+} from "@testing/mock-services";
+import { UserDetailsContainerTableComponent } from "./user-details-container-table.component";
 
 describe("UserDetailsContainerTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsContainerTableComponent>;
@@ -46,12 +49,14 @@ describe("UserDetailsContainerTableComponent", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [UserDetailsContainerTableComponent, BrowserAnimationsModule],
+      imports: [UserDetailsContainerTableComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: ContainerService, useClass: MockContainerService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: UserService, useClass: MockUserService },
         MockLocalService,
         MockNotificationService,

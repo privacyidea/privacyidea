@@ -8,7 +8,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_object
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from .base import MyApiTestCase
 
 PWFILE = "tests/testdata/passwd"
@@ -641,7 +641,7 @@ class APIUsersTestCase(MyApiTestCase):
                                            method="POST",
                                            data={"user": "hans",
                                                  "realm": self.realm1,
-                                                 "key": f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp",
+                                                 "key": f"{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp",
                                                  "value": "push"},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
@@ -655,10 +655,10 @@ class APIUsersTestCase(MyApiTestCase):
         user = User("hans", self.realm1)
         # Seed a legacy/orphaned internal-prefix row in customuserattribute to verify the admin
         # API can still delete such entries (the prefix is now reserved but old rows may exist).
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push")
+        user.set_attribute(f"{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push")
         # Delete internal attribute is allowed
         with self.app.test_request_context(
-                f"/user/attribute/{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp/hans/{self.realm1}",
+                f"/user/attribute/{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp/hans/{self.realm1}",
                 method="DELETE",
                 data={},
                 headers={"Authorization": self.at}):
@@ -739,6 +739,33 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual("value2", user.get("custom2"))
             self.assertEqual("value3", user.get("custom3"))
 
+        # Do not get custom attributes if explicitly disabled
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode({"username": "cornelius", "realm": self.realm1,
+                                                                   "include_custom_attributes": False}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
+                                   "description", "resolver", "editable", "realm"}
+            self.assertSetEqual(expected_attributes, set(user.keys()))
+            self.assertEqual("1000", user.get("userid"))
+            self.assertEqual("cornelius", user.get("username"))
+            self.assertEqual("", user.get("surname"))
+            self.assertEqual("Cornelius", user.get("givenname"))
+            self.assertEqual("user@localhost.localdomain", user.get("email"))
+            self.assertEqual("+491234566", user.get("phone"))
+            self.assertEqual("+491111111", user.get("mobile"))
+            self.assertEqual("Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
+                             user.get("description"))
+            self.assertEqual(self.resolvername1, user.get("resolver"))
+            self.assertEqual(False, user.get("editable"))
+
         # Request specific attributes (without custom attributes)
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -785,6 +812,23 @@ class APIUsersTestCase(MyApiTestCase):
             # realm is only added when explicitly requested
             expected_user = {"username": "cornelius", "email": "user@localhost.localdomain", "custom1": "value1",
                              "custom2": "value2"}
+            self.assertDictEqual(expected_user, user)
+
+        # Request specific attributes with custom attributes in attributes list, but disable custom_attributes retrieval
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode(
+                                               {"username": "cornelius", "realm": self.realm1,
+                                                "attributes": "username,email,custom2,custom1",
+                                                "include_custom_attributes": False}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            expected_user = {"username": "cornelius", "email": "user@localhost.localdomain"}
             self.assertDictEqual(expected_user, user)
 
         # Clean up

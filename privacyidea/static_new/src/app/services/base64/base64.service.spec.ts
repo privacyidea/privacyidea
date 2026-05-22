@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -91,9 +91,7 @@ describe("Base64Service", () => {
   it("round-trips bytes → Base64 → bytes losslessly", () => {
     const original = new Uint8Array([9, 8, 7, 6, 5, 4, 3, 2, 1]);
     const b64 = service.bytesToBase64(original);
-    const decoded = service.base64URLToBytes(
-      b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
-    );
+    const decoded = service.base64URLToBytes(b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""));
     expect(decoded).toEqual(original);
   });
 

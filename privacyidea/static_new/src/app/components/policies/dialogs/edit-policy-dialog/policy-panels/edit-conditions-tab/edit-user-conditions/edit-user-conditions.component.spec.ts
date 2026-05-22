@@ -18,15 +18,13 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockRealmService } from "../../../../../../../../testing/mock-services";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { MockResolverService } from "../../../../../../../../testing/mock-services/mock-resolver-service";
-import { PolicyService } from "../../../../../../../services/policies/policies.service";
-import { RealmService } from "../../../../../../../services/realm/realm.service";
-import { ResolverService } from "../../../../../../../services/resolver/resolver.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockRealmService } from "@testing/mock-services";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EditUserConditionsComponent } from "./edit-user-conditions.component";
-import { ReactiveFormsModule } from "@angular/forms";
 
 describe("EditUserConditionsComponent", () => {
   let component: EditUserConditionsComponent;
@@ -34,7 +32,7 @@ describe("EditUserConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditUserConditionsComponent, NoopAnimationsModule, ReactiveFormsModule],
+      imports: [EditUserConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },
@@ -80,8 +78,8 @@ describe("EditUserConditionsComponent", () => {
   });
 
   it("should validate that user does not contain commas", () => {
-    component.userFormControl.setValue("user,name");
-    expect(component.userFormControl.invalid).toBe(true);
-    expect(component.userFormControl.hasError("includesComma")).toBe(true);
+    component.userSignal.set("user,name");
+    expect(component.userField().valid()).toBe(false);
+    expect(component.userField().errors().some((e) => e.kind === "includesComma")).toBe(true);
   });
 });

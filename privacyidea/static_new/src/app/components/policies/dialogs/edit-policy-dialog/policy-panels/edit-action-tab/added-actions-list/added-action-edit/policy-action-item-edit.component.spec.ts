@@ -17,15 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
-import { PolicyService, PolicyActionDetail } from "../../../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { FormsModule } from "@angular/forms";
-import { By } from "@angular/platform-browser";
-import { Component, input, output } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { Component, input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
 
 @Component({
   selector: "app-selector-buttons",
@@ -52,12 +50,12 @@ describe("PolicyActionItemEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyActionItemEditComponent, FormsModule, CommonModule],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+      imports: [PolicyActionItemEditComponent, CommonModule],
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(PolicyActionItemEditComponent, {
         set: {
-          imports: [CommonModule, FormsModule, MockSelectorButtonsComponent]
+          imports: [CommonModule, MockSelectorButtonsComponent]
         }
       })
       .compileComponents();
@@ -85,7 +83,8 @@ describe("PolicyActionItemEditComponent", () => {
   });
 
   it("should identify boolean actions correctly", () => {
-    jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "bool", desc: "" });
+    fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "" });
+    fixture.detectChanges();
     expect(component.isBooleanAction("test_action")).toBe(true);
   });
 

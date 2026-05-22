@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -38,17 +38,17 @@ describe("ClearableInputComponent", () => {
   });
 
   it("should have showClearButton as true by default", () => {
-    expect(component.showClearButton).toBe(true);
+    expect(component.showClearButton()).toBe(true);
   });
 
-  it("should emit onClick event when clearInput is called", () => {
-    jest.spyOn(component.onClick, "emit");
+  it("should emit clearButtonClick event when clearInput is called", () => {
+    jest.spyOn(component.clearButtonClick, "emit");
     component.clearInput();
-    expect(component.onClick.emit).toHaveBeenCalled();
+    expect(component.clearButtonClick.emit).toHaveBeenCalled();
   });
 
   it("should allow showClearButton to be set to false", () => {
-    component.showClearButton = false;
-    expect(component.showClearButton).toBe(false);
+    fixture.componentRef.setInput("showClearButton", false);
+    expect(component.showClearButton()).toBe(false);
   });
 });

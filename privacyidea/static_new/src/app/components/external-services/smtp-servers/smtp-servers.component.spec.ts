@@ -16,18 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SmtpServersComponent } from "./smtp-servers.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { SmtpService } from "../../../services/smtp/smtp.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Router, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { MockDialogService } from "../../../../testing/mock-services";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;
@@ -35,6 +38,7 @@ describe("SmtpServersComponent", () => {
   let smtpServiceMock: any;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
+  let router: Router;
 
   beforeEach(async () => {
     smtpServiceMock = {
@@ -46,24 +50,22 @@ describe("SmtpServersComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [SmtpServersComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [SmtpServersComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: SmtpService, useValue: smtpServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
-    })
-      .overrideComponent(SmtpServersComponent, {
-        add: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SmtpServersComponent);
-
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -87,11 +89,15 @@ describe("SmtpServersComponent", () => {
     expect(component.smtpDataSource().filter).toBe("server1");
   });
 
-  it("should open edit dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
+  it("should navigate to create page", () => {
+    component.onCreateNewServer();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW);
+  });
+
+  it("should navigate to edit page when editing a server", () => {
     const server = smtpServiceMock.smtpServers()[0];
-    component.openEditDialog(server);
-    expect(dialog.open).toHaveBeenCalled();
+    component.onEditServer(server);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   });
 
   it("should delete server after confirmation", async () => {

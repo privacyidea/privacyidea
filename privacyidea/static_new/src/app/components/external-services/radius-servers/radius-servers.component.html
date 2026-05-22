@@ -26,7 +26,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Filter RADIUS Servers...</mat-label>
       <app-clearable-input
-        (onClick)="resetFilter()"
+        (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
         <input
           #filterHTMLInputElement
@@ -47,7 +47,7 @@
   </div>
   <div class="actions-container">
     <button
-      (click)="openEditDialog()"
+      (click)="onCreateNewServer()"
       class="action-button-primary button-width-l"
       i18n
       mat-stroked-button>
@@ -71,14 +71,13 @@
       <td
         *matCellDef="let server"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="server.identifier">
           <a
-            (click)="openEditDialog(server)"
+            (click)="onEditServer(server)"
             class="flex ali-center">
             {{ server.identifier }}
           </a>
-          <app-copy-button [copyText]="server.identifier" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 

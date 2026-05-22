@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, HostListener, inject, OnInit } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
@@ -103,7 +102,7 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [RouterOutlet, FormsModule],
+  imports: [RouterOutlet],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.scss"
 })
@@ -118,7 +117,7 @@ export class AppComponent implements OnInit {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     }
 
     const _welcomeInit = inject(WelcomeDialogService);

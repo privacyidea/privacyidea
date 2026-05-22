@@ -46,12 +46,10 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Yubikey Identifier</mat-label>
       <input
-        [errorStateMatcher]="yubicoErrorStatematcher"
-        [formControl]="yubikeyIdentifierControl"
+        [formField]="yubicoIdentifierForm"
         i18n-placeholder
         matInput
-        placeholder="Enter the 12 digit identifier"
-        required />
+        placeholder="Enter the 12 digit identifier" />
       <mat-error i18n>Yubikey identifier with 12 digits is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>

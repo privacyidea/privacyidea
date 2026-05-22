@@ -1,0 +1,6 @@
+@use "styles";
+@use "buttons";
+
+.edit-template-layout {
+  @include styles.main-component-style;
+}

@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { WritableSignal, signal } from "@angular/core";
-import { MatTableDataSource } from "@angular/material/table";
 import { Sort } from "@angular/material/sort";
-import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "../../app/services/table-utils/table-utils.service";
-import { ContainerDetailToken } from "../../app/services/container/container.service";
-import { TokenApplication } from "../../app/services/machine/machine.service";
+import { MatTableDataSource } from "@angular/material/table";
+import { ContainerDetailToken } from "@services/container/container.service";
+import { TokenApplication } from "@services/machine/machine.service";
+import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);

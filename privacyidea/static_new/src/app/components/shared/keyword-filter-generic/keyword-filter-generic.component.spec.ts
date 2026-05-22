@@ -18,10 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { KeywordFilterGenericComponent } from "./keyword-filter-generic.component";
-import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter-value-generic";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 
 describe("KeywordFilterGenericComponent", () => {
   let component: KeywordFilterGenericComponent<any>;
@@ -50,7 +49,7 @@ describe("KeywordFilterGenericComponent", () => {
     mockInput = document.createElement("input");
 
     await TestBed.configureTestingModule({
-      imports: [KeywordFilterGenericComponent, NoopAnimationsModule]
+      imports: [KeywordFilterGenericComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(KeywordFilterGenericComponent);

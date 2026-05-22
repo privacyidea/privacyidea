@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,22 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { RealmService, RealmServiceInterface } from "../realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { PiResponse } from "../../app.component";
-import { environment } from "../../../environments/environment";
-import { ROUTE_PATHS } from "../../route_paths";
-import { StringUtils } from "../../utils/string.utils";
-import { Observable, of } from "rxjs";
 import { Router } from "@angular/router";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { NotificationService } from "@services/notification/notification.service";
+import { StringUtils } from "@utils/string.utils";
+import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
-import { NotificationService } from "../notification/notification.service";
 
 const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
 const advancedApiFilter: string[] = [];
@@ -119,9 +119,7 @@ export interface UserServiceInterface {
   displayUser(user: UserData | string): string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class UserService implements UserServiceInterface {
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -235,7 +233,7 @@ export class UserService implements UserServiceInterface {
 
   apiUserFilter = signal(new FilterValue());
 
-  pageSize = linkedSignal(() => this.authService.userPageSize() > 0 ? this.authService.userPageSize() : 10);
+  pageSize = linkedSignal(() => (this.authService.userPageSize() > 0 ? this.authService.userPageSize() : 10));
 
   pageIndex = linkedSignal({
     source: () => ({
@@ -283,8 +281,8 @@ export class UserService implements UserServiceInterface {
     }
   });
 
-  selectionFilter = linkedSignal<string, UserData | string>({
-    source: this.selectedUserRealm,
+  selectionFilter = linkedSignal<{ realm: string; routeUrl: string }, UserData | string>({
+    source: () => ({ realm: this.selectedUserRealm(), routeUrl: this.contentService.routeUrl() }),
     computation: () => ""
   });
 
@@ -320,9 +318,11 @@ export class UserService implements UserServiceInterface {
   user: WritableSignal<UserData> = linkedSignal({
     source: () => ({
       userRes: this.userResource.hasValue() ? this.userResource.value() : undefined,
+      isLoading: this.userResource.isLoading(),
+      error: this.userResource.error(),
       detailsUsername: this.detailsUsername()
     }),
-    computation: (source) => {
+    computation: (source, previous) => {
       const emptyDetails: UserData = {
         description: "",
         editable: false,
@@ -335,7 +335,14 @@ export class UserService implements UserServiceInterface {
         userid: "",
         username: ""
       };
-      return source.userRes?.result?.value?.[0] ?? emptyDetails;
+      if (source.error) return emptyDetails;
+      const value = source.userRes?.result?.value?.[0];
+      if (!value) {
+        if (!source.isLoading) return emptyDetails;
+        if (source.detailsUsername !== previous?.source.detailsUsername) return emptyDetails;
+        return previous?.value ?? emptyDetails;
+      }
+      return value;
     }
   });
 
@@ -353,10 +360,10 @@ export class UserService implements UserServiceInterface {
     // Only load users on routes with a user list or selection.
     const onAllowedRoute =
       this.contentService.onTokenDetails() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onTokens() ||
       this.contentService.onUsers() ||
-      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onContainersCreate() ||
       this.contentService.onTokensEnrollment();
 
     if (!onAllowedRoute) {
@@ -374,6 +381,7 @@ export class UserService implements UserServiceInterface {
       params: {
         realm: selectedUserRealm,
         attributes: "username,userid,givenname,surname,email,phone,mobile,description,resolver,editable",
+        include_custom_attributes: false,
         ...this.filterParams()
       }
     };
@@ -382,15 +390,19 @@ export class UserService implements UserServiceInterface {
   users: WritableSignal<UserData[]> = linkedSignal({
     source: () => ({
       userRes: this.usersResource.hasValue() ? this.usersResource.value() : undefined,
+      isLoading: this.usersResource.isLoading(),
+      error: this.usersResource.error(),
       realm: this.selectedUserRealm()
     }),
     computation: (source, previous) => {
+      if (source.error) return [];
       const users = source.userRes?.result?.value;
-      if (!users && source.realm !== previous?.source.realm) {
-        // If the realm changed we do not fall back on the previous user list
-        return [];
-      }
-      return users ?? previous?.value ?? [];
+      if (users) return users;
+      // No value: distinguish loading vs settled-without-data
+      if (!source.isLoading) return [];
+      // Loading: keep previous only if the realm did not change
+      if (source.realm !== previous?.source.realm) return [];
+      return previous?.value ?? [];
     }
   });
 
@@ -468,17 +480,19 @@ export class UserService implements UserServiceInterface {
       key,
       value
     };
-    return this.http.post<PiResponse<number>>(this.baseUrl + "attribute", null, {
-      headers: this.authService.getHeaders(),
-      params
-    }).pipe(
-      catchError((error) => {
-        console.error("Failed to set user attribute.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to set user attribute. ` + message);
-        return of(undefined as any);
+    return this.http
+      .post<PiResponse<number>>(this.baseUrl + "attribute", null, {
+        headers: this.authService.getHeaders(),
+        params
       })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to set user attribute.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error($localize`Failed to set user attribute. ` + message);
+          return of(undefined as any);
+        })
+      );
   }
 
   deleteUserAttribute(key: string) {
@@ -491,7 +505,7 @@ export class UserService implements UserServiceInterface {
       catchError((error) => {
         console.error("Failed to delete user attribute.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete user attribute. ` + message);
+        this.notificationService.error($localize`Failed to delete user attribute. ` + message);
         return of(undefined as any);
       })
     );
@@ -505,16 +519,19 @@ export class UserService implements UserServiceInterface {
       delete (payload as any)["username"];
     }
     payload["resolver"] = resolver;
-    return this.http.post<PiResponse<number>>(this.baseUrl, payload, {
-      headers: this.authService.getHeaders()
-    }).pipe(map((response) => response.result?.status || false),
-      catchError((error) => {
-        console.warn("Failed to create user", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to create user ${userData.username}. ` + message);
-        return of(false);
+    return this.http
+      .post<PiResponse<number>>(this.baseUrl, payload, {
+        headers: this.authService.getHeaders()
       })
-    );
+      .pipe(
+        map((response) => response.result?.status || false),
+        catchError((error) => {
+          console.warn("Failed to create user", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error($localize`Failed to create user ${userData.username}. ` + message);
+          return of(false);
+        })
+      );
   }
 
   editUser(resolver: string, userData: EditUserData) {
@@ -525,29 +542,27 @@ export class UserService implements UserServiceInterface {
       delete (payload as any)["username"];
     }
     payload["resolver"] = resolver;
-    return this.http.put<PiResponse<number>>(this.baseUrl, payload, { headers: this.authService.getHeaders() })
-      .pipe(
-        map((response) => response.result?.status || false),
-        catchError((error) => {
-          console.warn("Failed to update user", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Failed to update user ${userData.username}. ` + message);
-          return of(false);
-        })
-      );
+    return this.http.put<PiResponse<number>>(this.baseUrl, payload, { headers: this.authService.getHeaders() }).pipe(
+      map((response) => response.result?.status || false),
+      catchError((error) => {
+        console.warn("Failed to update user", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error($localize`Failed to update user ${userData.username}. ` + message);
+        return of(false);
+      })
+    );
   }
 
   deleteUser(resolver: string, username: string): Observable<boolean> {
     const url = this.baseUrl + encodeURIComponent(resolver) + "/" + encodeURIComponent(username);
-    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() })
-      .pipe(
-        map((response) => response.result?.status || false),
-        catchError((error) => {
-          console.warn("Failed to delete user", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Failed to delete user ${username}. ` + message);
-          return of(false);
-        })
-      );
+    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() }).pipe(
+      map((response) => response.result?.status || false),
+      catchError((error) => {
+        console.warn("Failed to delete user", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error($localize`Failed to delete user ${username}. ` + message);
+        return of(false);
+      })
+    );
   }
 }

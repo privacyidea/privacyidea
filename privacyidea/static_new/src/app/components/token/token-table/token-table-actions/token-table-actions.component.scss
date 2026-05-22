@@ -2,13 +2,10 @@
 @use "table";
 
 .flex-row {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 :host {
   display: block;
-}
-
-::ng-deep .mat-mdc-menu-content {
-  background: var(--mat-sys-surface-container-low);
 }

@@ -21,15 +21,16 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatDialogModule, MatDialog } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideRouter } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ServiceIdsComponent } from "@components/external-services/service-ids/service-ids.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { ServiceIdService } from "@services/service-id/service-id.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { MockDialogService } from "../../../../testing/mock-services";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { ServiceIdService } from "../../../services/service-id/service-id.service";
-import { ServiceIdsComponent } from "./service-ids.component";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
@@ -37,6 +38,7 @@ describe("ServiceIdsComponent", () => {
   let serviceIdServiceMock: any;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
+  let router: Router;
 
   beforeEach(async () => {
     serviceIdServiceMock = {
@@ -48,24 +50,22 @@ describe("ServiceIdsComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [ServiceIdsComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [ServiceIdsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: ServiceIdService, useValue: serviceIdServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
-    })
-      .overrideComponent(ServiceIdsComponent, {
-        add: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ServiceIdsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -88,11 +88,17 @@ describe("ServiceIdsComponent", () => {
     expect(component.serviceIdDataSource().filter).toBe("service1");
   });
 
-  it("should open edit dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
+  it("should navigate to edit page when editing a service ID", () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
-    component.openEditDialog(serviceId);
-    expect(dialog.open).toHaveBeenCalled();
+    component.onEditServiceId(serviceId);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename
+    );
+  });
+
+  it("should navigate to create page", () => {
+    component.onCreateNewServiceId();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW);
   });
 
   it("should delete service ID after confirmation", async () => {

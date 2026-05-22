@@ -18,21 +18,19 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "../../../../../constants/token.constants";
+import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
 
 @Component({
   selector: "app-sms-config",
   standalone: true,
   imports: [
-    FormsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,

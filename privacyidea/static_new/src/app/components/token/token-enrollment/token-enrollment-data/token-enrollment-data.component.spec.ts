@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TokenEnrollmentDataComponent } from "./token-enrollment-data.component";
-import { MockContentService } from "src/testing/mock-services/mock-content-service";
-import { TokenService } from "../../../../services/token/token.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { MockTokenService } from "../../../../../testing/mock-services";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import { of } from "rxjs";
-import { MockNotificationService } from "src/testing/mock-services/mock-notification-service";
-import { NotificationService } from "../../../../services/notification/notification.service";
+import { TokenEnrollmentDataComponent } from "./token-enrollment-data.component";
 
 describe("TokenEnrollmentDataComponent", () => {
   let component: TokenEnrollmentDataComponent;
@@ -70,7 +70,7 @@ describe("TokenEnrollmentDataComponent", () => {
       container_serial: "CONT123",
       googleurl: { img: "img", value: "123" }
     });
-    expect(component["qrCode"]()).toEqual(("img"));
+    expect(component["qrCode"]()).toEqual("img");
     expect(component["url"]()).toEqual("123");
   });
 
@@ -110,12 +110,14 @@ describe("TokenEnrollmentDataComponent", () => {
   });
 
   it("should call enrollToken and update enrolledData on regenerateQRCode", () => {
-    mockTokenService.enrollToken = jest.fn().mockReturnValue(of({
-      detail: {
-        serial: "SERIAL123",
-        googleurl: { img: "new_img", value: "456" }
-      }
-    }));
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        detail: {
+          serial: "SERIAL123",
+          googleurl: { img: "new_img", value: "456" }
+        }
+      })
+    );
     fixture.componentRef.setInput("enrollmentParameters", {
       data: { serial: "SERIAL123" },
       mapper: { map: jest.fn() }
@@ -131,6 +133,43 @@ describe("TokenEnrollmentDataComponent", () => {
 
   it("should open notification if no enrollmentParameters are available on regenerateQRCode", () => {
     component.regenerateQRCode();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Enrollment parameters are missing. Cannot regenerate token.");
+    expect(mockNotificationService.warning).toHaveBeenCalledWith(
+      "Enrollment parameters are missing. Cannot regenerate token."
+    );
+  });
+
+  it("uses pushurl for QR code and URL when googleurl is absent (push token)", () => {
+    fixture.componentRef.setInput("tokenType", "push");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "PUSH001",
+      pushurl: { img: "push-qr-img", value: "push://enroll-url", description: "" }
+    });
+    fixture.detectChanges();
+    expect(component["qrCode"]()).toBe("push-qr-img");
+    expect(component["url"]()).toBe("push://enroll-url");
+  });
+
+  it("hasEnrollmentData is false for NO_QR_CODE type even when otpkey img is present (indexedsecret)", () => {
+    fixture.componentRef.setInput("tokenType", "indexedsecret");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "IDX001",
+      otpkey: { img: "some-qr-img", value: "hexkey", value_b32: "BASE32KEY", description: "" }
+    });
+    fixture.detectChanges();
+    expect(component["hasEnrollmentData"]()).toBe(false);
+  });
+
+  it("hasEnrollmentData is false for spass (no QR, no otpkey, no otps)", () => {
+    fixture.componentRef.setInput("tokenType", "spass");
+    fixture.componentRef.setInput("enrolledInputData", { serial: "SPASS001" });
+    fixture.detectChanges();
+    expect(component["hasEnrollmentData"]()).toBe(false);
+  });
+
+  it("hasEnrollmentData is false for email token", () => {
+    fixture.componentRef.setInput("tokenType", "email");
+    fixture.componentRef.setInput("enrolledInputData", { serial: "EMAIL001" });
+    fixture.detectChanges();
+    expect(component["hasEnrollmentData"]()).toBe(false);
   });
 });

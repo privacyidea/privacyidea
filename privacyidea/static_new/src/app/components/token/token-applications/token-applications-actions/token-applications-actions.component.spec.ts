@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenApplicationsActionsComponent } from "./token-applications-actions.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { MachineService } from "../../../../services/machine/machine.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MachineService } from "@services/machine/machine.service";
+import { TokenApplicationsActionsComponent } from "./token-applications-actions.component";
+import { MockMachineService } from "@testing/mock-services";
 
 describe("TokenApplicationsActionsComponent", () => {
   let component: TokenApplicationsActionsComponent;
@@ -30,10 +30,11 @@ describe("TokenApplicationsActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenApplicationsActionsComponent, BrowserAnimationsModule],
+      imports: [TokenApplicationsActionsComponent],
       providers: [
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        { provide: MachineService, useClass: MockMachineService }
       ]
     }).compileComponents();
 

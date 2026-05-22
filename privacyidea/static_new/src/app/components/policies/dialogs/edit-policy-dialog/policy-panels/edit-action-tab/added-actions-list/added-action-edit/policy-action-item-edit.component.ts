@@ -17,24 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
-import { Component, input, output, computed, inject } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import {
-  PolicyActionDetail,
-  PolicyServiceInterface,
-  PolicyService
-} from "../../../../../../../../services/policies/policies.service";
-import { SelectorButtonsComponent } from "../../selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -49,7 +43,6 @@ import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/m
     MatSelectModule,
     MatFormFieldModule,
     MatAutocompleteModule,
-    FormsModule,
     MultiSelectOnlyComponent
   ],
   templateUrl: "./policy-action-item-edit.component.html",
@@ -76,8 +69,8 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
     return valueList as T[];
   });
 
-  isBooleanAction(actionName: string): boolean {
-    return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
+  isBooleanAction(_actionName: string): boolean {
+    return this.actionDetail()?.type === "bool";
   }
 
   removeAction() {

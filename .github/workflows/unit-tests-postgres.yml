@@ -16,6 +16,7 @@ on:
       - 'requirements.txt'
       - 'tools/**'
       - '.github/workflows/unit-tests-postgres.yml'
+      - '.github/python-versions.env'
 
 permissions:
   contents: read
@@ -26,7 +27,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  versions:
+    name: Load Python versions
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.load.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: load
+        # Run on oldest and latest supported versions only — enough to catch
+        # PostgreSQL dialect issues without duplicating the full MariaDB matrix.
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "matrix=[\"$MIN\",\"$MAX\"]" >> "$GITHUB_OUTPUT"
+
   test:
+    needs: versions
     name: 'Python ${{ matrix.python-version }}'
     permissions:
       checks: write
@@ -34,9 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Run on oldest and latest supported versions only — enough to catch
-        # PostgreSQL dialect issues without duplicating the full MariaDB matrix.
-        python-version: ['3.10', '3.14']
+        python-version: ${{ fromJSON(needs.versions.outputs.matrix) }}
 
     services:
       postgres:
@@ -93,20 +109,7 @@ jobs:
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
         pip freeze
-        # Collect coverage only on the lowest Python version to avoid redundant
-        # reports and reduce overhead on all other matrix jobs.
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
-        if [ "$PYTHON_VERSION" = "3.10" ]; then
-          python -b -m pytest -v -n auto --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
-        else
-          python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
-        fi
-
-    - name: Codecov upload
-      if: ${{ steps.pytest_run.outcome == 'success' && matrix.python-version == '3.10' }}
-      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
-      with:
-        files: ./coverage.xml
-        token: ${{ secrets.CODECOV_TOKEN }}
+        python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
 

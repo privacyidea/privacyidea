@@ -16,23 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal, signal, WritableSignal } from "@angular/core";
-import { of, Subject } from "rxjs";
 
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   ContainerDetailData,
   ContainerDetails,
   ContainerServiceInterface,
   ContainerTemplate,
   ContainerType,
-  ContainerTypes
-} from "../../app/services/container/container.service";
-import { PiResponse } from "../../app/app.component";
-import { Sort } from "@angular/material/sort";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+  ContainerTypes,
+  TemplateComparisonResult
+} from "@services/container/container.service";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
+import { of, Subject } from "rxjs";
 
 export class MockContainerService implements ContainerServiceInterface {
+  containersForTokenType: Signal<string[]> = signal([]);
+  compareWithTemplate: () => Promise<void> = jest.fn().mockResolvedValue(undefined);
   compatibleWithSelectedTokenType = signal<string | null>(null);
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];
@@ -42,7 +45,7 @@ export class MockContainerService implements ContainerServiceInterface {
   eventPageSize: number = 10;
   states = signal<string[]>([]);
   readonly containerSerial = signal("CONT-1");
-  readonly selectedContainer = signal("");
+  readonly selectedContainerSerial = signal("");
   readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly containerFilter = signal<FilterValue>(new FilterValue());
   readonly filterParams = computed<Record<string, string>>(() =>
@@ -75,7 +78,7 @@ export class MockContainerService implements ContainerServiceInterface {
     ];
   });
   selectedContainerType = signal<ContainerType | undefined>(undefined);
-  containerDetailResource = new MockHttpResourceRef(
+  containerDetailsResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
         {
@@ -93,12 +96,15 @@ export class MockContainerService implements ContainerServiceInterface {
       count: 1
     })
   );
-  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
+  containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
+  containerDetail = signal<ContainerDetailData | null>(null);
+  templateComparison: WritableSignal<TemplateComparisonResult | null> = signal(null);
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));
   setContainerDescription = jest.fn().mockReturnValue(of(null));
   toggleActive = jest.fn().mockReturnValue(of({}));
+  setStates = jest.fn().mockReturnValue(of({}));
   unassignUser = jest.fn().mockReturnValue(of(null));
   assignUser = jest.fn().mockReturnValue(of(null));
   setContainerInfos = jest.fn().mockReturnValue(of({}));
@@ -110,9 +116,7 @@ export class MockContainerService implements ContainerServiceInterface {
   deleteContainer = jest.fn().mockReturnValue(of({}));
   deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer = jest.fn(() =>
-    of(MockPiResponse.fromValue({})) as any
-  );
+  registerContainer = jest.fn(() => of(MockPiResponse.fromValue({})) as any);
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
   containerBelongsToUser = jest.fn().mockReturnValue(false);

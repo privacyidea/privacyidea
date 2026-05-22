@@ -17,28 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import {
-  Tokengroup,
-  TokengroupService,
-  TokengroupServiceInterface
-} from "../../../services/tokengroup/tokengroup.service";
-import { NewTokengroupComponent } from "./new-tokengroup/new-tokengroup.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
 @Component({
   selector: "app-tokengroups",
@@ -49,24 +44,24 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./tokengroups.component.html",
   styleUrl: "./tokengroups.component.scss"
 })
 export class TokengroupsComponent {
   protected readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -88,13 +83,12 @@ export class TokengroupsComponent {
     return dataSource;
   });
 
-  openEditDialog(group?: Tokengroup): void {
-    this.dialog.open(NewTokengroupComponent, {
-      data: group ? { ...group } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+  onCreateNewTokengroup(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
+  }
+
+  onEditTokengroup(group: Tokengroup): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   }
 
   deleteTokengroup(group: Tokengroup): void {

@@ -17,12 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditActionTabComponent } from "./edit-action-tab.component";
-import { DialogService } from "../../../../../../services/dialog/dialog.service";
-import { PolicyDetail } from "../../../../../../services/policies/policies.service";
 import { Component, input, output } from "@angular/core";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyDetail } from "@services/policies/policies.service";
+import { EditActionTabComponent } from "./edit-action-tab.component";
 
 @Component({
   selector: "app-added-actions-list",
@@ -64,7 +63,7 @@ describe("EditActionTabComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditActionTabComponent],
-      providers: [{ provide: DialogService, useClass: MockDialogService }, provideNoopAnimations()]
+      providers: [{ provide: DialogService, useClass: MockDialogService }]
     })
       .overrideComponent(EditActionTabComponent, {
         set: {

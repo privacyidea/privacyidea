@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SetPinActionComponent } from "./set-pin-action.component";
-import { of } from "rxjs";
-import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { TokenService } from "../../../../../services/token/token.service";
-import { signal } from "@angular/core";
-import { NotificationService } from "../../../../../services/notification/notification.service";
-import { AuthService } from "../../../../../services/auth/auth.service";
-import { MockLocalService, MockNotificationService } from "../../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../../../testing/mock-services/mock-auth-service";
+import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockLocalService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
+import { SetPinActionComponent } from "./set-pin-action.component";
 
 describe("SetPinActionComponent", () => {
   let component: SetPinActionComponent;
@@ -48,7 +48,7 @@ describe("SetPinActionComponent", () => {
   } as unknown as MatDialog;
 
   const notificationServiceStub = {
-    openSnackBar: jest.fn()
+    success: jest.fn(), error: jest.fn(), warning: jest.fn()
   };
 
   beforeEach(async () => {
@@ -81,14 +81,14 @@ describe("SetPinActionComponent", () => {
   it("setPin() success", () => {
     component.setPin();
     expect(tokenServiceStub.setPin).toHaveBeenCalledWith("Mock serial", "1234");
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith("PIN set successfully.");
+    expect(notificationServiceStub.success).toHaveBeenCalledWith("PIN set successfully.");
   });
 
   it("setPin() should raise error if pins does not match", () => {
     component.repeatPinValue.set("4321");
     component.setPin();
     expect(tokenServiceStub.setPin).not.toHaveBeenCalled();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith("PINs do not match.");
+    expect(notificationServiceStub.warning).toHaveBeenCalledWith("PINs do not match.");
   });
 
   it("setRandomPin()", () => {

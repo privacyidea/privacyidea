@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,32 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { LayoutComponent } from "./layout.component";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ActivatedRoute } from "@angular/router";
-import { of } from "rxjs";
+import { Component } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { RouterOutlet } from "@angular/router";
+import { MatProgressBar } from "@angular/material/progress-bar";
+import { LayoutComponent } from "@components/layout/layout.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { LoadingService } from "@services/loading/loading-service";
+import { MockAuthService, MockContentService } from "@testing/mock-services";
+
+@Component({ selector: "app-navigation", template: "", standalone: true })
+class NavigationStubComponent {}
+
+@Component({ selector: "app-navigation-self-service", template: "", standalone: true })
+class NavigationSelfServiceStubComponent {}
+
+@Component({ selector: "app-navigation-self-service-wizard", template: "", standalone: true })
+class NavigationSelfServiceWizardStubComponent {}
+
+class MockLoadingService {
+  addListener = jest.fn();
+  removeListener = jest.fn();
+  isLoading = jest.fn().mockReturnValue(false);
+  getLoadingUrls = jest.fn().mockReturnValue([]);
+}
 
 describe("LayoutComponent", () => {
   let component: LayoutComponent;
@@ -49,18 +68,24 @@ describe("LayoutComponent", () => {
     await TestBed.configureTestingModule({
       imports: [LayoutComponent],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        [
-          {
-            provide: ActivatedRoute,
-            useValue: {
-              params: of({ id: "123" })
-            }
-          }
-        ]
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: LoadingService, useClass: MockLoadingService }
       ]
-    }).compileComponents();
+    })
+      .overrideComponent(LayoutComponent, {
+        set: {
+          imports: [
+            RouterOutlet,
+            MatProgressBar,
+            NavigationStubComponent,
+            NavigationSelfServiceStubComponent,
+            NavigationSelfServiceWizardStubComponent
+          ]
+        }
+      })
+      .compileComponents();
+
     fixture = TestBed.createComponent(LayoutComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

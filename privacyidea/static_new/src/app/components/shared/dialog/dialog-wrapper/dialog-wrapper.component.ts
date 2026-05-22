@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
-import { assert } from "../../../../utils/assert";
-import { DialogAction } from "../../../../models/dialog";
+import { A11yModule } from "@angular/cdk/a11y";
 import { CommonModule } from "@angular/common";
+import { Component, inject, input, output } from "@angular/core";
+import { MatButton } from "@angular/material/button";
 import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { MatButton } from "@angular/material/button";
-import { A11yModule } from "@angular/cdk/a11y";
+import { DialogAction } from "@models/dialog";
+import { assert } from "@utils/assert";
 
 @Component({
   selector: "app-dialog-wrapper",

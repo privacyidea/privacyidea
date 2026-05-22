@@ -17,10 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
 import { provideRouter } from "@angular/router";
-import { provideAnimations } from "@angular/platform-browser/animations";
-import { RADIUS_SERVER } from "../../../../../constants/token.constants";
+import { RadiusConfigComponent } from "@components/configuration/token-type-config/token-types/radius-config/radius-config.component";
+import { RADIUS_SERVER } from "@constants/token.constants";
 
 const mockRadiusServers = ["radius-server-1", "radius-server-2", "radius-server-3"];
 
@@ -31,7 +30,7 @@ describe("RadiusConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RadiusConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(RadiusConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -90,15 +89,4 @@ describe("RadiusConfigComponent", () => {
     expect(component.expanded()).toBe(false);
   });
 
-  it("should call updateFormData with empty value when clearField is called", async () => {
-    const initialServer = "radius-server-1";
-    fixture.componentRef.setInput("formData", { [RADIUS_SERVER]: initialServer });
-    fixture.detectChanges();
-    expect(component.formData()[RADIUS_SERVER]).toEqual(initialServer);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(RADIUS_SERVER);
-    expect(component.updateFormData).toHaveBeenCalledWith(RADIUS_SERVER, "");
-  });
 });
-

@@ -16,32 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule } from "@angular/common";
 import { HttpParams } from "@angular/common/http";
 import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
-import { Subscription } from "rxjs";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FindSerialResultDialogComponent } from "@components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface, TokenType } from "@services/token/token.service";
+import { Subscription } from "rxjs";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
 
 @Component({
   selector: "app-token-get-serial",
   imports: [
-    FormsModule,
     MatProgressBarModule,
     MatFormField,
     MatInput,
@@ -135,7 +130,7 @@ export class TokenFindSerialComponent {
 
   countTokens(): void {
     if (this.currentStep() !== "init" && this.currentStep() !== "found") {
-      this.notificationService.openSnackBar("Invalid action.");
+      this.notificationService.warning("Invalid action.");
       return;
     }
     let params = this.getParams();
@@ -173,7 +168,7 @@ export class TokenFindSerialComponent {
 
   findSerial(): void {
     if (this.currentStep() !== "countDone") {
-      this.notificationService.openSnackBar("Invalid action.");
+      this.notificationService.warning("Invalid action.");
       return;
     }
     let params = this.getParams();

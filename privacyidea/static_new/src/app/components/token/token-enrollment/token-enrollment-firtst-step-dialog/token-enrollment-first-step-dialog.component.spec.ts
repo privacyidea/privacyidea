@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { ReactiveFormsModule } from "@angular/forms";
-import { TokenEnrollmentFirstStepDialogComponent } from "./token-enrollment-first-step-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService, MockContentService} from "@testing/mock-services";
+import { TokenEnrollmentFirstStepDialogComponent } from "./token-enrollment-first-step-dialog.component";
+import { ContentService } from "@services/content/content.service";
 
 describe("TokenEnrollmentFirstStepDialogComponent", () => {
   let component: TokenEnrollmentFirstStepDialogComponent;
@@ -78,9 +80,11 @@ describe("TokenEnrollmentFirstStepDialogComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: MAT_DIALOG_DATA, useValue: dialogDataStub }
+        { provide: MAT_DIALOG_DATA, useValue: dialogDataStub },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService }
       ],
-      imports: [MatFormFieldModule, MatAutocompleteModule, ReactiveFormsModule, TokenEnrollmentFirstStepDialogComponent]
+      imports: [MatFormFieldModule, MatAutocompleteModule, TokenEnrollmentFirstStepDialogComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenEnrollmentFirstStepDialogComponent);

@@ -34,6 +34,7 @@ def check_realm_list(realms: str):
         raise ParameterError("No realms specified!")
     realms = realms.split(" ")
     valid_realms = list(get_realms().keys())
+    valid_realms.append("-") # allow to define no realm option
     invalid_realms = list(set(realms) - set(valid_realms))
     if invalid_realms:
         raise ParameterError(f"The following realms do not exist: {invalid_realms}!")

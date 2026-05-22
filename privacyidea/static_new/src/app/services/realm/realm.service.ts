@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,12 +18,12 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { Observable, catchError, throwError } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { catchError, Observable, throwError } from "rxjs";
 
 export type AdminRealms = string[];
 export type Realms = { [key: string]: Realm };
@@ -84,9 +84,7 @@ export interface RealmServiceInterface {
   setDefaultRealm(realm: string): Observable<PiResponse<number | any>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class RealmService implements RealmServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -95,15 +93,15 @@ export class RealmService implements RealmServiceInterface {
   private onAllowedRoute = computed(() => {
     return (
       this.contentService.onTokenDetails() ||
-      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onContainersDetails() ||
       this.contentService.onTokens() ||
-      this.contentService.onUsers() ||
-      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onAnyUsersRoute() ||
+      this.contentService.onContainersCreate() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensImport() ||
       this.contentService.onPolicies() ||
       this.contentService.onUserRealms() ||
-      this.contentService.onTokensContainersTemplates()
+      this.contentService.onContainersTemplates()
     );
   });
 
@@ -224,32 +222,36 @@ export class RealmService implements RealmServiceInterface {
       };
     }
 
-    return this.http.post<PiResponse<any>>(url, body, {
-      headers: this.authService.getHeaders()
-    }).pipe(
-      catchError((error) => {
-        console.error("Failed to create realm.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to create realm. " + message);
-        return throwError(() => error);
+    return this.http
+      .post<PiResponse<any>>(url, body, {
+        headers: this.authService.getHeaders()
       })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to create realm.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to create realm. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   deleteRealm(realm: string): Observable<PiResponse<number | any>> {
     const encodedRealm = encodeURIComponent(realm);
     const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
 
-    return this.http.delete<PiResponse<number | any>>(url, {
-      headers: this.authService.getHeaders()
-    }).pipe(
-      catchError((error) => {
-        console.error("Failed to delete realm.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete realm. " + message);
-        return throwError(() => error);
+    return this.http
+      .delete<PiResponse<number | any>>(url, {
+        headers: this.authService.getHeaders()
       })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete realm.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to delete realm. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   setDefaultRealm(realm: string): Observable<PiResponse<number | any>> {
@@ -260,7 +262,7 @@ export class RealmService implements RealmServiceInterface {
       catchError((error) => {
         console.error("Failed to set default realm.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to set default realm. " + message);
+        this.notificationService.error("Failed to set default realm. " + message);
         return throwError(() => error);
       })
     );

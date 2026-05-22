@@ -17,10 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { RemoteConfigComponent } from "@components/configuration/token-type-config/token-types/remote-config/remote-config.component";
 import { provideRouter } from "@angular/router";
-import { provideAnimations } from "@angular/platform-browser/animations";
-import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "../../../../../constants/token.constants";
+import { RemoteConfigComponent } from "@components/configuration/token-type-config/token-types/remote-config/remote-config.component";
+import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "@constants/token.constants";
 
 describe("RemoteConfigComponent", () => {
   let fixture: ComponentFixture<RemoteConfigComponent>;
@@ -29,7 +28,7 @@ describe("RemoteConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RemoteConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(RemoteConfigComponent);
     fixture.componentRef.setInput("formData", {});

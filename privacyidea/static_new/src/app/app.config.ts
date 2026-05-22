@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,20 +18,14 @@
  **/
 import { APP_BASE_HREF } from "@angular/common";
 import { provideHttpClient, withInterceptors } from "@angular/common/http";
-import {
-  ApplicationConfig,
-  inject,
-  provideAppInitializer,
-  provideZonelessChangeDetection
-} from "@angular/core";
-import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
+import { ApplicationConfig, inject, provideAppInitializer, provideZonelessChangeDetection } from "@angular/core";
 import { provideRouter } from "@angular/router";
 import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
-import { AuthService } from "./services/auth/auth.service";
-import { ThemeService } from "./services/theme/theme.service";
-import { ConfigService } from "./services/config/config.service";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
+import { AuthService } from "./services/auth/auth.service";
+import { ConfigService } from "./services/config/config.service";
+import { ThemeService } from "./services/theme/theme.service";
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -41,7 +35,6 @@ export const appConfig: ApplicationConfig = {
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideAnimationsAsync(),
     { provide: APP_BASE_HREF, useValue: "/app/v2/" },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),

@@ -25,8 +25,8 @@
           matInput
           placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().LDAPURI"
-          (ngModelChange)="updateData({ LDAPURI: $event })" />
+          [value]="hostsData().LDAPURI"
+          (input)="updateData({ LDAPURI: $event.target['value'] })" />
       </mat-form-field>
     </div>
     <div class="row-container">
@@ -34,8 +34,8 @@
         <mat-checkbox
           matInput
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().TLS_VERIFY"
-          (ngModelChange)="updateTlsVerify($event)"
+          [checked]="hostsData().TLS_VERIFY"
+          (change)="updateTlsVerify($event.checked)"
           i18n="@@tlsVerify">
           TLS Verify
         </mat-checkbox>
@@ -47,8 +47,8 @@
             matInput
             placeholder="/etc/privacyidea/ldap-ca.crt"
             [disabled]="!isEditMode()"
-            [ngModel]="hostsData().TLS_CA_FILE"
-            (ngModelChange)="updateData({ TLS_CA_FILE: $event })" />
+            [value]="hostsData().TLS_CA_FILE"
+            (input)="updateData({ TLS_CA_FILE: $event.target['value'] })" />
           <mat-hint i18n="@@tlsCaFileHint">
             Path to a CA certificate file to verify the LDAP server's TLS certificate.
           </mat-hint>
@@ -64,8 +64,8 @@
           matInput
           placeholder="ou=users,dc=domain,dc=tld"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().LDAPBASE"
-          (ngModelChange)="updateData({ LDAPBASE: $event })" />
+          [value]="hostsData().LDAPBASE"
+          (input)="updateData({ LDAPBASE: $event.target['value'] })" />
       </mat-form-field>
       <mat-form-field>
         <mat-label i18n="@@bindDn">Bind DN</mat-label>
@@ -73,8 +73,8 @@
           matInput
           placeholder="cn=admin,ou=users,dc=domain,dc=tld"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().BINDDN"
-          (ngModelChange)="updateData({ BINDDN: $event })" />
+          [value]="hostsData().BINDDN"
+          (input)="updateData({ BINDDN: $event.target['value'] })" />
       </mat-form-field>
     </div>
 
@@ -86,8 +86,8 @@
           matInput
           placeholder="topsecret"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().BINDPW"
-          (ngModelChange)="updateData({ BINDPW: $event })" />
+          [value]="hostsData().BINDPW"
+          (input)="updateData({ BINDPW: $event.target['value'] })" />
       </mat-form-field>
 
       <mat-form-field>
@@ -95,8 +95,8 @@
         <mat-select
           matInput
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().AUTHTYPE"
-          (ngModelChange)="updateData({ AUTHTYPE: $event })">
+          [value]="hostsData().AUTHTYPE"
+          (selectionChange)="updateData({ AUTHTYPE: $event.value })">
           <mat-option value="Simple">simple</mat-option>
           <mat-option value="SASL Digest-MD5">SASL Digest-MD5</mat-option>
         </mat-select>
@@ -111,8 +111,8 @@
           matInput
           placeholder="5"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().TIMEOUT"
-          (ngModelChange)="updateData({ TIMEOUT: $event })" />
+          [value]="hostsData().TIMEOUT"
+          (input)="updateData({ TIMEOUT: $event.target['value'] })" />
       </mat-form-field>
 
       <mat-form-field>
@@ -122,8 +122,8 @@
           matInput
           placeholder="500"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().SIZELIMIT"
-          (ngModelChange)="updateData({ SIZELIMIT: $event })" />
+          [value]="hostsData().SIZELIMIT"
+          (input)="updateData({ SIZELIMIT: $event.target['value'] })" />
       </mat-form-field>
     </div>
   </div>
@@ -142,8 +142,8 @@
       <div class="checkbox-container">
         <mat-checkbox
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().NOREFERRALS === 'True'"
-          (ngModelChange)="onClickNoReferrals($event)"
+          [checked]="hostsData().NOREFERRALS === 'True'"
+          (change)="onClickNoReferrals($event.checked)"
           i18n="@@noReferrals">
           <p>Referrals are not tracked (anonymously)</p>
         </mat-checkbox>
@@ -157,8 +157,8 @@
           matInput
           placeholder="DN"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().IDATTRIBUTE"
-          (ngModelChange)="updateData({ IDATTRIBUTE: $event })" />
+          [value]="hostsData().IDATTRIBUTE"
+          (input)="updateData({ IDATTRIBUTE: $event.target['value'] })" />
         <mat-hint i18n="@@idAttributeHint"> An attribute or DN to identify the machine </mat-hint>
       </mat-form-field>
 
@@ -168,8 +168,8 @@
           matInput
           placeholder="(objectClass=computer)"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().SEARCHFILTER"
-          (ngModelChange)="updateData({ SEARCHFILTER: $event })" />
+          [value]="hostsData().SEARCHFILTER"
+          (input)="updateData({ SEARCHFILTER: $event.target['value'] })" />
       </mat-form-field>
     </div>
 
@@ -180,16 +180,16 @@
           matInput
           placeholder="dNSHostName"
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().HOSTNAMEATTRIBUTE"
-          (ngModelChange)="updateData({ HOSTNAMEATTRIBUTE: $event })" />
+          [value]="hostsData().HOSTNAMEATTRIBUTE"
+          (input)="updateData({ HOSTNAMEATTRIBUTE: $event.target['value'] })" />
       </mat-form-field>
       <mat-form-field>
         <mat-label i18n="@@ipAttribute">IP Attribute</mat-label>
         <input
           matInput
           [disabled]="!isEditMode()"
-          [ngModel]="hostsData().IPATTRIBUTE"
-          (ngModelChange)="updateData({ IPATTRIBUTE: $event })" />
+          [value]="hostsData().IPATTRIBUTE"
+          (input)="updateData({ IPATTRIBUTE: $event.target['value'] })" />
         <mat-hint i18n="@@ipAttributeHint">An attribute that contains the IP address of the machine. </mat-hint>
       </mat-form-field>
     </div>

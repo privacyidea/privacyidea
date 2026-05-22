@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,28 +16,25 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
-import { MatIconModule } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
-import { MatTooltipModule } from "@angular/material/tooltip";
+import { Component, input, output } from "@angular/core";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 
 @Component({
   selector: "app-clearable-input",
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, MatIconButton, MatTooltipModule],
+  imports: [ClearButtonComponent],
   templateUrl: "./clearable-input.component.html",
   styleUrl: "./clearable-input.component.scss"
 })
 export class ClearableInputComponent {
-  @Output() onClick = new EventEmitter<void>();
-  @Input() showClearButton: boolean = true;
-  @Input() disabled: boolean = false;
+  readonly clearButtonClick = output<void>();
+  readonly showClearButton = input<boolean>(true);
+  readonly disabled = input<boolean>(false);
 
   clearInput(): void {
-    if (this.disabled) {
+    if (this.disabled()) {
       return;
     }
-    this.onClick.emit();
+    this.clearButtonClick.emit();
   }
 }

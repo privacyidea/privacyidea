@@ -92,10 +92,15 @@ angular.module("privacyideaApp")
                         username: $scope.User.username,
                         password: $scope.User.password
                     }, function (data) {
-                        inform.add(gettextCatalog.getString("Password set successfully."),
-                            {type: "info"});
-                        $scope.User.password = "";
-                        $scope.password2 = "";
+                        if (data.result.value) {
+                            inform.add(gettextCatalog.getString("Password set successfully."),
+                                {type: "info"});
+                            $scope.User.password = "";
+                            $scope.password2 = "";
+                        } else {
+                            inform.add(gettextCatalog.getString("Failed to set password."),
+                                {type: "danger"});
+                        }
                     });
             };
 
@@ -403,7 +408,7 @@ angular.module("privacyideaApp")
             // Change the pagination
             $scope.pageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
-                $scope._getUsers();
+                $scope._applyPageSlice();
             };
             $scope.$on("piReload", function () {
                 $scope._getUsers(false);
@@ -451,18 +456,24 @@ angular.module("privacyideaApp")
                         params.email = "*" + $scope.params.emailFilter + "*";
                     }
                     params.attributes = "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
+                    params.include_custom_attributes = false;
                     UserFactory.getUsers(params,
                         function (data) {
                             //debug: console.log("success");
-                            const userList = data.result.value;
-                            // The userList is the complete list of the users.
-                            $scope.userCount = userList.length;
-                            const start = ($scope.params.page - 1) * $scope.usersPerPage;
-                            const stop = start + $scope.usersPerPage;
-                            $scope.userlist = userList.slice(start, stop);
+                            // The backend returns the complete list of users; pagination is done client-side.
+                            $scope._allUsers = data.result.value;
+                            $scope.userCount = $scope._allUsers.length;
+                            $scope._applyPageSlice();
                             //debug: console.log($scope.userlist);
                         });
                 }
+            };
+
+            $scope._applyPageSlice = function () {
+                const all = $scope._allUsers || [];
+                const start = ($scope.params.page - 1) * $scope.usersPerPage;
+                const stop = start + $scope.usersPerPage;
+                $scope.userlist = all.slice(start, stop);
             };
 
             $scope.getRealms = function () {

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
-import { Router } from "@angular/router";
-import { of } from "rxjs";
-import { TokenService } from "../../../services/token/token.service";
-import { MockContentService, MockTokenService } from "../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
-import { ContentService } from "../../../services/content/content.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Router } from "@angular/router";
+import { ContentService } from "@services/content/content.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { of } from "rxjs";
+import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
 
 describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let fixture: ComponentFixture<AssignTokenSelfServiceComponent>;
   let component: AssignTokenSelfServiceComponent;
 
-  let tokenSvc: MockTokenService;
+  let tokenService: MockTokenService;
   let routerMock: { navigateByUrl: jest.Mock };
 
   beforeEach(async () => {
@@ -49,8 +49,8 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
     component = fixture.componentInstance;
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    tokenSvc.assignUser.mockReturnValue(of(null));
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    tokenService.assignUser.mockReturnValue(of(null));
 
     fixture.detectChanges();
   });
@@ -72,8 +72,8 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     component.assignUserToToken();
 
-    expect(tokenSvc.assignUser).toHaveBeenCalledTimes(1);
-    expect(tokenSvc.assignUser).toHaveBeenCalledWith({
+    expect(tokenService.assignUser).toHaveBeenCalledTimes(1);
+    expect(tokenService.assignUser).toHaveBeenCalledWith({
       tokenSerial: serial,
       username: "",
       realm: "",
@@ -82,6 +82,6 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
 
     expect(routerMock.navigateByUrl).toHaveBeenCalledTimes(1);
     expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringContaining(serial));
-    expect(tokenSvc.tokenSerial()).toBe(serial);
+    expect(tokenService.tokenSerial()).toBe(serial);
   });
 });

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input, signal } from "@angular/core";
 import { CdkCopyToClipboard } from "@angular/cdk/clipboard";
+import { Component, Input, signal } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 
 @Component({

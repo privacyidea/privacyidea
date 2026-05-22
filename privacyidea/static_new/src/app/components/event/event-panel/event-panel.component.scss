@@ -1,5 +1,4 @@
 @use "styles";
-@use "dialog";
 
 .edit-event-handler-layout {
   display: flex;
@@ -7,7 +6,7 @@
 }
 
 .edit-event-handler-container {
-  @include dialog.dialog-container-styles;
+  @include styles.main-component-style;
   display: grid;
   position: relative;
 }

@@ -18,26 +18,34 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { DialogService } from "@services/dialog/dialog.service";
+import { AdditionalCondition, PolicyService } from "@services/policies/policies.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { of } from "rxjs";
 import { EditAdditionalConditionsComponent } from "./edit-additional-conditions.component";
-import { PolicyService, AdditionalCondition } from "../../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 
 describe("EditAdditionalConditionsComponent", () => {
   let component: EditAdditionalConditionsComponent;
   let fixture: ComponentFixture<EditAdditionalConditionsComponent>;
+  let dialogServiceMock: MockDialogService;
 
   const mockCondition: AdditionalCondition = ["token", "serial", "equals", "12345", false, "condition_is_false"];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditAdditionalConditionsComponent],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+      providers: [
+        { provide: PolicyService, useClass: MockPolicyService },
+        { provide: DialogService, useClass: MockDialogService },
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditAdditionalConditionsComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("policy", { name: "test", conditions: [mockCondition] });
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -124,16 +132,148 @@ describe("EditAdditionalConditionsComponent", () => {
     );
   });
 
-  it("should cancel editing and reset form signals", () => {
+  it("should cancel editing and reset form signals without dialog when form is not dirty", () => {
     component.startEditCondition(mockCondition, 0);
     expect(component.showAddConditionForm()).toBe(true);
 
     component.cancelEdit();
 
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
     expect(component.showAddConditionForm()).toBe(false);
     expect(component.editIndex()).toBeNull();
     expect(component.conditionKey()).toBe("");
     expect(component.conditionSection()).toBe("");
+  });
+
+  describe("isFormDirty", () => {
+    it("should return false when form is not shown", () => {
+      expect(component.isFormDirty()).toBe(false);
+    });
+
+    it("should return false when add form is shown but all fields are empty", () => {
+      component.showAddConditionForm.set(true);
+      expect(component.isFormDirty()).toBe(false);
+    });
+
+    it("should return true when a new condition has non-empty fields", () => {
+      component.showAddConditionForm.set(true);
+      component.conditionSection.set("token");
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return true when a new condition has conditionActive flipped from default", () => {
+      component.showAddConditionForm.set(true);
+      component.conditionActive.set(false);
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return true when a new condition has conditionHandleMissingData changed from default", () => {
+      component.showAddConditionForm.set(true);
+      component.conditionHandleMissingData.set("condition_is_true");
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return false when editing a condition with unchanged values", () => {
+      component.startEditCondition(mockCondition, 0);
+      expect(component.isFormDirty()).toBe(false);
+    });
+
+    it("should return true when editing and value has changed", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("99999");
+      expect(component.isFormDirty()).toBe(true);
+    });
+
+    it("should return true when editing and active state has changed", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionActive.set(false);
+      expect(component.isFormDirty()).toBe(true);
+    });
+  });
+
+  describe("cancelEdit with dirty form", () => {
+    it("should open confirmation dialog when form is dirty", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("changed");
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(null));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+      expect(component.showAddConditionForm()).toBe(true);
+    });
+
+    it("should reset form after user confirms discard in dialog", () => {
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("changed");
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("discard"));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(component.showAddConditionForm()).toBe(false);
+      expect(component.editIndex()).toBeNull();
+      expect(component.conditionValue()).toBe("");
+    });
+
+    it("should save and emit when user picks save-exit", () => {
+      const emitSpy = jest.spyOn(component.policyEdit, "emit");
+      component.startEditCondition(mockCondition, 0);
+      component.conditionValue.set("changed");
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(emitSpy).toHaveBeenCalled();
+      expect(component.showAddConditionForm()).toBe(false);
+    });
+
+    it("should not save when save-exit is picked but the condition is invalid", () => {
+      const emitSpy = jest.spyOn(component.policyEdit, "emit");
+      component.showAddConditionForm.set(true);
+      // Fill in just enough to be dirty but invalid (no section / key)
+      component.conditionValue.set("something");
+      expect(component.canSaveCondition()).toBe(false);
+      const dialogRef = new MockMatDialogRef();
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+      dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+
+      component.cancelEdit();
+
+      expect(emitSpy).not.toHaveBeenCalled();
+      expect(component.showAddConditionForm()).toBe(true);
+    });
+  });
+
+  describe("canSaveCondition", () => {
+    it("is true when section, comparator, missingData, and key (trimmed) are all set", () => {
+      component.conditionSection.set("token");
+      component.conditionComparator.set("equals");
+      component.conditionHandleMissingData.set("condition_is_false");
+      component.conditionKey.set("serial");
+      expect(component.canSaveCondition()).toBe(true);
+    });
+
+    it("is false when key is only whitespace", () => {
+      component.conditionSection.set("token");
+      component.conditionComparator.set("equals");
+      component.conditionHandleMissingData.set("condition_is_false");
+      component.conditionKey.set("   ");
+      expect(component.canSaveCondition()).toBe(false);
+    });
+
+    it("is false when section is missing", () => {
+      component.conditionSection.set("");
+      component.conditionComparator.set("equals");
+      component.conditionHandleMissingData.set("condition_is_false");
+      component.conditionKey.set("serial");
+      expect(component.canSaveCondition()).toBe(false);
+    });
   });
 
   it("should not save or emit if required fields are missing", () => {

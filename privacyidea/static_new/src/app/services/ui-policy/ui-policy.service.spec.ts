@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -62,14 +62,11 @@ describe("UiPolicyService", () => {
   });
 
   it("falls back to defaults and warns when appConfig is missing", () => {
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {
-    });
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
 
     const srv = new UiPolicyService();
 
-    expect(warn).toHaveBeenCalledWith(
-      "App configuration not found. Using default values."
-    );
+    expect(warn).toHaveBeenCalledWith("App configuration not found. Using default values.");
     expect(srv.remoteUser).toBe("");
     expect(srv.passwordReset).toBe(false);
     expect(srv.hasJobQueue).toBe(true);

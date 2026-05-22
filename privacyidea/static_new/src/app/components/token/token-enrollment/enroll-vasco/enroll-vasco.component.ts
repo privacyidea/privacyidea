@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,22 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { ErrorStateMatcher } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   VascoApiPayloadMapper,
   VascoEnrollmentData
-} from "../../../../mappers/token-api-payload/vasco-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+} from "@app/mappers/token-api-payload/vasco-token-api-payload.mapper";
 
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   type: "vasco";
@@ -40,17 +36,10 @@ export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   vascoSerial?: string;
 }
 
-export class VascoErrorStateMatcher implements ErrorStateMatcher {
-  isErrorState(control: FormControl | null): boolean {
-    const invalid = control && control.value ? control.value.length !== 496 : true;
-    return !!(control && invalid && (control.dirty || control.touched));
-  }
-}
-
 @Component({
   selector: "app-enroll-vasco",
   standalone: true,
-  imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatCheckbox, MatError],
+  imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
   templateUrl: "./enroll-vasco.component.html",
   styleUrl: "./enroll-vasco.component.scss"
 })
@@ -59,9 +48,7 @@ export class EnrollVascoComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   disabled = input<boolean>(false);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: VascoEnrollmentData;
@@ -69,17 +56,19 @@ export class EnrollVascoComponent implements OnInit {
     } | null
   >();
 
-  otpKeyControl = new FormControl<string>("");
-  useVascoSerialControl = new FormControl<boolean>(false, [Validators.required]);
-  vascoSerialControl = new FormControl<string>("");
+  useVascoSerial = signal<boolean>(false);
+  otpKey = signal<string>("");
+  vascoSerial = signal<string>("");
 
-  vascoForm = new FormGroup({
-    otpKey: this.otpKeyControl,
-    useVascoSerial: this.useVascoSerialControl,
-    vascoSerial: this.vascoSerialControl
+  otpKeyForm = form(this.otpKey, (f) => {
+    validate(f, (ctx) => (ctx.value().length !== 496 ? [{ kind: "invalidLength" as any }] : []));
+    disabled(f, () => this.disabled() || this.useVascoSerial());
   });
 
-  vascoErrorStatematcher = new VascoErrorStateMatcher();
+  vascoSerialForm = form(this.vascoSerial, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !this.useVascoSerial());
+  });
 
   static convertOtpKeyToVascoSerial(otpHex: string): string {
     let vascoOtpStr = "";
@@ -92,53 +81,36 @@ export class EnrollVascoComponent implements OnInit {
     return vascoOtpStr.slice(0, 10);
   }
 
-  constructor() {
-    effect(() =>
-      this.disabled() ? this.vascoForm.disable({ emitEvent: false }) : this.vascoForm.enable({ emitEvent: false })
-    );
-  }
-
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      otpKey: this.otpKeyControl,
-      useVascoSerial: this.useVascoSerialControl,
-      vascoSerial: this.vascoSerialControl
-    });
+    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-
-    this.useVascoSerialControl.valueChanges.subscribe((useSerial) => {
-      if (useSerial) {
-        this.vascoSerialControl.setValidators([Validators.required]);
-        this.otpKeyControl.clearValidators();
-      } else {
-        this.otpKeyControl.setValidators([Validators.required, Validators.minLength(496), Validators.maxLength(496)]);
-        this.vascoSerialControl.clearValidators();
-      }
-      this.otpKeyControl.updateValueAndValidity();
-      this.vascoSerialControl.updateValueAndValidity();
-    });
-    this.useVascoSerialControl.updateValueAndValidity();
   }
 
-  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
     data: VascoEnrollmentData;
     mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
   } | null => {
-    if (this.vascoForm.invalid) {
-      this.vascoForm.markAllAsTouched();
+    if (!this.useVascoSerial() && !this.otpKeyForm().valid()) {
+      this.otpKeyForm().markAsTouched();
+      return null;
+    }
+    if (this.useVascoSerial() && !this.vascoSerialForm().valid()) {
+      this.vascoSerialForm().markAsTouched();
       return null;
     }
 
     const enrollmentData: VascoEnrollmentOptions = {
       ...basicOptions,
       type: "vasco",
-      useVascoSerial: !!this.useVascoSerialControl.value
+      useVascoSerial: this.useVascoSerial()
     };
 
     if (enrollmentData.useVascoSerial) {
-      enrollmentData.vascoSerial = this.vascoSerialControl.value ?? "";
+      enrollmentData.vascoSerial = this.vascoSerial();
     } else {
-      enrollmentData.otpKey = this.otpKeyControl.value ?? "";
+      enrollmentData.otpKey = this.otpKey();
     }
     return {
       data: enrollmentData,

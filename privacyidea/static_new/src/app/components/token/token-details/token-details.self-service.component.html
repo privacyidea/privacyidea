@@ -22,25 +22,19 @@
   class="details-container"
   i18n-aria-label>
   <div class="details-flex-layout flex-column">
-    <div class="details-header">
-      <h3 i18n>Details for Token:</h3>
-      <div class="flex-row flex-nowrap ali-center">
-        <h3 class="token-serial">{{ tokenSerial() }}</h3>
-        <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
-      </div>
-      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-        <h3 i18n>{{ " (Offline)" }}</h3>
-      }
-      @if (authService.actionAllowed("auditlog")) {
-        <button
-          (click)="showTokenAuditLog()"
-          [routerLink]="[ROUTE_PATHS.AUDIT]"
-          mat-icon-button
-          matTooltip="Show token in audit log">
-          <mat-icon>receipt_long</mat-icon>
-        </button>
-      }
-    </div>
+    <app-details-header
+      [serial]="tokenSerial()"
+      entityLabel="Token"
+      [showAuditButton]="authService.actionAllowed('auditlog')"
+      [auditRoute]="ROUTE_PATHS.AUDIT"
+      auditTooltip="Show token in audit log"
+      (auditClick)="showTokenAuditLog()">
+      <ng-container headerExtra>
+        @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+          <h3 i18n>{{ " (Offline)" }}</h3>
+        }
+      </ng-container>
+    </app-details-header>
     <div
       class="details-flex-layout responsive-flex-row-1310">
       <div>
@@ -61,8 +55,9 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
-              .concat(element.isEditing() ? ['padding-0'] : [])"
+              [ngClass]="
+                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
+              "
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
@@ -72,10 +67,11 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
-                        (onClick)="containerService.selectedContainer.set(null)"
-                        [showClearButton]="containerService.selectedContainer() !== ''">
+                        (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
+                        [showClearButton]="containerService.selectedContainerSerial() !== ''">
                         <input
-                          [(ngModel)]="containerService.selectedContainer"
+                          [value]="containerService.selectedContainerSerial()"
+                          (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
                           [matAutocomplete]="containerAuto"
                           matInput />
                       </app-clearable-input>
@@ -86,20 +82,17 @@
                       </mat-autocomplete>
                     </mat-form-field>
                   } @else {
-                    <div class="flex-row flex-nowrap ali-center">
+                    <app-copyable [copyText]="element.value">
                       @if (containerService.containerBelongsToUser(element.value)) {
                         <a
                           attr.aria-label="{{ element.keyMap.label }} Link"
-                          (click)="contentService.containerSelected(element.value)">
+                          (click)="contentService.navigateContainerDetails(element.value)">
                           {{ element.value }}
                         </a>
                       } @else {
                         {{ element.value }}
                       }
-                      @if (element.value !== "") {
-                        <app-copy-button [copyText]="element.value"></app-copy-button>
-                      }
-                    </div>
+                    </app-copyable>
                   }
                 }
                 @case ("realms") {
@@ -132,13 +125,15 @@
                       class="input-width-m description height-136"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
-                        [maxlength]="80"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
+                        maxlength="80"
                         i18n-placeholder
                         matInput
                         placeholder="Enter description"
                         rows="4"></textarea>
-                      <mat-hint align="end">{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+                      <mat-hint align="end"
+                        >{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
                       </mat-hint>
                     </mat-form-field>
                   } @else {
@@ -155,7 +150,8 @@
                       class="input-width-m height-52"
                       subscriptSizing="dynamic">
                       <input
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         matInput
                         type="number" />
                     </mat-form-field>
@@ -164,7 +160,8 @@
                       class="input-width-m"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         matInput
                         rows="1"></textarea>
                     </mat-form-field>
@@ -198,8 +195,9 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
-                authService.actionAllowed("reset")) {
+                @if (
+                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
+                ) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -208,8 +206,12 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (element.keyMap.key === "container_serial" && !isAnyEditingOrRevoked() &&
-                element.value && authService.actionAllowed("container_remove_token")) {
+                } @else if (
+                  element.keyMap.key === "container_serial" &&
+                  !isAnyEditingOrRevoked() &&
+                  element.value &&
+                  authService.actionAllowed("container_remove_token")
+                ) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button

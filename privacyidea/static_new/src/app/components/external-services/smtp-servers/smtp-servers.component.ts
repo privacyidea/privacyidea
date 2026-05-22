@@ -18,24 +18,24 @@
  **/
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { NewSmtpServerComponent } from "./new-smtp-server/new-smtp-server.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { Router } from "@angular/router";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-smtp",
@@ -46,24 +46,24 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"
 })
 export class SmtpServersComponent {
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -83,13 +83,12 @@ export class SmtpServersComponent {
     return dataSource;
   });
 
-  openEditDialog(server?: SmtpServer): void {
-    this.dialog.open(NewSmtpServerComponent, {
-      data: server ? { ...server } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+  onCreateNewServer(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW);
+  }
+
+  onEditServer(server: SmtpServer): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   }
 
   deleteServer(server: SmtpServer): void {

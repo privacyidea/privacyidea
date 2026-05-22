@@ -83,7 +83,7 @@ from ...lib.container import (get_all_containers, init_container, init_registrat
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.policies.actions import PolicyAction
-from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
+from ...lib.users.internal_user_attributes import InternalUserAttributes
 
 log = logging.getLogger(__name__)
 
@@ -390,7 +390,7 @@ def preferred_client_mode(request, response):
     last_used_token_type = None
     if client_mode_per_user_pol:
         user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
-        last_used_map = user.internal_attributes.get(InternalCustomUserAttributes.LAST_USED_TOKEN) or {}
+        last_used_map = user.internal_attributes.get(InternalUserAttributes.LAST_USED_TOKEN) or {}
         last_used_token_type = last_used_map.get(user_agent)
 
     if content.get("detail"):

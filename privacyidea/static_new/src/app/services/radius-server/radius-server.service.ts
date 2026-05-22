@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable, linkedSignal, WritableSignal, Signal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface RadiusServer {
@@ -54,9 +54,7 @@ export interface RadiusServerServiceInterface {
   deleteRadiusServer(identifier: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class RadiusServerService implements RadiusServerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -82,25 +80,33 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   });
 
   radiusServers: WritableSignal<RadiusServer[]> = linkedSignal({
-    source: () => this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined,
-    computation: (source, previous) =>
-      Object.entries(source?.result?.value ?? {}).map(([identifier, server]) => ({ ...server, identifier })) ??
-      previous?.value ??
-      []
+    source: () => ({
+      value: this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined,
+      isLoading: this.radiusServerResource.isLoading(),
+      error: this.radiusServerResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return Object.entries(source.value.result?.value ?? {}).map(([identifier, server]) => ({
+        ...server,
+        identifier
+      }));
+    }
   });
 
   async postRadiusServer(server: RadiusServer): Promise<void> {
-    const url = `${this.radiusServerBaseUrl}${server.identifier}`;
+    const url = `${this.radiusServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved RADIUS server.`);
+        this.notificationService.success($localize`Successfully saved RADIUS server.`);
         this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to save RADIUS server. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -111,32 +117,32 @@ export class RadiusServerService implements RadiusServerServiceInterface {
     return lastValueFrom(request)
       .then((res) => {
         if (res?.result?.value) {
-          this.notificationService.openSnackBar($localize`RADIUS request successful.`);
+          this.notificationService.success($localize`RADIUS request successful.`);
           return true;
         } else {
-          this.notificationService.openSnackBar($localize`RADIUS request failed!`);
+          this.notificationService.error($localize`RADIUS request failed!`);
           return false;
         }
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to send RADIUS test request. ` + message);
+        this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
         return false;
       });
   }
 
   async deleteRadiusServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted RADIUS server: ${identifier}.`);
+        this.notificationService.success($localize`Successfully deleted RADIUS server: ${identifier}.`);
         this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to delete RADIUS server. ` + message);
         throw new Error("delete-failed");
       });
   }

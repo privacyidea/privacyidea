@@ -1,9 +1,10 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .sms-gateways-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
 }
 
 .actions-container {
@@ -19,8 +20,4 @@
   cursor: pointer;
   color: var(--mat-sys-primary);
   text-decoration: underline;
-}
-
-::ng-deep app-sms-edit-dialog.mat-mdc-dialog-component-host mat-dialog-content.mat-mdc-dialog-content.mdc-dialog__content.sms-dialog-content {
-  max-height: 82vh;
 }

@@ -1,4 +1,37 @@
-Version 3.13
+Version 3.13.1
+
+  * The new WebUI beta has been updated to the current state of development. The menu is now back to the known top
+    side menu with slightly optimized menu structure, because having the horizontal space is better for displaying our
+    tables. The layout has been mostly flattened. Still work in progress!
+
+  Enhancements:
+  * Added a dedicated push_challenge_text policy so the PUSH token notification can be worded independently of the
+    default challenge text — useful when both PUSH and a challenge-response token are active for the same user (#5300)
+  * Testing a Passkey in the WebUI will now show if the one that was used for the test is the one you are viewing
+    the details of. If not, the one that was used is linked. The linking is for admins only. (#5263)
+  * Updated the pinned dependencies for the backend. At the time of release, they contained no known security
+    vulnerabilities.
+
+  Fixes:
+  * Fixed pi-manage backup create failing on Python 3.12 (#5299)
+  * /system/random no longer writes the generated random bytes to the audit log (#5307)
+  * Fixed authorization on DELETE /user/attribute so users can only delete their own attributes (#5308)
+  * Several small audit-logging and API consistency fixes found during API documentation review (#5309)
+  * Fixed PIN policies preventing passkey enrollment by allowing to set PIN for passkeys during enrollment (#5269)
+  * Added the passkey serial to the audit log for /auth requests (#5264)
+  * Fixed Event Handler conditions failing to handle datetime objects (#5256)
+  * Fixed passkey enrollment not working on MariaDB after an update (#5238)
+  * Fixed the datepicker not working in the old WebUI (#5237)
+  * Fixed signature verification for Yubico Validation Protocol v2 responses (#5229)
+  * Fixed empty email body when sending via Exchange SE (#5217)
+  * Allow registering a passkey on a computer that already has a revoked passkey for the user (#5191)
+  * Exclude custom user attributes from shallow user lookups, e.g. userlist (#5185)
+  * Improved error handling for password updates in the WebUI (#5181)
+  * Improved error handling for password reset via /recovery in the WebUI (#5201)
+  * Fixed the old WebUI dropping the configured custom user agent when editing an existing policy (#5295)
+  * HTTP resolver group config now matches the HTTP method case-insensitively and tolerates non-dict values (#5289)
+
+Version 3.13, 2026-03-31
 
   Features:
   * The new WebUI 2.0 is now in beta, containing all admin functionality. But please be aware that layouts are not final and bugs may still occur.

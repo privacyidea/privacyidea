@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,30 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenDetailsUserComponent } from "./token-details-user.component";
-import { Tokens, TokenService } from "../../../../services/token/token.service";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal, WritableSignal } from "@angular/core";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { UserService } from "../../../../services/user/user.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { Tokens, TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import {
+  MockContentService,
   MockLocalService,
   MockNotificationService,
   MockPiResponse,
   MockRealmService,
   MockTokenService,
   MockUserService
-} from "../../../../../testing/mock-services";
-import { RealmService } from "../../../../services/realm/realm.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { TokenTypeOption } from "../../token.component";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { ContentService } from "@services/content/content.service";
 
-function makeTokenDetailResponse(tokentype: TokenTypeOption): MockPiResponse<Tokens> {
+function makeTokenDetailResponse(tokentype: any): MockPiResponse<Tokens> {
   return {
     id: 0,
     jsonrpc: "2.0",
@@ -89,9 +89,9 @@ describe("TokenDetailsUserComponent", () => {
   let component: TokenDetailsUserComponent;
   let selfFixture: ComponentFixture<TokenDetailsUserSelfServiceComponent>;
   let selfComponent: TokenDetailsUserSelfServiceComponent;
-  let tokenSvc: MockTokenService;
-  let userSvc: MockUserService;
-  let realmSvc: MockRealmService;
+  let tokenService: MockTokenService;
+  let userService: MockUserService;
+  let realmService: MockRealmService;
 
   let tokenSerial!: WritableSignal<string>;
   let isEditingUser!: WritableSignal<boolean>;
@@ -100,7 +100,7 @@ describe("TokenDetailsUserComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsUserComponent, NoopAnimationsModule],
+      imports: [TokenDetailsUserComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -109,14 +109,15 @@ describe("TokenDetailsUserComponent", () => {
         { provide: RealmService, useClass: MockRealmService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
         MockLocalService,
         MockNotificationService
       ]
     }).compileComponents();
 
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    userSvc = TestBed.inject(UserService) as unknown as MockUserService;
-    realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
+    realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
 
     fixture = TestBed.createComponent(TokenDetailsUserComponent);
     component = fixture.componentInstance;
@@ -145,7 +146,7 @@ describe("TokenDetailsUserComponent", () => {
   it("tokenType reflects tokenDetailResource tokentype", () => {
     expect(component.tokenType()).toBe("hotp");
 
-    tokenSvc.tokenDetailResource.set(makeTokenDetailResponse("totp"));
+    tokenService.tokenDetailResource.set(makeTokenDetailResponse("totp"));
     fixture.detectChanges();
 
     expect(component.tokenType()).toBe("totp");
@@ -154,8 +155,8 @@ describe("TokenDetailsUserComponent", () => {
   it("unassignUser calls service and reloads token details", () => {
     component.unassignUser();
 
-    expect(tokenSvc.unassignUser).toHaveBeenCalledWith("Mock serial");
-    expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalled();
+    expect(tokenService.unassignUser).toHaveBeenCalledWith("Mock serial");
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
   });
 
   it("toggleUserEdit flips the flag and reloads default realm", () => {
@@ -164,7 +165,7 @@ describe("TokenDetailsUserComponent", () => {
     component.toggleUserEdit();
 
     expect(isEditingUser()).toBe(true);
-    expect(realmSvc.defaultRealmResource.reload).toHaveBeenCalled();
+    expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });
 
   it("cancelUserEdit flips the flag back and clears the selection filter", () => {
@@ -173,24 +174,24 @@ describe("TokenDetailsUserComponent", () => {
     component.cancelUserEdit();
 
     expect(isEditingUser()).toBe(false);
-    expect(userSvc.selectionFilter()).toBe("");
+    expect(userService.selectionFilter()).toBe("");
   });
 
   it("saveUser assigns user with selectionUsernameFilter + selectedUserRealm and then resets state", () => {
-    userSvc.selectionUsernameFilter.set("alice");
-    userSvc.selectedUserRealm.set("realmA");
+    userService.selectionUsernameFilter.set("alice");
+    userService.selectedUserRealm.set("realmA");
 
     component.saveUser();
 
-    expect(tokenSvc.assignUser).toHaveBeenCalledWith({
+    expect(tokenService.assignUser).toHaveBeenCalledWith({
       tokenSerial: "Mock serial",
       username: "alice",
       realm: "realmA"
     });
 
-    expect(userSvc.selectionFilter()).toBe("");
-    expect(userSvc.selectedUserRealm()).toBe("");
-    expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalled();
+    expect(userService.selectionFilter()).toBe("");
+    expect(userService.selectedUserRealm()).toBe("");
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     expect(isEditingUser()).toBe(true);
   });
 });

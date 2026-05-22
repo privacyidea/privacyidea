@@ -32,11 +32,10 @@
   }
   <form
     class="margin-left-16"
-    (ngSubmit)="enrollToken()"
-    [formGroup]="formGroupSignal()">
+    (submit)="$event.preventDefault(); enrollToken()">
     <div class="enroll-button-container margin-top-16 margin-bottom-16">
       <button
-        [disabled]="formGroupSignal().invalid"
+        [disabled]="isFormInvalid()"
         class="action-button-primary button-width-m"
         mat-stroked-button
         type="submit">
@@ -52,170 +51,27 @@
         <mat-icon>open_in_new</mat-icon>
       </button>
     </div>
-    @switch (authService.defaultTokentype() || "hotp") {
-      @case ("hotp") {
-        <app-enroll-hotp
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("totp") {
-        <app-enroll-totp
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("spass") {
-        <app-enroll-spass
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("motp") {
-        <app-enroll-motp
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("sshkey") {
-        <app-enroll-sshkey
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("yubikey") {
-        <app-enroll-yubikey
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("remote") {
-        <app-enroll-remote
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("yubico") {
-        <app-enroll-yubico
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("radius") {
-        <app-enroll-radius
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("sms") {
-        <app-enroll-sms
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("4eyes") {
-        <app-enroll-foureyes
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("applspec") {
-        <app-enroll-applspec
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("daypassword") {
-        <app-enroll-daypassword
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("certificate") {
-        <app-enroll-certificate
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("email") {
-        <app-enroll-email
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("indexedsecret") {
-        <app-enroll-indexedsecret
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("paper") {
-        <app-enroll-paper
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("push") {
-        <app-enroll-push
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
-      }
-      @case ("question") {
-        <app-enroll-question
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("registration") {
-        <app-enroll-registration
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("tan") {
-        <app-enroll-tan
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("tiqr") {
-        <app-enroll-tiqr
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          [wizard]="wizard" />
-      }
-      @case ("u2f") {
-        <app-enroll-u2f
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("vasco") {
-        <app-enroll-vasco
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("webauthn") {
-        <app-enroll-webauthn
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
-      }
-      @case ("passkey") {
-        <app-enroll-passkey
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
-      }
-    }
+    <app-enroll-token-type-switch
+      [tokenTypeKey]="authService.defaultTokentype() || 'hotp'"
+      [wizard]="wizard"
+      (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+      (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+      (reopenDialogChange)="updateReopenDialog($event)" />
     @if (descriptionRequired()) {
       <mat-form-field class="input-width-l description-form">
         <mat-label>Description</mat-label>
         <textarea
-          [formControl]="descriptionControl"
-          [maxlength]="80"
+          [formField]="descriptionForm"
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }}
         </mat-hint>
-        @if (descriptionControl.hasError("required")) {
+        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
           <mat-error i18n>
             Description is <strong>required</strong>.
           </mat-error>
-        } @else if (descriptionControl.hasError("maxlength")) {
+        } @else if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
           <mat-error i18n>
             Description cannot exceed <strong>80 characters</strong>.
           </mat-error>

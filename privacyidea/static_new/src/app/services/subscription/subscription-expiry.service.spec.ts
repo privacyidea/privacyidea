@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { SubscriptionExpiryService } from "./subscription-expiry.service";
-import { MatDialog } from "@angular/material/dialog";
-import { AuthService } from "../auth/auth.service";
 import { signal } from "@angular/core";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { MockPiResponse } from "../../../testing/mock-services";
-import { MockSubscriptionService } from "../../../testing/mock-services/mock-subscription-serivce";
+import { TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
+import { MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { SubscriptionExpiryService } from "./subscription-expiry.service";
 
 function makeSubs(value: Record<string, any>) {
   return MockPiResponse.fromValue<Record<string, any>>(value);
@@ -71,10 +71,12 @@ describe("SubscriptionExpiryService", () => {
   });
 
   it("does not open when no expiring items", () => {
-    subsMock.subscriptionsResource.set(makeSubs({
-      a: { application: "app1", timedelta: -40, date_till: "2026-01-01" },
-      b: { application: "app2", timedelta: 5, date_till: "2026-03-01" }
-    }));
+    subsMock.subscriptionsResource.set(
+      makeSubs({
+        a: { application: "app1", timedelta: -40, date_till: "2026-01-01" },
+        b: { application: "app2", timedelta: 5, date_till: "2026-03-01" }
+      })
+    );
     (authMock.isAuthenticated as any).set(true);
 
     const service = TestBed.inject(SubscriptionExpiryService);

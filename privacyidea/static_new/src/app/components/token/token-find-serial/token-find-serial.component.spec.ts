@@ -17,28 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { provideHttpClient, HttpParams } from "@angular/common/http";
+import { HttpParams, provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
-import { Subject, of, Subscription } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import {
-  MockTokenService,
-  MockNotificationService,
-  MockDialogService,
-  MockContentService
-} from "../../../../testing/mock-services";
-import { ContentService } from "../../../services/content/content.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { TokenService } from "../../../services/token/token.service";
-import {
-  FindSerialResultDialogComponent,
-  GetSerialResultDialogReturn
+    FindSerialResultDialogComponent,
+    GetSerialResultDialogReturn
 } from "@components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component";
-import { TokenFindSerialComponent } from "./token-find-serial.component";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import {
+    MockContentService,
+    MockDialogService,
+    MockNotificationService,
+    MockTokenService
+} from "@testing/mock-services";
+import { of, Subject, Subscription } from "rxjs";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
-import { DialogService } from "../../../services/dialog/dialog.service";
+import { TokenFindSerialComponent } from "./token-find-serial.component";
 
 const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
 
@@ -64,7 +63,7 @@ describe("TokenGetSerialComponent", () => {
     lastResultDialogData = undefined;
 
     await TestBed.configureTestingModule({
-      imports: [TokenFindSerialComponent, BrowserAnimationsModule],
+      imports: [TokenFindSerialComponent],
       providers: [
         provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },
@@ -116,7 +115,7 @@ describe("TokenGetSerialComponent", () => {
   it("countTokens: guards invalid states", () => {
     component.currentStep.set("searching");
     component.countTokens();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Invalid action.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("Invalid action.");
     expect(tokenServiceMock.getSerial as jest.Mock).not.toHaveBeenCalled();
   });
 
@@ -193,7 +192,7 @@ describe("TokenGetSerialComponent", () => {
   it("findSerial: guards invalid state", () => {
     component.currentStep.set("init");
     component.findSerial();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Invalid action.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("Invalid action.");
     expect(tokenServiceMock.getSerial as jest.Mock).not.toHaveBeenCalled();
   });
 

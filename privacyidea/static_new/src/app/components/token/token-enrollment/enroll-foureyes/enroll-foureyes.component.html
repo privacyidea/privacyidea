@@ -22,13 +22,11 @@
       class="input-width-s">
       <mat-label i18n>Separator</mat-label>
       <input
-        [errorStateMatcher]="foureyesErrorStateMatcher"
-        [formControl]="separatorControl"
+        [formField]="separatorForm"
         class="separator-input"
         i18n-placeholder
         matInput
-        placeholder="|"
-        required />
+        placeholder="|" />
       <mat-error i18n>Separator is <strong>required</strong></mat-error>
     </mat-form-field>
     <span class="margin-top-16"> The separator that is used to separate the passwords of the different tokens. </span>
@@ -41,8 +39,8 @@
     <mat-form-field class="input-width-l">
       <mat-label>Select Realms</mat-label>
       <mat-select
-        [errorStateMatcher]="foureyesErrorStateMatcher"
-        [formControl]="requiredTokensOfRealmsControl"
+        [value]="requiredTokensOfRealms()"
+        (selectionChange)="requiredTokensOfRealms.set($event.value)"
         multiple
         required>
         @for (realm of realmOptions(); track realm) {
@@ -53,8 +51,8 @@
               <span>{{ realm }}</span>
             </mat-option>
             <input
-              (ngModelChange)="setTokenCount(realm, $event)"
-              [ngModel]="getTokenCount(realm)"
+              [value]="getTokenCount(realm)"
+              (change)="setTokenCount(realm, +$event.target['value'])"
               class="required-realms-input"
               max="9"
               min="1"

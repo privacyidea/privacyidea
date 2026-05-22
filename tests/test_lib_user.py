@@ -22,7 +22,9 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_from_param,
                                   UserError, get_attributes)
 from privacyidea.lib.user import log as user_log
-from privacyidea.models import NodeName, db
+from sqlalchemy import select
+
+from privacyidea.models import InternalUserAttribute, NodeName, db
 from . import ldap3mock
 from .base import MyTestCase, OverrideConfigTestCase
 from .test_lib_resolver import LDAPDirectory_small
@@ -886,28 +888,75 @@ class UserTestCase(MyTestCase):
         user.set_internal_attribute("last_used_token", {"app-a": "hotp"})
         user.set_internal_attribute("fido2_user_id", "abc123")
         attrs = user.internal_attributes
-        self.assertEqual(attrs.get("last_used_token"), {"app-a": "hotp"})
-        self.assertEqual(attrs.get("fido2_user_id"), "abc123")
+        self.assertEqual({"app-a": "hotp"}, attrs.get("last_used_token"))
+        self.assertEqual("abc123", attrs.get("fido2_user_id"))
 
         # Overwrite an existing key
         user.set_internal_attribute("last_used_token", {"app-a": "totp", "app-b": "push"})
-        self.assertEqual(user.internal_attributes.get("last_used_token"),
-                         {"app-a": "totp", "app-b": "push"})
+        self.assertEqual({"app-a": "totp", "app-b": "push"},
+                         user.internal_attributes.get("last_used_token"))
 
         # Delete a single key
         r = user.delete_internal_attribute("fido2_user_id")
-        self.assertEqual(r, 1)
+        self.assertEqual(1, r)
         attrs = user.internal_attributes
         self.assertIsNone(attrs.get("fido2_user_id"))
         self.assertIn("last_used_token", attrs)
 
+        # JSON contract: list, nested dict, numeric, boolean, None all round-trip
+        user.set_internal_attribute("a_list", ["push", "hotp", "totp"])
+        user.set_internal_attribute("a_nested", {"outer": {"inner": [1, 2, 3]}})
+        user.set_internal_attribute("a_number", 42)
+        user.set_internal_attribute("a_bool", True)
+        user.set_internal_attribute("a_null", None)
+        attrs = user.internal_attributes
+        self.assertEqual(["push", "hotp", "totp"], attrs.get("a_list"))
+        self.assertEqual({"outer": {"inner": [1, 2, 3]}}, attrs.get("a_nested"))
+        self.assertEqual(42, attrs.get("a_number"))
+        self.assertEqual(True, attrs.get("a_bool"))
+        self.assertIsNone(attrs.get("a_null"))
+
         # Delete-all clears the rest
-        user.set_internal_attribute("misc", "x")
         r = user.delete_internal_attribute()
-        self.assertEqual(r, 2)
-        self.assertEqual(user.internal_attributes, {})
+        self.assertEqual(6, r)
+        self.assertEqual({}, user.internal_attributes)
 
         # Cleanup
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_52_internal_user_attribute_node_column(self):
+        """The ``node`` column is reserved for future per-node state.
+        Verify it is persisted as given and defaults to NULL."""
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        user = User(login="root", realm=self.realm1)
+
+        def _row(key):
+            return db.session.execute(
+                select(InternalUserAttribute).filter_by(
+                    user_id=user.uid, resolver=user.resolver,
+                    realm_id=user.realm_id, Key=key)
+            ).scalar_one()
+
+        # Default: node is NULL (global value)
+        user.set_internal_attribute("global_key", "v1")
+        self.assertIsNone(_row("global_key").node)
+
+        # Explicit node value is persisted
+        user.set_internal_attribute("node_key", "v2", node="node-A")
+        self.assertEqual("node-A", _row("node_key").node)
+
+        # Re-setting the same key with a new node value overwrites it
+        user.set_internal_attribute("node_key", "v3", node="node-B")
+        self.assertEqual("node-B", _row("node_key").node)
+
+        # Re-setting without node clears it back to NULL
+        user.set_internal_attribute("node_key", "v4")
+        self.assertIsNone(_row("node_key").node)
+
+        user.delete_internal_attribute()
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 

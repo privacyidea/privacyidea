@@ -18,11 +18,11 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 type Tokengroups = {
@@ -47,9 +47,7 @@ export interface TokengroupServiceInterface {
   deleteTokengroup(groupname: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TokengroupService implements TokengroupServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -76,12 +74,15 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   tokengroups: WritableSignal<Tokengroup[]> = linkedSignal({
-    source: () => this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined,
-    computation: (tokengroupResource, previous) => {
-      const value = tokengroupResource?.result?.value;
-      if (!value) {
-        return previous?.value ?? [];
-      }
+    source: () => ({
+      value: this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined,
+      isLoading: this.tokengroupResource.isLoading(),
+      error: this.tokengroupResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
       return Object.entries(value).map(([groupname, { description, id }]) => ({
         groupname,
         description,
@@ -91,33 +92,33 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   async postTokengroup(tokengroup: Tokengroup): Promise<void> {
-    const url = `${this.tokengroupBaseUrl}${tokengroup.groupname}`;
+    const url = `${this.tokengroupBaseUrl}${encodeURIComponent(tokengroup.groupname)}`;
     const request = this.http.post<PiResponse<any>>(url, tokengroup, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved tokengroup.`);
+        this.notificationService.success($localize`Successfully saved tokengroup.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to save tokengroup. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteTokengroup(groupname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${groupname}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${encodeURIComponent(groupname)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted tokengroup: ${groupname}.`);
+        this.notificationService.success($localize`Successfully deleted tokengroup: ${groupname}.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to delete tokengroup. ` + message);
         throw new Error("delete-failed");
       });
   }

@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
-import { Component, input, output, inject } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyService, PolicyActionDetail } from "../../../../../../../services/policies/policies.service";
-import { parseBooleanValue } from "../../../../../../../utils/parse-boolean-value";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 
 @Component({
@@ -38,13 +37,14 @@ export class AddedActionsListComponent {
   readonly actions = input.required<{ name: string; value: any }[]>();
   readonly actionsChange = output<{ name: string; value: any }[]>();
   readonly isEditMode = input.required<boolean>();
+  readonly scope = input<string | undefined>(undefined);
 
   private policyService = inject(PolicyService);
 
   parseBooleanValue = parseBooleanValue;
 
   isBooleanAction(actionName: string): boolean {
-    return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
+    return this.policyService.getDetailsOfAction(actionName, this.scope())?.type === "bool";
   }
 
   onToggleChange(actionName: string, newValue: boolean): void {
@@ -59,7 +59,7 @@ export class AddedActionsListComponent {
   }
 
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
-    return this.policyService.getDetailsOfAction(actionName);
+    return this.policyService.getDetailsOfAction(actionName, this.scope());
   }
 
   updateActionInSelectedPolicy(actionName: string, newValue: string | number) {

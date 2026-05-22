@@ -19,20 +19,22 @@
 
 import { Component, inject, input } from "@angular/core";
 
-import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { lastValueFrom } from "rxjs";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
-import { EditPolicyDialogComponent } from "../../dialogs/edit-policy-dialog/edit-policy-dialog.component";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { MatIconModule } from "@angular/material/icon";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { lastValueFrom } from "rxjs";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-policies-table-actions",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule],
+  imports: [MatIconModule, MatButtonModule, OverflowNavDirective],
   templateUrl: "./policies-table-actions.component.html",
   styleUrl: "./policies-table-actions.component.scss"
 })
@@ -42,12 +44,10 @@ export class PoliciesTableActionsComponent {
   readonly dialogService = inject(DialogService);
   readonly authService = inject(AuthService);
   readonly policyService = inject(PolicyService);
+  private readonly router = inject(Router);
 
   createNewPolicy(): void {
-    this.dialogService.openDialog({
-      component: EditPolicyDialogComponent,
-      data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
-    });
+    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_NEW);
   }
 
   async deleteSelectedPolicies(): Promise<void> {

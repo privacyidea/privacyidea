@@ -18,28 +18,28 @@
  **/
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   CaConnector,
   CaConnectorService,
   CaConnectorServiceInterface
-} from "../../../services/ca-connector/ca-connector.service";
-import { NewCaConnectorComponent } from "./new-ca-connector/new-ca-connector.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { MatTooltipModule } from "@angular/material/tooltip";
+} from "@services/ca-connector/ca-connector.service";
 
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatSort, MatSortModule } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-ca-connectors",
@@ -50,24 +50,23 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./ca-connectors.component.html",
   styleUrl: "./ca-connectors.component.scss"
 })
 export class CaConnectorsComponent {
   protected readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -90,12 +89,11 @@ export class CaConnectorsComponent {
   });
 
   openEditDialog(connector?: CaConnector): void {
-    this.dialog.open(NewCaConnectorComponent, {
-      data: connector ? { ...connector } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+    if (connector) {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS + connector.connectorname);
+    } else {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW);
+    }
   }
 
   deleteConnector(connector: CaConnector): void {

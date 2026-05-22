@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,25 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-
 import { Component, EventEmitter, input, linkedSignal, Output, ViewEncapsulation } from "@angular/core";
-import { MatInput } from "@angular/material/input";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { PeriodicTaskOption } from "../../../../../../services/periodic-task/periodic-task.service";
+import { MatInput } from "@angular/material/input";
+import { PeriodicTaskOption } from "@services/periodic-task/periodic-task.service";
 
 @Component({
   selector: "app-periodic-task-option-detail",
-  imports: [
-    MatFormField,
-    MatLabel,
-    MatInput,
-    FormsModule,
-    MatButton,
-    MatIcon
-  ],
+  imports: [MatFormField, MatLabel, MatInput, MatButton, MatIcon],
   templateUrl: "./periodic-task-option-detail.component.html",
   styleUrl: "./periodic-task-option-detail.component.scss",
   encapsulation: ViewEncapsulation.None

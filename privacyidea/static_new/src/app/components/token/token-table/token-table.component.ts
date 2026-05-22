@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,31 +28,30 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatDividerModule } from "@angular/material/divider";
-import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { FormsModule } from "@angular/forms";
+import { NgClass } from "@angular/common";
+import { MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { NgClass } from "@angular/common";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
-import { MatIconButton } from "@angular/material/button";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -79,11 +78,10 @@ const columnKeysMap = [
     MatSortModule,
     NgClass,
     MatCheckboxModule,
-    FormsModule,
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
-    CopyButtonComponent,
+    CopyableComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,

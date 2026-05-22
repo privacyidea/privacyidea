@@ -478,7 +478,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
         # The fido2_user_id from the imported token info should be cached as an internal user
         # attribute so the next passkey enrollment for this user reuses the same id.
-        self.assertEqual(self.user.internal_attributes.get(FIDO2TokenInfo.USER_ID), fido2_user_id)
+        self.assertEqual(fido2_user_id, self.user.internal_attributes.get(FIDO2TokenInfo.USER_ID))
 
         # Check that the token actually works
         challenge = self._initialize_authentication()

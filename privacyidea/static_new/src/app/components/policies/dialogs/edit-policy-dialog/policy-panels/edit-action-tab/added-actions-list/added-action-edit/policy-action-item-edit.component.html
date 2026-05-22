@@ -68,21 +68,21 @@
             <input
               type="text"
               class="action-value-input flex-2"
-              [ngModel]="action().value"
-              (ngModelChange)="updateAction($event)" />
+              [value]="action().value"
+              (input)="updateAction($any($any($event.target).value))" />
           }
           @case ("int") {
             <input
               type="number"
               class="action-value-input flex-2"
-              [ngModel]="action().value"
-              (ngModelChange)="updateAction($event)" />
+              [value]="action().value"
+              (input)="updateAction($any(+$any($event.target).value))" />
           }
           @case ("text") {
             <textarea
               class="action-value-textarea flex-2"
-              [ngModel]="action().value"
-              (ngModelChange)="updateAction($event)"></textarea>
+              [value]="action().value"
+              (input)="updateAction($any($any($event.target).value))"></textarea>
           }
         }
       }

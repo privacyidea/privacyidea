@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { EventActionTabComponent } from "./event-action-tab.component";
-import { EventService } from "../../../../../services/event/event.service";
-import { MockEventService } from "../../../../../../testing/mock-services/mock-event-service";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { AuthService } from "../../../../../services/auth/auth.service";
-import { MockAuthService } from "../../../../../../testing/mock-services/mock-auth-service";
-import { FormControl } from "@angular/forms";
+import { AuthService } from "@services/auth/auth.service";
+import { EventService } from "@services/event/event.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { EventActionTabComponent } from "./event-action-tab.component";
 
 describe("EventActionTabComponent", () => {
   let component: EventActionTabComponent;
@@ -37,15 +36,14 @@ describe("EventActionTabComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: EventService, useClass: MockEventService }]
+        { provide: EventService, useClass: MockEventService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventActionTabComponent);
     component = fixture.componentInstance;
-    // Provide required inputs
     fixture.componentRef.setInput("action", "add_token_info");
-    fixture.componentRef.setInput("options", { "key": "test_key", "value": "test_value" });
-    fixture.componentRef.setInput("isEditMode", true);
+    fixture.componentRef.setInput("options", { key: "test_key", value: "test_value" });
     component.newAction = { emit: jest.fn() } as any;
     component.newOptions = { emit: jest.fn() } as any;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
@@ -57,81 +55,88 @@ describe("EventActionTabComponent", () => {
   });
 
   it("should initialize selectedAction from input", () => {
-    expect(component.selectedAction.value).toBe("add_token_info");
+    expect(component.selectedAction()).toBe("add_token_info");
   });
 
   it("should reset options on action selection change and emit changes", () => {
-    component.selectedAction.setValue("actionB");
-    expect(Object.keys(component.selectedOptions.value)).toEqual(["opt3"]);
-    expect(component.newOptions.emit).toHaveBeenCalledWith({});
+    component.selectedAction.set("actionB");
+    fixture.detectChanges();
+    expect(Object.keys(component.selectedOptions())).toEqual(["opt3"]);
+    expect(component.newOptions.emit).toHaveBeenCalledWith({ opt3: "" });
   });
 
   it("should update selectedOptions and emit on option change", () => {
-    component.selectedOptions.get('key')?.setValue('another_key');
-    component.selectedOptions.get('value')?.setValue('');
+    component.setOption("key", "another_key");
+    component.setOption("value", "");
+    fixture.detectChanges();
 
-    expect(component.selectedOptions.value).toEqual({"key": "another_key", "value": ""});
-    expect(component.newOptions.emit).toHaveBeenCalledWith({"key": "another_key", "value": ""});
+    expect(component.selectedOptions()).toEqual({ key: "another_key", value: "" });
+    expect(component.newOptions.emit).toHaveBeenCalledWith({ key: "another_key", value: "" });
   });
 
   it("should also emit empty options", () => {
-    component.selectedAction.setValue("actionA");
-    expect(Object.keys(component.selectedOptions.value)).toEqual(["opt1", "opt2", "opt3"]);
-    expect(component.newOptions.emit).toHaveBeenCalledWith({});
+    component.selectedAction.set("actionA");
+    fixture.detectChanges();
+    expect(Object.keys(component.selectedOptions())).toEqual(["opt1", "opt2", "opt3"]);
+    expect(component.newOptions.emit).toHaveBeenCalledWith({ opt1: "", opt2: "", opt3: "" });
 
-    component.selectedOptions.get('opt3')?.setValue('newValue');
-    expect(component.selectedOptions.value).toEqual({"opt1": "", "opt2": "", "opt3": "newValue"});
-    expect(component.newOptions.emit).toHaveBeenCalledWith({"opt1": "", "opt2": "", "opt3": "newValue"});
+    component.setOption("opt3", "newValue");
+    fixture.detectChanges();
+    expect(component.selectedOptions()).toEqual({ opt1: "", opt2: "", opt3: "newValue" });
+    expect(component.newOptions.emit).toHaveBeenCalledWith({ opt1: "", opt2: "", opt3: "newValue" });
   });
 
   it("onActionSelectionChange should emit selected action", () => {
-    component.selectedAction.setValue("actionB");
-    component.onActionSelectionChange();
+    component.onActionSelectionChange("actionB");
     expect(component.newAction.emit).toHaveBeenCalledWith("actionB");
 
-    component.selectedAction.setValue("");
-    component.onActionSelectionChange();
+    component.onActionSelectionChange("");
     expect(component.newAction.emit).toHaveBeenCalledWith("");
   });
 
   it("actionOptions() should return empty dict if no action is selected", () => {
-    component.selectedAction.setValue("");
+    component.selectedAction.set("");
+    fixture.componentRef.setInput("action", "");
+    fixture.detectChanges();
     const opts = component.actionOptions();
     expect(opts).toMatchObject({});
   });
 
   it("actionOptions() should return options for selected action", () => {
-    component.selectedAction.setValue("actionA");
+    component.selectedAction.set("actionA");
+    fixture.detectChanges();
     const opts = component.actionOptions();
     expect(opts["opt1"].type).toBe("bool");
     expect(opts["opt2"].type).toBe("int");
   });
 
   it("checkOptionVisibility returns true if no visibleIf", () => {
-    component.selectedAction.setValue("actionA");
+    component.selectedAction.set("actionA");
+    fixture.detectChanges();
     expect(component.checkOptionVisibility("opt1")).toBe(true);
   });
 
   it("checkOptionVisibility returns true if visibleIf is set and value matches", () => {
-    component.selectedAction.setValue("actionA");
-    component.selectedOptions.addControl("opt1", new FormControl(true));
-    component.selectedOptions.addControl("opt2", new FormControl(3));
-    component.selectedOptions.patchValue({ opt1: true, opt2: 3 });
+    component.selectedAction.set("actionA");
+    fixture.detectChanges();
+    component.selectedOptions.set({ opt1: true, opt2: 3 });
+    fixture.detectChanges();
     expect(component.checkOptionVisibility("opt3")).toBe(true);
   });
 
   it("checkOptionVisibility returns false if visibleIf is set and value does not match", () => {
-    component.selectedAction.setValue("actionA");
-    component.selectedOptions.addControl("opt1", new FormControl(true));
-    component.selectedOptions.addControl("opt2", new FormControl(1));
-    component.selectedOptions.patchValue({ opt1: true, opt2: 1 });
+    component.selectedAction.set("actionA");
+    fixture.detectChanges();
+    component.selectedOptions.set({ opt1: true, opt2: 1 });
+    fixture.detectChanges();
     expect(component.checkOptionVisibility("opt3")).toBe(false);
   });
 
   it("checkOptionVisibility returns true if visibleIf is set, but not visibleValue and dependent value is set", () => {
-    component.selectedAction.setValue("actionA");
-    component.selectedOptions.addControl("opt1", new FormControl(true));
-    component.selectedOptions.patchValue({ opt1: true });
+    component.selectedAction.set("actionA");
+    fixture.detectChanges();
+    component.selectedOptions.set({ opt1: true });
+    fixture.detectChanges();
     expect(component.checkOptionVisibility("opt2")).toBe(true);
   });
 });

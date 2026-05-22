@@ -18,14 +18,13 @@
  **/
 import { Component, input, output, signal } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
 import { MatDivider } from "@angular/material/list";
-import { MatCheckbox } from "@angular/material/checkbox";
 
 export type ApiKeyData = {
   apiId: string;
@@ -37,7 +36,6 @@ export type ApiKeyData = {
   selector: "app-yubikey-config",
   standalone: true,
   imports: [
-    FormsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
@@ -61,7 +59,8 @@ export class YubikeyConfigComponent {
   newYubikeyGenKey = signal(true);
 
   createNewKey() {
-    if (this.newYubikeyApiId()) {
+    const apiId = this.newYubikeyApiId();
+    if (apiId && /^[a-zA-Z0-9._-]*$/.test(apiId)) {
       const newKeyData = {
         apiId: this.newYubikeyApiId(),
         apiKey: this.newYubikeyApiKey(),

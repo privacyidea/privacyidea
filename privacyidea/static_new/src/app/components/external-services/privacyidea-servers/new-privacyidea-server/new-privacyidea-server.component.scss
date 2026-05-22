@@ -1,5 +1,32 @@
-@use "../../../../../styles";
+@use "styles";
 
-.privacyidea-server-dialog-content {
-  min-width: 664px
+.privacyidea-server-page-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.privacyidea-server-page-container {
+  @include styles.main-component-style;
+  display: grid;
+  position: relative;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+
+  .action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: var(--global-padding);
+  }
+}
+
+.privacyidea-server-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }

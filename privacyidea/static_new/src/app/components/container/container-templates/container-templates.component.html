@@ -1,0 +1,157 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  class="container-templates-layout"
+  aria-label="Container Templates Layout">
+  <div class="filter-paginator-container">
+    <app-container-templates-filter
+      class="container-templates-table-filter"
+      [initialFilter]="filter()"
+      (filterChange)="onFilterChange($event)">
+    </app-container-templates-filter>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize()"
+      showFirstLastButtons />
+  </div>
+
+  <app-container-templates-table-actions [selectedTemplates]="selectedTemplates()">
+  </app-container-templates-table-actions>
+
+  <table
+    mat-table
+    matSort
+    (matSortChange)="onSortChange($event)"
+    [dataSource]="pagedContainerTemplates()"
+    class="container-templates-table">
+    <ng-container matColumnDef="select">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>
+        <mat-checkbox
+          (change)="toggleAllRows()"
+          [checked]="isAllSelected()"
+          [indeterminate]="isPartiallySelected()"
+          [disabled]="containerTemplateService.templates().length === 0"
+          aria-label="Select all templates"
+          i18n-aria-label>
+        </mat-checkbox>
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let row">
+        <mat-checkbox
+          (click)="$event.stopPropagation()"
+          (change)="updateSelection($event, row)"
+          [checked]="selectedTemplateNames().has(row.name)"
+          [disabled]="!row.name"
+          [aria-label]="row.name ? 'Select template ' + row.name : 'Select template'"
+          i18n-aria-label>
+        </mat-checkbox>
+      </td>
+    </ng-container>
+
+    @for (column of columns | keyvalue: keepOrder; track column.key) {
+      <ng-container [matColumnDef]="column.key">
+        <th
+          mat-header-cell
+          *matHeaderCellDef
+          mat-sort-header
+          [disabled]="!column.value.sortable || containerTemplateService.templates().length === 0"
+          [class]="'col-' + column.key">
+          <div class="table-header-container">
+            @if (column.value.label) {
+              <div>{{ column.value.label }}</div>
+            }
+            @if (column.value.filterable) {
+              <div class="flex">
+                <button
+                  mat-icon-button
+                  class="filter-button"
+                  [disabled]="containerTemplateService.templates().length === 0"
+                  (click)="$event.stopPropagation(); onClickFilter(column.key)">
+                  <mat-icon class="keyword-button-icon margin-left-0">
+                    {{ getFilterIconName(column.key) }}
+                  </mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        </th>
+
+        <td
+          mat-cell
+          *matCellDef="let template"
+          [class]="'col-' + column.key">
+          @if (template.name) {
+            @switch (column.key) {
+              @case ("name") {
+                <a
+                  role="button"
+                  tabindex="0"
+                  (click)="$event.stopPropagation(); onClickTemplateName(template)"
+                  (keydown.enter)="$event.stopPropagation(); onClickTemplateName(template)"
+                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); onClickTemplateName(template)"
+                  class="text-link-button cursor-pointer"
+                  [attr.aria-label]="template.name ? 'Edit template ' + template.name : 'Edit template'"
+                  i18n-aria-label>
+                  {{ template.name }}
+                </a>
+              }
+              @case ("tokens") {
+                <app-view-template-tokens [templateTokens]="template.template_options.tokens">
+                </app-view-template-tokens>
+              }
+              @case ("default") {
+                {{ template.default }}
+              }
+              @default {
+                {{ template[column.key] }}
+              }
+            }
+          }
+        </td>
+      </ng-container>
+    }
+
+    <tr
+      mat-header-row
+      *matHeaderRowDef="columnKeys()"></tr>
+    <tr
+      mat-row
+      *matRowDef="let row; columns: columnKeys()"
+      [class.skeleton-row]="!row.name"></tr>
+
+    <tr
+      *matNoDataRow
+      aria-label="No Data Row"
+      i18n-aria-label>
+      <td
+        [attr.colspan]="columnKeys().length"
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
+        No data matching the filter.
+      </td>
+    </tr>
+  </table>
+</div>

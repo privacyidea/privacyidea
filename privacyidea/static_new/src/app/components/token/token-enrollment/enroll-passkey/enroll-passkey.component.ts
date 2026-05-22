@@ -16,37 +16,34 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogRef } from "@angular/material/dialog";
-import { lastValueFrom } from "rxjs";
-import {
-  PasskeyApiPayloadMapper,
-  PasskeyEnrollmentData,
-  PasskeyFinalizeApiPayloadMapper,
-  PasskeyFinalizeData
-} from "../../../../mappers/token-api-payload/passkey-token-api-payload.mapper";
-import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { ReopenDialogFn } from "../token-enrollment.component";
 import {
   EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  PasskeyApiPayloadMapper,
+  PasskeyEnrollmentData,
+  PasskeyFinalizeApiPayloadMapper,
+  PasskeyFinalizeData
+} from "@app/mappers/token-api-payload/passkey-token-api-payload.mapper";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-enroll-passkey",
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [],
   templateUrl: "./enroll-passkey.component.html",
   styleUrl: "./enroll-passkey.component.scss"
 })
@@ -59,9 +56,7 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PasskeyEnrollmentData;
@@ -72,8 +67,6 @@ export class EnrollPasskeyComponent implements OnInit {
   @Output() onEnrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
-
-  passkeyForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
@@ -89,7 +82,7 @@ export class EnrollPasskeyComponent implements OnInit {
   } | null => {
     if (!navigator.credentials?.create) {
       const errorMsg = "Passkey/WebAuthn is not supported by this browser.";
-      this.notificationService.openSnackBar(errorMsg);
+      this.notificationService.error(errorMsg);
       throw new Error(errorMsg);
     }
 
@@ -118,7 +111,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const detail = enrollmentResponse.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
-      this.notificationService.openSnackBar("Failed to initiate Passkey registration: Invalid server response.");
+      this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       throw new Error("Invalid server response for Passkey initiation.");
     }
     this.openStepOneDialog({
@@ -177,7 +170,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
-      this.notificationService.openSnackBar("Failed to initiate Passkey registration: Invalid server response.");
+      this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       return null;
     }
     const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred: any) => ({
@@ -203,9 +196,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const publicKeyCred = await navigator.credentials
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
-        this.notificationService.openSnackBar(
-          `Passkey credential creation failed: ${browserOrCredentialError.message}`
-        );
+        this.notificationService.error(`Passkey credential creation failed: ${browserOrCredentialError.message}`);
         return null;
       })
       .finally(() => {
@@ -243,16 +234,14 @@ export class EnrollPasskeyComponent implements OnInit {
       })
     )
       .catch(async (errorStep3) => {
-        this.notificationService.openSnackBar(
-          "Error during final Passkey registration step. Attempting to clean up token."
-        );
-        await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
-          this.notificationService.openSnackBar(
+        this.notificationService.error("Error during final Passkey registration step. Attempting to clean up token.");
+        (await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
+          this.notificationService.error(
             `Failed to delete token ${detail.serial} after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
         }),
-          this.notificationService.openSnackBar(`Token ${detail.serial} deleted due to registration error.`);
+          this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`));
         throw Error(errorStep3);
       })
       .then((finalResponse) => {

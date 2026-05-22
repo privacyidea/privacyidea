@@ -17,33 +17,32 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, output, ViewChild, input } from "@angular/core";
+import { Component, computed, inject, input, output, signal, ViewChild } from "@angular/core";
 
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import { form, FormField, validate } from "@angular/forms/signals";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
-import { MatButtonModule } from "@angular/material/button";
-import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyService, PolicyDetail } from "../../../../../../../services/policies/policies.service";
-import { RealmServiceInterface, RealmService } from "../../../../../../../services/realm/realm.service";
-import { ResolverService, ResolverServiceInterface } from "../../../../../../../services/resolver/resolver.service";
-import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-only/multi-select-only.component";
-import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-edit-user-conditions",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatIconModule,
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
     MatButtonModule,
     MatExpansionModule,
-    ReactiveFormsModule,
     MultiSelectOnlyComponent,
     MatCheckboxModule
   ],
@@ -61,9 +60,9 @@ export class EditUserConditionsComponent {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  userFormControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [this.userValidator.bind(this)]
+  readonly userSignal = signal("");
+  readonly userField = form(this.userSignal, (f) => {
+    validate(f, (ctx) => /[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []);
   });
 
   readonly selectedRealms = computed(() => this.policy().realm || []);
@@ -134,10 +133,10 @@ export class EditUserConditionsComponent {
 
   addUser(user: string) {
     const trimmed = user?.trim();
-    if (this.userFormControl.invalid || !trimmed) return;
+    if (this.userField().errors().length > 0 || !trimmed) return;
     if (!this.selectedUsers().includes(trimmed)) {
       this.emitEdits({ user: [...this.selectedUsers(), trimmed] });
-      this.userFormControl.setValue("");
+      this.userSignal.set("");
     }
   }
 
@@ -153,7 +152,4 @@ export class EditUserConditionsComponent {
     this.emitEdits({ user_case_insensitive: !this.userCaseInsensitive() });
   }
 
-  userValidator(control: AbstractControl): ValidationErrors | null {
-    return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
-  }
 }

@@ -542,6 +542,77 @@ myApp.directive("piPolicyConditions", ["instanceUrl", "versioningSuffixProvider"
     };
 }]);
 
+// <pi-client-ip-input> renders a text input bound to a CSV-of-CIDRs model
+// (e.g. "10.0.0.0/8, !10.0.0.124"). Typing in any segment offers autocomplete
+// from the known clients list (ip / hostname / clienttype). Selecting an entry
+// replaces only the active segment and preserves a leading "!" negation.
+myApp.directive("piClientIpInput", ["ClientTypeFactory", function (ClientTypeFactory) {
+    const splitSegment = function (full) {
+        const text = full || "";
+        const lastComma = text.lastIndexOf(",");
+        const before = lastComma >= 0 ? text.substring(0, lastComma + 1) : "";
+        let segment = lastComma >= 0 ? text.substring(lastComma + 1) : text;
+        const leading = segment.match(/^\s*/)[0];
+        segment = segment.substring(leading.length);
+        let negation = "";
+        if (segment.startsWith("!")) {
+            negation = "!";
+            segment = segment.substring(1);
+        }
+        return {prefix: before + leading + negation, query: segment};
+    };
+
+    return {
+        restrict: "E",
+        scope: {
+            value: "=ngModel",
+            inputName: "@name",
+            inputId: "@inputId",
+            placeholder: "@",
+            inputClass: "@class"
+        },
+        template: '<input type="text" autocomplete="off"' +
+                  ' class="{{ inputClass || \'form-control\' }}"' +
+                  ' name="{{ inputName }}" id="{{ inputId }}"' +
+                  ' placeholder="{{ placeholder }}"' +
+                  ' ng-model="value"' +
+                  ' ng-focus="loadClients()"' +
+                  ' uib-typeahead="c.ip as c.label for c in suggest($viewValue)"' +
+                  ' typeahead-on-select="onSelect($item)"' +
+                  ' typeahead-min-length="1"' +
+                  ' typeahead-editable="true"/>',
+        link: function (scope) {
+            scope.knownClients = [];
+            let lastViewValue = "";
+
+            scope.loadClients = function () {
+                ClientTypeFactory.load(function (list) {
+                    scope.knownClients = list;
+                });
+            };
+
+            scope.suggest = function (viewValue) {
+                lastViewValue = viewValue || "";
+                const parts = splitSegment(viewValue);
+                const q = (parts.query || "").toLowerCase();
+                if (!q) {
+                    return [];
+                }
+                return scope.knownClients.filter(function (c) {
+                    return (c.ip && c.ip.toLowerCase().indexOf(q) !== -1) ||
+                           (c.hostname && c.hostname.toLowerCase().indexOf(q) !== -1) ||
+                           (c.apptype && c.apptype.toLowerCase().indexOf(q) !== -1);
+                });
+            };
+
+            scope.onSelect = function ($item) {
+                const parts = splitSegment(lastViewValue);
+                scope.value = parts.prefix + $item.ip;
+            };
+        }
+    };
+}]);
+
 myApp.directive("selectOrCreateContainer", ["instanceUrl", "versioningSuffixProvider", "ContainerFactory", "$http",
     "containerUrl", "AuthFactory",
     function (instanceUrl, versioningSuffixProvider, ContainerFactory, $http, containerUrl, AuthFactory) {

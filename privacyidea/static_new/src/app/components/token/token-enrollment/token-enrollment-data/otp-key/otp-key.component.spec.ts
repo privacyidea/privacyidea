@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { OtpKeyComponent } from "./otp-key.component";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { OtpKeyComponent } from "./otp-key.component";
 
 describe("OtpKeyComponent", () => {
   let component: OtpKeyComponent;
@@ -26,11 +26,8 @@ describe("OtpKeyComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        OtpKeyComponent
-      ]
-    })
-      .compileComponents();
+      imports: [OtpKeyComponent]
+    }).compileComponents();
 
     fixture = TestBed.createComponent(OtpKeyComponent);
     component = fixture.componentInstance;

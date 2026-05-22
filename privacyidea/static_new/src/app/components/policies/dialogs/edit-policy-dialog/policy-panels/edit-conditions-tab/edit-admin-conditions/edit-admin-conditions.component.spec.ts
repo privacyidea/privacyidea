@@ -18,14 +18,12 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { PolicyService } from "src/app/services/policies/policies.service";
-import { RealmService } from "src/app/services/realm/realm.service";
-import { ResolverService } from "src/app/services/resolver/resolver.service";
-import { MockRealmService } from "src/testing/mock-services";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { MockResolverService } from "src/testing/mock-services/mock-resolver-service";
+import { PolicyService } from "@services/policies/policies.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockRealmService } from "@testing/mock-services";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EditAdminConditionsComponent } from "./edit-admin-conditions.component";
 
 describe("EditAdminConditionsComponent", () => {
@@ -34,12 +32,11 @@ describe("EditAdminConditionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditAdminConditionsComponent, ReactiveFormsModule],
+      imports: [EditAdminConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: ResolverService, useClass: MockResolverService },
-        provideNoopAnimations()
       ]
     }).compileComponents();
 
@@ -64,7 +61,7 @@ describe("EditAdminConditionsComponent", () => {
         adminuser: ["admin1", "admin2"]
       })
     );
-    expect(component.adminFormControl.value).toBe("");
+    expect(component.adminSignal()).toBe("");
   });
 
   it("should remove admin user", () => {
