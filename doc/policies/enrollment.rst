@@ -558,14 +558,14 @@ webauthn_authenticator_attachment
 type: ``string``
 
 This action configures whether to limit roll out of WebAuthn tokens to either
-only platform authenticators, or only platform authenticators. Cross-platform
-authenticators are authenticators, that are intended to be plugged into
-different devices, whereas platform authenticators are those, that are built
-directly into one particular device and can not (easily) be removed and plugged
-into a different device.
+only platform authenticators, or only cross-platform authenticators.
+Cross-platform authenticators are authenticators, that are intended to be
+plugged into different devices, whereas platform authenticators are those,
+that are built directly into one particular device and can not (easily) be
+removed and plugged into a different device.
 
-The default is to allow both `platform` and `cross-platform` attachment for
-authenticators.
+The default is to allow both ``platform`` and ``cross-platform`` attachment
+for authenticators.
 
 .. _policy_webauthn_enroll_authenticator_selection_list:
 
@@ -714,12 +714,20 @@ passkey_attestation_conveyance_preference
 
 type: string
 
-This action configures the attestation conveyance preference for the passkey enrollment. Possible values are:
-"none", "indirect" and "direct" and "enterprise". The default is "none". If attestation is requested and the
-authenticator return a statement, the certificate will be saved in the token info. Currently, there is no further
-validation.
+This action configures the attestation conveyance preference for the passkey enrollment. Possible values are
+``none``, ``indirect``, ``direct`` and ``enterprise``. The default is ``none``.
+
+If attestation is requested and the authenticator returns a statement, the leaf certificate from the attestation
+statement is saved in the token info as ``attestation_certificate``, and the token description is set to the
+certificate's Common Name if no description has been set yet. Currently, there is no further validation of the
+attestation data.
+
+Requesting attestation also reveals the AAGUID of the authenticator (which is zeroed out when attestation is
+``none``) and typically causes the browser to show an additional consent dialog to the user during registration.
+For these reasons, ``none`` is the recommended setting for passkeys; see :ref:`passkey` for details.
+
 This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestation_form` and
-:ref:`policy_webauthn_enroll_authenticator_attestation_level` which are not used for passkey enrollment.
+:ref:`policy_webauthn_enroll_authenticator_attestation_level`, which are not used for passkey enrollment.
 
 .. _policy_webauthn_enroll_req:
 
@@ -731,14 +739,22 @@ type: ``string``
 This action allows filtering of WebAuthn tokens by the fields of the
 attestation certificate.
 
-The action can be specified like this::
+The action value is parsed as a slash-delimited expression with three parts:
+``<field>/<regex>/<trailing>``. The leading ``<field>`` selects which field
+of the attestation certificate is checked and must be one of ``subject``,
+``issuer`` or ``serial``. ``<regex>`` is a Python regular expression that is
+applied via ``re.search`` against that field. The trailing ``/`` is required
+as a terminator; anything after it is ignored. Several examples::
 
     webauthn_req=subject/.*Yubico.*/
+    webauthn_req=issuer/.*FIDO2 CA.*/
+    webauthn_req=serial/^4711$/
 
-The keyword can be "subject", "issuer" or "serial". Followed by a
-regular expression. During registration of the WebAuthn authenticator the
-information is fetched from the attestation certificate. Only if the attribute
-in the attestation certificate matches accordingly the token can be enrolled.
+During registration of the WebAuthn authenticator the information is fetched
+from the attestation certificate. The token can only be enrolled if the
+selected field matches the regular expression. If the attestation statement
+contains no certificate (for example because attestation form is ``none``),
+filtering fails and enrollment is denied.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authz_req`.
