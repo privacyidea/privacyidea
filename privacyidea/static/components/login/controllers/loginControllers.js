@@ -67,10 +67,12 @@ angular.module("privacyideaApp")
             obj = angular.element(document.querySelector("#EXTERNAL_LINKS"));
             $scope.piExternalLinks = obj.val();
             obj = angular.element(document.querySelector('#REALMS'));
-            $scope.piRealms = obj.val().mysplit(",").sort();
-            if ($scope.piRealms.length > 0) {
-                $scope.piRealms.push("-");
-            }
+            // A "-" entry in the realmdropdown policy is the indicator that the
+            // dropdown should offer a "no realm" option; render it as an empty
+            // entry rather than a literal dash.
+            $scope.piRealms = obj.val().mysplit(",").map(function (r) {
+                return r === "-" ? "" : r;
+            });
             obj = angular.element(document.querySelector('#LOGO'));
             $scope.piLogo = obj.val();
             obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
@@ -298,10 +300,6 @@ angular.module("privacyideaApp")
                 $scope.polling = false;
                 $scope.image = false;
                 //debug: console.log($scope.login);
-                // Replace the placeholder for no realm with no realm
-                if ($scope.login.realm === "-") {
-                    $scope.login.realm = "";
-                }
                 $http.post(authUrl, {
                     username: $scope.login.username,
                     password: $scope.login.password,
@@ -731,7 +729,7 @@ angular.module("privacyideaApp")
             };
 
             $scope.clearRealmSelection = function () {
-                $scope.login.realm = "-";
+                $scope.login.realm = "";
             };
         }]);
 
