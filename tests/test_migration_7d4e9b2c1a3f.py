@@ -39,6 +39,11 @@ def _q(col: str) -> str:
     return f'"{col}"' if is_postgres() else f"`{col}`"
 
 
+PI_INTERNAL = "pi_internal"  # value the pre-migration code wrote into customuserattribute.Type
+                             # for last_used_token_<agent> rows. The migration filters on it
+                             # so that prefix-collision admin rows are left untouched.
+
+
 class TestMigration7d4e9b2c1a3f(MigrationTestBase):
     REVISION = "7d4e9b2c1a3f"
     PARENT_REVISION = "b1a2c3d4e5f6"
@@ -130,8 +135,8 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_custom(engine, [
-            {"user_id": "u1", "Key": "last_used_token_privacyidea-cp", "Value": "push"},
-            {"user_id": "u1", "Key": "last_used_token_privacyIDEA-Keycloak", "Value": "hotp"},
+            {"user_id": "u1", "Key": "last_used_token_privacyidea-cp", "Value": "push", "Type": PI_INTERNAL},
+            {"user_id": "u1", "Key": "last_used_token_privacyIDEA-Keycloak", "Value": "hotp", "Type": PI_INTERNAL},
         ])
         engine.dispose()
 
@@ -156,8 +161,8 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_custom(engine, [
-            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "hotp"},
-            {"user_id": "u2", "Key": "last_used_token_app-a", "Value": "totp"},
+            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "hotp", "Type": PI_INTERNAL},
+            {"user_id": "u2", "Key": "last_used_token_app-a", "Value": "totp", "Type": PI_INTERNAL},
         ])
         engine.dispose()
 
@@ -176,6 +181,9 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
             {"user_id": "u1", "Key": "department", "Value": "engineering"},
             {"user_id": "u1", "Key": "last_used_token", "Value": "legacy-bare-key"},  # bare key, no suffix
             {"user_id": "u1", "Key": "fido2_user_id", "Value": "should-move"},
+            # Admin-created row that happens to share the last_used_token_ prefix
+            # but has no Type marker — must NOT be consumed by the migration.
+            {"user_id": "u1", "Key": "last_used_token_admin-note", "Value": "do-not-touch"},
         ])
         engine.dispose()
 
@@ -186,8 +194,57 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         # The bare 'last_used_token' key (without underscore suffix) is NOT internal —
         # the migration only matches 'last_used_token_%'.
         assert self._fetch_custom_value(engine, "u1", "last_used_token") == "legacy-bare-key"
+        # Prefix-collision admin row (no Type marker) is preserved.
+        assert self._fetch_custom_value(engine, "u1", "last_used_token_admin-note") == "do-not-touch"
         # fido2_user_id moved out.
         assert self._fetch_custom_count(engine, "u1", "fido2_user_id") == 0
+        engine.dispose()
+
+    def test_upgrade_is_idempotent(self, flask_app):
+        """The data-migration step must survive being re-run.
+
+        Production retry scenario: upgrade() crashes between the INSERT into
+        ``internaluserattribute`` and the DELETE from ``customuserattribute``.
+        The operator re-runs the migration; old rows are still present, new
+        rows already exist. A naive INSERT would hit the UNIQUE constraint
+        and abort.
+        """
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        self._insert_custom(engine, [
+            {"user_id": "u1", "Key": "fido2_user_id", "Value": "abc123"},
+            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "hotp", "Type": PI_INTERNAL},
+        ])
+        engine.dispose()
+
+        # First run — full upgrade.
+        self._upgrade()
+
+        # Simulate partial-failure recovery: re-insert the old rows as if the
+        # DELETE step had never run, then re-execute the data migration step.
+        engine = self._engine()
+        self._insert_custom(engine, [
+            {"user_id": "u1", "Key": "fido2_user_id", "Value": "abc123"},
+            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "hotp", "Type": PI_INTERNAL},
+        ])
+        import importlib
+        mig = importlib.import_module(
+            "privacyidea.migrations.versions.7d4e9b2c1a3f_internaluserattribute"
+        )
+        with engine.connect() as conn:
+            mig._run_data_migration(conn)
+            conn.commit()
+        engine.dispose()
+
+        # End state: still exactly one row per key in the new table, and the
+        # re-inserted old rows have been cleaned up.
+        engine = self._engine()
+        assert self._fetch_internal_count(engine, "u1", "fido2_user_id") == 1
+        assert self._fetch_internal_count(engine, "u1", "last_used_token") == 1
+        assert self._fetch_internal_value(engine, "u1", "fido2_user_id") == "abc123"
+        assert self._fetch_internal_value(engine, "u1", "last_used_token") == {"app-a": "hotp"}
+        assert self._fetch_custom_count(engine, "u1", "fido2_user_id") == 0
+        assert self._fetch_custom_count(engine, "u1", "last_used_token_app-a") == 0
         engine.dispose()
 
     # ---- downgrade --------------------------------------------------------
@@ -214,8 +271,8 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_custom(engine, [
-            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "push"},
-            {"user_id": "u1", "Key": "last_used_token_app-b", "Value": "hotp"},
+            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "push", "Type": PI_INTERNAL},
+            {"user_id": "u1", "Key": "last_used_token_app-b", "Value": "hotp", "Type": PI_INTERNAL},
         ])
         engine.dispose()
 
@@ -235,7 +292,7 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         self._insert_custom(engine, [
             {"user_id": "u1", "Key": "department", "Value": "engineering"},
             {"user_id": "u1", "Key": "fido2_user_id", "Value": "xyz"},
-            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "hotp"},
+            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "hotp", "Type": PI_INTERNAL},
         ])
         engine.dispose()
 

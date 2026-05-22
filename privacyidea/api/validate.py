@@ -773,6 +773,10 @@ def _finalize_auth_response(context):
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
                     if user.exist():
+                        # Read-modify-write on a per-user dict. Concurrent auths from
+                        # different user-agents can race here and lose one update.
+                        # Accepted: the value is a UX hint (preferred client mode) —
+                        # at worst the user sees their second-most-recent choice.
                         last_used = dict(user.internal_attributes.get(
                             InternalUserAttributes.LAST_USED_TOKEN) or {})
                         last_used[user_agent] = token.get_tokentype()

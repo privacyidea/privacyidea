@@ -383,6 +383,17 @@ class User:
         db.session.commit()
         return result.rowcount
 
+    def _require_resolved(self) -> None:
+        """
+        Internal-attribute operations key on (uid, resolver, realm_id). An
+        unresolved user has ``uid=''``, which would collide with every other
+        unresolved user in the table — i.e. cross-user data leak. Refuse to
+        read or write internal attributes until the user is actually known.
+        """
+        if not self.uid:
+            raise UserError(f"Cannot access internal attributes for unresolved user "
+                            f"(login={self.login!r}, realm={self.realm!r}).")
+
     @property
     def internal_attributes(self) -> dict:
         """
@@ -391,6 +402,7 @@ class User:
         FIDO2 user IDs, last-used token per client) and are NOT meant to be
         used in policy conditions. Use :meth:`attributes` for admin-facing data.
         """
+        self._require_resolved()
         return get_internal_attributes(self.uid, self.resolver, self.realm_id)
 
     @log_with(log)
@@ -400,6 +412,7 @@ class User:
         JSON-serializable Python object. ``node`` is reserved for future
         node-local state and should be left as None for global values.
         """
+        self._require_resolved()
         stmt = select(InternalUserAttribute).filter_by(
             user_id=self.uid,
             resolver=self.resolver,
@@ -426,6 +439,7 @@ class User:
         Delete an internal attribute. If ``key`` is None, all internal
         attributes for this user are deleted.
         """
+        self._require_resolved()
         stmt = delete(InternalUserAttribute).filter_by(user_id=self.uid, resolver=self.resolver,
                                                        realm_id=self.realm_id)
         if key:

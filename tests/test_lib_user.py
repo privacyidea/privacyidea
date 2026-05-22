@@ -925,6 +925,16 @@ class UserTestCase(MyTestCase):
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 
+    def test_51b_internal_attributes_refuse_unresolved_user(self):
+        """An unresolved User (empty uid) must not read or write internal
+        attributes — otherwise all unresolved users share a single bucket."""
+        from privacyidea.lib.error import UserError
+        unresolved = User()
+        self.assertFalse(unresolved.uid)
+        self.assertRaises(UserError, lambda: unresolved.internal_attributes)
+        self.assertRaises(UserError, unresolved.set_internal_attribute, "k", "v")
+        self.assertRaises(UserError, unresolved.delete_internal_attribute)
+
     def test_52_internal_user_attribute_node_column(self):
         """The ``node`` column is reserved for future per-node state.
         Verify it is persisted as given and defaults to NULL."""

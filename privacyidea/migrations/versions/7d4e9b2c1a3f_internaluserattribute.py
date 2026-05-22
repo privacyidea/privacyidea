@@ -21,6 +21,10 @@ depends_on = None
 FIDO2_USER_ID_KEY = 'fido2_user_id'
 LAST_USED_TOKEN_KEY = 'last_used_token'
 LAST_USED_TOKEN_PREFIX = 'last_used_token_'
+# Marker that ``validate.py`` always set on rows it wrote for the
+# ``last_used_token_<agent>`` keys. Used to distinguish them from any
+# admin-created ``customuserattribute`` rows that happen to share the prefix.
+INTERNAL_TYPE_MARKER = 'pi_internal'
 
 
 def _old_table():
@@ -94,10 +98,37 @@ def upgrade():
             raise
 
     # --- Data migration: move internal entries from customuserattribute ---
-    conn = op.get_bind()
+    _run_data_migration(op.get_bind())
+
+
+def _run_data_migration(conn) -> None:
+    """
+    Move internal-state rows from ``customuserattribute`` into
+    ``internaluserattribute``. Safe to re-run: each insert checks for an
+    existing target row first, so partial-failure recovery (re-running the
+    migration after a crash between insert and delete) is supported.
+
+    Scope:
+    - ``fido2_user_id`` rows are matched by exact key. The Type column was
+      never set for these (see ``passkeytoken.py`` history), so no Type
+      filter is applied.
+    - ``last_used_token_<agent>`` rows are matched by prefix AND require
+      ``Type='pi_internal'`` so that an admin-created customuserattribute
+      row that happens to share the prefix is left untouched.
+    """
     old = _old_table()
     new = _new_table()
     now = datetime.now(timezone.utc)
+
+    def _target_exists(user_id, resolver, realm_id, key) -> bool:
+        return conn.execute(
+            sa.select(new.c.user_id).where(
+                new.c.user_id == user_id,
+                new.c.resolver == resolver,
+                new.c.realm_id == realm_id,
+                new.c.Key == key,
+            )
+        ).first() is not None
 
     # 1. fido2_user_id: one row per user, copy Value as JSON string
     fido_rows = conn.execute(
@@ -105,6 +136,8 @@ def upgrade():
         .where(old.c.Key == FIDO2_USER_ID_KEY)
     ).fetchall()
     for row in fido_rows:
+        if _target_exists(row.user_id, row.resolver, row.realm_id, FIDO2_USER_ID_KEY):
+            continue
         conn.execute(
             new.insert().values(
                 user_id=row.user_id,
@@ -117,10 +150,14 @@ def upgrade():
             )
         )
 
-    # 2. last_used_token_<user_agent>: consolidate per user into a single dict row
+    # 2. last_used_token_<user_agent>: consolidate per user into a single dict row.
+    # Filter by Type='pi_internal' so we only consume rows privacyIDEA wrote itself.
     last_used_rows = conn.execute(
         sa.select(old.c.user_id, old.c.resolver, old.c.realm_id, old.c.Key, old.c.Value)
-        .where(old.c.Key.like(f'{LAST_USED_TOKEN_PREFIX}%'))
+        .where(
+            old.c.Key.like(f'{LAST_USED_TOKEN_PREFIX}%'),
+            old.c.Type == INTERNAL_TYPE_MARKER,
+        )
     ).fetchall()
     grouped = defaultdict(dict)
     for row in last_used_rows:
@@ -129,6 +166,8 @@ def upgrade():
             continue
         grouped[(row.user_id, row.resolver, row.realm_id)][user_agent] = row.Value
     for (user_id, resolver, realm_id), value_dict in grouped.items():
+        if _target_exists(user_id, resolver, realm_id, LAST_USED_TOKEN_KEY):
+            continue
         conn.execute(
             new.insert().values(
                 user_id=user_id,
@@ -141,9 +180,13 @@ def upgrade():
             )
         )
 
-    # 3. Remove migrated rows from the old table
+    # 3. Remove migrated rows from the old table. The DELETE is naturally
+    # idempotent; running it after a clean run is a no-op.
     conn.execute(old.delete().where(old.c.Key == FIDO2_USER_ID_KEY))
-    conn.execute(old.delete().where(old.c.Key.like(f'{LAST_USED_TOKEN_PREFIX}%')))
+    conn.execute(old.delete().where(
+        old.c.Key.like(f'{LAST_USED_TOKEN_PREFIX}%'),
+        old.c.Type == INTERNAL_TYPE_MARKER,
+    ))
 
 
 def downgrade():
