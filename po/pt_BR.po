@@ -50,8 +50,8 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
 "<li>Support and\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Service Level Agreements by NetKnights</a>, "
 "Germany.\n"
 "                    </li>\n"
@@ -68,8 +68,8 @@ msgid ""
 "                    <li>Depending on the support level you get help with "
 "updates and yearly consultancy.</li>\n"
 "                    <li>By buying the\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        you ensure that professional developers can work "
 "full time\n"
 "                        on privacyIDEA, add new features and fix bugs in a "
@@ -209,7 +209,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:252
 #: privacyidea/static/components/config/views/config.events.list.html:27
 #: privacyidea/static/components/config/views/config.policies.details.html:158
-#: privacyidea/static/components/config/views/config.policies.details.html:355
+#: privacyidea/static/components/config/views/config.policies.details.html:354
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
@@ -234,7 +234,7 @@ msgstr ""
 msgid "Active Policies"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:327
+#: privacyidea/static/components/config/views/config.policies.details.html:326
 #: privacyidea/static/components/token/views/token.containerdetails.html:760
 msgid "Add"
 msgstr ""
@@ -281,7 +281,7 @@ msgstr ""
 msgid "Additional"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:338
+#: privacyidea/static/components/config/views/config.policies.details.html:337
 msgid "Additional conditions"
 msgstr ""
 
@@ -769,7 +769,7 @@ msgid "Close all containers"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.policies.details.html:389
+#: privacyidea/static/components/config/views/config.policies.details.html:388
 msgid "Close all groups"
 msgstr ""
 
@@ -936,7 +936,7 @@ msgstr ""
 msgid "Count Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:164
+#: privacyidea/static/components/config/views/config.system.edit.html:166
 msgid ""
 "Count Window of\n"
 "                newly enrolled tokens"
@@ -1317,8 +1317,8 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
-"Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
-"username }}?"
+"Do you really want to delete the Token {{ tokenSerial }} from user "
+"{{ token.username }}?"
 msgstr ""
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:18
@@ -2418,7 +2418,7 @@ msgstr ""
 msgid "Mark the token as lost"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:177
+#: privacyidea/static/components/config/views/config.system.edit.html:179
 msgid ""
 "Max Failcount of\n"
 "                newly enrolled tokens"
@@ -2663,7 +2663,7 @@ msgstr ""
 msgid "OTP length"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:150
+#: privacyidea/static/components/config/views/config.system.edit.html:152
 msgid ""
 "OTP length of\n"
 "                newly enrolled tokens"
@@ -2726,7 +2726,7 @@ msgid "Open all containers"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
-#: privacyidea/static/components/config/views/config.policies.details.html:383
+#: privacyidea/static/components/config/views/config.policies.details.html:382
 msgid "Open all groups"
 msgstr ""
 
@@ -2935,7 +2935,7 @@ msgid ""
 "            the generated code below."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:358
+#: privacyidea/static/components/config/views/config.policies.details.html:357
 msgid "Please select a Scope in the top section first to configure actions."
 msgstr ""
 
@@ -3478,7 +3478,7 @@ msgstr ""
 msgid "SMTP server configuration"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:133
+#: privacyidea/static/components/config/views/config.system.edit.html:135
 msgid "SMTP server for password recovery"
 msgstr ""
 
@@ -3541,7 +3541,7 @@ msgstr ""
 msgid "Save Options"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:534
+#: privacyidea/static/components/config/views/config.policies.details.html:533
 msgid "Save Policy"
 msgstr ""
 
@@ -3574,7 +3574,7 @@ msgstr ""
 msgid "Save States"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:244
+#: privacyidea/static/components/config/views/config.system.edit.html:246
 msgid "Save System Config"
 msgstr ""
 
@@ -3662,7 +3662,7 @@ msgstr ""
 msgid "Select Realm"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:142
+#: privacyidea/static/components/config/views/config.system.edit.html:144
 msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -3837,7 +3837,7 @@ msgstr ""
 msgid "Show Policy templates"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:375
+#: privacyidea/static/components/config/views/config.policies.details.html:374
 msgid "Show all actions"
 msgstr ""
 
@@ -3849,7 +3849,7 @@ msgstr ""
 msgid "Show password"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:369
+#: privacyidea/static/components/config/views/config.policies.details.html:368
 msgid "Show selected actions only"
 msgstr ""
 
@@ -3978,7 +3978,7 @@ msgstr ""
 msgid "Sync Window"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:189
+#: privacyidea/static/components/config/views/config.system.edit.html:191
 msgid ""
 "Sync Window of\n"
 "                newly enrolled tokens"
@@ -4436,8 +4436,9 @@ msgid ""
 "validate.html\" target=\"_blank\">\n"
 "        validate API</a> but can also be handled by the\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
 
@@ -4466,7 +4467,7 @@ msgid ""
 "                a trusted certificate. Do not uncheck this in productive use!"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:202
+#: privacyidea/static/components/config/views/config.system.edit.html:204
 msgid "The challenge validity time"
 msgstr ""
 
@@ -4736,8 +4737,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
 "The token is currently assigned to container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -4771,20 +4772,20 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 
@@ -4848,7 +4849,7 @@ msgid ""
 "                        contain this resolver."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.system.edit.html:125
+#: privacyidea/static/components/config/views/config.system.edit.html:127
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
@@ -5179,7 +5180,7 @@ msgstr ""
 msgid "Token resync successful."
 msgstr ""
 
-#: privacyidea/static/components/directives/controllers/directives.js:1012
+#: privacyidea/static/components/directives/controllers/directives.js:1083
 #: privacyidea/static/components/token/controllers/tokenControllers.js:692
 msgid "Token successfully verified"
 msgstr ""
@@ -5385,7 +5386,7 @@ msgstr ""
 msgid "User"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:308
+#: privacyidea/static/components/config/views/config.policies.details.html:307
 msgid "User Agent"
 msgstr ""
 
@@ -5872,7 +5873,7 @@ msgstr ""
 msgid "failed users / tokens"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:398
+#: privacyidea/static/components/config/views/config.policies.details.html:397
 msgid "filter action..."
 msgstr ""
 
