@@ -186,23 +186,51 @@
                  </div>
            </div>
        </div>
-       <div class="col-lg-4">
+   </div>
+   <div class="row">
+       <div class="col-lg-12">
              <div class="panel panel-default" ng-show="checkRight('managesubscription')">
                  <div class="panel-heading">
                     <a ui-sref="component.subscriptions">
-                    <span class="glyphicon glyphicon-calendar"
+                    <span class="glyphicon glyphicon-th-list"
                           aria-hidden="true"></span>
                     <span translate>Subscriptions</span></a>
 		 </div>
                  <div class="panel-body">
-                     <table class="table">
+                     <p ng-if="!pluginStatus.length" translate>Loading…</p>
+                     <table class="table" ng-if="pluginStatus.length">
+                         <thead>
+                             <tr>
+                                 <th translate>Application</th>
+                                 <th translate>Status</th>
+                                 <th translate>Expires</th>
+                                 <th translate>Last seen</th>
+                             </tr>
+                         </thead>
                          <tbody>
-                            <tr ng-repeat="(key, subscription) in subscriptions">
-                                <td><a ui-sref="component.subscriptions()">{{ subscription.application }}</a>
-                                    ({{ subscription.level }})</td>
-                                <td>{{ subscription.active_users }}/    {{ subscription.num_users }}</td>
-                                <td>{{ subscription.date_till }}</td>
-                            </tr>
+                             <tr ng-repeat="entry in pluginStatus"
+                                 ng-class="{'info': entry.is_server}">
+                                 <td>
+                                     <strong ng-if="entry.is_server">{{ pluginDisplayName[entry.application] | translate }}</strong>
+                                     <span ng-if="!entry.is_server">{{ (pluginDisplayName[entry.application] || entry.application) | translate }}</span>
+                                 </td>
+                                 <td>
+                                     <span ng-class="pluginStatusDot[entry.status]"
+                                           style="font-size: 1.2em; line-height: 1;"
+                                           aria-hidden="true">●</span>
+                                     {{ pluginStatusText[entry.status] | translate }}
+                                 </td>
+                                 <td>
+                                     {{ entry.date_till | date: "y-MM-dd" }}
+                                     <span ng-if="entry.days_left > 0">
+                                         ({{ entry.days_left }} <span translate>days left</span>)
+                                     </span>
+                                     <span ng-if="entry.days_left < 0">
+                                         ({{ -entry.days_left }} <span translate>days ago</span>)
+                                     </span>
+                                 </td>
+                                 <td>{{ entry.last_seen | date: "y-MM-dd HH:mm" }}</td>
+                             </tr>
                          </tbody>
                      </table>
                  </div>

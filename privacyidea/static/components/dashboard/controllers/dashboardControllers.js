@@ -31,7 +31,38 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
-    $scope.subscriptions = {};
+    $scope.pluginStatus = [];
+    // Maps plugin status to the bootstrap text-color class for the traffic-light dot.
+    $scope.pluginStatusDot = {
+        "ok": "text-success",
+        "expiring": "text-warning",
+        "no_subscription": "text-warning",
+        "exceeded": "text-danger",
+        "expired": "text-danger",
+        "unused": "text-muted"
+    };
+    // Human-readable label per status. Kept on the client so the API stays
+    // language-neutral; routed through `translate` in the view for i18n.
+    $scope.pluginStatusText = {
+        "ok": "OK",
+        "expiring": "Expiring soon",
+        "no_subscription": "No subscription",
+        "exceeded": "Subscription required",
+        "expired": "Expired",
+        "unused": "Not used"
+    };
+    // Display name per plugin application key. The privacyidea- prefix is
+    // dropped — context already makes it obvious. Unknown keys fall back to
+    // the raw application identifier in the view.
+    $scope.pluginDisplayName = {
+        "privacyidea-cp": "Windows Credential Provider",
+        "privacyidea-adfs": "AD FS",
+        "privacyidea-pam": "PAM OTP & Push",
+        "pam-passkey": "PAM Passkey",
+        "privacyidea-shibboleth": "Shibboleth",
+        "privacyidea-keycloak": "Keycloak",
+        "privacyidea": "privacyIDEA Server"
+    };
     $scope.authentications = {"success": 0, "fail": 0};
 
     $scope.get_total_token_number = function () {
@@ -105,9 +136,58 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
 
 
-     $scope.getSubscriptions = function() {
-        SubscriptionFactory.get(function (data) {
-            $scope.subscriptions = data.result.value;
+     // Map a server-subscription row (as returned by GET /subscriptions/)
+     // to the same shape as a plugin status entry. The server is always
+     // "used" — there's no unused state for it.
+     $scope.buildServerStatusEntry = function(subscriptions) {
+        var serverSub = null;
+        angular.forEach(subscriptions || [], function(s) {
+            if (s.application === "privacyidea") { serverSub = s; }
+        });
+        var entry = {"application": "privacyidea",
+                     "status": "no_subscription",
+                     "last_seen": null,
+                     "date_till": null,
+                     "days_left": null};
+        if (serverSub) {
+            var till = new Date(serverSub.date_till);
+            var msPerDay = 24 * 60 * 60 * 1000;
+            var daysLeft = Math.floor((till - new Date()) / msPerDay);
+            entry.date_till = serverSub.date_till;
+            entry.days_left = daysLeft;
+            if (daysLeft < 0) {
+                entry.status = "expired";
+            } else if (daysLeft < 30) {
+                entry.status = "expiring";
+            } else {
+                entry.status = "ok";
+            }
+        }
+        return entry;
+     };
+
+     // Sort priority per status: subscribed first, then used-but-unsubscribed,
+     // then never-used. The server entry is always pinned to position 0 above
+     // any plugin entries.
+     var PLUGIN_STATUS_ORDER = {
+         "ok": 1, "expiring": 1, "expired": 1,
+         "no_subscription": 2, "exceeded": 2,
+         "unused": 3
+     };
+
+     $scope.getPluginStatus = function() {
+        SubscriptionFactory.getStatus(function (data) {
+            var pluginEntries = data.result.value;
+            SubscriptionFactory.get(function (subData) {
+                var serverEntry = $scope.buildServerStatusEntry(subData.result.value);
+                serverEntry.is_server = true;
+                // Array.prototype.sort is stable, so DASHBOARD_PLUGINS order is
+                // preserved within each status bucket.
+                var sortedPlugins = pluginEntries.slice().sort(function(a, b) {
+                    return PLUGIN_STATUS_ORDER[a.status] - PLUGIN_STATUS_ORDER[b.status];
+                });
+                $scope.pluginStatus = [serverEntry].concat(sortedPlugins);
+            });
         });
      };
 
@@ -182,7 +262,7 @@ $scope.getAuthentication = function () {
         $scope.get_events();
     }
     if (AuthFactory.checkRight('managesubscription')) {
-        $scope.getSubscriptions();
+        $scope.getPluginStatus();
     }
     if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
@@ -204,6 +284,7 @@ $scope.getAuthentication = function () {
         }
         if (AuthFactory.checkRight('managesubscription')) {
             $scope.getSubscriptions();
+            $scope.getPluginStatus();
         }
         if (AuthFactory.checkRight('auditlog')) {
             $scope.getAuthentication();

@@ -39,7 +39,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.token import get_tokens
 from .log import log_with
 from .utils import get_plugin_info_from_useragent
-from ..models import Subscription, db
+from ..models import ClientApplication, Subscription, db
 
 EXPIRE_MESSAGE = lazy_gettext("My subscription has expired.")
 SUBSCRIPTION_DATE_FORMAT = "%Y-%m-%d"
@@ -69,6 +69,7 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea-ldap-proxy": 50,
                 "privacyidea-cp": 50,
                 "privacyidea-pam": 10000,
+                "pam-passkey": 10000,
                 "privacyidea-shibboleth": 10000,
                 "privacyidea-adfs": 50,
                 "privacyidea-keycloak": 10000,
@@ -76,6 +77,27 @@ APPLICATIONS = {"demo_application": 0,
                 "privacyidea-simplesamlphp": 10000,
                 "privacyidea authenticator": 10,
                 "privacyidea": 50}
+
+# Plugins shown on the dashboard subscription overview. Order is preserved
+# in the API response so the frontend can render them as-is. Display names
+# live on the frontend (see ``pluginDisplayName`` in dashboardControllers.js).
+DASHBOARD_PLUGINS = [
+    "privacyidea-cp",
+    "privacyidea-adfs",
+    "privacyidea-pam",
+    "pam-passkey",
+    "privacyidea-shibboleth",
+    "privacyidea-keycloak",
+]
+
+EXPIRING_THRESHOLD_DAYS = 30
+
+# Guard against adding a plugin to DASHBOARD_PLUGINS without giving it a
+# free-token limit in APPLICATIONS — otherwise the status overview would
+# silently report it as ``exceeded`` for any non-zero token-user count.
+assert set(DASHBOARD_PLUGINS).issubset(APPLICATIONS), (
+    f"DASHBOARD_PLUGINS missing from APPLICATIONS: "
+    f"{set(DASHBOARD_PLUGINS) - set(APPLICATIONS)}")
 
 log = logging.getLogger(__name__)
 
@@ -98,6 +120,83 @@ def get_users_with_active_tokens():
     result = db.session.execute(stmt)
     rows = result.all()
     return len(rows)
+
+
+def get_plugin_subscription_status():
+    """
+    Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
+
+    Each entry has a ``status`` field. Possible values, with the colour the
+    frontend dashboard maps them to:
+
+    * ``ok`` (green) — used, valid subscription, at least
+      :data:`EXPIRING_THRESHOLD_DAYS` days left.
+    * ``expiring`` (orange) — used, valid subscription, within
+      :data:`EXPIRING_THRESHOLD_DAYS` days of expiry.
+    * ``expired`` (red) — used, subscription exists but ``date_till`` is in
+      the past. Distinct from ``no_subscription`` so the dashboard can
+      surface former customers whose subscription lapsed.
+    * ``no_subscription`` (orange) — used, no subscription on file, token-user
+      count still within the free limit from :data:`APPLICATIONS`.
+    * ``exceeded`` (red) — used, no subscription on file, token-user count
+      exceeds the free limit.
+    * ``unused`` (grey) — plugin has not contacted this server.
+
+    Plugin usage is derived from the ``ClientApplication`` table by parsing
+    each stored user-agent string with
+    :func:`~privacyidea.lib.utils.get_plugin_info_from_useragent`.
+
+    :return: list of dicts in the order of :data:`DASHBOARD_PLUGINS`. Each
+        dict has the keys ``application``, ``status``, ``last_seen``,
+        ``date_till`` and ``days_left``.
+    :rtype: list[dict]
+    """
+    stmt = (
+        select(ClientApplication.clienttype,
+               func.max(ClientApplication.lastseen).label("max_lastseen"))
+        .group_by(ClientApplication.clienttype)
+    )
+    last_seen_by_plugin: dict[str, datetime.datetime] = {}
+    for clienttype, max_lastseen in db.session.execute(stmt).all():
+        plugin = get_plugin_info_from_useragent(clienttype)[0]
+        if not plugin:
+            continue
+        key = plugin.lower()
+        current = last_seen_by_plugin.get(key)
+        if current is None or max_lastseen > current:
+            last_seen_by_plugin[key] = max_lastseen
+
+    token_users = get_users_with_active_tokens()
+    now = datetime.datetime.now()
+    overview = []
+    for plugin in DASHBOARD_PLUGINS:
+        entry = {"application": plugin,
+                 "last_seen": last_seen_by_plugin.get(plugin.lower()),
+                 "date_till": None,
+                 "days_left": None,
+                 "status": "unused"}
+        if entry["last_seen"] is None:
+            overview.append(entry)
+            continue
+
+        subscriptions = get_subscription(plugin)
+        subscription = subscriptions[0] if subscriptions else None
+        date_till = subscription.get("date_till") if subscription else None
+        if subscription and date_till and date_till >= now:
+            days_left = (date_till - now).days
+            entry["date_till"] = date_till
+            entry["days_left"] = days_left
+            entry["status"] = "expiring" if days_left < EXPIRING_THRESHOLD_DAYS else "ok"
+        elif subscription:
+            # Subscription on file but expired — distinct from never-subscribed.
+            entry["date_till"] = date_till
+            entry["days_left"] = (date_till - now).days if date_till else None
+            entry["status"] = "expired"
+        else:
+            free_limit = APPLICATIONS[plugin.lower()]
+            entry["status"] = "exceeded" if token_users > free_limit else "no_subscription"
+        overview.append(entry)
+    return overview
 
 
 def subscription_status(component="privacyidea", tokentype=None):
