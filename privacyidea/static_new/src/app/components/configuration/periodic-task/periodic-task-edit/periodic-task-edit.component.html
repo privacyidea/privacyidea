@@ -1,0 +1,289 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="periodic-task-page-layout">
+  <h3 class="margin-8 flex-row flex-nowrap ali-center">
+    {{ title() }}
+    @if (!isNewTask()) {
+      <span>:&nbsp;</span>
+      <span class="periodic-task-name-color">{{ editTask().name }}</span>
+      <app-copy-button [copyText]="editTask().name"></app-copy-button>
+    }
+  </h3>
+
+  <div class="page-controls">
+    <mat-slide-toggle
+      (change)="editTask.set({ ...editTask(), active: $event.checked })"
+      [checked]="editTask().active"
+      [disabled]="!authService.actionAllowed('periodictask_write')"
+      [disableRipple]="true"
+      i18n-matTooltip
+      matTooltip="Toggle Active Status">
+      @if (editTask().active) {
+        <span i18n>Active</span>
+      } @else {
+        <span i18n>Inactive</span>
+      }
+    </mat-slide-toggle>
+    <button
+      (click)="onCancel()"
+      class="action-button-secondary button-width-s"
+      mat-stroked-button>
+      <span i18n>Cancel</span>
+    </button>
+    <button
+      (click)="save()"
+      [disabled]="!canSave()"
+      class="action-button-primary button-width-s"
+      mat-stroked-button>
+      <mat-icon>save</mat-icon>
+      <span i18n>Save</span>
+    </button>
+    @if (!isNewTask() && authService.actionAllowed("periodictask_write")) {
+      <button
+        (click)="onDelete()"
+        class="action-button-secondary button-width-s"
+        color="warn"
+        i18n-matTooltip
+        mat-stroked-button
+        matTooltip="Delete">
+        <mat-icon>delete</mat-icon>
+        <span i18n>Delete</span>
+      </button>
+    }
+  </div>
+
+  @if (!isNewTask()) {
+    <div class="task-metadata margin-bottom-16">
+      <div class="metadata-row">
+        <span
+          class="metadata-label"
+          i18n>Last definition update:</span>
+        @if (editTask().last_update) {
+          <span>
+            {{ editTask().last_update | date:'yyyy-MM-dd HH:mm' }}
+          </span>
+        } @else {
+          <span i18n>Never</span>
+        }
+      </div>
+      <div class="metadata-row">
+        <span
+          class="metadata-label"
+          i18n>Last runs:</span>
+        @if (Object.keys(editTask().last_runs || {}).length > 0) {
+          <ul class="no-indention margin-0">
+            @for (entry of Object.entries(editTask().last_runs); track entry[0]) {
+              <li>
+                {{ entry[0] }}: {{ entry[1] | date:'yyyy-MM-dd HH:mm' }}
+              </li>
+            }
+          </ul>
+        } @else {
+          <span i18n>Never</span>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="flex-column gap-16">
+    @if (isNewTask()) {
+      <mat-form-field>
+        <mat-label i18n>Name</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="editTask.update(t => ({...t, name: ''}))"
+          [showClearButton]="!!editTask().name">
+          <input
+            [formField]="editTaskForm.name"
+            matInput />
+        </app-clearable-input>
+        <mat-hint i18n>Unique name of the periodic task.</mat-hint>
+        @if (editTaskForm.name().errors().some(e => e.kind === 'required') && (editTaskForm.name().dirty() || editTaskForm.name().touched())) {
+          <mat-error i18n>Name is <strong>required</strong>.</mat-error>
+        }
+        @if (editTaskForm.name().errors().some(e => e.kind === 'pattern') && (editTaskForm.name().dirty() || editTaskForm.name().touched())) {
+          <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label i18n>Task Module</mat-label>
+        <mat-select
+          [value]="editTask().taskmodule"
+          (selectionChange)="onTaskModuleChange($event.value)">
+          @for (module of taskModules(); track module) {
+            <mat-option [value]="module">
+              {{ getModuleLabel(module) }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <div class="flex-row">
+      <div class="flex-size-1 margin-bottom-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Interval</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="editTask.update(t => ({...t, interval: ''}))"
+            [showClearButton]="!!editTask().interval">
+            <input
+              [formField]="editTaskForm.interval"
+              matInput
+              [placeholder]="'5 10 * * *'" />
+          </app-clearable-input>
+          <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
+          @if (editTaskForm.interval().errors().some(e => e.kind === 'required') && (editTaskForm.interval().dirty() || editTaskForm.interval().touched())) {
+            <mat-error i18n>Interval is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="flex-size-1">
+        <mat-expansion-panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <span i18n>Examples</span>
+            </mat-panel-title>
+          </mat-expansion-panel-header>
+          <div class="example-grid">
+            <div class="bold">5 10 * * *</div>
+            <div>Every day at 10:05 am</div>
+            <div class="bold">*/10 * * * *</div>
+            <div>Every 10 minutes</div>
+            <div class="bold">1 23 * * 7</div>
+            <div>Every sunday at 11:01 pm</div>
+          </div>
+        </mat-expansion-panel>
+      </div>
+    </div>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label i18n>Nodes</mat-label>
+      <mat-select
+        (selectionChange)="onNodeSelectionChange($event.value)"
+        [multiple]="true"
+        [value]="editTask().nodes"
+        required>
+        @for (node of systemService.nodes(); track node) {
+          <mat-option [value]="node.name">
+            {{ node.name }}
+          </mat-option>
+        }
+      </mat-select>
+      <mat-hint i18n>Select the nodes on which the periodic task should be executed.</mat-hint>
+      <mat-error i18n>At least one node is <strong>required</strong>.</mat-error>
+    </mat-form-field>
+    <mat-form-field subscriptSizing="dynamic">
+      <mat-label i18n>Ordering</mat-label>
+      <input
+        matInput
+        type="number"
+        [value]="editTask().ordering"
+        (input)="editTask.set({ ...editTask(), ordering: +$any($event.target).value })" />
+      <mat-hint i18n>Tasks with lower ordering number are executed first.</mat-hint>
+    </mat-form-field>
+    <mat-checkbox
+      [checked]="editTask().retry_if_failed"
+      (change)="editTask.set({ ...editTask(), retry_if_failed: $event.checked })"
+      class="server-checkbox"
+      i18n>
+      Retry to execute this periodic task if it fails.
+    </mat-checkbox>
+  </div>
+
+  <h3>Options</h3>
+  <div class="options-flex-row">
+    <div class="flex-size-2">
+      @if (Object.keys(editTask().options).length === 0) {
+        <span
+          class="italic"
+          i18n>
+          No options have been set for this periodic task yet.
+        </span>
+      }
+      <div class="added-actions-container">
+        @for (option of Object.keys(editTask().options); track option) {
+          <div
+            class="action-card"
+            [class.action-card-selected]="selectedOption().name === option"
+            (click)="onOptionSelection(option, taskModuleOptions()[option], editTask().options[option])">
+            <div class="action-card-row">
+              <span class="action-label">
+                {{ option }}
+                @if (taskModuleOptions()[option].required) {
+                  <span>*</span>
+                }
+              </span>
+              @if (!isBooleanAction(editTask().options[option])) {
+                <div class="action-value">
+                  {{ editTask().options[option] }}
+                </div>
+              }
+              <div class="actions margin-left-16 height-48">
+                @if (taskModuleOptions()[option] && !taskModuleOptions()[option].required) {
+                  <button
+                    (click)="deleteOption(option)"
+                    mat-icon-button
+                    matTooltip="Remove Option">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (Object.keys(notUsedOptions()).length > 0) {
+        <h4 i18n>Add Option</h4>
+      }
+      <div class="added-actions-container">
+        @for (option of Object.keys(notUsedOptions()); track option) {
+          <div
+            class="action-card"
+            [class.action-card-selected]="selectedOption().name === option"
+            (click)="onOptionSelection(option, notUsedOptions()[option])">
+            <div class="action-card-row">
+              <span class="action-label">{{ option }}</span>
+              @if (editOption() === option && notUsedOptions()[option].type === "str") {
+                <div class="action-value">
+                  <mat-form-field>
+                    <input
+                      matInput
+                      [value]="newOptionValues()[option]"
+                      (input)="updateNewOptionValue(option, $any($event.target).value)" />
+                  </mat-form-field>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="flex-size-1">
+      @if (selectedOption().name) {
+        <app-periodic-task-option-detail
+          [option]="selectedOption()"
+          [showAddButton]="Object.prototype.hasOwnProperty.call(notUsedOptions(), selectedOption().name)"
+          (newValue)="addOption($event)"></app-periodic-task-option-detail>
+      }
+    </div>
+  </div>
+</div>

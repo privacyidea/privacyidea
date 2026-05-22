@@ -23,6 +23,7 @@ import { AuditComponent } from "@components/audit/audit.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
 import { MachineDetailsDialogComponent } from "@components/configuration/machines/machine-details-dialog/machine-details-dialog.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
+import { PeriodicTaskEditComponent } from "@components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskComponent } from "@components/configuration/periodic-task/periodic-task.component";
 import { SubscriptionComponent } from "@components/configuration/subscription/subscription.component";
 import { SystemConfigComponent } from "@components/configuration/system/system-config.component";
@@ -138,7 +139,14 @@ export const routes: Routes = [
           { path: "details/:id", component: MachineDetailsDialogComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
-      { path: "periodic-tasks", component: PeriodicTaskComponent, canDeactivate: [pendingChangesGuard] },
+      {
+        path: "periodic-tasks",
+        children: [
+          { path: "", component: PeriodicTaskComponent },
+          { path: "new", component: PeriodicTaskEditComponent, canDeactivate: [pendingChangesGuard] },
+          { path: "details/:name", component: PeriodicTaskEditComponent, canDeactivate: [pendingChangesGuard] }
+        ]
+      },
       { path: "subscription", component: SubscriptionComponent },
       { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }

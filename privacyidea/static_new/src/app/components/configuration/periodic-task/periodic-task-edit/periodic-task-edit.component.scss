@@ -1,0 +1,56 @@
+@use "styles";
+
+.periodic-task-page-layout {
+  @include styles.main-component-style;
+}
+
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.periodic-task-name-color {
+  color: var(--mat-sys-primary);
+}
+
+.task-metadata {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+}
+
+.metadata-row {
+  margin-bottom: 4px;
+}
+
+.metadata-label {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.no-indention {
+  padding-left: 16px;
+}
+
+.options-flex-row {
+  display: flex;
+  gap: calc(var(--global-gap) / 4 * 3);
+  flex-direction: row;
+  margin-bottom: var(--global-gap);
+  min-width: 0;
+  width: 100%;
+}
+
+.height-48 {
+  height: 48px;
+}
+
+.example-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  margin-bottom: auto;
+}

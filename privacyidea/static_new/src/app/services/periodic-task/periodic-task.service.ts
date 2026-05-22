@@ -139,7 +139,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   });
 
   periodicTaskModuleResource = httpResource<PiResponse<PeriodicTaskModule[]>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS) {
+    if (!this.contentService.onConfigurationPeriodicTasks()) {
       return undefined;
     }
     return {
