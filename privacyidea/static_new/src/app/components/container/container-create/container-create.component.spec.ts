@@ -116,10 +116,6 @@ const routerMock = { navigateByUrl } as unknown as Router;
 describe("ContainerCreateComponent", () => {
   let fixture: ComponentFixture<ContainerCreateComponent>;
   let component: ContainerCreateComponent;
-  let selfFixture: ComponentFixture<ContainerCreateSelfServiceComponent>;
-  let selfComponent: ContainerCreateSelfServiceComponent;
-  let wizardFixture: ComponentFixture<ContainerCreateComponent>;
-  let wizardComponent: ContainerCreateComponent;
 
   let containerServiceMock: MockContainerService;
   let userService: MockUserService;
@@ -161,10 +157,6 @@ describe("ContainerCreateComponent", () => {
 
     fixture = TestBed.createComponent(ContainerCreateComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(ContainerCreateSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
-    wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
-    wizardComponent = wizardFixture.componentInstance;
 
     containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     userService = TestBed.inject(UserService) as unknown as MockUserService;
@@ -191,11 +183,13 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("creates self service", () => {
-    expect(selfComponent).toBeTruthy();
+    const selfFixture = TestBed.createComponent(ContainerCreateSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("creates wizard", () => {
-    expect(wizardComponent).toBeTruthy();
+    const wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+    expect(wizardFixture.componentInstance).toBeTruthy();
   });
 
   it("non-QR create: navigates and sets containerSerial", () => {
@@ -391,8 +385,8 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("smartphone without registration wizard policy does not open registration completed dialog", () => {
-    wizardFixture.destroy();
-    selfFixture.destroy();
+    TestBed.createComponent(ContainerCreateWizardComponent).destroy();
+    TestBed.createComponent(ContainerCreateSelfServiceComponent).destroy();
     authService.authData.set({
       ...authService.authData()!,
       container_wizard: { ...authService.authData()!.container_wizard, registration: false }
@@ -416,8 +410,8 @@ describe("ContainerCreateComponent", () => {
   });
 
   it("smartphone with registration wizard policy but without register right does not open registration completed dialog", () => {
-    wizardFixture.destroy();
-    selfFixture.destroy();
+    TestBed.createComponent(ContainerCreateWizardComponent).destroy();
+    TestBed.createComponent(ContainerCreateSelfServiceComponent).destroy();
     authService.authData.set({
       ...authService.authData()!,
       container_wizard: { ...authService.authData()!.container_wizard, registration: true }
@@ -527,6 +521,14 @@ describe("ContainerCreateComponent", () => {
   });
 
   describe("wizard", () => {
+    let wizardFixture: ComponentFixture<ContainerCreateWizardComponent>;
+    let wizardComponent: ContainerCreateWizardComponent;
+
+    beforeEach(() => {
+      wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
+      wizardComponent = wizardFixture.componentInstance;
+    });
+
     it("show loaded templates if not empty", async () => {
       authService.authData.set({
         ...authService.authData()!,
