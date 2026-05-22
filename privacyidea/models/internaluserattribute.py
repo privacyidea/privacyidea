@@ -17,6 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -62,9 +63,9 @@ class InternalUserAttribute(MethodsMixin, db.Model):
     resolver: Mapped[str | None] = mapped_column(Unicode(120), default='')
     realm_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('realm.id', ondelete='CASCADE'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    Value: Mapped[Any | None] = mapped_column(JSON, nullable=True)
     last_modified: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )

@@ -368,4 +368,32 @@
             </table>
         </div>
     </div>
+
+    <div style="margin-top: 20px;" ng-show="loggedInUser.role === 'admin'">
+        <uib-accordion close-others="false">
+            <div uib-accordion-group
+                 class="panel-default"
+                 is-open="internalAttributesAccordionOpen"
+                 ng-click="onInternalAttributesAccordionToggle(internalAttributesAccordionOpen)">
+                <uib-accordion-heading>
+                    <translate>Internal attributes</translate>
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': internalAttributesAccordionOpen,
+                                     'glyphicon-chevron-right': !internalAttributesAccordionOpen}">
+                    </span>
+                </uib-accordion-heading>
+                <table class="table table-hover" ng-show="internalAttributesLoaded">
+                    <tr ng-repeat="(key, value) in internal_attributes">
+                        <td class="col-sm-4"><b>{{ key }}</b></td>
+                        <td class="col-sm-8">{{ formatInternalAttribute(value) }}</td>
+                    </tr>
+                    <tr ng-show="!(internal_attributes | json) || (internal_attributes | json) === '{}'">
+                        <td colspan="2" class="text-muted text-center" translate>
+                            No internal attributes recorded for this user.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </uib-accordion>
+    </div>
 </div>

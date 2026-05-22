@@ -100,6 +100,14 @@ myApp.factory("UserFactory", ['AuthFactory', '$http', '$state', '$rootScope',
                      params: params
                     }).then(function(response) {callback(response.data)},
                     function(error) {AuthFactory.authError(error.data)});
+            },
+            getInternalAttributes: function(username, realmname, callback) {
+                var params = {"user": username, "realm": realmname};
+                $http.get(userUrl + "/internal_attribute",
+                    {headers: {'PI-Authorization': AuthFactory.getAuthToken()},
+                     params: params
+                    }).then(function(response) {callback(response.data)},
+                    function(error) {AuthFactory.authError(error.data)});
             }
 
         };

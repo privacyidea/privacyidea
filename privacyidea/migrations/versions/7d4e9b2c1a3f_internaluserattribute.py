@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
@@ -81,7 +82,7 @@ def upgrade():
             sa.Column('realm_id', sa.Integer(), nullable=True),
             sa.Column('Key', sa.Unicode(length=255), nullable=False),
             sa.Column('Value', sa.JSON(), nullable=True),
-            sa.Column('last_modified', sa.DateTime(), nullable=True),
+            sa.Column('last_modified', sa.DateTime(timezone=True), nullable=True),
             sa.Column('node', sa.Unicode(length=120), nullable=True),
             sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id'),
@@ -96,6 +97,16 @@ def upgrade():
         else:
             print("Could not add table 'internaluserattribute' to database.")
             raise
+
+    # Advance the sequence past any existing rows. Covers the
+    # table-already-exists branch above where rows may already be present
+    # and the sequence (newly created or pre-existing) would otherwise hand
+    # out a value <= MAX(id), causing duplicate-PK errors on the next insert.
+    if bind.dialect.supports_sequences:
+        max_id = bind.execute(
+            text("SELECT COALESCE(MAX(id), 0) FROM internaluserattribute")
+        ).scalar() or 0
+        op.execute(f"ALTER SEQUENCE internaluserattribute_seq RESTART WITH {max_id + 1}")
 
     _run_data_migration(op.get_bind())
 

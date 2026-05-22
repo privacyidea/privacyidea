@@ -50,7 +50,6 @@ custom-attribute write/delete endpoints are gated by the
 :ref:`policy_delete_custom_user_attributes` policies and may be
 invoked by users on themselves as well as by admins on other users.
 """
-from flask_babel import _
 import logging
 
 from flask import g, Blueprint, request
@@ -59,7 +58,7 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import PolicyError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
@@ -231,6 +230,31 @@ def get_user_attribute():
         r = r.get(attrkey)
     g.audit_object.log({"success": True,
                         "info": f"{attrkey!s}"})
+    return send_result(r)
+
+
+@user_blueprint.route('/internal_attribute', methods=['GET'])
+@admin_required
+@event("get_user_internal_attribute", request, g)
+def get_user_internal_attribute():
+    """
+    Return privacyIDEA-internal attributes for a user. These are caches
+    privacyIDEA writes about itself (e.g. ``fido2_user_id``,
+    ``last_used_token``) and are NOT user-facing — admin-only, read-only.
+
+    Intended for support / debugging via the WebUI details panel.
+
+    :query user: user name (required).
+    :query resolver: resolver name.
+    :query realm: realm name.
+    :status 200: dict of internal attributes in ``result.value``.
+    """
+    username = get_required(request.all_data, "user")
+    realm = get_optional(request.all_data, "realm")
+    resolver = get_optional(request.all_data, "resolver")
+    user = User(login=username, realm=realm or "", resolver=resolver or "")
+    r = user.internal_attributes
+    g.audit_object.log({"success": True, "info": f"{username!s}"})
     return send_result(r)
 
 

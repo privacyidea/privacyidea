@@ -225,6 +225,25 @@ angular.module("privacyideaApp")
                     });
             };
 
+            // Internal attributes are admin-only diagnostic data. We fetch
+            // them lazily the first time the accordion expands so the details
+            // page does not pay for an extra round-trip on every load.
+            $scope.internalAttributesLoaded = false;
+            $scope.internal_attributes = {};
+            $scope.formatInternalAttribute = function (value) {
+                // Show string values bare; dicts/lists/numbers as JSON.
+                return typeof value === 'string' ? value : JSON.stringify(value);
+            };
+            $scope.onInternalAttributesAccordionToggle = function (isOpen) {
+                if (isOpen && !$scope.internalAttributesLoaded) {
+                    UserFactory.getInternalAttributes($scope.username, $scope.realmname,
+                        function (data) {
+                            $scope.internal_attributes = data.result.value || {};
+                            $scope.internalAttributesLoaded = true;
+                        });
+                }
+            };
+
             $scope.deleteCustomAttribute = function (key) {
                 UserFactory.deleteCustomAttribute($scope.username, $scope.realmname, key,
                     function (data) {

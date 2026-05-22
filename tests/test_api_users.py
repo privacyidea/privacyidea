@@ -665,6 +665,26 @@ class APIUsersTestCase(MyApiTestCase):
 
         delete_policy("custom_attribute")
 
+    def test_11b_get_internal_attributes(self):
+        """The /user/internal_attribute endpoint exposes the diagnostic
+        cache (fido2_user_id, last_used_token) to admins."""
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        user.set_internal_attribute("last_used_token", {"privacyidea-cp": "push"})
+        user.set_internal_attribute("fido2_user_id", "abc123")
+
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "hans", "realm": self.realm1},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result", {}).get("value")
+            self.assertEqual({"privacyidea-cp": "push"}, value.get("last_used_token"))
+            self.assertEqual("abc123", value.get("fido2_user_id"))
+
+        user.delete_internal_attribute()
+
     def test_12_get_users(self):
         self.setUp_user_realms()
 
