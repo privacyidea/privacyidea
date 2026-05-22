@@ -22,9 +22,11 @@
 myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                          "SubscriptionFactory", "AuditFactory",
                                          "$scope", "$location", "AuthFactory",
+                                         "gettextCatalog",
                                          function (ConfigFactory, TokenFactory,
                                                    SubscriptionFactory, AuditFactory,
-                                                   $scope, $location, AuthFactory) {
+                                                   $scope, $location, AuthFactory,
+                                                   gettextCatalog) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.policies = {"active": [], "num_active": 0,
@@ -36,22 +38,23 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     $scope.pluginStatusLoadState = null;
     // Maps plugin status to the bootstrap text-color class for the traffic-light dot.
     $scope.pluginStatusDot = {
-        "ok": "text-success",
+        "active": "text-success",
         "expiring": "text-warning",
         "no_subscription": "text-warning",
         "exceeded": "text-danger",
         "expired": "text-danger",
         "unused": "text-muted"
     };
-    // Human-readable label per status. Kept on the client so the API stays
-    // language-neutral; routed through `translate` in the view for i18n.
+    // Localized label per status. Built via gettextCatalog so the strings are
+    // picked up by the nggettext extractor (plain JS literals routed through
+    // `| translate` in the template are not).
     $scope.pluginStatusText = {
-        "ok": "OK",
-        "expiring": "Expiring soon",
-        "no_subscription": "No subscription",
-        "exceeded": "Subscription required",
-        "expired": "Expired",
-        "unused": "Not used"
+        "active": gettextCatalog.getString("Active"),
+        "expiring": gettextCatalog.getString("Expiring soon"),
+        "no_subscription": gettextCatalog.getString("No subscription"),
+        "exceeded": gettextCatalog.getString("Subscription required"),
+        "expired": gettextCatalog.getString("Expired"),
+        "unused": gettextCatalog.getString("Not used")
     };
     // Display name per plugin application key. The privacyidea- prefix is
     // dropped — context already makes it obvious. Unknown keys fall back to
@@ -142,7 +145,7 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
      // then never-used. The server entry (is_server) is always pinned to the
      // top, regardless of status.
      var PLUGIN_STATUS_ORDER = {
-         "ok": 1, "expiring": 1, "expired": 1,
+         "active": 1, "expiring": 1, "expired": 1,
          "no_subscription": 2, "exceeded": 2,
          "unused": 3
      };
@@ -157,8 +160,8 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
             var sorted = entries.map(function(entry, idx) {
                     return {entry: entry, idx: idx};
                 }).sort(function(a, b) {
-                    if (a.entry.is_server) return -1;
-                    if (b.entry.is_server) return 1;
+                    if (a.entry.is_server && !b.entry.is_server) return -1;
+                    if (b.entry.is_server && !a.entry.is_server) return 1;
                     var diff = PLUGIN_STATUS_ORDER[a.entry.status] - PLUGIN_STATUS_ORDER[b.entry.status];
                     return diff !== 0 ? diff : a.idx - b.idx;
                 }).map(function(item) { return item.entry; });

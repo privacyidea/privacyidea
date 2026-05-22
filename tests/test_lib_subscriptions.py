@@ -247,7 +247,7 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
             overview = {e["application"]: e
                         for e in get_plugin_subscription_status()}
 
-        self.assertEqual(overview["privacyidea-keycloak"]["status"], "ok")
+        self.assertEqual(overview["privacyidea-keycloak"]["status"], "active")
         self.assertGreaterEqual(overview["privacyidea-keycloak"]["days_left"], 30)
         self.assertIsNotNone(overview["privacyidea-keycloak"]["date_till"])
 
@@ -289,7 +289,7 @@ class PluginSubscriptionStatusTestCase(MyTestCase):
             overview = {e["application"]: e
                         for e in get_plugin_subscription_status()}
 
-        self.assertEqual(overview["privacyidea-cp"]["status"], "ok")
+        self.assertEqual(overview["privacyidea-cp"]["status"], "active")
 
     def test_05_unparseable_useragent_is_skipped(self):
         # A row whose user-agent string does not match the plugin format
@@ -341,7 +341,7 @@ class ServerSubscriptionStatusTestCase(MyTestCase):
     def test_02_ok(self):
         self._add_server_subscription(days_left=100)
         entry = get_server_subscription_status()
-        self.assertEqual(entry["status"], "ok")
+        self.assertEqual(entry["status"], "active")
         self.assertGreaterEqual(entry["days_left"], 30)
 
     def test_03_expiring(self):
@@ -363,5 +363,5 @@ class ServerSubscriptionStatusTestCase(MyTestCase):
         self._add_server_subscription(days_left=-5, by_email="old@x")
         self._add_server_subscription(days_left=100, by_email="new@x")
         entry = get_server_subscription_status()
-        self.assertEqual(entry["status"], "ok")
+        self.assertEqual(entry["status"], "active")
         self.assertGreaterEqual(entry["days_left"], 30)

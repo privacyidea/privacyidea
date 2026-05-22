@@ -115,33 +115,34 @@ def get_users_with_active_tokens():
     return len(rows)
 
 
-def _classify_subscription_date(date_till, now):
+def _classify_subscription_date(
+        date_till: datetime.datetime,
+        now: datetime.datetime) -> tuple[str, int]:
     """
-    Map a subscription's ``date_till`` to a dashboard status.
+    Map a subscription's ``date_till`` to a dashboard status. The caller is
+    responsible for handling the "no subscription on file" case before
+    calling this helper.
 
-    :return: ``(status, days_left)`` where status is one of ``"ok"``,
+    :return: ``(status, days_left)`` where status is one of ``"active"``,
         ``"expiring"`` or ``"expired"``, and ``days_left`` is the integer
-        day delta (negative when expired). Returns ``(None, None)`` if
-        ``date_till`` is falsy.
+        day delta (negative when expired).
     """
-    if not date_till:
-        return None, None
     days_left = (date_till - now).days
     if date_till < now:
         return "expired", days_left
     if days_left < EXPIRING_THRESHOLD_DAYS:
         return "expiring", days_left
-    return "ok", days_left
+    return "active", days_left
 
 
-def get_plugin_subscription_status():
+def get_plugin_subscription_status() -> list[dict]:
     """
     Return a dashboard status entry for each plugin in :data:`DASHBOARD_PLUGINS`.
 
     Each entry has a ``status`` field. Possible values, with the colour the
     frontend dashboard maps them to:
 
-    * ``ok`` (green) — used, valid subscription, at least
+    * ``active`` (green) — used, valid subscription, at least
       :data:`EXPIRING_THRESHOLD_DAYS` days left.
     * ``expiring`` (orange) — used, valid subscription, within
       :data:`EXPIRING_THRESHOLD_DAYS` days of expiry.
@@ -187,7 +188,8 @@ def get_plugin_subscription_status():
     subscriptions_by_app = {sub["application"].lower(): sub
                             for sub in all_subscriptions}
 
-    token_users = get_users_with_active_tokens()
+    # Lazily computed — only the no_subscription/exceeded branch needs it.
+    token_users: int | None = None
     now = datetime.datetime.now()
     overview = []
     for plugin in DASHBOARD_PLUGINS:
@@ -205,19 +207,21 @@ def get_plugin_subscription_status():
 
         subscription = subscriptions_by_app.get(plugin.lower())
         date_till = subscription.get("date_till") if subscription else None
-        status, days_left = _classify_subscription_date(date_till, now)
-        if status:
+        if date_till:
+            status, days_left = _classify_subscription_date(date_till, now)
             entry["date_till"] = date_till
             entry["days_left"] = days_left
             entry["status"] = status
         else:
+            if token_users is None:
+                token_users = get_users_with_active_tokens()
             free_limit = APPLICATIONS[plugin.lower()]
             entry["status"] = "exceeded" if token_users > free_limit else "no_subscription"
         overview.append(entry)
     return overview
 
 
-def get_server_subscription_status():
+def get_server_subscription_status() -> dict:
     """
     Dashboard status entry for the privacyIDEA server itself. Same shape as
     entries from :func:`get_plugin_subscription_status` plus ``is_server: True``.
@@ -239,8 +243,8 @@ def get_server_subscription_status():
                            reverse=True)
     subscription = subscriptions[0] if subscriptions else None
     date_till = subscription.get("date_till") if subscription else None
-    status, days_left = _classify_subscription_date(date_till, datetime.datetime.now())
-    if status:
+    if date_till:
+        status, days_left = _classify_subscription_date(date_till, datetime.datetime.now())
         entry["date_till"] = date_till
         entry["days_left"] = days_left
         entry["status"] = status

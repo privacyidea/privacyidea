@@ -106,7 +106,7 @@ class APISubscriptionsTestCase(MyApiTestCase):
         self.assertEqual(value[0]["application"], "privacyidea")
         self.assertEqual([e["application"] for e in value[1:]], DASHBOARD_PLUGINS)
         by_app = {e["application"]: e for e in value[1:]}
-        self.assertEqual(by_app["privacyidea-keycloak"]["status"], "ok")
+        self.assertEqual(by_app["privacyidea-keycloak"]["status"], "active")
         # Everything else stays unused on a fresh test DB.
         for plugin in DASHBOARD_PLUGINS:
             if plugin != "privacyidea-keycloak":
