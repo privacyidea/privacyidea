@@ -93,8 +93,8 @@
         <mat-checkbox
           (change)="updateSelection($event, task)"
           (click)="$event.stopPropagation()"
-          [checked]="task.id != null && selectedTaskIds().has(task.id)"
-          [disabled]="!authService.actionAllowed('periodictask_write') || task.id == null"
+          [checked]="task.id !== null && task.id !== undefined && selectedTaskIds().has(task.id)"
+          [disabled]="!authService.actionAllowed('periodictask_write') || task.id === null || task.id === undefined"
           aria-label="Select periodic task"
           i18n-aria-label></mat-checkbox>
       </td>
@@ -114,7 +114,11 @@
         <app-copyable [copyText]="task.name">
           <a
             (click)="onEditTask(task)"
-            class="flex ali-center">
+            (keydown.enter)="onEditTask(task)"
+            (keydown.space)="onEditTask(task); $event.preventDefault()"
+            class="flex ali-center"
+            role="button"
+            tabindex="0">
             {{ task.name }}
           </a>
         </app-copyable>

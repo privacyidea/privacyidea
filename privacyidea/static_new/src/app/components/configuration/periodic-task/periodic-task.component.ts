@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, OnInit, signal, ViewChild } from "@angular/core";
+import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -75,7 +75,7 @@ export class PeriodicTaskComponent implements OnInit {
   filterString = signal<string>("");
 
   @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "name", "taskmodule", "interval", "nodes", "options", "active"];
 
@@ -86,11 +86,11 @@ export class PeriodicTaskComponent implements OnInit {
     this.detailedView.set(!this.detailedView());
   }
 
-  isBooleanValue(value: any): boolean {
+  isBooleanValue(value: unknown): boolean {
     return ["true", "false"].includes(String(value).toLowerCase());
   }
 
-  formatOptions(options: Record<string, any>): string {
+  formatOptions(options: Record<string, unknown> | null | undefined): string {
     if (!options || typeof options !== "object") return "";
     return Object.entries(options)
       .map(([key, value]) => (this.isBooleanValue(value) ? key : `${key}: ${value}`))
@@ -228,7 +228,7 @@ export class PeriodicTaskComponent implements OnInit {
     this.filterString.set("");
     const dataSource = this.periodicTasksDataSource();
     dataSource.filter = "";
-    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
+    const inputEl = this.filterInput?.nativeElement;
     if (inputEl) {
       inputEl.value = "";
     }

@@ -178,8 +178,8 @@ describe("PeriodicTaskComponent", () => {
 
   describe("formatOptions", () => {
     it("returns an empty string for nullish or non-object input", () => {
-      expect(component.formatOptions(null as any)).toBe("");
-      expect(component.formatOptions(undefined as any)).toBe("");
+      expect(component.formatOptions(null)).toBe("");
+      expect(component.formatOptions(undefined)).toBe("");
     });
 
     it("returns an empty string for an empty options object", () => {
