@@ -1,19 +1,20 @@
 # Polon <polonize@proton.me>, 2023, 2024.
 # Eryk Michalak <gnu.ewm@protonmail.com>, 2023, 2024.
+# Jakub Kł <jgeralcik@gmail.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-03-28 09:26+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2026-05-24 17:11+0000\n"
+"Last-Translator: Jakub Kł <jgeralcik@gmail.com>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/privacyidea/"
-"branch-3-11-webui/pl/>\n"
+"privacyidea-webui/pl/>\n"
 "Language: pl\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 2026.6.dev0\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -894,9 +895,8 @@ msgid "Container Created"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:20
-#, fuzzy
 msgid "Container Details for {{ containerSerial }}"
-msgstr "Szczegóły tokena {{ tokenSerial }}"
+msgstr "Szczegóły Kontenera dla {{ containerSerial }}"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
 msgid "Container Realms"
@@ -1382,9 +1382,8 @@ msgid "Do you really want to delete this resolver?"
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.serviceid.list.html:29
-#, fuzzy
 msgid "Do you really want to delete this service ID?"
-msgstr "Czy chcesz usunąć token {{ tokenSerial }}?"
+msgstr "Czy na pewno chcesz usunąć ten ID serwisu?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
@@ -2944,7 +2943,6 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.containercreate.html:179
 #: privacyidea/static/components/token/views/token.containerdetails.html:276
-#, fuzzy
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
 "                    or click <a href=\"{{ containerRegistrationURL }}\">this "
@@ -2953,11 +2951,12 @@ msgid ""
 "missing registration data to the configured\n"
 "                    endpoint."
 msgstr ""
-"Zeskanuj kod QR przy użyciu aplikacji uwierzytelniającej privacyIDEA "
-"Authenticator\n"
-"            lub kliknij <a href=\"{{ enrolledToken.pushurl.value }}\">ten "
-"link</a> w twoim\n"
-"            smartfonie."
+"Zeskanuj proszę kod QR używając aplikacji privacyIDEA Authenticator App\n"
+"                    lub kliknij <a href=\"{{ containerRegistrationURL }}\">"
+"ten link</a> na twoim\n"
+"                    telefonie, aby zarejestrować swój kontener. Zostaną "
+"wysłane brakujące dane rejestracji do wybranego\n"
+"                    punktu końcowego."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid ""
@@ -4815,7 +4814,6 @@ msgid "The time in which the password can be used. For example '1d' or '12h'."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.html:194
-#, fuzzy
 msgid ""
 "The token has been enrolled in the container\n"
 "            <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -4823,10 +4821,11 @@ msgid ""
 "                {{ enrolledToken.container_serial }}\n"
 "            </a>."
 msgstr ""
-"Token został zarejestrowany z numerem seryjnym\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
-"\">\n"
-"                {{ enrolledToken.serial }}</a>."
+"Token został dodany do kontenera\n"
+"            <a ui-sref=\"token.containerdetails({containerSerial: "
+"enrolledToken.container_serial})\">\n"
+"                {{ enrolledToken.container_serial }}\n"
+"            </a>."
 
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
@@ -5339,19 +5338,16 @@ msgid "Total Challenges:"
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:77
-#, fuzzy
 msgid "Total Containers: {{ containerData.count }}"
-msgstr "całkowita liczba tokenów: {{ tokendata.count }}"
+msgstr "Wszystkie Kontenery: {{ containerData.count }}"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:30
-#, fuzzy
 msgid "Total Containers: {{ containerdata.count }}"
-msgstr "całkowita liczba tokenów: {{ tokendata.count }}"
+msgstr "Wszystkie Kontenery: {{ containerdata.count }}"
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:32
-#, fuzzy
 msgid "Total Templates: {{ templatedata.count }}"
-msgstr "całkowita liczba tokenów: {{ tokendata.count }}"
+msgstr "Wszystkie Szablony: {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:46
 msgid "Total expired challenges deleted:"
@@ -5801,9 +5797,8 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:525
-#, fuzzy
 msgid "You will be logged in as: {{ loggedinUsername }}"
-msgstr "Zostaniesz wylogowany w ciągu {{ myCountdown }} sekund."
+msgstr "Zostaniesz zalogowany jako: {{ loggedinUsername }}"
 
 #: privacyidea/static/templates/menu.html:171
 msgid "You will be logged out in {{ myCountdown }} second(s)."
