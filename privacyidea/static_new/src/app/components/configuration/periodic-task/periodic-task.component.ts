@@ -233,4 +233,6 @@ export class PeriodicTaskComponent implements OnInit {
       inputEl.value = "";
     }
   }
+
+  protected readonly Array = Array;
 }
