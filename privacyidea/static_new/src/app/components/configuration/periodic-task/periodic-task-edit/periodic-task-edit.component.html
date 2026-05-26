@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   class="periodic-task-page-layout">
   <h3 class="margin-8 flex-row flex-nowrap ali-center">
@@ -28,7 +29,13 @@
     }
   </h3>
 
-  <div class="page-controls">
+  <div
+    #stickySentinel
+    class="sticky-sentinel"></div>
+
+  <div
+    #stickyHeader
+    class="page-controls sticky-header">
     <mat-slide-toggle
       (change)="editTask.set({ ...editTask(), active: $event.checked })"
       [checked]="editTask().active"
@@ -129,7 +136,7 @@
       </mat-form-field>
     }
 
-    <div class="flex-row">
+    <div class="flex-row gap-16">
       <div class="flex-size-1 margin-bottom-16">
         <mat-form-field
           appearance="fill"
@@ -167,7 +174,7 @@
         </mat-expansion-panel>
       </div>
     </div>
-    <mat-form-field subscriptSizing="dynamic">
+    <mat-form-field class="input-width-xl" subscriptSizing="dynamic">
       <mat-label i18n>Nodes</mat-label>
       <mat-select
         (selectionChange)="onNodeSelectionChange($event.value)"
@@ -183,7 +190,7 @@
       <mat-hint i18n>Select the nodes on which the periodic task should be executed.</mat-hint>
       <mat-error i18n>At least one node is <strong>required</strong>.</mat-error>
     </mat-form-field>
-    <mat-form-field subscriptSizing="dynamic">
+    <mat-form-field class="input-width-xl" subscriptSizing="dynamic">
       <mat-label i18n>Ordering</mat-label>
       <input
         matInput

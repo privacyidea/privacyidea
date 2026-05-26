@@ -19,14 +19,18 @@
 
 import { DatePipe } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
+  Renderer2,
   signal,
   untracked,
+  ViewChild,
   WritableSignal
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -93,7 +97,7 @@ import { firstValueFrom } from "rxjs";
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
 })
-export class PeriodicTaskEditComponent implements OnDestroy {
+export class PeriodicTaskEditComponent implements AfterViewInit, OnDestroy {
   protected readonly periodicTaskService: PeriodicTaskServiceInterface = inject(PeriodicTaskService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly systemService = inject(SystemService);
@@ -101,6 +105,13 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly renderer: Renderer2 = inject(Renderer2);
+
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+
+  private stickyObserver?: IntersectionObserver;
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;
@@ -212,8 +223,27 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     this.periodicTaskService.fetchAllModuleOptions();
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+
+    this.stickyObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.rootBounds) return;
+        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+        if (shouldFloat) {
+          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        } else {
+          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        }
+      },
+      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
+    );
+    this.stickyObserver.observe(this.stickySentinel.nativeElement);
+  }
+
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+    this.stickyObserver?.disconnect();
   }
 
   hasChanges(): boolean {

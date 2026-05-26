@@ -1,5 +1,7 @@
 .input-container {
   position: relative;
+  display: flex;
+  flex-direction: row;
 }
 
 .input-container button {
