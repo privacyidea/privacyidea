@@ -292,3 +292,35 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
                              "ERR401: User is not authorized to authenticate under these conditions.")
 
         delete_policy("auth01")
+
+
+class SetRealmConflictTestCase(MyApiTestCase):
+    """
+    Two AUTHZ `setrealm` policies that match the same user but set
+    different target realms must be rejected as a conflict.
+    """
+
+    def test_00_setrealm_conflicting_policies_raise(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        set_policy(name="pol_setrealm_conflict_a",
+                   scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.SETREALM}={self.realm1}")
+        set_policy(name="pol_setrealm_conflict_b",
+                   scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.SETREALM}={self.realm2}")
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "pass": "irrelevant"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            error = res.json.get("result", {}).get("error", {})
+            self.assertEqual(303, error.get("code"), res.json)
+            self.assertIn("Conflicting policies", error.get("message", ""), res.json)
+
+        delete_policy("pol_setrealm_conflict_a")
+        delete_policy("pol_setrealm_conflict_b")
