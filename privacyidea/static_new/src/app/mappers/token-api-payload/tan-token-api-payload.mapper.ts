@@ -64,7 +64,7 @@ export class TanApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     return {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "tan",
-      tanCount: details.info?.["tan.count"] ?? undefined
+      tanCount: details.info?.["tan.count"] != null ? Number(details.info["tan.count"]) : undefined
     };
   }
 }

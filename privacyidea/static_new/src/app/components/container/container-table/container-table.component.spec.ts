@@ -151,7 +151,7 @@ describe("ContainerTableComponent (Jest)", () => {
 
       expect(component.pageIndex()).toBe(2);
       expect(component.pageSize()).toBe(15);
-      expect(containerService.eventPageSize).toBe(15);
+      expect(containerService.eventPageSize()).toBe(15);
     });
   });
 

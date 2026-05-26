@@ -272,7 +272,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
       this.maxfail = this.tokenDetails().maxfail;
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
-      this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
+      this.userRealm = (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
     });
   }
@@ -292,7 +292,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
   async saveAllInlineEdits(): Promise<boolean> {
     for (const row of this.tokenDetailData()) {
       if (row.isEditing()) {
-        this.saveTokenEdit(row);
+        this.saveTokenEdit(row as EditableElement<string>);
       }
     }
     if (this.isEditingUser()) {
@@ -356,7 +356,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
               const tokengroups = response.result?.value || {};
               this.tokengroupOptions.set(Object.keys(tokengroups));
               this.selectedTokengroup.set(
-                this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value
+                (this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value as string[]) ?? []
               );
             }
           });
@@ -430,11 +430,13 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
         this.containerService.filterContainersByTokenOwner.set(false);
         break;
       case "tokengroup":
-        this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);
+        this.selectedTokengroup.set(
+          (this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value as string[]) ?? []
+        );
         break;
       case "realms":
         this.realmService.selectedRealms.set(
-          this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value
+          (this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value as string[]) ?? []
         );
         break;
       default:
