@@ -20,7 +20,6 @@
 import { HttpClient, HttpResourceRef, httpResource } from "@angular/common/http";
 import { Injectable, WritableSignal, effect, inject, signal, untracked } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -131,7 +130,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
     if (
-      this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ||
+      !this.contentService.onConfigurationPeriodicTasks() ||
       !this.authService.actionAllowed("periodictask_read")
     ) {
       return undefined;
