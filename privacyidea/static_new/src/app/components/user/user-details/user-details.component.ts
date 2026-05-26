@@ -56,6 +56,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -103,6 +104,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private breakpointObserver = inject(BreakpointObserver);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
   private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
@@ -261,7 +263,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         this.editMode.set(false);
       }
       return !!success;
-    } catch {
+    } catch (error) {
+      console.error("Failed to save user edits", error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.notificationService.error("Failed to save user edits. " + message);
       return false;
     }
   }
@@ -349,9 +354,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   editIsDirty = computed(() => {
     if (!this.editMode()) return false;
-    const original = this.userData();
-    const edited = this.editedUserData();
-    return Object.keys(edited).some((key) => (edited[key] ?? "") !== (original?.[key] ?? ""));
+    const original: Record<string, unknown> = this.userData() ?? {};
+    return Object.entries(this.editedUserData()).some(
+      ([key, value]) => (value ?? "") !== (original[key] ?? "")
+    );
   });
 
   editUser() {
