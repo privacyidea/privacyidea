@@ -344,3 +344,91 @@ class RegistrationAndPasswordToken(MyApiTestCase):
 
         # delete token
         remove_token(serial)
+
+    def test_03_applspec_service_id_case_insensitive(self):
+        # ApplicationSpecificPasswordTokenClass.use_for_authentication compares
+        # service_id case-insensitively (.lower() on both sides). The spec/test
+        # only exercises an exact-case match, so pin down upper/mixed case here.
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollAPPLSPEC", PolicyAction.ENROLLPIN])
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'applspec',
+                                                 'genkey': '1',
+                                                 'service_id': 'thunderbird',
+                                                 'pin': 'test'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            password = detail.get("password")
+
+        for sent_service_id in ("THUNDERBIRD", "Thunderbird", "thuNDerbird"):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "service_id": sent_service_id,
+                                                     "pass": quote(f"test{password}")}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                data = res.json
+                self.assertEqual("ACCEPT", data.get("result").get("authentication"),
+                                 (sent_service_id, data))
+                self.assertEqual("matching 1 tokens", data.get("detail").get("message"), data)
+
+        remove_token(serial)
+        delete_policy("enroll")
+
+    def test_04_applspec_multiple_tokens_select_by_service_id(self):
+        # Same user owns two applspec tokens for different service_ids.
+        # The use_for_authentication filter must select the right token per
+        # request — wrong-password / right-service_id stays REJECT.
+        set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollAPPLSPEC", PolicyAction.ENROLLPIN])
+
+        passwords = {}
+        serials = {}
+        for service in ("thunderbird", "evolution"):
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data={'user': 'cornelius',
+                                                     'type': 'applspec',
+                                                     'genkey': '1',
+                                                     'service_id': service,
+                                                     'pin': 'test'},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                detail = res.json.get("detail")
+                serials[service] = detail.get("serial")
+                passwords[service] = detail.get("password")
+
+        self.assertNotEqual(passwords["thunderbird"], passwords["evolution"])
+
+        for service in ("thunderbird", "evolution"):
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"user": "cornelius",
+                                                     "service_id": service,
+                                                     "pass": quote(f"test{passwords[service]}")}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                data = res.json
+                self.assertEqual("ACCEPT", data.get("result").get("authentication"),
+                                 (service, data))
+                self.assertEqual(serials[service], data.get("detail").get("serial"), data)
+
+        # Right service_id, wrong (other token's) password -> REJECT.
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "service_id": "thunderbird",
+                                                 "pass": quote(f"test{passwords['evolution']}")}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            data = res.json
+            self.assertEqual("REJECT", data.get("result").get("authentication"), data)
+
+        for serial in serials.values():
+            remove_token(serial)
+        delete_policy("enroll")
