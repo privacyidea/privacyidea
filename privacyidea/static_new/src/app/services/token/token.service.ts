@@ -115,6 +115,24 @@ export interface Tokens {
   tokens: TokenDetails[];
 }
 
+export interface TokenInfo {
+  CA?: string;
+  dynamic_email?: string;
+  dynamic_phone?: string;
+  email?: string;
+  hashlib?: string;
+  phone?: string;
+  pin?: string;
+  rollover?: string;
+  separator?: string;
+  service_id?: string;
+  timeStep?: string;
+  validity_period_end?: string;
+  validity_period_start?: string;
+
+  [key: string]: string | undefined;
+}
+
 export interface TokenDetails {
   active: boolean;
   container_serial: string;
@@ -123,7 +141,7 @@ export interface TokenDetails {
   description: string;
   failcount: number;
   id: number;
-  info: any;
+  info: TokenInfo;
   locked: boolean;
   maxfail: number;
   otplen: number;
@@ -164,8 +182,8 @@ export interface WebAuthnRegisterRequest {
   message: string;
   name: string;
   nonce: string;
-  excludeCredentials?: any;
-  extensions?: any;
+  excludeCredentials?: { id: string; type: string; transports?: string[] }[];
+  extensions?: Record<string, unknown>;
   pubKeyCredAlgorithms: {
     alg: number;
     type: string;
@@ -181,9 +199,12 @@ export interface WebAuthnRegisterRequest {
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
 
-export type EnrollTokenArguments = { data: TokenEnrollmentData; mapper: BaseApiPayloadMapper };
+export interface EnrollTokenArguments {
+  data: TokenEnrollmentData;
+  mapper: BaseApiPayloadMapper;
+}
 
-export type TokenEnrollmentDialogData = {
+export interface TokenEnrollmentDialogData {
   tokenType: string;
   response: EnrollmentResponse | null;
   enrollParameters: EnrollTokenArguments;
@@ -192,7 +213,7 @@ export type TokenEnrollmentDialogData = {
   onlyAddToRealm?: boolean;
   rollover?: boolean;
   showEnrollData?: boolean;
-};
+}
 
 export interface LostTokenData {
   disable: number;
@@ -220,14 +241,14 @@ export interface TokenServiceInterface {
   apiFilterKeyMap: Record<string, string>;
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
-  eventPageSize: number;
+  eventPageSize: WritableSignal<number>;
   tokenSerial: WritableSignal<string>;
   selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenDetailResourceValue: Signal<Tokens | undefined>;
-  tokenTypesResource: HttpResourceRef<PiResponse<{}> | undefined>;
+  tokenTypesResource: HttpResourceRef<PiResponse<Record<string, string>> | undefined>;
   userTokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   detailsUsername: WritableSignal<string>;
   userRealm: WritableSignal<string>;
@@ -247,7 +268,7 @@ export interface TokenServiceInterface {
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
-  maxDescriptionLength: number;
+  readonly maxDescriptionLength: number;
 
   clearFilter(): void;
 
@@ -257,27 +278,27 @@ export interface TokenServiceInterface {
 
   resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>>;
 
-  saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>>;
+  saveTokenDetail(tokenSerial: string, key: string, value: unknown): Observable<PiResponse<boolean>>;
 
   getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 
-  setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]>;
+  setTokenInfos(tokenSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>[]>;
 
-  deleteToken(tokenSerial: string): Observable<Object>;
+  deleteToken(tokenSerial: string): Observable<PiResponse<number>>;
 
-  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult>>;
 
   bulkDeleteWithConfirmDialog(serialList: string[], afterDelete?: () => void): void;
 
-  revokeToken(tokenSerial: string): Observable<any>;
+  revokeToken(tokenSerial: string): Observable<PiResponse<number>>;
 
-  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object>;
+  deleteInfo(tokenSerial: string, infoKey: string): Observable<PiResponse<boolean>>;
 
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean>[]>;
 
   unassignUser(tokenSerial: string): Observable<PiResponse<boolean>>;
 
-  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>>;
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult>>;
 
   assignUserToAll(args: {
     tokenSerials: string[];
@@ -293,9 +314,9 @@ export interface TokenServiceInterface {
     pin?: string;
   }): Observable<PiResponse<boolean>>;
 
-  setPin(tokenSerial: string, userPin: string): Observable<any>;
+  setPin(tokenSerial: string, userPin: string): Observable<PiResponse<number>>;
 
-  setRandomPin(tokenSerial: string): Observable<any>; // TODO: Specify return type
+  setRandomPin(tokenSerial: string): Observable<PiResponse<number, { pin: string }>>;
 
   resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Promise<PiResponse<boolean>>;
 
@@ -318,9 +339,9 @@ export interface TokenServiceInterface {
 
   getTokengroups(): Observable<PiResponse<TokenGroups>>;
 
-  setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object>;
+  setTokengroup(tokenSerial: string, value: string | string[]): Observable<PiResponse<number>>;
 
-  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>>;
+  importTokens(fileName: string, params: FormData): Observable<PiResponse<TokenImportResult>>;
 }
 
 @Injectable()
@@ -332,16 +353,7 @@ export class TokenService implements TokenServiceInterface {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
 
-  readonly hiddenApiFilter = hiddenApiFilter;
-  readonly apiFilterKeyMap = apiFilterKeyMap;
-  stopPolling$ = new Subject<void>();
-  tokenBaseUrl = environment.proxyUrl + "/token/";
-  maxDescriptionLength = 80;
-  eventPageSize = 10;
-  userRealm = signal("");
-  tokenSerial = this.contentService.tokenSerial;
-  detailsUsername = this.contentService.detailsUsername;
-  filterParams = computed<Record<string, string>>(() => {
+  private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
@@ -356,6 +368,15 @@ export class TokenService implements TokenServiceInterface {
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
   });
+  readonly hiddenApiFilter = hiddenApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
+  readonly tokenBaseUrl = environment.proxyUrl + "/token/";
+  readonly maxDescriptionLength = 80;
+  readonly userRealm = signal("");
+  readonly tokenSerial = this.contentService.tokenSerial;
+  readonly detailsUsername = this.contentService.detailsUsername;
+  readonly stopPolling$ = new Subject<void>();
+  readonly eventPageSize = signal(10);
 
   tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
     const filter = this.selectedToken();
@@ -488,7 +509,7 @@ export class TokenService implements TokenServiceInterface {
     return this.tokenDetailResource.value()?.result?.value;
   });
 
-  tokenTypesResource = httpResource<PiResponse<{}>>(() => {
+  tokenTypesResource = httpResource<PiResponse<Record<string, string>>>(() => {
     // Only load token types on routes with a tokentype list or selection.
     const onAllowedRoute =
       this.contentService.onTokens() ||
@@ -588,7 +609,7 @@ export class TokenService implements TokenServiceInterface {
         pagesize: this.pageSize(),
         sortby: this.sort()?.active || "serial",
         sortdir: this.sort()?.direction || "asc",
-        ...this.filterParams()
+        ...this._filterParams()
       }
     };
   });
@@ -626,10 +647,10 @@ export class TokenService implements TokenServiceInterface {
     return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 
-  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {
+  bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<BulkResult, any>>(
+      .post<PiResponse<BulkResult>>(
         this.tokenBaseUrl + "unassign",
         {
           serials: tokenDetails.map((token) => token.serial)
@@ -646,11 +667,11 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>> {
+  bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult>> {
     const headers = this.authService.getHeaders();
     const body = { serials: selectedTokens };
 
-    return this.http.delete<PiResponse<BulkResult, any>>(this.tokenBaseUrl, { headers, body }).pipe(
+    return this.http.delete<PiResponse<BulkResult>>(this.tokenBaseUrl, { headers, body }).pipe(
       catchError((error) => {
         console.error("Failed to delete tokens.", error);
         const message = error.result?.error?.message || "";
@@ -682,7 +703,7 @@ export class TokenService implements TokenServiceInterface {
             return;
           }
           this.bulkDeleteTokens(serialList).subscribe({
-            next: (response: PiResponse<BulkResult, any>) => {
+            next: (response: PiResponse<BulkResult>) => {
               const failedTokens = response.result?.value?.failed || [];
               const unauthorizedTokens = response.result?.value?.unauthorized || [];
               const count_success = response.result?.value?.count_success || 0;
@@ -748,14 +769,23 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>> {
+  saveTokenDetail(tokenSerial: string, key: string, value: unknown): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    const set_url = `${this.tokenBaseUrl}set`;
 
-    const params =
-      key === "maxfail" ? { serial: tokenSerial, max_failcount: value } : { serial: tokenSerial, [key]: value };
+    let url: string;
+    let params: Record<string, unknown>;
+    if (key === "description") {
+      url = `${this.tokenBaseUrl}description/${encodeURIComponent(tokenSerial)}`;
+      params = { description: value };
+    } else if (key === "maxfail") {
+      url = `${this.tokenBaseUrl}set`;
+      params = { serial: tokenSerial, max_failcount: value };
+    } else {
+      url = `${this.tokenBaseUrl}set`;
+      params = { serial: tokenSerial, [key]: value };
+    }
 
-    return this.http.post<PiResponse<boolean>>(set_url, params, { headers }).pipe(
+    return this.http.post<PiResponse<boolean>>(url, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to set token detail.", error);
         const message = error.error?.result?.error?.message || "";
@@ -785,12 +815,12 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]> {
+  setTokenInfos(tokenSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>[]> {
     const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     const info_url = `${this.tokenBaseUrl}info`;
 
-    const postRequest = (url: string, body: any) => {
+    const postRequest = (url: string, body: Record<string, string>) => {
       return this.http.post<PiResponse<boolean>>(url, body, { headers }).pipe(
         catchError((error) => {
           console.error("Failed to set token info.", error);
@@ -823,14 +853,14 @@ export class TokenService implements TokenServiceInterface {
     return forkJoin(requests);
   }
 
-  deleteToken(tokenSerial: string): Observable<Object> {
+  deleteToken(tokenSerial: string): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
+    return this.http.delete<PiResponse<number>>(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
   }
 
-  revokeToken(tokenSerial: string): Observable<any> {
+  revokeToken(tokenSerial: string): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
-    return this.http.post(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers }).pipe(
+    return this.http.post<PiResponse<number>>(`${this.tokenBaseUrl}revoke`, { serial: tokenSerial }, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to revoke token.", error);
         const message = error.error?.result?.error?.message || "";
@@ -840,12 +870,15 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
+  deleteInfo(tokenSerial: string, infoKey: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
-        headers
-      })
+      .delete<PiResponse<boolean>>(
+        `${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`,
+        {
+          headers
+        }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete token info.", error);
@@ -942,10 +975,10 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  setPin(tokenSerial: string, userPin: string): Observable<any> {
+  setPin(tokenSerial: string, userPin: string): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<number>>(
         `${this.tokenBaseUrl}setpin`,
         {
           serial: tokenSerial,
@@ -963,10 +996,10 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  setRandomPin(tokenSerial: string): Observable<any> {
+  setRandomPin(tokenSerial: string): Observable<PiResponse<number, { pin: string }>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
+      .post<PiResponse<number, { pin: string }>>(
         `${this.tokenBaseUrl}setrandompin`,
         {
           serial: tokenSerial
@@ -1008,7 +1041,7 @@ export class TokenService implements TokenServiceInterface {
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
     const headers = this.authService.getHeaders();
-    let params = new HttpParams().set("serial", tokenSerial);
+    const params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
       params
@@ -1121,16 +1154,12 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object> {
+  setTokengroup(tokenSerial: string, value: string | string[]): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
 
-    const valueArray: string[] = Array.isArray(value)
-      ? value
-      : typeof value === "object" && value !== null
-        ? Object.values(value)
-        : [value];
+    const valueArray: string[] = Array.isArray(value) ? value : [value];
     return this.http
-      .post(
+      .post<PiResponse<number>>(
         `${this.tokenBaseUrl}group/${encodeURIComponent(tokenSerial)}`,
         {
           groups: valueArray
@@ -1147,7 +1176,7 @@ export class TokenService implements TokenServiceInterface {
       );
   }
 
-  importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>> {
+  importTokens(fileName: string, params: FormData): Observable<PiResponse<TokenImportResult>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<PiResponse<TokenImportResult>>(`${this.tokenBaseUrl}load/${encodeURIComponent(fileName)}`, params, {
