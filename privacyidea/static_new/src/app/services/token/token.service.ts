@@ -115,6 +115,24 @@ export interface Tokens {
   tokens: TokenDetails[];
 }
 
+export interface TokenInfo {
+  CA?: string;
+  dynamic_email?: string;
+  dynamic_phone?: string;
+  email?: string;
+  hashlib?: string;
+  phone?: string;
+  pin?: string;
+  rollover?: string;
+  separator?: string;
+  service_id?: string;
+  timeStep?: string;
+  validity_period_end?: string;
+  validity_period_start?: string;
+
+  [key: string]: string | undefined;
+}
+
 export interface TokenDetails {
   active: boolean;
   container_serial: string;
@@ -123,7 +141,7 @@ export interface TokenDetails {
   description: string;
   failcount: number;
   id: number;
-  info: Record<string, string>;
+  info: TokenInfo;
   locked: boolean;
   maxfail: number;
   otplen: number;
@@ -855,9 +873,12 @@ export class TokenService implements TokenServiceInterface {
   deleteInfo(tokenSerial: string, infoKey: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete<PiResponse<boolean>>(`${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
-        headers
-      })
+      .delete<PiResponse<boolean>>(
+        `${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`,
+        {
+          headers
+        }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete token info.", error);
