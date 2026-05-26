@@ -131,6 +131,10 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     return Object.fromEntries(Object.entries(options).filter(([, opt]) => opt.required));
   });
 
+  fieldHasError(field: { errors(): { kind: string }[]; dirty(): boolean; touched(): boolean }, kind: string): boolean {
+    return field.errors().some((e) => e.kind === kind) && (field.dirty() || field.touched());
+  }
+
   isOptionSet(key: string): boolean {
     return Object.prototype.hasOwnProperty.call(this.editTask().options, key);
   }
@@ -267,16 +271,6 @@ export class PeriodicTaskEditComponent implements OnDestroy {
           await this.save();
         }
       });
-  }
-
-  async onDelete(): Promise<void> {
-    if (this.originalTask.id == null) return;
-    const result = await this.periodicTaskService.deleteWithConfirmDialog(this.originalTask);
-    if (result) {
-      this.periodicTaskService.periodicTasksResource.reload();
-      this.pendingChangesService.clearAllRegistrations();
-      this.router.navigateByUrl(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
-    }
   }
 
   // Form actions

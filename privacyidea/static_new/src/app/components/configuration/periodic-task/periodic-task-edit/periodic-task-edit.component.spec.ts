@@ -101,13 +101,6 @@ describe("PeriodicTaskEditComponent", () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
     });
 
-    it("onDelete is a no-op when the loaded task has no id", async () => {
-      const { component } = await createComponent({ name: "my-task" });
-      await component.onDelete();
-      expect(periodicTaskService.deleteWithConfirmDialog).not.toHaveBeenCalled();
-      expect(router.navigateByUrl).not.toHaveBeenCalled();
-    });
-
     it("save is a no-op and does not navigate when canSave is false", async () => {
       const { component } = await createComponent({});
       expect(component.canSave()).toBe(false);
@@ -405,25 +398,36 @@ describe("PeriodicTaskEditComponent", () => {
     });
   });
 
-  describe("onDelete with valid id", () => {
-    it("calls deleteWithConfirmDialog, reloads, clears registrations, and navigates when confirmed", async () => {
-      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
-      (periodicTaskService.deleteWithConfirmDialog as jest.Mock).mockResolvedValueOnce({
-        result: { value: 1 }
-      });
-      await component.onDelete();
-      expect(periodicTaskService.deleteWithConfirmDialog).toHaveBeenCalled();
-      expect(periodicTaskService.periodicTasksResource.reload).toHaveBeenCalled();
-      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+  describe("fieldHasError", () => {
+    const makeField = (errors: { kind: string }[], dirty: boolean, touched: boolean) => ({
+      errors: () => errors,
+      dirty: () => dirty,
+      touched: () => touched
     });
 
-    it("does nothing further when the dialog returns falsy", async () => {
-      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
-      (periodicTaskService.deleteWithConfirmDialog as jest.Mock).mockResolvedValueOnce(undefined);
-      await component.onDelete();
-      expect(periodicTaskService.deleteWithConfirmDialog).toHaveBeenCalled();
-      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    it("returns false when the field has no errors", async () => {
+      const { component } = await createComponent({});
+      expect(component.fieldHasError(makeField([], true, false), "required")).toBe(false);
+    });
+
+    it("returns false when the matching error exists but the field is neither dirty nor touched", async () => {
+      const { component } = await createComponent({});
+      expect(component.fieldHasError(makeField([{ kind: "required" }], false, false), "required")).toBe(false);
+    });
+
+    it("returns true when the matching error exists and the field is dirty", async () => {
+      const { component } = await createComponent({});
+      expect(component.fieldHasError(makeField([{ kind: "required" }], true, false), "required")).toBe(true);
+    });
+
+    it("returns true when the matching error exists and the field is touched", async () => {
+      const { component } = await createComponent({});
+      expect(component.fieldHasError(makeField([{ kind: "required" }], false, true), "required")).toBe(true);
+    });
+
+    it("returns false when a different error kind is present", async () => {
+      const { component } = await createComponent({});
+      expect(component.fieldHasError(makeField([{ kind: "pattern" }], true, true), "required")).toBe(false);
     });
   });
 });

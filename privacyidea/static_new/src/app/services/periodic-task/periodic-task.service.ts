@@ -39,8 +39,8 @@ export interface PeriodicTask {
   retry_if_failed: boolean;
   last_update: string;
   ordering: number;
-  options: Record<string, any>;
-  last_runs: Record<string, any>;
+  options: Record<string, string>;
+  last_runs: Record<string, string>;
 }
 
 export const EMPTY_PERIODIC_TASK: PeriodicTask = {
@@ -97,11 +97,11 @@ export interface PeriodicTaskServiceInterface {
   periodicTasksResource: HttpResourceRef<PiResponse<PeriodicTask[]> | undefined>;
   periodicTaskModuleResource: HttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>;
   moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
-  enablePeriodicTask(taskId: number): Promise<any>;
-  disablePeriodicTask(taskId: number): Promise<any>;
-  deletePeriodicTask(taskId: number): Observable<PiResponse<number, any>>;
-  deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, any> | undefined>;
-  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined>;
+  enablePeriodicTask(taskId: number): Promise<PiResponse<number, never> | undefined>;
+  disablePeriodicTask(taskId: number): Promise<PiResponse<number, never> | undefined>;
+  deletePeriodicTask(taskId: number): Observable<PiResponse<number, never>>;
+  deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, never> | undefined>;
+  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, never> | undefined>;
   fetchAllModuleOptions(): void;
 }
 
@@ -157,8 +157,8 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   enablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
-        catchError((error) => {
+      this.http.post<PiResponse<number, never>>(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
+        catchError(() => {
           this.periodicTasksResource.reload();
           this.notificationService.error("Failed to enable periodic task!");
           return of(undefined);
@@ -170,9 +170,9 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   disablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     const response$ = this.http
-      .post(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers })
+      .post<PiResponse<number, never>>(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers })
       .pipe(
-        catchError((error) => {
+        catchError(() => {
           this.periodicTasksResource.reload();
           this.notificationService.error("Failed to disable periodic task!");
           return of(undefined);
@@ -181,11 +181,11 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     return lastValueFrom(response$);
   }
 
-  deletePeriodicTask(taskId: number): Observable<PiResponse<number, any>> {
+  deletePeriodicTask(taskId: number): Observable<PiResponse<number, never>> {
     const headers = this.authService.getHeaders();
 
     return this.http
-      .delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + encodeURIComponent(taskId), { headers })
+      .delete<PiResponse<number, never>>(this.periodicTaskBaseUrl + encodeURIComponent(taskId), { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete periodic task.", error);
@@ -196,7 +196,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       );
   }
 
-  async deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, any> | undefined> {
+  async deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, never> | undefined> {
     const confirmation = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -223,36 +223,30 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         this.notificationService.success("Successfully deleted periodic task.");
       }
       return response;
-    } catch (error) {
+    } catch {
       // error already handled in deletePeriodicTask
     }
     return undefined;
   }
 
-  convertNodesArrayToString(nodes: any): string {
-    // Ensure params.nodes is a comma-separated string.
+  convertNodesArrayToString(nodes: string[] | string | null | undefined): string {
     if (Array.isArray(nodes)) {
-      nodes = nodes.join(",");
+      return nodes.join(",");
     } else if (typeof nodes === "string") {
-      // already a string, do nothing
-    } else if (nodes == null) {
-      nodes = "";
-    } else {
-      // Unexpected type, log a warning and set to empty string
-      console.warn("Unexpected type for params.nodes in savePeriodicTask:", nodes);
-      nodes = "";
+      return nodes;
     }
-    return nodes;
+    return "";
   }
 
-  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined> {
+  savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, never> | undefined> {
     const headers = this.authService.getHeaders();
-    const params = { ...task } as any;
-    if (params.id == null) {
-      delete params.id;
-    }
-    params.nodes = this.convertNodesArrayToString(params.nodes);
-    return this.http.post<PiResponse<number, any>>(this.periodicTaskBaseUrl, params, { headers }).pipe(
+    const { id, ...rest } = task;
+    const params = {
+      ...rest,
+      nodes: this.convertNodesArrayToString(task.nodes),
+      ...(id != null ? { id } : {})
+    };
+    return this.http.post<PiResponse<number, never>>(this.periodicTaskBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save periodic task.", error.error);
         const message = error.error.result?.error?.message || "";

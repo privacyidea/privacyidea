@@ -56,18 +56,6 @@
       <mat-icon>save</mat-icon>
       <span i18n>Save</span>
     </button>
-    @if (!isNewTask() && authService.actionAllowed("periodictask_write")) {
-      <button
-        (click)="onDelete()"
-        class="action-button-secondary button-width-s"
-        color="warn"
-        i18n-matTooltip
-        mat-stroked-button
-        matTooltip="Delete">
-        <mat-icon>delete</mat-icon>
-        <span i18n>Delete</span>
-      </button>
-    }
   </div>
 
   @if (!isNewTask()) {
@@ -115,10 +103,10 @@
             matInput />
         </app-clearable-input>
         <mat-hint i18n>Unique name of the periodic task.</mat-hint>
-        @if (editTaskForm.name().errors().some(e => e.kind === 'required') && (editTaskForm.name().dirty() || editTaskForm.name().touched())) {
+        @if (fieldHasError(editTaskForm.name(), 'required')) {
           <mat-error i18n>Name is <strong>required</strong>.</mat-error>
         }
-        @if (editTaskForm.name().errors().some(e => e.kind === 'pattern') && (editTaskForm.name().dirty() || editTaskForm.name().touched())) {
+        @if (fieldHasError(editTaskForm.name(), 'pattern')) {
           <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
         }
       </mat-form-field>
@@ -151,7 +139,7 @@
               [placeholder]="'5 10 * * *'" />
           </app-clearable-input>
           <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
-          @if (editTaskForm.interval().errors().some(e => e.kind === 'required') && (editTaskForm.interval().dirty() || editTaskForm.interval().touched())) {
+          @if (fieldHasError(editTaskForm.interval(), 'required')) {
             <mat-error i18n>Interval is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
