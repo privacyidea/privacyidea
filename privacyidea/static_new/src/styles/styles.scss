@@ -714,39 +714,6 @@ body.self-service-layout {
   color: var(--mat-sys-on-surface) !important;
 }
 
-.cdk-overlay-container {
-  // Navigation blocking dialog wins over navigation accessible dialog, e.g. confirmation dialog over resolver edit
-  &:has(.nav-accessible-dialog):has(.nav-blocking-dialog) {
-    .cdk-overlay-backdrop {
-      margin-left: 0;
-      width: 100%;
-    }
-  }
-
-  // Dialogs where navigation should remain accessible shift the overlay
-  &:has(.nav-accessible-dialog):not(:has(.nav-blocking-dialog)) {
-    .cdk-overlay-backdrop {
-      margin-left: var(--overlay-margin);
-      width: calc(100% - var(--overlay-margin));
-    }
-  }
-
-  // Navigation accessible dialogs are always shifted, to be centered in the remaining space
-  &:has(.nav-accessible-dialog) {
-    .cdk-overlay-pane {
-      margin-left: var(--overlay-margin);
-    }
-
-    // Shift back components which could be contained in the dialog to be correctly aligned
-    .mat-mdc-select-panel,
-    .mat-mdc-autocomplete-panel,
-    .mat-mdc-menu-panel,
-    .mat-mdc-tooltip {
-      margin-left: calc(-1 * var(--overlay-margin));
-    }
-  }
-}
-
 .mat-mdc-menu-content {
   max-height: 400px;
 }

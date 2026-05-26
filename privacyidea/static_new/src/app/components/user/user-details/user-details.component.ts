@@ -46,15 +46,19 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogResult
+} from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
+import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom, map } from "rxjs";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
@@ -82,7 +86,8 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
     MatSelectModule,
     MatTooltip,
     RouterLink,
-    CopyableComponent
+    CopyableComponent,
+    UserDetailsEditComponent
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
@@ -229,6 +234,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
+        this.editIsDirty() ||
         !!this.addKeyInput() ||
         !!this.addValueInput() ||
         !!this.selectedKey() ||
@@ -236,12 +242,32 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     );
     this.pendingChangesService.registerValidChanges(
       () => {
+        if (this.editMode()) return true;
         const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
         const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
         return !!key && !!value;
       },
     );
-    this.pendingChangesService.registerSave(() => this.addCustomAttribute());
+    this.pendingChangesService.registerSave(() => {
+      if (this.editMode()) return this.saveEditAsync();
+      return this.addCustomAttribute();
+    });
+  }
+
+  private saveEditAsync(): Promise<boolean> {
+    const data = { ...this.editedUserData(), username: this.userData().username };
+    return new Promise((resolve) => {
+      this.userService.editUser(this.userData().resolver, data).subscribe({
+        next: (success) => {
+          if (success) {
+            this.userService.userResource.reload();
+            this.editMode.set(false);
+          }
+          resolve(!!success);
+        },
+        error: () => resolve(false)
+      });
+    });
   }
 
   ngOnDestroy(): void {
@@ -322,10 +348,57 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
   }
 
+  editMode = signal(false);
+  editedUserData: WritableSignal<EditUserData> = signal({ username: "" });
+
+  editIsDirty = computed(() => {
+    if (!this.editMode()) return false;
+    const original = this.userData();
+    const edited = this.editedUserData();
+    return Object.keys(edited).some((key) => (edited[key] ?? "") !== (original?.[key] ?? ""));
+  });
+
   editUser() {
-    this.dialogService.openDialog({
-      component: EditUserDialogComponent,
-      data: this.userData()
+    this.editedUserData.set({ ...this.userData() });
+    this.editMode.set(true);
+  }
+
+  cancelEdit() {
+    if (!this.editIsDirty()) {
+      this.editMode.set(false);
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          allowSaveExit: true,
+          saveExitDisabled: false
+        }
+      })
+      .afterClosed()
+      .subscribe((result: SaveAndExitDialogResult | undefined) => {
+        if (result === "discard") {
+          this.editMode.set(false);
+        } else if (result === "save-exit") {
+          this.saveEdit();
+        }
+      });
+  }
+
+  onUpdateEditedUser(newData: EditUserData) {
+    this.editedUserData.set(newData);
+  }
+
+  saveEdit() {
+    const data = { ...this.editedUserData(), username: this.userData().username };
+    this.userService.editUser(this.userData().resolver, data).subscribe({
+      next: (success) => {
+        if (success) {
+          this.userService.userResource.reload();
+          this.editMode.set(false);
+        }
+      }
     });
   }
 

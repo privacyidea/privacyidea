@@ -41,18 +41,35 @@
     </button>
   </div>
 
-  @if (userData().editable) {
+  @if (!userData().editable) {
     <div class="flex gap-8 margin-bottom-16">
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
-        <button
-          (click)="editUser()"
-          class="action-button-secondary button-width-s"
-          mat-stroked-button>
-          <mat-icon>edit</mat-icon>
-          <span i18n>Edit</span>
-        </button>
+        @if (!editMode()) {
+          <button
+            (click)="editUser()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>edit</mat-icon>
+            <span i18n>Edit</span>
+          </button>
+        } @else {
+          <button
+            (click)="saveEdit()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>save</mat-icon>
+            <span i18n>Save</span>
+          </button>
+          <button
+            (click)="cancelEdit()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>close</mat-icon>
+            <span i18n>Cancel</span>
+          </button>
+        }
       }
-      @if (authService.actionAllowed("deleteuser")) {
+      @if (authService.actionAllowed("deleteuser") && !editMode()) {
         <button
           (click)="deleteUser()"
           class="action-button-delete-secondary button-width-s"
@@ -64,26 +81,33 @@
     </div>
   }
 
-  <div class="user-details">
-    @for (col of detailsColumns(); track $index) {
-      <div class="user-details-column">
-        @for (item of col; track item.key) {
-          <div class="label">{{ item.label }}:</div>
-          @if (Array.isArray(item.value) && item.value.length > 1) {
-            <div class="value">
-              <ul class="no-indention margin-0">
-                @for (val of item.value; track val) {
-                  <li>{{ val }}</li>
-                }
-              </ul>
-            </div>
-          } @else {
-            <div class="value">{{ item.value }}</div>
+  @if (editMode()) {
+    <app-user-details-edit
+      [resolver]="userData().resolver"
+      [initialUserData]="userData()"
+      (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+  } @else {
+    <div class="user-details">
+      @for (col of detailsColumns(); track $index) {
+        <div class="user-details-column">
+          @for (item of col; track item.key) {
+            <div class="label">{{ item.label }}:</div>
+            @if (Array.isArray(item.value) && item.value.length > 1) {
+              <div class="value">
+                <ul class="no-indention margin-0">
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
+                  }
+                </ul>
+              </div>
+            } @else {
+              <div class="value">{{ item.value }}</div>
+            }
           }
-        }
-      </div>
-    }
-  </div>
+        </div>
+      }
+    </div>
+  }
 
   <div class="flex-column">
     <div class="details-header">
