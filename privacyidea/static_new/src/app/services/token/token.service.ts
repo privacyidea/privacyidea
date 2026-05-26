@@ -260,7 +260,7 @@ export interface TokenServiceInterface {
 
   resetFailCount(tokenSerial: string): Observable<PiResponse<boolean>>;
 
-  saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>>;
+  saveTokenDetail(tokenSerial: string, key: string, value: unknown): Observable<PiResponse<boolean>>;
 
   getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 

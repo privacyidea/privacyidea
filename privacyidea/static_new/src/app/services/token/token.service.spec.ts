@@ -35,7 +35,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenService, Tokens } from "./token.service";
+import { BulkResult, TokenGroups, TokenService, Tokens } from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -803,7 +803,7 @@ describe("TokenService", () => {
 
   describe("getTokengroups()", () => {
     it("GETs /tokengroup", () => {
-      getSpy.mockReturnValue(of(MockPiResponse.fromValue(new Map())));
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({} as unknown as TokenGroups)));
       tokenService.getTokengroups().subscribe();
 
       // derive expected URL from known base to avoid importing environment
