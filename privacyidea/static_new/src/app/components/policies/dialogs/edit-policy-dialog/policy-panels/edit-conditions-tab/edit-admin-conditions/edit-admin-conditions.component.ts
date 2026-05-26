@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, output, signal, ViewChild } from "@angular/core";
 
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -35,14 +35,13 @@ import { ResolverService, ResolverServiceInterface } from "@services/resolver/re
   selector: "app-edit-admin-conditions",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatIconModule,
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
     MatButtonModule,
     MatExpansionModule,
-    ReactiveFormsModule,
     MultiSelectOnlyComponent
   ],
   templateUrl: "./edit-admin-conditions.component.html",
@@ -59,9 +58,9 @@ export class EditAdminConditionsComponent {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<PolicyDetail>();
 
-  adminFormControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [this.adminValidator.bind(this)]
+  readonly adminSignal = signal("");
+  readonly adminField = form(this.adminSignal, (f) => {
+    validate(f, (ctx) => /[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []);
   });
 
   readonly selectedRealms = computed(() => this.policy().realm || []);
@@ -118,12 +117,12 @@ export class EditAdminConditionsComponent {
 
   addAdmin(adminuser: string) {
     const trimmed = adminuser?.trim();
-    if (this.adminFormControl.invalid || !trimmed) {
+    if (this.adminField().errors().length > 0 || !trimmed) {
       return;
     }
     if (!this.selectedAdmins().includes(trimmed)) {
       this.updatePolicy({ adminuser: [...this.selectedAdmins(), trimmed] });
-      this.adminFormControl.setValue("");
+      this.adminSignal.set("");
     }
   }
 
@@ -133,10 +132,6 @@ export class EditAdminConditionsComponent {
 
   clearAdmins() {
     this.updatePolicy({ adminuser: [] });
-  }
-
-  adminValidator(control: AbstractControl): ValidationErrors | null {
-    return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
   }
 
   updatePolicy(patch: Partial<PolicyDetail>) {

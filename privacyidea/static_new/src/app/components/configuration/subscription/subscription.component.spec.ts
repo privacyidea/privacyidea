@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 import { By } from "@angular/platform-browser";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -72,7 +71,7 @@ describe("SubscriptionComponent", () => {
     dialogService = new MockDialogService();
 
     await TestBed.configureTestingModule({
-      imports: [SubscriptionComponent, MatSnackBarModule, BrowserAnimationsModule],
+      imports: [SubscriptionComponent, MatSnackBarModule],
       providers: [
         { provide: SubscriptionService, useValue: subscriptionService },
         { provide: NotificationService, useValue: notificationService },

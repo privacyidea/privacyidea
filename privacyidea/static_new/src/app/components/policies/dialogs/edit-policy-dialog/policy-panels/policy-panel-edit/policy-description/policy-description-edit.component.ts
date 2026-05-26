@@ -19,7 +19,6 @@
 
 import { TextFieldModule } from "@angular/cdk/text-field";
 import { Component, inject, input, output } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
@@ -29,7 +28,7 @@ import { DocumentationService, DocumentationServiceInterface } from "@services/d
   templateUrl: "./policy-description-edit.component.html",
   styleUrls: ["./policy-description-edit.component.scss"],
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
+  imports: [MatFormFieldModule, MatInputModule, TextFieldModule]
 })
 export class PolicyDescriptionEditComponent {
   readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);

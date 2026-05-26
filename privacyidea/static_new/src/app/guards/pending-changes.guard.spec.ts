@@ -173,4 +173,60 @@ describe("pendingChangesGuard", () => {
       });
     }
   });
+
+  it("should open dialog with allowSaveExit=false when no save function is registered", (done) => {
+    pendingChangesService.hasChangesMockValue = true;
+    pendingChangesService.hasSaveFnMockValue = false;
+
+    dialogService.openDialog = jest.fn(() => ({
+      afterClosed: () => of("discard")
+    }));
+
+    const result = TestBed.runInInjectionContext(() =>
+      pendingChangesGuard(undefined, mockRoute, mockState, mockNextState)
+    );
+
+    expect(isObservable(result)).toBe(true);
+    if (isObservable(result)) {
+      result.subscribe({
+        next: () => {
+          expect(dialogService.openDialog).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({ allowSaveExit: false })
+            })
+          );
+          done();
+        },
+        error: (err) => done.fail(err)
+      });
+    }
+  });
+
+  it("should open dialog with allowSaveExit=true when a save function is registered", (done) => {
+    pendingChangesService.hasChangesMockValue = true;
+    pendingChangesService.hasSaveFnMockValue = true;
+
+    dialogService.openDialog = jest.fn(() => ({
+      afterClosed: () => of("discard")
+    }));
+
+    const result = TestBed.runInInjectionContext(() =>
+      pendingChangesGuard(undefined, mockRoute, mockState, mockNextState)
+    );
+
+    expect(isObservable(result)).toBe(true);
+    if (isObservable(result)) {
+      result.subscribe({
+        next: () => {
+          expect(dialogService.openDialog).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({ allowSaveExit: true })
+            })
+          );
+          done();
+        },
+        error: (err) => done.fail(err)
+      });
+    }
+  });
 });

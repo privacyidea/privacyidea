@@ -17,6 +17,7 @@
 @include meta.load-css("actions.scss");
 @include meta.load-css("overflow.scss");
 @include meta.load-css("snackbar.scss");
+@include meta.load-css("animations.scss");
 
 html,
 body {
@@ -353,6 +354,22 @@ body.self-service-layout {
 
 .margin-right-16 {
   margin-right: 16px;
+}
+
+.margin-right-4 {
+  margin-right: 4px;
+}
+
+.margin-right-5 {
+  margin-right: 5px;
+}
+
+.margin-right-3 {
+  margin-right: 3px;
+}
+
+.margin-right-2 {
+  margin-right: 2px;
 }
 
 .margin-top-0 {

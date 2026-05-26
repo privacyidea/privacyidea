@@ -18,7 +18,6 @@
  **/
 import { Component, computed, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -29,7 +28,7 @@ import { parseBooleanValue } from "@utils/parse-boolean-value";
 @Component({
   selector: "app-remote-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
   templateUrl: "./remote-config.component.html",
   styleUrl: "./remote-config.component.scss"
 })

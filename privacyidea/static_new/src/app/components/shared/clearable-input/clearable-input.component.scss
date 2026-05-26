@@ -1,5 +1,7 @@
 .input-container {
   position: relative;
+  display: flex;
+  flex-direction: row;
 }
 
 .input-container button {
@@ -14,7 +16,6 @@
 
 .input-container button mat-icon {
   font-size: 24px;
-  rotate: 45deg;
 }
 
 .input-container button:not(:disabled):hover {

@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -27,7 +26,7 @@ import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants
 @Component({
   selector: "app-yubico-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
   templateUrl: "./yubico-config.component.html",
   styleUrl: "./yubico-config.component.scss"
 })

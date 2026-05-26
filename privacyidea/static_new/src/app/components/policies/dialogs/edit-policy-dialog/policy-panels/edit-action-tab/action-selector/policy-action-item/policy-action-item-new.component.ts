@@ -18,7 +18,6 @@
  **/
 
 import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -28,11 +27,12 @@ import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-poli
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
+export type SelectableAction = { label: string; actionName: string; scope: string; detail: PolicyActionDetail };
+
 @Component({
   selector: "app-policy-action-item-new",
   standalone: true,
   imports: [
-    FormsModule,
     MatIconModule,
     MatTooltipModule,
     SelectorButtonsComponent,
@@ -44,49 +44,48 @@ import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@serv
   templateUrl: "./policy-action-item-new.component.html",
   styleUrls: ["./policy-action-item-new.component.scss"]
 })
-export class PolicyActionItemComponent<T extends string | number = string | number> {
+export class PolicyActionItemComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
-  readonly actionName = input.required<string>();
-  readonly actionValue = input<T>();
-  readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
-  readonly isBooleanAction = computed(() => this.actionDetail()?.type === "bool");
+  readonly selectableAction = input.required<SelectableAction>();
+  readonly actionValue = input<string | number>();
+
+  readonly isBooleanAction = computed(() => this.selectableAction().detail?.type === "bool");
   readonly inputIsValid = computed<boolean>(() => {
-    const actionDetail = this.actionDetail();
+    const detail = this.selectableAction().detail;
     const actionValue = this.currentAction()?.value;
-    if (actionDetail === null || actionValue === undefined) return false;
-    return this.policyService.actionValueIsValid(actionDetail, actionValue);
+    if (!detail || actionValue === undefined) return false;
+    return this.policyService.actionValueIsValid(detail, actionValue);
   });
   readonly selectActionByName = output<string>();
-  readonly actionAdd = output<{ name: string; value: T | undefined }>();
+  readonly actionAdd = output<{ name: string; value: string | number | undefined }>();
 
   currentAction = linkedSignal({
-    source: () => this.actionDetail(),
-    computation: (actionDetail) => {
-      const actionName = this.actionName();
-      if (!actionDetail) return { name: actionName, value: undefined };
-      const defaultValue = actionDetail.type === "bool" ? ("true" as T) : this.actionValue();
+    source: () => this.selectableAction(),
+    computation: (selectableAction) => {
+      const { actionName, detail } = selectableAction;
+      const defaultValue = detail?.type === "bool" ? "true" : this.actionValue();
       return { name: actionName, value: defaultValue };
     }
   });
 
-  selectedItems = computed<T[]>(() => {
+  selectedItems = computed<(string | number)[]>(() => {
     const value = this.currentAction()?.value;
     const valueList = typeof value === "string" ? value.split(" ") : [value];
-    return valueList as T[];
+    return valueList as (string | number)[];
   });
 
-  addAction(value?: T) {
-    const name = this.actionName();
+  addAction(value?: string | number) {
+    const name = this.selectableAction().actionName;
     const finalValue = value !== undefined ? value : this.currentAction().value;
     this.actionAdd.emit({ name, value: finalValue });
   }
 
-  updateSelectedActionValue(value: T | T[]) {
-    const actionName = this.actionName();
+  updateSelectedActionValue(value: string | number | (string | number)[]) {
+    const actionName = this.selectableAction().actionName;
     if (Array.isArray(value)) {
       const stringValue = value.map((v) => v.toString()).join(" ");
-      this.currentAction.set({ name: actionName, value: stringValue as T });
+      this.currentAction.set({ name: actionName, value: stringValue });
     } else {
       this.currentAction.set({ name: actionName, value: value });
     }

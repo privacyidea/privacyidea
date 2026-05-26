@@ -17,9 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
@@ -28,14 +27,7 @@ import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-selection",
-  imports: [
-    FormsModule,
-    MatChipsModule,
-    MatExpansionModule,
-    MatIcon,
-    ReactiveFormsModule,
-    ClearableInputComponent
-  ],
+  imports: [FormsModule, MatChipsModule, MatExpansionModule, MatIcon, ClearableInputComponent],
   templateUrl: "./event-selection.component.html",
   styleUrl: "./event-selection.component.scss"
 })
@@ -44,32 +36,39 @@ export class EventSelectionComponent {
   events = input.required<string[]>();
   newEvents = output<string[]>();
 
-  selectedEvents = new FormControl<string[]>([], { nonNullable: true, validators: [Validators.required] });
-  selectedEventsSignal = toSignal(this.selectedEvents.valueChanges, { initialValue: this.selectedEvents.value });
+  selectedEvents = signal<string[]>([]);
+  touched = signal(false);
+  invalid = computed(() => this.selectedEvents().length === 0);
+  showError = computed(() => this.touched() && this.invalid());
 
   constructor() {
     effect(() => {
-      this.selectedEvents.setValue(this.events());
+      this.selectedEvents.set(this.events());
     });
   }
 
   searchTerm = signal("");
 
+  markTouched(): void {
+    this.touched.set(true);
+  }
+
   removeEvent(event: string): void {
-    const current = this.selectedEvents.value;
+    const current = this.selectedEvents();
     const index = current.indexOf(event);
     if (index > -1) {
       const updated = [...current.slice(0, index), ...current.slice(index + 1)];
-      this.selectedEvents.setValue(updated);
+      this.selectedEvents.set(updated);
       this.newEvents.emit(updated);
+      this.markTouched();
     }
   }
 
   addEvent(event: string): void {
-    const current = this.selectedEvents.value;
+    const current = this.selectedEvents();
     if (event && current.indexOf(event) === -1) {
       const updated = [...current, event];
-      this.selectedEvents.setValue(updated);
+      this.selectedEvents.set(updated);
       this.newEvents.emit(updated);
     }
   }
@@ -77,7 +76,7 @@ export class EventSelectionComponent {
   remainingEvents = linkedSignal({
     source: () => ({
       available: this.eventService.availableEvents(),
-      selected: this.selectedEventsSignal(),
+      selected: this.selectedEvents(),
       search: this.searchTerm()
     }),
     computation: ({ available, selected, search }) =>

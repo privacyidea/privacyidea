@@ -19,7 +19,6 @@
 
 import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { EditActionTabComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/edit-action-tab.component";
 import { EditConditionsTabComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
@@ -36,7 +35,6 @@ export type PolicyTab = "actions" | "conditions";
   standalone: true,
   imports: [
     MatButtonModule,
-    FormsModule,
     EditActionTabComponent,
     EditConditionsTabComponent,
     PolicyDescriptionEditComponent,

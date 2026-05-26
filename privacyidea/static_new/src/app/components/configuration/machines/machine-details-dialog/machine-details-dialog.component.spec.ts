@@ -18,7 +18,6 @@
  **/
 import { computed, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -26,7 +25,9 @@ import { ApplicationService } from "@services/application/application.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MachineService } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService } from "@services/token/token.service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
 import { MachineDetailsDialogComponent } from "./machine-details-dialog.component";
 
@@ -39,6 +40,7 @@ describe("MachineDetailsDialogComponent", () => {
   let routerMock: any;
   let contentServiceMock: any;
   let tokenServiceMock: any;
+  let pendingChangesService: MockPendingChangesService;
 
   const mockMachine = { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" };
 
@@ -101,7 +103,7 @@ describe("MachineDetailsDialogComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachineDetailsDialogComponent, NoopAnimationsModule],
+      imports: [MachineDetailsDialogComponent],
       providers: [
         { provide: MachineService, useValue: machineServiceMock },
         { provide: ApplicationService, useValue: applicationServiceMock },
@@ -109,6 +111,7 @@ describe("MachineDetailsDialogComponent", () => {
         { provide: ContentService, useValue: contentServiceMock },
         { provide: TokenService, useValue: tokenServiceMock },
         { provide: Router, useValue: routerMock },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -123,6 +126,7 @@ describe("MachineDetailsDialogComponent", () => {
 
     fixture = TestBed.createComponent(MachineDetailsDialogComponent);
     component = fixture.componentInstance;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();
   });
 
@@ -149,8 +153,8 @@ describe("MachineDetailsDialogComponent", () => {
   });
 
   it("should attach token", () => {
-    component.newTokenSerial = "S2";
-    component.selectedApplication = "ssh";
+    component.newTokenSerial.set("S2");
+    component.selectedApplication.set("ssh");
     component.attachToken();
     expect(machineServiceMock.postAssignMachineToToken).toHaveBeenCalledWith({
       serial: "S2",
@@ -185,5 +189,21 @@ describe("MachineDetailsDialogComponent", () => {
   it("should call machineResolverSelected when machine resolver is clicked", () => {
     component.onMachineResolverClick("res1");
     expect(contentServiceMock.machineResolverSelected).toHaveBeenCalledWith("res1");
+  });
+
+  it("should register hasChanges based on editingIds in ngOnInit", () => {
+    expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+    const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+    expect(fn()).toBe(false);
+
+    const token = component.dataSource.data[0];
+    component.startEdit(token);
+    expect(fn()).toBe(true);
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

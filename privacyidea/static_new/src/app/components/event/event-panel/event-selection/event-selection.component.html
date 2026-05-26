@@ -24,11 +24,11 @@
       </mat-expansion-panel-header>
 
       <div class="panel-content">
-        @if (selectedEvents.value.length > 0) {
+        @if (selectedEvents().length > 0) {
           <mat-chip-set
             aria-label="Selected events"
             i18n-aria-label>
-            @for (event of selectedEvents.value; track $index) {
+            @for (event of selectedEvents(); track $index) {
               <mat-chip (removed)="removeEvent(event)">
                 {{ event }}
                 <button
@@ -58,7 +58,7 @@
 
       <div class="panel-content">
         <app-clearable-input
-          (onClick)="searchTerm.set('')"
+          (clearButtonClick)="searchTerm.set('')"
           [showClearButton]="searchTerm() !== ''">
           <input
             clearableInput

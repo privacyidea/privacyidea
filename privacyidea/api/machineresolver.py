@@ -18,11 +18,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This endpoint is used to create, modify, list and delete Machine Resolvers.
-Machine Resolvers fetch machine information from remote machine stores like a
-hosts file or an Active Directory.
+The machine-resolver REST API manages machine resolver definitions.
+A machine resolver fetches information about machines (host name, IP,
+identifier) from a backing store such as a local hosts file or an LDAP
+directory; the resolved machines are then targets for token attachments
+and machine applications (see :ref:`rest_machine`).
 
-The code of this module is tested in tests/test_api_machineresolver.py
+All endpoints require admin authentication. Read access is gated by the
+admin policy action :ref:`mresolverread`, write access by
+:ref:`mresolverwrite`, and deletion by :ref:`mresolverdelete`.
 """
 from flask import (Blueprint,
                    request)
@@ -47,9 +51,15 @@ machineresolver_blueprint = Blueprint('machineresolver_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERREAD)
 def get_resolvers():
     """
-    returns a json list of all machine resolver.
+    Return all machine resolvers known to this server. The result is a
+    dictionary keyed by resolver name; each value contains the resolver
+    type and its configuration.
 
-    :param type: Only return resolvers of type (like "hosts"...)
+    Requires admin authentication and the policy action :ref:`mresolverread`.
+
+    :query type: optional filter — return only resolvers of the given type
+        (``hosts``, ``ldap``, ...).
+    :status 200: dict of resolver definitions in ``result.value``.
     """
     typ = get_optional(request.all_data, "type")
     res = get_resolver_list(filter_resolver_type=typ)
@@ -62,25 +72,20 @@ def get_resolvers():
 @prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERWRITE)
 def set_resolver(resolver=None):
     """
-    This creates a new machine resolver or updates an existing one.
-    A resolver is uniquely identified by its name.
+    Create or update a machine resolver. If a resolver with the given name
+    already exists it is updated; otherwise it is created. On update,
+    parameters that are not supplied are left unchanged, but the resolver
+    ``type`` must not be changed (it is bound to the resolver class).
 
-    If you update a resolver, you do not need to provide all parameters.
-    Parameters you do not provide are left untouched.
-    When updating a resolver you must not change the type!
-    You do not need to specify the type, but if you specify a wrong type,
-    it will produce an error.
+    Requires admin authentication and the policy action :ref:`mresolverwrite`.
 
-    :param resolver: the name of the resolver.
-    :type resolver: basestring
-    :param type: the type of the resolver. Valid types are... "hosts"
-    :type type: string
-    :return: a json result with the value being the database id (>0)
-
-    Additional parameters depend on the resolver type.
-
-    hosts:
-     * filename
+    :param resolver: path component, the name of the resolver.
+    :jsonparam type: resolver type (``hosts``, ``ldap``, ...). Required on
+        creation.
+    :jsonparam: any resolver-type-specific configuration fields. For example
+        a ``hosts`` resolver expects ``filename`` (the path to a hosts-style
+        file on the server).
+    :status 200: database id of the resolver in ``result.value``.
     """
     param = request.all_data
     if resolver:
@@ -95,10 +100,12 @@ def set_resolver(resolver=None):
 @prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
-    this function deletes an existing machine resolver
+    Delete the machine resolver with the given name.
 
-    :param resolver: the name of the resolver to delete.
-    :return: json with success or fail
+    Requires admin authentication and the policy action :ref:`mresolverdelete`.
+
+    :param resolver: path component, the name of the resolver.
+    :status 200: id of the deleted resolver in ``result.value``.
     """
     res = delete_resolver(resolver)
     g.audit_object.log({"success": res,
@@ -112,10 +119,15 @@ def delete_resolver_api(resolver=None):
 @prepolicy(check_base_action, request, PolicyAction.MACHINERESOLVERREAD)
 def get_resolver(resolver=None):
     """
-    This function retrieves the definition of a single machine resolver.
+    Return the configuration of a single machine resolver.
 
-    :param resolver: the name of the resolver
-    :return: a json result with the configuration of a specified resolver
+    The result is a dictionary keyed by resolver name (single entry), with
+    the resolver's type and configuration.
+
+    Requires admin authentication and the policy action :ref:`mresolverread`.
+
+    :param resolver: path component, the name of the resolver.
+    :status 200: dict containing the resolver's configuration in ``result.value``.
     """
     res = get_resolver_list(filter_resolver_name=resolver)
 
@@ -129,11 +141,22 @@ def get_resolver(resolver=None):
 @log_with(log)
 def test_resolver():
     """
-    This function tests, if the given parameter will create a working
-    machine resolver. The Machine Resolver Class itself verifies the
-    functionality. This can also be network connectivity to a Machine Store.
+    Test whether the supplied parameters yield a working machine resolver,
+    including network connectivity to the underlying store. The resolver
+    class itself performs the verification; nothing is persisted.
 
-    :return: a json result with bool
+    Requires admin authentication.
+
+    .. note::
+       Unlike the other write endpoints in this module, this endpoint is
+       **not** gated by a specific policy action — admin auth is the only
+       check.
+
+    :jsonparam type: resolver type (required).
+    :jsonparam: any type-specific configuration fields.
+    :status 200: ``result.value`` is ``True`` if the test succeeded,
+        ``False`` otherwise; ``detail.description`` carries a human-readable
+        message.
     """
     param = request.all_data
     rtype = get_required(param, "type")

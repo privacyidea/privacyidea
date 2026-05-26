@@ -20,14 +20,14 @@
   <mat-form-field class="input-width-s">
     <mat-label i18n>OTP</mat-label>
     <input
-      [formControl]="otpControl"
+      [formField]="otpForm"
       matInput />
   </mat-form-field>
 
   <button
     mat-stroked-button
     class="action-button-secondary button-width-m"
-    [disabled]="otpControl.invalid"
+    [disabled]="!otpForm().valid()"
     (click)="verifyOTP()">
     <mat-icon>verified_user</mat-icon>
     <span i18n>Verify Enrollment</span>

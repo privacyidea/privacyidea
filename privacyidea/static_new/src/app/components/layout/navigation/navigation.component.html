@@ -250,12 +250,12 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]">
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.CONTAINERS]">
       <mat-icon class="mdi--folder-list"></mat-icon>
       <span i18n>Overview</span>
     </a>
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
       <a
         class="sub-nav-active">
         <mat-icon>source</mat-icon>
@@ -264,28 +264,28 @@
     }
     @if (authService.actionAllowed("container_create")) {
       <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]">
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_CREATE ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]">
         <mat-icon>create_new_folder</mat-icon>
         <span i18n>Create</span>
       </a>
     }
     @if (authService.oneActionAllowed(["container_template_list", "container_template_create"])) {
       <a
-        [ngClass]="contentService.onTokensContainersTemplates() ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES]">
+        [ngClass]="contentService.onContainersTemplates() ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES]">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Templates</span>
       </a>
     }
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)) {
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)) {
       <a
         class="sub-nav-active">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Template Details</span>
       </a>
     }
-    @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE) {
+    @if (contentService.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE) {
       <a
         class="sub-nav-active">
         <mat-icon>note_add</mat-icon>
@@ -331,13 +331,17 @@
       <span i18n>Resolvers</span>
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
         <mat-icon class="ms--database"></mat-icon>
         <span i18n>Resolver Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
         <mat-icon>add</mat-icon>
         <span i18n>Create Resolver</span>
       </a>
@@ -365,14 +369,20 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
       <a class="sub-nav-active">
-        <mat-icon>gavel</mat-icon>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">gavel</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>Details</span>
       </a>
     }
     <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
-      <mat-icon>add</mat-icon>
+      <span class="icon-badge">
+        <mat-icon class="margin-right-5">gavel</mat-icon>
+        <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+      </span>
       <span i18n>Create</span>
     </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
@@ -447,7 +457,9 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
         <mat-icon>point_of_sale</mat-icon>
         <span i18n>Machine Details</span>
       </a>
@@ -469,14 +481,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>flag</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>Event Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EVENTS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create Event</span>
       </a>
     }
@@ -506,14 +528,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>email</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">email</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>SMTP Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">email</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create SMTP Server</span>
       </a>
     }
@@ -526,14 +558,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>vpn_lock</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">vpn_lock</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>RADIUS Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">vpn_lock</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create RADIUS Server</span>
       </a>
     }
@@ -546,14 +588,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>sms</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">sms</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>SMS Gateway Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">sms</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create SMS Gateway</span>
       </a>
     }
@@ -566,14 +618,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>assured_workload</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">assured_workload</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>CA Connector Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-2">assured_workload</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create CA Connector</span>
       </a>
     }
@@ -586,14 +648,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon class="mdi--pi-logo"></mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="mdi--pi-logo margin-right-5"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>PrivacyIDEA Server Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="mdi--pi-logo margin-right-3"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create PrivacyIDEA Server</span>
       </a>
     }
@@ -606,14 +678,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>local_police</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">local_police</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>Tokengroup Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">local_police</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create Tokengroup</span>
       </a>
     }
@@ -626,14 +708,24 @@
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>storage</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-5">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
         <span i18n>Service ID Details</span>
       </a>
     }
     @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) {
-      <a class="sub-nav-active" data-overflow-child>
-        <mat-icon>add</mat-icon>
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="margin-right-3">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
         <span i18n>Create Service ID</span>
       </a>
     }

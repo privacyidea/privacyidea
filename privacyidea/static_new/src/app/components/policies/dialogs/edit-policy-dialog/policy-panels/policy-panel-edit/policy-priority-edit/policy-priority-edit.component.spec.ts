@@ -18,8 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PolicyPriorityEditComponent } from "./policy-priority-edit.component";
 
 describe("PolicyPriorityEditComponent", () => {
@@ -28,7 +26,7 @@ describe("PolicyPriorityEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyPriorityEditComponent, FormsModule, NoopAnimationsModule]
+      imports: [PolicyPriorityEditComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyPriorityEditComponent);

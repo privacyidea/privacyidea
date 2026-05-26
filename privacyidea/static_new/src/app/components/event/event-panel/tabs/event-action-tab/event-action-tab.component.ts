@@ -18,13 +18,13 @@
  **/
 
 import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, input, output } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, inject, input, output, signal } from "@angular/core";
+import { form, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ActionOptions, EventService } from "@services/event/event.service";
 
 @Component({
@@ -36,12 +36,11 @@ import { ActionOptions, EventService } from "@services/event/event.service";
     MatLabel,
     MatOption,
     MatSelect,
-    FormsModule,
     MatInput,
     MatCheckbox,
-    ReactiveFormsModule,
     MatError,
-    NgClass
+    NgClass,
+    ErrorStateDirective
   ],
   templateUrl: "./event-action-tab.component.html",
   styleUrl: "./event-action-tab.component.scss"
@@ -55,102 +54,116 @@ export class EventActionTabComponent {
   optionsValid = output<boolean>();
   protected readonly Object = Object;
 
-  selectedAction = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  selectedActionSignal = toSignal(this.selectedAction.valueChanges, { initialValue: this.selectedAction.value });
-  selectedOptions = new FormGroup<any>({});
-
-  constructor() {
-    // Set initial values
-    effect(() => {
-      this.selectedAction.setValue(this.action(), { emitEvent: false });
-      this.rebuildOptionsForm(this.options(), false);
-      this.optionsValid.emit(this.selectedOptions.valid);
-    });
-
-    // Subscribe to value changes in selectedOptions and emit to parent
-    this.selectedOptions.valueChanges.subscribe(() => {
-      this.emitOptionsToParent();
-    });
-
-    // Rebuild options form when selectedAction changes
-    this.selectedAction.valueChanges.subscribe((actionValue) => {
-      const options = this.eventService.moduleActions()[actionValue] || {};
-      this.rebuildOptionsForm(options);
-      // Emit after rebuilding, as structure/values may have changed
-      this.emitOptionsToParent();
-    });
-  }
-
-  rebuildOptionsForm(options: Record<string, any>, emitEvent: boolean = true) {
-    // Remove controls that are not in the new options
-    Object.keys(this.selectedOptions.controls).forEach((key) => {
-      if (!(key in options)) {
-        this.selectedOptions.removeControl(key, { emitEvent: emitEvent });
-      }
-    });
-    // Add or update controls for each option
-    for (const optionName of Object.keys(options)) {
-      const option = options[optionName];
-      const validators = option.required ? [Validators.required] : [];
-      if (this.selectedOptions.contains(optionName)) {
-        this.selectedOptions.get(optionName)?.setValidators(validators);
-        this.selectedOptions.get(optionName)?.setValue(this.options()[optionName] ?? option.default ?? "");
-        this.selectedOptions.get(optionName)?.updateValueAndValidity({ emitEvent: emitEvent });
-      } else {
-        this.selectedOptions.addControl(
-          optionName,
-          new FormControl(this.options()[optionName] ?? option.default ?? "", validators),
-          { emitEvent: emitEvent }
-        );
-      }
-    }
-  }
-
-  emitOptionsToParent() {
-    this.newOptions.emit(this.optionsToDict());
-    this.optionsValid.emit(this.selectedOptions.valid);
-  }
-
-  onActionSelectionChange() {
-    this.newAction.emit(this.selectedAction.value);
-  }
-
-  optionsToDict() {
-    let newOptions: Record<string, any> = {};
-    for (const key of Object.keys(this.selectedOptions.controls)) {
-      const value = this.selectedOptions.get(key)?.value;
-      if (value === null || value === undefined) {
-        continue; // skip undefined or empty values
-      }
-      newOptions[key] = this.selectedOptions.get(key)?.value;
-    }
-    return newOptions;
-  }
-
-  actionOptions = computed(() => {
-    if (!this.selectedActionSignal()) {
-      if (this.action()) {
-        // initial load case if the selectedActionSignal is not yet set correctly
-        return this.eventService.moduleActions()[this.action()] || {};
-      }
-      return {};
-    }
-    return this.eventService.moduleActions()[this.selectedActionSignal()] || {};
+  selectedAction = signal<string>("");
+  selectedActionForm = form(this.selectedAction, (f) => {
+    required(f);
   });
 
+  showActionError = computed(() => {
+    const actionForm = this.selectedActionForm();
+    return actionForm.errors().some((error) => error.kind === "required") && actionForm.touched();
+  });
+
+  selectedOptions = signal<Record<string, any>>({});
+  touchedOptions = signal<Record<string, boolean>>({});
+
+  actionOptions = computed(() => {
+    const action = this.selectedAction();
+    if (action) {
+      return this.eventService.moduleActions()[action] || {};
+    }
+    if (this.action()) {
+      return this.eventService.moduleActions()[this.action()] || {};
+    }
+    return {};
+  });
+
+  optionsAreValid = computed(() => {
+    const optionDefinitions = this.actionOptions();
+    const values = this.selectedOptions();
+    for (const name of Object.keys(optionDefinitions)) {
+      if (optionDefinitions[name].required && this.isEmpty(values[name])) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  constructor() {
+    // Sync the selectedAction signal with the input
+    effect(() => {
+      this.selectedAction.set(this.action());
+    });
+
+    // Rebuild option defaults when action or options input changes
+    effect(() => {
+      const optionDefinitions = this.actionOptions();
+      const incoming = this.options();
+      const rebuilt: Record<string, any> = {};
+      for (const name of Object.keys(optionDefinitions)) {
+        const definition = optionDefinitions[name] as Record<string, any>;
+        if (incoming[name] !== undefined) {
+          rebuilt[name] = incoming[name];
+        } else if (definition["default"] !== undefined) {
+          rebuilt[name] = definition["default"];
+        } else {
+          rebuilt[name] = "";
+        }
+      }
+      this.selectedOptions.set(rebuilt);
+      this.touchedOptions.set({});
+    });
+
+    // Emit options + validity to the parent whenever they change
+    effect(() => {
+      const values = this.selectedOptions();
+      this.optionsValid.emit(this.optionsAreValid());
+      this.newOptions.emit(this.optionsToDict(values));
+    });
+  }
+
+  private isEmpty(value: any): boolean {
+    return value === null || value === undefined || value === "";
+  }
+
+  private optionsToDict(values: Record<string, any>): Record<string, any> {
+    const result: Record<string, any> = {};
+    for (const key of Object.keys(values)) {
+      const value = values[key];
+      if (value === null || value === undefined) continue;
+      result[key] = value;
+    }
+    return result;
+  }
+
+  setOption(name: string, value: any): void {
+    this.selectedOptions.update((current) => ({ ...current, [name]: value }));
+  }
+
+  markOptionTouched(name: string): void {
+    this.touchedOptions.update((current) => ({ ...current, [name]: true }));
+  }
+
+  isOptionInvalid(name: string): boolean {
+    const definition = this.actionOptions()[name];
+    if (!definition || !definition.required) return false;
+    return this.isEmpty(this.selectedOptions()[name]);
+  }
+
+  showOptionError(name: string): boolean {
+    return !!this.touchedOptions()[name] && this.isOptionInvalid(name);
+  }
+
+  onActionSelectionChange(value: string): void {
+    this.selectedAction.set(value);
+    this.newAction.emit(value);
+  }
+
   checkOptionVisibility(optionName: string): boolean {
-    // checks if the visible conditions of an option are met
     const optionDetails = this.actionOptions()[optionName];
-    if (!optionDetails || !optionDetails.visibleIf) {
-      // no visible condition set
-      return true;
-    }
-    if (optionDetails.visibleValue === undefined) {
-      // related option is set, but no specific value is required
-      return true;
-    }
-    // check if the related option matches the required value
-    const dependentOptionValue = (this.selectedOptions.value as Record<string, any>)[optionDetails.visibleIf];
-    return dependentOptionValue === optionDetails.visibleValue;
+    if (!optionDetails || !optionDetails.visibleIf) return true;
+    if (optionDetails.visibleValue === undefined) return true;
+    const dependent = this.selectedOptions()[optionDetails.visibleIf];
+    return dependent === optionDetails.visibleValue;
   }
 }

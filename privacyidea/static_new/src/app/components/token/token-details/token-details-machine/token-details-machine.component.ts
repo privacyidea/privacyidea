@@ -18,7 +18,6 @@
  **/
 import { CdkTableDataSourceInput } from "@angular/cdk/table";
 import { Component, computed, inject } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -41,7 +40,6 @@ import {
     MatCell,
     MatList,
     MatListItem,
-    FormsModule,
     MatIconButton,
     MatIcon,
     MatDivider,

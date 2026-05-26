@@ -59,9 +59,7 @@ export interface SmsGatewayServiceInterface {
   deleteSmsGateway(name: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SmsGatewayService implements SmsGatewayServiceInterface {
   private readonly baseUrl = environment.proxyUrl + "/smsgateway";
   private readonly authService: AuthServiceInterface = inject(AuthService);

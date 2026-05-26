@@ -18,8 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PolicyNameEditComponent } from "./policy-name-edit.component";
 
 describe("PolicyNameEditComponent", () => {
@@ -28,7 +26,7 @@ describe("PolicyNameEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyNameEditComponent, FormsModule, NoopAnimationsModule]
+      imports: [PolicyNameEditComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyNameEditComponent);

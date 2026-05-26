@@ -54,9 +54,7 @@ export interface RadiusServerServiceInterface {
   deleteRadiusServer(identifier: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class RadiusServerService implements RadiusServerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -82,11 +80,19 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   });
 
   radiusServers: WritableSignal<RadiusServer[]> = linkedSignal({
-    source: () => (this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined),
-    computation: (source, previous) =>
-      Object.entries(source?.result?.value ?? {}).map(([identifier, server]) => ({ ...server, identifier })) ??
-      previous?.value ??
-      []
+    source: () => ({
+      value: this.radiusServerResource.hasValue() ? this.radiusServerResource.value() : undefined,
+      isLoading: this.radiusServerResource.isLoading(),
+      error: this.radiusServerResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return Object.entries(source.value.result?.value ?? {}).map(([identifier, server]) => ({
+        ...server,
+        identifier
+      }));
+    }
   });
 
   async postRadiusServer(server: RadiusServer): Promise<void> {

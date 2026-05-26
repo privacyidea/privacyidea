@@ -20,10 +20,18 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
+import { of } from "rxjs";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService } from "@testing/mock-services";
 
 describe("PeriodicTaskPanelComponent", () => {
   let component: PeriodicTaskPanelComponent;
@@ -40,6 +48,8 @@ describe("PeriodicTaskPanelComponent", () => {
     ordering: 0
   };
   let periodicTaskServiceMock: MockPeriodicTaskService;
+  let dialogServiceMock: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -47,7 +57,10 @@ describe("PeriodicTaskPanelComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService }
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
 
@@ -55,6 +68,8 @@ describe("PeriodicTaskPanelComponent", () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput("task", task);
     periodicTaskServiceMock = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();
   });
 
@@ -62,34 +77,97 @@ describe("PeriodicTaskPanelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("savePeriodicTask does not save if not allowed", () => {
+  it("savePeriodicTask resolves false and does not save if not allowed", async () => {
     const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Edited" }) };
     component.editComponent = editComponentMock as any;
     component.canSave = false;
     const saveSpy = jest.spyOn(periodicTaskServiceMock, "savePeriodicTask");
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
-    component.savePeriodicTask();
+    const result = await component.savePeriodicTask();
+    expect(result).toBe(false);
     expect(editComponentMock.editTask).toHaveBeenCalled();
     expect(saveSpy).not.toHaveBeenCalled();
     expect(reloadSpy).not.toHaveBeenCalled();
   });
 
-  it("savePeriodicTask should save if allowed", () => {
+  it("savePeriodicTask resolves true and saves if allowed", async () => {
     const editComponentMock = { editTask: jest.fn().mockReturnValue({ ...EMPTY_PERIODIC_TASK, name: "Edited" }) };
     component.editComponent = editComponentMock as any;
     component.canSave = true;
     const saveSpy = jest.spyOn(periodicTaskServiceMock, "savePeriodicTask");
     const reloadSpy = jest.spyOn(periodicTaskServiceMock.periodicTasksResource, "reload");
-    component.savePeriodicTask();
+    const result = await component.savePeriodicTask();
+    expect(result).toBe(true);
     expect(editComponentMock.editTask).toHaveBeenCalled();
     expect(saveSpy).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(false);
   });
 
-  it("cancelEdit should set isEditMode to false", () => {
+  it("cancelEdit should set isEditMode to false when task is not edited", () => {
     component.isEditMode.set(true);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task }) } as any;
     component.cancelEdit();
     expect(component.isEditMode()).toBe(false);
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+  });
+
+  it("cancelEdit should open save-and-exit dialog when task has been edited and stay in edit mode on close", () => {
+    component.isEditMode.set(true);
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(null));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+
+    component.cancelEdit();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(true);
+  });
+
+  it("cancelEdit should set isEditMode to false after user confirms discard in dialog", () => {
+    component.isEditMode.set(true);
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("discard"));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+
+    component.cancelEdit();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(false);
+  });
+
+  it("cancelEdit should save when user picks save-exit and canSave is true", async () => {
+    component.isEditMode.set(true);
+    component.canSave = true;
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+    const saveSpy = jest.spyOn(component, "savePeriodicTask").mockResolvedValue(true);
+
+    component.cancelEdit();
+    await Promise.resolve();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(saveSpy).toHaveBeenCalled();
+  });
+
+  it("cancelEdit should not save when user picks save-exit but canSave is false", async () => {
+    component.isEditMode.set(true);
+    component.canSave = false;
+    const dialogRef = new MockMatDialogRef();
+    jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+    dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
+    component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed Name" }) } as any;
+    const saveSpy = jest.spyOn(component, "savePeriodicTask");
+
+    component.cancelEdit();
+    await Promise.resolve();
+
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(component.isEditMode()).toBe(true);
   });
 
   it("toggleActive should call enablePeriodicTask if activate is true", () => {
@@ -115,5 +193,46 @@ describe("PeriodicTaskPanelComponent", () => {
     const deleteSpy = jest.spyOn(periodicTaskServiceMock, "deleteWithConfirmDialog");
     component.deleteTask();
     expect(deleteSpy).toHaveBeenCalled();
+  });
+
+  describe("pending changes", () => {
+    it("does not register anything before entering edit mode", () => {
+      expect(pendingChangesService.registerHasChanges).not.toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).not.toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).not.toHaveBeenCalled();
+    });
+
+    it("registers hasChanges, validChanges, and save once edit mode becomes true", () => {
+      component.isEditMode.set(true);
+      fixture.detectChanges();
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges callback reflects dirty edit state, not just edit mode", () => {
+      component.isEditMode.set(true);
+      fixture.detectChanges();
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+      component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task }) } as any;
+      expect(fn()).toBe(false);
+
+      component.editComponent = { editTask: jest.fn().mockReturnValue({ ...task, name: "Changed" }) } as any;
+      expect(fn()).toBe(true);
+
+      component.isEditMode.set(false);
+      expect(fn()).toBe(false);
+    });
+
+    it("validChanges callback reflects canSave", () => {
+      component.isEditMode.set(true);
+      fixture.detectChanges();
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.canSave = true;
+      expect(fn()).toBe(true);
+      component.canSave = false;
+      expect(fn()).toBe(false);
+    });
   });
 });

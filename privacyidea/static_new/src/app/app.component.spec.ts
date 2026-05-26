@@ -20,7 +20,6 @@ import { APP_BASE_HREF, Location } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
 
 import { MockNotificationService, MockSessionTimerService } from "@testing/mock-services";
@@ -37,7 +36,7 @@ describe("AppComponent", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [AppComponent, BrowserAnimationsModule],
+      imports: [AppComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -88,19 +87,6 @@ describe("AppComponent", () => {
     expect(timer.startTimer).toHaveBeenCalled();
   });
 
-  describe("appConfig", () => {
-    it("defines providers array", () => {
-      expect(Array.isArray(appConfig.providers)).toBe(true);
-    });
-
-    it("contains APP_BASE_HREF set to /app/v2/", () => {
-      const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
-      if (p && "useValue" in p) {
-        expect(p?.useValue).toBe("/app/v2/");
-      }
-    });
-  });
-
   describe("Routing", () => {
     let router: Router;
     let location: Location;
@@ -138,5 +124,18 @@ describe("AppComponent", () => {
       await Promise.resolve();
       expect(location.path()).toBe("/login");
     });
+  });
+});
+
+describe("appConfig", () => {
+  it("defines providers array", () => {
+    expect(Array.isArray(appConfig.providers)).toBe(true);
+  });
+
+  it("contains APP_BASE_HREF set to /app/v2/", () => {
+    const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
+    if (p && "useValue" in p) {
+      expect(p?.useValue).toBe("/app/v2/");
+    }
   });
 });

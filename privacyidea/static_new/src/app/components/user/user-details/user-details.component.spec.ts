@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { BehaviorSubject, map, of } from "rxjs";
 
 import { BreakpointObserver } from "@angular/cdk/layout";
@@ -28,13 +27,18 @@ import { UserDetailsComponent } from "./user-details.component";
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
+import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
+    MockAuditService,
+    MockContainerService,
     MockContentService,
     MockDialogService,
     MockLocalService,
@@ -44,6 +48,7 @@ import {
     MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({
@@ -58,6 +63,7 @@ describe("UserDetailsComponent", () => {
   let userServiceMock: MockUserService;
   let tokenServiceMock: MockTokenService;
   let dialogServiceMock: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
   let dialogMock: MockMatDialog;
   let breakpointSubject: BehaviorSubject<Record<string, boolean>>;
 
@@ -84,7 +90,7 @@ describe("UserDetailsComponent", () => {
     });
 
     await TestBed.configureTestingModule({
-      imports: [UserDetailsComponent, BrowserAnimationsModule],
+      imports: [UserDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -103,10 +109,13 @@ describe("UserDetailsComponent", () => {
         },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: ContainerService, useClass: MockContainerService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: MatDialog, useValue: dialogMock },
         MockLocalService,
         MockNotificationService
@@ -118,6 +127,7 @@ describe("UserDetailsComponent", () => {
     tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -185,7 +195,7 @@ describe("UserDetailsComponent", () => {
     expect(component.canAddAttribute()).toBe(true);
   });
 
-  it("addCustomAttribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", () => {
+  it("addCustomAttribute calls setUserAttribute and reloads userAttributesResource, then clears inputs", async () => {
     userServiceMock.attributeSetMap.set({
       department: ["sales", "finance"],
       customKey: ["2", "1"]
@@ -197,7 +207,8 @@ describe("UserDetailsComponent", () => {
     const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
     const reloadSpy = jest.spyOn(userServiceMock.userAttributesResource, "reload");
 
-    component.addCustomAttribute();
+    const result = await component.addCustomAttribute();
+    expect(result).toBe(true);
     expect(setSpy).toHaveBeenCalledWith("department", "sales");
     expect(reloadSpy).toHaveBeenCalledTimes(1);
 
@@ -247,7 +258,7 @@ describe("UserDetailsComponent", () => {
     (component as any).tokenAutoTrigger = { openPanel };
 
     component.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as any);
-    expect(tokenServiceMock.eventPageSize).toBe(25);
+    expect(tokenServiceMock.eventPageSize()).toBe(25);
     expect(tokenServiceMock.pageIndex()).toBe(2);
 
     jest.runOnlyPendingTimers();
@@ -349,5 +360,65 @@ describe("UserDetailsComponent", () => {
     columns = component.detailsColumns();
     expect(columns.length).toBe(1);
     expect(columns[0].length).toBe(totalEntries);
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects attribute input signals", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.addKeyInput.set("key");
+      expect(fn()).toBe(true);
+      component.addKeyInput.set("");
+
+      component.addValueInput.set("value");
+      expect(fn()).toBe(true);
+      component.addValueInput.set("");
+
+      component.selectedKey.set("k");
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges requires both key and value", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.keyMode.set("input");
+      expect(fn()).toBe(false);
+
+      component.addKeyInput.set("key");
+      expect(fn()).toBe(false);
+
+      component.addValueInput.set("value");
+      expect(fn()).toBe(true);
+    });
+
+    it("save calls setUserAttribute and resolves true on success", async () => {
+      component.keyMode.set("input");
+      component.addKeyInput.set("key");
+      component.addValueInput.set("value");
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+      const result = await fn();
+      expect(setSpy).toHaveBeenCalledWith("key", "value");
+      expect(result).toBe(true);
+    });
+
+    it("save resolves false when key or value missing", async () => {
+      const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+      const result = await fn();
+      expect(setSpy).not.toHaveBeenCalled();
+      expect(result).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

@@ -19,6 +19,7 @@
 
 import { NgOptimizedImage } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
@@ -29,7 +30,7 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
@@ -55,7 +56,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   templateUrl: "./login.component.html",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatFormField,
     MatInput,
     MatLabel,
@@ -69,7 +70,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   ],
   styleUrl: "./login.component.scss"
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router: Router = inject(Router);
   private readonly localService: LocalServiceInterface = inject(LocalService);
@@ -80,10 +81,15 @@ export class LoginComponent implements OnDestroy {
   private transactionId = "";
   private pollingSubscription: Subscription | null = null;
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("usernameInput") usernameInput?: ElementRef<HTMLInputElement>;
   username = signal<string>("");
   password = signal<string>("");
   hidePassword = signal<boolean>(true);
   otp = signal<string>("");
+
+  usernameField = form(this.username, (f) => { required(f); });
+  passwordField = form(this.password, (f) => { required(f); });
+  otpField = form(this.otp, (f) => { required(f); });
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 
@@ -232,6 +238,10 @@ export class LoginComponent implements OnDestroy {
     this.hidePassword.set(true);
   }
 
+  ngAfterViewInit(): void {
+    setTimeout(() => this.usernameInput?.nativeElement.focus(), 0);
+  }
+
   ngOnDestroy(): void {
     this.stopPushPolling();
   }
@@ -298,11 +308,11 @@ export class LoginComponent implements OnDestroy {
       if (this.authService.tokenWizard()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
       } else if (this.authService.containerWizard().enabled) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD).then();
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
       } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.anyContainerActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS).then();
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
       } else {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       }

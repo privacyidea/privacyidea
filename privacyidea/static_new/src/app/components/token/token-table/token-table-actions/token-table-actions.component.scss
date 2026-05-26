@@ -2,7 +2,8 @@
 @use "table";
 
 .flex-row {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 :host {

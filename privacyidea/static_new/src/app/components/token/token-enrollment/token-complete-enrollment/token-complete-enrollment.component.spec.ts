@@ -62,14 +62,14 @@ describe("TokenCompleteEnrollmentComponent", () => {
   });
 
   it("should disable enroll action if input is invalid", () => {
-    component.clientPartControl.setValue("");
+    component.clientPart.set("");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(true);
     expect(component.dialogActions()[0].disabled).toBe(true);
   });
 
   it("should enable enroll action if input is valid", () => {
-    component.clientPartControl.setValue("SOMEKEY");
+    component.clientPart.set("SOMEKEY");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(false);
     expect(component.dialogActions()[0].disabled).toBe(false);
@@ -82,7 +82,7 @@ describe("TokenCompleteEnrollmentComponent", () => {
         result: { status: true }
       } as any)
     );
-    component.clientPartControl.setValue("SOMEKEY");
+    component.clientPart.set("SOMEKEY");
     component.onDialogAction("enroll");
     expect(mockTokenService.enrollToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).toHaveBeenCalled();
@@ -95,14 +95,14 @@ describe("TokenCompleteEnrollmentComponent", () => {
         result: { status: true }
       } as any)
     );
-    component.clientPartControl.setValue("SOMEKEY");
+    component.clientPart.set("SOMEKEY");
     component.onDialogAction("enroll");
     expect(mockTokenService.enrollToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });
 
   it("should remove twoStepInit from enrollParameters.data when enrolling", () => {
-    component.clientPartControl.setValue("SOMEKEY");
+    component.clientPart.set("SOMEKEY");
     fixture.detectChanges();
     jest.spyOn(component["tokenService"], "enrollToken").mockImplementation((params) => {
       expect(params.data.type).toEqual("hotp");

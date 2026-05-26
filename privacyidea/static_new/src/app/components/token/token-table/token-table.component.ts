@@ -41,14 +41,13 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -79,11 +78,10 @@ const columnKeysMap = [
     MatSortModule,
     NgClass,
     MatCheckboxModule,
-    FormsModule,
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
-    CopyButtonComponent,
+    CopyableComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,
@@ -236,7 +234,7 @@ export class TokenTableComponent implements AfterViewInit, OnDestroy {
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
-    this.tokenService.eventPageSize = event.pageSize;
+    this.tokenService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 

@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,9 +27,10 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -42,6 +42,7 @@ import {
   TokenApplication,
   TokenApplications
 } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
 
@@ -57,21 +58,21 @@ import { lastValueFrom } from "rxjs";
     MatTooltipModule,
     MatTableModule,
     MatPaginatorModule,
-    FormsModule,
     MatSelectModule,
     MatAutocompleteModule,
-    CopyButtonComponent
+    CopyButtonComponent,
+    CopyableComponent
   ],
   templateUrl: "./machine-details-dialog.component.html",
   styleUrl: "./machine-details-dialog.component.scss"
 })
-export class MachineDetailsDialogComponent implements OnInit {
+export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly router: Router = inject(Router);
   private readonly route: ActivatedRoute = inject(ActivatedRoute);
+  private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -82,8 +83,8 @@ export class MachineDetailsDialogComponent implements OnInit {
   dataSource = new MatTableDataSource<TokenApplication>([]);
   displayedColumns: string[] = ["serial", "application", "options", "actions"];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  newTokenSerial = "";
-  selectedApplication: "offline" | "ssh" = "offline";
+  newTokenSerial = signal("");
+  selectedApplication = signal<"offline" | "ssh">("offline");
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
   editingIds = new Set<number>();
@@ -112,10 +113,11 @@ export class MachineDetailsDialogComponent implements OnInit {
     if (this.data()) {
       this.loadTokenApplications();
     }
-    // If data() is still undefined, the effect() will handle it once machines signal resolves.
+    this.pendingChangesService.registerHasChanges(() => this.editingIds.size > 0);
   }
 
   onTokenSerialInput(value: string): void {
+    this.newTokenSerial.set(value);
     this.tokenService.selectedToken.set(value);
   }
 
@@ -194,22 +196,26 @@ export class MachineDetailsDialogComponent implements OnInit {
 
   attachToken(): void {
     const machine = this.data();
-    if (!this.newTokenSerial || !this.selectedApplication || !machine) {
+    if (!this.newTokenSerial() || !this.selectedApplication() || !machine) {
       return;
     }
 
     this.machineService
       .postAssignMachineToToken({
-        serial: this.newTokenSerial,
-        application: this.selectedApplication,
+        serial: this.newTokenSerial(),
+        application: this.selectedApplication(),
         machineid: machine.id,
         resolver: machine.resolver_name
       })
       .subscribe(() => {
-        this.newTokenSerial = "";
-        this.selectedApplication = "offline";
+        this.newTokenSerial.set("");
+        this.selectedApplication.set("offline");
         this.loadTokenApplications();
       });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   onTokenClick(serial: string): void {

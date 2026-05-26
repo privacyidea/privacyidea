@@ -18,7 +18,6 @@
  **/
 import { Component, input, output, signal } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -31,7 +30,6 @@ import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
   selector: "app-questionnaire-config",
   standalone: true,
   imports: [
-    FormsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,

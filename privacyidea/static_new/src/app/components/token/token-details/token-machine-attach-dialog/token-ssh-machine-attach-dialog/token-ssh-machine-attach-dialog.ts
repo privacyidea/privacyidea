@@ -16,15 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators
-} from "@angular/forms";
+import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { form, FormField, required, validate } from "@angular/forms/signals";
 import { MatOptionModule } from "@angular/material/core";
 import { MatDialogModule } from "@angular/material/dialog";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
@@ -54,7 +47,7 @@ export type SshMachineAssignDialogData = {
   templateUrl: "./token-ssh-machine-attach-dialog.component.html",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatSelectModule,
     MatInputModule,
     MatButtonModule,
@@ -131,21 +124,41 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     return this.availableUsers().filter((user) => user.toLowerCase().includes(filterString));
   });
 
-  /// Form controls ///
-  selectedMachine = new FormControl<string | Machine>("", this.machineValidator);
-  selectedServiceId = new FormControl<string>("", Validators.required);
-  selectedUser = new FormControl<string>("", Validators.required);
-
-  formGroup = new FormGroup({
-    selectedMachine: this.selectedMachine,
-    selectedServiceId: this.selectedServiceId,
-    selectedUser: this.selectedUser
+  /// Signal form fields ///
+  selectedMachineValue = signal<string | Machine>("");
+  selectedMachineForm = form(this.selectedMachineValue, (f) => {
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      if (!value) return [{ kind: "required" as any }];
+      if (typeof value === "string") return [{ kind: "required" as any }];
+      const machine = value as Machine;
+      if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
+        return [{ kind: "invalidMachine" as any }];
+      }
+      return [];
+    });
   });
 
-  /// Computed properties ///
+  selectedServiceIdValue = signal("");
+  selectedServiceIdForm = form(this.selectedServiceIdValue, (f) => {
+    required(f);
+  });
 
-  ngOnInit() {
-    this.selectedMachine.valueChanges.subscribe((value) => {
+  selectedUserValue = signal("");
+  selectedUserForm = form(this.selectedUserValue, (f) => {
+    required(f);
+  });
+
+  isFormValid = computed(() =>
+    this.selectedMachineForm().valid() &&
+    this.selectedServiceIdForm().valid() &&
+    this.selectedUserForm().valid()
+  );
+
+  constructor() {
+    super();
+    effect(() => {
+      const value = this.selectedMachineValue();
       this.machineFilter.set(
         typeof value === "string"
           ? value.trim().toLowerCase()
@@ -153,9 +166,10 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
             ? this.getFullMachineName(value).trim().toLowerCase()
             : ""
       );
-      this.selectedUser.valueChanges.subscribe((userValue) => {
-        this.userFilter.set(userValue ? userValue.trim().toLowerCase() : "");
-      });
+    });
+    effect(() => {
+      const userValue = this.selectedUserValue();
+      this.userFilter.set(userValue ? userValue.trim().toLowerCase() : "");
     });
   }
 
@@ -168,17 +182,20 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   }
 
   onAssign() {
-    if (this.formGroup.invalid) {
+    if (!this.isFormValid()) {
+      this.selectedMachineForm().markAsTouched();
+      this.selectedServiceIdForm().markAsTouched();
+      this.selectedUserForm().markAsTouched();
       return;
     }
-    const machine = this.selectedMachine.value;
+    const machine = this.selectedMachineValue();
     if (!machine || typeof machine === "string") {
       console.error("Invalid machine selection:", machine);
       return;
     }
     const request = this.machineService.postAssignMachineToToken({
-      service_id: this.selectedServiceId.value!,
-      user: this.selectedUser.value!,
+      service_id: this.selectedServiceIdValue(),
+      user: this.selectedUserValue(),
       serial: this.data.tokenSerial,
       application: "ssh",
       machineid: machine!.id,
@@ -198,19 +215,5 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
 
   onCancel(): void {
     this.dialogRef.close(null);
-  }
-
-  machineValidator(control: AbstractControl<string | Machine>): ValidationErrors | null {
-    if (!control.value) {
-      return { required: true }; // Machine selection is required
-    }
-    if (typeof control.value === "string") {
-      return { required: true }; // Machine selection is required
-    }
-    const machine = control.value as Machine;
-    if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
-      return { invalidMachine: true }; // Invalid machine object
-    }
-    return null; // No validation error
   }
 }

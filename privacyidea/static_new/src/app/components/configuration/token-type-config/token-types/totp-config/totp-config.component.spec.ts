@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
 import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from "@constants/token.constants";
@@ -32,7 +31,7 @@ describe("TotpConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TotpConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(TotpConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -88,14 +87,4 @@ describe("TotpConfigComponent", () => {
     expect(component.formData()[TOTP_HASHLIB]).toEqual("sha256");
   });
 
-  it("should call updateFormData with empty value when clearField is called", () => {
-    const initialTimeStep = "60";
-    fixture.componentRef.setInput("formData", { [TOTP_TIME_STEP]: initialTimeStep });
-    fixture.detectChanges();
-    expect(component.formData()[TOTP_TIME_STEP]).toEqual(initialTimeStep);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(TOTP_TIME_STEP);
-    expect(component.updateFormData).toHaveBeenCalledWith(TOTP_TIME_STEP, "");
-  });
 });

@@ -25,8 +25,8 @@
       cdkTextareaAutosize
       [cdkAutosizeMinRows]="3"
       [cdkAutosizeMaxRows]="6"
-      [ngModel]="description()"
-      (ngModelChange)="updatePolicyDescription($event)"
+      [value]="description()"
+      (input)="updatePolicyDescription($any($event.target).value)"
       i18n-placeholder
       placeholder="(optional) Enter a description for this policy...">
     </textarea>

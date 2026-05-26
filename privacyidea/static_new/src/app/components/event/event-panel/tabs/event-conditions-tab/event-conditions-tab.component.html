@@ -62,7 +62,7 @@
       }
 
       <app-clearable-input
-        (onClick)="searchTerm.set('')"
+        (clearButtonClick)="searchTerm.set('')"
         [showClearButton]="searchTerm().length > 0">
         <input
           clearableInput
