@@ -181,9 +181,12 @@ export interface WebAuthnRegisterRequest {
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
 
-export type EnrollTokenArguments = { data: TokenEnrollmentData; mapper: BaseApiPayloadMapper };
+export interface EnrollTokenArguments {
+  data: TokenEnrollmentData;
+  mapper: BaseApiPayloadMapper;
+}
 
-export type TokenEnrollmentDialogData = {
+export interface TokenEnrollmentDialogData {
   tokenType: string;
   response: EnrollmentResponse | null;
   enrollParameters: EnrollTokenArguments;
@@ -192,7 +195,7 @@ export type TokenEnrollmentDialogData = {
   onlyAddToRealm?: boolean;
   rollover?: boolean;
   showEnrollData?: boolean;
-};
+}
 
 export interface LostTokenData {
   disable: number;
@@ -263,7 +266,7 @@ export interface TokenServiceInterface {
 
   setTokenInfos(tokenSerial: string, infos: any): Observable<PiResponse<boolean>[]>;
 
-  deleteToken(tokenSerial: string): Observable<Object>;
+  deleteToken(tokenSerial: string): Observable<object>;
 
   bulkDeleteTokens(selectedTokens: string[]): Observable<PiResponse<BulkResult, any>>;
 
@@ -271,7 +274,7 @@ export interface TokenServiceInterface {
 
   revokeToken(tokenSerial: string): Observable<any>;
 
-  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object>;
+  deleteInfo(tokenSerial: string, infoKey: string): Observable<object>;
 
   unassignUserFromAll(tokenSerials: string[]): Observable<PiResponse<boolean>[]>;
 
@@ -318,7 +321,7 @@ export interface TokenServiceInterface {
 
   getTokengroups(): Observable<PiResponse<TokenGroups>>;
 
-  setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object>;
+  setTokengroup(tokenSerial: string, value: string | string[]): Observable<object>;
 
   importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>>;
 }
@@ -748,13 +751,12 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  saveTokenDetail(tokenSerial: string, key: string, value: any): Observable<PiResponse<boolean>> {
+  saveTokenDetail(tokenSerial: string, key: string, value: unknown): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
 
     let url: string;
-    let params: Record<string, any>;
+    let params: Record<string, unknown>;
     if (key === "description") {
-      // /token/set is admin-only; /token/description is gated by the setdescription policy and works for users too.
       url = `${this.tokenBaseUrl}description/${encodeURIComponent(tokenSerial)}`;
       params = { description: value };
     } else if (key === "maxfail") {
@@ -833,7 +835,7 @@ export class TokenService implements TokenServiceInterface {
     return forkJoin(requests);
   }
 
-  deleteToken(tokenSerial: string): Observable<Object> {
+  deleteToken(tokenSerial: string): Observable<object> {
     const headers = this.authService.getHeaders();
     return this.http.delete(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
   }
@@ -850,7 +852,7 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
+  deleteInfo(tokenSerial: string, infoKey: string): Observable<object> {
     const headers = this.authService.getHeaders();
     return this.http
       .delete(`${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
@@ -1018,7 +1020,7 @@ export class TokenService implements TokenServiceInterface {
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
     const headers = this.authService.getHeaders();
-    let params = new HttpParams().set("serial", tokenSerial);
+    const params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
       params
@@ -1131,7 +1133,7 @@ export class TokenService implements TokenServiceInterface {
     );
   }
 
-  setTokengroup(tokenSerial: string, value: string | string[]): Observable<Object> {
+  setTokengroup(tokenSerial: string, value: string | string[]): Observable<object> {
     const headers = this.authService.getHeaders();
 
     const valueArray: string[] = Array.isArray(value)
