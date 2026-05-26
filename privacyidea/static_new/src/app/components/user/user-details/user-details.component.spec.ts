@@ -391,7 +391,7 @@ describe("UserDetailsComponent", () => {
       expect(editSpy).not.toHaveBeenCalled();
     });
 
-    it("cancelEdit with changes and save-exit calls editUser and exits", () => {
+    it("cancelEdit with changes and save-exit calls editUser and exits", async () => {
       component.editUser();
       component.onUpdateEditedUser({ ...component.editedUserData(), email: "changed@example.com" });
       dialogServiceMock.openDialog = jest.fn().mockReturnValue({
@@ -401,6 +401,7 @@ describe("UserDetailsComponent", () => {
       const reloadSpy = jest.spyOn(userServiceMock.userResource, "reload");
 
       component.cancelEdit();
+      await Promise.resolve();
 
       expect(userServiceMock.editUser).toHaveBeenCalledWith(
         mockUserData.resolver,
