@@ -168,7 +168,7 @@ describe("EventConditionsTabComponent", () => {
     expect(component.selectedGroup()).toBe("group2");
   });
 
-  it("selectedGroup should fall back to first available group when selected group becomes empty", () => {
+  it("selectedGroup should fall back to empty string when no non-empty groups remain", () => {
     component.selectedConditions.set({});
     component.searchTerm.set("");
     component.selectedGroup.set("group2");

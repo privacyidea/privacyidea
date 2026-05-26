@@ -73,14 +73,17 @@
         @if (remainingEvents().length > 0) {
           <div class="event-items">
             @for (event of remainingEvents(); track event) {
-              <div
+              <button
+                type="button"
                 class="event-item"
-                (click)="addEvent(event)">
+                (click)="addEvent(event)"
+                [attr.aria-label]="'Add event ' + event"
+                i18n-aria-label>
                 <span class="event-name">{{ event }}</span>
-                <button class="add-event-button">
+                <span class="add-event-button">
                   <mat-icon>add</mat-icon>
-                </button>
-              </div>
+                </span>
+              </button>
             }
           </div>
         } @else {
