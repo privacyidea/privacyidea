@@ -407,7 +407,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   }
 
   onPageEvent(event: PageEvent) {
-    this.tokenService.eventPageSize = event.pageSize;
+    this.tokenService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
     setTimeout(() => {
       this.filterHTMLInputElement.nativeElement.focus();

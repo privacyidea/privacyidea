@@ -409,14 +409,12 @@ describe("ContainerService", () => {
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
-    containerService.eventPageSize = 7;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(7);
     expect(containerService.pageSize()).toBe(10);
   });
 
   it("pageSize keeps valid eventPageSize", () => {
-    containerService.eventPageSize = 15;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(15);
     expect(containerService.pageSize()).toBe(15);
   });
 
@@ -460,8 +458,7 @@ describe("ContainerService", () => {
 
   it("pageIndex resets when pageSize source changes", () => {
     containerService.pageIndex.set(4);
-    containerService.eventPageSize = 5;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(5);
     expect(containerService.pageSize()).toBe(5);
     expect(containerService.pageIndex()).toBe(0);
   });
@@ -562,12 +559,10 @@ describe("ContainerService", () => {
   });
 
   it("pageSize boundary values 5 and 15 are respected", () => {
-    containerService.eventPageSize = 5;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(5);
     expect(containerService.pageSize()).toBe(5);
 
-    containerService.eventPageSize = 15;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(15);
     expect(containerService.pageSize()).toBe(15);
   });
 

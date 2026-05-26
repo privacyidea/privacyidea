@@ -191,7 +191,7 @@ export interface ContainerServiceInterface {
   advancedApiFilter: string[];
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
-  eventPageSize: number;
+  eventPageSize: WritableSignal<number>;
   states: WritableSignal<string[]>;
   containerSerial: WritableSignal<string>;
   containerDetail: Signal<ContainerDetailData | null>;
@@ -279,7 +279,7 @@ export class ContainerService implements ContainerServiceInterface {
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
   containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
-  eventPageSize = 10;
+  readonly eventPageSize = signal(10);
 
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
@@ -323,13 +323,8 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   pageSize = linkedSignal({
-    source: this.containerFilter,
-    computation: (): number => {
-      if (![5, 10, 15].includes(this.eventPageSize)) {
-        return 10;
-      }
-      return this.eventPageSize;
-    }
+    source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
+    computation: ({ size }): number => ([5, 10, 15].includes(size) ? size : 10)
   });
 
   pageIndex = linkedSignal({

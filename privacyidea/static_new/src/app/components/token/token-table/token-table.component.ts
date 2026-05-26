@@ -234,7 +234,7 @@ export class TokenTableComponent implements AfterViewInit, OnDestroy {
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
-    this.tokenService.eventPageSize = event.pageSize;
+    this.tokenService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 
