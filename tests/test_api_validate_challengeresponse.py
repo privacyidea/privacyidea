@@ -1225,6 +1225,69 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(serial)
 
+    def test_14b_indexedsecret_wrong_intermediate_then_retry(self):
+        """
+        A wrong character at any indexed-secret multichallenge step
+        rejects with "Response did not match the challenge.", increments
+        the token failcounter, but keeps the transaction_id alive — the
+        user can resubmit the correct character on the same tid and the
+        multichallenge proceeds to the next step (and eventually ACCEPTs).
+        """
+        index_secret = "abcdefghijklmn"
+        serial = "indx_retry"
+        tok = init_token({"type": "indexedsecret", "otpkey": index_secret,
+                          "pin": "index", "serial": serial},
+                         user=User("cornelius", self.realm1))
+        tok.add_tokeninfo("multichallenge", 1)
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "index"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            position = detail["attributes"]["random_positions"][0]
+
+        # Wrong character: REJECT, failcount += 1, challenge row still alive.
+        wrong_char = "Z" if index_secret[position - 1] != "Z" else "Y"
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": wrong_char,
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"].get("value"), res.json)
+            self.assertEqual("Response did not match the challenge.",
+                             res.json["detail"].get("message"), res.json)
+
+        self.assertEqual(1, get_one_token(serial=serial).token.failcount)
+        self.assertEqual(1,
+                         Challenge.query.filter_by(serial=serial,
+                                                   transaction_id=transaction_id).count(),
+                         "tid must still exist after a wrong intermediate answer")
+
+        # Correct character on the SAME tid: progresses to the next step.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": index_secret[position - 1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertFalse(res.json["result"].get("value"))
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            position = detail["attributes"]["random_positions"][0]
+
+        # Final correct character → ACCEPT.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": index_secret[position - 1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json["result"].get("value"), res.json)
+
+        remove_token(serial)
+
     def test_15_questionnaire_multichallenge(self):
         questionnaire = {"Question1": "Answer1",
                          "Question2": "Answer2",
@@ -1283,6 +1346,76 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(len(set(found_questions)), 5)
         remove_token(serial)
         delete_policy("questpol")
+
+    def test_15b_questionnaire_wrong_intermediate_then_retry(self):
+        """
+        A wrong answer at any questionnaire multichallenge step rejects
+        with "Response did not match the challenge.", increments the
+        token failcounter, but keeps the transaction_id alive — the
+        user can resubmit the correct answer on the same tid and the
+        multichallenge proceeds (and eventually ACCEPTs).
+        """
+        questionnaire = {"Question1": "Answer1",
+                         "Question2": "Answer2",
+                         "Question3": "Answer3",
+                         "Q4": "A4",
+                         "Q5": "A5"}
+        serial = "quest_retry"
+        init_token({"type": "question", "questions": questionnaire,
+                    "pin": "quest", "serial": serial},
+                   user=User("cornelius", self.realm1))
+        # Ask two questions to keep the test short.
+        set_policy(name="questpol_retry", scope=SCOPE.AUTH,
+                   action="question_number=2")
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "quest"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            question = detail["message"]
+
+        # Wrong answer: REJECT, failcount += 1, challenge row still alive.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "definitely-wrong",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"].get("value"), res.json)
+            self.assertEqual("Response did not match the challenge.",
+                             res.json["detail"].get("message"), res.json)
+
+        self.assertEqual(1, get_one_token(serial=serial).token.failcount)
+        self.assertEqual(1,
+                         Challenge.query.filter_by(serial=serial,
+                                                   transaction_id=transaction_id).count(),
+                         "tid must still exist after a wrong intermediate answer")
+
+        # Correct answer on the SAME tid: progresses to the next question.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": questionnaire[question],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertFalse(res.json["result"].get("value"))
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            question = detail["message"]
+
+        # Final correct answer → ACCEPT.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": questionnaire[question],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json["result"].get("value"), res.json)
+
+        remove_token(serial)
+        delete_policy("questpol_retry")
 
     def test_16_4eyes_multichallenge_with_pin(self):
         # We require 1 token in realm1 and 2 tokens in realm2
