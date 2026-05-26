@@ -104,11 +104,9 @@ describe("TokenDetailsComponent", () => {
     machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
-    (tokenService.getTokengroups as any) = jest
-      .fn()
-      .mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
-    (tokenService.setTokengroup as any) = jest.fn().mockReturnValue(of({}));
-    (tokenService.setTokenRealm as any) = jest.fn().mockReturnValue(of({}));
+    tokenService.getTokengroups.mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
+    tokenService.setTokengroup.mockReturnValue(of({}));
+    tokenService.setTokenRealm.mockReturnValue(of({}));
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -260,6 +258,18 @@ describe("TokenDetailsComponent", () => {
 
     expect(containerService.selectedContainerSerial()).toBe("");
     expect(el.isEditing()).toBe(false);
+  });
+
+  it("cancelTokenEdit('container_serial') resets filterContainersByTokenOwner", () => {
+    const element = {
+      keyMap: { key: "container_serial" },
+      isEditing: signal(true)
+    } as any;
+
+    containerService.filterContainersByTokenOwner.set(true);
+    component.cancelTokenEdit(element);
+
+    expect(containerService.filterContainersByTokenOwner()).toBe(false);
   });
 
   it("isEditableElement defers to policy: true/false", () => {

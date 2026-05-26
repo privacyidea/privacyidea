@@ -37,12 +37,13 @@ export class MockContainerService implements ContainerServiceInterface {
   containersForTokenType: Signal<string[]> = signal([]);
   compareWithTemplate: () => Promise<void> = jest.fn().mockResolvedValue(undefined);
   compatibleWithSelectedTokenType = signal<string | null>(null);
+  filterContainersByTokenOwner = signal(false);
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
-  eventPageSize: number = 10;
+  readonly eventPageSize = signal(10);
   states = signal<string[]>([]);
   readonly containerSerial = signal("CONT-1");
   readonly selectedContainerSerial = signal("");
@@ -57,16 +58,13 @@ export class MockContainerService implements ContainerServiceInterface {
   );
   pageSize = signal<number>(10);
   pageIndex = signal<number>(0);
-  loadAllContainers = signal<boolean>(false);
   containerResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  containerOptions: WritableSignal<string[]> = signal([]);
-  filteredContainerOptions: Signal<string[]> = computed(() => {
-    const options = this.containerOptions();
-    const filter = this.containerFilter();
-    return options.filter((option) => option.includes(filter.value) || option.includes(filter.hiddenValue));
-  });
+  userContainersResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue({ containers: [], count: 0 }));
+  containersForTokenTypeResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue({ containers: [], count: 0 }));
   containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
   containerTypesResource: MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue<ContainerTypes>(new Map()));

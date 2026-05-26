@@ -177,7 +177,7 @@ export class ContainerTableComponent {
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
-    this.containerService.eventPageSize = event.pageSize;
+    this.containerService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 

@@ -207,7 +207,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("onPageEvent updates page size, index and service's eventPageSize", () => {
     table.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as any);
-    expect(tokenService.eventPageSize).toBe(25);
+    expect(tokenService.eventPageSize()).toBe(25);
     expect(table.pageSize()).toBe(25);
     expect(table.pageIndex()).toBe(2);
   });

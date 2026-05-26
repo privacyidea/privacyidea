@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { AfterViewInit, Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -80,7 +80,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
   templateUrl: "./user-details-container-table.component.html",
   styleUrl: "./user-details-container-table.component.scss"
 })
-export class UserDetailsContainerTableComponent {
+export class UserDetailsContainerTableComponent implements AfterViewInit {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -102,13 +102,18 @@ export class UserDetailsContainerTableComponent {
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
-    source: this.containerService.containerResource.value,
-    computation: (containerResource, previous) => {
-      if (!containerResource?.result?.value) {
-        return previous?.value ?? [];
-      }
+    source: () => ({
+      value: this.containerService.userContainersResource.hasValue()
+        ? this.containerService.userContainersResource.value()
+        : undefined,
+      isLoading: this.containerService.userContainersResource.isLoading(),
+      error: this.containerService.userContainersResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
 
-      return containerResource.result.value.containers ?? [];
+      return source.value.result?.value?.containers ?? [];
     }
   });
 
@@ -126,7 +131,7 @@ export class UserDetailsContainerTableComponent {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    (this.dataSource as any)._sort = this.sort;
+    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
     this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
       const currentState = (row.states?.[0] ?? "").toString();
@@ -152,7 +157,7 @@ export class UserDetailsContainerTableComponent {
 
   handleStateClick(element: ContainerDetailData) {
     this.containerService.toggleActive(element.serial, element.states).subscribe({
-      next: () => this.containerService.containerResource.reload()
+      next: () => this.containerService.userContainersResource.reload()
     });
   }
 
@@ -160,7 +165,7 @@ export class UserDetailsContainerTableComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof ContainerDetailData;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: ContainerDetailData, b: ContainerDetailData) => {
       const va = (a[key] ?? "").toString().toLowerCase();
       const vb = (b[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;

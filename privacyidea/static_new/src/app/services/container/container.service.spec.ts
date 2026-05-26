@@ -33,7 +33,8 @@ import {
   ContainerRegisterData,
   ContainerService,
   ContainerType,
-  TemplateComparisonResult
+  TemplateComparisonResult,
+  toWildcardParam
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -403,19 +404,17 @@ describe("ContainerService", () => {
 
   it("filterParams converts blank values and drops unknown keys", () => {
     containerService.containerFilter.set(new FilterValue({ value: "type: generic description: foo: bar" }));
-    const fp = containerService.filterParams();
-    expect(fp).toEqual({ type: "generic" });
+    const filterParams = containerService.filterParams();
+    expect(filterParams).toEqual({ type: "generic" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
-    containerService.eventPageSize = 7;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(7);
     expect(containerService.pageSize()).toBe(10);
   });
 
   it("pageSize keeps valid eventPageSize", () => {
-    containerService.eventPageSize = 15;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(15);
     expect(containerService.pageSize()).toBe(15);
   });
 
@@ -424,12 +423,6 @@ describe("ContainerService", () => {
     expect(containerService.pageIndex()).toBe(2);
     containerService.containerFilter.set(new FilterValue({ value: "type: x" }));
     expect(containerService.pageIndex()).toBe(0);
-  });
-
-  it("filteredContainerOptions respects selectedContainer filter", () => {
-    containerService.containerOptions.set(["Alpha", "Serial42", "Beta"]);
-    containerService.selectedContainerSerial.set("se");
-    expect(containerService.filteredContainerOptions()).toEqual(["Serial42"]);
   });
 
   it("removeAll returns null when no tokens array", async () => {
@@ -465,8 +458,7 @@ describe("ContainerService", () => {
 
   it("pageIndex resets when pageSize source changes", () => {
     containerService.pageIndex.set(4);
-    containerService.eventPageSize = 5;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(5);
     expect(containerService.pageSize()).toBe(5);
     expect(containerService.pageIndex()).toBe(0);
   });
@@ -567,12 +559,10 @@ describe("ContainerService", () => {
   });
 
   it("pageSize boundary values 5 and 15 are respected", () => {
-    containerService.eventPageSize = 5;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(5);
     expect(containerService.pageSize()).toBe(5);
 
-    containerService.eventPageSize = 15;
-    containerService.containerFilter.set(new FilterValue());
+    containerService.eventPageSize.set(15);
     expect(containerService.pageSize()).toBe(15);
   });
 
@@ -717,67 +707,6 @@ describe("ContainerService", () => {
     expect(params).not.toHaveProperty("token_serial");
   });
 
-  describe("containerOptions", () => {
-    it("should update containerOptions from httpResource when not yet present", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
-      TestBed.tick();
-
-      const req = httpMock.expectOne((r) => r.url === "/container/");
-      expect(req.request.method).toBe("GET");
-      req.flush(
-        MockPiResponse.fromValue({
-          containers: [
-            { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
-            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] }
-          ]
-        })
-      );
-      await Promise.resolve();
-
-      expect(containerService.containerOptions()).toEqual(["c1", "c2"]);
-    });
-
-    it("should handle error state from containerResource", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
-      TestBed.tick();
-
-      const req = httpMock.expectOne((r) => r.url === "/container/");
-      expect(req.request.method).toBe("GET");
-      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403,
-        statusText: "Permission denied"
-      });
-      await Promise.resolve();
-
-      expect(containerService.containerOptions()).toEqual([]);
-    });
-
-    it("should reset to empty array when containerResource errors after successful load", async () => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
-      TestBed.tick();
-
-      let req = httpMock.expectOne((r) => r.url === "/container/");
-      req.flush(
-        MockPiResponse.fromValue({
-          containers: [{ serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] }]
-        })
-      );
-      await Promise.resolve();
-      expect(containerService.containerOptions()).toEqual(["c1"]);
-
-      containerService.containerResource.reload();
-      TestBed.tick();
-      req = httpMock.expectOne((r) => r.url === "/container/");
-      req.flush("Error", { status: 500, statusText: "Server Error" });
-      await Promise.resolve();
-
-      expect(containerService.containerOptions()).toEqual([]);
-    });
-  });
-
   describe("containerTypeOptions", () => {
     it("containerTypeOptions returns [] when API empty", () => {
       jest.spyOn(containerService.containerTypesResource, "value").mockReturnValue(undefined);
@@ -917,28 +846,26 @@ describe("ContainerService", () => {
       mockableService.containerTypeOptions = containerTypeOptionsSignal;
       mockableService.compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
     });
 
     it("should compute compatibleTypes correctly", () => {
-      const compatibleTypes = containerService["compatibleTypes"]();
-      expect(compatibleTypes).toEqual(["typeA", "typeB"]);
+      expect(containerService["compatibleTypes"]()).toEqual(["typeA", "typeB"]);
     });
 
     it("should filter containersForTokenType by compatibleTypes and return serials", async () => {
       TestBed.tick();
 
-      const req = httpMock.expectOne((r) => r.url === "/container/");
+      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
       expect(req.request.method).toBe("GET");
-      const mockContainers = [
-        { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
-        { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] },
-        { serial: "c3", type: "typeC", realms: [], states: [], tokens: [], users: [] }
-      ];
       req.flush(
         MockPiResponse.fromValue({
-          containers: mockContainers
+          containers: [
+            { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
+            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] },
+            { serial: "c3", type: "typeC", realms: [], states: [], tokens: [], users: [] }
+          ]
         })
       );
       await Promise.resolve();
@@ -946,11 +873,10 @@ describe("ContainerService", () => {
       expect(containerService.containersForTokenType()).toEqual(["c1", "c2"]);
     });
 
-    it("should handle containerResource error", async () => {
+    it("should handle containersForTokenTypeResource error", async () => {
       TestBed.tick();
 
-      const req = httpMock.expectOne((r) => r.url === "/container/");
-      expect(req.request.method).toBe("GET");
+      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }));
       await Promise.resolve();
 
@@ -960,7 +886,7 @@ describe("ContainerService", () => {
     it("should reset containersForTokenType to empty when resource errors after success", async () => {
       TestBed.tick();
 
-      let req = httpMock.expectOne((r) => r.url === "/container/");
+      let req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
       req.flush(
         MockPiResponse.fromValue({
           containers: [
@@ -972,13 +898,243 @@ describe("ContainerService", () => {
       await Promise.resolve();
       expect(containerService.containersForTokenType()).toEqual(["c1", "c2"]);
 
-      containerService.containerResource.reload();
+      containerService.containersForTokenTypeResource.reload();
       TestBed.tick();
-      req = httpMock.expectOne((r) => r.url === "/container/");
+      req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
       req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(containerService.containersForTokenType()).toEqual([]);
+    });
+  });
+
+  describe("serialFilterParam", () => {
+    it("returns empty object for null serial", () => {
+      containerService.selectedContainerSerial.set(null);
+      expect((containerService as any)["serialFilterParam"]()).toEqual({});
+    });
+
+    it("returns empty object for empty string", () => {
+      containerService.selectedContainerSerial.set("");
+      expect((containerService as any)["serialFilterParam"]()).toEqual({});
+    });
+
+    it("returns empty object for whitespace-only string", () => {
+      containerService.selectedContainerSerial.set("  ");
+      expect((containerService as any)["serialFilterParam"]()).toEqual({});
+    });
+
+    it("wraps valid serial with wildcards", () => {
+      containerService.selectedContainerSerial.set("CONT1");
+      expect((containerService as any)["serialFilterParam"]()).toEqual({ container_serial: "*CONT1*" });
+    });
+
+    it("trims whitespace before wrapping", () => {
+      containerService.selectedContainerSerial.set("  CONT1  ");
+      expect((containerService as any)["serialFilterParam"]()).toEqual({ container_serial: "*CONT1*" });
+    });
+  });
+
+  describe("containersForTokenTypeResource loading conditions", () => {
+    beforeEach(() => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+    });
+
+    it("does not load on containers list route", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      httpMock.match((r) => r.url === "/container/").forEach((r) =>
+        r.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
+      );
+    });
+
+    it("loads on enrollment route with no_token param", async () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+      TestBed.tick();
+      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    it("loads on token details route when token is available and not in a container", async () => {
+      jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
+      jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
+        result: { value: { tokens: [{ container_serial: "" }] } }
+      } as any);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
+      TestBed.tick();
+      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    it("does not load on token details route when token is already in a container", () => {
+      jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
+      jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
+        result: { value: { tokens: [{ container_serial: "CONT-EXISTING" }] } }
+      } as any);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+    });
+
+    it("does not load on token details route when token detail resource has no value", () => {
+      jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(false);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+    });
+
+    it("applies type filter when a unique compatible type exists", async () => {
+      (containerService as any).containerTypeOptions = signal([
+        { containerType: "smartphone", description: "", token_types: ["push"] }
+      ]);
+      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+      TestBed.tick();
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "smartphone"
+      );
+      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    it("does not apply type filter when multiple compatible types exist", async () => {
+      (containerService as any).containerTypeOptions = signal([
+        { containerType: "smartphone", description: "", token_types: ["push"] },
+        { containerType: "generic", description: "", token_types: ["push"] }
+      ]);
+      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+      TestBed.tick();
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && !r.params.has("type")
+      );
+      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    it("includes serial filter when selectedContainerSerial is set", async () => {
+      containerService.selectedContainerSerial.set("CONT1");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+      TestBed.tick();
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("container_serial") === "*CONT1*"
+      );
+      req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    describe("filterContainersByTokenOwner", () => {
+      beforeEach(() => {
+        jest.spyOn(tokenServiceMock.tokenDetailResource, "hasValue").mockReturnValue(true);
+        jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
+          result: { value: { tokens: [{ container_serial: "", username: "alice", user_realm: "realm1" }] } }
+        } as any);
+        contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "SERIAL1");
+      });
+
+      it("does not include user or realm when filter is off", () => {
+        TestBed.tick();
+        const httpRequest = httpMock.expectOne(
+          (request) =>
+            request.url === "/container/" &&
+            request.params.get("no_token") === "1" &&
+            !request.params.has("user") &&
+            !request.params.has("realm")
+        );
+        httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      });
+
+      it("includes user and realm when filter is on", () => {
+        containerService.filterContainersByTokenOwner.set(true);
+        TestBed.tick();
+        const httpRequest = httpMock.expectOne(
+          (request) =>
+            request.url === "/container/" &&
+            request.params.get("no_token") === "1" &&
+            request.params.get("user") === "alice" &&
+            request.params.get("realm") === "realm1"
+        );
+        httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      });
+
+      it("omits user and realm when filter is on but token has no username", () => {
+        jest.spyOn(tokenServiceMock.tokenDetailResource, "value").mockReturnValue({
+          result: { value: { tokens: [{ container_serial: "", username: "", user_realm: "realm1" }] } }
+        } as any);
+        containerService.filterContainersByTokenOwner.set(true);
+        TestBed.tick();
+        const httpRequest = httpMock.expectOne(
+          (request) =>
+            request.url === "/container/" &&
+            request.params.get("no_token") === "1" &&
+            !request.params.has("user") &&
+            !request.params.has("realm")
+        );
+        httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      });
+
+      it("resets to false on route change", () => {
+        containerService.filterContainersByTokenOwner.set(true);
+        contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+        expect(containerService.filterContainersByTokenOwner()).toBe(false);
+        httpMock.match((request) => request.url === "/container/").forEach((pendingRequest) =>
+          pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
+        );
+      });
+    });
+  });
+
+  describe("userContainersResource", () => {
+    let userServiceMock: MockUserService;
+
+    const flushPending = () =>
+      httpMock.match((request) => request.url === "/container/").forEach((pendingRequest) =>
+        pendingRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }))
+      );
+
+    beforeEach(() => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      userServiceMock = TestBed.inject(UserService) as any;
+      userServiceMock.detailsUsername.set("alice");
+      userServiceMock.selectedUserRealm.set("realm1");
+    });
+
+    it("does not load when not on user details page", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("realm") === "realm1");
+      flushPending();
+    });
+
+    it("does not load when container_list is not allowed", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("realm") === "realm1");
+      flushPending();
+    });
+
+    it("loads on user details page with no_token, user, and realm params", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      TestBed.tick();
+      const httpRequest = httpMock.expectOne(
+        (request) =>
+          request.url === "/container/" &&
+          request.params.get("no_token") === "1" &&
+          request.params.get("realm") === "realm1"
+      );
+      expect(httpRequest.request.method).toBe("GET");
+      expect(httpRequest.request.params.get("user")).toBe("alice");
+      httpRequest.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+      flushPending();
+    });
+
+    it("omits realm when selectedUserRealm is empty", () => {
+      userServiceMock.selectedUserRealm.set("");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.has("realm"));
+      flushPending();
     });
   });
 
@@ -1104,5 +1260,50 @@ describe("ContainerService", () => {
       containerService.containerSerial.set("CONT-A");
       expect(containerService.templateComparison()).toEqual(result);
     });
+  });
+});
+
+describe("toWildcardParam", () => {
+  const plain = new Set(["user", "type"]);
+
+  it("returns empty object for null value", () => {
+    expect(toWildcardParam("container_serial", null, plain)).toEqual({});
+  });
+
+  it("returns empty object for undefined value", () => {
+    expect(toWildcardParam("container_serial", undefined, plain)).toEqual({});
+  });
+
+  it("returns empty object for empty string", () => {
+    expect(toWildcardParam("container_serial", "", plain)).toEqual({});
+  });
+
+  it("returns empty object for whitespace-only string", () => {
+    expect(toWildcardParam("container_serial", "   ", plain)).toEqual({});
+  });
+
+  it("returns empty object for single wildcard (invalid filter value)", () => {
+    expect(toWildcardParam("container_serial", "*", plain)).toEqual({});
+  });
+
+  it("wraps non-plain key with wildcards", () => {
+    expect(toWildcardParam("container_serial", "CONT1", plain)).toEqual({ container_serial: "*CONT1*" });
+  });
+
+  it("does not wrap plain key with wildcards", () => {
+    expect(toWildcardParam("type", "hotp", plain)).toEqual({ type: "hotp" });
+    expect(toWildcardParam("user", "alice", plain)).toEqual({ user: "alice" });
+  });
+
+  it("trims whitespace before wrapping", () => {
+    expect(toWildcardParam("container_serial", "  CONT1  ", plain)).toEqual({ container_serial: "*CONT1*" });
+  });
+
+  it("trims whitespace for plain keys too", () => {
+    expect(toWildcardParam("type", "  hotp  ", plain)).toEqual({ type: "hotp" });
+  });
+
+  it("works with an empty plain keys set (always wraps)", () => {
+    expect(toWildcardParam("type", "hotp", new Set())).toEqual({ type: "*hotp*" });
   });
 });

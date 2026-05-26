@@ -258,7 +258,7 @@ describe("UserDetailsComponent", () => {
     (component as any).tokenAutoTrigger = { openPanel };
 
     component.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as any);
-    expect(tokenServiceMock.eventPageSize).toBe(25);
+    expect(tokenServiceMock.eventPageSize()).toBe(25);
     expect(tokenServiceMock.pageIndex()).toBe(2);
 
     jest.runOnlyPendingTimers();

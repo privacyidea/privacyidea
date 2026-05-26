@@ -1655,6 +1655,7 @@ def get_static_policy_definitions(scope=None):
     # "group": ment to be used for grouping actions for better finding
     # "mainmenu": list of enabled Menus. If this action is set, this menu
     #                 is visible in the WebUI
+
     pol = {
         SCOPE.REGISTER: {
             PolicyAction.RESOLVER: {'type': 'str',
@@ -2925,7 +2926,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("A list of realm names, which are "
                           "displayed in a drop down menu in the WebUI login "
-                          "screen. Realms are separated by white spaces.")
+                          "screen. Realms are separated by white spaces. "
+                          "The order of the realms in the policy is preserved "
+                          "in the drop down. Include '-' as an entry to add "
+                          "an empty option. The first option specified here will be preselected.")
             },
             PolicyAction.HIDE_WELCOME: {
                 'type': 'bool',
@@ -3085,7 +3089,6 @@ def get_static_policy_definitions(scope=None):
         }
 
     }
-
     if scope:
         if scope not in pol:
             log.debug(f"Scope '{scope}' is not defined in the static policy definitions.")
