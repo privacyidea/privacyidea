@@ -166,7 +166,7 @@
       <td
         *matCellDef="let task"
         mat-cell>
-        {{ task.nodes.join(", ") }}
+        {{ Array.isArray(task.nodes) ? task.nodes.join(", ") : task.nodes }}
       </td>
     </ng-container>
 
