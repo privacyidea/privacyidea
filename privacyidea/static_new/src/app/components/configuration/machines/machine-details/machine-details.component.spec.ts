@@ -29,11 +29,11 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { TokenService } from "@services/token/token.service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
-import { MachineDetailsDialogComponent } from "./machine-details-dialog.component";
+import { MachineDetailsComponent } from "./machine-details.component";
 
-describe("MachineDetailsDialogComponent", () => {
-  let component: MachineDetailsDialogComponent;
-  let fixture: ComponentFixture<MachineDetailsDialogComponent>;
+describe("MachineDetailsComponent", () => {
+  let component: MachineDetailsComponent;
+  let fixture: ComponentFixture<MachineDetailsComponent>;
   let machineServiceMock: any;
   let applicationServiceMock: any;
   let dialogServiceMock: any;
@@ -103,7 +103,7 @@ describe("MachineDetailsDialogComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachineDetailsDialogComponent],
+      imports: [MachineDetailsComponent],
       providers: [
         { provide: MachineService, useValue: machineServiceMock },
         { provide: ApplicationService, useValue: applicationServiceMock },
@@ -124,7 +124,7 @@ describe("MachineDetailsDialogComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MachineDetailsDialogComponent);
+    fixture = TestBed.createComponent(MachineDetailsComponent);
     component = fixture.componentInstance;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();

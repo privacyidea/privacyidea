@@ -27,7 +27,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { MockNotificationService, MockPendingChangesService, MockRouter } from "@testing/mock-services";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject } from "rxjs";
-import { EventPanelComponent } from "./event-panel.component";
+import { EventEditPageComponent } from "./event-edit-page.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -52,9 +52,9 @@ const mockEventHandler: EventHandler = {
   ordering: 0
 };
 
-describe("EventPanelComponent — edit mode", () => {
-  let component: EventPanelComponent;
-  let fixture: ComponentFixture<EventPanelComponent>;
+describe("EventEditPageComponent — edit mode", () => {
+  let component: EventEditPageComponent;
+  let fixture: ComponentFixture<EventEditPageComponent>;
   let mockEventService: MockEventService;
   let mockNotificationService: MockNotificationService;
   let mockRouter: MockRouter;
@@ -65,7 +65,7 @@ describe("EventPanelComponent — edit mode", () => {
     paramMap$ = new BehaviorSubject(convertToParamMap({ id: mockEventHandler.id }));
 
     await TestBed.configureTestingModule({
-      imports: [EventPanelComponent],
+      imports: [EventEditPageComponent],
       providers: [
         provideHttpClient(),
         { provide: EventService, useClass: MockEventService },
@@ -92,7 +92,7 @@ describe("EventPanelComponent — edit mode", () => {
     mockEventService.eventHandlers.set([mockEventHandler]);
     mockEventService.selectedHandlerModule.set(mockEventHandler.handlermodule);
 
-    fixture = TestBed.createComponent(EventPanelComponent);
+    fixture = TestBed.createComponent(EventEditPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -314,16 +314,16 @@ describe("EventPanelComponent — edit mode", () => {
   });
 });
 
-describe("EventPanelComponent — create new mode", () => {
-  let component: EventPanelComponent;
-  let fixture: ComponentFixture<EventPanelComponent>;
+describe("EventEditPageComponent — create new mode", () => {
+  let component: EventEditPageComponent;
+  let fixture: ComponentFixture<EventEditPageComponent>;
   let mockEventService: MockEventService;
   let mockNotificationService: MockNotificationService;
   let mockRouter: MockRouter;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EventPanelComponent],
+      imports: [EventEditPageComponent],
       providers: [
         provideHttpClient(),
         { provide: EventService, useClass: MockEventService },
@@ -340,7 +340,7 @@ describe("EventPanelComponent — create new mode", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EventPanelComponent);
+    fixture = TestBed.createComponent(EventEditPageComponent);
     component = fixture.componentInstance;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;

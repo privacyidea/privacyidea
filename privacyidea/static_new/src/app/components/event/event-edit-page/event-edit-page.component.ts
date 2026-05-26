@@ -60,7 +60,7 @@ import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-c
 export type eventTab = "events" | "action" | "conditions";
 
 @Component({
-  selector: "app-event-panel",
+  selector: "app-event-edit-page",
   imports: [
     MatIcon,
     EventActionTabComponent,
@@ -88,11 +88,11 @@ export type eventTab = "events" | "action" | "conditions";
     ClearableInputComponent
   ],
   standalone: true,
-  templateUrl: "./event-panel.component.html",
-  styleUrl: "./event-panel.component.scss",
+  templateUrl: "./event-edit-page.component.html",
+  styleUrl: "./event-edit-page.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventPanelComponent implements AfterViewInit, OnDestroy {
+export class EventEditPageComponent implements AfterViewInit, OnDestroy {
   protected readonly eventService = inject(EventService);
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);

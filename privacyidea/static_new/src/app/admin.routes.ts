@@ -21,13 +21,13 @@ import { Routes } from "@angular/router";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuditComponent } from "@components/audit/audit.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
-import { MachineDetailsDialogComponent } from "@components/configuration/machines/machine-details-dialog/machine-details-dialog.component";
+import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
 import { PeriodicTaskComponent } from "@components/configuration/periodic-task/periodic-task.component";
 import { SubscriptionComponent } from "@components/configuration/subscription/subscription.component";
 import { SystemConfigComponent } from "@components/configuration/system/system-config.component";
 import { TokenTypeConfigComponent } from "@components/configuration/token-type-config/token-type-config.component";
-import { EventPanelComponent } from "@components/event/event-panel/event-panel.component";
+import { EventEditPageComponent } from "@components/event/event-edit-page/event-edit-page.component";
 import { EventComponent } from "@components/event/event.component";
 import { CaConnectorsComponent } from "@components/external-services/ca-connectors/ca-connectors.component";
 import { NewCaConnectorComponent } from "@components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component";
@@ -44,21 +44,21 @@ import { SmtpServersComponent } from "@components/external-services/smtp-servers
 import { NewTokengroupComponent } from "@components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
 import { TokengroupsComponent } from "@components/external-services/tokengroups/tokengroups.component";
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
-import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
 import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { ContainerTemplatesComponent } from "@components/container/container-templates/container-templates.component";
-import { ContainerTemplateEditDialogComponent } from "@components/container/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
+import { ContainerTemplateEditPageComponent } from "@components/container/container-templates/container-template-edit-page/container-template-edit-page.component";
 import { TokenApplicationsComponent } from "@components/token/token-applications/token-applications.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { TokenEnrollmentComponent } from "@components/token/token-enrollment/token-enrollment.component";
 import { TokenFindSerialComponent } from "@components/token/token-find-serial/token-find-serial.component";
 import { TokenImportComponent } from "@components/token/token-import/token-import.component";
 import { TokenTableComponent } from "@components/token/token-table/token-table.component";
-import { CreateUserDialogComponent } from "@components/user/create-user-dialog/create-user-dialog.component";
+import { UserCreateComponent } from "@components/user/user-create/user-create.component";
 import { RealmTableComponent } from "@components/user/realm-table/realm-table.component";
 import { UserDetailsComponent } from "@components/user/user-details/user-details.component";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
@@ -88,10 +88,10 @@ export const routes: Routes = [
         path: "templates",
         children: [
           { path: "", component: ContainerTemplatesComponent },
-          { path: "create", component: ContainerTemplateEditDialogComponent, canDeactivate: [pendingChangesGuard] },
+          { path: "create", component: ContainerTemplateEditPageComponent, canDeactivate: [pendingChangesGuard] },
           {
             path: "details/:name",
-            component: ContainerTemplateEditDialogComponent,
+            component: ContainerTemplateEditPageComponent,
             canDeactivate: [pendingChangesGuard]
           }
         ]
@@ -102,7 +102,7 @@ export const routes: Routes = [
     path: "users",
     children: [
       { path: "", component: UserTableComponent },
-      { path: "new", component: CreateUserDialogComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "new", component: UserCreateComponent, canDeactivate: [pendingChangesGuard] },
       { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "realms", component: RealmTableComponent, canDeactivate: [pendingChangesGuard] },
       { path: "resolvers", component: UserResolversComponent },
@@ -114,16 +114,16 @@ export const routes: Routes = [
     path: "policies",
     children: [
       { path: "", component: PoliciesTableComponent },
-      { path: "new", component: EditPolicyDialogComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "details/:name", component: EditPolicyDialogComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "new", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
     path: "events",
     children: [
       { path: "", component: EventComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "new", component: EventPanelComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "details/:id", component: EventPanelComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "new", component: EventEditPageComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:id", component: EventEditPageComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
@@ -135,7 +135,7 @@ export const routes: Routes = [
         path: "machines",
         children: [
           { path: "", component: MachinesComponent },
-          { path: "details/:id", component: MachineDetailsDialogComponent, canDeactivate: [pendingChangesGuard] }
+          { path: "details/:id", component: MachineDetailsComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
       { path: "periodic-tasks", component: PeriodicTaskComponent, canDeactivate: [pendingChangesGuard] },

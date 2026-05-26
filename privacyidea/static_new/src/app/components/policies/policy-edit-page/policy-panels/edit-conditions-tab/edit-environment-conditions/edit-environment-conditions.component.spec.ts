@@ -19,7 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
-import { EditEnvironmentConditionsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component";
+import { EditEnvironmentConditionsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { PolicyService } from "@services/policies/policies.service";
 import { SystemService } from "@services/system/system.service";

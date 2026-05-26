@@ -21,7 +21,7 @@ import { Component, computed, model } from "@angular/core";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatIcon } from "@angular/material/icon";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { TemplateAddedTokenRowComponent } from "@components/container/container-templates/dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
+import { TemplateAddedTokenRowComponent } from "@components/container/container-templates/container-template-edit-page/template-added-token-row/template-added-token-row.component";
 import { ContainerTemplate } from "@services/container/container.service";
 import { TokenTypeKey } from "@services/token/token.service";
 
