@@ -286,16 +286,12 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   }
 
   onTaskModuleChange(module: string): void {
-    if (this.isNewTask()) {
-      this.editTask.set({ ...this.editTask(), taskmodule: module });
-      const required: Record<string, any> = {};
-      Object.entries(this.requiredOptions()).forEach(([key, opt]) => {
-        required[key] = opt.value ?? "";
-      });
-      this.editTask.set({ ...this.editTask(), taskmodule: module, options: { ...required } });
-    } else {
-      this.editTask.set({ ...this.editTask(), taskmodule: module });
-    }
+    this.editTask.set({ ...this.editTask(), taskmodule: module });
+    const required: Record<string, string> = {};
+    Object.entries(this.requiredOptions()).forEach(([key, opt]) => {
+      required[key] = opt.value ?? "";
+    });
+    this.editTask.set({ ...this.editTask(), options: { ...required } });
   }
 
   getModuleLabel(module: string): string {

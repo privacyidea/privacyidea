@@ -126,6 +126,40 @@ describe("PeriodicTaskComponent", () => {
     expect(component.filterString()).toBe("");
   });
 
+  it("onFilterInput trims input, updates filterString, and applies it to the data source", () => {
+    component.onFilterInput("  Logins  ");
+    expect(component.filterString()).toBe("Logins");
+    expect(component.periodicTasksDataSource().filter).toBe("logins");
+  });
+
+  it("onFilterInput treats nullish input as an empty string", () => {
+    component.filterString.set("seed");
+    component.onFilterInput(null as unknown as string);
+    expect(component.filterString()).toBe("");
+    expect(component.periodicTasksDataSource().filter).toBe("");
+  });
+
+  it("resetFilter clears the underlying input element value when one is present", () => {
+    const inputElement = document.createElement("input");
+    inputElement.value = "stale";
+    (component as unknown as { filterInput: { nativeElement: HTMLInputElement } }).filterInput = {
+      nativeElement: inputElement
+    };
+    component.filterString.set("stale");
+    component.resetFilter();
+    expect(inputElement.value).toBe("");
+  });
+
+  it("periodicTasks returns an empty array when the resource has no value", () => {
+    (periodicTaskService.periodicTasksResource.hasValue as jest.Mock).mockReturnValue(false);
+    expect(component.periodicTasks()).toEqual([]);
+  });
+
+  it("isAllSelected is false when there are no selectable tasks at all", () => {
+    // default mock state: resource value is an empty list → no selectable ids
+    expect(component.isAllSelected()).toBe(false);
+  });
+
   describe("matchesFilter", () => {
     const task: PeriodicTask = {
       ...EMPTY_PERIODIC_TASK,
@@ -137,6 +171,12 @@ describe("PeriodicTaskComponent", () => {
       active: true,
       options: { total_tokens: "true", event_counter: "logins" }
     };
+
+    it("treats a missing nodes array as empty (no match against 'undefined')", () => {
+      const t = { ...task, nodes: undefined as unknown as string[] };
+      expect(component.matchesFilter(t, "undefined")).toBe(false);
+      expect(component.matchesFilter(t, "nightly")).toBe(true);
+    });
 
     it("matches on the task name", () => {
       expect(component.matchesFilter(task, "nightly")).toBe(true);

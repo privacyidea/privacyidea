@@ -24,27 +24,32 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { EMPTY_PERIODIC_TASK, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { EMPTY_PERIODIC_TASK, PeriodicTask, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { SystemService } from "@services/system/system.service";
 import { MockAuthService, MockDialogService } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit.component";
 
 describe("PeriodicTaskEditComponent", () => {
-  let periodicTaskService: PeriodicTaskService;
+  let periodicTaskService: MockPeriodicTaskService;
+  let dialogService: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
   let router: Router;
 
-  const createComponent = async (paramMap: Record<string, string>) => {
+  const createComponent = async (paramMap: Record<string, string>, tasks: PeriodicTask[] = []) => {
+    const periodicTaskMock = new MockPeriodicTaskService();
+    if (tasks.length > 0) periodicTaskMock.setPeriodicTasks(tasks);
+
     await TestBed.configureTestingModule({
       imports: [PeriodicTaskEditComponent],
       providers: [
         provideHttpClient(),
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap(paramMap)) } },
-        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: PeriodicTaskService, useValue: periodicTaskMock },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
@@ -52,12 +57,24 @@ describe("PeriodicTaskEditComponent", () => {
       ]
     }).compileComponents();
 
-    periodicTaskService = TestBed.inject(PeriodicTaskService);
+    periodicTaskService = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
     const fixture: ComponentFixture<PeriodicTaskEditComponent> = TestBed.createComponent(PeriodicTaskEditComponent);
     return { fixture, component: fixture.componentInstance };
+  };
+
+  const VALID_TASK: PeriodicTask = {
+    ...EMPTY_PERIODIC_TASK,
+    id: 42,
+    name: "nightly-stats",
+    interval: "5 0 * * *",
+    nodes: ["node-a"],
+    taskmodule: "EventCounter",
+    options: { event_counter: "logins", stats_key: "k" }
   };
 
   afterEach(() => {
@@ -258,6 +275,155 @@ describe("PeriodicTaskEditComponent", () => {
         options: { event_counter: "val1", stats_key: "val2" }
       });
       expect(component.canSave()).toBe(true);
+    });
+  });
+
+  describe("Route handling with seeded resource", () => {
+    it("loads the task into editTask when the route name matches one in the resource", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      expect(component.isNewTask()).toBe(false);
+      expect(component.editTask().name).toBe(VALID_TASK.name);
+      expect(component.editTask().interval).toBe(VALID_TASK.interval);
+      expect(component.editTask().options).toEqual(VALID_TASK.options);
+    });
+
+    it("hasChanges is false right after a task is loaded (editTask matches originalTask)", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("hasChanges is true once editTask diverges from the loaded original", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.editTask.set({ ...component.editTask(), interval: "*/10 * * * *" });
+      expect(component.hasChanges()).toBe(true);
+    });
+  });
+
+  describe("onTaskModuleChange in edit mode", () => {
+    it("resets options to required-only when the module changes in edit mode", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.onTaskModuleChange("SimpleStats");
+      expect(component.editTask().taskmodule).toBe("SimpleStats");
+      // SimpleStats has no required options, so options should be cleared entirely
+      expect(component.editTask().options).toEqual({});
+
+      // Switching to EventCounter pre-fills its two required options with empty strings
+      component.onTaskModuleChange("EventCounter");
+      expect(component.editTask().taskmodule).toBe("EventCounter");
+      expect(component.editTask().options).toEqual({ event_counter: "", stats_key: "" });
+    });
+
+    it("preserves non-option fields (interval, nodes, name) when the module changes", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.onTaskModuleChange("SimpleStats");
+      expect(component.editTask().interval).toBe(VALID_TASK.interval);
+      expect(component.editTask().nodes).toEqual(VALID_TASK.nodes);
+      expect(component.editTask().name).toBe(VALID_TASK.name);
+    });
+  });
+
+  describe("onNodeSelectionChange", () => {
+    it("replaces the nodes array on the edit task", async () => {
+      const { component } = await createComponent({});
+      component.onNodeSelectionChange(["nodeA", "nodeB"]);
+      expect(component.editTask().nodes).toEqual(["nodeA", "nodeB"]);
+    });
+  });
+
+  describe("getModuleLabel", () => {
+    it("returns the mapped label for a known module", async () => {
+      const { component } = await createComponent({});
+      expect(component.getModuleLabel("SimpleStats")).toBe("Simple Statistics");
+      expect(component.getModuleLabel("EventCounter")).toBe("Event Counter");
+    });
+
+    it("falls back to the raw value for an unknown module", async () => {
+      const { component } = await createComponent({});
+      expect(component.getModuleLabel("MysteryModule")).toBe("MysteryModule");
+    });
+  });
+
+  describe("save", () => {
+    it("calls savePeriodicTask, reloads the resource, clears pending changes, and navigates", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      const result = await component.save();
+      expect(result).toBe(true);
+      expect(periodicTaskService.savePeriodicTask).toHaveBeenCalledWith(component.editTask());
+      expect(periodicTaskService.periodicTasksResource.reload).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+    });
+
+    it("returns false and does not navigate when the service returns a response without a result value", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      (periodicTaskService.savePeriodicTask as jest.Mock).mockReturnValueOnce(of({ result: { value: undefined } }));
+      const result = await component.save();
+      expect(result).toBe(false);
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("returns false and does not navigate when the service throws", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      (periodicTaskService.savePeriodicTask as jest.Mock).mockReturnValueOnce(
+        throwError(() => new Error("boom"))
+      );
+      const result = await component.save();
+      expect(result).toBe(false);
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onCancel with pending changes", () => {
+    it("navigates back when the user picks 'discard' in the dialog", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.editTask.set({ ...component.editTask(), interval: "*/2 * * * *" });
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of("discard") });
+      component.onCancel();
+      // afterClosed callback runs synchronously in this mock; let microtasks flush
+      await Promise.resolve();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+    });
+
+    it("triggers save when the user picks 'save-exit' and canSave is true", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.editTask.set({ ...component.editTask(), interval: "*/3 * * * *" });
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of("save-exit") });
+      component.onCancel();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(periodicTaskService.savePeriodicTask).toHaveBeenCalled();
+    });
+
+    it("is a no-op for 'save-exit' when canSave is false", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.editTask.set({ ...component.editTask(), interval: "" });
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of("save-exit") });
+      component.onCancel();
+      await Promise.resolve();
+      expect(periodicTaskService.savePeriodicTask).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onDelete with valid id", () => {
+    it("calls deleteWithConfirmDialog, reloads, clears registrations, and navigates when confirmed", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      (periodicTaskService.deleteWithConfirmDialog as jest.Mock).mockResolvedValueOnce({
+        result: { value: 1 }
+      });
+      await component.onDelete();
+      expect(periodicTaskService.deleteWithConfirmDialog).toHaveBeenCalled();
+      expect(periodicTaskService.periodicTasksResource.reload).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+    });
+
+    it("does nothing further when the dialog returns falsy", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      (periodicTaskService.deleteWithConfirmDialog as jest.Mock).mockResolvedValueOnce(undefined);
+      await component.onDelete();
+      expect(periodicTaskService.deleteWithConfirmDialog).toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
   });
 });
