@@ -80,7 +80,12 @@
           <ul class="no-indention margin-0">
             @for (entry of Object.entries(editTask().last_runs); track entry[0]) {
               <li>
-                {{ entry[0] }}: {{ entry[1] | date:'yyyy-MM-dd HH:mm' }}
+                {{ entry[0] }}:
+                @if (isDateValue(entry[1])) {
+                  {{ entry[1] | date:'yyyy-MM-dd HH:mm' }}
+                } @else {
+                  {{ entry[1] }}
+                }
               </li>
             }
           </ul>

@@ -139,6 +139,11 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     return Object.prototype.hasOwnProperty.call(this.editTask().options, key);
   }
 
+  isDateValue(value: unknown): boolean {
+    if (typeof value !== "string" || value === "") return false;
+    return !Number.isNaN(Date.parse(value));
+  }
+
   toggleOption(key: string, opt: PeriodicTaskOption, checked: boolean): void {
     if (opt.required) return;
     const options = { ...this.editTask().options };
