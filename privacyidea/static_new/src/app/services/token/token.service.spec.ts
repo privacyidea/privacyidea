@@ -264,16 +264,6 @@ describe("TokenService", () => {
       );
     });
 
-    it("accepts an object and flattens values", () => {
-      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
-      tokenService.setTokengroup("serial", { a: "g1", b: "g2" } as unknown as string[]).subscribe();
-
-      expect(postSpy).toHaveBeenCalledWith(
-        `${tokenService.tokenBaseUrl}group/serial`,
-        { groups: ["g1", "g2"] },
-        { headers: authService.getHeaders() }
-      );
-    });
   });
 
   describe("pollTokenRolloutState()", () => {
@@ -336,14 +326,33 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
-  describe("reactive helpers", () => {
-    it("filterParams wildcard‑wraps non‑ID fields", () => {
+  describe("token filter -> tokenResource request params", () => {
+    it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
+      contentServiceMock.onTokens = signal(true);
       tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
-      expect(tokenService.filterParams()).toEqual({
-        serial: "*otp*",
-        user: "alice",
-        description: "*vpn*"
-      });
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("serial")).toBe("*otp*");
+      expect(req.request.params.get("user")).toBe("alice");
+      expect(req.request.params.get("description")).toBe("*vpn*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("omits empty / wildcard-only filter values from the outgoing request", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.tokenFilter.set(
+        new FilterValue({ value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***" })
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("serial")).toBe(false);
+      expect(req.request.params.has("active")).toBe(false);
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("description")).toBe(false);
+      expect(req.request.params.has("rollout_state")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
   });
 
@@ -844,21 +853,6 @@ describe("TokenService", () => {
         }
       });
     });
-  });
-
-  it("should not include empty filter values in filterParams", () => {
-    tokenService.tokenFilter.set(
-      new FilterValue({
-        value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***"
-      })
-    );
-
-    const params = tokenService.filterParams();
-    expect(params).not.toHaveProperty("serial");
-    expect(params).not.toHaveProperty("active");
-    expect(params).toHaveProperty("type", "*hotp*");
-    expect(params).not.toHaveProperty("description");
-    expect(params).not.toHaveProperty("rollout_state");
   });
 
   describe("userTokenResource", () => {

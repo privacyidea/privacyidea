@@ -81,8 +81,8 @@ export class MockTokenService implements TokenServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
-  maxDescriptionLength = 80;
-  readonly eventPageSize = 10;
+  readonly maxDescriptionLength = 80;
+  readonly eventPageSize = signal(10);
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
     key: "hotp",

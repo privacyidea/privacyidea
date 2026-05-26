@@ -43,7 +43,7 @@ export class MockContainerService implements ContainerServiceInterface {
   advancedApiFilter: string[] = [];
   stopPolling$: Subject<void> = new Subject<void>();
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
-  eventPageSize: number = 10;
+  readonly eventPageSize = signal(10);
   states = signal<string[]>([]);
   readonly containerSerial = signal("CONT-1");
   readonly selectedContainerSerial = signal("");

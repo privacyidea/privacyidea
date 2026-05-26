@@ -223,7 +223,7 @@ export interface TokenServiceInterface {
   apiFilterKeyMap: Record<string, string>;
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
-  eventPageSize: number;
+  eventPageSize: WritableSignal<number>;
   tokenSerial: WritableSignal<string>;
   selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
@@ -250,7 +250,7 @@ export interface TokenServiceInterface {
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
-  maxDescriptionLength: number;
+  readonly maxDescriptionLength: number;
 
   clearFilter(): void;
 
@@ -335,16 +335,7 @@ export class TokenService implements TokenServiceInterface {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
 
-  readonly hiddenApiFilter = hiddenApiFilter;
-  readonly apiFilterKeyMap = apiFilterKeyMap;
-  stopPolling$ = new Subject<void>();
-  tokenBaseUrl = environment.proxyUrl + "/token/";
-  maxDescriptionLength = 80;
-  eventPageSize = 10;
-  userRealm = signal("");
-  tokenSerial = this.contentService.tokenSerial;
-  detailsUsername = this.contentService.detailsUsername;
-  filterParams = computed<Record<string, string>>(() => {
+  private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
@@ -359,6 +350,15 @@ export class TokenService implements TokenServiceInterface {
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
   });
+  readonly hiddenApiFilter = hiddenApiFilter;
+  readonly apiFilterKeyMap = apiFilterKeyMap;
+  readonly tokenBaseUrl = environment.proxyUrl + "/token/";
+  readonly maxDescriptionLength = 80;
+  readonly userRealm = signal("");
+  readonly tokenSerial = this.contentService.tokenSerial;
+  readonly detailsUsername = this.contentService.detailsUsername;
+  readonly stopPolling$ = new Subject<void>();
+  readonly eventPageSize = signal(10);
 
   tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
     const filter = this.selectedToken();
@@ -591,7 +591,7 @@ export class TokenService implements TokenServiceInterface {
         pagesize: this.pageSize(),
         sortby: this.sort()?.active || "serial",
         sortdir: this.sort()?.direction || "asc",
-        ...this.filterParams()
+        ...this._filterParams()
       }
     };
   });
@@ -837,7 +837,7 @@ export class TokenService implements TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<object> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
+    return this.http.delete<object>(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
   }
 
   revokeToken(tokenSerial: string): Observable<any> {
@@ -855,7 +855,7 @@ export class TokenService implements TokenServiceInterface {
   deleteInfo(tokenSerial: string, infoKey: string): Observable<object> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
+      .delete<object>(`${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
         headers
       })
       .pipe(
@@ -1136,13 +1136,9 @@ export class TokenService implements TokenServiceInterface {
   setTokengroup(tokenSerial: string, value: string | string[]): Observable<object> {
     const headers = this.authService.getHeaders();
 
-    const valueArray: string[] = Array.isArray(value)
-      ? value
-      : typeof value === "object" && value !== null
-        ? Object.values(value)
-        : [value];
+    const valueArray: string[] = Array.isArray(value) ? value : [value];
     return this.http
-      .post(
+      .post<object>(
         `${this.tokenBaseUrl}group/${encodeURIComponent(tokenSerial)}`,
         {
           groups: valueArray
