@@ -18,9 +18,10 @@
  **/
 
 import { MatDialog } from "@angular/material/dialog";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 
 export class MockMatDialog implements Partial<MatDialog> {
-  open = jest.fn();
+  open = jest.fn().mockImplementation(() => new MockMatDialogRef());
   closeAll = jest.fn();
   getDialogById = jest.fn();
   ngOnDestroy = jest.fn();

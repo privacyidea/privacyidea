@@ -41,7 +41,7 @@
     </button>
   </div>
 
-  @if (!userData().editable) {
+  @if (userData().editable) {
     <div class="flex gap-8 margin-bottom-16">
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
         @if (!editMode()) {

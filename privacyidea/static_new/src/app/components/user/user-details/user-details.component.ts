@@ -56,11 +56,11 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom, map } from "rxjs";
-import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
@@ -131,7 +131,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   };
   readonly excludedKeys = new Set(["editable"]);
   customAttributeKeys: Signal<Set<string>> = computed(() => {
-    const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
+    const attributeKeys = this.userService.userAttributesList().map((attribute) => attribute.key);
     return new Set(attributeKeys);
   });
 
@@ -238,36 +238,32 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         !!this.addKeyInput() ||
         !!this.addValueInput() ||
         !!this.selectedKey() ||
-        !!this.selectedValue(),
+        !!this.selectedValue()
     );
-    this.pendingChangesService.registerValidChanges(
-      () => {
-        if (this.editMode()) return true;
-        const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-        const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-        return !!key && !!value;
-      },
-    );
+    this.pendingChangesService.registerValidChanges(() => {
+      if (this.editMode()) return true;
+      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+      return !!key && !!value;
+    });
     this.pendingChangesService.registerSave(() => {
       if (this.editMode()) return this.saveEditAsync();
       return this.addCustomAttribute();
     });
   }
 
-  private saveEditAsync(): Promise<boolean> {
+  private async saveEditAsync(): Promise<boolean> {
     const data = { ...this.editedUserData(), username: this.userData().username };
-    return new Promise((resolve) => {
-      this.userService.editUser(this.userData().resolver, data).subscribe({
-        next: (success) => {
-          if (success) {
-            this.userService.userResource.reload();
-            this.editMode.set(false);
-          }
-          resolve(!!success);
-        },
-        error: () => resolve(false)
-      });
-    });
+    try {
+      const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
+      if (success) {
+        this.userService.userResource.reload();
+        this.editMode.set(false);
+      }
+      return !!success;
+    } catch {
+      return false;
+    }
   }
 
   ngOnDestroy(): void {
@@ -391,15 +387,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   saveEdit() {
-    const data = { ...this.editedUserData(), username: this.userData().username };
-    this.userService.editUser(this.userData().resolver, data).subscribe({
-      next: (success) => {
-        if (success) {
-          this.userService.userResource.reload();
-          this.editMode.set(false);
-        }
-      }
-    });
+    void this.saveEditAsync();
   }
 
   deleteUser() {
