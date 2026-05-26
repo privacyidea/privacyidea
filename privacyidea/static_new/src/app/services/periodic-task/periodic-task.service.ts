@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, HttpResourceRef, httpResource } from "@angular/common/http";
-import { Injectable, WritableSignal, effect, inject, signal } from "@angular/core";
+import { Injectable, WritableSignal, effect, inject, signal, untracked } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -29,7 +29,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService } from "@services/notification/notification.service";
 import { Observable, catchError, forkJoin, lastValueFrom, of, throwError } from "rxjs";
 
-export type PeriodicTask = {
+export interface PeriodicTask {
   id: number | null;
   name: string;
   active: boolean;
@@ -41,7 +41,7 @@ export type PeriodicTask = {
   ordering: number;
   options: Record<string, any>;
   last_runs: Record<string, any>;
-};
+}
 
 export const EMPTY_PERIODIC_TASK: PeriodicTask = {
   id: null,
@@ -71,13 +71,13 @@ export const TASK_KEY_MAPPING: Record<string, string> = {
   last_runs: "Last Runs"
 };
 
-export type PeriodicTaskOption = {
+export interface PeriodicTaskOption {
   name: string;
   description: string;
   type: string;
   required?: boolean;
   value?: string;
-};
+}
 
 export const EMPTY_PERIODIC_TASK_OPTION: PeriodicTaskOption = {
   name: "",
@@ -121,6 +121,11 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     });
     effect(() => {
       this.notificationService.handleResourceError(this.periodicTaskModuleResource.error(), "periodic task modules");
+    });
+    effect(() => {
+      const modules = this.periodicTaskModuleResource.value()?.result?.value;
+      if (!modules?.length) return;
+      untracked(() => this.fetchAllModuleOptions());
     });
   }
 
@@ -242,7 +247,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();
-    let params = { ...task } as any;
+    const params = { ...task } as any;
     if (params.id == null) {
       delete params.id;
     }
@@ -260,26 +265,29 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   moduleOptions = signal<Record<string, Record<string, PeriodicTaskOption>>>({});
 
   fetchAllModuleOptions() {
-    const requests = PERIODIC_TASK_MODULES.map((module) =>
+    const modules: string[] = this.periodicTaskModuleResource.value()?.result?.value ?? PERIODIC_TASK_MODULES;
+    const alreadyLoaded = Object.keys(this.moduleOptions());
+    const missing = modules.filter((m) => !alreadyLoaded.includes(m));
+    if (!missing.length) return;
+
+    const requests = missing.map((module) =>
       this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(
         this.periodicTaskBaseUrl + "options/" + encodeURIComponent(module),
-        {
-          headers: this.authService.getHeaders()
-        }
+        { headers: this.authService.getHeaders() }
       )
     );
 
     forkJoin(requests).subscribe({
       next: (responses) => {
-        const optionsDict: Record<string, Record<string, PeriodicTaskOption>> = {};
+        const newOptions: Record<string, Record<string, PeriodicTaskOption>> = {};
         responses.forEach((response, idx) => {
-          let options = response.result?.value ?? {};
+          const options = response.result?.value ?? {};
           Object.keys(options).forEach((key) => {
             options[key].name = key;
           });
-          optionsDict[PERIODIC_TASK_MODULES[idx]] = options;
+          newOptions[missing[idx]] = options;
         });
-        this.moduleOptions.set(optionsDict);
+        this.moduleOptions.update((existing) => ({ ...existing, ...newOptions }));
       },
       error: () => {
         this.notificationService.error("Failed to fetch module options.");

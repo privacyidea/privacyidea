@@ -151,7 +151,7 @@ describe("PeriodicTaskComponent", () => {
   });
 
   it("periodicTasks returns an empty array when the resource has no value", () => {
-    (periodicTaskService.periodicTasksResource.hasValue as jest.Mock).mockReturnValue(false);
+    periodicTaskService.periodicTasksResource.value.set(undefined);
     expect(component.periodicTasks()).toEqual([]);
   });
 

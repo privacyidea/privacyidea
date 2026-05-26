@@ -18,20 +18,13 @@
  **/
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { PeriodicTask, PeriodicTaskOption, PeriodicTaskServiceInterface } from "@services/periodic-task/periodic-task.service";
+import { PeriodicTask, PeriodicTaskModule, PeriodicTaskOption, PeriodicTaskServiceInterface } from "@services/periodic-task/periodic-task.service";
 import { of } from "rxjs";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
 export class MockPeriodicTaskService implements PeriodicTaskServiceInterface {
-  periodicTasksResource: any = {
-    hasValue: jest.fn().mockReturnValue(true),
-    value: jest.fn().mockReturnValue({ result: { value: [] } }),
-    reload: jest.fn()
-  };
-  periodicTaskModuleResource: any = {
-    hasValue: jest.fn().mockReturnValue(true),
-    value: jest.fn().mockReturnValue({ result: { value: [] } }),
-    reload: jest.fn()
-  };
+  periodicTasksResource = new MockHttpResourceRef<PiResponse<PeriodicTask[]> | undefined>(MockPiResponse.fromValue<PeriodicTask[]>([]));
+  periodicTaskModuleResource = new MockHttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>(MockPiResponse.fromValue<PeriodicTaskModule[]>([]));
   moduleOptions = signal<Record<string, Record<string, PeriodicTaskOption>>>({
     SimpleStats: {
       hardware_tokens: { name: "hardware_tokens", type: "bool", description: "" },
@@ -79,12 +72,12 @@ export class MockPeriodicTaskService implements PeriodicTaskServiceInterface {
 
   enablePeriodicTask = jest.fn().mockResolvedValue({});
   disablePeriodicTask = jest.fn().mockResolvedValue({});
-  deletePeriodicTask = jest.fn().mockReturnValue(of({} as PiResponse<number, any>));
+  deletePeriodicTask = jest.fn().mockReturnValue(of({} as PiResponse<number, never>));
   deleteWithConfirmDialog = jest.fn();
   savePeriodicTask = jest.fn().mockReturnValue(of({ result: { value: "3" } }));
   fetchAllModuleOptions = jest.fn();
 
   setPeriodicTasks(tasks: PeriodicTask[]): void {
-    this.periodicTasksResource.value.mockReturnValue({ result: { value: tasks } });
+    this.periodicTasksResource.value.set(MockPiResponse.fromValue(tasks));
   }
 }
