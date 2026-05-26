@@ -8,7 +8,7 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: repeat(3, auto);
+  grid-template-columns: repeat(3, calc(100% / 3));
   gap: var(--global-gap);
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-surface-container-highest);
@@ -125,7 +125,7 @@
 
 @media (max-width: 1240px) {
   .user-details {
-    grid-template-columns: repeat(2, auto);
+    grid-template-columns: repeat(2, 50%);
   }
   .custom-user-details {
     grid-template-columns: auto;
