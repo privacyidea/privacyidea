@@ -36,11 +36,11 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
-import { CreateUserDialogComponent } from "./create-user-dialog.component";
+import { UserCreateComponent } from "./user-create.component";
 
-describe("CreateUserDialogComponent", () => {
-  let component: CreateUserDialogComponent;
-  let fixture: ComponentFixture<CreateUserDialogComponent>;
+describe("UserCreateComponent", () => {
+  let component: UserCreateComponent;
+  let fixture: ComponentFixture<UserCreateComponent>;
   let mockUserService: MockUserService;
   let mockRealmService: MockRealmService;
   let mockResolverService: MockResolverService;
@@ -50,7 +50,7 @@ describe("CreateUserDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CreateUserDialogComponent],
+      imports: [UserCreateComponent],
       providers: [
         { provide: UserService, useClass: MockUserService },
         { provide: RealmService, useClass: MockRealmService },
@@ -58,7 +58,7 @@ describe("CreateUserDialogComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        provideRouter([{ path: "users", component: CreateUserDialogComponent }])
+        provideRouter([{ path: "users", component: UserCreateComponent }])
       ]
     }).compileComponents();
 
@@ -75,7 +75,7 @@ describe("CreateUserDialogComponent", () => {
       realmB: { resolver: [{ name: "resolver2" } as RealmResolver] } as Realm
     });
 
-    fixture = TestBed.createComponent(CreateUserDialogComponent);
+    fixture = TestBed.createComponent(UserCreateComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -91,7 +91,7 @@ describe("CreateUserDialogComponent", () => {
   it("should set empty resolver if no realms are available", () => {
     mockRealmService.realms.set({});
 
-    fixture = TestBed.createComponent(CreateUserDialogComponent);
+    fixture = TestBed.createComponent(UserCreateComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
 

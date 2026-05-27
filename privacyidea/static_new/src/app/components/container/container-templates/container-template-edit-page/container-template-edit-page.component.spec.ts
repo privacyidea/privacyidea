@@ -29,18 +29,18 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { MockContentService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { of } from "rxjs";
-import { ContainerTemplateEditDialogComponent } from "./container-template-edit-dialog.component";
+import { ContainerTemplateEditPageComponent } from "./container-template-edit-page.component";
 
-describe("ContainerTemplateEditDialogComponent", () => {
-  let component: ContainerTemplateEditDialogComponent;
-  let fixture: ComponentFixture<ContainerTemplateEditDialogComponent>;
+describe("ContainerTemplateEditPageComponent", () => {
+  let component: ContainerTemplateEditPageComponent;
+  let fixture: ComponentFixture<ContainerTemplateEditPageComponent>;
   let containerTemplateServiceMock: MockContainerTemplateService;
   let contentService: MockContentService;
   let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateEditDialogComponent],
+      imports: [ContainerTemplateEditPageComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -53,7 +53,7 @@ describe("ContainerTemplateEditDialogComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerTemplateEditDialogComponent);
+    fixture = TestBed.createComponent(ContainerTemplateEditPageComponent);
     containerTemplateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     contentService.routeUrl.set(ROUTE_PATHS.CONTAINERS_TEMPLATES);

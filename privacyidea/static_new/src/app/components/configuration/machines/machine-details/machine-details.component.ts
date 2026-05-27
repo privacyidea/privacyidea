@@ -47,7 +47,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { lastValueFrom } from "rxjs";
 
 @Component({
-  selector: "app-machine-details-dialog",
+  selector: "app-machine-details",
   standalone: true,
   imports: [
     CommonModule,
@@ -63,10 +63,10 @@ import { lastValueFrom } from "rxjs";
     CopyButtonComponent,
     CopyableComponent
   ],
-  templateUrl: "./machine-details-dialog.component.html",
-  styleUrl: "./machine-details-dialog.component.scss"
+  templateUrl: "./machine-details.component.html",
+  styleUrl: "./machine-details.component.scss"
 })
-export class MachineDetailsDialogComponent implements OnInit, OnDestroy {
+export class MachineDetailsComponent implements OnInit, OnDestroy {
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);

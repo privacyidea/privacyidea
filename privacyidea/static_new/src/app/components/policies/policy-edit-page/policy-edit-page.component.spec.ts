@@ -21,7 +21,7 @@ import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -38,7 +38,7 @@ class MockPanel {
 
 function createTestBed(paramName: string | null) {
   return TestBed.configureTestingModule({
-    imports: [EditPolicyDialogComponent],
+    imports: [PolicyEditPageComponent],
     providers: [
       {
         provide: ActivatedRoute,
@@ -54,13 +54,13 @@ function createTestBed(paramName: string | null) {
       { provide: PendingChangesService, useClass: MockPendingChangesService }
     ]
   })
-    .overrideComponent(EditPolicyDialogComponent, { set: { imports: [MockPanel] } })
+    .overrideComponent(PolicyEditPageComponent, { set: { imports: [MockPanel] } })
     .compileComponents();
 }
 
-describe("EditPolicyDialogComponent – create mode", () => {
-  let component: EditPolicyDialogComponent;
-  let fixture: ComponentFixture<EditPolicyDialogComponent>;
+describe("PolicyEditPageComponent – create mode", () => {
+  let component: PolicyEditPageComponent;
+  let fixture: ComponentFixture<PolicyEditPageComponent>;
   let policyService: MockPolicyService;
   let dialogService: MockDialogService;
   let router: Router;
@@ -68,7 +68,7 @@ describe("EditPolicyDialogComponent – create mode", () => {
   beforeEach(async () => {
     await createTestBed(null);
 
-    fixture = TestBed.createComponent(EditPolicyDialogComponent);
+    fixture = TestBed.createComponent(PolicyEditPageComponent);
     component = fixture.componentInstance;
     policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
@@ -138,16 +138,16 @@ describe("EditPolicyDialogComponent – create mode", () => {
   });
 });
 
-describe("EditPolicyDialogComponent – edit mode", () => {
-  let component: EditPolicyDialogComponent;
-  let fixture: ComponentFixture<EditPolicyDialogComponent>;
+describe("PolicyEditPageComponent – edit mode", () => {
+  let component: PolicyEditPageComponent;
+  let fixture: ComponentFixture<PolicyEditPageComponent>;
   let policyService: MockPolicyService;
   let router: Router;
 
   beforeEach(async () => {
     await createTestBed("TestPolicy");
 
-    fixture = TestBed.createComponent(EditPolicyDialogComponent);
+    fixture = TestBed.createComponent(PolicyEditPageComponent);
     component = fixture.componentInstance;
     policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     router = TestBed.inject(Router);

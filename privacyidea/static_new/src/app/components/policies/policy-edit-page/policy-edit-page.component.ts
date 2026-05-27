@@ -45,13 +45,13 @@ import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/poli
 import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-template-picker.component";
 
 @Component({
-  selector: "app-edit-policy-dialog",
+  selector: "app-policy-edit-page",
   standalone: true,
   imports: [PolicyPanelEditComponent, PolicyTemplatePickerComponent, MatButtonModule, MatIconModule],
-  templateUrl: "./edit-policy-dialog.component.html",
-  styleUrl: "./edit-policy-dialog.component.scss"
+  templateUrl: "./policy-edit-page.component.html",
+  styleUrl: "./policy-edit-page.component.scss"
 })
-export class EditPolicyDialogComponent implements AfterViewInit, OnDestroy {
+export class PolicyEditPageComponent implements AfterViewInit, OnDestroy {
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly router = inject(Router);

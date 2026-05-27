@@ -34,7 +34,7 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";

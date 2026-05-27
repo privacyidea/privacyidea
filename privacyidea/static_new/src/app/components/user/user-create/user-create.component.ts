@@ -46,13 +46,8 @@ import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { EditUserData, UserService } from "@services/user/user.service";
 
-export interface CreateUserDialogData {
-  resolver?: string;
-  realm?: string;
-}
-
 @Component({
-  selector: "app-create-user-dialog",
+  selector: "app-user-create",
   standalone: true,
   imports: [
     UserDetailsEditComponent,
@@ -68,10 +63,10 @@ export interface CreateUserDialogData {
     MatIconModule,
     ScrollToTopDirective
   ],
-  templateUrl: "./create-user-dialog.component.html",
-  styleUrl: "./create-user-dialog.component.scss"
+  templateUrl: "./user-create.component.html",
+  styleUrl: "./user-create.component.scss"
 })
-export class CreateUserDialogComponent implements OnInit, OnDestroy {
+export class UserCreateComponent implements OnInit, OnDestroy {
   protected readonly userService = inject(UserService);
   protected readonly resolverService = inject(ResolverService);
   protected readonly realmService = inject(RealmService);
@@ -85,13 +80,15 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
   username = signal<string>("");
   resolver = signal<string>("");
 
-  usernameForm = form(this.username, (f) => { required(f); });
-  resolverForm = form(this.resolver, (f) => { required(f); });
+  usernameForm = form(this.username, (f) => {
+    required(f);
+  });
+  resolverForm = form(this.resolver, (f) => {
+    required(f);
+  });
 
   canSave = computed(() => this.usernameForm().valid() && this.resolverForm().valid());
-  isDirty = computed(() =>
-    this.usernameForm().dirty() || this.resolverForm().dirty() || !this.editUserDataIsEmpty()
-  );
+  isDirty = computed(() => this.usernameForm().dirty() || this.resolverForm().dirty() || !this.editUserDataIsEmpty());
 
   constructor() {
     const realm = this.realm();

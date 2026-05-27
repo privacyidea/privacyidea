@@ -48,7 +48,7 @@ import {
 import { deepCopy } from "@utils/deep-copy.utils";
 
 @Component({
-  selector: "app-container-template-edit-dialog",
+  selector: "app-container-template-edit-page",
   standalone: true,
   host: {
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
@@ -64,10 +64,10 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatCheckboxModule,
     ContainerTemplateEditComponent
   ],
-  templateUrl: "./container-template-edit-dialog.component.html",
-  styleUrl: "./container-template-edit-dialog.component.scss"
+  templateUrl: "./container-template-edit-page.component.html",
+  styleUrl: "./container-template-edit-page.component.scss"
 })
-export class ContainerTemplateEditDialogComponent {
+export class ContainerTemplateEditPageComponent {
   // --- Services ---
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -100,7 +100,7 @@ export class ContainerTemplateEditDialogComponent {
       }
       const template = this.containerTemplateService.templates().find((p) => p.name === name);
       if (!template) {
-        console.warn("ContainerTemplateEditDialogComponent: No template found with name ", name);
+        console.warn("ContainerTemplateEditPageComponent: No template found with name ", name);
         this.initTemplate.set(null);
         return;
       }
