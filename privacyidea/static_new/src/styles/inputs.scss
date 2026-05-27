@@ -156,9 +156,7 @@ $input-focus-outline: theme.$focus-outline;
   max-width: 932px;
 }
 
-mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(
-    .condition-value-container *
-  ):not(.login-form *) {
+mat-form-field.height-77 {
   height: 76.5px;
 }
 

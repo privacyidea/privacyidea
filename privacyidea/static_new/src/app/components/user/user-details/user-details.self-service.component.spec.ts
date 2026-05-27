@@ -194,16 +194,27 @@ describe("UserDetailsSelfServiceComponent", () => {
     expect(host.textContent).toContain("a@example.com");
   });
 
-  it("renders array values as a <ul> list when length > 1", () => {
+  it("renders array values collapsed by default and expands on toggle", () => {
     userServiceMock.user.set({
       username: "alice",
       email: ["a@example.com", "b@example.com"] as any
     } as any);
     fixture.detectChanges();
 
-    const ul = fixture.nativeElement.querySelector(".value ul");
+    const host: HTMLElement = fixture.nativeElement;
+    const ul = host.querySelector(".value ul");
     expect(ul).toBeTruthy();
-    expect(ul.querySelectorAll("li").length).toBe(2);
+    expect(ul!.querySelectorAll("li").length).toBe(1);
+
+    const toggle = host.querySelector(".value-toggle") as HTMLButtonElement;
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(host.querySelector(".value ul")!.querySelectorAll("li").length).toBe(2);
+    expect(host.querySelector(".value-toggle")!.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("detailsColumns splits entries according to colCount", () => {

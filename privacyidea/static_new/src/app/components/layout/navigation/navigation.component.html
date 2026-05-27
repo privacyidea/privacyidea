@@ -510,6 +510,28 @@
         <span i18n>Periodic Tasks</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS)) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon>event_repeat</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-gear">settings</mat-icon>
+        </span>
+        <span i18n>Periodic Task Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon>event_repeat</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-add">add</mat-icon>
+        </span>
+        <span i18n>Create Periodic Task</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

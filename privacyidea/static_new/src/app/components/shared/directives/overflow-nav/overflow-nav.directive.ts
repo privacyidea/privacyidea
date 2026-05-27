@@ -58,6 +58,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private isCalculating = false;
   private unlisteners: (() => void)[] = [];
   private menuItemUnlisteners: (() => void)[] = [];
+  private menuItemSources = new WeakMap<HTMLElement, HTMLElement>();
 
   private get container(): HTMLElement {
     return this.el.nativeElement;
@@ -146,30 +147,39 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
     this.mutationObserver = new MutationObserver((mutations) => {
       if (this.isCalculating) return;
-      const hasRelevantChange = mutations.some((m) => {
+      let needsOverflowRecalc = false;
+      let needsDisabledRefresh = false;
+      for (const m of mutations) {
         if (m.type === "childList" && (m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
-          return true;
+          needsOverflowRecalc = true;
+          continue;
         }
-        if (m.type === "attributes" && m.attributeName === "class") {
-          const el = m.target as HTMLElement;
-          if (el === this.moreButton) return false;
+        if (m.type !== "attributes") continue;
+        const el = m.target as HTMLElement;
+        if (m.attributeName === "class") {
+          if (el === this.moreButton) continue;
           if (el.tagName === "A" || el.tagName === "BUTTON") {
             const hadActive = (m.oldValue || "").includes("nav-active");
             const hasNow = (el.className || "").includes("nav-active");
-            return hadActive !== hasNow;
+            if (hadActive !== hasNow) needsOverflowRecalc = true;
+          }
+        } else if (m.attributeName === "disabled" || m.attributeName === "aria-disabled") {
+          if (el.tagName === "BUTTON" || el.tagName === "A") {
+            needsDisabledRefresh = true;
           }
         }
-        return false;
-      });
-      if (hasRelevantChange) {
+      }
+      if (needsOverflowRecalc) {
         this.calculateOverflow();
+      } else if (needsDisabledRefresh && this.isMenuOpen) {
+        this.refreshMenuItemStates();
       }
     });
     this.mutationObserver.observe(this.container, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class"],
+      attributeFilter: ["class", "disabled", "aria-disabled"],
       attributeOldValue: true
     });
   }
@@ -341,6 +351,8 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       if (isActive(btn)) {
         this.renderer.addClass(menuItem, "overflow-menu-item-active");
       }
+      this.menuItemSources.set(menuItem, btn);
+      this.applyDisabledState(menuItem, btn);
 
       const srcIcon = btn.querySelector("mat-icon");
       if (srcIcon) {
@@ -360,6 +372,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       this.menuItemUnlisteners.push(
         this.renderer.listen(menuItem, "click", (e: Event) => {
           e.stopPropagation();
+          if (this.isButtonDisabled(btn)) return;
           btn.click();
           this.closeMenu();
         })
@@ -398,16 +411,44 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   }
 
   private toggleMenu(): void {
-    this.isMenuOpen ? this.closeMenu() : this.openMenu();
+    if (this.isMenuOpen) {
+      this.closeMenu();
+    } else {
+      this.openMenu();
+    }
   }
 
   private openMenu(): void {
+    this.refreshMenuItemStates();
     const rect = this.moreButton.getBoundingClientRect();
     this.renderer.setStyle(this.menuContainer, "position", "fixed");
     this.renderer.setStyle(this.menuContainer, "top", `${rect.bottom + 4}px`);
     this.renderer.setStyle(this.menuContainer, "left", `${rect.left}px`);
     this.renderer.setStyle(this.menuContainer, "display", "block");
     this.isMenuOpen = true;
+  }
+
+  private isButtonDisabled(btn: HTMLElement): boolean {
+    return (btn as HTMLButtonElement).disabled || btn.getAttribute("aria-disabled") === "true";
+  }
+
+  private applyDisabledState(menuItem: HTMLElement, btn: HTMLElement): void {
+    if (this.isButtonDisabled(btn)) {
+      this.renderer.setAttribute(menuItem, "disabled", "");
+      this.renderer.setAttribute(menuItem, "aria-disabled", "true");
+      this.renderer.addClass(menuItem, "overflow-menu-item-disabled");
+    } else {
+      this.renderer.removeAttribute(menuItem, "disabled");
+      this.renderer.removeAttribute(menuItem, "aria-disabled");
+      this.renderer.removeClass(menuItem, "overflow-menu-item-disabled");
+    }
+  }
+
+  private refreshMenuItemStates(): void {
+    for (const item of Array.from(this.menuContainer.children) as HTMLElement[]) {
+      const src = this.menuItemSources.get(item);
+      if (src) this.applyDisabledState(item, src);
+    }
   }
 
   private closeMenu(): void {
