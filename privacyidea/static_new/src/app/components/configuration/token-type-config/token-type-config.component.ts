@@ -177,7 +177,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   hashLibs = computed<string[]>(() => this.systemConfigInit()?.hashlibs ?? ["sha1", "sha256", "sha512"]);
   totpSteps = computed<string[]>(() => {
     const steps = this.systemConfigInit()?.totpSteps ?? [30, 60];
-    return (Array.isArray(steps) ? steps : [steps]).map((s: any) => String(s));
+    return (Array.isArray(steps) ? steps : [steps]).map((s: unknown) => String(s));
   });
 
   expandedPanel: string | null = null;
@@ -253,7 +253,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f } as Record<string, unknown>;
       delete next[key];
       return next;
     });
@@ -273,7 +273,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f } as Record<string, unknown>;
       delete next[key];
       return next;
     });
@@ -358,7 +358,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     }
   }
 
-  onCheckboxChange(key: string, event: any) {
+  onCheckboxChange(key: string, event: { checked: boolean }) {
     this.formData.update((f) => ({
       ...f,
       [key]: event.checked ? "True" : "False"

@@ -101,12 +101,12 @@ export class EnrollWebauthnComponent implements OnInit {
     enrollmentResponse: EnrollmentResponse,
     enrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
-    if (!(enrollmentResponse as any)?.detail) {
+    if (!(enrollmentResponse as WebauthnEnrollmentResponse)?.detail) {
       this.notificationService.error(
         "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
       return null;
-    } else if (!(enrollmentResponse as any)?.detail?.webAuthnRegisterRequest) {
+    } else if (!(enrollmentResponse as WebauthnEnrollmentResponse)?.detail?.webAuthnRegisterRequest) {
       this.notificationService.error(
         "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
       );
@@ -158,7 +158,7 @@ export class EnrollWebauthnComponent implements OnInit {
       pubKeyCredParams: request.pubKeyCredAlgorithms,
       timeout: request.timeout,
       excludeCredentials: request.excludeCredentials
-        ? request.excludeCredentials.map((cred: any) => ({
+        ? request.excludeCredentials.map((cred) => ({
             id: this.base64Service.base64URLToBytes(cred.id),
             type: cred.type,
             transports: cred.transports

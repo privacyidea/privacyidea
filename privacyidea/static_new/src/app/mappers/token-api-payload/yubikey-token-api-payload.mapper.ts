@@ -56,8 +56,8 @@ export class YubikeyApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): YubikeyEnrollmentData {
-    return payload as YubikeyEnrollmentData;
+  override fromApiPayload(payload: YubikeyEnrollmentPayload): YubikeyEnrollmentData {
+    return payload as unknown as YubikeyEnrollmentData;
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): YubikeyEnrollmentData {

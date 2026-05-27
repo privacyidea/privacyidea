@@ -44,7 +44,7 @@ export class SpassApiPayloadMapper extends BaseApiPayloadMapper implements Token
     return payload;
   }
 
-  override fromApiPayload(payload: any): SpassEnrollmentData {
+  override fromApiPayload(payload: SpassEnrollmentPayload): SpassEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as SpassEnrollmentData;
   }

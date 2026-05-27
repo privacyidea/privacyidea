@@ -16,10 +16,18 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="token-type-config-container" #scrollContainer>
+<div
+  class="token-type-config-container"
+  #scrollContainer>
   <div #stickySentinel></div>
-  <div class="flex-row just-space-between ali-center sticky-header" #stickyHeader>
-    <h3 class="margin-8" i18n>Token Type Configuration</h3>
+  <div
+    class="flex-row just-space-between ali-center sticky-header"
+    #stickyHeader>
+    <h3
+      class="margin-8"
+      i18n>
+      Token Type Configuration
+    </h3>
     <div class="flex-row ali-center gap-8">
       <button
         (click)="toggleAllPanels()"
@@ -27,7 +35,7 @@
         [matTooltip]="allPanelsOpen() ? 'Close all' : 'Open all'"
         mat-icon-button
         type="button">
-        <mat-icon>{{ allPanelsOpen() ? 'unfold_less' : 'unfold_more' }}</mat-icon>
+        <mat-icon>{{ allPanelsOpen() ? "unfold_less" : "unfold_more" }}</mat-icon>
       </button>
       <button
         (click)="save()"
@@ -49,8 +57,7 @@
       [formData]="formData()"
       [hashLibs]="hashLibs()"
       [totpSteps]="totpSteps()"></app-totp-config>
-    <app-u2f-config
-      [formData]="formData()"></app-u2f-config>
+    <app-u2f-config [formData]="formData()"></app-u2f-config>
     <app-webauthn-config
       (formDataChange)="formData.set($event)"
       [formData]="formData()"></app-webauthn-config>
@@ -77,8 +84,8 @@
       [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (formDataChange)="formData.set($event)"
-      (onAddQuestion)="addQuestion($event)"
-      (onDeleteEntry)="deleteQuestion($event)"
+      (addQuestionRequest)="addQuestion($event)"
+      (deleteRequest)="deleteQuestion($event)"
       [formData]="formData()"
       [questionKeys]="questionKeys"
       [expanded]="expandedPanel === 'questionnaire'"></app-questionnaire-config>
@@ -87,8 +94,8 @@
       [formData]="formData()"
       [expanded]="expandedPanel === 'yubico'"></app-yubico-config>
     <app-yubikey-config
-      (onDeleteEntry)="deleteSystemEntry($event)"
-      (onYubikeyCreateNewKey)="yubikeyAddNewKey($event)"
+      (deleteRequest)="deleteSystemEntry($event)"
+      (yubikeyCreateNewKey)="yubikeyAddNewKey($event)"
       [formData]="formData()"
       [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>
     <app-daypassword-config

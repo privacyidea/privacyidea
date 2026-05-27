@@ -209,7 +209,7 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
   validOptions = signal(false);
 
   sectionValidity = computed(() => {
-    const validity: Record<string, any> = {};
+    const validity: Record<string, boolean> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
     validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);

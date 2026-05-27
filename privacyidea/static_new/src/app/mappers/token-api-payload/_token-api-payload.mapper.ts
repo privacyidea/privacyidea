@@ -66,7 +66,7 @@ export interface TokenEnrollmentData {
   serial?: string | null;
   rollover?: boolean | null;
   verify?: string;
-  [key: string]: any; // TODO: remove this when all types are defined
+  [key: string]: unknown; // TODO: remove this when all types are defined
 }
 
 export interface TokenEnrollmentPayload {
@@ -84,12 +84,12 @@ export interface TokenEnrollmentPayload {
   otplen?: number;
   timeStep?: string | number;
   genkey?: boolean | number;
-  [key: string]: any; // TODO: remove this when all types are defined
+  [key: string]: unknown; // TODO: remove this when all types are defined
 }
 
 export interface TokenApiPayloadMapper<T> {
-  toApiPayload(data: T): any;
-  fromApiPayload(data: any): T;
+  toApiPayload(data: T): TokenEnrollmentPayload;
+  fromApiPayload(data: TokenEnrollmentPayload): T;
   fromTokenDetailsToEnrollmentData(details: TokenDetails): T;
 }
 

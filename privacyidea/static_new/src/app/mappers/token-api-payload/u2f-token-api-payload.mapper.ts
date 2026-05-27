@@ -43,7 +43,7 @@ export class U2fApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     return payload;
   }
 
-  override fromApiPayload(payload: any): U2fEnrollmentData {
+  override fromApiPayload(payload: U2fEnrollmentPayload): U2fEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as U2fEnrollmentData;
   }

@@ -56,12 +56,12 @@ describe("YubikeyConfigComponent", () => {
     expect(component.formData()["yubikey.apiid.3"]).toEqual("apiKey3");
   });
 
-  it("should emit onYubikeyCreateNewKey when createNewKey is called with valid id", () => {
-    jest.spyOn(component.onYubikeyCreateNewKey, "emit");
+  it("should emit yubikeyCreateNewKey when createNewKey is called with valid id", () => {
+    jest.spyOn(component.yubikeyCreateNewKey, "emit");
     const newId = "newClientId";
     component.newYubikeyApiId.set(newId);
     component.createNewKey();
-    expect(component.onYubikeyCreateNewKey.emit).toHaveBeenCalledWith({ apiId: newId, apiKey: "", generateKey: true });
+    expect(component.yubikeyCreateNewKey.emit).toHaveBeenCalledWith({ apiId: newId, apiKey: "", generateKey: true });
   });
 
   it("should clear newYubikeyApiId and newYubikeyApiKey after creating a new key", () => {
@@ -78,19 +78,19 @@ describe("YubikeyConfigComponent", () => {
     expect(component.newYubikeyApiKey()).toBe("");
   });
 
-  it("should not emit onYubikeyCreateNewKey when createNewKey is called with empty id", () => {
-    jest.spyOn(component.onYubikeyCreateNewKey, "emit");
+  it("should not emit yubikeyCreateNewKey when createNewKey is called with empty id", () => {
+    jest.spyOn(component.yubikeyCreateNewKey, "emit");
     component.newYubikeyApiId.set("");
     component.newYubikeyApiKey.set("apiKey");
     component.createNewKey();
-    expect(component.onYubikeyCreateNewKey.emit).not.toHaveBeenCalled();
+    expect(component.yubikeyCreateNewKey.emit).not.toHaveBeenCalled();
   });
 
-  it("should emit onDeleteEntry when deleteEntry is called", () => {
-    jest.spyOn(component.onDeleteEntry, "emit");
+  it("should emit deleteRequest when deleteEntry is called", () => {
+    jest.spyOn(component.deleteRequest, "emit");
     const keyToDelete = "yubikey.apiid.1";
     component.deleteEntry(keyToDelete);
-    expect(component.onDeleteEntry.emit).toHaveBeenCalledWith(keyToDelete);
+    expect(component.deleteRequest.emit).toHaveBeenCalledWith(keyToDelete);
   });
 
   it("should handle multiple yubikey API IDs", () => {

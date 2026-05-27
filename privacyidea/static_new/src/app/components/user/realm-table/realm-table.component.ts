@@ -26,9 +26,10 @@ import {
   inject,
   linkedSignal,
   OnDestroy,
+  OnInit,
   signal,
   ViewChild,
-  WritableSignal, OnInit
+  WritableSignal
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -72,7 +73,10 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "@services/syste
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, lastValueFrom, take } from "rxjs";
 
-interface ResolverWithPriority { name: string; priority: number | null }
+interface ResolverWithPriority {
+  name: string;
+  priority: number | null;
+}
 type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 
 const ALL_NODES_VALUE = "__all_nodes__";
@@ -199,7 +203,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const nodes = this.systemService.nodes();
     const selectedNodeUuid = this.selectedNode();
 
-    return Object.entries(realms as any).flatMap(([realmName, realm]: [string, any]) => {
+    return Object.entries(realms).flatMap(([realmName, realm]) => {
       const resolvers = realm.resolver ?? [];
 
       if (selectedNodeUuid !== ALL_NODES_VALUE) {
@@ -282,7 +286,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
         this.newRealmName() !== "" ||
         Object.keys(this.newRealmNodeResolvers()).length > 0 ||
         (this.editingRealmName() !== null &&
-          JSON.stringify(this.editNodeResolvers()) !== JSON.stringify(this.editOriginalNodeResolvers())),
+          JSON.stringify(this.editNodeResolvers()) !== JSON.stringify(this.editOriginalNodeResolvers()))
     );
     this.pendingChangesService.registerValidChanges(() => this.canSubmitNewRealm());
     this.pendingChangesService.registerSave(() => this.onCreateRealm());
@@ -591,7 +595,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const dir = s.direction === "desc" ? -1 : 1;
     const key = s.active as keyof RealmRow;
 
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: RealmRow, b: RealmRow) => {
       let va: any;
       let vb: any;
       if (key === "isDefault") {

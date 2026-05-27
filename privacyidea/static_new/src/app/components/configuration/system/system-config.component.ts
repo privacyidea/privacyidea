@@ -122,14 +122,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     const body = { ...this.params() };
 
     this.systemService.saveSystemConfig(body).subscribe({
-      next: (response: any) => {
-        if (response.result.status) {
+      next: (response) => {
+        if (response.result?.status) {
           this.notificationService.success("System configuration saved successfully.");
         } else {
           this.notificationService.error("Failed to save system configuration.");
         }
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error saving system configuration:", error);
         this.notificationService.error("Error saving system configuration.");
       }
@@ -139,8 +139,8 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   private _saveAndReturn(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       this.systemService.saveSystemConfig({ ...this.params() }).subscribe({
-        next: (response: any) => {
-          if (response.result.status) {
+        next: (response) => {
+          if (response.result?.status) {
             this.notificationService.success("System configuration saved successfully.");
             resolve(true);
           } else {
@@ -158,14 +158,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
 
   deleteUserCache(): void {
     this.systemService.deleteUserCache().subscribe({
-      next: (response: any) => {
-        if (response.result.status) {
+      next: (response) => {
+        if (response.result?.status) {
           this.notificationService.success("User cache deleted successfully.");
         } else {
           this.notificationService.error("Failed to delete user cache.");
         }
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error deleting user cache:", error);
         this.notificationService.error("Error deleting user cache.");
       }
@@ -185,7 +185,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
           data: { documentation }
         });
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error loading system documentation:", error);
         this.notificationService.error("Error loading system documentation.");
       }

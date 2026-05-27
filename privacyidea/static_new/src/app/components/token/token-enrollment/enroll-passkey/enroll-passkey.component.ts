@@ -147,6 +147,9 @@ export class EnrollPasskeyComponent implements OnInit {
         data: { enrollmentResponse }
       });
       const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
+      if (publicKeyCred === null) {
+        return null;
+      }
       const resposeLastStep = await this.finalizeEnrollment({
         enrollmentInitData,
         enrollmentResponse,
@@ -166,14 +169,14 @@ export class EnrollPasskeyComponent implements OnInit {
     this.currentStepOneRef?.close();
   }
 
-  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<any | null> {
+  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<PublicKeyCredential | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
       this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       return null;
     }
-    const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred: any) => ({
+    const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred: { id: string; type: PublicKeyCredentialType }) => ({
       id: this.base64Service.base64URLToBytes(cred.id),
       type: cred.type
     }));
@@ -202,16 +205,17 @@ export class EnrollPasskeyComponent implements OnInit {
       .finally(() => {
         this.closeStepOneDialog();
       });
-    return publicKeyCred;
+    return publicKeyCred as PublicKeyCredential | null;
   }
 
   private async finalizeEnrollment(args: {
     enrollmentInitData: PasskeyEnrollmentData;
     enrollmentResponse: EnrollmentResponse;
-    publicKeyCred: any;
+    publicKeyCred: PublicKeyCredential;
   }): Promise<EnrollmentResponse> {
     const { enrollmentInitData, enrollmentResponse, publicKeyCred } = args;
     const detail = enrollmentResponse.detail;
+    const attestationResponse = publicKeyCred.response as AuthenticatorAttestationResponse;
     const passkeyFinalizeData: PasskeyFinalizeData = {
       ...enrollmentInitData,
       transaction_id: detail["transaction_id"]!,
@@ -219,8 +223,8 @@ export class EnrollPasskeyComponent implements OnInit {
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
       authenticatorAttachment: publicKeyCred.authenticatorAttachment,
-      attestationObject: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.attestationObject)),
-      clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON))
+      attestationObject: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.attestationObject)),
+      clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.clientDataJSON))
     };
 
     const extResults = publicKeyCred.getClientExtensionResults();

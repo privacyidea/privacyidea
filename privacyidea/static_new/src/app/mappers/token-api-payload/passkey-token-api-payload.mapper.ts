@@ -67,7 +67,7 @@ export class PasskeyApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): PasskeyEnrollmentData {
+  override fromApiPayload(payload: TokenEnrollmentPayload): PasskeyEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyEnrollmentData;
   }
@@ -99,12 +99,12 @@ export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<Pa
     return payload;
   }
 
-  fromApiPayload(payload: any): PasskeyFinalizeData {
+  fromApiPayload(payload: PasskeyFinalizationPayload): PasskeyFinalizeData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyFinalizeData;
   }
 
-  fromTokenDetailsToEnrollmentData(details: TokenDetails): PasskeyFinalizeData {
+  fromTokenDetailsToEnrollmentData(): PasskeyFinalizeData {
     return {} as PasskeyFinalizeData;
   }
 }

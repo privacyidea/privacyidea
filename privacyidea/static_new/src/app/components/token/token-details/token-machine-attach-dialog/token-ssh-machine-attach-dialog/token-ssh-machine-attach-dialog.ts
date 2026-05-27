@@ -42,7 +42,7 @@ export interface SshMachineAssignDialogData {
 }
 
 @Component({
-  selector: "token-ssh-machine-attach-dialog",
+  selector: "app-token-ssh-machine-attach-dialog",
   styleUrls: ["./token-ssh-machine-attach-dialog.component.scss"],
   templateUrl: "./token-ssh-machine-attach-dialog.component.html",
   standalone: true,
@@ -149,10 +149,8 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     required(f);
   });
 
-  isFormValid = computed(() =>
-    this.selectedMachineForm().valid() &&
-    this.selectedServiceIdForm().valid() &&
-    this.selectedUserForm().valid()
+  isFormValid = computed(
+    () => this.selectedMachineForm().valid() && this.selectedServiceIdForm().valid() && this.selectedUserForm().valid()
   );
 
   constructor() {

@@ -43,7 +43,7 @@ export class TiqrApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     return payload;
   }
 
-  override fromApiPayload(payload: any): TiqrEnrollmentData {
+  override fromApiPayload(payload: TiqrEnrollmentPayload): TiqrEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as TiqrEnrollmentData;
   }

@@ -92,7 +92,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       return undefined;
     }
 
-    let params: any = {};
+    let params: Record<string, string> = {};
     if (this.containerService.selectedContainerType()) {
       params = { container_type: this.containerService.selectedContainerType()!.containerType };
     }

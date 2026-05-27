@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
-import { form, FormField, required } from "@angular/forms/signals";
+import { form, FormField } from "@angular/forms/signals";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -219,9 +219,9 @@ export class HttpResolverComponent {
     return {
       get: () => currentModel.config_authorization,
       update: (fn: (config: HttpConfigModel) => HttpConfigModel) => {
-        this.model.update(model => ({ ...model, config_authorization: fn(model.config_authorization) }));
+        this.model.update((model) => ({ ...model, config_authorization: fn(model.config_authorization) }));
       }
-    } as any;
+    };
   });
 
   isValid = () => {
@@ -231,7 +231,13 @@ export class HttpResolverComponent {
       return !!currentModel.base_url;
     }
     if (basic) {
-      return !!currentModel.endpoint && !!currentModel.method && !!currentModel.requestMapping && !!currentModel.headers && !!currentModel.responseMapping;
+      return (
+        !!currentModel.endpoint &&
+        !!currentModel.method &&
+        !!currentModel.requestMapping &&
+        !!currentModel.headers &&
+        !!currentModel.responseMapping
+      );
     }
     return !!currentModel.base_url;
   };
@@ -314,18 +320,18 @@ export class HttpResolverComponent {
       const data = this.mergedData() as any;
       if (!basic && !this.model().responseMapping) {
         if (data.responseMapping === undefined) {
-          this.model.update(m => ({ ...m, responseMapping: '{"username":"{username}", "userid":"{userid}"}' }));
+          this.model.update((m) => ({ ...m, responseMapping: '{"username":"{username}", "userid":"{userid}"}' }));
         }
         if (data.verify_tls === undefined) {
-          this.model.update(m => ({ ...m, verify_tls: true }));
+          this.model.update((m) => ({ ...m, verify_tls: true }));
         }
       }
       if (basic && this.model().responseMapping) {
         if (data.responseMapping === undefined) {
-          this.model.update(m => ({ ...m, responseMapping: "" }));
+          this.model.update((m) => ({ ...m, responseMapping: "" }));
         }
         if (data.verify_tls === undefined) {
-          this.model.update(m => ({ ...m, verify_tls: false }));
+          this.model.update((m) => ({ ...m, verify_tls: false }));
         }
       }
     });
@@ -333,39 +339,39 @@ export class HttpResolverComponent {
     // Sync sub-component models to main model when they change
     effect(() => {
       const auth = this.configAuthModel();
-      this.model.update(m => ({ ...m, config_authorization: auth }));
+      this.model.update((m) => ({ ...m, config_authorization: auth }));
     });
     effect(() => {
       const userAuth = this.configUserAuthModel();
-      this.model.update(m => ({ ...m, config_user_auth: userAuth }));
+      this.model.update((m) => ({ ...m, config_user_auth: userAuth }));
     });
     effect(() => {
       const list = this.configGetUserListModel();
-      this.model.update(m => ({ ...m, config_get_user_list: list }));
+      this.model.update((m) => ({ ...m, config_get_user_list: list }));
     });
     effect(() => {
       const byId = this.configGetUserByIdModel();
-      this.model.update(m => ({ ...m, config_get_user_by_id: byId }));
+      this.model.update((m) => ({ ...m, config_get_user_by_id: byId }));
     });
     effect(() => {
       const byName = this.configGetUserByNameModel();
-      this.model.update(m => ({ ...m, config_get_user_by_name: byName }));
+      this.model.update((m) => ({ ...m, config_get_user_by_name: byName }));
     });
     effect(() => {
       const create = this.configCreateUserModel();
-      this.model.update(m => ({ ...m, config_create_user: create }));
+      this.model.update((m) => ({ ...m, config_create_user: create }));
     });
     effect(() => {
       const edit = this.configEditUserModel();
-      this.model.update(m => ({ ...m, config_edit_user: edit }));
+      this.model.update((m) => ({ ...m, config_edit_user: edit }));
     });
     effect(() => {
       const del = this.configDeleteUserModel();
-      this.model.update(m => ({ ...m, config_delete_user: del }));
+      this.model.update((m) => ({ ...m, config_delete_user: del }));
     });
     effect(() => {
       const groups = this.userGroupsModel();
-      this.model.update(m => ({ ...m, config_get_user_groups: groups }));
+      this.model.update((m) => ({ ...m, config_get_user_groups: groups }));
     });
   }
 
@@ -459,35 +465,35 @@ export class HttpResolverComponent {
     }
 
     if (Object.keys(updates).length > 0) {
-      this.model.update(m => ({ ...m, ...updates }));
+      this.model.update((m) => ({ ...m, ...updates }));
     }
 
     if (data.config_get_user_groups) {
-      this.userGroupsModel.update(g => ({ ...g, ...this.sanitizeConfig(data.config_get_user_groups) }));
+      this.userGroupsModel.update((g) => ({ ...g, ...this.sanitizeConfig(data.config_get_user_groups) }));
     }
     if (data.config_authorization) {
-      this.configAuthModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_authorization) }));
+      this.configAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_authorization) }));
     }
     if (data.config_user_auth) {
-      this.configUserAuthModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_user_auth) }));
+      this.configUserAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_user_auth) }));
     }
     if (data.config_get_user_list) {
-      this.configGetUserListModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_get_user_list) }));
+      this.configGetUserListModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_get_user_list) }));
     }
     if (data.config_get_user_by_id) {
-      this.configGetUserByIdModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_get_user_by_id) }));
+      this.configGetUserByIdModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_get_user_by_id) }));
     }
     if (data.config_get_user_by_name) {
-      this.configGetUserByNameModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_get_user_by_name) }));
+      this.configGetUserByNameModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_get_user_by_name) }));
     }
     if (data.config_create_user) {
-      this.configCreateUserModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_create_user) }));
+      this.configCreateUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_create_user) }));
     }
     if (data.config_edit_user) {
-      this.configEditUserModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_edit_user) }));
+      this.configEditUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_edit_user) }));
     }
     if (data.config_delete_user) {
-      this.configDeleteUserModel.update(c => ({ ...c, ...this.sanitizeConfig(data.config_delete_user) }));
+      this.configDeleteUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_delete_user) }));
     }
 
     this.httpForm().reset();
@@ -513,7 +519,7 @@ export class HttpResolverComponent {
       }
       return JSON.stringify(value);
     }
-    return value as string ?? "";
+    return (value as string) ?? "";
   }
 
   protected onMappingChanged(): void {
@@ -532,6 +538,6 @@ export class HttpResolverComponent {
       }
     }
 
-    this.model.update(m => ({ ...m, attribute_mapping: map }));
+    this.model.update((m) => ({ ...m, attribute_mapping: map }));
   }
 }

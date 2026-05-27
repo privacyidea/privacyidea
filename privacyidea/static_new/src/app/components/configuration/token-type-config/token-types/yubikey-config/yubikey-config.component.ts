@@ -48,11 +48,11 @@ export interface ApiKeyData {
   styleUrl: "./yubikey-config.component.scss"
 })
 export class YubikeyConfigComponent {
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
   yubikeyApiIds = input.required<string[]>();
 
-  onYubikeyCreateNewKey = output<ApiKeyData>();
-  onDeleteEntry = output<string>();
+  yubikeyCreateNewKey = output<ApiKeyData>();
+  deleteRequest = output<string>();
 
   newYubikeyApiId = signal("");
   newYubikeyApiKey = signal("");
@@ -66,13 +66,13 @@ export class YubikeyConfigComponent {
         apiKey: this.newYubikeyApiKey(),
         generateKey: this.newYubikeyGenKey()
       };
-      this.onYubikeyCreateNewKey.emit(newKeyData);
+      this.yubikeyCreateNewKey.emit(newKeyData);
       this.newYubikeyApiId.set("");
       this.newYubikeyApiKey.set("");
     }
   }
 
   deleteEntry(key: string) {
-    this.onDeleteEntry.emit(key);
+    this.deleteRequest.emit(key);
   }
 }

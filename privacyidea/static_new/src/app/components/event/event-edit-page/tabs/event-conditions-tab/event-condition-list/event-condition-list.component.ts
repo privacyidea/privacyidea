@@ -62,8 +62,8 @@ export class EventConditionListComponent {
   inputName = input<string>("");
   focusConditionName = input<string | null>(null);
   toolTipText = input<string>("");
-  newConditionValue = output<{ conditionName: string; conditionValue: any }>();
-  actionButtonClicked = output<{ conditionName: string; conditionValue: any }>();
+  newConditionValue = output<{ conditionName: string; conditionValue: string | string[] }>();
+  actionButtonClicked = output<{ conditionName: string; conditionValue: string | string[] }>();
 
   editConditions = linkedSignal(() => {
     return this.conditions();
@@ -136,7 +136,7 @@ export class EventConditionListComponent {
     return [];
   }
 
-  onConditionValueChange(conditionName: string, value: any) {
+  onConditionValueChange(conditionName: string, value: string | string[]) {
     this.editConditions()[conditionName] = value;
     if (this.emitOnConditionValueChange()) {
       if (Array.isArray(value)) {

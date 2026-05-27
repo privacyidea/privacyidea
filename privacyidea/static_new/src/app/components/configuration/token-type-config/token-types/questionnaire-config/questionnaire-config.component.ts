@@ -29,14 +29,7 @@ import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 @Component({
   selector: "app-questionnaire-config",
   standalone: true,
-  imports: [
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    MatDivider
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, MatDivider],
   templateUrl: "./questionnaire-config.component.html",
   styleUrl: "./questionnaire-config.component.scss"
 })
@@ -48,24 +41,24 @@ export class QuestionnaireConfigComponent {
   expanded = input<boolean>(false);
 
   formDataChange = output<Record<string, any>>();
-  onAddQuestion = output<string>();
-  onDeleteEntry = output<string>();
+  addQuestionRequest = output<string>();
+  deleteRequest = output<string>();
 
   newQuestionText = signal("");
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }
 
   addQuestion() {
     if (this.newQuestionText()) {
-      this.onAddQuestion.emit(this.newQuestionText());
+      this.addQuestionRequest.emit(this.newQuestionText());
       this.newQuestionText.set("");
     }
   }
 
   deleteEntry(key: string) {
-    this.onDeleteEntry.emit(key);
+    this.deleteRequest.emit(key);
   }
 }
