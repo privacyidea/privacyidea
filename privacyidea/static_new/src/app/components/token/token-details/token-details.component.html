@@ -158,8 +158,9 @@
               subscriptSizing="dynamic">
               <mat-label i18n>Description</mat-label>
               <input
-                [(ngModel)]="desc.value"
-                [maxlength]="80"
+                [value]="desc.value"
+                (input)="desc.value = $any($event.target).value"
+                maxlength="80"
                 appAutofocus
                 matInput
                 type="text" />
@@ -270,7 +271,8 @@
                     (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
                     [showClearButton]="containerService.selectedContainerSerial() !== ''">
                     <input
-                      [(ngModel)]="containerService.selectedContainerSerial"
+                      [value]="containerService.selectedContainerSerial()"
+                      (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
                       [matAutocomplete]="containerAuto"
                       appAutofocus
                       matInput />
@@ -282,7 +284,8 @@
                   </mat-autocomplete>
                 </mat-form-field>
                 <mat-checkbox
-                  [(ngModel)]="containerService.filterContainersByTokenOwner"
+                  [checked]="containerService.filterContainersByTokenOwner()"
+                  (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
                   [disabled]="!tokenDetails().username"
                   i18n>
                   Filter by token owner
@@ -307,8 +310,8 @@
                   subscriptSizing="dynamic">
                   <mat-label i18n>Select Realms</mat-label>
                   <mat-select
-                    [(ngModel)]="realmService.selectedRealms"
                     [value]="realmService.selectedRealms()"
+                    (selectionChange)="realmService.selectedRealms.set($event.value)"
                     appAutofocus
                     multiple>
                     @for (option of realmService.realmOptions(); track option) {
@@ -343,8 +346,8 @@
                   subscriptSizing="dynamic">
                   <mat-label i18n>Select Token Group</mat-label>
                   <mat-select
-                    [(ngModel)]="selectedTokengroup"
                     [value]="selectedTokengroup()"
+                    (selectionChange)="selectedTokengroup.set($event.value)"
                     appAutofocus
                     multiple>
                     @for (option of tokengroupOptions(); track option) {
@@ -425,8 +428,9 @@
                   class="input-width-m description height-136"
                   subscriptSizing="dynamic">
                   <textarea
-                    [(ngModel)]="element.value"
-                    [maxlength]="80"
+                    [value]="element.value"
+                    (input)="element.value = $any($event.target).value"
+                    maxlength="80"
                     i18n-placeholder
                     matInput
                     placeholder="Enter description"
@@ -449,7 +453,8 @@
                   class="input-width-m height-52"
                   subscriptSizing="dynamic">
                   <input
-                    [(ngModel)]="element.value"
+                    [value]="element.value"
+                    (input)="element.value = $any($event.target).value"
                     appAutofocus
                     matInput
                     type="number" />
@@ -459,7 +464,8 @@
                   class="input-width-m"
                   subscriptSizing="dynamic">
                   <textarea
-                    [(ngModel)]="element.value"
+                    [value]="element.value"
+                    (input)="element.value = $any($event.target).value"
                     appAutofocus
                     matInput
                     rows="1"></textarea>

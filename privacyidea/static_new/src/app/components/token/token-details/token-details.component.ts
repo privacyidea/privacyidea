@@ -28,7 +28,6 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
@@ -57,6 +56,7 @@ import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -148,11 +148,10 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     MatTable,
     NgClass,
     NgTemplateOutlet,
-    FormsModule,
     MatInput,
     MatFormFieldModule,
     MatSelectModule,
-    ReactiveFormsModule,
+    MatCheckbox,
     MatIconButton,
     TokenDetailsUserComponent,
     MatAutocomplete,
