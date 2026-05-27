@@ -42,11 +42,11 @@ export class MachineResolverLdapTabComponent implements OnInit {
     data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };
     return data;
   });
-  readonly onNewData = output<MachineResolverData>();
-  readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
+  readonly newData = output<MachineResolverData>();
+  readonly newValidator = output<(data: MachineResolverData) => boolean>();
 
   ngOnInit(): void {
-    this.onNewValidator.emit(this.isValid.bind(this));
+    this.newValidator.emit(this.isValid.bind(this));
   }
 
   updateData(
@@ -55,8 +55,8 @@ export class MachineResolverLdapTabComponent implements OnInit {
       | { patch?: Partial<LdapMachineResolverData>; remove: (keyof LdapMachineResolverData)[] }
       | Partial<LdapMachineResolverData>
   ) {
-    let patch: Partial<LdapMachineResolverData> = {};
-    let remove: (keyof LdapMachineResolverData)[] = [];
+    let patch: Partial<LdapMachineResolverData>;
+    let remove: (keyof LdapMachineResolverData)[];
     if ("remove" in args || "patch" in args) {
       const complexArgs = args as {
         patch?: Partial<LdapMachineResolverData>;
@@ -66,6 +66,7 @@ export class MachineResolverLdapTabComponent implements OnInit {
       remove = complexArgs.remove || [];
     } else {
       patch = args as Partial<LdapMachineResolverData>;
+      remove = [];
     }
     const newData = { ...this.machineResolverData(), ...patch, type: "ldap" };
     if (remove.length > 0) {
@@ -73,7 +74,7 @@ export class MachineResolverLdapTabComponent implements OnInit {
         delete newData[key];
       });
     }
-    this.onNewData.emit(newData);
+    this.newData.emit(newData);
   }
   updateTlsVerify($event: boolean) {
     this.updateData({ patch: { TLS_VERIFY: $event, TLS_CA_FILE: undefined }, remove: ["TLS_CA_FILE"] });

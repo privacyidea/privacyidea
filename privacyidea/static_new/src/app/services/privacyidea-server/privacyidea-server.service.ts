@@ -49,7 +49,7 @@ export interface PrivacyideaServerServiceInterface {
 
   deletePrivacyideaServer(identifier: string): Promise<void>;
 
-  testPrivacyideaServer(params: any): Promise<boolean>;
+  testPrivacyideaServer(params: PrivacyideaServer): Promise<boolean>;
 }
 
 @Injectable()
@@ -95,7 +95,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
 
   async postPrivacyideaServer(server: PrivacyideaServer): Promise<void> {
     const url = `${this.privacyideaServerBaseUrl}${encodeURIComponent(server.identifier)}`;
-    const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<boolean>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
@@ -110,7 +110,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   }
 
   async deletePrivacyideaServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(
+    const request = this.http.delete<PiResponse<boolean>>(
       `${this.privacyideaServerBaseUrl}${encodeURIComponent(identifier)}`,
       {
         headers: this.authService.getHeaders()
@@ -128,7 +128,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
       });
   }
 
-  async testPrivacyideaServer(params: any): Promise<boolean> {
+  async testPrivacyideaServer(params: PrivacyideaServer): Promise<boolean> {
     const url = `${this.privacyideaServerBaseUrl}test_request`;
     const request = this.http.post<PiResponse<boolean>>(url, params, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)

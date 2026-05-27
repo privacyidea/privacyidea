@@ -26,7 +26,7 @@ export interface EnrollmentResponse<D extends EnrollmentResponseDetail = Enrollm
   detail: D;
   result: { status: boolean };
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface EnrollmentResponseDetail {
@@ -43,7 +43,7 @@ export interface EnrollmentResponseDetail {
   tiqrenroll?: EnrollmentUrl;
   verify?: { message: string };
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface EnrollmentUrl {

@@ -340,7 +340,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

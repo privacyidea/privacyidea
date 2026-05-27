@@ -36,11 +36,11 @@ export class MachineResolverHostsTabComponent implements OnInit {
   readonly hostsData = linkedSignal<HostsMachineResolverData>(
     () => this.machineResolverData() as HostsMachineResolverData
   );
-  readonly onNewData = output<MachineResolverData>();
-  readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
+  readonly newData = output<MachineResolverData>();
+  readonly newValidator = output<(data: MachineResolverData) => boolean>();
 
   ngOnInit(): void {
-    this.onNewValidator.emit(this.isValid.bind(this));
+    this.newValidator.emit(this.isValid.bind(this));
   }
 
   updateData(
@@ -49,8 +49,8 @@ export class MachineResolverHostsTabComponent implements OnInit {
       | { patch?: Partial<HostsMachineResolverData>; remove: (keyof HostsMachineResolverData)[] }
       | Partial<HostsMachineResolverData>
   ) {
-    let patch: Partial<HostsMachineResolverData> = {};
-    let remove: (keyof HostsMachineResolverData)[] = [];
+    let patch: Partial<HostsMachineResolverData>;
+    let remove: (keyof HostsMachineResolverData)[];
     if ("remove" in args || "patch" in args) {
       const complexArgs = args as {
         patch?: Partial<HostsMachineResolverData>;
@@ -60,6 +60,7 @@ export class MachineResolverHostsTabComponent implements OnInit {
       remove = complexArgs.remove || [];
     } else {
       patch = args as Partial<HostsMachineResolverData>;
+      remove = [];
     }
     const newData = { ...this.machineResolverData(), ...patch, type: "hosts" };
     if (remove.length > 0) {
@@ -67,7 +68,7 @@ export class MachineResolverHostsTabComponent implements OnInit {
         delete newData[key];
       });
     }
-    this.onNewData.emit(newData);
+    this.newData.emit(newData);
   }
 
   isValid(data: MachineResolverData): boolean {

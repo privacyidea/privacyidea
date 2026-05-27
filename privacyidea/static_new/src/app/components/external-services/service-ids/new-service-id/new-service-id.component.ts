@@ -138,7 +138,7 @@ export class NewServiceIdComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
