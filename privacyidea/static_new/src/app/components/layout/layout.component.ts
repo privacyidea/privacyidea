@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, effect, inject, Renderer2, signal } from "@angular/core";
+import { Component, DOCUMENT, effect, inject, Renderer2, signal, OnInit, OnDestroy } from "@angular/core";
 
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
@@ -40,7 +40,7 @@ import { NavigationComponent } from "./navigation/navigation.component";
   ],
   styleUrl: "./layout.component.scss"
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit, OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly loadingService: LoadingServiceInterface = inject(LoadingService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

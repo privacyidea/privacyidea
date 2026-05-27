@@ -137,7 +137,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true");
       expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false");
       // Allow enable / disable
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -157,7 +157,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })).toBe("highlight-warning");
       expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false");
       // Allow reset failcount
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",

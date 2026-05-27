@@ -52,7 +52,7 @@ export class UserDetailsEditComponent {
   protected newUserData: WritableSignal<EditUserData> = linkedSignal(() => {
     const attributes = this.resolverService.userAttributes();
     const previousData = this.lastUserData() || this.initialUserData();
-    let newData: EditUserData = { username: previousData?.username || "" };
+    const newData: EditUserData = { username: previousData?.username || "" };
     for (const attribute of attributes) {
       // Preserve existing value for attributes that remain, else initialize with empty string
       newData[attribute] = previousData?.[attribute] ?? "";

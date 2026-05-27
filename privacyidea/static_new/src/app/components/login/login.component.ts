@@ -166,7 +166,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     const isChallengeResponse = this.showOtpField();
     const password = isChallengeResponse ? this.otp() : this.password();
 
-    let params: any = { username, password };
+    const params: any = { username, password };
     if (this.realm()) {
       params.realm = this.realm();
     }

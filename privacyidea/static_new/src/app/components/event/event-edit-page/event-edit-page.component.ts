@@ -262,7 +262,7 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
   }
 
   getSaveParameters(): Record<string, any> {
-    let eventParams = deepCopy(this.editEvent()) as Record<string, any>;
+    const eventParams = deepCopy(this.editEvent()) as Record<string, any>;
     for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
       eventParams["option." + optionKey] = optionValue;
     }
@@ -276,7 +276,7 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
 
   saveEvent(): Promise<boolean> {
     return new Promise((resolve) => {
-      let eventParams = this.getSaveParameters();
+      const eventParams = this.getSaveParameters();
       if (this.isNewEvent()) {
         delete eventParams["id"];
       }

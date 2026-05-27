@@ -27,33 +27,23 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { lastValueFrom } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
-export type PolicyActionDetail<T extends string | number = string | number> = {
+export interface PolicyActionDetail<T extends string | number = string | number> {
   desc: string;
   type: ActionType;
   multiple?: boolean;
   group?: string;
   mainmenu?: string[];
   value?: T[];
-};
+}
 
-export type ScopedPolicyActions = {
-  [scopeName: string]: {
-    [actionName: string]: PolicyActionDetail;
-  };
-};
+export type ScopedPolicyActions = Record<string, Record<string, PolicyActionDetail>>;
 
-export type PolicyActionGroups = {
-  [scopeName: string]: {
-    [group: string]: {
-      [actionName: string]: PolicyActionDetail;
-    };
-  };
-};
+export type PolicyActionGroups = Record<string, Record<string, Record<string, PolicyActionDetail>>>;
 
 export type PoliciesList = PolicyDetail[];
 
-export type PolicyDetail = {
-  action: { [actionName: string]: string | boolean } | null;
+export interface PolicyDetail {
+  action: Record<string, string | boolean> | null;
   active: boolean;
   adminrealm: string[];
   adminuser: string[];
@@ -71,7 +61,7 @@ export type PolicyDetail = {
   user: string[];
   user_agents: string[];
   user_case_insensitive: boolean;
-};
+}
 
 export type AdditionalCondition = [
   SectionOptionKey,
@@ -167,7 +157,7 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
 export interface PolicyServiceInterface {
   readonly isEditMode: Signal<boolean>;
   readonly policyActions: Signal<ScopedPolicyActions>;
-  readonly allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }>;
+  readonly allPolicyActionsFlat: Signal<Record<string, PolicyActionDetail>>;
   readonly allPolicyScopes: Signal<string[]>;
   readonly policyActionsByGroup: Signal<PolicyActionGroups>;
   readonly allPolicies: Signal<PolicyDetail[]>;
@@ -292,7 +282,7 @@ export class PolicyService implements PolicyServiceInterface {
   });
   allPolicyActionsFlat = computed(() => {
     const policyActions = this.policyActions();
-    const flat: { [actionName: string]: PolicyActionDetail } = {};
+    const flat: Record<string, PolicyActionDetail> = {};
     for (const scope in policyActions) {
       const actions = policyActions[scope];
       for (const actionName in actions) {

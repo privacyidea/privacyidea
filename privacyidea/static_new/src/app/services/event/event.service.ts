@@ -29,7 +29,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 
-export type EventHandler = {
+export interface EventHandler {
   id: number | null;
   name: string;
   active: boolean;
@@ -40,7 +40,7 @@ export type EventHandler = {
   action: string;
   options: Record<string, any> | null;
   conditions: Record<string, any>;
-};
+}
 
 export const EMPTY_EVENT: EventHandler = {
   id: null,
@@ -55,14 +55,14 @@ export const EMPTY_EVENT: EventHandler = {
   conditions: {}
 };
 
-export type EventCondition = {
+export interface EventCondition {
   desc: string;
   type: string;
   group?: string;
   value?: any[];
-};
+}
 
-export type ActionOptionDetails = {
+export interface ActionOptionDetails {
   type?: string;
   desc?: string;
   description?: string;
@@ -70,7 +70,7 @@ export type ActionOptionDetails = {
   value?: any[];
   visibleIf?: string;
   visibleValue?: any;
-};
+}
 
 export type ActionOptions = Record<string, ActionOptionDetails>;
 
@@ -83,9 +83,9 @@ export interface EventServiceInterface {
 
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined>;
 
-  enableEvent(eventId: number | null): Promise<Object | undefined>;
+  enableEvent(eventId: number | null): Promise<object | undefined>;
 
-  disableEvent(eventId: number | null): Promise<Object | undefined>;
+  disableEvent(eventId: number | null): Promise<object | undefined>;
 
   deleteEvent(eventId: number): Observable<PiResponse<number, any>>;
 
@@ -149,7 +149,7 @@ export class EventService implements EventServiceInterface {
 
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();
-    let params = { ...event } as any;
+    const params = { ...event } as any;
     if (params.id == null) {
       delete params.id;
     }

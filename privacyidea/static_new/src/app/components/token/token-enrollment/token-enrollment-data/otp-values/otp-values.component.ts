@@ -34,7 +34,7 @@ import { MatIcon } from "@angular/material/icon";
   styleUrl: "./otp-values.component.scss"
 })
 export class OtpValuesComponent {
-  @Input() otpValues!: Array<string>;
+  @Input() otpValues!: string[];
   protected readonly Object = Object;
 
   printOtps(): void {

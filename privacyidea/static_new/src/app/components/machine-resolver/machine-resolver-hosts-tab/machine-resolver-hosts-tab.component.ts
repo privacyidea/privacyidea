@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
+import { Component, input, linkedSignal, output, ViewEncapsulation, OnInit } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
@@ -30,7 +30,7 @@ import { HostsMachineResolverData, MachineResolverData } from "@services/machine
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })
-export class MachineResolverHostsTabComponent {
+export class MachineResolverHostsTabComponent implements OnInit {
   readonly isEditMode = input.required<boolean>();
   readonly machineResolverData = input.required<MachineResolverData>();
   readonly hostsData = linkedSignal<HostsMachineResolverData>(

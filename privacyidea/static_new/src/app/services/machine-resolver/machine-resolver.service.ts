@@ -26,9 +26,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-export type MachineResolvers = {
-  [key: string]: MachineResolver;
-};
+export type MachineResolvers = Record<string, MachineResolver>;
 
 export interface MachineResolverData {
   resolver: string;

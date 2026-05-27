@@ -26,11 +26,11 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatDivider } from "@angular/material/list";
 
-export type ApiKeyData = {
+export interface ApiKeyData {
   apiId: string;
   apiKey: string;
   generateKey: boolean;
-};
+}
 
 @Component({
   selector: "app-yubikey-config",

@@ -42,13 +42,13 @@ export class ContainerRegistrationConfigComponent {
   @Input() passphrasePrompt = signal("");
   @Input() passphraseResponse = signal("");
   @Input() userStorePassphrase = signal(false);
-  @Input() containerHasOwner: boolean = false;
+  @Input() containerHasOwner = false;
   @Output() validInputChange = new EventEmitter<boolean>();
 
-  defaultPrompt: string = "Please enter your user store passphrase.";
+  defaultPrompt = "Please enter your user store passphrase.";
 
-  showPassphrase: boolean = false;
-  showRepeatPassphrase: boolean = false;
+  showPassphrase = false;
+  showRepeatPassphrase = false;
   repeatPassphraseResponse = signal("");
 
   promptRequired = computed(() => this.userStorePassphrase() || this.passphraseResponse());

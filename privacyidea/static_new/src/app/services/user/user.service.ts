@@ -446,7 +446,7 @@ export class UserService implements UserServiceInterface {
   allUsernames = computed<string[]>(() => this.users().map((user) => user.username));
 
   selectionFilteredUsers = computed<UserData[]>(() => {
-    let userFilter = this.selectionFilter();
+    const userFilter = this.selectionFilter();
     if (typeof userFilter !== "string" || userFilter.trim() === "") {
       return this.users();
     }

@@ -43,7 +43,7 @@
   @for (optionName of Object.keys(actionOptions()); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0">
-        @if (actionOptions()[optionName].type == "bool") {
+        @if (actionOptions()[optionName].type === "bool") {
           <mat-checkbox
             class="margin-0"
             [checked]="!!selectedOptions()[optionName]"

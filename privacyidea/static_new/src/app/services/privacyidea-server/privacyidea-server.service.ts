@@ -39,9 +39,7 @@ export interface PrivacyideaServer {
 
 export type RemoteServer = PrivacyideaServer;
 
-export type PrivacyideaServers = {
-  [key: string]: PrivacyideaServer;
-};
+export type PrivacyideaServers = Record<string, PrivacyideaServer>;
 
 export interface PrivacyideaServerServiceInterface {
   remoteServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined>;

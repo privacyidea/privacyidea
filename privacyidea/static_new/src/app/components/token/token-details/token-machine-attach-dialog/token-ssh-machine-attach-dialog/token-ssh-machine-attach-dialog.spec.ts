@@ -29,12 +29,12 @@ import { MachineService } from "@services/machine/machine.service";
 import { UserService } from "@services/user/user.service";
 import { MockApplicationService, MockMachineService, MockUserService } from "@testing/mock-services";
 
-type TestMachine = {
+interface TestMachine {
   id: number;
   hostname: string[];
   ip: string;
   resolver_name: string;
-};
+}
 
 describe("TokenSshMachineAssignDialogComponent", () => {
   let component: TokenSshMachineAssignDialogComponent;

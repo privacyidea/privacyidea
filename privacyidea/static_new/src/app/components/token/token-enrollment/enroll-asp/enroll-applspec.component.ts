@@ -62,7 +62,7 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   enrollmentData = input<ApplspecEnrollmentData>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

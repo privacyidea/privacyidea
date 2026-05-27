@@ -35,11 +35,11 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { DialogAction } from "@models/dialog";
 import { Observable } from "rxjs";
 
-export type SshMachineAssignDialogData = {
+export interface SshMachineAssignDialogData {
   tokenSerial: string;
   tokenDetails: Record<string, any>;
   tokenType: string;
-};
+}
 
 @Component({
   selector: "token-ssh-machine-attach-dialog",
@@ -85,7 +85,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   availableApplications = linkedSignal({
     source: this.applicationService.applications,
     computation: (source) => {
-      var availableApps = [];
+      const availableApps = [];
       if (source.ssh.options.sshkey.service_id.value.length > 0) {
         availableApps.push("ssh");
       }

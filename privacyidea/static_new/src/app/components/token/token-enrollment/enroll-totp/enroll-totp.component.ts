@@ -74,7 +74,7 @@ export class EnrollTotpComponent implements OnInit {
   readonly timeStepOptions = [30, 60];
 
   enrollmentData = input<TotpEnrollmentData>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

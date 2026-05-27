@@ -28,7 +28,7 @@ import {
   OnDestroy,
   signal,
   ViewChild,
-  WritableSignal
+  WritableSignal, OnInit
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -72,8 +72,8 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "@services/syste
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, lastValueFrom, take } from "rxjs";
 
-type ResolverWithPriority = { name: string; priority: number | null };
-type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
+interface ResolverWithPriority { name: string; priority: number | null }
+type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
@@ -119,7 +119,7 @@ const columnKeysMap = [
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
 })
-export class RealmTableComponent implements OnDestroy {
+export class RealmTableComponent implements OnDestroy, OnInit {
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -109,7 +109,7 @@ describe("AuthService", () => {
   });
 
   describe("check rights", () => {
-    let jwtData = {
+    const jwtData = {
       username: "alice",
       realm: "defrealm",
       nonce: "fake_nonce",
@@ -180,7 +180,7 @@ describe("AuthService", () => {
   });
 
   describe("checkForceServerGenerateOTPKey", () => {
-    let jwtData = {
+    const jwtData = {
       username: "alice",
       realm: "defrealm",
       nonce: "fake_nonce",

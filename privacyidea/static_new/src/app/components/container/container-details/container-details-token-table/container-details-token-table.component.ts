@@ -27,7 +27,7 @@ import {
   linkedSignal,
   signal,
   ViewChild,
-  WritableSignal
+  WritableSignal, AfterViewInit
 } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -62,11 +62,11 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
-type ContainerDetailTokenData = {
+interface ContainerDetailTokenData {
   token: ContainerDetailToken;
   columnKey: string;
   status: ComparisonStatus;
-};
+}
 
 @Component({
   selector: "app-container-details-token-table",
@@ -91,7 +91,7 @@ type ContainerDetailTokenData = {
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
 })
-export class ContainerDetailsTokenTableComponent {
+export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

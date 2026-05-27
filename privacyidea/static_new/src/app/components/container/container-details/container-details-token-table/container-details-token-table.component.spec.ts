@@ -94,7 +94,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 

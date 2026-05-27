@@ -113,7 +113,7 @@ export class EventConditionListComponent {
   }
 
   availableConditionValues = computed(() => {
-    let valueMap: Record<string, any> = {};
+    const valueMap: Record<string, any> = {};
     for (const [name, details] of Object.entries(this.eventService.moduleConditions())) {
       if (details.type == "multi") {
         valueMap[name] = details.value?.map((valueMap) => valueMap.name) || [];

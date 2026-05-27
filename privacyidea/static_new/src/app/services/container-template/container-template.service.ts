@@ -32,9 +32,7 @@ export interface TemplateTokenType {
   token_types: string[];
 }
 
-export interface TemplateTokenTypes {
-  [key: string]: TemplateTokenType;
-}
+export type TemplateTokenTypes = Record<string, TemplateTokenType>;
 
 export interface ContainerTemplateServiceInterface {
   containerTemplateBaseUrl: string;

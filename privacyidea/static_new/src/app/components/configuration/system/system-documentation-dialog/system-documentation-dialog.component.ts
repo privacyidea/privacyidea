@@ -42,7 +42,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 })
 export class SystemDocumentationDialogComponent implements AfterViewInit {
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
-  documentation: string = "";
+  documentation = "";
 
   constructor(
     public dialogRef: MatDialogRef<SystemDocumentationDialogComponent>,

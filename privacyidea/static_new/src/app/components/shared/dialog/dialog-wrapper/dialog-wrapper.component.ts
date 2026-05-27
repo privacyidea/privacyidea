@@ -19,7 +19,7 @@
 
 import { A11yModule } from "@angular/cdk/a11y";
 import { CommonModule } from "@angular/common";
-import { Component, inject, input, output } from "@angular/core";
+import { Component, inject, input, output, OnInit } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -33,7 +33,7 @@ import { assert } from "@utils/assert";
   imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon, A11yModule],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
-export class DialogWrapperComponent<R = any> {
+export class DialogWrapperComponent<R = any> implements OnInit {
   private readonly dialogRef = inject(MatDialogRef);
 
   title = input.required<string>();

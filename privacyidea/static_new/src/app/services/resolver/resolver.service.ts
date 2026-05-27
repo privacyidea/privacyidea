@@ -36,21 +36,19 @@ export type ResolverType =
   | "entraidresolver"
   | "keycloakresolver";
 
-export type LdapPreset = {
+export interface LdapPreset {
   name: string;
   loginName: string;
   searchFilter: string;
   userInfo: string;
   uidType: string;
-};
+}
 
 export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";
 
-export interface ResolverData {
-  [key: string]: any;
-}
+export type ResolverData = Record<string, any>;
 
-export type Resolvers = { [key: string]: Resolver };
+export type Resolvers = Record<string, Resolver>;
 
 export interface Resolver {
   censor_keys: string[];
@@ -120,7 +118,7 @@ export interface PasswdResolverData extends ResolverData {
 
 export interface HTTPResolverData extends ResolverData {
   base_url?: string;
-  attribute_mapping?: { [key: string]: string };
+  attribute_mapping?: Record<string, string>;
   Editable?: boolean;
   verify_tls?: boolean;
   tls_ca_path?: string;
@@ -274,7 +272,7 @@ export class ResolverService implements ResolverServiceInterface {
   editableResolvers = computed(() => {
     const resolvers = this.resolverResourceValue();
     if (!resolvers) return [];
-    let editableResolverNames: string[] = [];
+    const editableResolverNames: string[] = [];
     for (const [name, resolver] of Object.entries(resolvers)) {
       const editable =
         resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;

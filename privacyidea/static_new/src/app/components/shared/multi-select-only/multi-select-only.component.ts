@@ -35,7 +35,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 export class MultiSelectOnlyComponent<T = string | number> {
   // Inputs
   readonly label = input<string>("");
-  readonly items = input<T[] | Set<T> | Array<T> | undefined>([]);
+  readonly items = input<T[] | Set<T> | T[] | undefined>([]);
   readonly selectedItems = input<T[]>([]);
   readonly tooltipText = input<string>("");
 

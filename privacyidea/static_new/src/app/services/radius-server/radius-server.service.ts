@@ -39,9 +39,7 @@ export interface RadiusServer {
   };
 }
 
-export type RadiusServers = {
-  [key: string]: RadiusServer;
-};
+export type RadiusServers = Record<string, RadiusServer>;
 
 export interface RadiusServerServiceInterface {
   radiusServerResource: HttpResourceRef<PiResponse<RadiusServers> | undefined>;

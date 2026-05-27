@@ -179,7 +179,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
-    let enrollPromise = this._toPromise(enrollResponse);
+    const enrollPromise = this._toPromise(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
@@ -296,7 +296,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.openLastStepDialog(response);
   }
 
-  updateAdditionalFormFields(_event: { [key: string]: any }): void {
+  updateAdditionalFormFields(_event: Record<string, any>): void {
     // Child validation happens in the child components themselves.
     // Treat parent form as always valid; child validity state is managed per-child.
     this.childValid.set(true);

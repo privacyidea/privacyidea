@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Output, signal } from "@angular/core";
+import { Component, EventEmitter, inject, input, Output, signal, OnInit } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -42,7 +42,7 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   templateUrl: "./enroll-sshkey.component.html",
   styleUrl: "./enroll-sshkey.component.scss"
 })
-export class EnrollSshkeyComponent {
+export class EnrollSshkeyComponent implements OnInit {
   disabled = input<boolean>(false);
   protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(SshkeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

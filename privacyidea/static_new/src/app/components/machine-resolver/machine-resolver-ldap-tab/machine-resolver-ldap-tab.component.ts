@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
+import { Component, input, linkedSignal, output, ViewEncapsulation, OnInit } from "@angular/core";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -34,7 +34,7 @@ import { MatButton } from "@angular/material/button";
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })
-export class MachineResolverLdapTabComponent {
+export class MachineResolverLdapTabComponent implements OnInit {
   readonly isEditMode = input.required<boolean>();
   readonly machineResolverData = input.required<MachineResolverData>();
   readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {

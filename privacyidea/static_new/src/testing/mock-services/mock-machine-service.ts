@@ -31,7 +31,7 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockMachineService implements MachineServiceInterface {
   getMachineTokens = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<TokenApplications>([])));
-  baseUrl: string = "environment.mockProxyUrl + '/machine/'";
+  baseUrl = "environment.mockProxyUrl + '/machine/'";
   filterValue: WritableSignal<Record<string, string>> = signal({});
   sshApiFilter: string[] = [];
   offlineApiFilter: string[] = [];

@@ -349,7 +349,7 @@ export class MachineService implements MachineServiceInterface {
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    let params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
+    const params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
     return this.http
       .get(application ? `${this.baseUrl}authitem/${encodeURIComponent(application)}` : `${this.baseUrl}authitem`, {
         headers,

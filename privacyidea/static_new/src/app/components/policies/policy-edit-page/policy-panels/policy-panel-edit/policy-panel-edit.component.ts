@@ -93,7 +93,7 @@ export class PolicyPanelEditComponent {
     this.onPolicyEdit.emit(edits);
   }
 
-  public updateActions(actions: { [actionName: string]: any }): void {
+  public updateActions(actions: Record<string, any>): void {
     this.addPolicyEdit({ action: actions });
   }
 

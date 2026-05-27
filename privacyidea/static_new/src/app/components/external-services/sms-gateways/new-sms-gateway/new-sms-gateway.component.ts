@@ -52,7 +52,7 @@ import {
   SmsProvider
 } from "@services/sms-gateway/sms-gateway.service";
 
-type KeyValueRow = { key: string; value: string };
+interface KeyValueRow { key: string; value: string }
 
 interface SmsFormModel {
   name: string;
@@ -229,12 +229,12 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     );
   }
 
-  providerEntries(): Array<{ key: string; value: SmsProvider }> {
+  providerEntries(): { key: string; value: SmsProvider }[] {
     const providersObj = this.providers() ?? {};
     return Object.entries(providersObj).map(([key, value]) => ({ key, value }));
   }
 
-  parameterEntries(): Array<{ key: string; value: any }> {
+  parameterEntries(): { key: string; value: any }[] {
     const paramsObj = this.selectedProvider()?.parameters ?? {};
     return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
   }

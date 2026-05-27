@@ -68,7 +68,7 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   enrollmentData = input<RadiusEnrollmentData>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

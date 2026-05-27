@@ -33,7 +33,7 @@ describe("MachineResolverService", () => {
   let authServiceMock: MockAuthService;
   let contentServiceMock: MockContentService;
   let notificationServiceMock: MockNotificationService;
-  let testMachineResolver: MachineResolver = {
+  const testMachineResolver: MachineResolver = {
     resolvername: "test-resolver",
     type: "hosts",
     data: {

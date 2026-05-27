@@ -26,7 +26,7 @@ import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from "@angular
 export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   private resizeObserver!: ResizeObserver;
   private mutationObserver!: MutationObserver;
-  @Input() scrollItemSelector: string = ".scroll-item"; // Default selector, can be overridden
+  @Input() scrollItemSelector = ".scroll-item"; // Default selector, can be overridden
 
   constructor(private el: ElementRef<HTMLElement>) {}
 

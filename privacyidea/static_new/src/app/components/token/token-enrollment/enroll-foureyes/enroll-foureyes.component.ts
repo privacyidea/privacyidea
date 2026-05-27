@@ -61,7 +61,7 @@ export class EnrollFoureyesComponent implements OnInit {
 
   separator = signal<string>("|");
   requiredTokensOfRealms = signal<string[]>([]);
-  tokensByRealm: Map<string, number> = new Map();
+  tokensByRealm = new Map<string, number>();
 
   separatorForm = form(this.separator, (f) => {
     required(f);

@@ -27,9 +27,9 @@ import { DialogAction } from "@models/dialog";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { Observable } from "rxjs";
 
-export type HotpMachineAssignDialogData = {
+export interface HotpMachineAssignDialogData {
   tokenSerial: string;
-};
+}
 
 @Component({
   selector: "token-ssh-machine-attach-dialog",

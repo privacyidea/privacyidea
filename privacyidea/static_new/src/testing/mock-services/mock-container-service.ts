@@ -58,16 +58,16 @@ export class MockContainerService implements ContainerServiceInterface {
   );
   pageSize = signal<number>(10);
   pageIndex = signal<number>(0);
-  containerResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> = new MockHttpResourceRef(
+  containerResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  userContainersResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> =
-    new MockHttpResourceRef(MockPiResponse.fromValue({ containers: [], count: 0 }));
-  containersForTokenTypeResource: MockHttpResourceRef<PiResponse<ContainerDetails> | undefined> =
-    new MockHttpResourceRef(MockPiResponse.fromValue({ containers: [], count: 0 }));
+  userContainersResource =
+    new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(MockPiResponse.fromValue({ containers: [], count: 0 }));
+  containersForTokenTypeResource =
+    new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(MockPiResponse.fromValue({ containers: [], count: 0 }));
   containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
-  containerTypesResource: MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> =
-    new MockHttpResourceRef(MockPiResponse.fromValue<ContainerTypes>(new Map()));
+  containerTypesResource =
+    new MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined>(MockPiResponse.fromValue<ContainerTypes>(new Map()));
   containerTypeOptions: Signal<ContainerType[]> = computed(() => {
     return [
       { containerType: "generic", description: "", token_types: [] } as ContainerType,
@@ -123,8 +123,8 @@ export class MockContainerService implements ContainerServiceInterface {
   stopPolling = jest.fn();
   createContainer = jest.fn();
   startPolling = jest.fn();
-  templatesResource: MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
-    new MockHttpResourceRef(MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] }));
+  templatesResource =
+    new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] }));
   templates: WritableSignal<ContainerTemplate[]> = signal([]);
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));

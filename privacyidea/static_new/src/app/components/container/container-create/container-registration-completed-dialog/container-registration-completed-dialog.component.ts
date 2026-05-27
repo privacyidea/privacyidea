@@ -23,9 +23,9 @@ import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } fr
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
-export type ContainerRegistrationCompletedDialogData = {
+export interface ContainerRegistrationCompletedDialogData {
   containerSerial: string;
-};
+}
 
 @Component({
   selector: "app-container-registration-completed-dialog",

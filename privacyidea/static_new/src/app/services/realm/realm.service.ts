@@ -26,7 +26,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { catchError, Observable, throwError } from "rxjs";
 
 export type AdminRealms = string[];
-export type Realms = { [key: string]: Realm };
+export type Realms = Record<string, Realm>;
 
 export interface Realm {
   default: boolean;
@@ -54,7 +54,7 @@ export interface RealmRow {
   resolversText: string;
 }
 
-export type RealmResolvers = Array<RealmResolver>;
+export type RealmResolvers = RealmResolver[];
 
 export interface RealmResolver {
   name: string;

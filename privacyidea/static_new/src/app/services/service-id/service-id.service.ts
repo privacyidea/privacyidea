@@ -25,9 +25,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-type ServiceIds = {
-  [key: string]: _ServiceId;
-};
+type ServiceIds = Record<string, _ServiceId>;
 
 interface _ServiceId {
   description: string;

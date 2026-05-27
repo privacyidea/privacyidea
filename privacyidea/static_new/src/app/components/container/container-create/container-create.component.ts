@@ -29,7 +29,7 @@ import {
   signal,
   untracked,
   ViewChild,
-  WritableSignal
+  WritableSignal, OnInit, AfterViewInit, OnDestroy
 } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -91,7 +91,7 @@ import { firstValueFrom } from "rxjs";
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
 })
-export class ContainerCreateComponent {
+export class ContainerCreateComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
@@ -300,7 +300,7 @@ export class ContainerCreateComponent {
     this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_DETAILS + serial);
   }
 
-  protected registerContainer(serial: string, regenerate: boolean = false) {
+  protected registerContainer(serial: string, regenerate = false) {
     this.containerService
       .registerContainer({
         container_serial: serial,

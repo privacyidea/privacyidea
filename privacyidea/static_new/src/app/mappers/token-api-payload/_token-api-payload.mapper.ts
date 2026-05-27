@@ -53,7 +53,7 @@ export interface EnrollmentUrl {
   value_b32?: string;
 }
 
-export type TokenEnrollmentData = {
+export interface TokenEnrollmentData {
   type: TokenTypeKey;
   description?: string;
   containerSerial?: string;
@@ -67,7 +67,7 @@ export type TokenEnrollmentData = {
   rollover?: boolean | null;
   verify?: string;
   [key: string]: any; // TODO: remove this when all types are defined
-};
+}
 
 export interface TokenEnrollmentPayload {
   type: TokenTypeKey;

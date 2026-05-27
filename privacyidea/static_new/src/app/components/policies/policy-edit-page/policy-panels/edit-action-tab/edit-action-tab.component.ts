@@ -45,9 +45,7 @@ export class EditActionTabComponent {
 
   readonly policy = input.required<PolicyDetail>();
   readonly policyScopeChange = output<string | undefined>();
-  readonly actionsUpdate = output<{
-    [actionName: string]: any;
-  }>();
+  readonly actionsUpdate = output<Record<string, any>>();
 
   readonly selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
     source: () => ({
@@ -64,7 +62,7 @@ export class EditActionTabComponent {
   });
 
   onActionsChange(updatedActions: { name: string; value: any }[]) {
-    const newActions: { [key: string]: any } = {};
+    const newActions: Record<string, any> = {};
     updatedActions.forEach((action) => {
       newActions[action.name] = action.value;
     });

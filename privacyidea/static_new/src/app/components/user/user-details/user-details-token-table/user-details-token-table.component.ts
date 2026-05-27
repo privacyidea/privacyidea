@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal, AfterViewInit } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -74,7 +74,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
   templateUrl: "./user-details-token-table.component.html",
   styleUrl: "./user-details-token-table.component.scss"
 })
-export class UserDetailsTokenTableComponent {
+export class UserDetailsTokenTableComponent implements AfterViewInit {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

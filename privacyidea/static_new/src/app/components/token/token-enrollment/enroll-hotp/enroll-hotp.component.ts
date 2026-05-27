@@ -71,7 +71,7 @@ export class EnrollHotpComponent implements OnInit {
   ];
 
   enrollmentData = input<HotpEnrollmentData | null>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: HotpEnrollmentData;

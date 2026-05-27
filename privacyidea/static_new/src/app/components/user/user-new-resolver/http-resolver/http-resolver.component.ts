@@ -41,11 +41,11 @@ import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { HttpConfigComponent, HttpConfigModel } from "./http-config/http-config.component";
 import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute/http-groups-attribute.component";
 
-export type AttributeMappingRow = {
+export interface AttributeMappingRow {
   privacyideaAttr: string | null;
   userStoreAttr: string;
   isCustom?: boolean;
-};
+}
 
 export interface ClientCertificateModel {
   private_key_file: string;
@@ -203,8 +203,8 @@ export class HttpResolverComponent {
     }
     return this.serverDefaults();
   });
-  isAdvanced: boolean = false;
-  isAuthorizationExpanded: boolean = false;
+  isAdvanced = false;
+  isAuthorizationExpanded = false;
 
   model = signal<HttpResolverModel>(emptyHttpModel());
 
@@ -513,7 +513,7 @@ export class HttpResolverComponent {
       }
       return JSON.stringify(value);
     }
-    return <string>value ?? "";
+    return value as string ?? "";
   }
 
   protected onMappingChanged(): void {

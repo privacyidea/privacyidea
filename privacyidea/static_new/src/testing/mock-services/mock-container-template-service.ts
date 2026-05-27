@@ -29,7 +29,7 @@ import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockContainerTemplateService implements ContainerTemplateServiceInterface {
   // --- Properties ---
-  containerTemplateBaseUrl: string = "/mock/container/templates/";
+  containerTemplateBaseUrl = "/mock/container/templates/";
 
   templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
     undefined

@@ -27,5 +27,5 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
   styleUrl: "./copyable.component.scss"
 })
 export class CopyableComponent {
-  @Input() copyText: string = "";
+  @Input() copyText = "";
 }

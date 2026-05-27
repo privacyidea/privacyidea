@@ -36,7 +36,7 @@ export interface FourEyesEnrollmentData extends TokenEnrollmentData {
 
 export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
   separator: string;
-  "4eyes": { [key: string]: { count: number; selected: boolean } };
+  "4eyes": Record<string, { count: number; selected: boolean }>;
 }
 
 @Injectable({ providedIn: "root" })
@@ -50,7 +50,7 @@ export class FourEyesApiPayloadMapper
       ...basePayload,
       separator: data.separator,
       "4eyes": (data.requiredTokenOfRealms ?? []).reduce(
-        (acc: { [key: string]: { count: number; selected: boolean } }, curr) => {
+        (acc: Record<string, { count: number; selected: boolean }>, curr) => {
           acc[curr.realm] = { count: curr.tokens, selected: true };
           return acc;
         },

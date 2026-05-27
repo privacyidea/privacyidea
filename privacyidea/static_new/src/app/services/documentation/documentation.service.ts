@@ -20,10 +20,10 @@ import { inject, Injectable } from "@angular/core";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { VersioningService } from "@services/version/version.service";
 
-export type ActionDocumentation = {
+export interface ActionDocumentation {
   info: string[];
   notes: string[];
-};
+}
 export interface DocumentationServiceInterface {
   openDocumentation(page: string): Promise<void>;
   getVersionUrl(pageUrl: string): string;

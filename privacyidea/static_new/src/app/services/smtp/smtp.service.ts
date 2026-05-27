@@ -43,9 +43,7 @@ export interface SmtpServer {
   dont_send_on_error: boolean;
 }
 
-export type SmtpServers = {
-  [key: string]: SmtpServer;
-};
+export type SmtpServers = Record<string, SmtpServer>;
 
 export interface SmtpServiceInterface {
   smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined>;

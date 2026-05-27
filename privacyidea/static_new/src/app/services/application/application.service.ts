@@ -24,11 +24,11 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { empty } from "rxjs";
 
-export type Applications = {
+export interface Applications {
   luks: ApplicationLuks;
   offline: ApplicationOffline;
   ssh: ApplicationSsh;
-};
+}
 
 interface ApplicationLuks {
   options: {

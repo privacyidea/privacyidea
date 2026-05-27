@@ -19,9 +19,9 @@
 
 import { WritableSignal, signal } from "@angular/core";
 
-type TestApplicationsShape = {
+interface TestApplicationsShape {
   ssh: { options: { sshkey: { service_id: { value: string[] } } } };
-};
+}
 
 export class MockApplicationService {
   applications: WritableSignal<TestApplicationsShape> = signal({

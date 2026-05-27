@@ -28,7 +28,7 @@ import { MatIcon } from "@angular/material/icon";
   styleUrls: ["./copy-button.component.scss"]
 })
 export class CopyButtonComponent {
-  @Input() copyText: string = "";
+  @Input() copyText = "";
   copied = signal(false);
 
   onCopy(): void {

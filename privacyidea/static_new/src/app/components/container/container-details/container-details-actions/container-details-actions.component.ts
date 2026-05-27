@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, Input, signal } from "@angular/core";
+import { Component, computed, effect, inject, Input, signal, OnDestroy } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -38,7 +38,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
-export type ContainerRegisterFinalizeData = {
+export interface ContainerRegisterFinalizeData {
   response: PiResponse<ContainerRegisterData>;
   registerContainer: (
     userStorePW?: boolean,
@@ -48,7 +48,7 @@ export type ContainerRegisterFinalizeData = {
     regenerate?: boolean
   ) => void;
   rollover: boolean;
-};
+}
 
 @Component({
   selector: "app-container-details-actions",
@@ -56,7 +56,7 @@ export type ContainerRegisterFinalizeData = {
   imports: [MatButton, MatIcon, MatDivider],
   styleUrl: "./container-details-actions.component.scss"
 })
-export class ContainerDetailsActionsComponent {
+export class ContainerDetailsActionsComponent implements OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -68,9 +68,9 @@ export class ContainerDetailsActionsComponent {
   @Input() containerSerial!: string;
   @Input() containerType!: string;
 
-  passphrasePrompt: string = "";
-  passphraseResponse: string = "";
-  userStorePW: boolean = false;
+  passphrasePrompt = "";
+  passphraseResponse = "";
+  userStorePW = false;
   dialogData = signal<ContainerRegisterFinalizeData | undefined>(undefined);
   registrationState = computed(
     () => this.containerService.containerDetails()?.containers[0]?.info?.registration_state ?? ""
@@ -163,7 +163,7 @@ export class ContainerDetailsActionsComponent {
     passphrasePrompt?: string,
     passphraseResponse?: string,
     rollover?: boolean,
-    regenerate: boolean = false
+    regenerate = false
   ) {
     this.userStorePW = userStorePW ?? this.userStorePW;
     this.passphrasePrompt = passphrasePrompt ?? this.passphrasePrompt;

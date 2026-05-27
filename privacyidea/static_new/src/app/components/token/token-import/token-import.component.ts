@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
+import { Component, computed, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild, OnInit, AfterViewInit } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -47,7 +47,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatError
   ]
 })
-export class TokenImportComponent implements OnDestroy {
+export class TokenImportComponent implements OnDestroy, OnInit, AfterViewInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

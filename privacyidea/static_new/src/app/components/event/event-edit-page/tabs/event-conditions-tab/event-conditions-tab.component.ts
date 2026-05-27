@@ -83,7 +83,7 @@ export class EventConditionsTabComponent {
     computation: ({ available, selected, search }) => {
       // TODO: Can we simplify this logic?
       // let remaining = deepCopy(available);
-      let remaining: Record<string, any> = {};
+      const remaining: Record<string, any> = {};
       for (const [groupName, condition] of Object.entries(available)) {
         remaining[groupName] = {};
         for (const conditionName of Object.keys(condition)) {

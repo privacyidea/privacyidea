@@ -29,14 +29,14 @@ import { MatListModule } from "@angular/material/list";
   styleUrl: "./view-template-tokens.component.scss"
 })
 export class ViewTemplateTokensComponent {
-  readonly templateTokens = input.required<Array<any> | undefined>();
+  readonly templateTokens = input.required<any[] | undefined>();
 
   isObject(value: any): boolean {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
 
-  asObject(value: any): Object {
-    return value as Object;
+  asObject(value: any): object {
+    return value as object;
   }
 
   isValidValue(val: any): boolean {

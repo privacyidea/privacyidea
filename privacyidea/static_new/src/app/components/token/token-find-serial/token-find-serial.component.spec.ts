@@ -83,7 +83,7 @@ describe("TokenGetSerialComponent", () => {
 
     (tokenServiceMock as any).getSerial = jest.fn();
     confirmClosed$ = new Subject<boolean | GetSerialResultDialogReturn>();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed$);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     fixture.detectChanges();

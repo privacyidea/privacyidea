@@ -27,7 +27,7 @@ import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
-export type SelectableAction = { label: string; actionName: string; scope: string; detail: PolicyActionDetail };
+export interface SelectableAction { label: string; actionName: string; scope: string; detail: PolicyActionDetail }
 
 @Component({
   selector: "app-policy-action-item-new",
