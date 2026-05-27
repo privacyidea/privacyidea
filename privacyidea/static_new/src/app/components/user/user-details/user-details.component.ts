@@ -173,6 +173,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   deletableAttributes = this.userService.deletableAttributes;
   keyOptions = this.userService.keyOptions;
   hasWildcardKey = this.userService.hasWildcardKey;
+  expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
   addValueInput = signal<string>("");
   selectedKey = signal<string | null>(null);
@@ -273,6 +274,20 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+  }
+
+  isExpanded(key: string): boolean {
+    return this.expandedKeys().has(key);
+  }
+
+  toggleExpanded(key: string): void {
+    const next = new Set(this.expandedKeys());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedKeys.set(next);
   }
 
   switchToCustomKey() {

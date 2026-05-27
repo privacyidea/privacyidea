@@ -489,6 +489,22 @@ describe("UserDetailsComponent", () => {
     });
   });
 
+  it("toggleExpanded flips expansion state per key", () => {
+    expect(component.isExpanded("groups")).toBe(false);
+
+    component.toggleExpanded("groups");
+    expect(component.isExpanded("groups")).toBe(true);
+    expect(component.isExpanded("other")).toBe(false);
+
+    component.toggleExpanded("other");
+    expect(component.isExpanded("groups")).toBe(true);
+    expect(component.isExpanded("other")).toBe(true);
+
+    component.toggleExpanded("groups");
+    expect(component.isExpanded("groups")).toBe(false);
+    expect(component.isExpanded("other")).toBe(true);
+  });
+
   it("should adjust colCount based on breakpoints", () => {
     expect(component.colCount()).toBe(3);
 

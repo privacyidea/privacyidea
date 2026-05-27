@@ -8,9 +8,9 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: calc(var(--global-gap) * 2);
-  padding: var(--three-quarters-global-padding) var(--global-padding);
+  grid-template-columns: repeat(3, calc(100% / 3));
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
@@ -41,8 +41,9 @@
 .user-details-grid,
 .user-details-column {
   display: grid;
-  gap: calc(var(--global-gap) * 0.75) var(--global-gap);
-  padding-right: var(--global-padding);
+  grid-template-columns: max-content;
+  gap: var(--half-global-gap) var(--global-gap);
+  padding-right: var(--half-global-padding);
   border: 0;
   margin-bottom: auto;
 
@@ -53,22 +54,62 @@
 
 .label {
   font-weight: 600;
-  overflow: auto;
-  text-overflow: ellipsis;
   display: block;
-  margin-block: auto;
-  max-width: 240px;
-  height: 28px;
+  min-height: 28px;
+  align-self: start;
+  overflow-wrap: anywhere;
 }
 
 .value {
   grid-column: 2;
-  overflow: auto;
-  text-overflow: ellipsis;
   display: block;
-  margin-block: auto;
-  max-width: 240px;
-  height: 28px;
+  min-height: 28px;
+  align-self: start;
+  overflow-wrap: anywhere;
+}
+
+.value-list {
+  list-style: disc outside;
+  padding: 0;
+  margin: 0;
+}
+
+.value-list li {
+  overflow-wrap: anywhere;
+}
+
+.value-list li + li {
+  margin-top: var(--quarter-global-padding);
+}
+
+.value-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--quarter-global-padding);
+  padding: var(--eighth-global-padding) 6px var(--eighth-global-padding) var(--quarter-global-padding);
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85em;
+  border-radius: var(--border-radius);
+
+  &:hover {
+    background: var(--mat-sys-surface-container-highest);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: var(--eighth-global-padding);
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .label-value-row {
@@ -84,7 +125,7 @@
 
 @media (max-width: 1240px) {
   .user-details {
-    grid-template-columns: repeat(2, auto);
+    grid-template-columns: repeat(2, 50%);
   }
   .custom-user-details {
     grid-template-columns: auto;
