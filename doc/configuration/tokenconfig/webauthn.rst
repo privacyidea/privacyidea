@@ -23,7 +23,7 @@ set to “trusted” through policy for any user.
 What this verifies (and what it does not):
 
 * Certificates must be **PEM-encoded** files. Files that cannot be parsed as
-  X.509 certificates are logged and silently skipped, so a directory with a
+  X.509 certificates are logged and skipped, so a directory with a
   mix of valid and invalid files will still work but trust will be reduced
   accordingly.
 * Only the **leaf attestation certificate** is matched against the configured
