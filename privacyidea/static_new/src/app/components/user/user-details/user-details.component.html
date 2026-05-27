@@ -42,12 +42,12 @@
   </div>
 
   @if (userData().editable) {
-    <div class="flex gap-8 margin-bottom-16">
+    <div class="flex gap-8">
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
         @if (!editMode()) {
           <button
             (click)="editUser()"
-            class="action-button-secondary button-width-s"
+            class="action-button-primary button-width-s"
             mat-stroked-button>
             <mat-icon>edit</mat-icon>
             <span i18n>Edit</span>
@@ -55,7 +55,7 @@
         } @else {
           <button
             (click)="saveEdit()"
-            class="action-button-secondary button-width-s"
+            class="action-button-primary button-width-s"
             mat-stroked-button>
             <mat-icon>save</mat-icon>
             <span i18n>Save</span>
@@ -64,7 +64,6 @@
             (click)="cancelEdit()"
             class="action-button-secondary button-width-s"
             mat-stroked-button>
-            <mat-icon>close</mat-icon>
             <span i18n>Cancel</span>
           </button>
         }
@@ -87,7 +86,7 @@
       [initialUserData]="userData()"
       (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
   } @else {
-    <div class="user-details">
+    <div class="user-details margin-top-16">
       @for (col of detailsColumns(); track $index) {
         <div class="user-details-column">
           @for (item of col; track item.key) {
