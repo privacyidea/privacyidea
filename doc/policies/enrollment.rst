@@ -743,11 +743,12 @@ The action value is parsed as a slash-delimited expression with three parts:
 ``<field>/<regex>/<trailing>``. The leading ``<field>`` selects which field
 of the attestation certificate is checked and must be one of ``subject``,
 ``issuer`` or ``serial``. ``<regex>`` is a Python regular expression that is
-applied via ``re.search`` against that field and therefore may not itself
-contain a ``/``. The trailing ``/`` is required as a terminator. A third path
-component may follow it and is ignored, but the value must contain exactly two
-``/`` separators in total: any additional ``/`` causes the action to be
-rejected. Several examples::
+applied via ``re.search`` against that field. Because ``/`` is the delimiter
+of this expression, the regex itself may not contain a ``/``. A second ``/``
+is required to terminate the regex part; the ``<trailing>`` text after it is
+optional and ignored. The value must contain exactly two ``/`` separators in
+total: any additional ``/`` causes the action to be rejected. Several
+examples::
 
     webauthn_req=subject/.*Yubico.*/
     webauthn_req='issuer/.*FIDO2 CA.*/'
