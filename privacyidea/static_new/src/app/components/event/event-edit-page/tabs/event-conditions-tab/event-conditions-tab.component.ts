@@ -31,10 +31,10 @@ import {
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { EventConditionListComponent } from "@components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EventService } from "@services/event/event.service";
-import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
 
 @Component({
   selector: "app-event-conditions-tab",
@@ -69,9 +69,7 @@ export class EventConditionsTabComponent {
   availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
 
   availableNonEmptyGroups = computed(() =>
-    this.availableGroups().filter(
-      g => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0
-    )
+    this.availableGroups().filter((g) => Object.keys(this.remainingConditionsByGroup()[g] || {}).length > 0)
   );
 
   selectedGroup: WritableSignal<string> = linkedSignal({
@@ -83,9 +81,7 @@ export class EventConditionsTabComponent {
     }
   });
 
-  remainingConditionsInSelectedGroup = computed(() =>
-    this.remainingConditionsByGroup()[this.selectedGroup()] ?? {}
-  );
+  remainingConditionsInSelectedGroup = computed(() => this.remainingConditionsByGroup()[this.selectedGroup()] ?? {});
 
   remainingConditionsByGroup = linkedSignal({
     source: () => ({
@@ -96,7 +92,7 @@ export class EventConditionsTabComponent {
     computation: ({ available, selected, search }) => {
       // TODO: Can we simplify this logic?
       // let remaining = deepCopy(available);
-      let remaining: Record<string, any> = {};
+      const remaining: Record<string, any> = {};
       for (const [groupName, condition] of Object.entries(available)) {
         remaining[groupName] = {};
         for (const conditionName of Object.keys(condition)) {
