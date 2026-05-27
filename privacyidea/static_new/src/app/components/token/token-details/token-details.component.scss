@@ -9,12 +9,14 @@
 
 .details-container {
   @include styles.main-component-style;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-auto-rows: auto;
-  row-gap: 16px;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   box-sizing: border-box;
+
+  .scroll-to-top-fab {
+    align-self: flex-end;
+  }
 
   .mat-mdc-select-value-text {
     font-size: 14px;
@@ -99,26 +101,20 @@
   }
 }
 
-.details-header-area {
-  width: 100%;
+.details-header h3 {
+  font-size: 22px;
+}
+
+.sticky-sentinel {
+  height: 0;
+}
+
+.header-status-actions {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  .details-header h3 {
-    font-size: 22px;
-  }
-
-  .header-status-actions {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border: 1px solid var(--mat-sys-outline-variant);
-    border-radius: var(--border-radius);
-  }
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .description-row {

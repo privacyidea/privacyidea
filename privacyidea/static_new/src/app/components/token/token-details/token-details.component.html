@@ -17,24 +17,32 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Details"
   class="details-container"
   i18n-aria-label>
-  <div class="details-header-area">
-    <app-details-header
-      [serial]="tokenSerial()"
-      entityLabel="Token"
-      [showAuditButton]="false"
-      [auditRoute]="ROUTE_PATHS.AUDIT"
-      auditTooltip="Show token in audit log"
-      (auditClick)="showTokenAuditLog()">
-      <ng-container headerExtra>
-        @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-          <h3 i18n>{{ " (Offline)" }}</h3>
-        }
-      </ng-container>
-    </app-details-header>
+  <app-details-header
+    [serial]="tokenSerial()"
+    entityLabel="Token"
+    [showAuditButton]="false"
+    [auditRoute]="ROUTE_PATHS.AUDIT"
+    auditTooltip="Show token in audit log"
+    (auditClick)="showTokenAuditLog()">
+    <ng-container headerExtra>
+      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+        <h3 i18n>{{ " (Offline)" }}</h3>
+      }
+    </ng-container>
+  </app-details-header>
+
+  <div
+    #stickySentinel
+    class="sticky-sentinel"></div>
+
+  <div
+    #stickyHeader
+    class="sticky-header">
     <div class="header-status-actions">
       @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
       (!tokenIsActive() && authService.actionAllowed("enable"))) {
@@ -148,7 +156,7 @@
   </div>
 
   @if (descriptionRow(); as desc) {
-    <section class="description-row"
+    <section class="description-row margin-bottom-16"
       [class.is-editing]="desc.isEditing()">
       <div class="value-row">
         <div class="value-content">
@@ -189,7 +197,7 @@
     </section>
   }
 
-  <div class="details-grid">
+  <div class="details-grid margin-bottom-16">
     @for (group of tokenDetailDataByGroup(); track group.id) {
       @if (group.rows.length > 0) {
         <section

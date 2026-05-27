@@ -17,13 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
+  Renderer2,
   signal,
   ViewChild,
   WritableSignal
@@ -173,7 +176,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
-export class TokenDetailsComponent implements OnInit, OnDestroy {
+export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
+  private readonly renderer = inject(Renderer2);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
@@ -364,6 +368,11 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
 
   @ViewChild(TokenDetailsUserComponent) userChild?: TokenDetailsUserComponent;
   @ViewChild(TokenDetailsInfoComponent) infoChild?: TokenDetailsInfoComponent;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+
+  private stickyObserver?: IntersectionObserver;
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
@@ -394,8 +403,27 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     return true;
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+
+    this.stickyObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.rootBounds) return;
+        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+        if (shouldFloat) {
+          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        } else {
+          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        }
+      },
+      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
+    );
+    this.stickyObserver.observe(this.stickySentinel.nativeElement);
+  }
+
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+    this.stickyObserver?.disconnect();
   }
 
   resetFailCount(): void {
