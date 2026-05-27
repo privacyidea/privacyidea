@@ -26,7 +26,7 @@ from datetime import timezone, datetime
 from collections.abc import Generator
 
 from flask import g
-from sqlalchemy import func, select, and_
+from sqlalchemy import func, select, and_, false
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
@@ -168,7 +168,8 @@ def find_container_by_serial(serial: str) -> TokenContainerClass:
     return create_container_from_db_object(db_container)
 
 
-def _create_container_query(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+def _create_container_query(user: User = None, serial: str = None, ctype: str | list[str] = None,
+                            token_serial: str = None,
                             realm: str = None, allowed_realms: list[str] = None, template: str = None,
                             description: str = None, assigned: bool = None, resolver: str = None, info: dict = None,
                             last_auth_delta: str = None, last_sync_delta: str = None, state: str = None,
@@ -178,7 +179,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     :param user: container owner, optional
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
-    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type filter, optional. May be either a string (case-insensitive, allows '*' as wildcard)
+        or a list of strings (case-insensitive, exact match; matches any type in the list). An empty list returns
+        no matches.
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*' as
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
@@ -220,7 +223,14 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         else:
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
-    if ctype and ctype.strip("*"):
+    if isinstance(ctype, list):
+        type_values = [t.strip() for t in ctype if t and str(t).strip()]
+        if not type_values:
+            # Caller asked for an empty subset of types — return no rows.
+            stmt = stmt.where(false())
+        else:
+            stmt = stmt.where(func.lower(TokenContainer.type).in_([t.lower() for t in type_values]))
+    elif ctype and ctype.strip("*"):
         if "*" in ctype:
             stmt = stmt.where(TokenContainer.type.ilike(ctype.replace("*", "%")))
         else:
@@ -344,7 +354,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     return stmt
 
 
-def get_all_containers(user: User = None, serial: str = None, ctype: str = None, token_serial: str = None,
+def get_all_containers(user: User = None, serial: str = None, ctype: str | list[str] = None,
+                       token_serial: str = None,
                        realm: str = None, allowed_realms: list[str] = None, sortby: str = 'serial',
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
@@ -359,7 +370,9 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
 
     :param user: container owner, optional
     :param serial: container serial (case-insensitive and allows '*' as wildcard), optional
-    :param ctype: container type (case-insensitive and allows '*' as wildcard), optional
+    :param ctype: container type filter, optional. May be either a string (case-insensitive, allows '*' as wildcard)
+        or a list of strings (case-insensitive, exact match; matches any type in the list). An empty list returns
+        no matches.
     :param token_serial: serial of a token which is assigned to the container (case-insensitive and allows '*'
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional

@@ -854,17 +854,18 @@ describe("ContainerService", () => {
       expect(containerService["compatibleTypes"]()).toEqual(["typeA", "typeB"]);
     });
 
-    it("should filter containersForTokenType by compatibleTypes and return serials", async () => {
+    it("sends the full list of compatible types as a comma-separated `type` param and returns the serials the backend returned", async () => {
       TestBed.tick();
 
-      const req = httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      const req = httpMock.expectOne(
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "typeA,typeB"
+      );
       expect(req.request.method).toBe("GET");
       req.flush(
         MockPiResponse.fromValue({
           containers: [
             { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
-            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] },
-            { serial: "c3", type: "typeC", realms: [], states: [], tokens: [], users: [] }
+            { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] }
           ]
         })
       );
@@ -906,6 +907,14 @@ describe("ContainerService", () => {
 
       expect(containerService.containersForTokenType()).toEqual([]);
     });
+
+    it("does not fire the request when no container type is compatible with the selected token type", () => {
+      compatibleWithSelectedTokenTypeSignal.set("unknown-token-type");
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      expect(containerService.containersForTokenType()).toEqual([]);
+    });
   });
 
   describe("serialFilterParam", () => {
@@ -938,6 +947,13 @@ describe("ContainerService", () => {
   describe("containersForTokenTypeResource loading conditions", () => {
     beforeEach(() => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      // Make sure compatibleTypes() is non-empty so the resource fires by default —
+      // individual tests can override these signals as needed.
+      (containerService as any).containerTypeOptions = signal([
+        { containerType: "smartphone", description: "", token_types: ["push"] },
+        { containerType: "generic", description: "", token_types: ["push", "hotp"] }
+      ]);
+      (containerService as any).compatibleWithSelectedTokenType = signal("push");
     });
 
     it("does not load on containers list route", () => {
@@ -986,7 +1002,7 @@ describe("ContainerService", () => {
       httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
     });
 
-    it("applies type filter when a unique compatible type exists", async () => {
+    it("sends a single compatible type as the `type` param", async () => {
       (containerService as any).containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] }
       ]);
@@ -999,7 +1015,7 @@ describe("ContainerService", () => {
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
     });
 
-    it("does not apply type filter when multiple compatible types exist", async () => {
+    it("sends multiple compatible types as a comma-separated `type` param", async () => {
       (containerService as any).containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] },
         { containerType: "generic", description: "", token_types: ["push"] }
@@ -1008,9 +1024,19 @@ describe("ContainerService", () => {
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       const req = httpMock.expectOne(
-        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && !r.params.has("type")
+        (r) => r.url === "/container/" && r.params.get("no_token") === "1" && r.params.get("type") === "smartphone,generic"
       );
       req.flush(MockPiResponse.fromValue({ containers: [], count: 0 }));
+    });
+
+    it("does not fire the request when no compatible container type exists", () => {
+      (containerService as any).containerTypeOptions = signal([
+        { containerType: "smartphone", description: "", token_types: ["push"] }
+      ]);
+      (containerService as any).compatibleWithSelectedTokenType = signal("certificate");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
     });
 
     it("includes serial filter when selectedContainerSerial is set", async () => {

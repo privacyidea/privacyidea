@@ -336,16 +336,6 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  private readonly uniqueCompatibleType = computed<string | null>(() => {
-    const compatibleTokenType = this.compatibleWithSelectedTokenType();
-    if (!compatibleTokenType) return null;
-
-    const types = this.containerTypeOptions();
-    const compatible = types.filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType));
-
-    return compatible.length === 1 ? String(compatible[0].containerType) : null;
-  });
-
   private readonly compatibleTypes = computed<string[]>(() => {
     const compatibleTokenType = this.compatibleWithSelectedTokenType();
     if (!compatibleTokenType) return [];
@@ -440,9 +430,17 @@ export class ContainerService implements ContainerServiceInterface {
       }
     }
 
+    // Without compatible container types there is nothing to ask the backend for —
+    // either no token type is selected yet or no container supports it.
+    const compatibleTypes = this.compatibleTypes();
+    if (compatibleTypes.length === 0) {
+      return undefined;
+    }
+
     const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
     const params: Record<string, any> = {
       no_token: 1,
+      type: compatibleTypes.join(","),
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
       ...(this.filterContainersByTokenOwner() &&
@@ -451,11 +449,6 @@ export class ContainerService implements ContainerServiceInterface {
           realm: token.user_realm
         })
     };
-
-    const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType) {
-      params["type"] = compatibleType;
-    }
 
     return this.paginatedContainerRequest(params);
   });
@@ -469,11 +462,7 @@ export class ContainerService implements ContainerServiceInterface {
     computation: (source, previous): string[] => {
       if (source.error) return [];
       if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
-      return (
-        source.value.result?.value?.containers
-          .filter((container) => this.compatibleTypes().includes(container.type))
-          .map((container) => container.serial) ?? []
-      );
+      return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
 
