@@ -49,7 +49,7 @@ export class EnrollPushComponent implements OnInit {
 
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PushEnrollmentData;
@@ -57,13 +57,13 @@ export class EnrollPushComponent implements OnInit {
     } | null
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<
+  @Output() enrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse) => Promise<EnrollmentResponse | null>
   >();
 
   ngOnInit(): void {
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
+    this.enrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
   enrollmentArgsGetter = (
