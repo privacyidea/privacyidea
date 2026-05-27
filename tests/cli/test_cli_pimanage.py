@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Paul Lettich <paul.lettich@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import contextlib
 import datetime as dt
 import pathlib
 import tempfile
@@ -72,58 +73,70 @@ class PIManageBackupTestCase(CliTestCase):
         self.assertIn("--keep-db-uri", result.output, result)
 
     @staticmethod
-    def _make_fake_run(live_pi_cfg, backup_uri):
+    def _make_fake_tarfile(live_pi_cfg, backup_uri,
+                           include_cfg=True, include_sql=True, include_enckey=False):
         """
-        Return a ``subprocess.run`` replacement that simulates two tar calls:
+        Return a context manager that replaces ``tarfile.open`` with a fake
+        that simulates:
 
-        1. ``tar -ztf <archive>`` (listing) – returns a two-line stdout with
-           the relative paths of pi.cfg and the SQL dump so that
-           ``backup_restore`` can locate both files inside the archive.
+        1. Iterating members – yields fake members whose ``name`` attributes
+           match the relative paths inside the archive. Which members appear
+           is controlled by ``include_cfg`` / ``include_sql`` /
+           ``include_enckey`` so tests can exercise the missing-file branches.
 
-        2. ``tar -zxf <archive> -C /`` (extraction) – writes the backup
-           content (``backup_uri``) into ``live_pi_cfg`` and creates a
-           placeholder SQL file, mimicking what a real tar extraction would do.
+        2. ``extractall`` – writes the backup content (``backup_uri``) into
+           ``live_pi_cfg`` and creates a placeholder SQL file, mimicking a
+           real extraction.
 
-
-        Note on path handling: ``backup_restore`` reads the tar listing and
-        prepends "/" to each line to reconstruct absolute paths.  We therefore
-        strip the leading "/" from the absolute ``live_pi_cfg`` path so that
-        prepending "/" gives back the original absolute path.
+        The ``backup_restore`` command opens the archive twice (once to list,
+        once to extract), so the fake supports both uses.
         """
         import unittest.mock as mock
 
         sql_file_path = live_pi_cfg.parent / "dbdump-20240101-1200.sql"
-        # Strip the leading "/" so backup_restore's "/{line}" reconstruction
-        # resolves to the same absolute path we started with.
         cfg_rel = str(live_pi_cfg).lstrip("/")
         sql_rel = str(sql_file_path).lstrip("/")
+        enckey_rel = str(live_pi_cfg.parent / "enckey").lstrip("/")
 
-        def fake_run(cmd, **kwargs):
-            r = mock.MagicMock()
-            r.returncode = 0
-            if "-ztf" in cmd:
-                # Simulate `tar -ztf fake.tgz` listing the archive contents.
-                r.stdout = f"{cfg_rel}\n{sql_rel}\n"
-            elif "-zxf" in cmd:
-                # Simulate `tar -zxf fake.tgz -C /` extraction:
-                # overwrite pi.cfg with the content that was stored in the
-                # backup (backup_uri), and create a minimal SQL file.
+        def make_member(name):
+            m = mock.MagicMock()
+            m.name = name
+            return m
+
+        members = []
+        if include_cfg:
+            members.append(make_member(cfg_rel))
+        if include_sql:
+            members.append(make_member(sql_rel))
+        if include_enckey:
+            members.append(make_member(enckey_rel))
+
+        @contextlib.contextmanager
+        def fake_tarfile_open(*args, **kwargs):
+            tf = mock.MagicMock()
+            # Fresh iterator each open() so the listing pass and the
+            # extraction pass both see the same members.
+            tf.__iter__.return_value = iter(list(members))
+
+            def fake_extractall(path="/", **kw):
                 live_pi_cfg.write_text(
                     f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n'
                     'SECRET_KEY = "secret"\n'
                 )
                 sql_file_path.write_text("-- sql dump placeholder\n")
-            return r
 
-        return fake_run
+            tf.extractall = fake_extractall
+            yield tf
+
+        return fake_tarfile_open
 
     def _run_restore_with_mocks(self, live_pi_cfg, backup_uri, live_uri):
         """
         Invoke ``backup restore --keep-db-uri fake.tgz`` with all external
         calls mocked so the test is fully self-contained:
 
-        - ``subprocess.run`` is replaced by :meth:`_make_fake_run` which
-          fakes the two tar invocations (listing + extraction).
+        - ``tarfile.open`` is replaced by :meth:`_make_fake_tarfile` which
+          fakes archive listing (iteration) and extraction.
         - ``shutil.copyfile`` is patched out because for SQLite URIs the
           restore command would try to copy the dump to the database path
           which does not exist in the test environment.
@@ -145,8 +158,8 @@ class PIManageBackupTestCase(CliTestCase):
         )
 
         runner = self.app.test_cli_runner()
-        with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                        side_effect=self._make_fake_run(live_pi_cfg, backup_uri)):
+        with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                        side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
             with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
                 with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
                     return runner.invoke(
@@ -180,6 +193,9 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertNotIn(repr(backup_uri), final_text, final_text)
             # The operator must be told which source was used.
             self.assertIn("using database URI from live config", result.output, result.output)
+            # No enckey member in the fake archive -> the operator must be warned
+            # so they don't silently end up with a backup missing the encryption key.
+            self.assertIn("NO FILE 'enckey' CONTAINED", result.output, result.output)
 
     def test_03_keep_db_uri_live_config_unreadable_falls_back_to_backup(self):
         """
@@ -201,8 +217,8 @@ class PIManageBackupTestCase(CliTestCase):
             live_pi_cfg.write_text("this is not valid python !!!\n")
 
             runner = self.app.test_cli_runner()
-            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                            side_effect=self._make_fake_run(live_pi_cfg, backup_uri)):
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
                 with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
                     with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
                         result = runner.invoke(
@@ -219,13 +235,115 @@ class PIManageBackupTestCase(CliTestCase):
             # The operator must also be told the backup URI is being used.
             self.assertIn("Using database URI from backup", result.output, result.output)
 
-    def test_04_pimanage_backup_create(self):
-        # TODO: create backup from an SQLite based configuration
-        pass
+    def test_04_missing_config_file_exits(self):
+        """
+        If the archive does not contain a pi.cfg, the restore must abort with
+        exit code 2 and a clear error message – it must NOT fall through to
+        the extraction step.
+        """
+        import unittest.mock as mock
 
-    def test_05_pimanage_backup_restore(self):
-        # TODO: restore backup from a backup file and check consistency
-        pass
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+
+            fake = self._make_fake_tarfile(
+                live_pi_cfg, "sqlite:////backup/data.sqlite",
+                include_cfg=False, include_sql=True,
+            )
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=fake):
+                result = runner.invoke(pi_manage,
+                                       ["backup", "restore", "fake.tgz"])
+
+            self.assertEqual(result.exit_code, 2, result.output)
+            self.assertIn("Missing config file pi.cfg", result.output, result.output)
+            # The fake's extractall would have created the SQL file; ensure we
+            # bailed out before extraction.
+            self.assertFalse((tmp / "dbdump-20240101-1200.sql").exists())
+
+    def test_05_missing_sql_file_exits(self):
+        """
+        If the archive contains pi.cfg but no SQL dump, the restore must abort
+        with exit code 2.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+
+            fake = self._make_fake_tarfile(
+                live_pi_cfg, "sqlite:////backup/data.sqlite",
+                include_cfg=True, include_sql=False,
+            )
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=fake):
+                result = runner.invoke(pi_manage,
+                                       ["backup", "restore", "fake.tgz"])
+
+            self.assertEqual(result.exit_code, 2, result.output)
+            self.assertIn("Missing database dump", result.output, result.output)
+            self.assertFalse((tmp / "dbdump-20240101-1200.sql").exists())
+
+    def test_06_unreadable_archive_exits(self):
+        """
+        If ``tarfile.open`` fails (corrupt archive, missing file, ...) the
+        restore must abort with exit code 2 and surface the underlying error.
+        """
+        import tarfile as _tarfile
+        import unittest.mock as mock
+
+        runner = self.app.test_cli_runner()
+        with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                        side_effect=_tarfile.ReadError("not a gzip file")):
+            result = runner.invoke(pi_manage,
+                                   ["backup", "restore", "fake.tgz"])
+
+        self.assertEqual(result.exit_code, 2, result.output)
+        self.assertIn("Unable to open backup file", result.output, result.output)
+        self.assertIn("not a gzip file", result.output, result.output)
+
+    def test_07_write_mysql_defaults_handles_missing_password(self):
+        """
+        A SQLALCHEMY_DATABASE_URI without a password yields
+        parsed.password is None. _write_mysql_defaults must still produce a
+        valid mysql defaults file (Python 3.12+ ConfigParser requires string
+        values).
+        """
+        import configparser
+        from urllib.parse import urlparse
+        from privacyidea.cli.pimanage.backup import _write_mysql_defaults
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
+            # URI without password — parsed.password is None
+            parsed = urlparse("mysql+pymysql://privacyidea@127.0.0.1/privacyidea_test")
+            self.assertIsNone(parsed.password)
+
+            _write_mysql_defaults(defaults_file, parsed)
+
+            cp = configparser.ConfigParser(interpolation=None)
+            cp.read(defaults_file)
+            self.assertEqual(cp["client"]["user"], "privacyidea")
+            self.assertEqual(cp["client"]["password"], "")
+
+        # Passwords containing '%' must be written verbatim — the default
+        # ConfigParser BasicInterpolation would otherwise reject them.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            defaults_file = pathlib.Path(tmp_dir) / "mysql.cnf"
+            # urlparse keeps percent-encoding raw, so the value entering
+            # ConfigParser literally contains '%'.
+            parsed = urlparse("mysql+pymysql://privacyidea:ab%25cd@127.0.0.1/privacyidea_test")
+            self.assertEqual(parsed.password, "ab%25cd")
+
+            _write_mysql_defaults(defaults_file, parsed)
+
+            cp = configparser.ConfigParser(interpolation=None)
+            cp.read(defaults_file)
+            self.assertEqual(cp["client"]["password"], "ab%25cd")
 
 
 class PIManageRealmTestCase(CliTestCase):
@@ -420,9 +538,9 @@ class PIManageChallengeTestCase(CliTestCase):
 
     def _init_challenges(self):
         # Insert two expired and one still-valid challenge.
-        Challenge(serial='0',validitytime=0).save()
-        Challenge(serial='1',validitytime=0).save()
-        Challenge(serial='2',validitytime=300).save()
+        Challenge(serial='0', validitytime=0).save()
+        Challenge(serial='1', validitytime=0).save()
+        Challenge(serial='2', validitytime=300).save()
 
     def tearDown(self):
         Challenge.query.delete()

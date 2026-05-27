@@ -20,7 +20,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import {
     DAYPASSWORD_HASHLIB,
     DAYPASSWORD_OTP_LENGTH,
@@ -30,7 +29,8 @@ import {
 } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
 
@@ -42,11 +42,12 @@ describe("EnrollDaypasswordComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollDaypasswordComponent, BrowserAnimationsModule],
+      imports: [EnrollDaypasswordComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
@@ -64,16 +65,15 @@ describe("EnrollDaypasswordComponent", () => {
   });
 
   it("Check default values are set correctly on init", () => {
-    expect(component.generateOnServerControl.value).toBe(true);
-    expect(component.generateOnServerControl.disabled).toBe(false);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
-    expect(component.otpLengthControl.value).toBe(6);
-    expect(component.otpLengthControl.disabled).toBe(false);
-    expect(component.hashAlgorithmControl.value).toBe("sha1");
-    expect(component.hashAlgorithmControl.disabled).toBe(false);
-    expect(component.timeStepControl.value).toBe("24h");
-    expect(component.timeStepControl.disabled).toBe(false);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(true);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpLength()).toBe(6);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha1");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.timeStep()).toBe("24h");
+    expect(component.timeStepForm().disabled()).toBe(false);
   });
 
   it("Default values are also set correctly if config contains empty strings", () => {
@@ -86,16 +86,15 @@ describe("EnrollDaypasswordComponent", () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(component.generateOnServerControl.value).toBe(true);
-    expect(component.generateOnServerControl.disabled).toBe(false);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
-    expect(component.otpLengthControl.value).toBe(6);
-    expect(component.otpLengthControl.disabled).toBe(false);
-    expect(component.hashAlgorithmControl.value).toBe("sha1");
-    expect(component.hashAlgorithmControl.disabled).toBe(false);
-    expect(component.timeStepControl.value).toBe("24h");
-    expect(component.timeStepControl.disabled).toBe(false);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(true);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpLength()).toBe(6);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha1");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.timeStep()).toBe("24h");
+    expect(component.timeStepForm().disabled()).toBe(false);
   });
 
   it("Default values from system config are used", () => {
@@ -110,10 +109,10 @@ describe("EnrollDaypasswordComponent", () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    expect(component.hashAlgorithmControl.value).toBe("sha512");
-    expect(component.hashAlgorithmControl.disabled).toBe(false);
-    expect(component.timeStepControl.value).toBe("12h");
-    expect(component.timeStepControl.disabled).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.timeStep()).toBe("12h");
+    expect(component.timeStepForm().disabled()).toBe(false);
   });
 
   it("Uses policy values for hashlib, otplen, and time step over system config defaults", () => {
@@ -132,12 +131,12 @@ describe("EnrollDaypasswordComponent", () => {
     fixture.detectChanges();
 
     function checkPolicyEnforcedValues() {
-      expect(component.hashAlgorithmControl.value).toBe("sha256");
-      expect(component.hashAlgorithmControl.disabled).toBe(true);
-      expect(component.timeStepControl.value).toBe("48h");
-      expect(component.timeStepControl.disabled).toBe(true);
-      expect(component.otpLengthControl.value).toBe(8);
-      expect(component.otpLengthControl.disabled).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha256");
+      expect(component.hashAlgorithmForm().disabled()).toBe(true);
+      expect(component.timeStep()).toBe("48h");
+      expect(component.timeStepForm().disabled()).toBe(true);
+      expect(component.otpLength()).toBe(8);
+      expect(component.otpLengthForm().disabled()).toBe(true);
     }
 
     checkPolicyEnforcedValues();
@@ -162,12 +161,12 @@ describe("EnrollDaypasswordComponent", () => {
         timeStep: "12h",
         generateOnServer: false
       });
-      component.ngOnInit();
-      expect(component.otpKeyFormControl.value).toBe("otp-key-123");
-      expect(component.otpLengthControl.value).toBe(8);
-      expect(component.hashAlgorithmControl.value).toBe("SHA512");
-      expect(component.timeStepControl.value).toBe("12h");
-      expect(component.generateOnServerControl.value).toBe(false);
+      fixture.detectChanges();
+      expect(component.otpKey()).toBe("otp-key-123");
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("SHA512");
+      expect(component.timeStep()).toBe("12h");
+      expect(component.generateOnServer()).toBe(false);
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -179,12 +178,12 @@ describe("EnrollDaypasswordComponent", () => {
         timeStep: undefined,
         generateOnServer: undefined
       });
-      component.ngOnInit();
-      expect(component.otpKeyFormControl.value).toBe("");
-      expect(component.otpLengthControl.value).toBe(6);
-      expect(component.hashAlgorithmControl.value).toBe("sha256");
-      expect(component.timeStepControl.value).toBe("24h");
-      expect(component.generateOnServerControl.value).toBe(true);
+      fixture.detectChanges();
+      expect(component.otpKey()).toBe("");
+      expect(component.otpLength()).toBe(6);
+      expect(component.hashAlgorithm()).toBe("sha256");
+      expect(component.timeStep()).toBe("24h");
+      expect(component.generateOnServer()).toBe(true);
     });
   });
 });

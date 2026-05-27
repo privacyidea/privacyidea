@@ -35,9 +35,11 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MachineService } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenTypeKey } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
   MockAuditService,
@@ -46,9 +48,11 @@ import {
   MockLocalService,
   MockMachineService,
   MockNotificationService,
+  MockPendingChangesService,
   MockRealmService,
   MockTableUtilsService,
   MockTokenService,
+  MockUserService,
   MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -98,6 +102,8 @@ describe("TokenDetailsComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: UserService, useClass: MockUserService },
         { provide: MatDialog, useValue: matDialogMock },
         { provide: Router, useValue: router },
         MockLocalService,
@@ -689,6 +695,8 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: UserService, useClass: MockUserService },
         { provide: MatDialog, useValue: { open: jest.fn() } },
         { provide: Router, useValue: { navigateByUrl: jest.fn().mockResolvedValue(true) } },
         MockLocalService,

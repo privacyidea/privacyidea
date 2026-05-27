@@ -25,13 +25,14 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
+  OnInit,
   Signal,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -43,7 +44,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
@@ -54,7 +55,8 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { filter, map } from "rxjs";
+import { filter, firstValueFrom, map } from "rxjs";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
@@ -77,16 +79,15 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
     NgClass,
     MatPaginator,
     UserDetailsContainerTableComponent,
-    FormsModule,
     MatSelectModule,
     MatTooltip,
     RouterLink,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
 })
-export class UserDetailsComponent {
+export class UserDetailsComponent implements OnInit, OnDestroy {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -96,6 +97,7 @@ export class UserDetailsComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private router = inject(Router);
   private breakpointObserver = inject(BreakpointObserver);
+  private readonly pendingChangesService = inject(PendingChangesService);
 
   private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
   private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
@@ -164,6 +166,7 @@ export class UserDetailsComponent {
   deletableAttributes = this.userService.deletableAttributes;
   keyOptions = this.userService.keyOptions;
   hasWildcardKey = this.userService.hasWildcardKey;
+  expandedKeys = signal<Set<string>>(new Set<string>());
   addKeyInput = signal<string>("");
   addValueInput = signal<string>("");
   selectedKey = signal<string | null>(null);
@@ -224,6 +227,42 @@ export class UserDetailsComponent {
     return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
   });
 
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        !!this.addKeyInput() ||
+        !!this.addValueInput() ||
+        !!this.selectedKey() ||
+        !!this.selectedValue(),
+    );
+    this.pendingChangesService.registerValidChanges(
+      () => {
+        const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+        const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+        return !!key && !!value;
+      },
+    );
+    this.pendingChangesService.registerSave(() => this.addCustomAttribute());
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
+  isExpanded(key: string): boolean {
+    return this.expandedKeys().has(key);
+  }
+
+  toggleExpanded(key: string): void {
+    const next = new Set(this.expandedKeys());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedKeys.set(next);
+  }
+
   switchToCustomKey() {
     this.keyMode.set("input");
     this.selectedKey.set(null);
@@ -234,26 +273,32 @@ export class UserDetailsComponent {
     this.addKeyInput.set("");
   }
 
-  addCustomAttribute() {
+  async addCustomAttribute(): Promise<boolean> {
     const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
     const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
 
-    if (!key || !value) return;
+    if (!key || !value) return false;
 
-    this.userService.setUserAttribute(key, value).subscribe({
-      next: () => {
-        this.userService.userAttributesResource.reload();
-        this.addKeyInput.set("");
-        this.addValueInput.set("");
-        this.selectedKey.set(null);
-        this.selectedValue.set(null);
-      }
-    });
+    try {
+      await firstValueFrom(this.userService.setUserAttribute(key, value));
+      this.userService.userAttributesResource.reload();
+      this.userService.userResource.reload();
+      this.addKeyInput.set("");
+      this.addValueInput.set("");
+      this.selectedKey.set(null);
+      this.selectedValue.set(null);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   deleteCustomAttribute(key: string) {
     this.userService.deleteUserAttribute(key).subscribe({
-      next: () => this.userService.userAttributesResource.reload()
+      next: () => {
+        this.userService.userAttributesResource.reload();
+        this.userService.userResource.reload();
+      }
     });
   }
 
@@ -280,7 +325,7 @@ export class UserDetailsComponent {
   }
 
   onPageEvent(event: PageEvent) {
-    this.tokenService.eventPageSize = event.pageSize;
+    this.tokenService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
     setTimeout(() => {
       this.filterHTMLInputElement.nativeElement.focus();

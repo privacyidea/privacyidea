@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { HostsMachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
 
@@ -28,7 +27,7 @@ describe("MachineResolverHostsTabComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineResolverHostsTabComponent, NoopAnimationsModule]
+      imports: [MachineResolverHostsTabComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(MachineResolverHostsTabComponent);

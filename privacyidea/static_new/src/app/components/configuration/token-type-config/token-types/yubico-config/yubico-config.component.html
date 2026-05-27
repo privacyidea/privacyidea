@@ -41,14 +41,13 @@
         class="input-width-l">
         <mat-label i18n>API Key</mat-label>
         <input
-          [ngModel]="formData()[YUBICO_SECRET]"
-          (ngModelChange)="updateFormData(YUBICO_SECRET, $event)"
-          #apiKeyInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #apiKeyInput
+          [value]="formData()[YUBICO_SECRET]"
+          (input)="updateFormData(YUBICO_SECRET, $any($event.target).value)"
           matInput
           placeholder="API Key"
           required>
-        @if (apiKeyInput.errors?.['required']) {
+        @if (apiKeyInput.validity.valueMissing) {
           <mat-error i18n>API Key is <strong>required</strong></mat-error>
         }
       </mat-form-field>
@@ -58,14 +57,13 @@
         class="input-width-l">
         <mat-label i18n>API Client ID</mat-label>
         <input
-          [ngModel]="formData()[YUBICO_ID]"
-          (ngModelChange)="updateFormData(YUBICO_ID, $event)"
-          #clientIdInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #clientIdInput
+          [value]="formData()[YUBICO_ID]"
+          (input)="updateFormData(YUBICO_ID, $any($event.target).value)"
           matInput
           placeholder="The client ID"
           required>
-        @if (clientIdInput.errors?.['required']) {
+        @if (clientIdInput.validity.valueMissing) {
           <mat-error i18n>API Client ID is <strong>required</strong></mat-error>
         }
       </mat-form-field>
@@ -77,15 +75,14 @@
         class="input-width-xl">
         <mat-label i18n>Yubico URL</mat-label>
         <input
-          [ngModel]="formData()[YUBICO_URL]"
-          (ngModelChange)="updateFormData(YUBICO_URL, $event)"
-          #urlInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #urlInput
+          [value]="formData()[YUBICO_URL]"
+          (input)="updateFormData(YUBICO_URL, $any($event.target).value)"
           matInput
           placeholder="https://api.yubico.com/wsapi/2.0/verify"
           required
           type="url">
-        @if (urlInput.errors?.['required']) {
+        @if (urlInput.validity.valueMissing) {
           <mat-error i18n>Yubico URL is <strong>required</strong></mat-error>
         }
       </mat-form-field>

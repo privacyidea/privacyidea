@@ -185,9 +185,9 @@ export class UserUtilsPanelComponent {
   refreshPage() {
     if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.containersForTokenTypeResource.reload();
       return;
-    } else if (this.contentService.onTokensContainersDetails()) {
+    } else if (this.contentService.onContainersDetails()) {
       this.containerService.containerDetailsResource.reload();
       this.tokenService.tokenResource.reload();
       this.userService.usersResource.reload();
@@ -196,7 +196,7 @@ export class UserUtilsPanelComponent {
       this.userService.usersResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.userContainersResource.reload();
       return;
     }
 
@@ -204,7 +204,7 @@ export class UserUtilsPanelComponent {
       case ROUTE_PATHS.TOKENS:
         this.tokenService.tokenResource.reload();
         break;
-      case ROUTE_PATHS.TOKENS_CONTAINERS:
+      case ROUTE_PATHS.CONTAINERS:
         this.containerService.containerResource.reload();
         break;
       case ROUTE_PATHS.TOKENS_CHALLENGES:
@@ -214,7 +214,7 @@ export class UserUtilsPanelComponent {
         this.machineService.tokenApplicationResource.reload();
         break;
       case ROUTE_PATHS.TOKENS_ENROLLMENT:
-        this.containerService.containerResource.reload();
+        this.containerService.containersForTokenTypeResource.reload();
         this.userService.usersResource.reload();
         break;
       case ROUTE_PATHS.AUDIT:
@@ -290,9 +290,9 @@ export class UserUtilsPanelComponent {
       case ROUTE_PATHS.TOKENS_WIZARD:
         // No additional resources required for the wizard currently.
         break;
-      case ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD:
-      case ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES:
-      case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
+      case ROUTE_PATHS.CONTAINERS_WIZARD:
+      case ROUTE_PATHS.CONTAINERS_TEMPLATES:
+      case ROUTE_PATHS.CONTAINERS_CREATE:
         this.containerTemplateService.templatesResource.reload();
         this.containerTemplateService.templateTokenTypesResource.reload();
         break;

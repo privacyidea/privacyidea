@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
@@ -31,7 +30,7 @@ describe("SmsConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SmsConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(SmsConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -79,17 +78,6 @@ describe("SmsConfigComponent", () => {
 
     expect(component.formData()[SMS_GATEWAY]).toEqual("gateway2");
     expect(component.formData()[SMS_PROVIDER_TIMEOUT]).toEqual(450);
-  });
-
-  it("should call updateFormData with empty value when clearField is called", () => {
-    const initialGateway = "gateway1";
-    fixture.componentRef.setInput("formData", { [SMS_GATEWAY]: initialGateway });
-    fixture.detectChanges();
-    expect(component.formData()[SMS_GATEWAY]).toEqual(initialGateway);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(SMS_GATEWAY);
-    expect(component.updateFormData).toHaveBeenCalledWith(SMS_GATEWAY, "");
   });
 
   it("should handle empty SMS identifier value", () => {

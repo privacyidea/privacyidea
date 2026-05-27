@@ -48,6 +48,7 @@ describe("ServiceIdService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        ServiceIdService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }
@@ -164,6 +165,23 @@ describe("ServiceIdService", () => {
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(service.serviceIdResource.hasValue()).toEqual(false);
+    expect(service.serviceIds()).toEqual([]);
+  });
+
+  it("should reset to empty array when serviceIdResource errors after successful load", async () => {
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    TestBed.tick();
+    let req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+    req.flush(MockPiResponse.fromValue({ svc1: { description: "d", id: 1 } }));
+    await lastValueFrom(of({}));
+    expect(service.serviceIds()).toEqual([{ servicename: "svc1", description: "d", id: 1 }]);
+
+    service.serviceIdResource.reload();
+    TestBed.tick();
+    req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+    req.flush("Error", { status: 500, statusText: "Server Error" });
+    await lastValueFrom(of({}));
+
     expect(service.serviceIds()).toEqual([]);
   });
 });

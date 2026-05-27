@@ -87,9 +87,7 @@ export interface MachineResolverServiceInterface {
   deleteMachineResolver(name: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class MachineResolverService implements MachineResolverServiceInterface {
   readonly allMachineResolverTypes: string[] = ["hosts", "ldap"];
   readonly machineResolverBaseUrl = environment.proxyUrl + "/machineresolver/";

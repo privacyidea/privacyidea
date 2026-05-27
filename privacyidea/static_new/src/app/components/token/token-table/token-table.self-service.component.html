@@ -74,17 +74,16 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.serial">
                   <a
                     attr.aria-label="{{ column.label }} Link"
                     (click)="contentService.tokenSelected(element.serial)">
                     {{ element[column.key] }}
                   </a>
-                  <app-copy-button [copyText]="element.serial" />
-                </div>
+                </app-copyable>
               }
               @case ("container_serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.container_serial">
                   @if (containerService.containerBelongsToUser(element.container_serial)) {
                     <a
                       attr.aria-label="{{ column.label }} Link"
@@ -94,10 +93,7 @@
                   } @else {
                     {{ element[column.key] }}
                   }
-                  @if (element.container_serial !== "") {
-                    <app-copy-button [copyText]="element.container_serial" />
-                  }
-                </div>
+                </app-copyable>
               }
               @case ("active") {
                 @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {

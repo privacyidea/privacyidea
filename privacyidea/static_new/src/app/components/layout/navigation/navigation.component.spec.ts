@@ -34,12 +34,22 @@ import { VersioningService } from "@services/version/version.service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import {
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
+  MockPeriodicTaskService,
+  MockRealmService,
   MockSessionTimerService,
+  MockSystemService,
   MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { RealmService } from "@services/realm/realm.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { EventService } from "@services/event/event.service";
+import { SystemService } from "@services/system/system.service";
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;
@@ -80,6 +90,11 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ConfigService, useClass: MockConfigService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: EventService, useClass: MockEventService },
+        { provide: SystemService, UseClass: MockSystemService },
         MockLocalService
       ]
     })
@@ -260,8 +275,8 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       expect(component.activeSection()).toBe("token");
     });
 
-    it("should detect 'container' for tokens/containers route", () => {
-      contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+    it("should detect 'container' for containers route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       expect(component.activeSection()).toBe("container");
     });
 

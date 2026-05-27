@@ -21,11 +21,12 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { MachineService } from "@services/machine/machine.service";
 import { MachinesComponent } from "./machines.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -41,12 +42,13 @@ describe("MachinesComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachinesComponent, NoopAnimationsModule],
+      imports: [MachinesComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: MachineService, useValue: machineServiceMock }
+        { provide: MachineService, useValue: machineServiceMock },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 

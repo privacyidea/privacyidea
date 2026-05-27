@@ -32,7 +32,7 @@
       <mat-label i18n>System Documentation</mat-label>
       <textarea
         #autosize="cdkTextareaAutosize"
-        [ngModel]="documentation"
+        [value]="documentation"
         cdkAutosizeMaxRows="30"
         cdkAutosizeMinRows="15"
         cdkTextareaAutosize
@@ -41,13 +41,9 @@
         rows="15">
     </textarea>
     </mat-form-field>
-    <div class="flex-row flex-nowrap ali-center">
-    <span i18n>
-    Copy System Documentation:
-      </span>
-      <app-copy-button
-        [copyText]="documentation" />
-    </div>
+    <app-copyable [copyText]="documentation">
+      <span i18n>Copy System Documentation:</span>
+    </app-copyable>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

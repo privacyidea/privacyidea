@@ -15,7 +15,14 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """The serviceid endpoint allows administrators to manage service ID definitions.
+__doc__ = """
+The serviceid REST API manages service ID definitions. Service IDs are
+used to scope SSH key assignments and application-specific passwords;
+see :ref:`serviceids` for the conceptual chapter.
+
+All endpoints require admin authentication. Listing is gated by the
+admin policy action :ref:`policy_serviceid_list`, creation/update by
+:ref:`policy_serviceid_add`, deletion by :ref:`policy_serviceid_delete`.
 """
 from flask import (Blueprint, request)
 from .lib.utils import (send_result)
@@ -42,25 +49,23 @@ serviceid_blueprint = Blueprint('serviceid_blueprint', __name__)
 @log_with(log)
 def set_serviceid_api(name):
     """
-    This call creates a new service ID definition or updates the description
-    of an existing service ID.
+    Create a new service ID definition or update the description of an
+    existing one. The name must be unique.
 
-    Note, that the identifier (name) of the service ID needs to be unique.
+    Requires admin authentication and the policy action
+    :ref:`policy_serviceid_add`.
 
-    :param name: The unique name of the service ID
-    :param description: The description of the service ID definition
-    :return:
+    :param name: path component, the unique name of the service ID.
+    :jsonparam description: free-form description of the service ID.
+    :status 200: database id of the service ID in ``result.value``.
 
     **Example request**:
-
-    To create a new serviceid "serviceA" with a description call:
 
     .. sourcecode:: http
 
        POST /serviceid/serviceA HTTP/1.1
        Host: example.com
        Accept: application/json
-       Content-Length: 26
        Content-Type: application/x-www-form-urlencoded
 
        description=My cool first service
@@ -73,15 +78,14 @@ def set_serviceid_api(name):
        Content-Type: application/json
 
        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-                    "status": true,
-                    "value": 1
-          }
-          "version": "privacyIDEA unknown"
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
        }
-
     """
     param = request.all_data
     description = get_optional(param, "description")
@@ -99,11 +103,17 @@ def set_serviceid_api(name):
 @log_with(log)
 def get_serviceid_api(name=None):
     """
-    This call returns the information for the given service ID.
-    If no name is specified, it returns a list of all defined services.
+    Return service ID definitions. If ``name`` is given, only the matching
+    service ID is returned; otherwise all service IDs are listed.
 
-    :return: a json result with a list of services
+    The result is a dictionary keyed by service ID name; each value carries
+    ``description`` and ``id``.
 
+    Requires admin authentication and the policy action
+    :ref:`policy_serviceid_list`.
+
+    :param name: optional path component selecting a single service ID.
+    :status 200: dict of service IDs in ``result.value``.
 
     **Example request**:
 
@@ -117,22 +127,21 @@ def get_serviceid_api(name=None):
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "service1": {"description": "1st service"},
-              "service2": {"description": "2nd service"}
-              }
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "service1": {"description": "1st service", "id": 1},
+             "service2": {"description": "2nd service", "id": 2}
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     sids = get_serviceids(name=name)
     g.audit_object.log({"success": True})
@@ -150,11 +159,20 @@ def get_serviceid_api(name=None):
 @log_with(log)
 def delete_serviceid_api(name=None):
     """
-    This call deletes the given service ID definition.
+    Delete the service ID with the given name.
 
-    :param name: The name of the service.
+    .. warning::
+       This call does **not** check whether the service ID is still in use
+       by SSH key assignments or application-specific passwords. Removing
+       a service ID that is still referenced will leave those assignments
+       pointing at a missing target.
 
-    :return: a json result with value=1 if deleting the service ID was successful
+    Requires admin authentication and the policy action
+    :ref:`policy_serviceid_delete`.
+
+    :param name: path component, the name of the service ID.
+    :status 200: ``result.value`` is ``1`` on success.
+    :status 404: no service ID with that name exists.
 
     **Example request**:
 
@@ -171,16 +189,15 @@ def delete_serviceid_api(name=None):
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 1
-          },
-          "version": "privacyIDEA unknown"
-        }
-
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     delete_serviceid(name)
     g.audit_object.log({"success": True,

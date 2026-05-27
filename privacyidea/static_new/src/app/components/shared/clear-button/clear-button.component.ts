@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, input, Output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -29,9 +29,13 @@ import { MatTooltip } from "@angular/material/tooltip";
 })
 export class ClearButtonComponent {
   toolTipText = input<string>();
-  @Output() onClick = new EventEmitter<MouseEvent>();
+  disabled = input<boolean>(false);
+  clearButtonClick = output<MouseEvent>();
 
   clearInput(event: MouseEvent): void {
-    this.onClick.emit(event);
+    if (this.disabled()) {
+      return;
+    }
+    this.clearButtonClick.emit(event);
   }
 }

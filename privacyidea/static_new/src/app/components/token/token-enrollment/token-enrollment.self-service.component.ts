@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { FormField } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAdapter } from "@angular/material/core";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS } from "@angular/material/tooltip";
@@ -56,7 +56,7 @@ import {
 @Component({
   selector: "app-token-enrollment-self-service",
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormField,
     MatOption,
     MatInput,

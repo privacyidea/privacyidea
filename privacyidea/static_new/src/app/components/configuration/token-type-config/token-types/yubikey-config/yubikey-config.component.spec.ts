@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { YubikeyConfigComponent } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
 
@@ -30,7 +29,7 @@ describe("YubikeyConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [YubikeyConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(YubikeyConfigComponent);
     fixture.componentRef.setInput("formData", {});

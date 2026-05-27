@@ -19,8 +19,9 @@
 <div class="flex-column">
   @if (!wizard) {
     <mat-checkbox
-      [disabled]="isGenerateOnServerDisabled()"
-      [formControl]="generateOnServerControl"
+      [checked]="generateOnServer()"
+      [disabled]="authService.checkForceServerGenerateOTPKey('applspec') || disabled()"
+      (change)="generateOnServer.set($event.checked)"
       class="server-checkbox"
       i18n>
       Generate the static password on the Server
@@ -33,8 +34,7 @@
         class="input-width-l">
         <mat-label i18n>Application Specific Password</mat-label>
         <input
-          [disabled]="isOtpKeyDisabled()"
-          [formControl]="otpKeyFormControl"
+          [formField]="otpKeyForm"
           i18n-placeholder
           matInput
           placeholder="Enter static password" />
@@ -44,10 +44,9 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Service ID</mat-label>
       <mat-select
+        [value]="serviceId()"
+        (selectionChange)="serviceId.set($event.value)"
         [disabled]="disabled()"
-        [errorStateMatcher]="applspecErrorStateMatcher"
-        [formControl]="serviceIdControl"
-        [value]="serviceIdControl.value"
         required>
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

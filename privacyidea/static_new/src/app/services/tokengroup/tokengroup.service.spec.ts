@@ -45,6 +45,7 @@ describe("TokengroupService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        TokengroupService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }
@@ -136,6 +137,25 @@ describe("TokengroupService", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(service.tokengroups()).toEqual([]);
+    });
+
+    it("should reset to empty array when resource errors after successful load", async () => {
+      contentService.onExternalTokenGroups = signal(true);
+      TestBed.tick();
+
+      let req = httpMock.expectOne((r) => r.url === "/tokengroup/");
+      const tokenGroups = { test: { description: "desc", id: 1 } };
+      req.flush(MockPiResponse.fromValue(tokenGroups));
+      await Promise.resolve();
+      expect(service.tokengroups()).toEqual([{ groupname: "test", description: "desc", id: 1 }]);
+
+      service.tokengroupResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne((r) => r.url === "/tokengroup/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(service.tokengroups()).toEqual([]);

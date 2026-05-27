@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -29,16 +28,16 @@ import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.con
 @Component({
   selector: "app-daypassword-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
   templateUrl: "./daypassword-config.component.html",
   styleUrl: "./daypassword-config.component.scss"
 })
 export class DaypasswordConfigComponent {
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, unknown>>();
+  formDataChange = output<Record<string, unknown>>();
   hashLibs = input.required<string[]>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: unknown): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

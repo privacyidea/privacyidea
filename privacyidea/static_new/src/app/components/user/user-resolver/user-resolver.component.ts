@@ -18,7 +18,6 @@
  **/
 
 import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -49,7 +48,6 @@ const columnKeysMap = [
   selector: "app-user-resolver",
   standalone: true,
   imports: [
-    FormsModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,

@@ -18,10 +18,11 @@
 -->
 <div class="details-header">
   <h3 i18n>Details for {{ entityLabel }}</h3>
-  <div class="flex-row flex-nowrap ali-center">
+  <app-copyable
+    class="flex-row flex-nowrap ali-center"
+    [copyText]="serial">
     <h3 class="token-serial">{{ serial }}</h3>
-    <app-copy-button [copyText]="serial"></app-copy-button>
-  </div>
+  </app-copyable>
   <ng-content select="[headerExtra]"></ng-content>
   @if (showAuditButton) {
     <button
@@ -33,4 +34,3 @@
     </button>
   }
 </div>
-

@@ -1,0 +1,84 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div
+  appScrollToTop
+  class="create-user-layout"
+  aria-label="Create New User"
+  i18n-aria-label>
+  <h3
+    class="heading"
+    i18n>Create New User
+  </h3>
+  <div class="flex-row gap-8">
+    <button
+      (click)="onCancel()"
+      class="action-button-secondary button-width-s"
+      mat-stroked-button>
+      <span i18n>Cancel</span>
+    </button>
+    <button
+      (click)="onSave()"
+      [disabled]="!canSave()"
+      class="action-button-primary button-width-s"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      <span i18n>Create</span>
+    </button>
+  </div>
+
+  <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
+    <mat-form-field class="input-width-l">
+      <mat-label i18n>Resolver</mat-label>
+      <mat-select
+        [value]="resolver()"
+        (selectionChange)="resolver.set($event.value)"
+        required>
+        @for (option of resolverService.editableResolvers(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>
+        <span i18n>Corresponding Realms:</span>
+        {{ correspondingRealms().join(", ") }}
+      </mat-hint>
+      @if (resolverForm().errors().some(e => e.kind === 'required') && resolverForm().touched()) {
+        <mat-error i18n>
+          Resolver is <strong>required</strong>
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="input-width-l">
+      <mat-label i18n>Username</mat-label>
+      <input
+        [formField]="usernameForm"
+        matInput />
+      @if (usernameForm().errors().some(e => e.kind === 'required') && usernameForm().touched()) {
+        <mat-error i18n>
+          Username is <strong>required</strong>
+        </mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  <app-user-details-edit
+    [resolver]="resolver()"
+    (updateData)="editedUserData.set($event)"></app-user-details-edit>
+</div>

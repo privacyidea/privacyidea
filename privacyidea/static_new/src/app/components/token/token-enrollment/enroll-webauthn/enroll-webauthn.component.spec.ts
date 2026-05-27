@@ -20,7 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
@@ -95,7 +94,7 @@ describe("EnrollWebauthnComponent", () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [EnrollWebauthnComponent, NoopAnimationsModule],
+      imports: [EnrollWebauthnComponent],
       providers: [
         provideHttpClient(),
         provideZonelessChangeDetection(),

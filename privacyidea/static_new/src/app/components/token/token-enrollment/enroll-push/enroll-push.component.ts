@@ -18,7 +18,6 @@
  **/
 
 import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogRef } from "@angular/material/dialog";
 import { PiResponse } from "@app/app.component";
 import {
@@ -37,7 +36,7 @@ import { lastValueFrom } from "rxjs";
 @Component({
   selector: "app-enroll-push",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-push.component.html",
   styleUrl: "./enroll-push.component.scss"
 })
@@ -51,9 +50,7 @@ export class EnrollPushComponent implements OnInit {
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PushEnrollmentData;

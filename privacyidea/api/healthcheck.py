@@ -16,18 +16,21 @@
 # SPDX-FileCopyrightText: 2024 Henrik Falk <henrik.falk@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-"""This module is intended to ensure the application can be monitored effectively
-and provide insights into whether the application and its dependencies are operational.
-A primary intention was to create a way for Kubernetes to check on containers.
+"""
+The healthcheck REST API exposes liveness, readiness and resolver
+connectivity probes intended for orchestrators (Kubernetes, Docker
+health checks, monitoring systems).
 
 Endpoints:
     - :http:get:`/healthz/` : Combined health check for liveness and readiness.
     - :http:get:`/healthz/startupz` : Startup check to confirm if the app has started.
     - :http:get:`/healthz/livez` : Liveness check to verify if the app is running.
     - :http:get:`/healthz/readyz` : Readiness check to confirm if the app is ready to serve requests.
-    - :http:get:`/healthz/resolversz` : Resolver check to test the connection to all LDAP and SQL resolvers.
+    - :http:get:`/healthz/resolversz` : Resolver check that tests the connection to all LDAP and SQL resolvers.
 
-The corresponding code is tested in tests/test_api_healthcheck.py.
+The endpoints are anonymous by default; ``/healthz/resolversz`` may be
+restricted to authenticated admins via the
+:ref:`policy_require_auth_for_resolver_details` policy.
 """
 from flask import Blueprint, current_app, g
 
@@ -203,43 +206,50 @@ def readyz():
 @healthz_blueprint.route('/resolversz', methods=['GET'])
 def resolversz():
     """
-    Resolver check endpoint that tests the connection to all resolvers types defined in resolver_types.
-    For now LDAP and SQL resolvers are tested.
+    Test connectivity to every configured LDAP and SQL resolver.
 
-    The endpoint returns a JSON object with the status of each resolver (either "OK"
-    or "fail"). It attempts to establish a connection to each resolver, and if any
-    exception occurs during the check, a 503 status is returned.
+    The endpoint tries to open a connection to each resolver, returning
+    ``OK`` for resolvers that respond and ``fail`` for those that don't.
+    The top-level ``status`` field is ``OK`` if every resolver responded,
+    ``fail`` if any resolver failed, or ``error`` if an unexpected
+    exception aborted the probe.
+
+    By default, this endpoint is anonymous. If the
+    :ref:`policy_require_auth_for_resolver_details` policy is active, an
+    admin auth token is required to see the per-resolver names: an
+    unauthenticated caller still gets the overall ``status``, but the
+    ``ldapresolver`` / ``sqlresolver`` keys are omitted from the response.
 
     :resheader Content-Type: application/json
-    :status 200: All resolvers have been successfully checked.
-    :status 503: Failed to check resolvers or an error occurred.
+    :status 200: probe completed; result in the body.
+    :status 503: an unexpected exception aborted the probe.
 
-   **Example Request**:
+    **Example Request**:
 
-   .. sourcecode:: http
+    .. sourcecode:: http
 
-      GET /healthz/resolversz HTTP/1.1
-      Host: example.com
-      Accept: application/json
+       GET /healthz/resolversz HTTP/1.1
+       Host: example.com
+       Accept: application/json
 
-   **Example Response**:
+    **Example Response**:
 
-   .. sourcecode:: http
+    .. sourcecode:: http
 
-      HTTP/1.1 200 OK
-      Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-      {
-          "status": "ready",
-          "ldapresolver": {
-              "ldapresolver1": "OK",
-              "ldapresolver2": "OK"
-          },
-          "sqlresolver": {
-              "sqlresolver1": "OK",
-              "sqlresolver2": "OK"
-          },
-      }
+       {
+         "status": "OK",
+         "ldapresolver": {
+           "ldapresolver1": "OK",
+           "ldapresolver2": "OK"
+         },
+         "sqlresolver": {
+           "sqlresolver1": "OK",
+           "sqlresolver2": "OK"
+         }
+       }
     """
     result = {}
     resolver_types = ["ldapresolver", "sqlresolver"]

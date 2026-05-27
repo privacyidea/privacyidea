@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, HostListener, inject, OnInit } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
@@ -103,7 +102,7 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [RouterOutlet, FormsModule],
+  imports: [RouterOutlet],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.scss"
 })

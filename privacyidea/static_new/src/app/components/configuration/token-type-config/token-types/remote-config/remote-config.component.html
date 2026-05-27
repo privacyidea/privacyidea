@@ -25,8 +25,8 @@
 
     <div class="flex-row gap-16 ali-center">
       <mat-checkbox
-        [ngModel]="verifySSL()"
-        (ngModelChange)="updateFormData(REMOTE_VERIFY_SSL, $event)"
+        [checked]="verifySSL()"
+        (change)="updateFormData(REMOTE_VERIFY_SSL, $event.checked)"
         i18n>Verify SSL certificate
       </mat-checkbox>
     </div>
@@ -37,14 +37,13 @@
         class="input-width-l">
         <mat-label i18n>Default Remote Server</mat-label>
         <input
-          [ngModel]="formData()[REMOTE_SERVER]"
-          (ngModelChange)="updateFormData(REMOTE_SERVER, $event)"
-          #remoteServerInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #remoteServerInput
+          [value]="formData()[REMOTE_SERVER]"
+          (input)="updateFormData(REMOTE_SERVER, $any($event.target).value)"
           matInput
           placeholder="https://your.other.privacyidea.server"
           required>
-        @if (remoteServerInput.errors?.['required']) {
+        @if (remoteServerInput.validity.valueMissing) {
           <mat-error i18n>Default Remote Server is <strong>required</strong></mat-error>
         }
       </mat-form-field>

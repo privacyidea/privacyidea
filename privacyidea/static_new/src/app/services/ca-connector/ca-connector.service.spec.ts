@@ -47,6 +47,7 @@ describe("CaConnectorService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        CaConnectorService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }
@@ -165,13 +166,13 @@ describe("CaConnectorService", () => {
     await Promise.resolve();
     expect(service.caConnectors()).toEqual(caConnectors);
 
-    // Return previous value for failed response
+    // Return empty array for failed response
     service.caConnectorResource.reload();
     TestBed.tick();
     req = httpMock.expectOne((req) => req.url.includes(service.caConnectorBaseUrl));
     req.flush("Error", { status: 500, statusText: "Unexpected error occurred" });
     await Promise.resolve();
-    expect(service.caConnectors()).toEqual(caConnectors);
+    expect(service.caConnectors()).toEqual([]);
   });
 
   it("should handle error for caConnectorResource", async () => {

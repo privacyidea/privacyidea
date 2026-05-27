@@ -46,9 +46,7 @@ export interface ConfigServiceInterface {
   loadConfig(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class ConfigService implements ConfigServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   http: HttpClient = inject(HttpClient);

@@ -18,7 +18,6 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ScimResolverComponent } from "./scim-resolver.component";
 
 describe("ScimResolverComponent", () => {
@@ -28,7 +27,7 @@ describe("ScimResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ScimResolverComponent, NoopAnimationsModule]
+      imports: [ScimResolverComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ScimResolverComponent);
@@ -41,17 +40,12 @@ describe("ScimResolverComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should expose controls via signal", () => {
-    const controls = component.controls();
-    expect(controls).toEqual(
-      expect.objectContaining({
-        Authserver: component.authServerControl,
-        Resourceserver: component.resourceServerControl
-      })
-    );
+  it("should expose isValid and getValue", () => {
+    expect(typeof component.isValid).toBe("function");
+    expect(typeof component.getValue).toBe("function");
   });
 
-  it("should update controls when data input changes", () => {
+  it("should update model when data input changes", () => {
     componentRef.setInput("data", {
       Authserver: "http://auth",
       Resourceserver: "http://resource",
@@ -62,10 +56,10 @@ describe("ScimResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.authServerControl.value).toBe("http://auth");
-    expect(component.resourceServerControl.value).toBe("http://resource");
-    expect(component.clientControl.value).toBe("client1");
-    expect(component.secretControl.value).toBe("secret1");
-    expect(component.mappingControl.value).toBe("{}");
+    expect(component.model().Authserver).toBe("http://auth");
+    expect(component.model().Resourceserver).toBe("http://resource");
+    expect(component.model().Client).toBe("client1");
+    expect(component.model().Secret).toBe("secret1");
+    expect(component.model().Mapping).toBe("{}");
   });
 });

@@ -16,7 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  OnInit,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
@@ -60,6 +71,7 @@ import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.s
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
@@ -162,7 +174,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
-export class TokenDetailsComponent {
+export class TokenDetailsComponent implements OnInit, OnDestroy {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
@@ -172,6 +184,7 @@ export class TokenDetailsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
@@ -318,7 +331,9 @@ export class TokenDetailsComponent {
         )
       }));
   });
-  descriptionRow = computed(() => this.tokenDetailData().find((r) => r.keyMap.key === "description"));
+  descriptionRow = computed(
+    () => this.tokenDetailData().find((r) => r.keyMap.key === "description") as EditableElement<string> | undefined
+  );
   tokengroupOptions = signal<string[]>([]);
   selectedTokengroup = signal<string[]>([]);
   tokenType = linkedSignal({
@@ -343,9 +358,45 @@ export class TokenDetailsComponent {
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
       this.maxfail = this.tokenDetails().maxfail;
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
-      this.userRealm = this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value || "";
+      this.userRealm = (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);
     });
+  }
+
+  @ViewChild(TokenDetailsUserComponent) userChild?: TokenDetailsUserComponent;
+  @ViewChild(TokenDetailsInfoComponent) infoChild?: TokenDetailsInfoComponent;
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        this.tokenDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
+    );
+    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
+  }
+
+  async saveAllInlineEdits(): Promise<boolean> {
+    for (const row of this.tokenDetailData()) {
+      if (row.isEditing()) {
+        this.saveTokenEdit(row);
+      }
+    }
+    if (this.isEditingUser()) {
+      this.userChild?.saveUser();
+    }
+    if (this.isEditingInfo()) {
+      const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
+      if (infoElement) {
+        this.infoChild?.saveInfo(infoElement as unknown as EditableElement<Record<string, string>>);
+      } else {
+        this.isEditingInfo.set(false);
+      }
+    }
+    return true;
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   resetFailCount(): void {
@@ -569,7 +620,7 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  saveTokenEdit(element: EditableElement<string>) {
+  saveTokenEdit(element: EditableElement) {
     switch (element.keyMap.key) {
       case "container_serial":
         this.containerService.selectedContainerSerial.set(
@@ -599,7 +650,7 @@ export class TokenDetailsComponent {
               const tokengroups = response.result?.value || {};
               this.tokengroupOptions.set(Object.keys(tokengroups));
               this.selectedTokengroup.set(
-                this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value
+                (this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value as string[]) ?? []
               );
             }
           });
@@ -609,7 +660,7 @@ export class TokenDetailsComponent {
     element.isEditing.set(!element.isEditing());
   }
 
-  saveTokenDetail(key: string, value: string): void {
+  saveTokenDetail(key: string, value: unknown): void {
     this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
       next: () => {
         this.tokenDetailResource.reload();
@@ -672,11 +723,13 @@ export class TokenDetailsComponent {
         this.containerService.selectedContainerSerial.set("");
         break;
       case "tokengroup":
-        this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);
+        this.selectedTokengroup.set(
+          (this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value as string[]) ?? []
+        );
         break;
       case "realms":
         this.realmService.selectedRealms.set(
-          this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value
+          (this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value as string[]) ?? []
         );
         break;
       default:

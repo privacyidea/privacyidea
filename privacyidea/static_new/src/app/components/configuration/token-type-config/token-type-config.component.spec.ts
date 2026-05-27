@@ -2,15 +2,15 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { NotificationService } from "@services/notification/notification.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService } from "@testing/mock-services";
+import { MockPendingChangesService, MockSystemService } from "@testing/mock-services";
 import { Observable, of } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -25,7 +25,7 @@ describe("TokenTypeConfigComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenTypeConfigComponent, NoopAnimationsModule],
+      imports: [TokenTypeConfigComponent],
       providers: [
         { provide: ActivatedRoute, useClass: MockActivatedRoute },
         provideHttpClient(),
@@ -45,7 +45,11 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() } }
+        {
+          provide: NotificationService,
+          useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn() }
+        },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 

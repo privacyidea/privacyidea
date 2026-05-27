@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,7 +27,7 @@ import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
@@ -49,11 +48,9 @@ import { TokenDetailsComponent } from "./token-details.component";
     MatRow,
     MatTable,
     NgClass,
-    FormsModule,
     MatInput,
     MatFormFieldModule,
     MatSelectModule,
-    ReactiveFormsModule,
     MatIconButton,
     TokenDetailsUserSelfServiceComponent,
     MatAutocomplete,
@@ -61,7 +58,7 @@ import { TokenDetailsComponent } from "./token-details.component";
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent,
+    CopyableComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent

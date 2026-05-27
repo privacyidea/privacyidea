@@ -32,8 +32,9 @@
 <mat-form-field class="input-width-xl margin-top-16">
   <mat-label i18n>Description</mat-label>
   <textarea
-    [(ngModel)]="description"
-    [maxlength]="80"
+    [value]="description()"
+    (input)="description.set($any($event.target).value)"
+    maxlength="80"
     i18n
     i18n-placeholder
     matInput
@@ -47,21 +48,21 @@
     <mat-form-field [class]="templateFieldClass">
       <mat-label i18n>Template</mat-label>
       <mat-select
-        [(ngModel)]="selectedTemplate"
-        [compareWith]="compareTemplates"
-        [value]="selectedTemplate()">
+        [value]="selectedTemplate()"
+        (selectionChange)="selectedTemplate.set($event.value)"
+        [compareWith]="compareTemplates">
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }
       </mat-select>
       @if (templateIsSelected) {
         <app-clear-button
-          (onClick)="clearTemplateSelection()"
+          (clearButtonClick)="clearTemplateSelection()"
           matSuffix></app-clear-button>
       }
     </mat-form-field>
 
-    <mat-expansion-panel class="expansion-panel margin-top-8">
+    <mat-expansion-panel class="expansion-panel input-width-xxl margin-top-8">
       <mat-expansion-panel-header>
         <mat-panel-title i18n>Added Tokens</mat-panel-title>
       </mat-expansion-panel-header>
@@ -78,8 +79,8 @@
 @if (showRegistration) {
   <h4 i18n>Registration</h4>
   <mat-checkbox
-    (change)="registrationSettings.expanded = false"
-    [(ngModel)]="generateQRCode">
+    [checked]="generateQRCode()"
+    (change)="generateQRCode.set($event.checked); registrationSettings.expanded = false">
     Generate a QR code to register the container on a smartphone.
   </mat-checkbox>
   <mat-accordion>

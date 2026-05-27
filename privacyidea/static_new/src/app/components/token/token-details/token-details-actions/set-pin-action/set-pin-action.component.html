@@ -30,7 +30,8 @@
         subscriptSizing="dynamic">
         <mat-label i18n>PIN</mat-label>
         <input
-          [(ngModel)]="setPinValue"
+          [value]="setPinValue()"
+          (input)="setPinValue.set($any($event.target).value)"
           [type]="'password'"
           matInput />
       </mat-form-field>
@@ -39,7 +40,8 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Repeat PIN</mat-label>
         <input
-          [(ngModel)]="repeatPinValue"
+          [value]="repeatPinValue()"
+          (input)="repeatPinValue.set($any($event.target).value)"
           [type]="'password'"
           matInput />
       </mat-form-field>

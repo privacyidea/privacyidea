@@ -777,11 +777,14 @@ class PushAPITestCase(MyApiTestCase):
 
         self.setUp_user_realms()
         # Setup PUSH policies
+        individual_message = "Please confirm on your smartphone and enter the code here."
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
                    action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        set_policy("push_challenge_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.CHALLENGE_TEXT}={individual_message}")
 
         expected_message = 'test message'
         set_policy("code_to_phone_message", scope=SCOPE.AUTH,
@@ -823,6 +826,8 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             detail = res.json.get("detail")
+            # Check the message
+            self.assertEqual(individual_message, detail.get("message"), res.json)
             # Get the challenge data
             transaction_id = detail.get("transaction_id")
             self.assertTrue(transaction_id)
@@ -903,10 +908,37 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.ACCEPT,
                              res.json.get("result").get("authentication"), res.json)
 
+        # Verify backwards-compat fallback: with the push-specific policy removed,
+        # the generic challenge_text policy is honored on the next challenge.
+        delete_policy("push_challenge_text")
+        generic_message = "Generic challenge text fallback."
+        set_policy("generic_challenge_text", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGETEXT}={generic_message}")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(generic_message, res.json.get("detail").get("message"), res.json)
+
+        # Verify precedence: when both policies are set, push_challenge_text wins.
+        set_policy("push_challenge_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.CHALLENGE_TEXT}={individual_message}")
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(individual_message, res.json.get("detail").get("message"), res.json)
+
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
         delete_policy("code_to_phone_message")
+        delete_policy("generic_challenge_text")
+        delete_policy("push_challenge_text")
 
     def test_18_push_code_to_phone_fail(self):
         """

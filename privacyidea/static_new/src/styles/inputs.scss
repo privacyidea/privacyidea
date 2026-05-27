@@ -13,6 +13,78 @@ $input-focus-outline: theme.$focus-outline;
   }
 }
 
+.known-clients-autocomplete-panel {
+  mat-option.known-client-option,
+  .known-client-option {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    height: auto;
+    line-height: var(--mat-sys-body-medium-line-height);
+    padding-bottom: var(--eighth-global-padding);
+    padding-top: var(--eighth-global-padding);
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    .mdc-list-item__primary-text {
+      align-items: flex-start;
+      column-gap: var(--half-global-gap);
+      display: flex;
+      white-space: normal;
+      width: 100%;
+    }
+  }
+
+  .known-client-ip {
+    color: var(--mat-sys-primary);
+    flex-shrink: 0;
+    font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    min-width: 15ch;
+  }
+
+  .known-client-details {
+    align-items: flex-start;
+    column-gap: var(--half-global-gap);
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    row-gap: var(--quarter-global-padding);
+  }
+
+  .known-client-hostname {
+    color: var(--mat-sys-on-surface-variant);
+    flex-shrink: 0;
+    font-size: var(--mat-sys-body-small-size);
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .known-client-apps {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    gap: var(--quarter-global-padding);
+    min-width: 0;
+  }
+
+  .known-client-app-chip {
+    background-color: var(--mat-sys-surface-container-highest);
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: var(--border-radius);
+    color: var(--mat-sys-on-surface-variant);
+    font-size: var(--mat-sys-body-small-size);
+    line-height: var(--mat-sys-body-small-line-height);
+    overflow: hidden;
+    padding: var(--eighth-global-padding) var(--half-global-padding);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .hint-spacer {
   margin-bottom: 1.2em;
 }
@@ -92,6 +164,10 @@ $input-focus-outline: theme.$focus-outline;
 mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(
     .condition-value-container *
   ):not(.login-form *):not(.set-pin-panel *):not(.test-sync-section *):not(.description-row *) {
+  height: 76.5px;
+}
+
+mat-form-field.height-77 {
   height: 76.5px;
 }
 

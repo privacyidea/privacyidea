@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { EmailConfigComponent } from "@components/configuration/token-type-config/token-types/email-config/email-config.component";
 import { EMAIL_SMTP_SERVER_KEY } from "@constants/token.constants";
@@ -31,7 +30,7 @@ describe("EmailConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EmailConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(EmailConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -51,14 +50,4 @@ describe("EmailConfigComponent", () => {
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [EMAIL_SMTP_SERVER_KEY]: newValue });
   });
 
-  it("should call updateFormData with empty value when clearField is called", async () => {
-    const initialServer = "server1";
-    fixture.componentRef.setInput("formData", { [EMAIL_SMTP_SERVER_KEY]: initialServer });
-    fixture.detectChanges();
-    expect(component.formData()[EMAIL_SMTP_SERVER_KEY]).toEqual(initialServer);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(EMAIL_SMTP_SERVER_KEY);
-    expect(component.updateFormData).toHaveBeenCalledWith(EMAIL_SMTP_SERVER_KEY, "");
-  });
 });

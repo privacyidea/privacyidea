@@ -19,20 +19,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { UserService } from "@services/user/user.service";
 import {
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService,
-    MockUserService
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockRealmService,
+  MockTableUtilsService,
+  MockUserService
 } from "@testing/mock-services";
 import { of } from "rxjs";
 import { UserTableComponent } from "./user-table.component";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { RealmService } from "@services/realm/realm.service";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;
@@ -53,10 +56,12 @@ describe("UserTableComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ],
-      imports: [UserTableComponent, NoopAnimationsModule]
+      imports: [UserTableComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserTableComponent);

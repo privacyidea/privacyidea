@@ -17,13 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
+import { Component, inject, OnDestroy } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit/machine-resolver-panel-edit.component";
 import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/machine-resolver-panel-new.component";
 
@@ -33,7 +34,12 @@ import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/m
   styleUrls: ["./machine-resolver.component.scss"],
   imports: [MachineResolverPanelNewComponent, MachineResolverPanelEditComponent, MatExpansionModule]
 })
-export class MachineResolverComponent {
+export class MachineResolverComponent implements OnDestroy {
   machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   authService: AuthServiceInterface = inject(AuthService);
+  private readonly pendingChangesService = inject(PendingChangesService);
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
 }

@@ -18,7 +18,6 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -40,7 +39,7 @@ describe("PoliciesTableActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PoliciesTableActionsComponent, NoopAnimationsModule],
+      imports: [PoliciesTableActionsComponent],
       providers: [
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },

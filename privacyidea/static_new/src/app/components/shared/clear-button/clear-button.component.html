@@ -19,9 +19,10 @@
 <div class="clear-button-container">
   <button
     (click)="clearInput($event)"
+    [disabled]="disabled()"
     type="button"
-    matTooltip="{{toolTipText()}}"
+    matTooltip="{{ toolTipText() }}"
     mat-icon-button>
-    <mat-icon>add_circle</mat-icon>
+    <mat-icon>cancel</mat-icon>
   </button>
 </div>

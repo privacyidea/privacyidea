@@ -180,9 +180,7 @@ export interface ResolverServiceInterface {
   getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ResolverService implements ResolverServiceInterface {
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
@@ -200,6 +198,9 @@ export class ResolverService implements ResolverServiceInterface {
   }
   resolversResource = httpResource<PiResponse<Resolvers>>(() => {
     if (!this.contentService.onAnyUsersRoute()) {
+      return undefined;
+    }
+    if (!this.authService.actionAllowed("resolverread")) {
       return undefined;
     }
     return {

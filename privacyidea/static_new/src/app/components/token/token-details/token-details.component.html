@@ -164,7 +164,7 @@
                 matInput
                 type="text" />
               <mat-hint align="end"
-                >{{ desc.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+                >{{ desc.value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
               </mat-hint>
             </mat-form-field>
           } @else {
@@ -267,7 +267,7 @@
                   subscriptSizing="dynamic">
                   <mat-label i18n>Enter Container</mat-label>
                   <app-clearable-input
-                    (onClick)="containerService.selectedContainerSerial.set(null)"
+                    (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
                     [showClearButton]="containerService.selectedContainerSerial() !== ''">
                     <input
                       [(ngModel)]="containerService.selectedContainerSerial"
@@ -281,6 +281,12 @@
                     }
                   </mat-autocomplete>
                 </mat-form-field>
+                <mat-checkbox
+                  [(ngModel)]="containerService.filterContainersByTokenOwner"
+                  [disabled]="!tokenDetails().username"
+                  i18n>
+                  Filter by token owner
+                </mat-checkbox>
               } @else {
                 <div class="flex-row flex-nowrap ali-center">
                   <a

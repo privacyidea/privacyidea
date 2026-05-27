@@ -18,7 +18,6 @@
  **/
 
 import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
@@ -27,7 +26,7 @@ import { HostsMachineResolverData, MachineResolverData } from "@services/machine
   selector: "app-machine-resolver-hosts-tab",
   templateUrl: "./machine-resolver-hosts-tab.component.html",
   styleUrls: ["./machine-resolver-hosts-tab.component.scss"],
-  imports: [MatFormFieldModule, MatInputModule, FormsModule],
+  imports: [MatFormFieldModule, MatInputModule],
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })

@@ -117,6 +117,16 @@
   font-weight: 500;
 }
 
+.overflow-menu-item-disabled {
+  cursor: unset !important;
+  opacity: 0.4;
+  color: var(--mat-sys-on-surface, #333) !important;
+
+  &:hover {
+    background: none !important;
+  }
+}
+
 .overflow-more-btn {
   display: inline-flex;
   align-items: center !important;

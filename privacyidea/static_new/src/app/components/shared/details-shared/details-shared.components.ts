@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, Input } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, Input, output } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
@@ -44,14 +43,15 @@ export class DetailsListDisplayComponent {
 @Component({
   selector: "app-details-description-cell",
   standalone: true,
-  imports: [FormsModule, MatFormFieldModule, MatInput],
+  imports: [MatFormFieldModule, MatInput],
   template: `
     @if (isEditing) {
       <mat-form-field
         class="input-width-m description height-126"
         subscriptSizing="dynamic">
         <textarea
-          [(ngModel)]="value"
+          [value]="value"
+          (input)="valueChange.emit($any($event.target).value)"
           [maxlength]="maxlength"
           i18n-placeholder
           matInput
@@ -69,6 +69,7 @@ export class DetailsListDisplayComponent {
 })
 export class DetailsDescriptionCellComponent {
   @Input({ required: true }) value: any;
+  valueChange = output<string>();
   @Input() isEditing = false;
   @Input() maxlength = 80;
   @Input() rows = 4;
@@ -77,14 +78,15 @@ export class DetailsDescriptionCellComponent {
 @Component({
   selector: "app-details-default-value-cell",
   standalone: true,
-  imports: [FormsModule, MatFormFieldModule, MatInput, NgClass],
+  imports: [MatFormFieldModule, MatInput, NgClass],
   template: `
     @if (isEditing && isNumber) {
       <mat-form-field
         class="input-width-m height-52"
         subscriptSizing="dynamic">
         <input
-          [(ngModel)]="value"
+          [value]="value"
+          (input)="valueChange.emit($any($event.target).value)"
           matInput
           type="number" />
       </mat-form-field>
@@ -93,7 +95,8 @@ export class DetailsDescriptionCellComponent {
         class="input-width-m"
         subscriptSizing="dynamic">
         <textarea
-          [(ngModel)]="value"
+          [value]="value"
+          (input)="valueChange.emit($any($event.target).value)"
           matInput
           rows="1"></textarea>
       </mat-form-field>
@@ -108,6 +111,7 @@ export class DetailsDescriptionCellComponent {
 })
 export class DetailsDefaultValueCellComponent {
   @Input({ required: true }) value: any;
+  valueChange = output<string>();
   @Input() isEditing = false;
   @Input() isNumber = false;
   @Input() divClass = "";
