@@ -22,25 +22,7 @@ import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
-import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "@components/token/token-enrollment/enroll-email/enroll-email.component";
-import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "@components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollMotpComponent } from "@components/token/token-enrollment/enroll-motp/enroll-motp.component";
-import { EnrollPaperComponent } from "@components/token/token-enrollment/enroll-paper/enroll-paper.component";
-import { EnrollPushComponent } from "@components/token/token-enrollment/enroll-push/enroll-push.component";
-import { EnrollQuestionComponent } from "@components/token/token-enrollment/enroll-questionnaire/enroll-question.component";
-import { EnrollRegistrationComponent } from "@components/token/token-enrollment/enroll-registration/enroll-registration.component";
-import { EnrollSmsComponent } from "@components/token/token-enrollment/enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "@components/token/token-enrollment/enroll-spass/enroll-spass.component";
-import { EnrollSshkeyComponent } from "@components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component";
-import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "@components/token/token-enrollment/enroll-u2f/enroll-u2f.component";
-import { EnrollVascoComponent } from "@components/token/token-enrollment/enroll-vasco/enroll-vasco.component";
-import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import {
@@ -63,28 +45,7 @@ import { Observable, lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-token-rollover",
-  imports: [
-    EnrollApplspecComponent,
-    EnrollDaypasswordComponent,
-    EnrollEmailComponent,
-    EnrollHotpComponent,
-    EnrollIndexedsecretComponent,
-    EnrollMotpComponent,
-    EnrollPaperComponent,
-    EnrollQuestionComponent,
-    EnrollRegistrationComponent,
-    EnrollSmsComponent,
-    EnrollSpassComponent,
-    EnrollSshkeyComponent,
-    EnrollTanComponent,
-    EnrollTiqrComponent,
-    EnrollTotpComponent,
-    EnrollU2fComponent,
-    EnrollVascoComponent,
-    DialogWrapperComponent,
-    EnrollPushComponent,
-    EnrollWebauthnComponent
-  ],
+  imports: [DialogWrapperComponent, EnrollTokenTypeSwitchComponent],
   standalone: true,
   templateUrl: "./token-rollover.component.html",
   styleUrl: "./token-rollover.component.scss"
@@ -294,13 +255,6 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     }
 
     this.openLastStepDialog(response);
-  }
-
-  updateAdditionalFormFields(_event: { [key: string]: any }): void {
-    // Child validation happens in the child components themselves.
-    // Treat parent form as always valid; child validity state is managed per-child.
-    this.childValid.set(true);
-    this.formGroupInvalid.set(false);
   }
 
   updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {

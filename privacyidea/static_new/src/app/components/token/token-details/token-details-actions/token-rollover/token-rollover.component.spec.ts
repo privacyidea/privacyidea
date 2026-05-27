@@ -118,12 +118,4 @@ describe("TokenRolloverComponent", () => {
       "Rollover action is not available for the selected token type."
     );
   });
-
-  it("updateAdditionalFormFields keeps dialog actions enabled (child handles its own validation)", () => {
-    component.updateAdditionalFormFields({ anyChildField: {} });
-    fixture.detectChanges();
-
-    expect(component.formGroupInvalid()).toBe(false);
-    expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: false })]);
-  });
 });

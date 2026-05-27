@@ -17,19 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import type { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
 
 @Component({
-  selector: "app-enroll-hotp",
+  selector: "app-enroll-token-type-switch",
   standalone: true,
   template: ""
 })
-class MockEnrollHotpComponent {
-  @Output() additionalFormFieldsChange = new EventEmitter<any>();
+class MockEnrollTokenTypeSwitchComponent {
+  @Input() tokenTypeKey!: string;
+  @Input() enrollmentData: TokenEnrollmentData | null = null;
+  @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();
 }
 
 describe("TemplateAddedTokenRowComponent", () => {
@@ -41,8 +45,8 @@ describe("TemplateAddedTokenRowComponent", () => {
       imports: [TemplateAddedTokenRowComponent]
     })
       .overrideComponent(TemplateAddedTokenRowComponent, {
-        remove: { imports: [EnrollHotpComponent] },
-        add: { imports: [MockEnrollHotpComponent] }
+        remove: { imports: [EnrollTokenTypeSwitchComponent] },
+        add: { imports: [MockEnrollTokenTypeSwitchComponent] }
       })
       .compileComponents();
 
@@ -60,11 +64,12 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(component).toBeTruthy();
     });
 
-    it("should render the correct child component based on token type", () => {
+    it("should render the token type switch with the payload type", () => {
       fixture.detectChanges();
 
-      const hotpChild = fixture.debugElement.query(By.css("app-enroll-hotp"));
-      expect(hotpChild).toBeTruthy();
+      const switchElement = fixture.debugElement.query(By.css("app-enroll-token-type-switch"));
+      expect(switchElement).toBeTruthy();
+      expect(switchElement.componentInstance.tokenTypeKey).toBe("hotp");
     });
 
     it("should keep the expansion panel enabled regardless of token type", () => {

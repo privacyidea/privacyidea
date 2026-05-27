@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
@@ -83,11 +84,11 @@ import type {
   templateUrl: "./enroll-token-type-switch.component.html"
 })
 export class EnrollTokenTypeSwitchComponent {
-  @Input({ required: true }) tokenTypeKey!: string;
-  @Input() wizard = false;
+  readonly tokenTypeKey = input.required<string>();
+  readonly wizard = input(false);
+  readonly enrollmentData = input<TokenEnrollmentData | null>(null);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<OnEnrollmentResponseFn>();
-  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
+  readonly enrollmentArgsGetterChange = output<enrollmentArgsGetterFn>();
+  readonly enrollmentResponseChange = output<OnEnrollmentResponseFn>();
+  readonly reopenDialogChange = output<ReopenDialogFn>();
 }

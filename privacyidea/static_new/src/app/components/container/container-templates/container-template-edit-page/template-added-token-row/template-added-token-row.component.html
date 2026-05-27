@@ -41,70 +41,8 @@
     {{ tokenTypeDescription() }}
   </div>
 
-  @switch (tokenEnrollmentPayload().type) {
-    @case ("hotp") {
-      <app-enroll-hotp
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("totp") {
-      <app-enroll-totp
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("spass") {
-      <app-enroll-spass (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("remote") {
-      <app-enroll-remote
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("sms") {
-      <app-enroll-sms
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("4eyes") {
-      <app-enroll-foureyes
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("applspec") {
-      <app-enroll-applspec
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("daypassword") {
-      <app-enroll-daypassword
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("email") {
-      <app-enroll-email
-        [enrollmentData]="$any(tokenEnrollmentData())"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("indexedsecret") {
-      <app-enroll-indexedsecret (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("paper") {
-      <app-enroll-paper (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("push") {
-      <app-enroll-push (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("registration") {
-      <app-enroll-registration (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("tan") {
-      <app-enroll-tan (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("tiqr") {
-      <app-enroll-tiqr (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @default {
-      <p i18n>No enrollment form available for this token type: {{ tokenEnrollmentData()?.type }}</p>
-    }
-  }
+  <app-enroll-token-type-switch
+    [tokenTypeKey]="tokenEnrollmentPayload().type"
+    [enrollmentData]="$any(tokenEnrollmentData())"
+    (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
 </mat-expansion-panel>
