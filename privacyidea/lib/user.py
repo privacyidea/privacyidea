@@ -390,9 +390,15 @@ class User:
         Writes/deletes on internal attributes key on (uid, resolver, realm_id).
         An unresolved user has ``uid=''``, so writing under it would create
         rows shared by every unresolved user — i.e. cross-user data leak.
+
+        We also require ``realm_id``: it is part of the unique constraint, but
+        SQL treats NULLs as distinct, so a NULL realm_id would silently bypass
+        the per-user-key dedup backstop. Requiring it here (matching the
+        ``uid and realm_id`` notion of an existing user, see :meth:`exist`)
+        guarantees every written row has a concrete identity.
         Reads are tolerated and return an empty dict (see ``internal_attributes``).
         """
-        if not self.uid:
+        if not self.uid or not self.realm_id:
             raise UserError(f"Cannot modify internal attributes for unresolved user "
                             f"(login={self.login!r}, realm={self.realm!r}).")
 
@@ -413,11 +419,17 @@ class User:
         return get_internal_attributes(self.uid, self.resolver, self.realm_id)
 
     @log_with(log)
-    def set_internal_attribute(self, key: str, value: Any, node: str | None = None) -> int:
+    def set_internal_attribute(self, key: str, value: Any) -> int:
         """
         Set an internal attribute for this user. ``value`` may be any
-        JSON-serializable Python object. ``node`` is reserved for future
-        node-local state and should be left as None for global values.
+        JSON-serializable Python object.
+
+        The model's ``node`` column is reserved for future node-local state
+        and is intentionally not exposed here: it is part of neither the
+        lookup nor the unique constraint yet, so writing it would create
+        inconsistent rows. When node-awareness is implemented, ``node`` must
+        be added to the unique constraint and to the SELECT below before it
+        can be written here.
 
         Not safe against concurrent writes on the same ``key`` for the same
         user: two callers can both miss the SELECT and race on the INSERT,
@@ -434,11 +446,10 @@ class User:
         existing = db.session.execute(stmt).scalar_one_or_none()
         if existing:
             existing.Value = value
-            existing.node = node
             attribute_id = existing.id
         else:
             new_attribute = InternalUserAttribute(user_id=self.uid, resolver=self.resolver,
-                                                  realm_id=self.realm_id, Key=key, Value=value, node=node)
+                                                  realm_id=self.realm_id, Key=key, Value=value)
             db.session.add(new_attribute)
             db.session.flush()
             attribute_id = new_attribute.id
@@ -1047,6 +1058,10 @@ def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[t
                 orphans.append((user_id, resolver_name, realm_id))
             continue
         if not login:
+            # An empty username (without an exception) is the resolver's
+            # "this uid no longer exists" answer — the primary orphan signal,
+            # matching TokenClass.is_orphaned. Transient backend failures raise
+            # instead and are handled above via orphaned_on_error.
             orphans.append((user_id, resolver_name, realm_id))
     return orphans
 

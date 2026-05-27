@@ -1018,8 +1018,9 @@ class UserTestCase(MyTestCase):
         delete_resolver(self.resolvername1)
 
     def test_52_internal_user_attribute_node_column(self):
-        """The ``node`` column is reserved for future per-node state.
-        Verify it is persisted as given and defaults to NULL."""
+        """The ``node`` column is reserved for future per-node state and is
+        not writable through the set_internal_attribute API yet, so every
+        row written via the API has node = NULL."""
         save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
                        "fileName": PWFILE})
         set_realm(self.realm1, [{'name': self.resolvername1}])
@@ -1032,21 +1033,14 @@ class UserTestCase(MyTestCase):
                     realm_id=user.realm_id, Key=key)
             ).scalar_one()
 
-        # Default: node is NULL (global value)
+        # Rows written through the API default node to NULL (global value)
         user.set_internal_attribute("global_key", "v1")
         self.assertIsNone(_row("global_key").node)
+        user.set_internal_attribute("global_key", "v2")
+        self.assertIsNone(_row("global_key").node)
 
-        # Explicit node value is persisted
-        user.set_internal_attribute("node_key", "v2", node="node-A")
-        self.assertEqual("node-A", _row("node_key").node)
-
-        # Re-setting the same key with a new node value overwrites it
-        user.set_internal_attribute("node_key", "v3", node="node-B")
-        self.assertEqual("node-B", _row("node_key").node)
-
-        # Re-setting without node clears it back to NULL
-        user.set_internal_attribute("node_key", "v4")
-        self.assertIsNone(_row("node_key").node)
+        # The write API does not accept a node argument
+        self.assertRaises(TypeError, user.set_internal_attribute, "k", "v", "node-A")
 
         user.delete_internal_attribute()
         delete_realm(self.realm1)
