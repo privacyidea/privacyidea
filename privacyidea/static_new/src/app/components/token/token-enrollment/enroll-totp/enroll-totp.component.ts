@@ -75,7 +75,6 @@ export class EnrollTotpComponent implements OnInit {
 
   enrollmentData = input<TotpEnrollmentData>();
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: TotpEnrollmentData;
@@ -172,7 +171,6 @@ export class EnrollTotpComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

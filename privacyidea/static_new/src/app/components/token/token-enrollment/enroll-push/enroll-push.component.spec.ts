@@ -87,13 +87,11 @@ describe("EnrollPushComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("ngOnInit emits additionalFormFields and clickEnroll handler", () => {
-    const addSpy = jest.spyOn(component.additionalFormFieldsChange, "emit");
+  it("ngOnInit emits clickEnroll handler", () => {
     const clickSpy = jest.spyOn(component.enrollmentArgsGetterChange, "emit");
 
     component.ngOnInit();
 
-    expect(addSpy).toHaveBeenCalledWith({});
     expect(clickSpy).toHaveBeenCalled();
     const emitted = clickSpy.mock.calls[0][0] as unknown as (opts: any) => Promise<EnrollmentResponse | null>;
     expect(typeof emitted).toBe("function");

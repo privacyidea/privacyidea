@@ -76,7 +76,6 @@ export class EnrollDaypasswordComponent implements OnInit {
 
   enrollmentData = input<DaypasswordEnrollmentData>();
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: DaypasswordEnrollmentData;
@@ -149,7 +148,6 @@ export class EnrollDaypasswordComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

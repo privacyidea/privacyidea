@@ -56,7 +56,6 @@ export class EnrollRemoteComponent implements OnInit {
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   enrollmentData = input<RemoteEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: RemoteEnrollmentData;
@@ -99,7 +98,6 @@ export class EnrollRemoteComponent implements OnInit {
       this.remoteRealm.set(this.enrollmentData()?.remoteRealm ?? "");
       this.remoteResolver.set(this.enrollmentData()?.remoteResolver ?? "");
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

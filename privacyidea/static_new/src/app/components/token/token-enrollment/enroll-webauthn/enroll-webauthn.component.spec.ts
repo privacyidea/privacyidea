@@ -124,15 +124,12 @@ describe("EnrollWebauthnComponent", () => {
   });
 
   it("should emit outputs on init", async () => {
-    const additionalEmits: any[] = [];
     let emittedHandler: ((...args: any[]) => any) | undefined;
 
-    component.additionalFormFieldsChange.subscribe((v) => additionalEmits.push(v));
     component.enrollmentArgsGetterChange.subscribe((fn) => (emittedHandler = fn));
 
     await detectChangesStable();
 
-    expect(additionalEmits[0]).toEqual({});
     expect(typeof emittedHandler).toBe("function");
   });
 

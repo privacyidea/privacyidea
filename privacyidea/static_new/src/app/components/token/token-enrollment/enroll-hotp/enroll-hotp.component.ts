@@ -78,7 +78,6 @@ export class EnrollHotpComponent implements OnInit {
       mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
     } | null
   >();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("hotp"));
@@ -157,7 +156,6 @@ export class EnrollHotpComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

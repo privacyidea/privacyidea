@@ -67,7 +67,6 @@ export class EnrollSmsComponent implements OnInit {
 
   enrollmentData = input<SmsEnrollmentData>();
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: SmsEnrollmentData;
@@ -151,7 +150,6 @@ export class EnrollSmsComponent implements OnInit {
       this.phoneNumber.set(data.phoneNumber ?? "");
       this.smsGatewayInitialized = true;
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

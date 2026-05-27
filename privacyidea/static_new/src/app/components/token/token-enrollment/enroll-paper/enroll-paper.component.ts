@@ -40,7 +40,6 @@ export class EnrollPaperComponent implements OnInit {
   protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(PaperApiPayloadMapper);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: PaperEnrollmentData;
@@ -49,7 +48,6 @@ export class EnrollPaperComponent implements OnInit {
   >();
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

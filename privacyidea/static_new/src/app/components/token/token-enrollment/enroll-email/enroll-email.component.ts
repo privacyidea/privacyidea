@@ -55,7 +55,6 @@ export class EnrollEmailComponent implements OnInit {
 
   enrollmentData = input<EmailEnrollmentData>();
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: EmailEnrollmentData;
@@ -89,7 +88,6 @@ export class EnrollEmailComponent implements OnInit {
       this.emailAddress.set(this.enrollmentData()?.emailAddress ?? "");
       this.readEmailDynamically.set(this.enrollmentData()?.readEmailDynamically ?? false);
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

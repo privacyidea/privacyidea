@@ -40,7 +40,6 @@ export class EnrollRegistrationComponent implements OnInit {
   protected readonly enrollmentMapper: RegistrationApiPayloadMapper = inject(RegistrationApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: RegistrationEnrollmentData;
@@ -49,7 +48,6 @@ export class EnrollRegistrationComponent implements OnInit {
   >();
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

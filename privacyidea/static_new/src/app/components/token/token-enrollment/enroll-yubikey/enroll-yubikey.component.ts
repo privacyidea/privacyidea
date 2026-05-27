@@ -41,7 +41,6 @@ export class EnrollYubikeyComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<YubikeyEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: YubikeyEnrollmentData;
@@ -99,7 +98,6 @@ export class EnrollYubikeyComponent implements OnInit {
       this.otpKey.set(this.enrollmentData()?.otpKey ?? "");
       this.otpLength.set(this.enrollmentData()?.otpLength ?? 44);
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 }

@@ -50,7 +50,6 @@ export class EnrollFoureyesComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<FourEyesEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: FourEyesEnrollmentData;
@@ -85,7 +84,6 @@ export class EnrollFoureyesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

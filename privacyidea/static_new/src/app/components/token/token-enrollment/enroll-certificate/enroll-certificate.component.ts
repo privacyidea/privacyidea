@@ -64,7 +64,6 @@ export class EnrollCertificateComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
 
   enrollmentData = input<CertificateEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: CertificateEnrollmentData;
@@ -108,7 +107,6 @@ export class EnrollCertificateComponent implements OnInit {
       this.caConnector.set(this.enrollmentData()?.caConnector ?? "");
       this.certTemplate.set(this.enrollmentData()?.certTemplate ?? "");
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

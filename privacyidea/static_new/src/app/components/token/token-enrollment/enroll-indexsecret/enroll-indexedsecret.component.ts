@@ -46,7 +46,6 @@ export class EnrollIndexedsecretComponent implements OnInit {
 
   disabled = input<boolean>(false);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: IndexedSecretEnrollmentData;
@@ -62,7 +61,6 @@ export class EnrollIndexedsecretComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

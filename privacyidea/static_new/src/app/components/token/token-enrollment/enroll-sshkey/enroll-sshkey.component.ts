@@ -66,10 +66,8 @@ export class EnrollSshkeyComponent {
       mapper: TokenApiPayloadMapper<SshkeyEnrollmentData>;
     } | null
   >();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
 
   ngOnInit() {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

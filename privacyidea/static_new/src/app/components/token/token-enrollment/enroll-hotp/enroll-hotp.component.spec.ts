@@ -54,7 +54,6 @@ describe("EnrollHotpComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
-    jest.spyOn(component.additionalFormFieldsChange, "emit");
     jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
   }
@@ -67,7 +66,6 @@ describe("EnrollHotpComponent", () => {
   it("emits the enrollmentArgsGetter on init", () => {
     createAndInit();
 
-    expect(component.additionalFormFieldsChange.emit).toHaveBeenCalledTimes(1);
     expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 

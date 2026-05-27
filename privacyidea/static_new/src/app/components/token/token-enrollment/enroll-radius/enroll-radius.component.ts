@@ -69,7 +69,6 @@ export class EnrollRadiusComponent implements OnInit {
 
   enrollmentData = input<RadiusEnrollmentData>();
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: RadiusEnrollmentData;
@@ -117,7 +116,6 @@ export class EnrollRadiusComponent implements OnInit {
       this.radiusServerConfiguration.set(this.enrollmentData()?.radiusServerConfiguration ?? "");
       this.radiusServerConfigInitialized = true;
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

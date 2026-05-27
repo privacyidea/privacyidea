@@ -63,7 +63,6 @@ export class EnrollApplspecComponent implements OnInit {
 
   enrollmentData = input<ApplspecEnrollmentData>();
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: ApplspecEnrollmentData;
@@ -95,7 +94,6 @@ export class EnrollApplspecComponent implements OnInit {
         this.otpKey.set(this.enrollmentData()!.otpKey ?? "");
       }
     }
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 

@@ -47,7 +47,6 @@ export class EnrollMotpComponent implements OnInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: MotpEnrollmentData;
@@ -79,7 +78,6 @@ export class EnrollMotpComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
