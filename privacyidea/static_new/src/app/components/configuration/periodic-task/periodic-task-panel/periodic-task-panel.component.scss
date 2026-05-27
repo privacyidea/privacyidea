@@ -1,8 +1,0 @@
-@use "styles";
-@use "table";
-
-.task-name {
-  white-space: nowrap;
-  overflow: inherit;
-  text-overflow: ellipsis;
-}
