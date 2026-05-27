@@ -30,9 +30,7 @@
       [wizard]="wizard()" />
   }
   @case ("spass") {
-    <app-enroll-spass
-      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard()" />
+    <app-enroll-spass (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
   }
   @case ("motp") {
     <app-enroll-motp
@@ -98,9 +96,7 @@
     <app-enroll-indexedsecret (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
   }
   @case ("paper") {
-    <app-enroll-paper
-      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard()" />
+    <app-enroll-paper (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
   }
   @case ("push") {
     <app-enroll-push
@@ -115,9 +111,7 @@
     <app-enroll-registration (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
   }
   @case ("tan") {
-    <app-enroll-tan
-      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard()" />
+    <app-enroll-tan (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
   }
   @case ("tiqr") {
     <app-enroll-tiqr
@@ -133,7 +127,8 @@
   @case ("webauthn") {
     <app-enroll-webauthn
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)" />
+      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)"
+      (reopenDialogChange)="reopenDialogChange.emit($event)" />
   }
   @case ("passkey") {
     <app-enroll-passkey
