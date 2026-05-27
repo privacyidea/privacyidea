@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -32,7 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -65,9 +65,9 @@ class InternalUserAttribute(MethodsMixin, db.Model):
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     Value: Mapped[Any | None] = mapped_column(JSON, nullable=True)
     last_modified: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        DateTime,
+        default=utc_now,
+        onupdate=utc_now,
     )
     # Reserved for future HA use: NULL means the value is global (valid on any node).
     node: Mapped[str | None] = mapped_column(Unicode(120), nullable=True, default=None)

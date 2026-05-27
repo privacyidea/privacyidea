@@ -82,7 +82,7 @@ def upgrade():
             sa.Column('realm_id', sa.Integer(), nullable=True),
             sa.Column('Key', sa.Unicode(length=255), nullable=False),
             sa.Column('Value', sa.JSON(), nullable=True),
-            sa.Column('last_modified', sa.DateTime(timezone=True), nullable=True),
+            sa.Column('last_modified', sa.DateTime(), nullable=True),
             sa.Column('node', sa.Unicode(length=120), nullable=True),
             sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id'),
@@ -128,7 +128,7 @@ def _run_data_migration(conn) -> None:
     """
     old = _old_table()
     new = _new_table()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     def _target_exists(user_id, resolver, realm_id, key) -> bool:
         return conn.execute(
