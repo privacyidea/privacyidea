@@ -9,12 +9,12 @@ from privacyidea.lib.resolver import save_resolver, get_resolver_object
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
-from .base import MyApiTestCase
+from .base import MyApiTestCase, PristineSqliteFixtures
 
 PWFILE = "tests/testdata/passwd"
 
 
-class APIUsersTestCase(MyApiTestCase):
+class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser-api.sqlite",
@@ -29,6 +29,10 @@ class APIUsersTestCase(MyApiTestCase):
                     "phone": "phone", \
                     "mobile": "mobile"}'
                   }
+
+    # SQL-resolver fixture this test class writes to (create/update/delete
+    # user, password re-salting); kept pristine via PristineSqliteFixtures.
+    pristine_fixtures = ["tests/testdata/testuser-api.sqlite"]
 
     def _create_user_wordy(self):
         """
@@ -726,6 +730,36 @@ class APIUsersTestCase(MyApiTestCase):
         delete_policy("internal_attr_realm1")
         realm1_user.delete_internal_attribute()
         realm2_user.delete_internal_attribute()
+
+    def test_11d_get_internal_attributes_no_realm_no_bypass(self):
+        """Omitting the realm must not let a realm-restricted admin read a
+        user in a different (default) realm. The realm used to read the data
+        must match the realm the policy authorized, not the default realm
+        that request.User would otherwise resolve to."""
+        self.setUp_user_realms()      # realm1 is the default realm
+        self.setUp_user_realm2()
+        # The secret lives on the user in the DEFAULT realm (realm1)
+        default_user = User("hans", self.realm1)
+        default_user.set_internal_attribute("fido2_user_id", "realm1-secret")
+
+        # Admin is restricted to realm2 only
+        set_policy("internal_attr_realm2", scope=SCOPE.ADMIN,
+                   action=PolicyAction.GET_USER_INTERNAL_ATTRIBUTES,
+                   realm=self.realm2)
+
+        # Request without a realm: realmadmin injects realm2, so the user must
+        # be resolved in realm2 (hans@realm2 has no internal attributes) and
+        # the realm1 secret must never leak.
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "hans"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            value = (res.json.get("result") or {}).get("value") or {}
+            self.assertNotEqual("realm1-secret", value.get("fido2_user_id"), res.data)
+
+        delete_policy("internal_attr_realm2")
+        default_user.delete_internal_attribute()
 
     def test_12_get_users(self):
         self.setUp_user_realms()

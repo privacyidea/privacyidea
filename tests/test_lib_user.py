@@ -26,7 +26,7 @@ from sqlalchemy import delete, select
 
 from privacyidea.models import InternalUserAttribute, NodeName, db
 from . import ldap3mock
-from .base import MyTestCase, OverrideConfigTestCase
+from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures
 from .test_lib_resolver import LDAPDirectory_small
 from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
@@ -35,10 +35,11 @@ PWFILE2 = "tests/testdata/passwords"
 PWFILE3 = "tests/testdata/passwd-mask-user"
 
 
-class UserTestCase(MyTestCase):
+class UserTestCase(PristineSqliteFixtures, MyTestCase):
     """
     Test the user on the database level
     """
+    pristine_fixtures = ["tests/testdata/testuser.sqlite"]
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"

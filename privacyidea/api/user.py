@@ -62,7 +62,7 @@ from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
-from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
+from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -254,7 +254,13 @@ def get_user_internal_attribute():
     :query realm: realm name.
     :status 200: dict of internal attributes in ``result.value``.
     """
-    user = request.User
+    # Resolve the user from request.all_data *after* the prepolicies ran, not
+    # from request.User: realmadmin may have injected the admin's realm into
+    # request.all_data when no realm was given. request.User was built earlier
+    # (in before_request) from the original params and would resolve in the
+    # default realm, so reading it would return data for a different realm than
+    # the one check_base_action authorized.
+    user = get_user_from_param(request.all_data)
     if not user or not user.exist():
         username = get_required(request.all_data, "user")
         raise UserError(f"The user '{username!s}' does not exist.")
