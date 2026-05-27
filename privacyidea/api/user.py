@@ -176,8 +176,7 @@ def set_user_attribute():
 
     Authorization is gated by the :ref:`policy_set_custom_user_attributes`
     policy. The policy value whitelists allowed key/value combinations
-    (the ``*`` wildcard is allowed for keys or values). Attribute keys
-    starting with an internal privacyIDEA prefix are rejected.
+    (the ``*`` wildcard is allowed for keys or values).
 
     :jsonparam user: user name (required).
     :jsonparam resolver: resolver name.
@@ -186,7 +185,6 @@ def set_user_attribute():
     :jsonparam value: attribute value (required).
     :jsonparam type: optional attribute type identifier.
     :status 200: database id of the attribute row in ``result.value``.
-    :status 400: attribute name uses a reserved internal prefix.
     :status 403: the active policy does not allow this key/value
         combination.
     """
