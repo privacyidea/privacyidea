@@ -750,8 +750,13 @@ component may follow it and is ignored, but the value must contain exactly two
 rejected. Several examples::
 
     webauthn_req=subject/.*Yubico.*/
-    webauthn_req=issuer/.*FIDO2 CA.*/
+    webauthn_req='issuer/.*FIDO2 CA.*/'
     webauthn_req=serial/^4711$/
+
+If the value contains whitespace (as in the second example above), the whole
+action value must be wrapped in single quotes. Otherwise it is split on
+whitespace into separate values, each of which is then parsed individually and
+fails.
 
 During registration of the WebAuthn authenticator the information is fetched
 from the attestation certificate. The token can only be enrolled if the

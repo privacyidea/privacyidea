@@ -63,8 +63,9 @@ certificate's issuer, subject and serial in token info
 (``attestation_issuer``, ``attestation_subject``, ``attestation_serial``),
 along with the AAGUID. The attestation signature is verified, but a
 self-signed or unknown-signer attestation is accepted. If the token has no
-description yet, the description is set to the leaf certificate's Common
-Name (otherwise it falls back to ``Generic WebAuthn Token``).
+description yet, its description is set to the leaf certificate's Common Name
+if the certificate has one; otherwise it falls back to ``Generic WebAuthn
+Token``. A description already set on the token is left unchanged.
 
 Setting the level to ``trusted`` requires configuring a directory of trusted
 attestation roots; see :ref:`webauthn_otp_token`. Enrollment is then rejected
