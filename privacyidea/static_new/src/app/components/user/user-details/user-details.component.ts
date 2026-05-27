@@ -27,8 +27,10 @@ import {
   linkedSignal,
   OnDestroy,
   OnInit,
+  Renderer2,
   Signal,
   signal,
+  viewChild,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -105,6 +107,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   private breakpointObserver = inject(BreakpointObserver);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly renderer = inject(Renderer2);
+
+  readonly scrollContainer = viewChild<ElementRef<HTMLElement>>("scrollContainer");
+  readonly stickyHeader = viewChild<ElementRef<HTMLElement>>("stickyHeader");
+  readonly stickySentinel = viewChild<ElementRef<HTMLElement>>("stickySentinel");
 
   private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
   private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
@@ -207,6 +214,28 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       } else {
         this.keyMode.set("select");
       }
+    });
+
+    effect((onCleanup) => {
+      const root = this.scrollContainer()?.nativeElement;
+      const header = this.stickyHeader()?.nativeElement;
+      const sentinel = this.stickySentinel()?.nativeElement;
+      if (!root || !header || !sentinel) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.rootBounds) return;
+          const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+          if (shouldFloat) {
+            this.renderer.addClass(header, "is-sticky");
+          } else {
+            this.renderer.removeClass(header, "is-sticky");
+          }
+        },
+        { root, threshold: [0, 1] }
+      );
+      observer.observe(sentinel);
+      onCleanup(() => observer.disconnect());
     });
   }
 
