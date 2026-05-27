@@ -177,7 +177,7 @@ export class EventComponent {
   formatConditions(conditions: any): string {
     if (!conditions || typeof conditions !== "object") return "";
     return Object.entries(conditions)
-      .map(([key, value]) => `${key}: ${value}`)
+      .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
   }
 
@@ -185,7 +185,7 @@ export class EventComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof EventHandler;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: EventHandler, b: EventHandler) => {
       const va = (a?.[key] ?? "").toString().toLowerCase();
       const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;

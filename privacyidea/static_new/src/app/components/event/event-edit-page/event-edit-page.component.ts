@@ -49,7 +49,7 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventService } from "@services/event/event.service";
+import { EMPTY_EVENT, EventHandlerSaveParams, EventService } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
@@ -234,14 +234,14 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
     this.hasChanges.set(true);
   }
 
-  setNewOptions(options: any): void {
+  setNewOptions(options: Record<string, unknown>): void {
     const current = this.editEvent().options || {};
     if (JSON.stringify(options) === JSON.stringify(current)) return;
     this.editEvent.set({ ...this.editEvent(), options });
     this.hasChanges.set(true);
   }
 
-  setNewConditions(conditions: any): void {
+  setNewConditions(conditions: Record<string, unknown>): void {
     this.editEvent.set({ ...this.editEvent(), conditions });
     this.hasChanges.set(true);
   }
@@ -256,21 +256,23 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
     this.hasChanges.set(true);
   }
 
-  updateEventHandler(key: string, value: any): void {
+  updateEventHandler(key: string, value: string | number | boolean): void {
     this.editEvent.set({ ...this.editEvent(), [key]: value });
     this.hasChanges.set(true);
   }
 
-  getSaveParameters(): Record<string, any> {
-    const eventParams = deepCopy(this.editEvent()) as Record<string, any>;
-    for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
+  getSaveParameters(): Record<string, unknown> {
+    type EventHandlerParams = EventHandlerSaveParams & { options?: Record<string, unknown> };
+    const eventParams = deepCopy(this.editEvent()) as unknown as EventHandlerParams;
+    const options = eventParams.options ?? {};
+    for (const [optionKey, optionValue] of Object.entries(options)) {
       eventParams["option." + optionKey] = optionValue;
     }
-    if (eventParams["id"] != null) {
-      eventParams["id"] = eventParams["id"].toString();
+    if (eventParams.id != null) {
+      eventParams.id = String(eventParams.id);
     }
-    eventParams["handlermodule"] = this.eventService.selectedHandlerModule();
-    delete eventParams["options"];
+    eventParams.handlermodule = this.eventService.selectedHandlerModule();
+    delete eventParams.options;
     return eventParams;
   }
 

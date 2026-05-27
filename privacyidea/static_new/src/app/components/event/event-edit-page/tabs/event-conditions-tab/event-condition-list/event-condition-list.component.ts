@@ -84,8 +84,6 @@ export class EventConditionListComponent {
 
   @ViewChildren("selectedConditionInput") selectedConditionInput!: QueryList<ElementRef | MatSelect>;
 
-  constructor() {}
-
   protected focusEffect = effect(() => {
     const conditionName = this.focusConditionName();
     if (conditionName) {

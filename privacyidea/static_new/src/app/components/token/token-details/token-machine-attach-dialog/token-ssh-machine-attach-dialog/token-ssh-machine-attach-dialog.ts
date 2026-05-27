@@ -30,6 +30,7 @@ import { MatSelectModule } from "@angular/material/select";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
+import { PiResponse } from "@app/app.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
@@ -61,7 +62,7 @@ export interface SshMachineAssignDialogData {
 })
 export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponent<
   SshMachineAssignDialogData,
-  Observable<any> | null
+  Observable<PiResponse<number>> | null
 > {
   /// Data for the dialog ///
   private applicationService: ApplicationServiceInterface = inject(ApplicationService);
@@ -129,11 +130,11 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   selectedMachineForm = form(this.selectedMachineValue, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
-      if (!value) return [{ kind: "required" as any }];
-      if (typeof value === "string") return [{ kind: "required" as any }];
+      if (!value) return [{ kind: "required" }];
+      if (typeof value === "string") return [{ kind: "required" }];
       const machine = value as Machine;
       if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
-        return [{ kind: "invalidMachine" as any }];
+        return [{ kind: "invalidMachine" }];
       }
       return [];
     });

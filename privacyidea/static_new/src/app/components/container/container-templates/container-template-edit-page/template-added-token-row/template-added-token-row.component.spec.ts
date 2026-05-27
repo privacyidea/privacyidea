@@ -77,7 +77,7 @@ describe("TemplateAddedTokenRowComponent", () => {
 
     it("should emit onRemoveToken when delete button is clicked", () => {
       fixture.componentRef.setInput("index", 5);
-      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      const spy = jest.spyOn(component.removeTokenRequest, "emit");
       fixture.detectChanges();
 
       const deleteBtn = fixture.debugElement.query(By.css("button[mat-icon-button]"));
@@ -87,7 +87,7 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("emits onEditToken when the enrollmentArgsGetter is registered and returns args", () => {
-      const spy = jest.spyOn(component.onEditToken, "emit");
+      const spy = jest.spyOn(component.editTokenRequest, "emit");
       fixture.detectChanges();
 
       component.updateEnrollmentArgsGetter((data) => ({
@@ -137,7 +137,7 @@ describe("TemplateAddedTokenRowComponent", () => {
 
     it("should handle invalid index by not emitting remove event", () => {
       fixture.componentRef.setInput("index", -1);
-      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      const spy = jest.spyOn(component.removeTokenRequest, "emit");
       fixture.detectChanges();
 
       component.removeToken();

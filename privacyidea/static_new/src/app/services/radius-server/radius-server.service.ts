@@ -47,7 +47,7 @@ export interface RadiusServerServiceInterface {
 
   postRadiusServer(server: RadiusServer): Promise<void>;
 
-  testRadiusServer(params: any): Promise<boolean>;
+  testRadiusServer(params: RadiusServer): Promise<boolean>;
 
   deleteRadiusServer(identifier: string): Promise<void>;
 }
@@ -109,26 +109,26 @@ export class RadiusServerService implements RadiusServerServiceInterface {
       });
   }
 
-  async testRadiusServer(params: any): Promise<boolean> {
+  async testRadiusServer(params: RadiusServer): Promise<boolean> {
     const url = `${this.radiusServerBaseUrl}test_request`;
     const request = this.http.post<PiResponse<boolean>>(url, params, { headers: this.authService.getHeaders() });
-    return lastValueFrom(request)
-      .then((res) => {
-        if (res?.result?.value) {
-          this.notificationService.success($localize`RADIUS request successful.`);
-          return true;
-        } else {
-          this.notificationService.error($localize`RADIUS request failed!`);
-          return false;
-        }
-      })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
-        return false;
-      });
-  }
 
+    try {
+      const res = await lastValueFrom(request);
+
+      if (res?.result?.value) {
+        this.notificationService.success($localize`RADIUS request successful.`);
+        return true;
+      }
+
+      this.notificationService.error($localize`RADIUS request failed!`);
+      return false;
+    } catch (error: any) {
+      const message = error.error?.result?.error?.message || "";
+      this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
+      return false;
+    }
+  }
   async deleteRadiusServer(identifier: string): Promise<void> {
     const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()

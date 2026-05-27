@@ -229,7 +229,7 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

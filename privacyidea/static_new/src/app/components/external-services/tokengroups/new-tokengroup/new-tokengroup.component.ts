@@ -138,7 +138,7 @@ export class NewTokengroupComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

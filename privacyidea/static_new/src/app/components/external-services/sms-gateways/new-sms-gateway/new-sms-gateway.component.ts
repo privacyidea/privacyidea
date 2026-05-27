@@ -23,7 +23,8 @@ import {
   computed,
   effect,
   ElementRef,
-  inject, input,
+  inject,
+  input,
   OnDestroy,
   Renderer2,
   signal,
@@ -52,7 +53,10 @@ import {
   SmsProvider
 } from "@services/sms-gateway/sms-gateway.service";
 
-interface KeyValueRow { key: string; value: string }
+interface KeyValueRow {
+  key: string;
+  value: string;
+}
 
 interface SmsFormModel {
   name: string;
@@ -122,12 +126,12 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   parametersDirty = signal(false);
 
   updateParameter(key: string, value: string): void {
-    this.parametersModel.update(m => ({ ...m, [key]: value }));
+    this.parametersModel.update((m) => ({ ...m, [key]: value }));
     this.parametersDirty.set(true);
   }
 
   clearParameter(key: string): void {
-    this.parametersModel.update(m => ({ ...m, [key]: '' }));
+    this.parametersModel.update((m) => ({ ...m, [key]: "" }));
     this.parametersDirty.set(true);
   }
 
@@ -343,7 +347,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -390,7 +394,8 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   deleteOption(key: string): void {
-    const { [key]: _, ...rest } = this.customOptions;
+    const rest = { ...this.customOptions };
+    delete rest[key];
     this.customOptions = rest;
   }
 
@@ -407,7 +412,8 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   deleteHeader(key: string): void {
-    const { [key]: _, ...rest } = this.customHeaders;
+    const rest = { ...this.customHeaders };
+    delete rest[key];
     this.customHeaders = rest;
   }
 

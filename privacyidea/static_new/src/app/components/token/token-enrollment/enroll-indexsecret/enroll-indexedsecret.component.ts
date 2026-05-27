@@ -57,7 +57,7 @@ export class EnrollIndexedsecretComponent implements OnInit {
   otpKey = signal<string>("");
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled());
   });
 

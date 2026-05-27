@@ -63,9 +63,7 @@ export class FilterOption<T = any> {
   }
 }
 
-export class DummyFilterOption<T = any> extends FilterOption<T> {
-  readonly isDummy = true;
-
+export class DummyFilterOption<T = unknown> extends FilterOption<T> {
   constructor(args: { key: string; value?: string | null }) {
     super({
       key: args.key,
