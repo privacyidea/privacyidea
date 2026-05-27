@@ -58,7 +58,7 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
-from privacyidea.lib.error import PolicyError
+from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
@@ -235,12 +235,17 @@ def get_user_attribute():
 
 @user_blueprint.route('/internal_attribute', methods=['GET'])
 @admin_required
+@prepolicy(realmadmin, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@prepolicy(check_base_action, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
 @event("get_user_internal_attribute", request, g)
 def get_user_internal_attribute():
     """
     Return privacyIDEA-internal attributes for a user. These are caches
     privacyIDEA writes about itself (e.g. ``fido2_user_id``,
     ``last_used_token``) and are NOT user-facing — admin-only, read-only.
+
+    Requires the policy action :ref:`policy_get_user_internal_attributes`.
+    A realm-restricted admin is confined to their realms.
 
     Intended for support / debugging via the WebUI details panel.
 
@@ -249,12 +254,12 @@ def get_user_internal_attribute():
     :query realm: realm name.
     :status 200: dict of internal attributes in ``result.value``.
     """
-    username = get_required(request.all_data, "user")
-    realm = get_optional(request.all_data, "realm")
-    resolver = get_optional(request.all_data, "resolver")
-    user = User(login=username, realm=realm or "", resolver=resolver or "")
+    user = request.User
+    if not user or not user.exist():
+        username = get_required(request.all_data, "user")
+        raise UserError(f"The user '{username!s}' does not exist.")
     r = user.internal_attributes
-    g.audit_object.log({"success": True, "info": f"{username!s}"})
+    g.audit_object.log({"success": True, "info": f"{user.login!s}"})
     return send_result(r)
 
 

@@ -228,13 +228,19 @@ angular.module("privacyideaApp")
             // Internal attributes are admin-only diagnostic data. We fetch
             // them lazily the first time the accordion expands so the details
             // page does not pay for an extra round-trip on every load.
+            // The accordion is only shown if the admin has the right to read
+            // them (get_user_internal_attributes).
+            $scope.canReadInternalAttributes = AuthFactory.checkRight("get_user_internal_attributes");
             $scope.internalAttributesLoaded = false;
             $scope.internal_attributes = {};
             $scope.formatInternalAttribute = function (value) {
                 // Show string values bare; dicts/lists/numbers as JSON.
                 return typeof value === 'string' ? value : JSON.stringify(value);
             };
-            $scope.onInternalAttributesAccordionToggle = function (isOpen) {
+            // Trigger the lazy fetch off the accordion's own is-open model so
+            // we always see the post-toggle state (an ng-click on the group
+            // can fire before the directive flips the flag).
+            $scope.$watch("internalAttributesAccordionOpen", function (isOpen) {
                 if (isOpen && !$scope.internalAttributesLoaded) {
                     UserFactory.getInternalAttributes($scope.username, $scope.realmname,
                         function (data) {
@@ -242,7 +248,7 @@ angular.module("privacyideaApp")
                             $scope.internalAttributesLoaded = true;
                         });
                 }
-            };
+            });
 
             $scope.deleteCustomAttribute = function (key) {
                 UserFactory.deleteCustomAttribute($scope.username, $scope.realmname, key,

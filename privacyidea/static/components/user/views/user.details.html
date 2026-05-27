@@ -369,12 +369,11 @@
         </div>
     </div>
 
-    <div style="margin-top: 20px;" ng-show="loggedInUser.role === 'admin'">
+    <div style="margin-top: 20px;" ng-show="canReadInternalAttributes">
         <uib-accordion close-others="false">
             <div uib-accordion-group
                  class="panel-default"
-                 is-open="internalAttributesAccordionOpen"
-                 ng-click="onInternalAttributesAccordionToggle(internalAttributesAccordionOpen)">
+                 is-open="internalAttributesAccordionOpen">
                 <uib-accordion-heading>
                     <translate>Internal attributes</translate>
                     <span class="pull-right glyphicon" aria-hidden="true"

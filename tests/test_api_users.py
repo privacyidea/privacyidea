@@ -685,6 +685,48 @@ class APIUsersTestCase(MyApiTestCase):
 
         user.delete_internal_attribute()
 
+    def test_11c_get_internal_attributes_realm_scoped(self):
+        """A realm-restricted admin may only read internal attributes of
+        users in their own realm(s)."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        realm1_user = User("hans", self.realm1)
+        realm1_user.set_internal_attribute("fido2_user_id", "realm1-id")
+        realm2_user = User("cornelius", self.realm2)
+        realm2_user.set_internal_attribute("fido2_user_id", "realm2-id")
+
+        # Admin policy that grants the right only for realm1
+        set_policy("internal_attr_realm1", scope=SCOPE.ADMIN,
+                   action=PolicyAction.GET_USER_INTERNAL_ATTRIBUTES,
+                   realm=self.realm1)
+
+        # Reading a realm1 user is allowed
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "hans", "realm": self.realm1},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertEqual("realm1-id", result.get("value").get("fido2_user_id"))
+
+        # Reading a realm2 user is denied for this realm-restricted admin
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "cornelius", "realm": self.realm2},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            self.assertIn(PolicyAction.GET_USER_INTERNAL_ATTRIBUTES,
+                          result.get("error").get("message"))
+
+        delete_policy("internal_attr_realm1")
+        realm1_user.delete_internal_attribute()
+        realm2_user.delete_internal_attribute()
+
     def test_12_get_users(self):
         self.setUp_user_realms()
 

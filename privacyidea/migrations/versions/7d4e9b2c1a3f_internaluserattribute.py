@@ -89,8 +89,6 @@ def upgrade():
             sa.UniqueConstraint('user_id', 'resolver', 'realm_id', 'Key',
                                 name='uq_internaluserattribute_user_key'),
         )
-        op.create_index('ix_internaluserattribute_user', 'internaluserattribute',
-                        ['user_id', 'resolver', 'realm_id'], unique=False)
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
             print("Table 'internaluserattribute' already exists.")
@@ -243,7 +241,6 @@ def downgrade():
         print(f"Could not copy data back to 'customuserattribute': {ex}")
 
     try:
-        op.drop_index('ix_internaluserattribute_user', table_name='internaluserattribute')
         op.drop_table('internaluserattribute')
         if op.get_bind().dialect.supports_sequences:
             op.execute("DROP SEQUENCE IF EXISTS internaluserattribute_seq")

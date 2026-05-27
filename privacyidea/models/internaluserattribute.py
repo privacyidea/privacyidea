@@ -26,7 +26,6 @@ from sqlalchemy import (
     Integer,
     DateTime,
     ForeignKey,
-    Index,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -52,8 +51,8 @@ class InternalUserAttribute(MethodsMixin, db.Model):
     """
     __tablename__ = 'internaluserattribute'
     __table_args__ = (
-        Index('ix_internaluserattribute_user',
-              'user_id', 'resolver', 'realm_id'),
+        # The unique constraint's backing index also serves lookups by the
+        # (user_id, resolver, realm_id) prefix, so no separate index is needed.
         UniqueConstraint('user_id', 'resolver', 'realm_id', 'Key',
                          name='uq_internaluserattribute_user_key'),
     )
