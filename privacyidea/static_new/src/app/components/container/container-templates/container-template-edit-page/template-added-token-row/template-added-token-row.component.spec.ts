@@ -67,12 +67,17 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(hotpChild).toBeTruthy();
     });
 
-    it("should disable expansion panel if child has no form fields", () => {
+    it("should keep the expansion panel enabled regardless of token type", () => {
       fixture.detectChanges();
 
-      expect(component.childHadNoForm()).toBe(true);
       const panel = fixture.debugElement.query(By.css("mat-expansion-panel"));
-      expect(panel.componentInstance.disabled).toBe(true);
+      expect(panel.componentInstance.disabled).toBe(false);
+    });
+
+    it("should expose the token type description", () => {
+      fixture.detectChanges();
+
+      expect(component.tokenTypeDescription()).toContain("HOTP");
     });
 
     it("should emit onRemoveToken when delete button is clicked", () => {
@@ -104,25 +109,6 @@ describe("TemplateAddedTokenRowComponent", () => {
   });
 
   describe("Lifecycle & UI Logic", () => {
-    it("should update childHadNoForm to false when fields are added", () => {
-      fixture.detectChanges();
-
-      expect(component.childHadNoForm()).toBe(true);
-
-      component.updateAdditionalFormFields({ pin: {} });
-      fixture.detectChanges();
-
-      expect(component.childHadNoForm()).toBe(false);
-    });
-
-    it("should set childHadForm back to false when no fields are passed", () => {
-      component.updateAdditionalFormFields({ key: {} });
-      expect(component.childHadForm()).toBe(true);
-
-      component.updateAdditionalFormFields({});
-      expect(component.childHadForm()).toBe(false);
-    });
-
     it("should stop propagation on delete button click", () => {
       fixture.detectChanges();
 

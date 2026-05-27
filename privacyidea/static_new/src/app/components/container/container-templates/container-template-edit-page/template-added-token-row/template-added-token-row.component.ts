@@ -47,6 +47,7 @@ import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-ta
 import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
 import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
 import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { tokenTypes } from "@utils/token.utils";
 
 @Component({
   selector: "app-template-added-token-row",
@@ -89,8 +90,10 @@ export class TemplateAddedTokenRowComponent {
   // State Signals
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
 
-  readonly childHadForm = signal<boolean>(false);
-  readonly childHadNoForm = computed(() => !this.childHadForm());
+  readonly tokenTypeDescription = computed(() => {
+    const type = this.tokenEnrollmentPayload().type;
+    return tokenTypes.find((t) => t.key === type)?.text ?? "";
+  });
 
   readonly enrollmentArgsGetterSignal = signal<enrollmentArgsGetterFn | null>(null);
 
@@ -117,9 +120,6 @@ export class TemplateAddedTokenRowComponent {
   }
 
   // Token Management Methods
-  updateAdditionalFormFields(fields: Record<string, any>) {
-    this.childHadForm.set(Object.keys(fields).length > 0);
-  }
 
   toggleUserAssign(checked: boolean) {
     this.userAssign.set(checked);
