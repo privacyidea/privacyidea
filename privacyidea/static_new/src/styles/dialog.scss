@@ -1,5 +1,3 @@
-@use "@angular/material" as mat;
-
 .mat-mdc-dialog-surface {
   border-radius: var(--border-radius) !important;
   box-shadow: var(--box-dialog-shadow) !important;
@@ -9,7 +7,7 @@
 @mixin dialog-container-styles {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
   background-color: var(--table-color);
 
   // subtract double global padding to preserve margin around the component
@@ -37,4 +35,9 @@
 }
 .mat-mdc-dialog-content {
   max-height: 82vh;
+  font-size: 16px
+}
+
+.cdk-overlay-pane {
+  max-width: unset !important;
 }

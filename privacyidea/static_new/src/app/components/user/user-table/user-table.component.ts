@@ -21,10 +21,10 @@ import {
   ElementRef,
   ViewChild,
   WritableSignal,
+  computed,
   inject,
   linkedSignal,
-  signal,
-  computed
+  signal
 } from "@angular/core";
 import {
   MatCell,
@@ -40,25 +40,25 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { FormsModule } from "@angular/forms";
+import { NgClass } from "@angular/common";
+import { MatIconButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { NgClass } from "@angular/common";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { Sort } from "@angular/material/sort";
-import { RouterLink } from "@angular/router";
-import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatDialog } from "@angular/material/dialog";
-import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
-import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+import { RouterLink } from "@angular/router";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
   { key: "username", label: "Username" },
@@ -75,7 +75,6 @@ const columnKeysMap = [
 @Component({
   selector: "app-user-table",
   imports: [
-    FormsModule,
     MatCell,
     MatCellDef,
     MatFormField,
@@ -94,8 +93,8 @@ const columnKeysMap = [
     MatHeaderCellDef,
     ScrollToTopDirective,
     ClearableInputComponent,
+    CopyableComponent,
     UserTableActionsComponent,
-    ClearableInputComponent,
     RouterLink,
     MatIcon,
     MatIconButton,
@@ -127,7 +126,7 @@ export class UserTableComponent {
   });
 
   totalLength: WritableSignal<number> = linkedSignal({
-    source: () => this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
+    source: () => (this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined),
     computation: (userResource, previous) => {
       if (userResource) {
         return userResource.result?.value?.length ?? 0;

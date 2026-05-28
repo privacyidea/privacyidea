@@ -17,22 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { AuthService } from "../../../services/auth/auth.service";
-import { DialogService } from "src/app/services/dialog/dialog.service";
 import { Component, Input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { of } from "rxjs";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { PolicyDetail, PolicyService } from "src/app/services/policies/policies.service";
-import { TableUtilsService } from "src/app/services/table-utils/table-utils.service";
-import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService } from "src/testing/mock-services";
-import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
-import { PoliciesTableComponent } from "./policies-table.component";
-import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
+import { PolicyFilterComponent } from "@components/policies/policies-table/policy-filter/policy-filter.component";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
@@ -58,7 +57,7 @@ describe("PoliciesTableComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PoliciesTableComponent, NoopAnimationsModule],
+      imports: [PoliciesTableComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: DialogService, useClass: MockDialogService },

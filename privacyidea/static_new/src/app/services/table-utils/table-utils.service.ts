@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { MatTableDataSource } from "@angular/material/table";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { ContainerDetailToken } from "../container/container.service";
+import { MatTableDataSource } from "@angular/material/table";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface FilterPair {
   key: string;
@@ -74,7 +74,7 @@ export const COLUMN_REGISTRY: Readonly<Record<ColumnKey, ColumnDef>> = {
   rounds: { key: "rounds", label: "Rounds" },
   service_id: { key: "service_id", label: "Service ID" },
   user: { key: "user", label: "SSH User" },
-  actions: { key: "actions", label: "Actions" },
+  actions: { key: "actions", label: "Actions" }
 } as const;
 
 type ColumnsTuple<K extends readonly ColumnKey[]> = {
@@ -102,7 +102,7 @@ export interface TableUtilsServiceInterface {
 
   getDisplayText(columnKey: string, element: any): string;
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string;
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: number }): string;
 
   getDivClassForKey(key: string): string;
 
@@ -129,9 +129,7 @@ export interface TableUtilsServiceInterface {
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -140,11 +138,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   emptyDataSource<T>(pageSize: number, columnsKeyMap: { key: string; label: string }[]): MatTableDataSource<T> {
     return new MatTableDataSource(
       Array.from({ length: pageSize }, () => {
-        const emptyRow: any = {};
+        const emptyRow: Record<string, string> = {};
         columnsKeyMap.forEach((column) => {
           emptyRow[column.key] = "";
         });
-        return emptyRow;
+        return emptyRow as T;
       })
     );
   }
@@ -252,7 +250,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return element[columnKey];
   }
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: any }): string {
+  getSpanClassForKey(args: { key: string; value?: any; maxfail?: number }): string {
     const { key, value, maxfail } = args;
     if (key === "success") {
       if (value === "" || value === null || value === undefined) {
@@ -284,7 +282,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         return "";
       } else if (value === 0) {
         return "highlight-true";
-      } else if (value >= 1 && value < maxfail) {
+      } else if (value >= 1 && maxfail !== undefined && value < maxfail) {
         return "highlight-warning";
       } else {
         return "highlight-false";
@@ -353,7 +351,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       case false:
         if (state === "active") {
           return "highlight-true";
-        } else if (state === "disabled") {
+        } else if (state === "disabled" || state === "damaged" || state === "lost") {
           return "highlight-false";
         } else {
           return "";
@@ -361,7 +359,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       case true:
         if (state === "active") {
           return "highlight-true-clickable";
-        } else if (state === "disabled") {
+        } else if (state === "disabled" || state === "damaged" || state === "lost") {
           return "highlight-false-clickable";
         } else {
           return "";
@@ -421,7 +419,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof ContainerDetailToken;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: ContainerDetailToken, b: ContainerDetailToken) => {
       const va = (a[key] ?? "").toString().toLowerCase();
       const vb = (b[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;

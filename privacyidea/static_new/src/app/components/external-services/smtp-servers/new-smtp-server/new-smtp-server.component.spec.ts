@@ -16,21 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewSmtpServerComponent } from "./new-smtp-server.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { MockDialogService } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { of } from "rxjs";
-import { SmtpService } from "../../../../services/smtp/smtp.service";
-import { MockSmtpService } from "../../../../../testing/mock-services/mock-smtp-service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services";
-import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
+import { NewSmtpServerComponent } from "./new-smtp-server.component";
 
 describe("NewSmtpServerComponent", () => {
   let smtpServiceMock: any;
@@ -50,7 +49,7 @@ describe("NewSmtpServerComponent", () => {
 
     beforeEach(async () => {
       await TestBed.configureTestingModule({
-        imports: [NewSmtpServerComponent, NoopAnimationsModule],
+        imports: [NewSmtpServerComponent],
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
@@ -77,37 +76,35 @@ describe("NewSmtpServerComponent", () => {
     });
 
     it("should initialize form for create mode", () => {
-      expect(component.isEditMode).toBe(false);
-      expect(component.smtpForm.get("identifier")?.value).toBe("");
+      expect(component.isEditMode()).toBe(false);
+      expect(component.smtpModel().identifier).toBe("");
     });
 
     it("should initialize form with S/MIME fields", () => {
-      expect(component.smtpForm.contains("certificate")).toBe(true);
-      expect(component.smtpForm.contains("private_key")).toBe(true);
-      expect(component.smtpForm.contains("private_key_password")).toBe(true);
-      expect(component.smtpForm.contains("smime")).toBe(true);
-      expect(component.smtpForm.contains("dont_send_on_error")).toBe(true);
-
-      expect(component.smtpForm.get("smime")?.value).toBe(false);
-      expect(component.smtpForm.get("dont_send_on_error")?.value).toBe(false);
+      expect(component.smtpModel().certificate).toBe("");
+      expect(component.smtpModel().private_key).toBe("");
+      expect(component.smtpModel().private_key_password).toBe("");
+      expect(component.smtpModel().smime).toBe(false);
+      expect(component.smtpModel().dont_send_on_error).toBe(false);
     });
 
     it("should show TLS when server does not start with smtps:", () => {
-      component.smtpForm.patchValue({ server: "smtp.example.com" });
-      expect(component.showTLS).toBe(true);
+      component.smtpModel.update((m) => ({ ...m, server: "smtp.example.com" }));
+      expect(component.showTLS()).toBe(true);
 
-      component.smtpForm.patchValue({ server: "smtps://smtp.example.com" });
-      expect(component.showTLS).toBe(false);
+      component.smtpModel.update((m) => ({ ...m, server: "smtps://smtp.example.com" }));
+      expect(component.showTLS()).toBe(false);
     });
 
     it("should call save when form is valid", async () => {
-      component.smtpForm.patchValue({
+      component.smtpModel.update((m) => ({
+        ...m,
         identifier: "test",
         server: "smtp.test.com",
         port: 25,
         sender: "test@test.com",
         timeout: 5
-      });
+      }));
 
       const success = await component.save();
 
@@ -117,13 +114,14 @@ describe("NewSmtpServerComponent", () => {
     });
 
     it("Save should handle error", async () => {
-      component.smtpForm.patchValue({
+      component.smtpModel.update((m) => ({
+        ...m,
         identifier: "test",
         server: "smtp.test.com",
         port: 25,
         sender: "test@test.com",
         timeout: 5
-      });
+      }));
       smtpServiceMock.postSmtpServer.mockRejectedValue(new Error("Save failed"));
 
       const success = await component.save();
@@ -134,38 +132,40 @@ describe("NewSmtpServerComponent", () => {
     });
 
     it("should not call smtpService.postSmtpServer if the form is invalid", async () => {
-      component.smtpForm.patchValue({
-        identifier: "", // Invalid
+      component.smtpModel.update((m) => ({
+        ...m,
+        identifier: "",
         server: "smtp.test.com",
         port: 25,
         sender: "test@test.com",
         timeout: 5
-      });
-      expect(component.smtpForm.valid).toBe(false);
+      }));
+      expect(component.smtpForm().valid()).toBe(false);
       await component.save();
       expect(smtpServiceMock.postSmtpServer).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
     it("should call test when form is valid", async () => {
-      component.smtpForm.patchValue({
+      component.smtpModel.update((m) => ({
+        ...m,
         identifier: "test",
         server: "smtp.test.com",
         port: 25,
         sender: "test@test.com",
         timeout: 5
-      });
+      }));
       await component.test();
       expect(smtpServiceMock.testSmtpServer).toHaveBeenCalled();
     });
 
     it("should return true for hasChanges if form is dirty", () => {
-      component.smtpForm.get("server")?.markAsDirty();
+      component.smtpForm.server().markAsDirty();
       expect(component.hasChanges).toBe(true);
     });
 
     it("should return false for hasChanges if form is pristine", () => {
-      expect(component.smtpForm.pristine).toBe(true);
+      expect(component.smtpForm().dirty()).toBe(false);
       expect(component.hasChanges).toBe(false);
     });
 
@@ -188,14 +188,15 @@ describe("NewSmtpServerComponent", () => {
 
       it("should open SaveAndExitDialog when there are changes", () => {
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-        component.smtpForm.patchValue({
+        component.smtpModel.update((m) => ({
+          ...m,
           identifier: "test",
           server: "smtp.test.com",
           port: 25,
           sender: "test@test.com",
           timeout: 5
-        });
-        component.smtpForm.markAsDirty();
+        }));
+        component.smtpForm().markAsDirty();
 
         component.onCancel();
 
@@ -211,76 +212,75 @@ describe("NewSmtpServerComponent", () => {
 
       it("should close when user selects 'discard' in cancel dialog", async () => {
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-        component.smtpForm.patchValue({
+        component.smtpModel.update((m) => ({
+          ...m,
           identifier: "test",
           server: "smtp.test.com",
           port: 25,
           sender: "test@test.com",
           timeout: 5
-        });
-        component.smtpForm.markAsDirty();
-
+        }));
+        component.smtpForm().markAsDirty();
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
         expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       });
 
       it("should close when user selects 'save-exit' and save succeeds", async () => {
-        component.smtpForm.patchValue({
+        component.smtpModel.update((m) => ({
+          ...m,
           identifier: "test",
           server: "smtp.test.com",
           port: 25,
           sender: "test@test.com",
           timeout: 5
-        });
-        component.smtpForm.markAsDirty();
+        }));
+        component.smtpForm().markAsDirty();
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
         pendingChangesService.save.mockReturnValue(Promise.resolve(true));
 
-
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
         expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       });
 
       it("should NOT close when user selects 'save-exit' but save fails", async () => {
-        component.smtpForm.patchValue({
+        component.smtpModel.update((m) => ({
+          ...m,
           identifier: "test",
           server: "smtp.test.com",
           port: 25,
           sender: "test@test.com",
           timeout: 5
-        });
-        component.smtpForm.markAsDirty();
+        }));
+        component.smtpForm().markAsDirty();
         smtpServiceMock.postSmtpServer.mockRejectedValue(new Error("Save failed"));
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
         pendingChangesService.save.mockReturnValue(Promise.resolve(false));
 
-
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
         expect(router.navigateByUrl).not.toHaveBeenCalled();
       });
 
       it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-        component.smtpForm.patchValue({ identifier: "" });
-        component.smtpForm.markAsDirty();
+        component.smtpModel.update((m) => ({ ...m, identifier: "" }));
+        component.smtpForm().markAsDirty();
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
-
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.save).not.toHaveBeenCalled();
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
@@ -289,19 +289,19 @@ describe("NewSmtpServerComponent", () => {
 
       it("should do nothing when user closes dialog without selecting an option", async () => {
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
-        component.smtpForm.patchValue({
+        component.smtpModel.update((m) => ({
+          ...m,
           identifier: "test",
           server: "smtp.test.com",
           port: 25,
           sender: "test@test.com",
           timeout: 5
-        });
-        component.smtpForm.markAsDirty();
-
+        }));
+        component.smtpForm().markAsDirty();
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
         expect(router.navigateByUrl).not.toHaveBeenCalled();
@@ -323,7 +323,7 @@ describe("NewSmtpServerComponent", () => {
       };
 
       await TestBed.configureTestingModule({
-        imports: [NewSmtpServerComponent, NoopAnimationsModule],
+        imports: [NewSmtpServerComponent],
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
@@ -347,9 +347,9 @@ describe("NewSmtpServerComponent", () => {
     });
 
     it("should disable identifier control when data is provided", () => {
-      expect(editComponent.isEditMode).toBe(true);
-      expect(editComponent.smtpForm.get("identifier")?.disabled).toBe(true);
-      expect(editComponent.smtpForm.get("identifier")?.value).toBe("existing-id");
+      expect(editComponent.isEditMode()).toBe(true);
+      expect(editComponent.smtpForm.identifier().disabled()).toBe(true);
+      expect(editComponent.smtpModel().identifier).toBe("existing-id");
     });
   });
 });

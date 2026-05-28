@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AppConfig, ConfigService } from "./config.service";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
-import { VersioningService, VersioningServiceInterface } from "../version/version.service";
-import { MockVersioningService } from "../../../testing/mock-services/mock-versioning-service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { VersioningService } from "@services/version/version.service";
+import { MockVersioningService } from "@testing/mock-services/mock-versioning-service";
+import { AppConfig, ConfigService } from "./config.service";
 
 describe("ConfigService", () => {
   let service: ConfigService;

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,39 +16,32 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, effect, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { form, FormField, required, validate } from "@angular/forms/signals";
 
 import { MatOptionModule } from "@angular/material/core";
-import { distinctUntilChanged, map } from "rxjs";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   YubikeyApiPayloadMapper,
   YubikeyEnrollmentData
-} from "../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+} from "@app/mappers/token-api-payload/yubikey-token-api-payload.mapper";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-enroll-yubikey",
   templateUrl: "./enroll-yubikey.component.html",
   styleUrls: ["./enroll-yubikey.component.scss"],
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatOptionModule]
+  imports: [MatFormFieldModule, MatInputModule, MatOptionModule, FormField]
 })
 export class EnrollYubikeyComponent implements OnInit {
   protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(YubikeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<YubikeyEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: YubikeyEnrollmentData;
@@ -56,31 +49,43 @@ export class EnrollYubikeyComponent implements OnInit {
     } | null
   >();
 
-  testYubiKeyControl = new FormControl("");
-  otpKeyControl = new FormControl("", [Validators.required, Validators.minLength(32), Validators.maxLength(32)]);
-  otpLengthControl = new FormControl<number | null>(44, [Validators.required, Validators.min(32)]);
+  testYubiKey = signal<string>("");
+  otpKey = signal<string>("");
+  otpLength = signal<number>(44);
 
-  yubikeyForm = new FormGroup({
-    otpKey: this.otpKeyControl,
-    otpLength: this.otpLengthControl
+  otpKeyForm = form(this.otpKey, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value().length !== 32 ? [{ kind: "invalidLength" as any }] : []));
   });
+  otpLengthForm = form(this.otpLength, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value() < 32 ? [{ kind: "min" as any }] : []));
+  });
+
+  constructor() {
+    effect(() => {
+      const len = Math.max(32, this.testYubiKey().length);
+      if (this.otpLength() !== len) this.otpLength.set(len);
+    });
+  }
+
   enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
     data: YubikeyEnrollmentData;
     mapper: TokenApiPayloadMapper<YubikeyEnrollmentData>;
   } | null => {
-    this.yubikeyForm.updateValueAndValidity();
-    if (this.yubikeyForm.invalid) {
-      this.yubikeyForm.markAllAsTouched();
+    if (!this.otpKeyForm().valid() || !this.otpLengthForm().valid()) {
+      this.otpKeyForm().markAsTouched();
+      this.otpLengthForm().markAsTouched();
       return null;
     }
 
     const enrollmentData: YubikeyEnrollmentData = {
       ...basicOptions,
       type: "yubikey",
-      otpKey: this.otpKeyControl.value ?? "",
-      otpLength: this.otpLengthControl.value ?? 44
+      otpKey: this.otpKey(),
+      otpLength: this.otpLength()
     };
 
     return {
@@ -90,29 +95,11 @@ export class EnrollYubikeyComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this._setInitialFormValues();
-    this.additionalFormFieldsChange.emit({
-      otpKey: this.otpKeyControl,
-      otpLength: this.otpLengthControl
-    });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-
-    this.testYubiKeyControl.valueChanges
-      .pipe(
-        map((v) => Math.max(32, (v ?? "").length)),
-        distinctUntilChanged()
-      )
-      .subscribe((len) => {
-        if (this.otpLengthControl.value !== len) {
-          this.otpLengthControl.setValue(len, { emitEvent: false });
-        }
-      });
-  }
-
-  private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
-      this.otpKeyControl.setValue(this.enrollmentData()?.otpKey ?? "", { emitEvent: false });
-      this.otpLengthControl.setValue(this.enrollmentData()?.otpLength ?? 44, { emitEvent: false });
+    if (this.enrollmentData()) {
+      this.otpKey.set(this.enrollmentData()?.otpKey ?? "");
+      this.otpLength.set(this.enrollmentData()?.otpLength ?? 44);
     }
+    this.additionalFormFieldsChange.emit({});
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 }

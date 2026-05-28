@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,10 +18,13 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollYubicoComponent } from "./enroll-yubico.component";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { EnrollYubicoComponent } from "./enroll-yubico.component";
+import { SystemService } from "@services/system/system.service";
+import { MockContentService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("EnrollYubicoComponent", () => {
   let component: EnrollYubicoComponent;
@@ -29,8 +32,12 @@ describe("EnrollYubicoComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollYubicoComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollYubicoComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService}
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollYubicoComponent);

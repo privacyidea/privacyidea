@@ -1,0 +1,106 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (authService.oneActionAllowed(["assign", "unassign", "enable", "disable", "container_remove_token", "delete"])) {
+  <div class="actions-otp-container">
+    <h4 class="margin-8">Token Actions</h4>
+    <div class="flex-column ali-center gap-8">
+      @if (authService.actionAllowed("assign")) {
+        <button
+          (click)="assignToAllToken()"
+          [disabled]="!isAssignableToAllToken()"
+          class="action-button-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>playlist_add</mat-icon>
+          Assign All
+        </button>
+      }
+      @if (authService.actionAllowed("unassign")) {
+        <button
+          (click)="unassignFromAllToken()"
+          [disabled]="!isUnassignableFromAllToken()"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>playlist_remove</mat-icon>
+          Unassign All
+        </button>
+      }
+    </div>
+
+    @if (authService.oneActionAllowed(["assign", "unassign"]) && authService.oneActionAllowed(["enable", "disable"])) {
+      <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+    }
+    <div class="flex-column ali-center gap-8">
+      @if (authService.actionAllowed("enable")) {
+        <button
+          (click)="toggleAll('activate')"
+          [disabled]="!anyDisabledTokens()"
+          class="action-button-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>playlist_play</mat-icon>
+          Activate All
+        </button>
+      }
+      @if (authService.actionAllowed("disable")) {
+        <button
+          (click)="toggleAll('deactivate')"
+          [disabled]="!anyActiveTokens()"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon class="mdi--list-lock" />
+          Deactivate All
+        </button>
+      }
+    </div>
+
+    @if (
+      authService.oneActionAllowed(["enable", "disable", "unassign", "assign"]) &&
+      authService.oneActionAllowed(["container_template_list", "container_remove_token", "delete"])
+    ) {
+      <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+    }
+    <div class="flex-column ali-center gap-8">
+      @if (authService.actionAllowed("container_remove_token")) {
+        <button
+          (click)="removeAll()"
+          [disabled]="tokenData().data.length === 0"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon> playlist_remove</mat-icon>
+          Remove All
+        </button>
+      }
+      @if (authService.actionAllowed("delete")) {
+        <button
+          (click)="deleteAllTokens()"
+          [disabled]="tokenData().data.length === 0"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon> delete_sweep</mat-icon>
+          Delete All
+        </button>
+      }
+    </div>
+  </div>
+}

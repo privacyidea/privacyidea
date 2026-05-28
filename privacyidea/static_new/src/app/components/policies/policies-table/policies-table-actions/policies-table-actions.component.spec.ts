@@ -18,18 +18,17 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PoliciesTableActionsComponent } from "./policies-table-actions.component";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { PolicyService } from "../../../../services/policies/policies.service";
-import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
-import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { MockRouter } from "../../../../../testing/mock-services";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { MockRouter } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { of } from "rxjs";
+import { PoliciesTableActionsComponent } from "./policies-table-actions.component";
 
 describe("PoliciesTableActionsComponent", () => {
   let component: PoliciesTableActionsComponent;
@@ -40,7 +39,7 @@ describe("PoliciesTableActionsComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PoliciesTableActionsComponent, NoopAnimationsModule],
+      imports: [PoliciesTableActionsComponent],
       providers: [
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },

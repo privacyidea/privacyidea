@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,9 +20,10 @@ import { APP_BASE_HREF, Location } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
 
+import { MockNotificationService, MockSessionTimerService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { AppComponent } from "./app.component";
 import { appConfig } from "./app.config";
 import { routes } from "./app.routes";
@@ -30,14 +31,12 @@ import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
-import { MockAuthService } from "../testing/mock-services/mock-auth-service";
-import { MockNotificationService, MockSessionTimerService } from "../testing/mock-services";
 
 describe("AppComponent", () => {
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [AppComponent, BrowserAnimationsModule],
+      imports: [AppComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -52,8 +51,7 @@ describe("AppComponent", () => {
       ]
     }).compileComponents();
 
-    jest.spyOn(console, "warn").mockImplementation(() => {
-    });
+    jest.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   it("creates the app", () => {
@@ -61,7 +59,7 @@ describe("AppComponent", () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it("has title \"privacyidea-webui\"", () => {
+  it('has title "privacyidea-webui"', () => {
     const fixture = TestBed.createComponent(AppComponent);
     expect(fixture.componentInstance.title).toBe("privacyidea-webui");
   });
@@ -87,19 +85,6 @@ describe("AppComponent", () => {
 
     expect(timer.resetTimer).toHaveBeenCalled();
     expect(timer.startTimer).toHaveBeenCalled();
-  });
-
-  describe("appConfig", () => {
-    it("defines providers array", () => {
-      expect(Array.isArray(appConfig.providers)).toBe(true);
-    });
-
-    it("contains APP_BASE_HREF set to /app/v2/", () => {
-      const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
-      if (p && "useValue" in p) {
-        expect(p?.useValue).toBe("/app/v2/");
-      }
-    });
   });
 
   describe("Routing", () => {
@@ -139,5 +124,18 @@ describe("AppComponent", () => {
       await Promise.resolve();
       expect(location.path()).toBe("/login");
     });
+  });
+});
+
+describe("appConfig", () => {
+  it("defines providers array", () => {
+    expect(Array.isArray(appConfig.providers)).toBe(true);
+  });
+
+  it("contains APP_BASE_HREF set to /app/v2/", () => {
+    const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
+    if (p && "useValue" in p) {
+      expect(p?.useValue).toBe("/app/v2/");
+    }
   });
 });

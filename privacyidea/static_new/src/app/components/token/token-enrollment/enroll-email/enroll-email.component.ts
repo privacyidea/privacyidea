@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { Router } from "@angular/router";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   EmailApiPayloadMapper,
   EmailEnrollmentData
-} from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { Router } from "@angular/router";
+} from "@app/mappers/token-api-payload/email-token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: "email";
@@ -44,7 +41,7 @@ export interface EmailEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-email",
   standalone: true,
-  imports: [MatCheckbox, MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatError],
+  imports: [MatCheckbox, MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-email.component.html",
   styleUrl: "./enroll-email.component.scss"
 })
@@ -58,9 +55,7 @@ export class EnrollEmailComponent implements OnInit {
 
   enrollmentData = input<EmailEnrollmentData>();
 
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: EmailEnrollmentData;
@@ -70,13 +65,17 @@ export class EnrollEmailComponent implements OnInit {
 
   disabled = input<boolean>(false);
 
-  emailAddressControl = new FormControl<string>("");
+  readEmailDynamically = signal<boolean>(false);
+  emailAddress = signal<string>("");
 
-  readEmailDynamicallyControl = new FormControl<boolean>(false);
-
-  emailForm = new FormGroup({
-    emailAddress: this.emailAddressControl,
-    readEmailDynamically: this.readEmailDynamicallyControl
+  emailAddressForm = form(this.emailAddress, (f) => {
+    required(f);
+    validate(f, (ctx) => {
+      const value = ctx.value();
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return [{ kind: "invalidEmail" as any }];
+      return [];
+    });
+    disabled(f, () => this.disabled() || this.readEmailDynamically());
   });
 
   defaultSmtpIsSet = computed(() => {
@@ -85,35 +84,13 @@ export class EnrollEmailComponent implements OnInit {
     return !!cfg?.["email.identifier"];
   });
 
-  constructor() {
-    effect(() =>
-      this.disabled() ? this.emailForm.disable({ emitEvent: false }) : this.emailForm.enable({ emitEvent: false })
-    );
-  }
-
   ngOnInit(): void {
-    this._setInitialFormValues();
-    this.additionalFormFieldsChange.emit({
-      emailAddress: this.emailAddressControl,
-      readEmailDynamically: this.readEmailDynamicallyControl
-    });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-
-    this.readEmailDynamicallyControl.valueChanges.subscribe((readEmailDynamic) => {
-      if (!readEmailDynamic) {
-        this.emailAddressControl.setValidators([Validators.email, Validators.required]);
-      } else {
-        this.emailAddressControl.clearValidators();
-      }
-      this.emailAddressControl.updateValueAndValidity();
-    });
-  }
-
-  private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
-      this.emailAddressControl.setValue(this.enrollmentData()?.emailAddress ?? "");
-      this.readEmailDynamicallyControl.setValue(this.enrollmentData()?.readEmailDynamically ?? false);
+    if (this.enrollmentData()) {
+      this.emailAddress.set(this.enrollmentData()?.emailAddress ?? "");
+      this.readEmailDynamically.set(this.enrollmentData()?.readEmailDynamically ?? false);
     }
+    this.additionalFormFieldsChange.emit({});
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
   enrollmentArgsGetter = (
@@ -122,17 +99,17 @@ export class EnrollEmailComponent implements OnInit {
     data: EmailEnrollmentData;
     mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
   } | null => {
-    if (!this.readEmailDynamicallyControl.value && this.emailAddressControl.invalid) {
-      this.emailForm.markAllAsTouched();
+    if (!this.readEmailDynamically() && !this.emailAddressForm().valid()) {
+      this.emailAddressForm().markAsTouched();
       return null;
     }
     const enrollmentData: EmailEnrollmentOptions = {
       ...basicOptions,
       type: "email",
-      readEmailDynamically: !!this.readEmailDynamicallyControl.value
+      readEmailDynamically: this.readEmailDynamically()
     };
     if (!enrollmentData.readEmailDynamically) {
-      enrollmentData.emailAddress = this.emailAddressControl.value ?? "";
+      enrollmentData.emailAddress = this.emailAddress();
     }
     return {
       data: enrollmentData,
@@ -146,7 +123,7 @@ export class EnrollEmailComponent implements OnInit {
   }
 
   onEmailConfigKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === "Enter" || event.key === " ") {
       this.goToEmailConfig();
     }
   }

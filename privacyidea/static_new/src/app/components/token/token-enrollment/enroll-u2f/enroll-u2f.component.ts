@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-  U2fApiPayloadMapper,
-  U2fEnrollmentData
-} from "../../../../mappers/token-api-payload/u2f-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { U2fApiPayloadMapper, U2fEnrollmentData } from "@app/mappers/token-api-payload/u2f-token-api-payload.mapper";
 
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   type: "u2f";
@@ -36,7 +29,7 @@ export interface U2fEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-u2f",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-u2f.component.html",
   styleUrl: "./enroll-u2f.component.scss"
 })
@@ -44,9 +37,7 @@ export class EnrollU2fComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: U2fApiPayloadMapper = inject(U2fApiPayloadMapper);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: U2fEnrollmentData;

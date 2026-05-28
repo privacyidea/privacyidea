@@ -18,6 +18,8 @@
  **/
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   BulkResult,
   LostTokenResponse,
@@ -26,11 +28,9 @@ import {
   TokenService,
   TokenServiceInterface,
   TokenType
-} from "../../app/services/token/token.service";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
-import { PiResponse } from "../../app/app.component";
+} from "@services/token/token.service";
 import { of, Subject } from "rxjs";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
   return {
@@ -81,8 +81,8 @@ export class MockTokenService implements TokenServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
-  maxDescriptionLength = 80;
-  readonly eventPageSize = 10;
+  readonly maxDescriptionLength = 80;
+  readonly eventPageSize = signal(10);
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({
     key: "hotp",
@@ -150,10 +150,12 @@ export class MockTokenService implements TokenServiceInterface {
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
-  verifyToken = jest.fn().mockReturnValue(of({
-    detail: { serial: "ABC123", rollout_state: "enrolled" },
-    result: { status: true }
-  }));
+  verifyToken = jest.fn().mockReturnValue(
+    of({
+      detail: { serial: "ABC123", rollout_state: "enrolled" },
+      result: { status: true }
+    })
+  );
   readonly lostToken = jest
     .fn<ReturnType<TokenService["lostToken"]>, Parameters<TokenService["lostToken"]>>()
     .mockImplementation((_serial: string) => {

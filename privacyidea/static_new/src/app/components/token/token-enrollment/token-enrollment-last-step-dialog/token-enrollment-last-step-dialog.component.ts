@@ -16,21 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, computed, inject, Signal } from "@angular/core";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import {
-  TokenEnrollmentDialogData,
-  TokenService,
-  TokenServiceInterface
-} from "../../../../services/token/token.service";
-import { NO_QR_CODE_TOKEN_TYPES } from "../token-enrollment.constants";
-import { MatIconModule } from "@angular/material/icon";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import { MatButtonModule } from "@angular/material/button";
-import { ReactiveFormsModule } from "@angular/forms";
-import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { MatIconModule } from "@angular/material/icon";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { NO_QR_CODE_TOKEN_TYPES } from "@components/token/token-enrollment/token-enrollment.constants";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
@@ -41,7 +37,6 @@ import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/t
     DialogWrapperComponent,
     MatIconModule,
     MatButtonModule,
-    ReactiveFormsModule,
     TokenEnrollmentDataComponent,
     TokenEnrolledTextComponent
   ]
@@ -62,11 +57,13 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.data.response?.detail?.googleurl?.value ??
     this.data.response?.detail?.motpurl?.value ??
     this.data.response?.detail?.otpkey?.value ??
-    this.data.response?.detail?.tiqrenroll?.value ?? "";
+    this.data.response?.detail?.tiqrenroll?.value ??
+    "";
   protected readonly rollover = this.data.rollover ?? false;
 
-  title: Signal<string> = computed(() => this.rollover ? $localize`Token Successfully Rolled Over` :
-    $localize`Token Successfully Enrolled`);
+  title: Signal<string> = computed(() =>
+    this.rollover ? $localize`Token Successfully Rolled Over` : $localize`Token Successfully Enrolled`
+  );
 
   showQRCode(): boolean {
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);

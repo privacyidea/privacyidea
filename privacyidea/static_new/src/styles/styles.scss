@@ -1,7 +1,9 @@
 @use "sass:meta";
 @use "@angular/material" as mat;
+@use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
+@forward "table" show base-table-structure;
 
 @include meta.load-css("mixins.scss");
 @include meta.load-css("buttons.scss");
@@ -10,12 +12,12 @@
 @include meta.load-css("info.scss");
 @include meta.load-css("inputs.scss");
 @include meta.load-css("tab.scss");
-@include meta.load-css("table.scss");
 @include meta.load-css("panel.scss");
 @include meta.load-css("list.scss");
 @include meta.load-css("actions.scss");
 @include meta.load-css("overflow.scss");
 @include meta.load-css("snackbar.scss");
+@include meta.load-css("animations.scss");
 
 html,
 body {
@@ -46,6 +48,18 @@ body {
   --light-distance: -4px;
   --shadow-distance: 2px;
 
+  // Pre-baked Material elevation shadows (0..24) as CSS variables.
+  // Generated at build time so that elevation can be re-skinned at runtime
+  // by reassigning --elevation-3 / --elevation-5 / --elevation-8.
+  @for $z from 0 through 24 {
+    --mat-elevation-#{$z}: #{mat-elevation.get-box-shadow($z)};
+  }
+
+  // User-tunable "current" elevations. Override at runtime to change look & feel.
+  --elevation-3: var(--mat-elevation-3);
+  --elevation-5: var(--mat-elevation-5);
+  --elevation-8: var(--mat-elevation-8);
+
   --double-global-padding: calc(var(--global-padding) * 2);
   --global-padding: 16px;
   --three-quarters-global-padding: calc(var(--global-padding) * 0.75);
@@ -56,6 +70,7 @@ body {
 
   --global-gap: 16px;
   --half-global-gap: calc(var(--global-gap) / 2);
+  --quarter-global-gap: calc(var(--global-gap) / 4);
 
   --light: #f3f3f3;
 
@@ -125,8 +140,7 @@ body {
   --mat-tab-inactive-ripple-color: white;
   --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
   --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
-
-  --drawer-width-admin: var(--overlay-margin);
+  --mat-sys-corner-extra-small: var(--border-radius);
   --drawer-width-self-service: 256px;
 
   --mat-menu-container-color: var(--mat-sys-surface-container-low);
@@ -135,11 +149,11 @@ body {
 @mixin main-component-style {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
   background-color: var(--table-color);
   // subtract double global padding to preserve margin around the component
   // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
-  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding) - 2 * var(--global-padding));
+  max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
   max-height: var(--max-height);
   overflow: auto;
 }
@@ -331,12 +345,32 @@ body.self-service-layout {
   margin-left: 8px;
 }
 
+.margin-left-4 {
+  margin-left: 4px;
+}
+
 .margin-right-32 {
   margin-right: 32px;
 }
 
 .margin-right-16 {
   margin-right: 16px;
+}
+
+.margin-right-4 {
+  margin-right: 4px;
+}
+
+.margin-right-5 {
+  margin-right: 5px;
+}
+
+.margin-right-3 {
+  margin-right: 3px;
+}
+
+.margin-right-2 {
+  margin-right: 2px;
 }
 
 .margin-top-0 {
@@ -528,6 +562,10 @@ body.self-service-layout {
   margin-left: 64px;
 }
 
+.width-300 {
+  width: 300px;
+}
+
 .max-width-300 {
   max-width: 300px;
 }
@@ -566,12 +604,20 @@ body.self-service-layout {
 
 .multi-column-panel.mat-mdc-select-panel {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(260px, 308px));
   max-height: unset;
   column-gap: var(--third-global-padding);
   padding: var(--three-quarters-global-padding);
   padding-bottom: var(--global-padding);
   overflow-y: auto;
+}
+
+@media (max-width: 1302px) {
+  .multi-column-panel.mat-mdc-select-panel {
+    grid-template-columns: minmax(260px, 308px);
+    width: fit-content !important;
+    min-width: unset !important;
+  }
 }
 
 .single-column-panel.mat-mdc-select-panel {
@@ -582,7 +628,7 @@ body.self-service-layout {
 }
 
 .select-option {
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
   border-radius: var(--border-radius);
   margin: 0 0 var(--third-global-padding) 0;
 }
@@ -598,7 +644,7 @@ body.self-service-layout {
 }
 
 .sticky-header.is-sticky {
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 }
 
 .sticky-controls {
@@ -720,7 +766,6 @@ mat-chip.mat-mdc-chip {
 
 .mdc-list-item.mdc-list-item--with-one-line {
   height: auto !important;
-  padding-left: 220;
   padding-right: 0;
   padding-bottom: 8px;
 }

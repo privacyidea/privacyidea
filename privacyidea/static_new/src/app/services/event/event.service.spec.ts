@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,24 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { EventService } from "./event.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import {
-  MockContentService,
-  MockDialogService,
-  MockNotificationService,
-  MockPiResponse
-} from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { NotificationService } from "../notification/notification.service";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import { ROUTE_PATHS } from "../../route_paths";
-import { ContentService } from "../content/content.service";
-import { AuthService } from "../auth/auth.service";
-import { DialogService } from "../dialog/dialog.service";
-import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
+import { EventService } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -50,6 +45,7 @@ describe("EventService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        EventService,
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
@@ -252,7 +248,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -315,7 +312,8 @@ describe("EventService", () => {
 
       const req = httpMock.expectOne(`${service.eventBaseUrl}/handlermodules`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -345,7 +343,8 @@ describe("EventService", () => {
 
       const req = httpMock.expectOne(`${service.eventBaseUrl}/available`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -371,7 +370,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/positions/testModule`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -436,7 +436,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/actions/testModule`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -482,7 +483,8 @@ describe("EventService", () => {
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/conditions/testModule`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

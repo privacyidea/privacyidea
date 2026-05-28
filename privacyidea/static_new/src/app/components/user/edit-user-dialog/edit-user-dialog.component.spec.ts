@@ -19,12 +19,17 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EditUserDialogComponent } from "./edit-user-dialog.component";
-import { UserService } from "../../../services/user/user.service";
-import { MockUserService } from "../../../../testing/mock-services";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { UserService } from "@services/user/user.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockDialogService, MockPendingChangesService, MockUserService } from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { EditUserDialogComponent } from "./edit-user-dialog.component";
 
 describe("EditUserDialogComponent", () => {
   let component: EditUserDialogComponent;
@@ -51,6 +56,10 @@ describe("EditUserDialogComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: UserService, useClass: MockUserService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: ResolverService, useClass: MockResolverService },
         { provide: MAT_DIALOG_DATA, useValue: testUserData },
         { provide: MatDialogRef, useClass: MockMatDialogRef }
       ]

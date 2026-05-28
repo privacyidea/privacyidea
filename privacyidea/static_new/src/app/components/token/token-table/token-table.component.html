@@ -29,7 +29,7 @@
         class="token-table-filter">
         <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
-          (onClick)="tokenService.clearFilter()"
+          (clearButtonClick)="tokenService.clearFilter()"
           [showClearButton]="tokenService.tokenFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
@@ -136,7 +136,9 @@
             *matCellDef="let tokenDetails"
             class="max-width-300"
             [ngClass]="{
-              'table-checkbox': column.key === 'select'
+              'table-checkbox': column.key === 'select',
+              'width-300': column.key === 'description',
+              'container_serial-width': column.key === 'container_serial'
             }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
@@ -150,15 +152,14 @@
                     [disabled]="totalLength() === 0" />
                 }
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="tokenDetails.serial">
                     <a
                       (click)="contentService.tokenSelected(tokenDetails.serial)"
                       attr.aria-label="{{ column.label }} Link"
                       class="flex ali-center">
                       {{ tokenDetails[column.key] }}
                     </a>
-                    <app-copy-button [copyText]="tokenDetails.serial" />
-                  </div>
+                  </app-copyable>
                 }
                 @case ("active") {
                   @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -181,31 +182,31 @@
                 @case ("realms") {
                   <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
                     @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
-                      <span attr.aria-label="{{ column.label }} Link">
-                        {{ realm }}
-                      </span>
-                      <br class="realm-break" />
+                      <app-copyable [copyText]="realm">
+                        <span attr.aria-label="{{ column.label }} Link">
+                          {{ realm }}
+                        </span>
+                      </app-copyable>
                     }
                   </div>
                 }
                 @case ("container_serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="tokenDetails.container_serial">
                     <a
-                      (click)="contentService.containerSelected(tokenDetails.container_serial)"
+                      (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       attr.aria-label="{{ column.label }} Link">
                       {{ tokenDetails[column.key] }}
                     </a>
-                    @if (tokenDetails.container_serial !== "") {
-                      <app-copy-button [copyText]="tokenDetails.container_serial" />
-                    }
-                  </div>
+                  </app-copyable>
                 }
                 @case ("username") {
-                  <a
-                    (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
-                    attr.aria-label="{{ column.label }} Link">
-                    {{ tokenDetails[column.key] }}
-                  </a>
+                  <app-copyable [copyText]="tokenDetails[column.key]">
+                    <a
+                      (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  </app-copyable>
                 }
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {

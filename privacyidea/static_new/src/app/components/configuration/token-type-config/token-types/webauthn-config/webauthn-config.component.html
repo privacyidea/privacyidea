@@ -32,8 +32,8 @@
         class="input-width-l">
         <mat-label i18n>trust_anchor_dir</mat-label>
         <input
-          [ngModel]="formData()[WEBAUTHN_TRUST_ANCHOR_DIR]"
-          (ngModelChange)="updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, $event)"
+          [value]="formData()[WEBAUTHN_TRUST_ANCHOR_DIR]"
+          (input)="updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, $any($event.target).value)"
           matInput
           placeholder="/etc/privacyidea/trusted_attestation_roots">
         <mat-hint i18n>The path to the directory containing the trust anchors.</mat-hint>

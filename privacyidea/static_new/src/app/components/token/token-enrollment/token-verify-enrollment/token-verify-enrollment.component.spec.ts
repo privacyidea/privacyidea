@@ -19,15 +19,15 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
-import { MockTokenService } from "src/testing/mock-services/mock-token-service";
-import { MockContentService } from "src/testing/mock-services/mock-content-service";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
-import { TokenService } from "../../../../services/token/token.service";
+import { NO_ERRORS_SCHEMA } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { ContentService } from "@services/content/content.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
-import { ContentService } from "../../../../services/content/content.service";
+import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
 
 describe("TokenVerifyEnrollmentComponent", () => {
   let component: TokenVerifyEnrollmentComponent;
@@ -64,33 +64,35 @@ describe("TokenVerifyEnrollmentComponent", () => {
   });
 
   it("should disable verify action if input is invalid", () => {
-    component.verifyOTPControl.setValue("");
+    component.verifyOTP_value.set("");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(true);
     expect(component.dialogActions()[0].disabled).toBe(true);
   });
 
   it("should enable verify action if input is valid", () => {
-    component.verifyOTPControl.setValue("123456");
+    component.verifyOTP_value.set("123456");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(false);
     expect(component.dialogActions()[0].disabled).toBe(false);
   });
 
   it("should call verifyToken and close dialog on successful verify", () => {
-    component.verifyOTPControl.setValue("123456");
+    component.verifyOTP_value.set("123456");
     component.onDialogAction("verify");
     expect(mockTokenService.verifyToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).toHaveBeenCalled();
   });
 
   it("should not close dialog if rollout_state is not enrolled", () => {
-    mockTokenService.verifyToken = jest.fn().mockReturnValue(of({
-      result: { status: true },
-      detail: { rollout_state: "client_wait", serial: "123", type: "hotp" },
-      type: "hotp"
-    }));
-    component.verifyOTPControl.setValue("123456");
+    mockTokenService.verifyToken = jest.fn().mockReturnValue(
+      of({
+        result: { status: true },
+        detail: { rollout_state: "client_wait", serial: "123", type: "hotp" },
+        type: "hotp"
+      })
+    );
+    component.verifyOTP_value.set("123456");
     component.onDialogAction("verify");
     expect(mockTokenService.verifyToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();

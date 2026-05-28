@@ -1,0 +1,76 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { NgClass } from "@angular/common";
+import { Component, computed, inject } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatCell, MatHeaderCell, MatHeaderRow, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
+
+@Component({
+  selector: "app-container-details-token-table-self-service",
+  imports: [
+    MatCell,
+    MatFormField,
+    MatHeaderCell,
+    MatHeaderRow,
+    MatInput,
+    MatLabel,
+    MatPaginator,
+    MatRow,
+    MatTable,
+    NgClass,
+    MatTableModule,
+    MatIcon,
+    MatIconButton,
+    CopyableComponent,
+    MatTooltip,
+    ClearableInputComponent
+  ],
+  templateUrl: "./container-details-token-table.self-service.component.html",
+  styleUrl: "./container-details-token-table.component.scss"
+})
+export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDetailsTokenTableComponent {
+  protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected override readonly authService: AuthServiceInterface = inject(AuthService);
+  override isAssignableToAllToken = computed<boolean>(() => {
+    const assignedUser = this.assignedUser();
+    return assignedUser.user_name !== "";
+  });
+
+  constructor() {
+    super();
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineResolverComponent } from "./machine-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MachineResolverService } from "../../services/machine-resolver/machine-resolver.service";
-import { MockMachineResolverService } from "../../../testing/mock-services/mock-machine-resolver-service";
-import { Component } from "@angular/core";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../services/auth/auth.service";
+import { Component } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { AuthService } from "@services/auth/auth.service";
+import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MachineResolverComponent } from "./machine-resolver.component";
 
 @Component({
   standalone: true,
@@ -48,15 +49,17 @@ describe("MachineResolverComponent", () => {
   let fixture: ComponentFixture<MachineResolverComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let authServiceMock: MockAuthService;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineResolverComponent, NoopAnimationsModule],
+      imports: [MachineResolverComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineResolverService, useClass: MockMachineResolverService },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     })
       .overrideComponent(MachineResolverComponent, {
@@ -70,6 +73,7 @@ describe("MachineResolverComponent", () => {
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
   });
 
   it("should create", () => {
@@ -122,5 +126,10 @@ describe("MachineResolverComponent", () => {
 
       expect(editPanels.length).toBe(3);
     });
+  });
+
+  it("ngOnDestroy clears all pending-changes registrations", () => {
+    component.ngOnDestroy();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 });

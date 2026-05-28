@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,10 +18,13 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollQuestionComponent } from "./enroll-question.component";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { EnrollQuestionComponent } from "./enroll-question.component";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { SystemService } from "@services/system/system.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("EnrollQuestionnaireComponent", () => {
   let component: EnrollQuestionComponent;
@@ -29,8 +32,14 @@ describe("EnrollQuestionnaireComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollQuestionComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollQuestionComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: ContentService, useClass: MockContentService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollQuestionComponent);

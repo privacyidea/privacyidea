@@ -16,24 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, EventEmitter, Input, Output, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
+import { MatOption } from "@angular/material/core";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption } from "@angular/material/core";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { NgClass } from "@angular/common";
-import { ClearableInputComponent } from "../clearable-input/clearable-input.component";
-import { AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { AuthServiceInterface } from "@services/auth/auth.service";
 
 @Component({
   selector: "app-container-add-token",
   standalone: true,
   imports: [
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatCheckbox,
@@ -65,4 +63,3 @@ export class ContainerAddTokenComponent {
   @Output() clearFilter = new EventEmitter<void>();
   @Output() addToken = new EventEmitter<any>();
 }
-

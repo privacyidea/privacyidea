@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,9 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
-import { provideHttpClient } from "@angular/common/http";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
@@ -26,7 +28,8 @@ describe("EnrollYubikeyComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(),
+        { provide: TokenService, useClass: MockTokenService }],
       imports: [EnrollYubikeyComponent]
     }).compileComponents();
 

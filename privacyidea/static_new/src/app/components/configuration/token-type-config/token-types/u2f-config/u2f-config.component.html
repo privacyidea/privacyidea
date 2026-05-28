@@ -30,14 +30,14 @@
         class="input-width-l">
         <mat-label i18n>AppID</mat-label>
         <input
-          [(ngModel)]="formData()['u2f.appId']"
-          #appIdInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #appIdInput
+          (input)="updateFormData('u2f.appId', $any($event.target).value)"
+          [value]="formData()['u2f.appId']"
           matInput
           placeholder="https://pi.server.com"
           required
           type="url">
-        @if (appIdInput.errors?.['required']) {
+        @if (appIdInput.validity.valueMissing) {
           <mat-error i18n>AppID is <strong>required</strong></mat-error>
         }
       </mat-form-field>

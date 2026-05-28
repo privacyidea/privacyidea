@@ -17,10 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { WebauthnConfigComponent } from "@components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component";
 import { provideRouter } from "@angular/router";
-import { provideAnimations } from "@angular/platform-browser/animations";
-import { WEBAUTHN_TRUST_ANCHOR_DIR } from "../../../../../constants/token.constants";
+import { WebauthnConfigComponent } from "@components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component";
+import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
 
 describe("WebauthnConfigComponent", () => {
   let fixture: ComponentFixture<WebauthnConfigComponent>;
@@ -29,7 +28,7 @@ describe("WebauthnConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [WebauthnConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(WebauthnConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -66,4 +65,3 @@ describe("WebauthnConfigComponent", () => {
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "" });
   });
 });
-

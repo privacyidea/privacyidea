@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,11 +18,11 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 type ServiceIds = {
@@ -47,9 +47,7 @@ export interface ServiceIdServiceInterface {
   deleteServiceId(servicename: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -59,6 +57,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
+    if (this.authService.isSelfServiceUser()) return undefined;
     if (!this.contentService.onExternalServiceIds() && !this.contentService.onTokenEnrollmentLikely()) {
       return undefined;
     }
@@ -70,12 +69,15 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   });
 
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
-    source: () => this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined,
-    computation: (serviceIdResource, previous) => {
-      const value = serviceIdResource?.result?.value;
-      if (!value) {
-        return previous?.value ?? [];
-      }
+    source: () => ({
+      value: this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined,
+      isLoading: this.serviceIdResource.isLoading(),
+      error: this.serviceIdResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
       return Object.entries(value).map(([servicename, { description, id }]) => ({
         servicename,
         description,

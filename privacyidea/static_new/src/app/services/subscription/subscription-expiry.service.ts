@@ -18,11 +18,11 @@
  **/
 import { effect, inject, Injectable, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { SubscriptionExpiryDialogComponent } from "@components/shared/subscription-expiry-dialog/subscription-expiry-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { Subscription, SubscriptionService } from "./subscription.service";
-import { SubscriptionExpiryDialogComponent } from "../../components/shared/subscription-expiry-dialog/subscription-expiry-dialog.component";
 
-@Injectable({ providedIn: "root" })
+@Injectable()
 export class SubscriptionExpiryService {
   private readonly dialog = inject(MatDialog);
   private readonly auth: AuthServiceInterface = inject(AuthService);

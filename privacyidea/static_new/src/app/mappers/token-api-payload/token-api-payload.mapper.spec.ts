@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { FourEyesApiPayloadMapper, FourEyesEnrollmentData } from "./4eyes-token-api-payload.mapper";
+import { BaseApiPayloadMapper, TokenEnrollmentData } from "./_token-api-payload.mapper";
 import { ApplspecApiPayloadMapper, ApplspecEnrollmentData } from "./applspec-token-api-payload.mapper";
 import { CertificateApiPayloadMapper, CertificateEnrollmentData } from "./certificate-token-api-payload.mapper";
 import { DaypasswordApiPayloadMapper, DaypasswordEnrollmentData } from "./daypassword-token-api-payload.mapper";
@@ -25,10 +27,10 @@ import { IndexedSecretApiPayloadMapper, IndexedSecretEnrollmentData } from "./in
 import { MotpApiPayloadMapper, MotpEnrollmentData } from "./motp-token-api-payload.mapper";
 import { PaperApiPayloadMapper, PaperEnrollmentData } from "./paper-token-api-payload.mapper";
 import {
-  PasskeyApiPayloadMapper,
-  PasskeyEnrollmentData,
-  PasskeyFinalizeApiPayloadMapper,
-  PasskeyFinalizeData
+    PasskeyApiPayloadMapper,
+    PasskeyEnrollmentData,
+    PasskeyFinalizeApiPayloadMapper,
+    PasskeyFinalizeData
 } from "./passkey-token-api-payload.mapper";
 import { PushApiPayloadMapper, PushEnrollmentData } from "./push-token-api-payload.mapper";
 import { QuestionApiPayloadMapper, QuestionEnrollmentData } from "./question-token-api-payload.mapper";
@@ -44,15 +46,13 @@ import { TotpApiPayloadMapper, TotpEnrollmentData } from "./totp-token-api-paylo
 import { U2fApiPayloadMapper, U2fEnrollmentData } from "./u2f-token-api-payload.mapper";
 import { VascoApiPayloadMapper, VascoEnrollmentData } from "./vasco-token-api-payload.mapper";
 import {
-  WebAuthnApiPayloadMapper,
-  WebAuthnEnrollmentData,
-  WebAuthnFinalizeApiPayloadMapper,
-  WebauthnFinalizeData
+    WebAuthnApiPayloadMapper,
+    WebAuthnEnrollmentData,
+    WebAuthnFinalizeApiPayloadMapper,
+    WebauthnFinalizeData
 } from "./webauthn-token-api-payload.mapper";
-import { FourEyesApiPayloadMapper, FourEyesEnrollmentData } from "./4eyes-token-api-payload.mapper";
-import { YubikeyApiPayloadMapper, YubikeyEnrollmentData } from "./yubikey-token-api-payload.mapper";
 import { YubicoApiPayloadMapper, YubicoEnrollmentData } from "./yubico-token-api-payload.mapper";
-import { BaseApiPayloadMapper, TokenEnrollmentData } from "./_token-api-payload.mapper";
+import { YubikeyApiPayloadMapper, YubikeyEnrollmentData } from "./yubikey-token-api-payload.mapper";
 
 const common = {
   description: "desc",

@@ -16,31 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenTableComponent } from "./token-table.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
-import {
-  MockContainerService,
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse,
-  MockTableUtilsService,
-  MockTokenService
-} from "../../../../testing/mock-services";
-import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
-import { TokenService } from "../../../services/token/token.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { ContentService } from "../../../services/content/content.service";
-import { AuthService, JwtData } from "../../../services/auth/auth.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
+import { AuthService, JwtData } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import {
+    MockContainerService,
+    MockContentService,
+    MockLocalService,
+    MockNotificationService,
+    MockRealmService,
+    MockTableUtilsService,
+    MockTokenService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { of } from "rxjs";
+import { TokenTableComponent } from "./token-table.component";
+import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
+import { RealmService } from "@services/realm/realm.service";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -53,13 +53,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tableFixture: ComponentFixture<TokenTableComponent>;
   let table: TokenTableComponent;
 
-  let selfFixture: ComponentFixture<TokenTableSelfServiceComponent>;
-  let component: TokenTableSelfServiceComponent;
-
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
-  let dialogServiceMock: MockDialogService;
-  let dialogMock: MatDialogMock;
   let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
@@ -68,7 +63,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TokenTableComponent, TokenTableSelfServiceComponent, NoopAnimationsModule],
+      imports: [TokenTableComponent, TokenTableSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -79,6 +74,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
+        { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
       ]
@@ -87,13 +83,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableFixture = TestBed.createComponent(TokenTableComponent);
     table = tableFixture.componentInstance;
 
-    selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
-    component = selfFixture.componentInstance;
-
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
     tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
     tokenService.toggleActive.mockReturnValue(of({}));
@@ -105,7 +96,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     );
 
     tableFixture.detectChanges();
-    selfFixture.detectChanges();
   });
 
   afterEach(() => {
@@ -117,16 +107,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("TokenTableSelfServiceComponent should create", () => {
-    expect(component).toBeTruthy();
+    const selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
     const tokens = [{ serial: "T-1" } as any, { serial: "T-2" } as any];
     tokenService.tokenResourceValue.set({
-        tokens,
-        count: 2,
-        current: 1
-      });
+      tokens,
+      count: 2,
+      current: 1
+    });
     tableFixture.detectChanges();
 
     expect(table.isAllSelected()).toBe(false);
@@ -216,7 +207,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("onPageEvent updates page size, index and service's eventPageSize", () => {
     table.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as any);
-    expect(tokenService.eventPageSize).toBe(25);
+    expect(tokenService.eventPageSize()).toBe(25);
     expect(table.pageSize()).toBe(25);
     expect(table.pageIndex()).toBe(2);
   });
@@ -294,6 +285,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("pageSizeOptions should add custom page size if not included in default options", () => {
+    const component = TestBed.createComponent(TokenTableSelfServiceComponent).componentInstance;
     const defaultOptions = [5, 10, 25, 50];
     tableUtilsService.pageSizeOptions.set(defaultOptions);
     expect(component.pageSizeOptions()).toEqual(defaultOptions);

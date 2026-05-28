@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,9 +19,9 @@
 import { TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
-import { ApplicationService } from "./application.service";
-import { MockPiResponse } from "../../../testing/mock-services";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockPiResponse } from "@testing/mock-services";
+import { ApplicationService } from "./application.service";
 
 describe("ApplicationService", () => {
   let applicationService: ApplicationService;
@@ -30,7 +30,7 @@ describe("ApplicationService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(), ApplicationService]
     });
     applicationService = TestBed.inject(ApplicationService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -44,46 +44,44 @@ describe("ApplicationService", () => {
     TestBed.tick();
     const req = httpMock.expectOne((req) => req.url.includes(applicationService.applicationBaseUrl));
     const apiApplications = {
-      "luks": {
-        "options": {
-          "totp": {
-            "partition": {
-              "type": "str"
+      luks: {
+        options: {
+          totp: {
+            partition: {
+              type: "str"
             },
-            "slot": {
-              "type": "int",
-              "value": [0, 1, 2, 3, 4, 5, 6, 7]
+            slot: {
+              type: "int",
+              value: [0, 1, 2, 3, 4, 5, 6, 7]
             }
           }
         }
       },
-      "offline": {
-        "options": {
-          "hotp": {
-            "count": {
-              "type": "str"
+      offline: {
+        options: {
+          hotp: {
+            count: {
+              type: "str"
             },
-            "rounds": {
-              "type": "str"
+            rounds: {
+              type: "str"
             }
           },
-          "passkey": {},
-          "webauthn": {}
+          passkey: {},
+          webauthn: {}
         }
       },
-      "ssh": {
-        "options": {
-          "sshkey": {
-            "service_id": {
-              "description": "The service ID of the SSH server. Several servers can have the same service ID.",
-              "type": "str",
-              "value": [
-                "testID"
-              ]
+      ssh: {
+        options: {
+          sshkey: {
+            service_id: {
+              description: "The service ID of the SSH server. Several servers can have the same service ID.",
+              type: "str",
+              value: ["testID"]
             },
-            "user": {
-              "description": "The username on the SSH server.",
-              "type": "str"
+            user: {
+              description: "The username on the SSH server.",
+              type: "str"
             }
           }
         }
@@ -125,5 +123,32 @@ describe("ApplicationService", () => {
       }
     };
     expect(applications).toEqual(defaultApplications);
+  });
+
+  it("should reset to default applications when resource errors after successful load", async () => {
+    TestBed.tick();
+    let req = httpMock.expectOne((req) => req.url.includes(applicationService.applicationBaseUrl));
+    const apiApplications = {
+      luks: { options: { totp: { partition: { type: "str" }, slot: { type: "int", value: [0, 1] } } } },
+      offline: { options: { hotp: { count: { type: "str" }, rounds: { type: "str" } }, passkey: {}, webauthn: {} } },
+      ssh: { options: { sshkey: { service_id: { description: "desc", type: "str", value: ["id1"] }, user: { description: "u", type: "str" } } } }
+    };
+    req.flush(MockPiResponse.fromValue(apiApplications));
+    await Promise.resolve();
+    expect(applicationService.applications()).toEqual(apiApplications);
+
+    // Reload and return error
+    applicationService.applicationResource.reload();
+    TestBed.tick();
+    req = httpMock.expectOne((req) => req.url.includes(applicationService.applicationBaseUrl));
+    req.flush("Error", { status: 500, statusText: "Server Error" });
+    await Promise.resolve();
+
+    const defaultApplications = {
+      luks: { options: { totp: { partition: { type: "" }, slot: { type: "", value: [] } } } },
+      offline: { options: { hotp: { count: { type: "" }, rounds: { type: "" } }, passkey: {}, webauthn: {} } },
+      ssh: { options: { sshkey: { service_id: { description: "", type: "", value: [] }, user: { description: "", type: "" } } } }
+    };
+    expect(applicationService.applications()).toEqual(defaultApplications);
   });
 });

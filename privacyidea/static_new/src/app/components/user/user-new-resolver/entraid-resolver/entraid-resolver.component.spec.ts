@@ -17,20 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EntraidResolverComponent } from "./entraid-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ComponentRef } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { ComponentRef } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { EntraidResolverComponent } from "./entraid-resolver.component";
 
 describe("EntraidResolverComponent", () => {
   let component: EntraidResolverComponent;
   let componentRef: ComponentRef<EntraidResolverComponent>;
   let fixture: ComponentFixture<EntraidResolverComponent>;
-  let resolverService: MockResolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -39,10 +37,9 @@ describe("EntraidResolverComponent", () => {
         provideHttpClientTesting(),
         { provide: ResolverService, useClass: MockResolverService }
       ],
-      imports: [EntraidResolverComponent, NoopAnimationsModule]
+      imports: [EntraidResolverComponent]
     }).compileComponents();
 
-    resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     fixture = TestBed.createComponent(EntraidResolverComponent);
     component = fixture.componentInstance;
     componentRef = fixture.componentRef;
@@ -61,8 +58,8 @@ describe("EntraidResolverComponent", () => {
     };
     componentRef.setInput("data", defaultData);
     fixture.detectChanges();
-    expect(component.baseUrlControl.value).toBe("https://graph.microsoft.com/v1.0");
-    expect(component.authorityControl.value).toBe("https://login.microsoftonline.com/{tenant}");
-    expect(component.configGetUserListGroup.value.endpoint).toBe("/users");
+    expect(component.model().base_url).toBe("https://graph.microsoft.com/v1.0");
+    expect(component.model().authority).toBe("https://login.microsoftonline.com/{tenant}");
+    expect(component.configGetUserListModel().endpoint).toBe("/users");
   });
 });

@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component } from "@angular/core";
 import { MatDialogContent } from "@angular/material/dialog";
-import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 export type MessageDialogData = {
   title: string | null;

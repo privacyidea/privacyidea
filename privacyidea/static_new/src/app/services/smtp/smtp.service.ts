@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, effect, inject, Injectable, Signal } from "@angular/core";
-import { environment } from "../../../environments/environment";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { PiResponse } from "../../app.component";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface SmtpServer {
@@ -58,9 +58,7 @@ export interface SmtpServiceInterface {
   deleteSmtpServer(identifier: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SmtpService implements SmtpServiceInterface {
   readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
 
@@ -76,7 +74,11 @@ export class SmtpService implements SmtpServiceInterface {
   }
 
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
-    if (!this.contentService.onExternalSmtp() && !this.contentService.onConfigurationTokenTypes() && !this.contentService.onConfigurationSystem()) {
+    if (
+      !this.contentService.onExternalSmtp() &&
+      !this.contentService.onConfigurationTokenTypes() &&
+      !this.contentService.onConfigurationSystem()
+    ) {
       return undefined;
     }
     return {

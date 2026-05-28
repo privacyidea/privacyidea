@@ -18,7 +18,8 @@
  **/
 
 import { Injectable } from "@angular/core";
-import { TokenDetails, TokenTypeKey } from "../../services/token/token.service";
+import { TokenDetails, TokenTypeKey } from "@services/token/token.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   type: string;
@@ -136,7 +137,7 @@ export class BaseApiPayloadMapper implements TokenApiPayloadMapper<TokenEnrollme
       realm: Array.isArray(details.realms) && details.realms.length > 0 ? details.realms[0] : undefined,
       pin: details.info?.pin ?? undefined,
       serial: details.serial ?? undefined,
-      rollover: details.info?.rollover ?? undefined
+      rollover: details.info?.rollover != null ? parseBooleanValue(details.info.rollover) : undefined
     };
   }
 }

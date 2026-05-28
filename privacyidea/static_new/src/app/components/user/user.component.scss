@@ -1,14 +1,13 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
-$margin-bottom-main: 136px;
+$margin-bottom-main: calc(var(--global-padding) * 8);
 
 .user-layout {
   display: flex;
 
   .main-margin-overflow {
-    margin: 0 32px $margin-bottom-main 0;
+    margin: 0 var(--double-global-padding) $margin-bottom-main 0;
   }
 
   .mat-drawer {
@@ -25,7 +24,7 @@ $margin-bottom-main: 136px;
 
   .drawer-button-div {
     display: flex;
-    margin-top: 284px;
+    margin-top: calc(var(--global-padding) * 18);
     margin-left: var(--global-padding);
     height: 100%;
     position: fixed;
@@ -34,7 +33,7 @@ $margin-bottom-main: 136px;
   .drawer-content-div {
     display: flex;
     flex-direction: row;
-    gap: 20px;
+    gap: var(--global-gap);
   }
 
   .tile-header {
@@ -43,15 +42,15 @@ $margin-bottom-main: 136px;
 
   .user-details-grid {
     display: flex;
-    gap: 32px;
-    margin-top: 32px;
+    gap: calc(var(--global-gap) * 2);
+    margin-top: var(--double-global-padding);
   }
 
   .user-details-column {
     display: grid;
     grid-template-columns: auto 1fr;
-    row-gap: 16px;
-    column-gap: 16px;
+    row-gap: var(--global-gap);
+    column-gap: var(--global-gap);
   }
 
   .user-self-service-card {

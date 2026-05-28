@@ -34,7 +34,8 @@
     </span>
   }
   <mat-checkbox
-    [formControl]="readNumberDynamicallyControl"
+    [checked]="readNumberDynamically()"
+    (change)="readNumberDynamically.set($event.checked)"
     i18n>
     Read number dynamically from user source on each request.
   </mat-checkbox>
@@ -48,7 +49,8 @@
           gateway here.
         </mat-hint>
         <mat-select
-          [formControl]="smsGatewayControl"
+          [value]="smsGateway()"
+          (selectionChange)="smsGateway.set($event.value)"
           required>
           @for (option of smsGatewayOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
@@ -61,9 +63,8 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>Phone number</mat-label>
       <input
-        [formControl]="phoneNumberControl"
-        matInput
-        required />
+        [formField]="phoneNumberForm"
+        matInput />
       <mat-error i18n>Phone number is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>

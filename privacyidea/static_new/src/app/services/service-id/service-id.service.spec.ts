@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,13 +19,13 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { ROUTE_PATHS } from "../../route_paths";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
 import { ServiceIdService } from "./service-id.service";
 
 describe("ServiceIdService", () => {
@@ -36,7 +36,8 @@ describe("ServiceIdService", () => {
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({})
+      getHeaders: jest.fn().mockReturnValue({}),
+      isSelfServiceUser: jest.fn().mockReturnValue(false)
     };
     const notificationServiceMock = {
       success: jest.fn(),
@@ -47,6 +48,7 @@ describe("ServiceIdService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        ServiceIdService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }
@@ -83,7 +85,10 @@ describe("ServiceIdService", () => {
     const promise = service.postServiceId(serviceId);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/${encodeURIComponent("test/1")}`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save service ID. Something went wrong");
@@ -104,7 +109,10 @@ describe("ServiceIdService", () => {
     const promise = service.deleteServiceId("test/1");
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/${encodeURIComponent("test/1")}`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to delete service ID. Something went wrong");
@@ -157,6 +165,23 @@ describe("ServiceIdService", () => {
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(service.serviceIdResource.hasValue()).toEqual(false);
+    expect(service.serviceIds()).toEqual([]);
+  });
+
+  it("should reset to empty array when serviceIdResource errors after successful load", async () => {
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    TestBed.tick();
+    let req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+    req.flush(MockPiResponse.fromValue({ svc1: { description: "d", id: 1 } }));
+    await lastValueFrom(of({}));
+    expect(service.serviceIds()).toEqual([{ servicename: "svc1", description: "d", id: 1 }]);
+
+    service.serviceIdResource.reload();
+    TestBed.tick();
+    req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+    req.flush("Error", { status: 500, statusText: "Server Error" });
+    await lastValueFrom(of({}));
+
     expect(service.serviceIds()).toEqual([]);
   });
 });

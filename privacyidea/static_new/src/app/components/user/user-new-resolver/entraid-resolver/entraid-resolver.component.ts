@@ -17,32 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, effect, signal } from "@angular/core";
-import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/http-resolver.component";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
-import { MatError, MatOption, MatSelect } from "@angular/material/select";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatTableModule } from "@angular/material/table";
+import { Component, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
+import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
+import { MatCheckbox } from "@angular/material/checkbox";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
+import { MatIconModule } from "@angular/material/icon";
+import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatDivider } from "@angular/material/list";
-import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
-import { HttpConfigComponent } from "../http-resolver/http-config/http-config.component";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { HttpGroupsAttributeComponent } from "../http-resolver/http-groups-attribute/http-groups-attribute.component";
+import { MatError, MatOption, MatSelect } from "@angular/material/select";
+import { MatTableModule } from "@angular/material/table";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { HttpConfigComponent } from "@components/user/user-new-resolver/http-resolver/http-config/http-config.component";
+import { HttpGroupsAttributeComponent } from "@components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component";
+import {
+  AttributeMappingRow,
+  HttpResolverComponent
+} from "@components/user/user-new-resolver/http-resolver/http-resolver.component";
 
 @Component({
   selector: "app-entraid-resolver",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatFormField,
     MatLabel,
     MatInput,
@@ -59,7 +62,6 @@ import { HttpGroupsAttributeComponent } from "../http-resolver/http-groups-attri
     MatExpansionPanelTitle,
     MatDivider,
     MatError,
-    ReactiveFormsModule,
     MatDivider,
     MatButtonToggleGroup,
     MatButtonToggle,
@@ -68,7 +70,7 @@ import { HttpGroupsAttributeComponent } from "../http-resolver/http-groups-attri
     HttpGroupsAttributeComponent
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
-  styleUrl: "../http-resolver/http-resolver.component.scss"
+  styleUrl: "../http-resolver//http-resolver.component.scss"
 })
 export class EntraidResolverComponent extends HttpResolverComponent {
   override isAdvanced: boolean = true;

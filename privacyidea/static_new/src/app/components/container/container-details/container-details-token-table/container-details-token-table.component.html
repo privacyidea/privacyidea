@@ -1,0 +1,225 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="Container Details Token Table"
+  class="container-details-token-table-layout"
+  i18n-aria-label>
+  <div class="flex-column">
+    <h3
+      class="margin-8"
+      i18n>
+      Tokens in Container
+    </h3>
+    <div class="flex-row filter-paginator-container ali-center">
+      @if (dataSource().data.length > 1) {
+        <mat-form-field
+          class="container-details-token-table-filter width-50"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Filter Token...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="clearFilter()"
+            [showClearButton]="filterInput.value !== ''">
+            <input
+              #filterInput
+              (keyup)="handleFilterInput($event)"
+              aria-label="Filter Input"
+              i18n-aria-label
+              i18n-placeholder
+              matInput
+              placeholder="Filter across all columns." />
+          </app-clearable-input>
+        </mat-form-field>
+      }
+
+      <div class="flex-row ali-center margin-left-auto">
+        <mat-paginator
+          [hidePageSize]="true"
+          [pageSize]="pageSize" />
+      </div>
+    </div>
+  </div>
+
+  <div class="responsive-flex-row-1580">
+    <table
+      [dataSource]="dataSource()"
+      aria-label="Token of Container Data Table"
+      class="container-details-token-table"
+      i18n-aria-label
+      mat-table>
+      @for (column of columnsKeyMap; track column) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell>
+            <div class="flex ali-center">
+              {{ column.label }}
+              <div class="margin-left-16 flex">
+                <button
+                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  class="sort-button"
+                  mat-icon-button
+                  type="button">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                </button>
+              </div>
+            </div>
+          </th>
+          <td
+            *matCellDef="let element"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell>
+            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              @switch (column.key) {
+                @case ("serial") {
+                  <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
+                    @if (
+                      element.status !== "missing" &&
+                      (element.token.username === authService.username() || authService.role() === "admin")
+                    ) {
+                      <a
+                        (click)="contentService.tokenSelected(element.token.serial)"
+                        attr.aria-label="{{ column.label }} Link"
+                        class="cursor-pointer">
+                        {{ element.token[column.key] }}
+                      </a>
+                    } @else {
+                      <span> {{ element.token[column.key] }} </span>
+                    }
+                  </app-copyable>
+                }
+                @case ("active") {
+                  @if (element.status !== "missing") {
+                    <span
+                      (click)="toggleActive(element.token)"
+                      [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)">
+                      {{ tableUtilsService.getDisplayText(column.key, element.token) }}
+                    </span>
+                  }
+                }
+                @case ("username") {
+                  <div class="flex-row ali-center">
+                    @if (element.status !== "missing") {
+                      @if (element.token[column.key]) {
+                        <a
+                          (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          attr.aria-label="{{ column.label }} Link"
+                          class="cursor-pointer">
+                          {{ element.token[column.key] }}
+                        </a>
+                      } @else if (containerService.containerDetails().containers[0]?.users?.length === 1) {
+                        <button
+                          mat-icon-button
+                          color="primary"
+                          (click)="assignUserToToken(element.token)"
+                          matTooltip="Assign Owner"
+                          i18n-matTooltip>
+                          <mat-icon>person_add</mat-icon>
+                        </button>
+                      }
+                    }
+                  </div>
+                }
+                @default {
+                  @if (element.status !== "missing") {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        href="#">
+                        {{ element.token[column.key] }}
+                      </a>
+                    } @else {
+                      <span> {{ element.token[column.key] }} </span>
+                    }
+                  } @else if (column.key === "tokentype") {
+                    <span> {{ element.token.tokentype }} </span>
+                  }
+                }
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          aria-label="Actions Column Header"
+          i18n
+          i18n-aria-label
+          mat-header-cell>
+          <div class="flex just-center">Actions</div>
+        </th>
+        <td
+          *matCellDef="let element"
+          aria-label="Actions Button Cell"
+          i18n-aria-label
+          mat-cell>
+          <div class="flex-row just-center">
+            @if (element.status !== "missing") {
+              @if (authService.actionAllowed("container_remove_token")) {
+                <button
+                  (click)="removeTokenFromContainer(containerSerial(), element.token.serial)"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Remove Token from Container">
+                  <mat-icon>remove_circle_outline</mat-icon>
+                </button>
+              }
+              @if (authService.actionAllowed("delete")) {
+                <button
+                  (click)="deleteTokenFromContainer(element.token.serial)"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Delete Token">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        aria-label="Header Row"
+        i18n-aria-label
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        [ngClass]="'comparison-status-' + row.status"
+        aria-label="Data Row"
+        i18n-aria-label
+        mat-row></tr>
+      <tr
+        *matNoDataRow
+        aria-label="No Data Row"
+        i18n-aria-label>
+        <td
+          [attr.colspan]="displayedColumns.length"
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

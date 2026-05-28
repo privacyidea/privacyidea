@@ -142,7 +142,7 @@ class SharedConfigClass:
                             try:
                                 value = json.loads(rconf.Value)
                             except json.JSONDecodeError as error:
-                                log.debug(
+                                log.warning(
                                     f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
                                 value = rconf.Value
                         elif rconf.Type == "dict_with_password":
@@ -154,7 +154,7 @@ class SharedConfigClass:
                                         value[key] = decryptPassword(val)
                                         resolverdef["censor_keys"].append(f"{rconf.Key}.{key}")
                             except json.JSONDecodeError as error:
-                                log.debug(
+                                log.warning(
                                     f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
                                 value = rconf.Value
                         else:
@@ -423,10 +423,9 @@ def get_caconnector_types():
     Returns a list of valid CA connector types
     :return:
     """
-    caconnector_types = []
-    for cacon in BaseCAConnector.__subclasses__():
-        caconnector_types.append(cacon.connector_type)
-    return caconnector_types
+    _, type_dict = get_caconnector_class_dict()
+    types = sorted(type_dict.values())
+    return types
 
 
 # @cache.cached(key_prefix="classes")

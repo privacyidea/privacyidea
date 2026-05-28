@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,8 +18,8 @@
  **/
 import { computed, effect, inject, Injectable, Signal, signal } from "@angular/core";
 import { Router } from "@angular/router";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number | undefined>;
@@ -33,9 +33,7 @@ export interface SessionTimerServiceInterface {
   startRefreshingRemainingTime(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly router: Router = inject(Router);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -126,7 +124,8 @@ export class SessionTimerService implements SessionTimerServiceInterface {
 
   private handleSessionTimeout(): void {
     this.notificationService.warning(
-      $localize`Your session has expired. You will be logged out and redirected to the login page.`);
+      $localize`Your session has expired. You will be logged out and redirected to the login page.`
+    );
     // Keep notification visible for 1.5s before logging out to ensure the user sees it
     setTimeout(() => {
       this.clearRefreshInterval();

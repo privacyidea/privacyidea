@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,31 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject } from "@angular/core";
-import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { MatIcon } from "@angular/material/icon";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
+
+import { Component, inject } from "@angular/core";
+import { MatRippleModule } from "@angular/material/core";
+import { MatIconModule } from "@angular/material/icon";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { NavigationSelfServiceButtonComponent } from "@components/layout/navigation-self-service/navigation-self-service-button/navigation-self-service-button.component";
 import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { ContentService } from "@services/content/content.service";
 
 @Component({
   selector: "app-navigation-self-service",
   standalone: true,
   imports: [
     NavigationSelfServiceButtonComponent,
-    MatIcon,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
-    MatAccordion,
-    UserUtilsPanelSelfServiceComponent
+    UserUtilsPanelSelfServiceComponent,
+    MatIconModule,
+    MatRippleModule,
+    RouterLink
   ],
   templateUrl: "./navigation-self-service.component.html",
   styleUrl: "./navigation-self-service.component.scss"
@@ -48,72 +44,8 @@ import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-util
 export class NavigationSelfServiceComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly Boolean = Boolean;
-  private readonly userService: UserServiceInterface = inject(UserService);
-
-  readonly labels: Record<string, string> = {
-    username: $localize`Username`,
-    givenname: $localize`Given name`,
-    surname: $localize`Surname`,
-    description: $localize`Description`,
-    email: $localize`Email`,
-    phone: $localize`Phone`,
-    mobile: $localize`Mobile`,
-    userid: $localize`User ID`,
-    resolver: $localize`Resolver`
-  };
-
-  readonly excludedKeys = new Set<string>(["editable", "username"]);
-
-  readonly detailOrder: string[] = [
-    "givenname",
-    "surname",
-    "description",
-    "email",
-    "phone",
-    "mobile"
-  ];
-
   userData = this.userService.user;
-
-  detailsEntries = computed(() => {
-    const data = this.userData() ?? {};
-    const result: { key: string; label: string; value: unknown }[] = [];
-
-    for (const key of this.detailOrder) {
-      if (!(key in data)) continue;
-      if (this.excludedKeys.has(key)) continue;
-
-      const raw = (data as any)[key];
-
-      result.push({
-        key,
-        label: this.labels[key] ?? key,
-        value: this.normalizeValue(raw)
-      });
-    }
-
-    for (const [key, raw] of Object.entries(data)) {
-      if (this.excludedKeys.has(key)) continue;
-      if (this.detailOrder.includes(key)) continue;
-
-      result.push({
-        key,
-        label: this.labels[key] ?? key,
-        value: this.normalizeValue(raw)
-      });
-    }
-
-    return result;
-  });
-
-  isArray(value: unknown): value is string[] {
-    return Array.isArray(value);
-  }
-
-  private normalizeValue(value: unknown): unknown {
-    if (value === null || value === undefined) return "-";
-    if (typeof value === "string" && value.trim() === "") return "-";
-    return value;
-  }
+  protected contentService: ContentService = inject(ContentService);
 }

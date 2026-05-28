@@ -16,70 +16,62 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, input } from "@angular/core";
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatInput } from "@angular/material/input";
+import { Component, effect, input, signal } from "@angular/core";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
-import { SCIMResolverData } from "../../../../services/resolver/resolver.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { MatInput } from "@angular/material/input";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SCIMResolverData } from "@services/resolver/resolver.service";
+
+interface ScimFormModel {
+  Authserver: string;
+  Resourceserver: string;
+  Client: string;
+  Secret: string;
+  Mapping: string;
+}
 
 @Component({
   selector: "app-scim-resolver",
   standalone: true,
-  imports: [MatFormField, MatLabel, FormsModule, ReactiveFormsModule, MatInput, MatError, ClearableInputComponent],
+  imports: [FormField, MatFormField, MatLabel, MatInput, MatError, ClearableInputComponent],
   templateUrl: "./scim-resolver.component.html",
   styleUrl: "./scim-resolver.component.scss"
 })
 export class ScimResolverComponent {
   data = input<Partial<SCIMResolverData>>({});
 
-  authServerControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
-  resourceServerControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
-  clientControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
-  secretControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
-  mappingControl = new FormControl<string>("", {
-    nonNullable: true,
-    validators: [Validators.required]
+  model = signal<ScimFormModel>({
+    Authserver: "",
+    Resourceserver: "",
+    Client: "",
+    Secret: "",
+    Mapping: ""
   });
 
-  controls = computed<Record<string, AbstractControl>>(() => ({
-    Authserver: this.authServerControl,
-    Resourceserver: this.resourceServerControl,
-    Client: this.clientControl,
-    Secret: this.secretControl,
-    Mapping: this.mappingControl
-  }));
+  scimForm = form(this.model, (f) => {
+    required(f.Authserver);
+    required(f.Resourceserver);
+    required(f.Client);
+    required(f.Secret);
+    required(f.Mapping);
+  });
+
+  isValid = () => this.scimForm().valid();
+  isDirty = () => this.scimForm().dirty();
+  getValue = () => this.model();
 
   constructor() {
     effect(() => {
       const initial = this.data();
-      if (initial.Authserver !== undefined) {
-        this.authServerControl.setValue(initial.Authserver, { emitEvent: false });
-      }
-      if (initial.Resourceserver !== undefined) {
-        this.resourceServerControl.setValue(initial.Resourceserver, { emitEvent: false });
-      }
-      if (initial.Client !== undefined) {
-        this.clientControl.setValue(initial.Client, { emitEvent: false });
-      }
-      if (initial.Secret !== undefined) {
-        this.secretControl.setValue(initial.Secret, { emitEvent: false });
-      }
-      if (initial.Mapping !== undefined) {
-        this.mappingControl.setValue(initial.Mapping, { emitEvent: false });
-      }
+      this.model.set({
+        Authserver: initial.Authserver ?? "",
+        Resourceserver: initial.Resourceserver ?? "",
+        Client: initial.Client ?? "",
+        Secret: initial.Secret ?? "",
+        Mapping: initial.Mapping ?? ""
+      });
+      this.scimForm().reset();
     });
   }
 }

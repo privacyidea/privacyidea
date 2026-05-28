@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { PrivacyideaServerService } from "./privacyidea-server.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
-import { ROUTE_PATHS } from "../../route_paths";
-import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { lastValueFrom, of } from "rxjs";
-import { ContentService } from "../content/content.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { PrivacyideaServerService } from "./privacyidea-server.service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
@@ -40,13 +40,17 @@ describe("PrivacyideaServerService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        PrivacyideaServerService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
@@ -83,7 +87,10 @@ describe("PrivacyideaServerService", () => {
     const promise = service.postPrivacyideaServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save privacyIDEA server. Something went wrong");
@@ -104,7 +111,10 @@ describe("PrivacyideaServerService", () => {
     const promise = service.deletePrivacyideaServer("test");
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to delete privacyIDEA server. Something went wrong");
@@ -140,7 +150,10 @@ describe("PrivacyideaServerService", () => {
     const promise = service.testPrivacyideaServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     const result = await promise;
     expect(result).toBe(false);
@@ -188,8 +201,9 @@ describe("PrivacyideaServerService", () => {
     const req = httpMock.expectOne(service.privacyideaServerBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
-      });
+      status: 403,
+      statusText: "Permission denied"
+    });
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(service.remoteServerOptions()).toEqual([]);

@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -30,12 +29,12 @@ import {
   TIQR_REG_SERVER,
   TIQR_SERVICE_DISPLAYNAME,
   TIQR_SERVICE_IDENTIFIER
-} from "../../../../../constants/token.constants";
+} from "@constants/token.constants";
 
 @Component({
   selector: "app-tiqr-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
   templateUrl: "./tiqr-config.component.html",
   styleUrl: "./tiqr-config.component.scss"
 })

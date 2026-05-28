@@ -17,19 +17,24 @@
   SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="assign-user-container">
+  <input
+    style="display: none"
+    type="text" />
+  <input
+    style="display: none"
+    type="password" />
   <mat-form-field
     class="input-width-l">
     <mat-label>Select Realm of User</mat-label>
     <mat-select
       (selectionChange)="onSelectedRealmChange($event.value)"
-      [formControl]="selectedUserRealmCtrl"
-      [required]="required()"
-      [value]="userService.selectedUserRealm()">
+      [value]="userService.selectedUserRealm()"
+      [required]="required()">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }
     </mat-select>
-    @if (selectedUserRealmCtrl.hasError("required")) {
+    @if (required() && !userService.selectedUserRealm()) {
       <mat-error i18n>User Realm is <strong>required</strong></mat-error>
     }
   </mat-form-field>
@@ -37,40 +42,37 @@
     class="input-width-l">
     <mat-label>Enter User</mat-label>
     <app-clearable-input
-      (onClick)="userFilterCtrl.setValue('')"
-      [showClearButton]="userService.selectionFilter() !== ''">
+      (clearButtonClick)="clearUser()"
+      [showClearButton]="userFilter() !== ''">
       <input
-        [formControl]="userFilterCtrl"
+        [value]="userFilter()"
+        (input)="onUserFilterInput($any($event.target).value)"
         [matAutocomplete]="userAuto"
+        [disabled]="userInputDisabled()"
         [required]="required()"
         matInput />
     </app-clearable-input>
     <mat-autocomplete
       #userAuto="matAutocomplete"
-      [displayWith]="userService.displayUser">
+      [displayWith]="displayUser"
+      (optionSelected)="onUserSelected($event.option.value)">
       @for (user of userService.selectionFilteredUsers(); track user) {
-        <mat-option [value]="user">{{ user.username }}</mat-option>
+        <mat-option class="type-option" [value]="user">{{ user.username }}</mat-option>
       }
     </mat-autocomplete>
-    @if (!selectedUserRealmCtrl.value && !onlyAddToRealm()) {
+    @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {
       <mat-hint> Select a realm first to enable user selection.</mat-hint>
     }
-    @if (userFilterCtrl.hasError("required")) {
+    @if (required() && !userService.selectedUser()) {
       <mat-error>User is <strong>required</strong></mat-error>
-    }
-    @if (userFilterCtrl.hasError("userNotInOptions")) {
-      <mat-error>User must be selected from the list.</mat-error>
-    }
-    @if (userFilterCtrl.hasError("userNotInRealm")) {
-      <mat-error> User does not exist in the selected realm.</mat-error>
     }
   </mat-form-field>
   @if (showOnlyAddToRealm()) {
     <div class="margin-bottom-16">
       <mat-checkbox
         [checked]="onlyAddToRealm()"
-        [disabled]="!!userFilterCtrl.value"
-        (change)="onOnlyAddToRealmChange($event.checked)">
+        [disabled]="!!userFilter()"
+        (change)="onlyAddToRealmChange($event.checked)">
         Only add to the realm (no user assignment)
       </mat-checkbox>
     </div>

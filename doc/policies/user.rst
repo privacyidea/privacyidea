@@ -255,6 +255,8 @@ Certain token types like *certificate* may define special actions when
 revoking a token.
 
 
+.. _policy_password_reset:
+
 password_reset
 ~~~~~~~~~~~~~~
 
@@ -447,6 +449,16 @@ container_create
 type: ``bool``
 
 This action allows the users to create new containers.
+
+.. versionadded:: 3.10
+
+container_list
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+This action allows the users to list their own containers and read the
+properties of containers assigned to them.
 
 .. versionadded:: 3.10
 

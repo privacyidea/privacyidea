@@ -18,7 +18,9 @@
  **/
 
 import { Component, inject, input, output } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 @Component({
   selector: "app-token-enrolled-text",
@@ -28,6 +30,7 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 })
 export class TokenEnrolledTextComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   serial = input<string>();
   containerSerial = input<string>();
@@ -45,11 +48,24 @@ export class TokenEnrolledTextComponent {
     this.contentService.tokenSelected(this.serial() ?? "");
   }
 
-  containerSelected() {
+  natigateContainerDetails() {
     if (!this.containerSerial()) {
       return;
     }
     this.switchRoute.emit();
-    this.contentService.containerSelected(this.containerSerial() ?? "");
+    this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
+  }
+
+  navigateUserDetails() {
+    if (!this.username() || !this.userRealm()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.userSelected(this.username() ?? "", this.userRealm() ?? "");
+  }
+
+  navigateRealms() {
+    this.switchRoute.emit();
+    this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS);
   }
 }

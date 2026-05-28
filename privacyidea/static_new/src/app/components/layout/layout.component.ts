@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,23 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, Renderer2, signal, DOCUMENT } from "@angular/core";
+import { Component, DOCUMENT, effect, inject, Renderer2, signal } from "@angular/core";
 
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
-import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
-import { NavigationComponent } from "./navigation/navigation.component";
-import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
 import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
+import { NavigationComponent } from "./navigation/navigation.component";
 
 @Component({
   selector: "layout",
   templateUrl: "layout.component.html",
   standalone: true,
-  imports: [RouterOutlet, MatProgressBar, MatDrawer, MatDrawerContainer, MatDrawerContent, NavigationComponent, NavigationSelfServiceComponent, NavigationSelfServiceWizardComponent],
+  imports: [
+    RouterOutlet,
+    MatProgressBar,
+    NavigationComponent,
+    NavigationSelfServiceComponent,
+    NavigationSelfServiceWizardComponent
+  ],
   styleUrl: "./layout.component.scss"
 })
 export class LayoutComponent {

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, effect, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
+import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { empty } from "rxjs";
 
 export type Applications = {
   luks: ApplicationLuks;
@@ -71,13 +72,34 @@ export interface ApplicationServiceInterface {
   applications: WritableSignal<Applications>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ApplicationService implements ApplicationServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   readonly applicationBaseUrl = environment.proxyUrl + "/application/";
+
+  private readonly empty: Applications = {
+    luks: {
+      options: {
+        totp: { partition: { type: "" }, slot: { type: "", value: [] } }
+      }
+    },
+    offline: {
+      options: {
+        hotp: { count: { type: "" }, rounds: { type: "" } },
+        passkey: {},
+        webauthn: {}
+      }
+    },
+    ssh: {
+      options: {
+        sshkey: {
+          service_id: { description: "", type: "", value: [] },
+          user: { description: "", type: "" }
+        }
+      }
+    }
+  };
 
   constructor() {
     effect(() => {
@@ -91,35 +113,16 @@ export class ApplicationService implements ApplicationServiceInterface {
     headers: this.authService.getHeaders()
   }));
   applications: WritableSignal<Applications> = linkedSignal({
-    source: this.applicationResource.value,
+    source: () => ({
+      value: this.applicationResource.hasValue() ? this.applicationResource.value() : undefined,
+      isLoading: this.applicationResource.isLoading(),
+      error: this.applicationResource.error()
+    }),
     computation: (source, previous) => {
-      if (source?.result?.value) {
-        return source.result.value;
-      }
-      return (
-        previous?.value ?? {
-          luks: {
-            options: {
-              totp: { partition: { type: "" }, slot: { type: "", value: [] } }
-            }
-          },
-          offline: {
-            options: {
-              hotp: { count: { type: "" }, rounds: { type: "" } },
-              passkey: {},
-              webauthn: {}
-            }
-          },
-          ssh: {
-            options: {
-              sshkey: {
-                service_id: { description: "", type: "", value: [] },
-                user: { description: "", type: "" }
-              }
-            }
-          }
-        }
-      );
+      if (source.error) return this.empty;
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? this.empty) : this.empty;
+      return value;
     }
   });
 }

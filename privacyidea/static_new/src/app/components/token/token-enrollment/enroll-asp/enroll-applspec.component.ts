@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,35 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { ErrorStateMatcher, MatOption } from "@angular/material/core";
+import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { ServiceIdService, ServiceIdServiceInterface } from "../../../../services/service-id/service-id.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   ApplspecApiPayloadMapper,
   ApplspecEnrollmentData
-} from "../../../../mappers/token-api-payload/applspec-token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+} from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";
   serviceId: string;
   generateOnServer: boolean;
   otpKey?: string;
-}
-
-export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
-  isErrorState(control: FormControl | null): boolean {
-    const invalid = control && control.value ? control.value === "" : true;
-    return !!(control && invalid && (control.dirty || control.touched));
-  }
 }
 
 @Component({
@@ -54,12 +46,11 @@ export class ApplspecErrorStateMatcher implements ErrorStateMatcher {
     MatFormField,
     MatInput,
     MatLabel,
-    ReactiveFormsModule,
     MatCheckbox,
-    FormsModule,
     MatOption,
     MatSelect,
-    MatError
+    MatError,
+    FormField
   ],
   templateUrl: "./enroll-applspec.component.html",
   styleUrl: "./enroll-applspec.component.scss"
@@ -72,9 +63,7 @@ export class EnrollApplspecComponent implements OnInit {
 
   enrollmentData = input<ApplspecEnrollmentData>();
   @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: ApplspecEnrollmentData;
@@ -83,61 +72,31 @@ export class EnrollApplspecComponent implements OnInit {
   >();
   disabled = input<boolean>(false);
 
-  serviceIdControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  generateOnServerControl = new FormControl<boolean>(true, { nonNullable: true, validators: [Validators.required] });
-  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true }, { nonNullable: true });
+  serviceId = signal<string>("");
+  generateOnServer = signal<boolean>(true);
+  otpKey = signal<string>("");
 
-  applspecForm = new FormGroup({
-    serviceId: this.serviceIdControl,
-    generateOnServer: this.generateOnServerControl,
-    otpKey: this.otpKeyFormControl
+  serviceIdForm = form(this.serviceId, (f) => {
+    required(f);
+    disabled(f, () => this.disabled());
   });
-
-  generateOnServer = toSignal(this.generateOnServerControl.valueChanges, {
-    initialValue: this.generateOnServerControl.value ?? true
+  otpKeyForm = form(this.otpKey, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("applspec"));
   });
-  isGenerateOnServerDisabled = computed(() => this.disabled());
-  isOtpKeyDisabled = computed(() => this.disabled() || this.generateOnServer());
 
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
-  applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
   ngOnInit(): void {
-    this._setInitialFormValues();
-    this.additionalFormFieldsChange.emit({
-      serviceId: this.serviceIdControl,
-      generateOnServer: this.generateOnServerControl,
-      otpKey: this.otpKeyFormControl
-    });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this._applyPolicies();
-  }
-
-  private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
-      this.serviceIdControl.setValue(this.enrollmentData()!.serviceId ?? "");
-      this.generateOnServerControl.setValue(this.enrollmentData()!.generateOnServer ?? true);
+    if (this.enrollmentData()) {
+      this.serviceId.set(this.enrollmentData()!.serviceId ?? "");
+      this.generateOnServer.set(this.enrollmentData()!.generateOnServer ?? true);
       if (!this.enrollmentData()!.generateOnServer) {
-        this.otpKeyFormControl.setValue(this.enrollmentData()!.otpKey ?? "");
+        this.otpKey.set(this.enrollmentData()!.otpKey ?? "");
       }
     }
-  }
-
-  private _applyPolicies() {
-    if (this.authService.checkForceServerGenerateOTPKey("applspec")) {
-      this.generateOnServerControl.disable({ emitEvent: false });
-    } else {
-      this.generateOnServerControl.valueChanges.subscribe((generate) => {
-        if (!generate) {
-          this.otpKeyFormControl.enable({ emitEvent: false });
-          this.otpKeyFormControl.setValidators([Validators.required]);
-        } else {
-          this.otpKeyFormControl.disable({ emitEvent: false });
-          this.otpKeyFormControl.clearValidators();
-        }
-        this.otpKeyFormControl.updateValueAndValidity();
-      });
-    }
+    this.additionalFormFieldsChange.emit({});
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
   enrollmentArgsGetter = (
@@ -146,23 +105,23 @@ export class EnrollApplspecComponent implements OnInit {
     data: ApplspecEnrollmentData;
     mapper: ApplspecApiPayloadMapper;
   } | null => {
-    if (
-      (!this.generateOnServer() && this.otpKeyFormControl.invalid) ||
-      this.generateOnServerControl.invalid ||
-      this.serviceIdControl.invalid
-    ) {
-      this.applspecForm.markAllAsTouched();
+    if (!this.serviceIdForm().valid()) {
+      this.serviceIdForm().markAsTouched();
+      return null;
+    }
+    if (!this.generateOnServer() && !this.otpKeyForm().valid()) {
+      this.otpKeyForm().markAsTouched();
       return null;
     }
 
     const enrollmentData: ApplspecEnrollmentOptions = {
       ...basicOptions,
       type: "applspec",
-      serviceId: this.serviceIdControl.value ?? "",
-      generateOnServer: !!this.generateOnServer()
+      serviceId: this.serviceId(),
+      generateOnServer: this.generateOnServer()
     };
     if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
+      enrollmentData.otpKey = this.otpKey();
     }
     return {
       data: enrollmentData,

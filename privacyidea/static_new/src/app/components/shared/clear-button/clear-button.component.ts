@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,26 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, input, Output } from "@angular/core";
-import { MatIcon } from "@angular/material/icon";
+import { Component, input, output } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-clear-button",
   templateUrl: "./clear-button.component.html",
-  imports: [
-    MatIcon,
-    MatIconButton,
-    MatTooltip
-  ],
+  imports: [MatIcon, MatIconButton, MatTooltip],
   styleUrls: ["./clear-button.component.scss"]
 })
 export class ClearButtonComponent {
   toolTipText = input<string>();
-  @Output() onClick = new EventEmitter<MouseEvent>();
+  disabled = input<boolean>(false);
+  clearButtonClick = output<MouseEvent>();
 
   clearInput(event: MouseEvent): void {
-    this.onClick.emit(event);
+    if (this.disabled()) {
+      return;
+    }
+    this.clearButtonClick.emit(event);
   }
 }

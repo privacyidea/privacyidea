@@ -41,7 +41,8 @@
       <mat-label i18n>OTP Value</mat-label>
       <input
         #otpValueInput
-        [(ngModel)]="otpValue"
+        [value]="otpValue()"
+        (input)="otpValue.set($any($event.target).value)"
         [disabled]="currentStep() !== 'init'"
         i18n-placeholder
         id="otpValue"
@@ -70,7 +71,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Token Type</mat-label>
         <mat-select
-          [(ngModel)]="tokenType"
+          (selectionChange)="tokenType.set($event.value)"
           [value]="tokenType()"
           i18n-placeholder
           placeholder="Select token type">
@@ -82,7 +83,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Assignment State</mat-label>
         <mat-select
-          [(ngModel)]="assignmentState"
+          (selectionChange)="assignmentState.set($event.value)"
           [value]="assignmentState()"
           i18n-placeholder
           placeholder="Specify assignment state">
@@ -101,7 +102,8 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n>Serial Substring</mat-label>
         <input
-          [(ngModel)]="serialSubstring"
+          [value]="serialSubstring()"
+          (input)="serialSubstring.set($any($event.target).value)"
           i18n-placeholder
           id="serialSubstring"
           matInput
@@ -112,7 +114,8 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Count Window</mat-label>
           <input
-            [(ngModel)]="countWindow"
+            [value]="countWindow()"
+            (input)="countWindow.set(+$any($event.target).value)"
             i18n-placeholder
             id="countWindow"
             matInput

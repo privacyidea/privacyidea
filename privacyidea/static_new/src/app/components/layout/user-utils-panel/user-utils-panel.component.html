@@ -17,42 +17,42 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="utils-group">
-  <div class="account-div">
-    <span><mat-icon>account_box</mat-icon></span>
-
-    <div class="text-div">
-      <span class="profile-text">{{ profileText() }}</span>
-      @if (localNode()) {
-        <i>{{ localNode() }}</i>
-      }
-    </div>
-    <button
-      (click)="logout()"
-      aria-label="Logout"
-      class="logout-btn"
-      i18n-aria-label
-      mat-icon-button
-      matTooltip="Logout">
-      <mat-icon>logout</mat-icon>
-    </button>
+<div class="utils-group flex-row">
+  <span
+    class="margin-left-8"
+    [matTooltip]="profileTooltip()"
+    [matTooltipDisabled]="isLargeScreen()">
+    <mat-icon>account_circle</mat-icon>
+  </span>
+  <div
+    class="profile-text-wrapper">
+    <span class="profile-text">
+      {{ profileText() }}
+    </span>
+    @if (localNode()) {
+      <i class="node-text"> {{ localNode() }} </i>
+    }
   </div>
-
-  <div class="utils">
-    <app-theme-switcher></app-theme-switcher>
-    <button
-      (click)="refreshPage()"
-      class="refresh-btn"
-      mat-fab
-      matTooltip="Refresh Resources">
-      <mat-icon>refresh</mat-icon>
-    </button>
-    <div
-      [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' : sessionTimerService.remainingTime()! <
-       60000 ? 'yellow-light' : 'surface-highest']"
-      class="session-timer"
-      matTooltip="Time until session expires">
-      {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
-    </div>
+  <app-theme-switcher></app-theme-switcher>
+  <button
+    (click)="refreshPage()"
+    mat-icon-button
+    matTooltip="Refresh Resources">
+    <mat-icon>refresh</mat-icon>
+  </button>
+  <div
+    [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' : sessionTimerService.remainingTime()! <
+     60000 ? 'yellow-light' : 'surface-highest']"
+    class="session-timer"
+    matTooltip="Time until session expires">
+    {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
   </div>
+  <button
+    (click)="logout()"
+    aria-label="Logout"
+    i18n-aria-label
+    mat-icon-button
+    matTooltip="Logout">
+    <mat-icon>logout</mat-icon>
+  </button>
 </div>

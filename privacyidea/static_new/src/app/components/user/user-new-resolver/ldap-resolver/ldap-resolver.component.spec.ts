@@ -16,12 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { LdapResolverComponent } from "./ldap-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
-import { ResolverService } from "../../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { LdapResolverComponent } from "./ldap-resolver.component";
 
 describe("LdapResolverComponent", () => {
   let component: LdapResolverComponent;
@@ -30,7 +29,7 @@ describe("LdapResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [LdapResolverComponent, NoopAnimationsModule],
+      imports: [LdapResolverComponent],
       providers: [{ provide: ResolverService, useClass: MockResolverService }]
     }).compileComponents();
 
@@ -44,17 +43,12 @@ describe("LdapResolverComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should expose controls via signal", () => {
-    const controls = component.controls();
-    expect(controls).toEqual(
-      expect.objectContaining({
-        LDAPURI: component.ldapUriControl,
-        LDAPBASE: component.ldapBaseControl
-      })
-    );
+  it("should expose isValid and getValue", () => {
+    expect(typeof component.isValid).toBe("function");
+    expect(typeof component.getValue).toBe("function");
   });
 
-  it("should update controls when data input changes", () => {
+  it("should update model when data input changes", () => {
     componentRef.setInput("data", {
       LDAPURI: "ldap://localhost",
       LDAPBASE: "dc=example,dc=com",
@@ -65,11 +59,11 @@ describe("LdapResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.ldapUriControl.value).toBe("ldap://localhost");
-    expect(component.ldapBaseControl.value).toBe("dc=example,dc=com");
-    expect(component.loginNameAttributeControl.value).toBe("uid");
-    expect(component.ldapSearchFilterControl.value).toBe("(objectClass=*)");
-    expect(component.userInfoControl.value).toBe("description");
+    expect(component.model().LDAPURI).toBe("ldap://localhost");
+    expect(component.model().LDAPBASE).toBe("dc=example,dc=com");
+    expect(component.model().LOGINNAMEATTRIBUTE).toBe("uid");
+    expect(component.model().LDAPSEARCHFILTER).toBe("(objectClass=*)");
+    expect(component.model().USERINFO).toBe("description");
   });
 
   it("should parse boolean and numeric strings from data input", () => {
@@ -83,11 +77,11 @@ describe("LdapResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.recursiveGroupSearchControl.value).toBe(false);
-    expect(component.tlsVerifyControl.value).toBe(true);
-    expect(component.timeoutControl.value).toBe(5);
-    expect(component.editableControl.value).toBe(false);
-    expect(component.groupBaseDNControl.value).toBe("ou=groups,dc=example,dc=com");
+    expect(component.model().recursive_group_search).toBe(false);
+    expect(component.model().TLS_VERIFY).toBe(true);
+    expect(component.model().TIMEOUT).toBe(5);
+    expect(component.model().EDITABLE).toBe(false);
+    expect(component.model().group_base_dn).toBe("ou=groups,dc=example,dc=com");
   });
 
   it("should parse '1' and '0' strings as booleans from data input", () => {
@@ -99,18 +93,18 @@ describe("LdapResolverComponent", () => {
 
     fixture.detectChanges();
 
-    expect(component.recursiveGroupSearchControl.value).toBe(true);
-    expect(component.tlsVerifyControl.value).toBe(false);
-    expect(component.editableControl.value).toBe(true);
+    expect(component.model().recursive_group_search).toBe(true);
+    expect(component.model().TLS_VERIFY).toBe(false);
+    expect(component.model().EDITABLE).toBe(true);
   });
 
   it("should apply LDAP presets", () => {
     const preset = component.ldapPresets[0];
     component.applyLdapPreset(preset);
-    expect(component.loginNameAttributeControl.value).toBe(preset.loginName);
-    expect(component.ldapSearchFilterControl.value).toBe(preset.searchFilter);
-    expect(component.userInfoControl.value).toBe(preset.userInfo);
-    expect(component.uidTypeControl.value).toBe(preset.uidType);
-    expect(component.multivalueAttributesControl.value).toBe("");
+    expect(component.model().LOGINNAMEATTRIBUTE).toBe(preset.loginName);
+    expect(component.model().LDAPSEARCHFILTER).toBe(preset.searchFilter);
+    expect(component.model().USERINFO).toBe(preset.userInfo);
+    expect(component.model().UIDTYPE).toBe(preset.uidType);
+    expect(component.model().MULTIVALUEATTRIBUTES).toBe("");
   });
 });

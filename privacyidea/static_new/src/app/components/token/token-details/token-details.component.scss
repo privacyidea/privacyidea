@@ -1,6 +1,5 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .details-container {
   @include styles.main-component-style;
@@ -9,8 +8,4 @@
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
-}
-
-.token-serial {
-  color: var(--mat-sys-primary);
 }

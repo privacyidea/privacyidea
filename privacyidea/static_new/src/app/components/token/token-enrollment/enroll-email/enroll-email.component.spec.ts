@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,10 +18,12 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollEmailComponent } from "./enroll-email.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { EnrollEmailComponent } from "./enroll-email.component";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService, MockTokenService} from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollEmailComponent", () => {
   let component: EnrollEmailComponent;
@@ -29,8 +31,11 @@ describe("EnrollEmailComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollEmailComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollEmailComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollEmailComponent);
@@ -50,8 +55,8 @@ describe("EnrollEmailComponent", () => {
         readEmailDynamically: true
       });
       component.ngOnInit();
-      expect(component.emailAddressControl.value).toBe("test@example.com");
-      expect(component.readEmailDynamicallyControl.value).toBe(true);
+      expect(component.emailAddress()).toBe("test@example.com");
+      expect(component.readEmailDynamically()).toBe(true);
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -61,8 +66,8 @@ describe("EnrollEmailComponent", () => {
         readEmailDynamically: undefined
       });
       component.ngOnInit();
-      expect(component.emailAddressControl.value).toBe("");
-      expect(component.readEmailDynamicallyControl.value).toBe(false);
+      expect(component.emailAddress()).toBe("");
+      expect(component.readEmailDynamically()).toBe(false);
     });
   });
 });

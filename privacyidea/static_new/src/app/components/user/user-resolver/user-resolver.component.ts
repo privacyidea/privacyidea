@@ -16,28 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
-import { MatSort, MatSortModule } from "@angular/material/sort";
-import { FormsModule } from "@angular/forms";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
-import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatSelectModule } from "@angular/material/select";
+import { MatSort, MatSortModule } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
-import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ResolverTableActionsComponent } from "./resolver-table-actions/resolver-table-actions.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { ROUTE_PATHS } from "src/app/route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ResolverTableActionsComponent } from "@components/user/user-resolver/resolver-table-actions/resolver-table-actions.component";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { Resolver, ResolverService } from "@services/resolver/resolver.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 const columnKeysMap = [
   { key: "resolvername", label: "Name" },
@@ -48,7 +48,6 @@ const columnKeysMap = [
   selector: "app-user-resolver",
   standalone: true,
   imports: [
-    FormsModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,

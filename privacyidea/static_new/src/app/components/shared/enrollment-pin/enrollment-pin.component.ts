@@ -17,25 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, Input } from "@angular/core";
-import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
+
+// TODO: Parent components (e.g. token-enrollment.component.ts) must be updated to pass
+// FieldTree<string> instead of FormControl<string> for setPinControl and repeatPinControl,
+// and to use validate() on the repeatPin field for cross-field pinMismatch validation
+// instead of a FormGroup validator.
 
 @Component({
   selector: "app-enrollment-pin",
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatError
-  ],
+  imports: [FormField, MatFormField, MatLabel, MatInput, MatError],
   templateUrl: "./enrollment-pin.component.html"
 })
 export class EnrollmentPinComponent {
-  @Input({ required: true }) setPinControl!: FormControl<string>;
-  @Input({ required: true }) repeatPinControl!: FormControl<string>;
-  @Input({ required: true }) formGroup!: FormGroup;
+  @Input({ required: true }) setPinControl!: FieldTree<string>;
+  @Input({ required: true }) repeatPinControl!: FieldTree<string>;
 }
-

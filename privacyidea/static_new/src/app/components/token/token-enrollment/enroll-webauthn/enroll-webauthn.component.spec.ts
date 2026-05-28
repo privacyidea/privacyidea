@@ -20,22 +20,18 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { lastValueFrom, of, throwError } from "rxjs";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnFinalizeApiPayloadMapper
-} from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
-import { Base64Service } from "../../../../services/base64/base64.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
+} from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
+import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
+import { Base64Service } from "@services/base64/base64.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { lastValueFrom, of, throwError } from "rxjs";
 
 const makeEnrollInitResponse = () => ({
   detail: {
@@ -98,7 +94,7 @@ describe("EnrollWebauthnComponent", () => {
     } as any;
 
     await TestBed.configureTestingModule({
-      imports: [EnrollWebauthnComponent, NoopAnimationsModule],
+      imports: [EnrollWebauthnComponent],
       providers: [
         provideHttpClient(),
         provideZonelessChangeDetection(),

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,13 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ClientsComponent } from "./clients.component";
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { MockAuditService, MockContentService, MockPiResponse } from "../../../../testing/mock-services";
-import { ClientsDict } from "../../../services/clients/clients.service";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ClientsComponent } from "@components/audit/clients/clients.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ClientsDict, ClientsService } from "@services/clients/clients.service";
+import { MockAuditService, MockClientsService, MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;
@@ -35,9 +38,10 @@ describe("ClientsComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ClientsComponent],
       providers: [
-        { provide: "AuditService", useClass: MockAuditService },
-        { provide: "AuthService", useClass: MockAuthService },
-        { provide: "ContentService", useClass: MockContentService },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: ClientsService, useClass: MockClientsService },
         provideHttpClient()
       ]
     }).compileComponents();

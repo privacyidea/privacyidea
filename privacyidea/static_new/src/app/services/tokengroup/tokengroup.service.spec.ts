@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { TokengroupService } from "./tokengroup.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
 import { signal } from "@angular/core";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { TokengroupService } from "./tokengroup.service";
 
 describe("TokengroupService", () => {
   let service: TokengroupService;
@@ -45,6 +45,7 @@ describe("TokengroupService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        TokengroupService,
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: ContentService, useClass: MockContentService }
@@ -109,7 +110,6 @@ describe("TokengroupService", () => {
   });
 
   describe("tokengroupResource / tokengroups", () => {
-
     it("tokengroups falls back to default when resource empty", () => {
       expect(service.tokengroups()).toEqual([]);
     });
@@ -120,11 +120,11 @@ describe("TokengroupService", () => {
 
       const req = httpMock.expectOne((r) => r.url === "/tokengroup/");
       expect(req.request.method).toBe("GET");
-      const tokenGroups = {test: { description: "", id: 1 }};
+      const tokenGroups = { test: { description: "", id: 1 } };
       req.flush(MockPiResponse.fromValue(tokenGroups));
       await Promise.resolve();
 
-      expect(service.tokengroups()).toEqual([{groupname: "test", description: "", id: 1 }]);
+      expect(service.tokengroups()).toEqual([{ groupname: "test", description: "", id: 1 }]);
     });
 
     it("should handle error state from smsGatewayResource", async () => {
@@ -134,8 +134,28 @@ describe("TokengroupService", () => {
       const req = httpMock.expectOne((r) => r.url === "/tokengroup/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(service.tokengroups()).toEqual([]);
+    });
+
+    it("should reset to empty array when resource errors after successful load", async () => {
+      contentService.onExternalTokenGroups = signal(true);
+      TestBed.tick();
+
+      let req = httpMock.expectOne((r) => r.url === "/tokengroup/");
+      const tokenGroups = { test: { description: "desc", id: 1 } };
+      req.flush(MockPiResponse.fromValue(tokenGroups));
+      await Promise.resolve();
+      expect(service.tokengroups()).toEqual([{ groupname: "test", description: "desc", id: 1 }]);
+
+      service.tokengroupResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne((r) => r.url === "/tokengroup/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(service.tokengroups()).toEqual([]);

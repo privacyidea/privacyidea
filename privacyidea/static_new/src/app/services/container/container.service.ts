@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,32 +16,69 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { StringUtils } from "../../utils/string.utils";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { UserService, UserServiceInterface } from "../user/user.service";
+import { PiResponse } from "@app/app.component";
+import {
+  EnrollmentResponseDetail,
+  EnrollmentUrl,
+  TokenEnrollmentPayload
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { StringUtils } from "@utils/string.utils";
+import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
-const apiFilter = ["container_serial", "type", "description", "container_realm"];
-const advancedApiFilter = ["token_serial"];
+const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
+const advancedApiFilter = ["token_serial", "template", "assigned"];
+
+export function toWildcardParam(
+  key: string,
+  value: string | null | undefined,
+  plainKeys: Set<string>
+): Record<string, string> {
+  const trimmed = (value ?? "").trim();
+  if (!StringUtils.validFilterValue(trimmed)) return {};
+  return { [key]: plainKeys.has(key) ? trimmed : `*${trimmed}*` };
+}
+
+export const CONTAINER_STATE_OPTIONS = [
+  { value: "active", label: $localize`active` },
+  { value: "disabled", label: $localize`deactivated` },
+  { value: "lost", label: $localize`lost` },
+  { value: "damaged", label: $localize`damaged` }
+] as const;
+
+export type TemplateComparisonResult = Record<
+  string,
+  {
+    tokens: {
+      additional: string[];
+      equal: boolean;
+      missing: string[];
+    };
+  }
+>;
 
 export interface ContainerDetails {
   count?: number;
-  containers: Array<ContainerDetailData>;
+  containers: ContainerDetailData[];
 }
+type ContainerRegistrationState = "registered" | "client_wait";
 
 export interface ContainerDetailData {
   description?: string;
-  info?: any;
+  info?: {
+    [key: string]: any;
+    registration_state?: ContainerRegistrationState;
+  };
   internal_info_keys?: any[];
   last_authentication?: any;
   last_synchronization?: any;
@@ -107,11 +144,12 @@ export interface ContainerType {
 }
 
 export interface ContainerCreateData {
-  container_type: string;
+  type: string;
   description?: string;
   user?: string;
   realm?: string;
-  template_name?: string;
+  name?: string;
+  template?: ContainerTemplate;
 }
 
 export interface ContainerTemplate {
@@ -119,8 +157,13 @@ export interface ContainerTemplate {
   default: boolean;
   name: string;
   template_options: {
-    tokens: Array<TokenEnrollmentPayload>;
+    tokens: TokenEnrollmentPayload[];
   };
+}
+
+export interface ContainerCreateResult {
+  container_serial: string;
+  tokens?: Record<string, EnrollmentResponseDetail & { type: string }>;
 }
 
 export interface ContainerRegisterData {
@@ -142,54 +185,57 @@ export interface ContainerUnregisterData {
 
 export interface ContainerServiceInterface {
   compatibleWithSelectedTokenType: WritableSignal<string | null>;
+  filterContainersByTokenOwner: WritableSignal<boolean>;
   isPollingActive: Signal<boolean>;
   apiFilter: string[];
   advancedApiFilter: string[];
   stopPolling$: Subject<void>;
   containerBaseUrl: string;
-  eventPageSize: number;
+  eventPageSize: WritableSignal<number>;
   states: WritableSignal<string[]>;
   containerSerial: WritableSignal<string>;
-  selectedContainer: WritableSignal<string | null>;
+  containerDetail: Signal<ContainerDetailData | null>;
+  selectedContainerSerial: WritableSignal<string | null>;
   sort: WritableSignal<Sort>;
   containerFilter: WritableSignal<FilterValue>;
   filterParams: Signal<Record<string, string>>;
   pageSize: WritableSignal<number>;
   pageIndex: WritableSignal<number>;
-  loadAllContainers: Signal<boolean>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
-  containerOptions: Signal<string[]>;
-  filteredContainerOptions: Signal<string[]>;
+  userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
   containerSelection: WritableSignal<ContainerDetailData[]>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
-  selectedContainerType: Signal<ContainerType | undefined>;
-  containerDetailResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
-  containerDetail: WritableSignal<ContainerDetails>;
-  addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
-  removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
-  setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
-  setContainerDescription: (containerSerial: string, value: string) => Observable<any>;
+  selectedContainerType: WritableSignal<ContainerType | undefined>;
+  containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  containerDetails: WritableSignal<ContainerDetails>;
+  templateComparison: WritableSignal<TemplateComparisonResult | null>;
+  addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
+  removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
+  setContainerRealm: (containerSerial: string, value: string[]) => Observable<PiResponse<boolean>>;
+  setContainerDescription: (containerSerial: string, value: string) => Observable<PiResponse<boolean>>;
   toggleActive: (
     containerSerial: string,
     states: string[]
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
-  unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
+  setStates: (containerSerial: string, states: string[]) => Observable<PiResponse<Record<string, boolean>>>;
+  unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<PiResponse<boolean>>;
   assignUser: (args: {
     containerSerial: string;
     username: string;
-
     userRealm: string;
-  }) => Observable<any>;
-  setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
-  deleteInfo: (containerSerial: string, key: string) => Observable<any>;
-  addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
-  removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
-  toggleAll: (action: "activate" | "deactivate") => Observable<any>;
-  removeAll: (containerSerial: string) => Observable<any>;
-  deleteContainer: (containerSerial: string) => Observable<any>;
-  deleteAllTokens: (param: { containerSerial: string; serialList: string }) => Observable<any>;
+  }) => Observable<PiResponse<boolean>>;
+  compareWithTemplate: () => Promise<void>;
+  setContainerInfos: (containerSerial: string, infos: Record<string, string>) => Observable<PiResponse<boolean>>[];
+  deleteInfo: (containerSerial: string, key: string) => Observable<PiResponse<boolean>>;
+  addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
+  removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
+  toggleAll: (action: "activate" | "deactivate") => Observable<(PiResponse<boolean> | null)[] | null>;
+  removeAll: (containerSerial: string) => Observable<PiResponse<boolean> | null>;
+  deleteContainer: (containerSerial: string) => Observable<PiResponse<boolean>>;
+  deleteAllTokens: (param: { containerSerial: string; serialList: string }) => Observable<PiResponse<boolean>>;
   registerContainer: (params: {
     container_serial: string;
     passphrase_user: boolean;
@@ -197,7 +243,8 @@ export interface ContainerServiceInterface {
     passphrase_response: string;
     rollover?: boolean;
   }) => Observable<PiResponse<ContainerRegisterData>>;
-  unregister: (containerSerial: string) => Observable<PiResponse<any>>;
+
+  unregister: (containerSerial: string) => Observable<PiResponse<ContainerUnregisterData>>;
   containerBelongsToUser: (containerSerial: string) => false | true | undefined;
 
   handleFilterInput($event: Event): void;
@@ -206,14 +253,12 @@ export interface ContainerServiceInterface {
 
   stopPolling(): void;
 
-  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>>;
+  createContainer(param: ContainerCreateData): Observable<PiResponse<ContainerCreateResult>>;
 
   startPolling(containerSerial: string): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ContainerService implements ContainerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -225,7 +270,7 @@ export class ContainerService implements ContainerServiceInterface {
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
-    computation: (tt) => tt?.key ?? null
+    computation: (tokenType) => tokenType?.key ?? null
   });
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
@@ -233,17 +278,33 @@ export class ContainerService implements ContainerServiceInterface {
 
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
-  eventPageSize = 10;
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
+  readonly eventPageSize = signal(10);
 
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
+  containerDetail = computed(() => {
+    const details = this.containerDetails();
+    const serial = this.containerSerial();
+    if (!details || !serial) {
+      return null;
+    }
+    return details.containers.find((container) => container.serial === serial) ?? null;
+  });
 
-  selectedContainer: WritableSignal<string | null> = linkedSignal({
-    source: () => this.contentService.routeUrl(),
-    computation: (routeUrl, previous) => (this.contentService.onTokensEnrollment() ? (previous?.value ?? "") : "")
+  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+    source: () => this.contentService.onTokensEnrollment(),
+    computation: (onTokensEnrollment, previous) => {
+      return onTokensEnrollment ? (previous?.value ?? "") : "";
+    }
   });
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
+
+  filterContainersByTokenOwner: WritableSignal<boolean> = linkedSignal({
+    source: this.contentService.routeUrl,
+    computation: () => false
+  });
 
   containerFilter: WritableSignal<FilterValue> = linkedSignal({
     source: this.contentService.routeUrl,
@@ -252,32 +313,18 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user", "type"]);
+    const plainKeys = new Set(["user", "type", "state", "assigned"]);
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, v]) => StringUtils.validFilterValue(v))
-      .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
+      .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
 
-    const params = Object.fromEntries(entries) as Record<string, string>;
-
-    // If we are on the user details page, always restrict containers to that user + realm
-    if (this.contentService.onUserDetails()) {
-      params["user"] = this.userService.detailsUsername();
-    }
-
-    return params;
+    return Object.fromEntries(entries) as Record<string, string>;
   });
 
   pageSize = linkedSignal({
-    source: this.containerFilter,
-    computation: (): any => {
-      if (![5, 10, 15].includes(this.eventPageSize)) {
-        return 10;
-      }
-      return this.eventPageSize;
-    }
+    source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
+    computation: ({ size }): number => ([5, 10, 15].includes(size) ? size : 10)
   });
 
   pageIndex = linkedSignal({
@@ -289,30 +336,28 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(
-    () =>
-      this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokenDetails() ||
-      this.contentService.onUserDetails()
-  );
-
   private readonly uniqueCompatibleType = computed<string | null>(() => {
-    const tt = this.compatibleWithSelectedTokenType();
-    if (!tt) return null;
+    const compatibleTokenType = this.compatibleWithSelectedTokenType();
+    if (!compatibleTokenType) return null;
 
     const types = this.containerTypeOptions();
-    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt));
+    const compatible = types.filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType));
 
     return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
 
   private readonly compatibleTypes = computed<string[]>(() => {
-    const tt = this.compatibleWithSelectedTokenType();
-    if (!tt) return [];
+    const compatibleTokenType = this.compatibleWithSelectedTokenType();
+    if (!compatibleTokenType) return [];
     const types = this.containerTypeOptions();
-    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt)).map((t) => String(t.containerType));
-    return compatible;
+    return types
+      .filter((containerType) => (containerType.token_types ?? []).includes(compatibleTokenType))
+      .map((containerType) => String(containerType.containerType));
   });
+
+  private readonly serialFilterParam = computed(() =>
+    toWildcardParam("container_serial", this.selectedContainerSerial(), new Set())
+  );
 
   private readonly tokenInContainer = computed<boolean>(() => {
     let assigned = "";
@@ -323,33 +368,31 @@ export class ContainerService implements ContainerServiceInterface {
     return String(assigned).trim() !== "";
   });
 
+  private containerRequest(params: Record<string, any>) {
+    return {
+      url: this.containerBaseUrl,
+      method: "GET" as const,
+      headers: this.authService.getHeaders(),
+      params: { sortby: this.sort().active, sortdir: this.sort().direction, ...params }
+    };
+  }
+
+  private paginatedContainerRequest(params: Record<string, any>) {
+    return this.containerRequest({
+      page: this.pageIndex() + 1,
+      pagesize: this.pageSize(),
+      ...params
+    });
+  }
+
   containerResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed.
     if (!this.authService.actionAllowed("container_list")) {
       return undefined;
     }
 
-    // On token details only load containers if details are available and the token is not already in a container.
-    if (this.contentService.onTokenDetails()) {
-      if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
-      const tokenRes = this.tokenService.tokenDetailResource.value();
-      if (!tokenRes) {
-        return undefined;
-      }
-      if (this.tokenInContainer()) {
-        return undefined;
-      }
-    }
-
     // Only load containers on routes with a container list or selection.
-    const onAllowedRoute =
-      this.contentService.onTokenDetails() ||
-      this.contentService.onUserDetails() ||
-      this.contentService.onTokensContainers() ||
-      this.contentService.onTokensEnrollment() ||
-      this.contentService.onTokens();
-
-    if (!onAllowedRoute) {
+    if (!this.contentService.onContainers()) {
       return undefined;
     }
 
@@ -358,53 +401,76 @@ export class ContainerService implements ContainerServiceInterface {
       return undefined;
     }
 
-    const baseParams: Record<string, any> = {
-      ...(!this.loadAllContainers() && {
-        page: this.pageIndex() + 1,
-        pagesize: this.pageSize()
-      }),
-      ...(this.loadAllContainers() && {
-        no_token: 1,
-        ...(this.userService.selectedUser()?.username && { user: this.userService.selectedUser()?.username }),
-        ...(this.userService.selectedUser()?.username &&
-          this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
-      }),
-      sortby: this.sort().active,
-      sortdir: this.sort().direction,
-      ...this.filterParams()
+    return this.paginatedContainerRequest(this.filterParams());
+  });
+
+  userContainersResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    if (!this.authService.actionAllowed("container_list")) {
+      return undefined;
+    }
+
+    // This resource is specific to the user details page
+    if (!this.contentService.onUserDetails()) {
+      return undefined;
+    }
+
+    return this.containerRequest({
+      no_token: 1,
+      ...this.filterParams(),
+      ...(this.userService.detailsUsername() && { user: this.userService.detailsUsername() }),
+      ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+    });
+  });
+
+  containersForTokenTypeResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    // Do not load containers if the action is not allowed, or we are not on the container details page
+    if (!this.authService.actionAllowed("container_list")) {
+      return undefined;
+    }
+
+    // only load for token details and enrollment
+    if (!this.contentService.onTokenDetails() && !this.contentService.onTokensEnrollment()) {
+      return undefined;
+    }
+
+    // for token details: only load containers if details are available and the token is not already in a container.
+    if (this.contentService.onTokenDetails()) {
+      if (!this.tokenService.tokenDetailResource.hasValue() || this.tokenInContainer()) {
+        return undefined;
+      }
+    }
+
+    const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
+    const params: Record<string, any> = {
+      no_token: 1,
+      ...this.serialFilterParam(),
+      ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),
+      ...(this.filterContainersByTokenOwner() &&
+        token?.username &&
+        token?.user_realm && {
+          realm: token.user_realm
+        })
     };
 
     const compatibleType = this.uniqueCompatibleType();
-    if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
-      baseParams["type"] = compatibleType;
+    if (compatibleType) {
+      params["type"] = compatibleType;
     }
-    return {
-      url: this.containerBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: baseParams
-    };
+
+    return this.paginatedContainerRequest(params);
   });
 
-  containerOptions = linkedSignal({
-    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
-    computation: (containerResource) => {
-      if (!containerResource) return [];
-      return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
-    }
-  });
-
-  filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || "").toLowerCase();
-    return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
-  });
-
-  containersForTokenType = linkedSignal({
-    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
-    computation: (containerResource) => {
-      if (!containerResource) return [];
+  containersForTokenType: WritableSignal<string[]> = linkedSignal({
+    source: () => ({
+      value: this.containersForTokenTypeResource.hasValue() ? this.containersForTokenTypeResource.value() : undefined,
+      isLoading: this.containersForTokenTypeResource.isLoading(),
+      error: this.containersForTokenTypeResource.error()
+    }),
+    computation: (source, previous): string[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
       return (
-        containerResource.result?.value?.containers
+        source.value.result?.value?.containers
           .filter((container) => this.compatibleTypes().includes(container.type))
           .map((container) => container.serial) ?? []
       );
@@ -424,12 +490,11 @@ export class ContainerService implements ContainerServiceInterface {
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
     // Only load container types on routes with a container type list or selection.
     const onAllowedRoute =
-      this.contentService.onTokensContainers() ||
-      this.contentService.onTokensContainersCreate() ||
-      this.contentService.onTokensContainersWizard() ||
+      this.contentService.onContainers() ||
+      this.contentService.onContainersCreate() ||
+      this.contentService.onContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
-
     if (!onAllowedRoute) {
       return undefined;
     }
@@ -454,15 +519,15 @@ export class ContainerService implements ContainerServiceInterface {
     }));
   });
 
-  selectedContainerType = linkedSignal<any, ContainerType | undefined>({
+  selectedContainerType = linkedSignal<string, ContainerType | undefined>({
     source: this.contentService.routeUrl,
-    computation: (routeUrl) => {
+    computation: () => {
       let containerType = this.authService.defaultContainerType();
 
-      if (this.contentService.onTokensContainersWizard()) {
+      if (this.contentService.onContainersWizard()) {
         containerType = this.authService.containerWizard().type || containerType;
       }
-      if (this.contentService.onTokensContainersTemplates()) {
+      if (this.contentService.onContainersTemplates()) {
         return undefined;
       }
       return (
@@ -476,14 +541,10 @@ export class ContainerService implements ContainerServiceInterface {
     }
   });
 
-  containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
+  containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
     this.pollingTrigger();
-    this.isPollingActive();
-
-    if (serial === "") {
-      return undefined;
-    }
+    if (serial === "") return undefined;
     return {
       url: this.containerBaseUrl,
       method: "GET",
@@ -494,23 +555,22 @@ export class ContainerService implements ContainerServiceInterface {
     };
   });
 
-  containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
-    computation: (containerDetailResource, previous) => {
-      const containerDetail = containerDetailResource?.result?.value;
-      if (containerDetail) {
-        return containerDetail;
-      }
-      return (
-        previous?.value ?? {
-          containers: [],
-          count: 0
-        }
-      );
+  containerDetails: WritableSignal<ContainerDetails> = linkedSignal({
+    source: () => ({
+      value: this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined,
+      isLoading: this.containerDetailsResource.isLoading(),
+      error: this.containerDetailsResource.error()
+    }),
+    computation: (source, previous) => {
+      const empty: ContainerDetails = { containers: [], count: 0 };
+      if (source.error) return empty;
+      const containerDetail = source.value?.result?.value;
+      if (!containerDetail) return source.isLoading ? (previous?.value ?? empty) : empty;
+      return containerDetail;
     }
   });
 
-  addToken(tokenSerial: string, containerSerial: string): Observable<any> {
+  addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<
@@ -526,7 +586,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  removeToken(tokenSerial: string, containerSerial: string): Observable<any> {
+  removeToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<
@@ -542,15 +602,13 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerRealm(containerSerial: string, value: string[]): Observable<any> {
+  setContainerRealm(containerSerial: string, value: string[]): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`,
-        { realms: valueString },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`, { realms: valueString }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to set container realm.", error);
@@ -561,14 +619,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerDescription(containerSerial: string, value: string): Observable<any> {
+  setContainerDescription(containerSerial: string, value: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`,
-        { description: value },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`, { description: value }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to set container description.", error);
@@ -612,14 +668,32 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  unassignUser(containerSerial: string, username: string, userRealm: string): Observable<any> {
+  setStates(containerSerial: string, states: string[]) {
+    if (states.length === 0) {
+      this.notificationService.error("Cannot save container states: at least one state must be selected.");
+      return throwError(() => new Error("setStates called with empty states array"));
+    }
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`,
-        { user: username, realm: userRealm },
-        { headers }
-      )
+      .post<
+        PiResponse<Record<string, boolean>>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: states.join(",") }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to set container states.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to set container states. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  unassignUser(containerSerial: string, username: string, userRealm: string): Observable<PiResponse<boolean>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, { user: username, realm: userRealm }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -630,14 +704,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<any> {
+  assignUser(args: { containerSerial: string; username: string; userRealm: string }): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`,
-        { user: args.username, realm: args.userRealm },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`, { user: args.username, realm: args.userRealm }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to assign user.", error);
@@ -648,28 +720,30 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  setContainerInfos(containerSerial: string, infos: any): Observable<Object>[] {
+  setContainerInfos(containerSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>>[] {
     const headers = this.authService.getHeaders();
     const info_url = `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info`;
     return Object.keys(infos).map((info) => {
       const infoValue = infos[info];
-      return this.http.post(`${info_url}/${encodeURIComponent(info)}`, { value: infoValue }, { headers }).pipe(
-        catchError((error) => {
-          console.error("Failed to save container infos.", error);
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.error("Failed to save container infos. " + message);
-          return throwError(() => error);
-        })
-      );
+      return this.http
+        .post<PiResponse<boolean>>(`${info_url}/${encodeURIComponent(info)}`, { value: infoValue }, { headers })
+        .pipe(
+          catchError((error) => {
+            console.error("Failed to save container infos.", error);
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error("Failed to save container infos. " + message);
+            return throwError(() => error);
+          })
+        );
     });
   }
 
-  deleteInfo(containerSerial: string, key: string): Observable<any> {
+  deleteInfo(containerSerial: string, key: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, {
-        headers
-      })
+      .delete<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete info.", error);
@@ -680,10 +754,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<any> {
+  addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to add token to container.", error);
@@ -694,14 +770,12 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<any> {
+  removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
-        { serial: tokenSerial },
-        { headers }
-      )
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
@@ -713,7 +787,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   toggleAll(action: "activate" | "deactivate"): Observable<(PiResponse<boolean> | null)[] | null> {
-    const data = this.containerDetail();
+    const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       this.notificationService.warning("No valid tokens array found in data.");
@@ -744,7 +818,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   removeAll(containerSerial: string): Observable<PiResponse<boolean> | null> {
-    const data = this.containerDetail();
+    const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error("No valid tokens array found in data.", data);
@@ -776,26 +850,26 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  deleteContainer(containerSerial: string): Observable<any> {
-    const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}`, { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to delete container.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to delete container. " + message);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<any> {
+  deleteContainer(containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(
-        `${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`,
-        { serial: param.serialList },
-        { headers }
-      )
+      .delete<PiResponse<boolean>>(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}`, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to delete container. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<PiResponse<boolean>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`, { serial: param.serialList }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
@@ -843,7 +917,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  containerBelongsToUser(containerSerial: any): false | true | undefined {
+  containerBelongsToUser(containerSerial: string): false | true | undefined {
     if (!this.containerResource.hasValue()) {
       return undefined;
     }
@@ -868,20 +942,10 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling$.next();
   }
 
-  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>> {
+  createContainer(createData: ContainerCreateData): Observable<PiResponse<ContainerCreateResult>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<{ container_serial: string }>>(
-        `${this.containerBaseUrl}init`,
-        {
-          type: param.container_type,
-          description: param.description,
-          user: param.user,
-          realm: param.realm,
-          template_name: param.template_name
-        },
-        { headers }
-      )
+      .post<PiResponse<ContainerCreateResult>>(`${this.containerBaseUrl}init`, createData, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to create container.", error);
@@ -892,7 +956,7 @@ export class ContainerService implements ContainerServiceInterface {
       );
   }
 
-  startPolling(containerSerial: string, isRollover: boolean = false): void {
+  startPolling(containerSerial: string, isRollover = false): void {
     if (this.isPollingActive()) {
       return;
     }
@@ -902,16 +966,11 @@ export class ContainerService implements ContainerServiceInterface {
     this.pollingTrigger.update((count) => count + 1);
   }
 
-  private pollingTimeoutId: any;
+  private pollingTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     effect(() => {
-      if (this.containerDetailResource.error()) {
-        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
-        console.error("Failed to get container details.", containerDetailError.message);
-        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
-        this.notificationService.error("Failed to get container details." + message);
-      }
+      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
     });
     effect(() => {
       if (this.containerResource.error()) {
@@ -926,14 +985,13 @@ export class ContainerService implements ContainerServiceInterface {
       const serial = this.containerSerial();
       const active = this.isPollingActive();
 
-      const onAllowedRoute =
-        this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
+      const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
 
-      if (!active || !serial || !this.containerDetailResource.hasValue() || !onAllowedRoute) {
+      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
         return;
       }
 
-      const resourceValue = this.containerDetailResource.value();
+      const resourceValue = this.containerDetailsResource.value();
       if (!resourceValue?.result?.value) {
         return;
       }
@@ -949,7 +1007,7 @@ export class ContainerService implements ContainerServiceInterface {
         const isRollover = this.isRolloverPolling();
         if (isRollover) {
           this.notificationService.success("Container rollover completed successfully.");
-        } else if (!this.contentService.onTokensContainersCreate()) {
+        } else if (!this.contentService.onContainersCreate()) {
           this.notificationService.success("Container registered successfully.");
         }
         this.isPollingActive.set(false);
@@ -957,4 +1015,38 @@ export class ContainerService implements ContainerServiceInterface {
       }
     });
   }
+
+  async compareWithTemplate() {
+    const serial = this.containerSerial();
+    const details = this.containerDetails();
+
+    const container = details?.containers.find((c) => c.serial === serial);
+    const templateName = container?.template;
+
+    if (!serial || !templateName) {
+      console.warn("Missing serial or template for comparison");
+      return;
+    }
+
+    const headers = this.authService.getHeaders();
+    const observable = this.http
+      .get<
+        PiResponse<TemplateComparisonResult>
+      >(`${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`, { headers })
+      .pipe(
+        catchError((error) => {
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to compare: " + message);
+          return of(null);
+        })
+      );
+
+    const result = await lastValueFrom(observable);
+    this.templateComparison.set(result?.result?.value ?? null);
+  }
+
+  readonly templateComparison = linkedSignal<string, TemplateComparisonResult | null>({
+    source: () => this.containerSerial(),
+    computation: () => null
+  });
 }

@@ -16,30 +16,38 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import {
-  ServiceId,
-  ServiceIdService,
-  ServiceIdServiceInterface
-} from "../../../../services/service-id/service-id.service";
+import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { MatButtonModule } from "@angular/material/button";
+import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+
 import { MatIconModule } from "@angular/material/icon";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+
+interface ServiceIdFormModel {
+  servicename: string;
+  description: string;
+}
+
+const EMPTY_SERVICE_ID_FORM: ServiceIdFormModel = {
+  servicename: "",
+  description: ""
+};
 
 @Component({
   selector: "app-new-service-id",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -50,16 +58,22 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
   styleUrl: "./new-service-id.component.scss"
 })
 export class NewServiceIdComponent implements OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
   protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
 
-  serviceIdForm!: FormGroup;
-  isEditMode = false;
+  isEditMode = signal(false);
   private editServiceName: string | null = null;
+
+  serviceIdModel = signal<ServiceIdFormModel>({ ...EMPTY_SERVICE_ID_FORM });
+
+  serviceIdForm = form(this.serviceIdModel, (f) => {
+    required(f.servicename);
+    pattern(f.servicename, /^[a-zA-Z0-9._-]*$/);
+    disabled(f.servicename, () => this.isEditMode());
+  });
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -69,59 +83,55 @@ export class NewServiceIdComponent implements OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const serviceName = params.get("name");
       if (serviceName) {
-        this.isEditMode = true;
+        this.isEditMode.set(true);
         this.editServiceName = serviceName;
         const serviceId = this.serviceIdService.serviceIds().find((s) => s.servicename === serviceName);
-        this.initForm(serviceId ?? null);
+        this.loadData(serviceId ?? null);
       } else {
-        this.isEditMode = false;
+        this.isEditMode.set(false);
         this.editServiceName = null;
-        this.initForm(null);
+        this.loadData(null);
       }
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const serviceIds = this.serviceIdService.serviceIds();
-      if (this.isEditMode && this.editServiceName && this.serviceIdForm?.pristine) {
+      if (this.isEditMode() && this.editServiceName && untracked(() => !this.serviceIdForm().dirty())) {
         const serviceId = serviceIds.find((s) => s.servicename === this.editServiceName);
         if (serviceId) {
-          this.initForm(serviceId);
+          this.loadData(serviceId);
         }
       }
     });
   }
 
   get hasChanges(): boolean {
-    return !this.serviceIdForm.pristine;
+    return this.serviceIdForm().dirty();
   }
 
   get canSave(): boolean {
-    return this.serviceIdForm.valid;
+    return this.serviceIdForm().valid();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  private initForm(data: ServiceId | null): void {
-    this.serviceIdForm = this.formBuilder.group({
-      servicename: [data?.servicename || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-      description: [data?.description || ""]
+  private loadData(data: ServiceId | null): void {
+    this.serviceIdModel.set({
+      servicename: data?.servicename || "",
+      description: data?.description || ""
     });
-
-    if (this.isEditMode) {
-      this.serviceIdForm.get("servicename")?.disable();
-    }
+    this.serviceIdForm().reset();
   }
 
   async save(): Promise<boolean> {
-    if (this.serviceIdForm.invalid) {
+    if (!this.serviceIdForm().valid()) {
       return false;
     }
-    const serviceId: ServiceId = {
-      ...this.serviceIdForm.getRawValue()
-    };
+    const { servicename, description } = this.serviceIdModel();
+    const serviceId: ServiceId = { servicename, description };
 
     try {
       await this.serviceIdService.postServiceId(serviceId);

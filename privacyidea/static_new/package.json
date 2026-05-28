@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "start-hmr": "ng serve --hmr --port 4200",
     "lint": "ng lint",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss,css,json}\"",
@@ -14,7 +15,6 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "21.2.8",
     "@angular/cdk": "21.2.6",
     "@angular/common": "21.2.8",
     "@angular/compiler": "21.2.8",
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@angular-builders/jest": "^21.0.3",
-    "@angular-devkit/build-angular": "21.2.7",
+    "@angular-devkit/build-angular": "^21.2.10",
     "@angular/cli": "21.2.7",
     "@angular/compiler-cli": "21.2.8",
     "@angular/localize": "21.2.8",

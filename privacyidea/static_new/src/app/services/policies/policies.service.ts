@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,12 +19,12 @@
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ActionType = "bool" | "int" | "str" | "text";
 export type PolicyActionDetail<T extends string | number = string | number> = {
@@ -186,7 +186,7 @@ export interface PolicyServiceInterface {
 
   canSavePolicy(policy: PolicyDetail): boolean;
 
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null;
+  getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null;
 
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
 
@@ -227,9 +227,7 @@ export interface PolicyServiceInterface {
   savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class PolicyService implements PolicyServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -252,13 +250,13 @@ export class PolicyService implements PolicyServiceInterface {
    * Filter policy actions by the actionFilter signal and already added actions.
    * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
    */
-    // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
-    //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
-    // });
+  // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+  //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
+  // });
 
   _allPolicies = computed(() => {
     if (!this.allPoliciesResource.hasValue()) return [];
-    return this.allPoliciesResource.value()?.result?.value ?? []
+    return this.allPoliciesResource.value()?.result?.value ?? [];
   });
 
   getEmptyPolicy(): PolicyDetail {
@@ -402,12 +400,12 @@ export class PolicyService implements PolicyServiceInterface {
     return true;
   }
 
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
-    const actions = this.allPolicyActionsFlat();
-    if (actionName && actions) {
-      return actions[actionName] ?? null;
+  getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null {
+    if (!actionName) return null;
+    if (scope) {
+      return this.policyActions()[scope]?.[actionName] ?? null;
     }
-    return null;
+    return this.allPolicyActionsFlat()[actionName] ?? null;
   }
 
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {

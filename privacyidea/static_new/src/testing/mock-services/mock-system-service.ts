@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
-import { Observable, of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
-import { NodeInfo, SystemServiceInterface } from "../../app/services/system/system.service";
-import { CaConnectors } from "../../app/services/ca-connector/ca-connector.service";
+import { computed, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
+import { CaConnectors } from "@services/ca-connector/ca-connector.service";
+import { NodeInfo, SystemServiceInterface } from "@services/system/system.service";
+import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockSystemService implements SystemServiceInterface {

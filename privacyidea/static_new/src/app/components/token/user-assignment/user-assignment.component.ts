@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,16 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, input, Input, signal } from "@angular/core";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { Component, computed, effect, inject, input, signal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
-import { MatInput, MatLabel } from "@angular/material/input";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint } from "@angular/material/form-field";
+import { MatInput, MatLabel } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-assignment",
@@ -34,7 +33,6 @@ import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
   standalone: true,
   imports: [
     ClearableInputComponent,
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatFormField,
@@ -42,7 +40,6 @@ import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
     MatLabel,
     MatOption,
     MatSelect,
-    ReactiveFormsModule,
     MatCheckbox,
     MatError,
     MatHint
@@ -52,84 +49,60 @@ export class UserAssignmentComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
 
-  @Input() selectedUserRealmControl?: FormControl<string>;
-  @Input() userFilterControl?: FormControl<string | UserData | null>;
   showOnlyAddToRealm = input<boolean>(false);
   required = input<boolean>(false);
 
-  // Internal defaults if not provided
-  readonly internalSelectedUserRealmControl = new FormControl<string>(
-    {
-      value: this.userService.selectedUserRealm(),
-      disabled: false
-    },
-    { nonNullable: true }
-  );
-  readonly internalUserFilterControl = new FormControl<string | UserData | null>(
-    {
-      value: this.userService.selectionFilter(),
-      disabled: !this.userService.selectedUserRealm()
-    },
-    { nonNullable: true }
-  );
-
-  get selectedUserRealmCtrl() {
-    return this.selectedUserRealmControl ?? this.internalSelectedUserRealmControl;
-  }
-
-  get userFilterCtrl() {
-    return this.userFilterControl ?? this.internalUserFilterControl;
-  }
-
   onlyAddToRealm = signal(false);
+  userFilter = signal<string>(this.userService.selectionUsernameFilter());
 
-  onOnlyAddToRealmChange(checked: boolean) {
-    this.onlyAddToRealm.set(checked);
-  }
+  readonly userInputDisabled = computed(
+    () => !this.userService.selectedUserRealm() || this.onlyAddToRealm()
+  );
 
-  onSelectedRealmChange(realm: string) {
-    this.userFilterCtrl.reset("", { emitEvent: false });
-    this.userService.selectedUserRealm.set(realm);
-  }
+  readonly displayUser = (value: UserData | string | null): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.username;
+  };
 
   constructor() {
     effect(() => {
       const users = this.userService.selectionFilteredUsers();
-      if (users.length === 1 && this.userFilterCtrl.value === users[0].username) {
-        this.userFilterCtrl.setValue(users[0]);
-      }
-    });
-
-    effect(() => {
-      const realm = this.userService.selectedUserRealm();
-      const onlyAddToRealm = this.onlyAddToRealm();
-      if (!realm || onlyAddToRealm) {
-        this.userFilterCtrl.disable({ emitEvent: false });
-      } else {
-        this.userFilterCtrl.enable({ emitEvent: false });
-      }
-    });
-
-    effect(() => {
-      const realm = this.userService.selectedUserRealm();
-      if (realm !== this.selectedUserRealmCtrl.value) {
-        this.selectedUserRealmCtrl.setValue(realm, { emitEvent: false });
+      const filter = this.userFilter();
+      if (users.length === 1 && filter === users[0].username) {
+        this.userService.selectionFilter.set(users[0]);
       }
     });
   }
 
-  ngOnInit(): void {
-    this.userService.selectedUserRealm.set(this.selectedUserRealmCtrl.value);
-    this.selectedUserRealmCtrl.valueChanges.subscribe((value) => {
-      this.userFilterCtrl.reset("", { emitEvent: false });
-      this.userService.selectedUserRealm.set(value);
-    });
+  onlyAddToRealmChange(checked: boolean) {
+    this.onlyAddToRealm.set(checked);
+    if (checked) {
+      this.clearUser();
+    }
+  }
 
-    this.userFilterCtrl.valueChanges.subscribe((value) => {
-      this.userService.selectionFilter.set(value ?? "");
-      if (value) {
-        this.onlyAddToRealm.set(false);
-      }
-    });
+  onSelectedRealmChange(realm: string) {
+    this.userService.selectedUserRealm.set(realm);
+    this.clearUser();
+  }
+
+  onUserFilterInput(value: string): void {
+    this.userFilter.set(value);
+    this.userService.selectionFilter.set(value);
+    if (value) {
+      this.onlyAddToRealm.set(false);
+    }
+  }
+
+  onUserSelected(user: UserData): void {
+    this.userFilter.set(user.username);
+    this.userService.selectionFilter.set(user);
+    this.onlyAddToRealm.set(false);
+  }
+
+  clearUser(): void {
+    this.userFilter.set("");
+    this.userService.selectionFilter.set("");
   }
 }

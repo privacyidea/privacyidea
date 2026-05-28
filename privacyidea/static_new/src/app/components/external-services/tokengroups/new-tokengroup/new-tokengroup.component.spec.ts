@@ -16,21 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewTokengroupComponent } from "./new-tokengroup.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TokengroupService } from "@services/tokengroup/tokengroup.service";
+import { MockDialogService } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockTokengroupService } from "@testing/mock-services/mock-tokengroup-service";
 import { of } from "rxjs";
-import { TokengroupService } from "../../../../services/tokengroup/tokengroup.service";
-import { MockTokengroupService } from "../../../../../testing/mock-services/mock-tokengroup-service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services";
-import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../route_paths";
+import { NewTokengroupComponent } from "./new-tokengroup.component";
 
 describe("NewTokengroupComponent", () => {
   let component: NewTokengroupComponent;
@@ -42,7 +41,7 @@ describe("NewTokengroupComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NewTokengroupComponent, NoopAnimationsModule],
+      imports: [NewTokengroupComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -70,15 +69,16 @@ describe("NewTokengroupComponent", () => {
   });
 
   it("should initialize form for create mode", () => {
-    expect(component.isEditMode).toBe(false);
-    expect(component.tokengroupForm.get("groupname")?.value).toBe("");
+    expect(component.isEditMode()).toBe(false);
+    expect(component.tokengroupModel().groupname).toBe("");
   });
 
   it("should call save when form is valid", async () => {
-    component.tokengroupForm.patchValue({
+    component.tokengroupModel.update(m => ({
+      ...m,
       groupname: "test",
       description: "desc"
-    });
+    }));
 
     const success = await component.save();
 
@@ -88,13 +88,13 @@ describe("NewTokengroupComponent", () => {
   });
 
   it("should handle error on save", async () => {
-    component.tokengroupForm.patchValue({
+    component.tokengroupModel.update(m => ({
+      ...m,
       groupname: "test",
       description: "desc"
-    });
+    }));
     tokengroupServiceMock.postTokengroup = jest.fn().mockRejectedValue(new Error("Save failed"));
     // Clear any previous calls to close from setup
-
 
     const success = await component.save();
 
@@ -114,8 +114,6 @@ describe("NewTokengroupComponent", () => {
     });
 
     it("should close directly when there are no changes", () => {
-
-
       component.onCancel();
 
       expect(dialogService.openDialog).not.toHaveBeenCalled();
@@ -124,11 +122,12 @@ describe("NewTokengroupComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.tokengroupForm.patchValue({
+      component.tokengroupModel.update(m => ({
+        ...m,
         groupname: "test",
         description: "desc"
-      });
-      component.tokengroupForm.markAsDirty();
+      }));
+      component.tokengroupForm().markAsDirty();
 
       component.onCancel();
 
@@ -144,67 +143,66 @@ describe("NewTokengroupComponent", () => {
 
     it("should close when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.tokengroupForm.patchValue({
+      component.tokengroupModel.update(m => ({
+        ...m,
         groupname: "test",
         description: "desc"
-      });
-      component.tokengroupForm.markAsDirty();
-
+      }));
+      component.tokengroupForm().markAsDirty();
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
     });
 
     it("should close when user selects 'save-exit' and save succeeds", async () => {
-      component.tokengroupForm.patchValue({
+      component.tokengroupModel.update(m => ({
+        ...m,
         groupname: "test",
         description: "desc"
-      });
-      component.tokengroupForm.markAsDirty();
+      }));
+      component.tokengroupForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
       pendingChangesService.save.mockReturnValue(Promise.resolve(true));
 
-
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
     });
 
     it("should NOT close when user selects 'save-exit' but save fails", async () => {
-      component.tokengroupForm.patchValue({
+      component.tokengroupModel.update(m => ({
+        ...m,
         groupname: "test",
         description: "desc"
-      });
-      component.tokengroupForm.markAsDirty();
+      }));
+      component.tokengroupForm().markAsDirty();
       tokengroupServiceMock.postTokengroup = jest.fn().mockRejectedValue(new Error("Save failed"));
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
       pendingChangesService.save.mockReturnValue(Promise.resolve(false));
 
-
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.tokengroupForm.patchValue({ groupname: "" });
-      component.tokengroupForm.markAsDirty();
+      component.tokengroupModel.update(m => ({ ...m, groupname: "" }));
+      component.tokengroupForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
-
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.save).not.toHaveBeenCalled();
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
@@ -213,16 +211,16 @@ describe("NewTokengroupComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
-      component.tokengroupForm.patchValue({
+      component.tokengroupModel.update(m => ({
+        ...m,
         groupname: "test",
         description: "desc"
-      });
-      component.tokengroupForm.markAsDirty();
-
+      }));
+      component.tokengroupForm().markAsDirty();
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();

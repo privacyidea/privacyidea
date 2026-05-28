@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,12 +20,12 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { environment } from "../../../environments/environment";
-import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { RadiusServerService } from "./radius-server.service";
 
 describe("RadiusServerService", () => {
@@ -39,6 +39,7 @@ describe("RadiusServerService", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        RadiusServerService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
@@ -75,7 +76,10 @@ describe("RadiusServerService", () => {
     const promise = service.postRadiusServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save RADIUS server. Something went wrong");
@@ -96,7 +100,10 @@ describe("RadiusServerService", () => {
     const promise = service.deleteRadiusServer("test");
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete RADIUS server. Something went wrong");
@@ -132,10 +139,15 @@ describe("RadiusServerService", () => {
     const promise = service.testRadiusServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await promise;
-    expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to send RADIUS test request. Something went wrong");
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
+      "Failed to send RADIUS test request. Something went wrong"
+    );
   });
 
   describe("radiusServers", () => {
@@ -171,6 +183,27 @@ describe("RadiusServerService", () => {
         status: 403,
         statusText: "Permission denied"
       });
+      await Promise.resolve();
+
+      expect(service.radiusServers()).toEqual([]);
+    });
+
+    it("should reset to empty array when resource errors after successful load", async () => {
+      contentServiceMock.onExternalRadius = signal(true);
+      TestBed.tick();
+
+      const radiusServers = {
+        server1: { server: "1.2.3.4", secret: "abc" }
+      };
+      let req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      req.flush(MockPiResponse.fromValue(radiusServers));
+      await Promise.resolve();
+      expect(service.radiusServers()).toEqual([{ identifier: "server1", server: "1.2.3.4", secret: "abc" }]);
+
+      service.radiusServerResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
       expect(service.radiusServers()).toEqual([]);

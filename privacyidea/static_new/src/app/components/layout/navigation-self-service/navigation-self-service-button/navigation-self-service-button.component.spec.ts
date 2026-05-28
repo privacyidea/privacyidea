@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,11 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button.component";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService } from "@testing/mock-services";
 import { of } from "rxjs";
+import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button.component";
 
 describe("NavigationSelfServiceButtonComponent", () => {
   let component: NavigationSelfServiceButtonComponent;
@@ -30,12 +32,8 @@ describe("NavigationSelfServiceButtonComponent", () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        }
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: ContentService, useClass: MockContentService }
       ],
       imports: [NavigationSelfServiceButtonComponent]
     }).compileComponents();

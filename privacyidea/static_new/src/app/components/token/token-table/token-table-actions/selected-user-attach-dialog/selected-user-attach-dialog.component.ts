@@ -17,20 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { RealmService, RealmServiceInterface } from "../../../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
-import { UserData, UserService, UserServiceInterface } from "../../../../../services/user/user.service";
-import { ClearableInputComponent } from "../../../../shared/clearable-input/clearable-input.component";
-import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
-import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -41,22 +41,19 @@ export interface SelectedUserAssignResult {
 @Component({
   selector: "app-selected-user-attach-dialog",
   imports: [
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatError,
     MatFormField,
     MatLabel,
     MatSelect,
-    ReactiveFormsModule,
     MatOption,
     MatInput,
     MatIcon,
-    MatDialogActions,
     MatButtonModule,
-    MatDialogTitle,
-    MatDialogContent,
-    ClearableInputComponent
+    MatSuffix,
+    ClearableInputComponent,
+    DialogWrapperComponent
   ],
   templateUrl: "./selected-user-attach-dialog.component.html",
   styleUrl: "./selected-user-attach-dialog.component.scss"
@@ -69,35 +66,61 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<a
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);
+  selectedRealm = signal(this.userService.selectedUserRealm());
+  selectedUser = signal<UserData | null>(null);
+  userFilter = signal(this.userService.selectionFilter());
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
-  selectedUserRealmControl = new FormControl<string>(this.userService.selectedUserRealm(), {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
-  userFilterControl = new FormControl<string | UserData | null>(this.userService.selectionFilter(), {
-    nonNullable: true,
-    validators: [Validators.required]
-  });
+  readonly realmInvalid = computed(() => !this.selectedRealm());
+  readonly userInvalid = computed(() => !this.selectedUser());
   selectionContainsAssignedToken = computed(() =>
     this.tokenService.tokenSelection().some((token) => token.username && token.username !== "")
   );
+  readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
+    {
+      label: $localize`Assign to Selected Token`,
+      value: "submit",
+      type: "confirm",
+      className: "input-width-m",
+      primary: true,
+      disabled: !this.pinsMatch() || this.realmInvalid() || this.userInvalid()
+    }
+  ]);
 
-  ngOnInit(): void {
-    this.selectedUserRealmControl.valueChanges.subscribe((value) => {
-      if (value !== this.userService.selectedUserRealm()) {
-        this.userService.selectedUserRealm.set(value ?? "");
-      }
-    });
+  onRealmChange(realm: string): void {
+    this.selectedRealm.set(realm);
+    this.userService.selectedUserRealm.set(realm);
+    this.selectedUser.set(null);
+    this.userFilter.set("");
+    this.userService.selectionFilter.set("");
   }
+
+  onUserFilterInput(value: string): void {
+    this.userFilter.set(value);
+    this.userService.selectionFilter.set(value);
+    if (!value) {
+      this.selectedUser.set(null);
+    }
+  }
+
+  onUserSelected(user: UserData): void {
+    this.selectedUser.set(user);
+    this.userFilter.set(user.username);
+    this.userService.selectionFilter.set(user.username);
+  }
+
+  displayUser = (value: UserData | string | null): string => {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return value.username;
+  };
 
   togglePinVisibility(): void {
     this.hidePin.update((prev) => !prev);
   }
 
   onConfirm(): void {
-    const realm = this.selectedUserRealmControl.value;
-    const userValue = this.userFilterControl.value;
-    const user = typeof userValue === "string" ? null : userValue;
+    const realm = this.selectedRealm();
+    const user = this.selectedUser();
 
     if (this.pinsMatch() && !!realm && !!user) {
       this.dialogRef.close({
@@ -110,5 +133,13 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<a
 
   onCancel(): void {
     this.dialogRef.close(null);
+  }
+
+  onAction(value: "submit" | null): void {
+    if (value === "submit") {
+      this.onConfirm();
+    } else {
+      this.onCancel();
+    }
   }
 }

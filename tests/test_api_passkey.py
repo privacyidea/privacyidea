@@ -775,6 +775,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("user", value["role"])
             self.assertIn("token", value)
             self.assertTrue(value["token"])
+        # The serial of the passkey used for the login must be in the audit log
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(serial, audit_entry.get("serial"), audit_entry)
+        self.assertEqual("passkey", audit_entry.get("token_type"), audit_entry)
         remove_token(serial)
 
     def test_11_auth_fail_uv(self):

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,9 +18,9 @@
  **/
 import { HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
+import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
 import { finalize, share } from "rxjs/operators";
 import { v4 as uuid } from "uuid";
-import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
 
 export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
   const loadingService: LoadingServiceInterface = inject(LoadingService);

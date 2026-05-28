@@ -18,6 +18,13 @@ on:
     paths:
       - "privacyidea/static_new/package-lock.json"
       - ".github/workflows/osv-scanner-frontend.yml"
+  push:
+    branches:
+      - "master"
+      - "branch-*"
+    paths:
+      - "privacyidea/static_new/package-lock.json"
+      - ".github/workflows/osv-scanner-frontend.yml"
   schedule:
     # Nightly at 22:53 UTC — offset from backend scan (22:47) to avoid simultaneous load.
     - cron: '53 22 * * *'
@@ -53,13 +60,12 @@ jobs:
         continue-on-error: true
         run: |
           osv-scanner scan \
-            --config=privacyidea/static_new/osv-scanner.toml \
             --lockfile=privacyidea/static_new/package-lock.json \
             --format=sarif \
-            --output=osv-results.sarif
+            --output-file=osv-results.sarif
 
       - name: Upload SARIF to the Security tab
-        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4
         with:
           sarif_file: osv-results.sarif
           category: osv-scanner-frontend

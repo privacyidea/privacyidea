@@ -34,15 +34,14 @@
         class="input-width-s">
         <mat-label i18n>Number of Answers</mat-label>
         <input
-          [ngModel]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
-          (ngModelChange)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event)"
-          #numAnswersInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #numAnswersInput
+          [value]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
+          (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $any($event.target).value)"
           matInput
           placeholder="5"
           required
           type="number">
-        @if (numAnswersInput.errors?.['required']) {
+        @if (numAnswersInput.validity.valueMissing) {
           <mat-error i18n>Number of Answers is <strong>required</strong></mat-error>
         }
       </mat-form-field>
@@ -81,19 +80,21 @@
         }
       </tbody>
     </table>
-    <div class="flex-row gap-16 ali-center margin-top-16">
+    <div class="flex-row ali-center margin-top-16">
       <mat-form-field
         appearance="fill"
         class="input-width-xl">
         <mat-label i18n>Question</mat-label>
         <input
-          [(ngModel)]="newQuestionText"
+          [value]="newQuestionText()"
+
+          (input)="newQuestionText.set($any($event.target).value)"
           matInput
           placeholder="Enter new question here">
       </mat-form-field>
       <button
         (click)="addQuestion()"
-        class="action-button-secondary button-width-m margin-bottom-16"
+        class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>add</mat-icon>
         <span i18n>Add new question</span>

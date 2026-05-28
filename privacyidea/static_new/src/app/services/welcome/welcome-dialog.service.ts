@@ -18,8 +18,8 @@
  **/
 import { effect, inject, Injectable, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { WelcomeDialogComponent } from "../../components/shared/welcome-dialog/welcome-dialog.component";
+import { WelcomeDialogComponent } from "@components/shared/welcome-dialog/welcome-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
 @Injectable({ providedIn: "root" })
 export class WelcomeDialogService {

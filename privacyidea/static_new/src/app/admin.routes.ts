@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,80 +16,96 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Routes } from "@angular/router";
-import { ChallengesTableComponent } from "./components/token/challenges-table/challenges-table.component";
-import { ContainerCreateComponent } from "./components/token/container-create/container-create.component";
-import { ContainerDetailsComponent } from "./components/token/container-details/container-details.component";
-import { ContainerTableComponent } from "./components/token/container-table/container-table.component";
-import { TokenApplicationsComponent } from "./components/token/token-applications/token-applications.component";
-import { TokenDetailsComponent } from "./components/token/token-details/token-details.component";
-import { TokenEnrollmentComponent } from "./components/token/token-enrollment/token-enrollment.component";
+import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
+import { AuditComponent } from "@components/audit/audit.component";
+import { ClientsComponent } from "@components/audit/clients/clients.component";
+import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
+import { MachinesComponent } from "@components/configuration/machines/machines.component";
+import { PeriodicTaskEditComponent } from "@components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component";
+import { PeriodicTaskComponent } from "@components/configuration/periodic-task/periodic-task.component";
+import { SubscriptionComponent } from "@components/configuration/subscription/subscription.component";
+import { SystemConfigComponent } from "@components/configuration/system/system-config.component";
+import { TokenTypeConfigComponent } from "@components/configuration/token-type-config/token-type-config.component";
+import { EventEditPageComponent } from "@components/event/event-edit-page/event-edit-page.component";
+import { EventComponent } from "@components/event/event.component";
+import { CaConnectorsComponent } from "@components/external-services/ca-connectors/ca-connectors.component";
+import { NewCaConnectorComponent } from "@components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component";
+import { NewPrivacyideaServerComponent } from "@components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
+import { PrivacyideaServersComponent } from "@components/external-services/privacyidea-servers/privacyidea-servers.component";
+import { NewRadiusServerComponent } from "@components/external-services/radius-servers/new-radius-server/new-radius-server.component";
+import { RadiusServersComponent } from "@components/external-services/radius-servers/radius-servers.component";
+import { NewServiceIdComponent } from "@components/external-services/service-ids/new-service-id/new-service-id.component";
+import { ServiceIdsComponent } from "@components/external-services/service-ids/service-ids.component";
+import { NewSmsGatewayComponent } from "@components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component";
+import { SmsGatewaysComponent } from "@components/external-services/sms-gateways/sms-gateways.component";
+import { NewSmtpServerComponent } from "@components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component";
+import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
+import { NewTokengroupComponent } from "@components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
+import { TokengroupsComponent } from "@components/external-services/tokengroups/tokengroups.component";
+import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
+import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
+import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
+import { ChallengesTableComponent } from "@components/token/challenges-table/challenges-table.component";
+import { ContainerCreateComponent } from "@components/container/container-create/container-create.component";
+import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
+import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
+import { ContainerTemplatesComponent } from "@components/container/container-templates/container-templates.component";
+import { ContainerTemplateEditPageComponent } from "@components/container/container-templates/container-template-edit-page/container-template-edit-page.component";
+import { TokenApplicationsComponent } from "@components/token/token-applications/token-applications.component";
+import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
+import { TokenEnrollmentComponent } from "@components/token/token-enrollment/token-enrollment.component";
 import { TokenFindSerialComponent } from "@components/token/token-find-serial/token-find-serial.component";
-import { TokenTableComponent } from "./components/token/token-table/token-table.component";
-import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
-import { UserTableComponent } from "./components/user/user-table/user-table.component";
-import { AuditComponent } from "./components/audit/audit.component";
-import { TokenImportComponent } from "./components/token/token-import/token-import.component";
-import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
-import { ClientsComponent } from "./components/audit/clients/clients.component";
-import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
-import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
-import { MachinesComponent } from "./components/configuration/machines/machines.component";
-import { MachineDetailsDialogComponent } from "./components/configuration/machines/machine-details-dialog/machine-details-dialog.component";
-import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
-import { NewSmtpServerComponent } from "./components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component";
-import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
-import { NewRadiusServerComponent } from "./components/external-services/radius-servers/new-radius-server/new-radius-server.component";
-import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
-import { NewSmsGatewayComponent } from "./components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component";
-import { PrivacyideaServersComponent } from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
-import { NewPrivacyideaServerComponent } from "./components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
-import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
-import { NewCaConnectorComponent } from "./components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component";
-import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
-import { NewTokengroupComponent } from "./components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
-import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
-import { NewServiceIdComponent } from "./components/external-services/service-ids/new-service-id/new-service-id.component";
-import { UserResolversComponent } from "./components/user/user-resolver/user-resolver.component";
-import { pendingChangesGuard } from "./guards/pending-changes.guard";
-import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
-import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
-import { EventComponent } from "./components/event/event.component";
-import { EventPanelComponent } from "./components/event/event-panel/event-panel.component";
-import { SystemConfigComponent } from "./components/configuration/system/system-config.component";
-import { TokenTypeConfigComponent } from "./components/configuration/token-type-config/token-type-config.component";
-import { ContainerTemplatesComponent } from "@components/token/container-templates/container-templates.component";
+import { TokenImportComponent } from "@components/token/token-import/token-import.component";
+import { TokenTableComponent } from "@components/token/token-table/token-table.component";
+import { UserCreateComponent } from "@components/user/user-create/user-create.component";
+import { RealmTableComponent } from "@components/user/realm-table/realm-table.component";
+import { UserDetailsComponent } from "@components/user/user-details/user-details.component";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
-import { EditPolicyDialogComponent } from "./components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { UserResolversComponent } from "@components/user/user-resolver/user-resolver.component";
+import { UserTableComponent } from "@components/user/user-table/user-table.component";
 
 export const routes: Routes = [
   {
     path: "tokens",
     children: [
       { path: "", component: TokenTableComponent },
-      { path: "enrollment", component: TokenEnrollmentComponent },
+      { path: "enrollment", component: TokenEnrollmentComponent, canDeactivate: [pendingChangesGuard] },
       { path: "challenges", component: ChallengesTableComponent },
       { path: "applications", component: TokenApplicationsComponent },
       { path: "get-serial", component: TokenFindSerialComponent },
+      { path: "details/:serial", component: TokenDetailsComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "import", component: TokenImportComponent, canDeactivate: [pendingChangesGuard] }
+    ]
+  },
+  {
+    path: "containers",
+    children: [
+      { path: "", component: ContainerTableComponent },
+      { path: "create", component: ContainerCreateComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:serial", component: ContainerDetailsComponent, canDeactivate: [pendingChangesGuard] },
       {
-        path: "containers",
+        path: "templates",
         children: [
-          { path: "", component: ContainerTableComponent },
-          { path: "create", component: ContainerCreateComponent },
-          { path: "details/:serial", component: ContainerDetailsComponent },
-          { path: "templates", component: ContainerTemplatesComponent, canDeactivate: [pendingChangesGuard] }
+          { path: "", component: ContainerTemplatesComponent },
+          { path: "create", component: ContainerTemplateEditPageComponent, canDeactivate: [pendingChangesGuard] },
+          {
+            path: "details/:name",
+            component: ContainerTemplateEditPageComponent,
+            canDeactivate: [pendingChangesGuard]
+          }
         ]
-      },
-      { path: "details/:serial", component: TokenDetailsComponent },
-      { path: "import", component: TokenImportComponent }
+      }
     ]
   },
   {
     path: "users",
     children: [
-      { path: "", component: UserTableComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "", component: UserTableComponent },
+      { path: "new", component: UserCreateComponent, canDeactivate: [pendingChangesGuard] },
       { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "realms", component: RealmTableComponent },
+      { path: "realms", component: RealmTableComponent, canDeactivate: [pendingChangesGuard] },
       { path: "resolvers", component: UserResolversComponent },
       { path: "resolvers/new", component: UserNewResolverComponent, canDeactivate: [pendingChangesGuard] },
       { path: "resolvers/details/:name", component: UserNewResolverComponent, canDeactivate: [pendingChangesGuard] }
@@ -99,33 +115,40 @@ export const routes: Routes = [
     path: "policies",
     children: [
       { path: "", component: PoliciesTableComponent },
-      { path: "new", component: EditPolicyDialogComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "details/:name", component: EditPolicyDialogComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "new", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:name", component: PolicyEditPageComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
     path: "events",
     children: [
       { path: "", component: EventComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "new", component: EventPanelComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "details/:id", component: EventPanelComponent, canDeactivate: [pendingChangesGuard] }
+      { path: "new", component: EventEditPageComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:id", component: EventEditPageComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
     path: "configuration",
     children: [
       // { path: "", component: SystemComponent },
-      { path: "machine_resolver", component: MachineResolverComponent },
+      { path: "machine_resolver", component: MachineResolverComponent, canDeactivate: [pendingChangesGuard] },
       {
         path: "machines",
         children: [
           { path: "", component: MachinesComponent },
-          { path: "details/:id", component: MachineDetailsDialogComponent }
+          { path: "details/:id", component: MachineDetailsComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
-      { path: "periodic-tasks", component: PeriodicTaskComponent },
+      {
+        path: "periodic-tasks",
+        children: [
+          { path: "", component: PeriodicTaskComponent },
+          { path: "new", component: PeriodicTaskEditComponent, canDeactivate: [pendingChangesGuard] },
+          { path: "details/:name", component: PeriodicTaskEditComponent, canDeactivate: [pendingChangesGuard] }
+        ]
+      },
       { path: "subscription", component: SubscriptionComponent },
-      { path: "system", component: SystemConfigComponent },
+      { path: "system", component: SystemConfigComponent, canDeactivate: [pendingChangesGuard] },
       { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },

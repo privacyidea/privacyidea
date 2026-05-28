@@ -22,53 +22,12 @@
   aria-label="Token Enrollment"
   class="token-enrollment-container">
   <h3 class="margin-8">Enroll a New Token</h3>
-  <form
-    (ngSubmit)="enrollToken()"
-    [formGroup]="formGroupSignal()">
-    <div #stickySentinel></div>
-    <div
-      #stickyHeader
-      class="sticky-header">
-      <div class="sticky-controls ali-center">
-        <mat-form-field
-          class="input-width-xl type-select">
-          <mat-select
-            [(ngModel)]="tokenService.selectedTokenType"
-            [ngModelOptions]="{ standalone: true }"
-            [panelClass]="'multi-column-panel'"
-            [value]="tokenService.selectedTokenType()">
-            @for (type of tokenService.tokenTypeOptions(); track type) {
-              <mat-option
-                #tooltip="matTooltip"
-                (click)="tooltip.hide()"
-                [matTooltip]="type.info.split(':')[1]"
-                [value]="type"
-                class="select-option">
-                {{ type.info.split(":")[0] }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <div class="enroll-button-container margin-left-auto">
-          <button
-            [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            class="action-button-primary button-width-m"
-            mat-stroked-button
-            type="submit">
-            <mat-icon>add_moderator</mat-icon>
-            Enroll Token
-          </button>
-          <button
-            (click)="reopenEnrollmentDialog()"
-            [matTooltip]="'Reopen enrollment dialog'"
-            [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
-            mat-icon-button
-            type="button">
-            <mat-icon>open_in_new</mat-icon>
-          </button>
-        </div>
-      </div>
-    </div>
+  <form (submit)="$event.preventDefault(); enrollToken()">
+    <app-token-enrollment-type-selector
+      [canReopenDialog]="canReopenEnrollmentDialog()"
+      [formInvalid]="isFormInvalid()"
+      [scrollContainer]="scrollContainer"
+      (reopenDialog)="reopenEnrollmentDialog()" />
     <div class="responsive-margin-left-1310">
       <div class="width-884 margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
@@ -76,7 +35,6 @@
       <h4 i18n>Token Configuration</h4>
       <app-enroll-token-type-switch
         [tokenTypeKey]="tokenService.selectedTokenType().key"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
         (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
         (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
         (reopenDialogChange)="updateReopenDialog($event)" />
@@ -84,13 +42,23 @@
         class="input-width-xl margin-top-16">
         <mat-label i18n>Description</mat-label>
         <textarea
-          [formControl]="descriptionControl"
-          [maxlength]="80"
+          [formField]="descriptionForm"
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        <mat-hint align="end"
+          >{{ description().length }} / {{ tokenService.maxDescriptionLength }}
         </mat-hint>
+        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
+          <mat-error i18n>
+            Description is <strong>required</strong>.
+          </mat-error>
+        }
+        @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
+          <mat-error i18n>
+            Description must not exceed {{ tokenService.maxDescriptionLength }} characters.
+          </mat-error>
+        }
       </mat-form-field>
       <div class="gap-16">
         @if (authService.actionAllowed("userlist")) {
@@ -98,11 +66,9 @@
             <h4 i18n>Assign Token to a User</h4>
             <app-user-assignment
               [required]="isUserRequired()"
-              [selectedUserRealmControl]="selectedUserRealmControl"
               [showOnlyAddToRealm]="
                 !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
-              "
-              [userFilterControl]="userFilterControl"></app-user-assignment>
+              "></app-user-assignment>
           </div>
         }
       </div>
@@ -110,9 +76,8 @@
       <div class="flex-row gap-16">
         @if (authService.actionAllowed("enrollpin")) {
           <app-enrollment-pin
-            [setPinControl]="setPinControl"
-            [repeatPinControl]="repeatPinControl"
-            [formGroup]="formGroupSignal()" />
+            [setPinControl]="setPinForm"
+            [repeatPinControl]="repeatPinForm" />
         }
 
         @if (authService.actionAllowed("container_list")) {
@@ -120,16 +85,19 @@
             <h4 i18n>Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
-                (onClick)="selectedContainerControl.setValue('')"
-                [showClearButton]="containerService.selectedContainer() !== ''">
+                (clearButtonClick)="selectedContainer.set(''); trackChange()"
+                [showClearButton]="selectedContainer() !== ''">
                 <input
-                  [formControl]="selectedContainerControl"
+                  [value]="selectedContainer()"
+                  (input)="selectedContainer.set($any($event.target).value); trackChange()"
                   [matAutocomplete]="containerAuto"
                   matInput />
               </app-clearable-input>
               <mat-label i18n>Container Serial</mat-label>
-              <mat-autocomplete #containerAuto="matAutocomplete">
-                @for (option of containerService.filteredContainerOptions(); track option) {
+              <mat-autocomplete
+                #containerAuto="matAutocomplete"
+                (optionSelected)="selectedContainer.set($event.option.value); trackChange()">
+                @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-autocomplete>
@@ -149,7 +117,8 @@
                 <mat-form-field class="date-picker input-width-l">
                   <mat-label i18n>Validity Start Date</mat-label>
                   <input
-                    [formControl]="selectedStartDateControl"
+                    [value]="selectedStartDate()"
+                    (dateChange)="selectedStartDate.set($event.value); trackChange()"
                     [matDatepicker]="startPicker"
                     matInput
                     placeholder="2026-01-01" />
@@ -163,7 +132,8 @@
                 <mat-form-field class="time-picker input-width-l">
                   <mat-label i18n>Validity Start Time</mat-label>
                   <input
-                    [formControl]="selectedStartTimeControl"
+                    [value]="selectedStartTime()"
+                    (input)="selectedStartTime.set($any($event.target).value); trackChange()"
                     matInput
                     max="23"
                     min="0"
@@ -172,7 +142,9 @@
 
                 <mat-form-field class="zone-picker input-width-l">
                   <mat-label i18n>Timezone</mat-label>
-                  <mat-select [formControl]="selectedTimezoneOffsetControl">
+                  <mat-select
+                    [value]="selectedTimezoneOffset()"
+                    (selectionChange)="selectedTimezoneOffset.set($event.value); trackChange()">
                     @for (option of timezoneOptions; track option) {
                       <mat-option [value]="option.value">{{ option.label }}</mat-option>
                     }
@@ -183,7 +155,8 @@
                 <mat-form-field class="date-picker input-width-l">
                   <mat-label i18n>Validity End Date</mat-label>
                   <input
-                    [formControl]="selectedEndDateControl"
+                    [value]="selectedEndDate()"
+                    (dateChange)="selectedEndDate.set($event.value); trackChange()"
                     [matDatepicker]="endPicker"
                     matInput
                     placeholder="2027-01-01" />
@@ -197,7 +170,8 @@
                 <mat-form-field class="time-picker input-width-l">
                   <mat-label i18n>Validity End Time</mat-label>
                   <input
-                    [formControl]="selectedEndTimeControl"
+                    [value]="selectedEndTime()"
+                    (input)="selectedEndTime.set($any($event.target).value); trackChange()"
                     matInput
                     max="23"
                     min="0"

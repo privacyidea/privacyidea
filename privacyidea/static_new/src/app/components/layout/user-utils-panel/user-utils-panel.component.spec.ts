@@ -17,44 +17,82 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideZonelessChangeDetection } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { UserUtilsPanelComponent } from "./user-utils-panel.component";
-import { ActivatedRoute, provideRouter, Router } from "@angular/router";
-import { provideLocationMocks } from "@angular/common/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { of } from "rxjs";
-import { TokenService } from "../../../services/token/token.service";
+import { provideLocationMocks } from "@angular/common/testing";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { ActivatedRoute, provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { ClientsService } from "@services/clients/clients.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { EventService } from "@services/event/event.service";
+import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
+import { MachineService } from "@services/machine/machine.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { ServiceIdService } from "@services/service-id/service-id.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
+import { SystemService } from "@services/system/system.service";
+import { ChallengesService } from "@services/token/challenges/challenges.service";
+import { TokenService } from "@services/token/token.service";
+import { TokengroupService } from "@services/tokengroup/tokengroup.service";
+import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
 import {
   MockAuditService,
+  MockCaConnectorService,
   MockChallengesService,
+  MockClientsService,
   MockContainerService,
+  MockContainerTemplateService,
   MockContentService,
+  MockDialogService,
+  MockDocumentationService,
   MockLocalService,
+  MockMachineResolverService,
   MockMachineService,
   MockNotificationService,
   MockPendingChangesService,
+  MockPeriodicTaskService,
+  MockPolicyService,
+  MockPrivacyideaServerService,
+  MockRadiusService,
+  MockRealmService,
+  MockServiceIdService,
   MockSessionTimerService,
+  MockSmsGatewayService,
+  MockSmtpService,
+  MockSystemService,
   MockTokenService,
+  MockTokengroupService,
   MockUserService,
-  MockDialogService
-} from "../../../../testing/mock-services";
-import { ContainerService } from "../../../services/container/container.service";
-import { ChallengesService } from "../../../services/token/challenges/challenges.service";
-import { MachineService } from "../../../services/machine/machine.service";
-import { UserService } from "../../../services/user/user.service";
-import { AuditService } from "../../../services/audit/audit.service";
-import { ContentService } from "../../../services/content/content.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { SessionTimerService } from "../../../services/session-timer/session-timer.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { MatSnackBar } from "@angular/material/snack-bar";
-import { ROUTE_PATHS } from "../../../route_paths";
+  MockVersioningService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { of } from "rxjs";
+import { UserUtilsPanelComponent } from "./user-utils-panel.component";
 
 describe("UserUtilsPanelComponent", () => {
   let component: UserUtilsPanelComponent;
@@ -103,20 +141,38 @@ describe("UserUtilsPanelComponent", () => {
         { provide: ChallengesService, useClass: MockChallengesService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: VersioningService, useClass: MockVersioningService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: AuditService, useClass: MockAuditService },
+        { provide: ClientsService, useClass: MockClientsService },
+        { provide: PolicyService, useClass: MockPolicyService },
+        { provide: SubscriptionService, useClass: MockSubscriptionService },
+        { provide: MachineResolverService, useClass: MockMachineResolverService },
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: DialogService, useClass: MockDialogService },
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: SmtpService, useClass: MockSmtpService },
+        { provide: RadiusServerService, useClass: MockRadiusService },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService },
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: TokengroupService, useClass: MockTokengroupService },
+        { provide: CaConnectorService, useClass: MockCaConnectorService },
+        { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: EventService, useClass: MockEventService },
+        { provide: SystemService, useClass: MockSystemService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
         provideZonelessChangeDetection(),
         MockLocalService,
         MockNotificationService
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(UserUtilsPanelComponent);
     component = fixture.componentInstance;
@@ -142,7 +198,6 @@ describe("UserUtilsPanelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-
   describe("refreshPage per route", () => {
     beforeEach(() => {
       jest.clearAllMocks();
@@ -152,14 +207,23 @@ describe("UserUtilsPanelComponent", () => {
       content.routeUrl.set(`${ROUTE_PATHS.TOKENS_DETAILS}/123`);
       component.refreshPage();
       expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
-      expect(containerService.containerResource.reload).toHaveBeenCalled();
+      expect(containerService.containersForTokenTypeResource.reload).toHaveBeenCalled();
     });
 
     it("refreshes tokens containers details route", () => {
-      content.routeUrl.set(`${ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS}/abc`);
+      content.routeUrl.set(`${ROUTE_PATHS.CONTAINERS_DETAILS}/abc`);
       component.refreshPage();
-      expect(containerService.containerDetailResource.reload).toHaveBeenCalled();
+      expect(containerService.containerDetailsResource.reload).toHaveBeenCalled();
       expect(tokenService.tokenResource.reload).toHaveBeenCalled();
+    });
+
+    it("refreshes user details route", () => {
+      content.routeUrl.set(`${ROUTE_PATHS.USERS_DETAILS}/alice`);
+      component.refreshPage();
+      expect(userService.usersResource.reload).toHaveBeenCalled();
+      expect(tokenService.tokenResource.reload).toHaveBeenCalled();
+      expect(tokenService.userTokenResource.reload).toHaveBeenCalled();
+      expect(containerService.userContainersResource.reload).toHaveBeenCalled();
     });
 
     it("refreshes tokens route", () => {
@@ -169,7 +233,7 @@ describe("UserUtilsPanelComponent", () => {
     });
 
     it("refreshes tokens containers route", () => {
-      content.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS);
+      content.routeUrl.set(ROUTE_PATHS.CONTAINERS);
       component.refreshPage();
       expect(containerService.containerResource.reload).toHaveBeenCalled();
     });
@@ -189,7 +253,7 @@ describe("UserUtilsPanelComponent", () => {
     it("refreshes tokens enrollment route", () => {
       content.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       component.refreshPage();
-      expect(containerService.containerResource.reload).toHaveBeenCalled();
+      expect(containerService.containersForTokenTypeResource.reload).toHaveBeenCalled();
       expect(userService.usersResource.reload).toHaveBeenCalled();
     });
 
@@ -214,7 +278,7 @@ describe("UserUtilsPanelComponent", () => {
       expect(component.profileText()).toBe("bob");
     });
     it("returns username and realm if available", () => {
-     authService.role.set("");
+      authService.role.set("");
       authService.realm.set("default");
       authService.username.set("alice");
       expect(component.profileText()).toBe("alice @ default");
@@ -234,7 +298,6 @@ describe("UserUtilsPanelComponent", () => {
   });
 
   describe("sessionTimeFormat signal", () => {
-
     it("format less than 10 min is 'm:ss'", () => {
       sessionTimerService.remainingTime.set(10 * 60 * 1000 - 1000);
       expect(component.sessionTimeFormat()).toBe("m:ss");

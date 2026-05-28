@@ -19,13 +19,13 @@
 <div
   appScrollToTop
   class="audit-table-container">
-  <div class="filter-paginator-container filter-max-width">
+  <div class="filter-paginator-container">
     <mat-form-field
       subscriptSizing="dynamic"
-      class="token-table-filter">
+      class="audit-table-filter">
       <mat-label i18n>Filter Audit Log...</mat-label>
       <app-clearable-input
-        (onClick)="auditService.clearFilter()"
+        (clearButtonClick)="auditService.clearFilter()"
         [showClearButton]="auditService.auditFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
@@ -62,7 +62,7 @@
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"
-    class="token-table"
+    class="audit-table"
     i18n-aria-label
     mat-table>
     @for (column of columnKeysMap; track column) {
@@ -97,8 +97,8 @@
           attr.aria-label="{{ column.label }} Cell"
           mat-cell>
           <div>
-            @switch (column.key) {
-              @case ("success") {
+            @switch (getCellRenderType(column.key)) {
+              @case ("status-span") {
                 <div class="flex just-center">
                   <span
                     [ngClass]="
@@ -111,53 +111,9 @@
                   </span>
                 </div>
               }
-              @case ("authentication") {
-                <div class="flex just-center">
-                  <span
-                    [ngClass]="
-                      tableUtilsService.getSpanClassForKey({
-                        key: column.key,
-                        value: element[column.key]
-                      })
-                    ">
-                    {{ element[column.key] }}
-                  </span>
-                </div>
-              }
-              @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
-                  <a
-                    (click)="contentService.tokenSelected(element.serial)"
-                    attr.aria-label="{{ column.label }} Link"
-                    routerLink="/token">
-                    {{ element[column.key] }}
-                  </a>
-                  @if (element.serial && element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
-                </div>
-              }
-              @case (column.key === "sig_check" || column.key === "missing_line" ? column.key : "") {
+              @case ("highlight-ok") {
                 <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' : 'highlight-false']">
                   {{ element[column.key] }}
-                </span>
-              }
-              @case ("container_serial") {
-                <div class="flex-row flex-nowrap ali-center">
-                  <a
-                    (click)="contentService.containerSelected(element.container_serial)"
-                    attr.aria-label="{{ column.label }} Link"
-                    routerLink="/token">
-                    {{ element[column.key] }}
-                  </a>
-                  @if (element.container_serial && element.container_serial !== "") {
-                    <app-copy-button [copyText]="element.container_serial"></app-copy-button>
-                  }
-                </div>
-              }
-              @case ("startdate") {
-                <span>
-                  {{ element[column.key].split(".")[0].replace("T", " ") }}
                 </span>
               }
               @case ("date") {
@@ -165,19 +121,53 @@
                   {{ element[column.key].split(".")[0].replace("T", " ") }}
                 </span>
               }
-              @case ("policies") {
+              @case ("policies-csv") {
                 @for (policy of element[column.key]?.split(","); track policy) {
-                  <span>
-                    {{ policy }}
-                  </span>
+                  <app-copyable [copyText]="policy">
+                    <span>{{ policy }}</span>
+                  </app-copyable>
                 }
               }
-              @case ("user") {
-                <a
-                  (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                  attr.aria-label="{{ column.label }} Link">
-                  {{ element[column.key] }}
-                </a>
+              @case ("serial-link") {
+                <app-copyable [copyText]="element.serial">
+                  <a
+                    (click)="contentService.tokenSelected(element.serial)"
+                    attr.aria-label="{{ column.label }} Link"
+                    routerLink="/token">
+                    {{ element[column.key] }}
+                  </a>
+                </app-copyable>
+              }
+              @case ("container-link") {
+                <app-copyable [copyText]="element.container_serial">
+                  <a
+                    (click)="contentService.navigateContainerDetails(element.container_serial)"
+                    attr.aria-label="{{ column.label }} Link"
+                    routerLink="/token">
+                    {{ element[column.key] }}
+                  </a>
+                </app-copyable>
+              }
+              @case ("user-link") {
+                <app-copyable [copyText]="element[column.key]">
+                  <a
+                    (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                    (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                    (keydown.space)="
+                      $event.preventDefault();
+                      contentService.userSelected(element[column.key], element['user_realm'])
+                    "
+                    attr.aria-label="{{ column.label }} Link"
+                    role="button"
+                    tabindex="0">
+                    {{ element[column.key] }}
+                  </a>
+                </app-copyable>
+              }
+              @case ("copy-text") {
+                <app-copyable [copyText]="element[column.key]">
+                  <span>{{ element[column.key] }}</span>
+                </app-copyable>
               }
               @default {
                 <span>

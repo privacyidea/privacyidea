@@ -16,15 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachinesComponent } from "./machines.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MachineService } from "../../../services/machine/machine.service";
-import { provideRouter, Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { MachineService } from "@services/machine/machine.service";
+import { MachinesComponent } from "./machines.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -40,12 +42,13 @@ describe("MachinesComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachinesComponent, NoopAnimationsModule],
+      imports: [MachinesComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: MachineService, useValue: machineServiceMock }
+        { provide: MachineService, useValue: machineServiceMock },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 

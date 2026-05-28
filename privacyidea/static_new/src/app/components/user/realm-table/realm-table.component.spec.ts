@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,14 +19,17 @@
 import { TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
-import { RealmTableComponent } from "./realm-table.component";
-import { Realms, RealmService } from "../../../services/realm/realm.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { ContentService } from "../../../services/content/content.service";
-import { SystemService } from "../../../services/system/system.service";
-import { NotificationService } from "../../../services/notification/notification.service";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService, Realms } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { SystemService } from "@services/system/system.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
   MockContentService,
   MockHttpResourceRef,
@@ -36,12 +39,11 @@ import {
   MockRouter,
   MockSystemService,
   MockTableUtilsService
-} from "../../../../testing/mock-services";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { ROUTE_PATHS } from "../../../route_paths";
+} from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { RealmTableComponent } from "./realm-table.component";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -59,6 +61,7 @@ describe("RealmTableComponent", () => {
   let dialog: LocalMockMatDialog;
   let resolverService: MockResolverService;
   let router: Router;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -73,7 +76,8 @@ describe("RealmTableComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useClass: LocalMockMatDialog },
         { provide: ResolverService, useClass: MockResolverService },
-        { provide: Router, useClass: MockRouter }
+        { provide: Router, useClass: MockRouter },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -86,6 +90,7 @@ describe("RealmTableComponent", () => {
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     router = TestBed.inject(Router);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.detectChanges();
   });
@@ -310,16 +315,17 @@ describe("RealmTableComponent", () => {
     expect(component.newRealmNodeResolvers()).toEqual({});
   });
 
-  it("onCreateRealm should do nothing when cannot submit", () => {
+  it("onCreateRealm should resolve false when cannot submit", async () => {
     component.newRealmName.set("");
     component.isCreatingRealm.set(false);
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(false);
     expect(realmService.createRealm).not.toHaveBeenCalled();
   });
 
-  it("onCreateRealm should create realm with global resolvers and optional priorities", () => {
+  it("onCreateRealm should create realm with global resolvers and optional priorities", async () => {
     component.newRealmName.set("realmA");
     component.newRealmNodeResolvers.set({
       "": [
@@ -332,8 +338,9 @@ describe("RealmTableComponent", () => {
       ]
     });
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(true);
     expect(realmService.createRealm).toHaveBeenCalledTimes(2);
 
     const callGlobal = (realmService.createRealm as jest.Mock).mock.calls[0];
@@ -353,12 +360,13 @@ describe("RealmTableComponent", () => {
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
-  it("onCreateRealm should create realm with empty resolver list when none configured", () => {
+  it("onCreateRealm should create realm with empty resolver list when none configured", async () => {
     component.newRealmName.set("realmEmpty");
     component.newRealmNodeResolvers.set({});
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(true);
     expect(realmService.createRealm).toHaveBeenCalledTimes(1);
     const call = (realmService.createRealm as jest.Mock).mock.calls[0];
     expect(call[0]).toBe("realmEmpty");
@@ -528,5 +536,51 @@ describe("RealmTableComponent", () => {
     resolverService.setResolvers([]);
     component.onClickResolver("non-existing");
     expect(dialog.open).not.toHaveBeenCalled();
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects newRealmName, newRealmNodeResolvers, and edit diff", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+      expect(fn()).toBe(false);
+
+      component.newRealmName.set("newRealm");
+      expect(fn()).toBe(true);
+      component.newRealmName.set("");
+
+      component.newRealmNodeResolvers.set({ node1: [{ name: "res", priority: null }] });
+      expect(fn()).toBe(true);
+      component.newRealmNodeResolvers.set({});
+
+      // Entering edit mode alone (no diff) should NOT trigger hasChanges
+      component.editingRealmName.set("someRealm");
+      expect(fn()).toBe(false);
+
+      // Edit diff triggers hasChanges
+      component.editNodeResolvers.set({ node1: [{ name: "res", priority: 1 }] });
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges reflects canSubmitNewRealm", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.newRealmName.set("validName");
+      expect(fn()).toBe(true);
+
+      component.newRealmName.set("invalid name with spaces");
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

@@ -37,9 +37,20 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__ = """
-This is the REST API for system calls to create and read system configuration.
+The system REST API exposes the server's configuration store and a
+handful of operational endpoints: the HSM unlock, an entropy source,
+per-token configuration tests, the rendered system documentation, and
+listings of configured RADIUS servers, CA connectors and nodes. See
+:ref:`system_config` for the conceptual chapter.
 
-The code of this module is tested in tests/test_api_system.py
+Most endpoints require admin authentication. Create/update and the
+``setDefault`` shortcut are gated by the policy action
+:ref:`configwrite`; deletion by :ref:`configdelete`. The rendered
+documentation requires :ref:`policy_system_documentation`, the HSM
+unlock requires :ref:`policy_set_hsm_password`, and the entropy
+endpoint requires :ref:`policy_getrandom`. ``GET /system/`` /
+``GET /system/<key>`` may be called by any authenticated user;
+non-admin callers only see configuration entries flagged as ``public``.
 """
 
 from flask_babel import _
@@ -64,7 +75,7 @@ from .auth import admin_required
 from .lib.utils import (getLowerParams,
                         send_result, send_file)
 from ..lib.params import get_optional, get_required
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, check_admin_base_action
 from ..lib.caconnector import get_caconnector_list
 from ..lib.config import (get_token_class,
                           set_privacyidea_config,
@@ -86,8 +97,15 @@ system_blueprint = Blueprint('system_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.CONFIGDOCUMENTATION)
 def get_config_documentation():
     """
-    returns an restructured text document, that describes the complete
-    configuration.
+    Render the current server configuration (system config, app config,
+    resolvers, realms, policies, admin accounts) into a single
+    reStructuredText document. The response is ``text/plain``; consumers
+    typically pipe it through Sphinx to produce a rendered status report.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_system_documentation`.
+
+    :status 200: ``text/plain`` body containing the rendered document.
     """
     P = PolicyClass()
 
@@ -115,9 +133,14 @@ def get_config_documentation():
 @system_blueprint.route('/gpgkeys', methods=['GET'])
 def get_gpg_keys():
     """
-    Returns the GPG keys in the config directory specified by PI_GNUPG_HOME.
+    Return the public GPG keys held in the directory configured via
+    ``PI_GNUPG_HOME``. These keys are used to verify imported token
+    seed files.
 
-    :return: A json list of the public GPG keys
+    Requires admin authentication.
+
+    :status 200: dict of public GPG keys (keyed by fingerprint) in
+        ``result.value``.
     """
     GPG = GPGImport(current_app.config)
     keys = GPG.get_publickeys()
@@ -127,76 +150,81 @@ def get_gpg_keys():
 
 @system_blueprint.route('/<key>', methods=['GET'])
 @system_blueprint.route('/', methods=['GET'])
+@prepolicy(check_admin_base_action, request, PolicyAction.SYSTEMREAD)
 def get_config(key=None):
     """
-    This endpoint either returns all config entries or only the value of the
-    one config key.
+    Return system configuration.
 
-    This endpoint can be called by the administrator but also by the normal
-    user, so that the normal user gets necessary information about the system
-    config
+    Without a path component, returns all configuration entries as a
+    dictionary. With ``<key>`` in the path, returns only that entry's
+    value.
 
-    :param key: (optional) The key to return
-    :>json bool status: Status of the request
-    :>json value: JSON object with a key-value pair of the config entries or
-    :>json value: The value of the specified config entry
-    :reqheader PI-Authorization: The authorization token
+    Both admins and authenticated users may call this endpoint, but
+    non-admins only see configuration entries that are flagged as
+    ``public``. Querying a non-public key as a regular user returns
+    ``null``. Admin access is gated by the policy action
+    :ref:`policy_configread` when at least one ``configread`` policy
+    is defined.
 
-    **Example request 1**:
+    :param key: optional path component, the configuration key to fetch.
+    :reqheader PI-Authorization: authentication token.
+    :status 200: configuration dictionary or single value in
+        ``result.value``.
+
+    **Example request**:
 
     .. sourcecode:: http
 
        GET /system/ HTTP/1.1
        Host: example.com
-       Content-Type: application/json
+       Accept: application/json
 
-    **Example response 1**:
+    **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "AutoResync": "False",
-              "splitAtSign": "True",
-              "PrependPin": "True",
-              "DefaultCountWindow": "10"
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "AutoResync": "False",
+             "splitAtSign": "True",
+             "PrependPin": "True",
+             "DefaultCountWindow": "10"
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
 
-    **Example request 2**:
-    Querying a specific system-configuration value
+    **Example request (single key)**:
 
     .. sourcecode:: http
 
        GET /system/totp.hashlib HTTP/1.1
        Host: example.com
-       Content-Type: application/json
+       Accept: application/json
 
-    **Example response 2**:
+    **Example response (single key)**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": "sha1"
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": "sha1"
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     if not key:
         result = get_from_config(role=g.logged_in_user.get("role"))
@@ -213,55 +241,55 @@ def get_config(key=None):
 @prepolicy(check_base_action, request, PolicyAction.SYSTEMWRITE)
 def set_config():
     """
-    set a configuration key or a set of configuration entries
+    Set one or more system configuration entries. The body is a flat
+    dictionary of ``keyname: value`` pairs; per-entry metadata may be
+    supplied using ``keyname.type`` and ``keyname.desc`` companion keys.
+    Setting ``keyname.type`` to ``password`` causes the value to be
+    stored encrypted.
 
-    parameter are generic ``keyname=value`` pairs.
+    Requires admin authentication and the policy action :ref:`configwrite`.
 
-    **remark** In case of key-value pairs the type information could be
-        provided by an additional parameter with same keyname with the
-        postfix ".type". Value could then be 'password' to trigger the
-        storing of the value in an encrypted form
-
-    :<json key-value-pairs: a list of ``keyname=value`` pairs
-    :<json <keyname>.type: type of the value: int or string/text or password.
-        password will trigger to store the encrypted value
-    :<json <keyname>.desc: additional information for this config entry
-    :>json bool status: Status of the request
-    :>json value: JSON object with a list of key-value pairs of the requested
-        config entry changes with the value of ``update`` or ``insert``
-    :reqheader PI-Authorization: The authorization token
+    :jsonparam <keyname>: configuration value to store.
+    :jsonparam <keyname>.type: optional type tag — ``int``, ``string``,
+        ``text``, or ``password`` (encrypted at rest).
+    :jsonparam <keyname>.desc: optional human-readable description.
+    :reqheader PI-Authorization: authentication token.
+    :status 200: dict mapping each set key to ``"insert"`` or
+        ``"update"`` in ``result.value``.
 
     **Example request**:
 
     .. sourcecode:: http
 
-        POST /system/setConfig HTTP/1.1
-        Host: example.com
-        Content-Type: application/json
+       POST /system/setConfig HTTP/1.1
+       Host: example.com
+       Content-Type: application/json
 
-        "splitAtSign": true
-        "totp.hashlib": "sha1"
-        "totp.hashlib.desc": "The hash algorithm used for TOTP tokens"
+       {
+         "splitAtSign": true,
+         "totp.hashlib": "sha1",
+         "totp.hashlib.desc": "The hash algorithm used for TOTP tokens"
+       }
 
     **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "splitAtSign": "update",
-              "totp.hashlib": "update"
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "splitAtSign": "update",
+             "totp.hashlib": "update"
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     param = request.all_data
     result = {}
@@ -283,21 +311,22 @@ def set_config():
 @prepolicy(check_base_action, request, PolicyAction.SYSTEMWRITE)
 def set_default():
     """
-    define default settings for tokens. These default settings
-    are used when new tokens are generated. The default settings will
-    not affect already enrolled tokens.
+    Set token default values that apply to newly enrolled tokens.
+    Existing tokens are not affected. At least one of the listed
+    parameters must be supplied.
 
-    :jsonparam DefaultMaxFailCount: Default value for the maximum allowed
-        authentication failures
-    :jsonparam DefaultSyncWindow: Default value for the synchronization window
-    :jsonparam DefaultCountWindow: Default value for the counter window
-    :jsonparam DefaultOtpLen: Default value for the OTP value length --
-        usually 6 or 8
-    :jsonparam DefaultResetFailCount: Default value, if the FailCounter should
-        be reset on successful authentication [True|False]
+    Requires admin authentication and the policy action :ref:`configwrite`.
 
-    :return: a json result with a boolean "result": true
-
+    :jsonparam DefaultMaxFailCount: maximum allowed authentication
+        failures before a token is locked.
+    :jsonparam DefaultSyncWindow: synchronization window size.
+    :jsonparam DefaultCountWindow: counter window size.
+    :jsonparam DefaultOtpLen: OTP value length (typically ``6`` or ``8``).
+    :jsonparam DefaultResetFailCount: whether the fail counter should be
+        reset on successful authentication (``True`` / ``False``).
+    :status 200: dict mapping each updated key to ``"insert"`` or
+        ``"update"`` in ``result.value``.
+    :status 400: none of the listed parameters was supplied.
     """
     keys = ["DefaultMaxFailCount",
             "DefaultSyncWindow",
@@ -330,14 +359,13 @@ def set_default():
 @log_with(log)
 def delete_config(key=None):
     """
-    delete a configuration key
+    Delete a system configuration entry.
 
-    :param string key: configuration key name
-    :returns: a json result with the deleted value
+    Requires admin authentication and the policy action :ref:`configdelete`.
 
+    :param key: path component, the configuration key to delete.
+    :status 200: ``True`` on success in ``result.value``.
     """
-    if not key:
-        raise ParameterError(_("You need to provide the config key to delete."))
     res = delete_privacyidea_config(key)
     g.audit_object.log({'success': res,
                         'info': key})
@@ -350,12 +378,22 @@ def delete_config(key=None):
 @log_with(log)
 def set_security_module():
     """
-    Set the password for the security module
+    Provide the password for the configured security module (HSM /
+    PKCS#11) so privacyIDEA can unlock its encryption key. Until the
+    HSM is unlocked, tokens whose secrets are protected by the HSM
+    cannot be used.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_set_hsm_password`.
+
+    :jsonparam password: the security-module password (required).
+    :status 200: ``{"is_ready": <bool>}`` in ``result.value``;
+        ``True`` if the HSM is now unlocked.
     """
     password = get_required(request.all_data, "password")
     is_ready = set_hsm_password(password)
     res = {"is_ready": is_ready}
-    g.audit_object.log({'success': res})
+    g.audit_object.log({'success': is_ready})
     return send_result(res)
 
 
@@ -364,12 +402,17 @@ def set_security_module():
 @log_with(log)
 def get_security_module():
     """
-    Get the status of the security module.
+    Return the readiness state of the configured security module.
+
+    Requires admin authentication.
+
+    :status 200: ``{"is_ready": <bool>}`` in ``result.value``;
+        ``True`` if the HSM is unlocked and usable.
     """
     hsm = get_hsm(require_ready=False)
     is_ready = hsm.is_ready
     res = {"is_ready": is_ready}
-    g.audit_object.log({'success': res})
+    g.audit_object.log({'success': is_ready})
     return send_result(res)
 
 
@@ -379,17 +422,19 @@ def get_security_module():
 @log_with(log)
 def rand():
     """
-    This endpoint can be used to retrieve random keys from privacyIDEA.
-    In certain cases the client might need random data to initialize tokens
-    on the client side. E.g. the command line client when initializing the
-    yubikey or the WebUI when creating Client API keys for the yubikey.
+    Return cryptographically random bytes from the server's RNG. Clients
+    use this when seeding tokens (CLI initializing a Yubikey, WebUI
+    creating a token secret) so that the secret material is sourced
+    from a trusted, centrally audited generator — and, when privacyIDEA
+    is configured against an HSM, from the HSM's hardware RNG.
 
-    In this case, privacyIDEA can create the random data/keys.
+    Requires admin authentication and the policy action
+    :ref:`policy_getrandom`.
 
-    :queryparam len: The length of a symmetric key (byte)
-    :queryparam encode: The type of encoding. Can be "hex" or "b64".
-
-    :return: key material
+    :query len: number of random bytes to return; default ``20``.
+    :query encode: encoding for the result — ``hex`` (default) or
+        ``b64``.
+    :status 200: the encoded random bytes in ``result.value``.
     """
     length = int(get_optional(request.all_data, "len") or 20)
     encode = get_optional(request.all_data, "encode")
@@ -400,7 +445,7 @@ def rand():
     else:
         res = hexlify_and_unicode(r)
 
-    g.audit_object.log({'success': res})
+    g.audit_object.log({'success': True, 'info': f"len={length}"})
     return send_result(res)
 
 
@@ -410,11 +455,24 @@ def rand():
 @log_with(log)
 def test(tokentype=None):
     """
-    The call /system/test/email tests the configuration of the email token.
+    Probe the server-side configuration of a given token type by
+    invoking that token class' ``test_config`` classmethod with the
+    request body. The shape of the body and what the test actually does
+    are token-type specific (the email token, for example, sends a test
+    email through the configured SMTP server).
+
+    Requires admin authentication and the policy action :ref:`configwrite`.
+
+    :param tokentype: path component, the token type to test
+        (e.g. ``email``).
+    :jsonparam: any token-type-specific configuration fields.
+    :status 200: ``True`` if the configuration is valid, ``False``
+        otherwise; ``detail.message`` carries a human-readable
+        description.
     """
     tokenc = get_token_class(tokentype)
     res, description = tokenc.test_config(request.all_data)
-    g.audit_object.log({"success": 1,
+    g.audit_object.log({"success": True,
                         "token_type": tokentype})
     return send_result(res, details={"message": description})
 
@@ -423,8 +481,13 @@ def test(tokentype=None):
 @prepolicy(check_base_action, request, action="enrollRADIUS")
 def list_radius_servers():
     """
-    Return the list of identifiers of all defined RADIUS servers.
-    This endpoint requires the enrollRADIUS right.
+    Return the identifiers of all configured RADIUS servers (only the
+    names, not the full configurations). The WebUI uses this when
+    enrolling a RADIUS token to populate the server-selection dropdown.
+
+    Requires the enrollment policy action ``enrollRADIUS``.
+
+    :status 200: list of RADIUS-server identifiers in ``result.value``.
     """
     server_list = get_radiusservers()
     res = [server.config.identifier for server in server_list]
@@ -436,10 +499,15 @@ def list_radius_servers():
 @prepolicy(check_base_action, request, action="enrollCERTIFICATE")
 def list_ca_connectors():
     """
-    Return a list of defined CA connectors. Each item of the list is
-    a dictionary with the CA connector information, including the
-    name and defined templates, but excluding the CA connector data.
-    This endpoint requires the enrollCERTIFICATE right.
+    Return the configured CA connectors with their templates but
+    without their connection configuration (no secrets are included).
+    The WebUI uses this when enrolling a certificate token to populate
+    the CA-selection dropdown and the per-CA template list.
+
+    Requires the enrollment policy action ``enrollCERTIFICATE``.
+
+    :status 200: list of CA-connector dictionaries (name, type,
+        templates) in ``result.value``.
     """
     ca_list = get_caconnector_list(return_config=False)
     g.audit_object.log({"success": True})
@@ -450,36 +518,37 @@ def list_ca_connectors():
 @admin_required
 def list_nodes():
     """
-    Return a list of nodes, that are known to the system.
+    Return the privacyIDEA nodes declared in the server configuration.
+    Each entry carries the node ``name`` and ``uuid`` and is used by
+    multi-node features (per-node periodic tasks, per-node resolver
+    visibility, ...).
 
-    :>json list nodes: A list of JSON objects with the node name and uuid
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication.
+
+    :reqheader PI-Authorization: authentication token.
+    :status 200: list of ``{"name", "uuid"}`` dictionaries in
+        ``result.value``.
 
     **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-                {
-                    "name": "node1",
-                    "uuid": "12345678-1234-1234-1234-1234567890ab"
-                },
-                {
-                    "name": "node2",
-                    "uuid": "12345678-4321-1234-1234-1234567890ac"
-                }
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": [
+             {"name": "node1", "uuid": "12345678-1234-1234-1234-1234567890ab"},
+             {"name": "node2", "uuid": "12345678-4321-1234-1234-1234567890ac"}
+           ]
+         },
+         "version": "privacyIDEA unknown"
+       }
+
     .. versionadded:: 3.10 Return node information with names and UUIDs
     """
     nodes = get_privacyidea_nodes()
@@ -491,27 +560,32 @@ def list_nodes():
 @admin_required
 def delete_user_cache_api():
     """
-    Delete all entries from the user cache.
+    Flush the user cache. The user cache speeds up repeated user-store
+    lookups; flushing it forces the next lookups to hit the backing
+    resolvers again. Useful after a resolver configuration change.
 
-    :>json bool status: Status of the request
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication.
+
+    :reqheader PI-Authorization: authentication token.
+    :status 200: ``{"status": True, "deleted": <n>}`` in ``result.value``,
+        where ``n`` is the number of cache entries removed.
 
     **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "deleted": 42
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {"status": true, "deleted": 42}
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     row_count = delete_user_cache()
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})

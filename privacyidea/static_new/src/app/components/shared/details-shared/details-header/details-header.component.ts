@@ -17,17 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { CopyButtonComponent } from "../../copy-button/copy-button.component";
-import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 
 @Component({
   selector: "app-details-header",
   standalone: true,
-  imports: [CopyButtonComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
-  templateUrl: "./details-header.component.html"
+  imports: [CopyableComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
+  templateUrl: "./details-header.component.html",
+  styleUrl: "./details-header.component.scss"
 })
 export class DetailsHeaderComponent {
   @Input({ required: true }) serial!: string;
@@ -38,4 +39,3 @@ export class DetailsHeaderComponent {
 
   @Output() auditClick = new EventEmitter<void>();
 }
-

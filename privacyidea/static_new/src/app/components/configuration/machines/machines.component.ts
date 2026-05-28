@@ -18,24 +18,24 @@
  **/
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
 
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { Machine, MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-machines",
@@ -51,7 +51,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
     MatFormFieldModule,
     MatInputModule,
     ClearableInputComponent,
-    CopyButtonComponent
+    CopyableComponent
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"
@@ -84,7 +84,9 @@ export class MachinesComponent {
   });
 
   openDetailsDialog(machine: Machine): void {
-    this.router.navigateByUrl(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name));
+    this.router.navigateByUrl(
+      ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
+    );
   }
 
   onFilterInput(value: string): void {

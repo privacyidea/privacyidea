@@ -17,10 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { HotpConfigComponent } from "./hotp-config.component";
 import { provideRouter } from "@angular/router";
-import { HOTP_HASHLIB } from "../../../../../constants/token.constants";
-import { provideAnimations } from "@angular/platform-browser/animations";
+import { HOTP_HASHLIB } from "@constants/token.constants";
+import { HotpConfigComponent } from "./hotp-config.component";
 
 const mockHashLibs = ["sha1", "sha256", "sha512"];
 
@@ -31,7 +30,7 @@ describe("HotpConfigComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HotpConfigComponent],
-      providers: [provideRouter([]), provideAnimations()]
+      providers: [provideRouter([])]
     }).compileComponents();
     fixture = TestBed.createComponent(HotpConfigComponent);
     fixture.componentRef.setInput("formData", {});
@@ -49,17 +48,6 @@ describe("HotpConfigComponent", () => {
     const newValue = "sha256";
     component.updateFormData(HOTP_HASHLIB, newValue);
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [HOTP_HASHLIB]: newValue });
-  });
-
-  it("should call updateFormData with empty value when clearField is called", async () => {
-    const initialHashlib = "sha1";
-    fixture.componentRef.setInput("formData", { [HOTP_HASHLIB]: initialHashlib });
-    fixture.detectChanges();
-    expect(component.formData()[HOTP_HASHLIB]).toEqual(initialHashlib);
-
-    jest.spyOn(component, "updateFormData");
-    component.clearField(HOTP_HASHLIB);
-    expect(component.updateFormData).toHaveBeenCalledWith(HOTP_HASHLIB, "");
   });
 
   it("should preserve existing form data when updating a field", () => {

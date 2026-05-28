@@ -1,4 +1,4 @@
-@use "../../../../../styles";
+@use "styles";
 @use "@angular/material" as mat;
 
 .sms-gateway-page-layout {
@@ -11,7 +11,6 @@
   display: grid;
   position: relative;
 }
-
 
 .sms-gateway-content {
   width: 664px;

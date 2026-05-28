@@ -2,13 +2,13 @@
 @use "table";
 
 ul {
-  column-count: 4;
-  column-gap: 22px;
+  column-count: 3;
+  column-gap: 32px;
 }
 
 app-dialog-wrapper li {
   word-wrap: break-word;
   overflow-wrap: break-word;
-  word-break: break-all;
+  word-break: break-word;
   max-width: 100%;
 }

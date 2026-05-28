@@ -20,7 +20,7 @@
   class="service-id-page-layout">
   <div class="service-id-page-container">
 
-    @if (isEditMode) {
+    @if (isEditMode()) {
       <h3
         class="margin-8"
         i18n>
@@ -45,7 +45,7 @@
         </button>
         <button
           (click)="save()"
-          [disabled]="serviceIdForm.invalid"
+          [disabled]="!serviceIdForm().valid()"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
@@ -54,49 +54,44 @@
       </div>
     </div>
 
-    @if (serviceIdForm) {
-      <form
-        [formGroup]="serviceIdForm"
-        class="service-id-form">
+    <div class="service-id-form">
 
-        <div class="flex-column gap-16">
-          <mat-form-field
-            appearance="fill"
-            class="input-width-l  margin-bottom-16">
-            <mat-label i18n>Identifier</mat-label>
-            <app-clearable-input
-              (onClick)="serviceIdForm.get('servicename')?.setValue('')"
-              [showClearButton]="!isEditMode && !!serviceIdForm.get('servicename')?.value">
-              <input
-                formControlName="servicename"
-                matInput
-                placeholder="myNewService"
-                required />
-            </app-clearable-input>
-            <mat-hint i18n>This is the unique identifying name for this service definition.</mat-hint>
-            @if (serviceIdForm.get('servicename')?.hasError('required') && serviceIdForm.get('servicename')?.touched) {
-              <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
-            }
-            @if (serviceIdForm.get('servicename')?.hasError('pattern') && serviceIdForm.get('servicename')?.touched) {
-              <mat-error i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
-            }
-          </mat-form-field>
+      <div class="flex-column gap-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l  margin-bottom-16">
+          <mat-label i18n>Identifier</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="serviceIdModel.update(m => ({...m, servicename: ''}))"
+            [showClearButton]="!isEditMode() && !!serviceIdModel().servicename">
+            <input
+              [formField]="serviceIdForm.servicename"
+              matInput
+              placeholder="myNewService" />
+          </app-clearable-input>
+          <mat-hint i18n>This is the unique identifying name for this service definition.</mat-hint>
+          @if (serviceIdForm.servicename().errors().some(e => e.kind === 'required') && serviceIdForm.servicename().touched()) {
+            <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
+          }
+          @if (serviceIdForm.servicename().errors().some(e => e.kind === 'pattern') && serviceIdForm.servicename().touched()) {
+            <mat-error i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+          }
+        </mat-form-field>
 
-          <mat-form-field
-            appearance="fill"
-            class="input-width-xl">
-            <mat-label i18n>Description</mat-label>
-            <app-clearable-input
-              (onClick)="serviceIdForm.get('description')?.setValue('')"
-              [showClearButton]="!!serviceIdForm.get('description')?.value">
-              <input
-                formControlName="description"
-                matInput
-                placeholder="some wise words" />
-            </app-clearable-input>
-          </mat-form-field>
-        </div>
-      </form>
-    }
+        <mat-form-field
+          appearance="fill"
+          class="input-width-xl">
+          <mat-label i18n>Description</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="serviceIdModel.update(m => ({...m, description: ''}))"
+            [showClearButton]="!!serviceIdModel().description">
+            <input
+              [formField]="serviceIdForm.description"
+              matInput
+              placeholder="some wise words" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
+    </div>
   </div>
 </div>

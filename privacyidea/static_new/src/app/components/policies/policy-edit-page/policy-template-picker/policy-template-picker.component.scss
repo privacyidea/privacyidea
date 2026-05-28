@@ -1,0 +1,48 @@
+@use "styles";
+
+.policy-template-picker {
+  margin-bottom: var(--global-padding);
+}
+
+.template-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quarter-global-padding);
+}
+
+.template-list-item {
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) var(--global-padding);
+  text-align: left;
+  width: 100%;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container);
+    border-color: var(--mat-sys-outline);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+}
+
+.template-name {
+  flex-shrink: 0;
+  font-weight: 600;
+  min-width: 18ch;
+}
+
+.template-description {
+  color: var(--mat-sys-on-surface-variant);
+  flex: 1 1 auto;
+  font-size: var(--mat-sys-body-small-size);
+}
