@@ -1,6 +1,6 @@
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
-from .base import MyApiTestCase
+from .base import MyApiTestCase, PristineSqliteFixtures
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
@@ -12,10 +12,11 @@ from privacyidea.lib.user import User
 from privacyidea.lib.error import Error
 
 
-class RegisterTestCase(MyApiTestCase):
+class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
     """
     test the api.register and api.recover endpoints
     """
+    pristine_fixtures = ["tests/testdata/testuser.sqlite"]
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",

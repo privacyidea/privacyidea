@@ -1,6 +1,22 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+* A new admin policy action `get_user_internal_attributes` controls who may read the
+  privacyIDEA-internal user attributes (e.g. `fido2_user_id`, `last_used_token`) via the
+  new `GET /user/internal_attribute` endpoint and the *Internal attributes* panel in the
+  user details view. **If you have any admin policies defined**, your administrators will
+  not be able to read these attributes until you grant them this action — review your
+  superuser/helpdesk policies and add `get_user_internal_attributes` where needed.
+  Installations without any admin policies are unaffected (all actions remain allowed).
+
+* Internal user state (the `fido2_user_id` value and `last_used_token_*` entries) is moved out
+  of the `customuserattribute` table into a new `internaluserattribute` table during the schema
+  update, and the original rows are then deleted from `customuserattribute`. Because the migration
+  both moves and deletes these rows, run the schema update with the privacyIDEA service stopped. In
+  a multi-node setup, do not keep an old version serving while the upgrade runs: a concurrent
+  old-version node could write these values back into `customuserattribute` and have them dropped by
+  the cleanup. (Single-node / offline upgrades are unaffected.)
+
 * The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,
   the schema update will flip them to `tokentype='deprecated'` and disable them, preserving the
   original type in `tokeninfo['original_tokentype']`. The migration logs a loud warning with the
