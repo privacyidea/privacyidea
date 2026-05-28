@@ -206,6 +206,7 @@
                           matInput />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
+                          (optionSelected)="userService.selectionFilter.set($event.option.value)"
                           class="user-selection-autocomplete">
                           @for (option of userService.selectionFilteredUsernames(); track option) {
                             <mat-option [value]="option">{{ option }}</mat-option>

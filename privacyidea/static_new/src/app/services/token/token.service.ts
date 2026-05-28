@@ -556,6 +556,8 @@ export class TokenService implements TokenServiceInterface {
     }));
   });
 
+  readonly defaultSizeOptions = [5, 10, 25, 50];
+
   pageSize = linkedSignal<{ role: string }, number>({
     source: () => ({
       role: this.authService.role()
@@ -564,8 +566,9 @@ export class TokenService implements TokenServiceInterface {
       if (previous && source.role === previous.source.role) {
         return previous.value;
       }
-      if (this.authService.tokenPageSize() != null && this.authService.tokenPageSize()! > 0) {
-        return this.authService.tokenPageSize()!;
+      const fromAuth = this.authService.tokenPageSize();
+      if (fromAuth != null && this.defaultSizeOptions.includes(fromAuth)) {
+        return fromAuth;
       }
       return source.role === "user" ? 5 : 10;
     }
@@ -573,7 +576,6 @@ export class TokenService implements TokenServiceInterface {
 
   tokenIsActive = signal(true);
   tokenIsRevoked = signal(true);
-  readonly defaultSizeOptions = [5, 10, 25, 50];
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
 
