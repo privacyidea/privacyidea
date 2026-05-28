@@ -62,7 +62,7 @@ export class ContainerCreateFormComponent {
   @Input({ required: true }) authService!: AuthServiceInterface;
   @Input({ required: true }) description!: WritableSignal<string>;
   @Input({ required: true }) selectedTemplate!: WritableSignal<ContainerTemplate>;
-  @Input({ required: true }) templateOptions!: any;
+  @Input({ required: true }) templateOptions!: WritableSignal<ContainerTemplate[]>;
   @Input({ required: true }) generateQRCode!: WritableSignal<boolean>;
   @Input({ required: true }) passphrasePrompt!: WritableSignal<string>;
   @Input({ required: true }) passphraseResponse!: WritableSignal<string>;

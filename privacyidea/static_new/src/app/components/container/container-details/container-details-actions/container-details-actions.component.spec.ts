@@ -84,8 +84,8 @@ describe("ContainerDetailsActionsComponent", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     mockNotificationService = TestBed.inject(NotificationService) as any;
 
-    component.containerSerial = "SMPH-1";
-    component.containerType = "smartphone";
+    fixture.componentRef.setInput("containerSerial", "SMPH-1");
+    fixture.componentRef.setInput("containerType", "smartphone");
   });
 
   it("should create", () => {

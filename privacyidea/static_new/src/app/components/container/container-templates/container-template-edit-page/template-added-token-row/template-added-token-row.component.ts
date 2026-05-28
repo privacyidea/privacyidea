@@ -117,7 +117,7 @@ export class TemplateAddedTokenRowComponent {
   }
 
   // Token Management Methods
-  updateAdditionalFormFields(fields: Record<string, any>) {
+  updateAdditionalFormFields(fields: Record<string, unknown>) {
     this.childHadForm.set(Object.keys(fields).length > 0);
   }
 

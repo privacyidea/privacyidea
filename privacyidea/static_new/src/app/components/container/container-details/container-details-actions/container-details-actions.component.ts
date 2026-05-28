@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, Input, signal, OnDestroy } from "@angular/core";
+import { Component, computed, effect, inject, input, signal, OnDestroy } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -65,8 +65,8 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
 
   private router = inject(Router);
 
-  @Input() containerSerial!: string;
-  @Input() containerType!: string;
+  containerSerial = input.required<string>();
+  containerType = input.required<string>();
 
   passphrasePrompt = "";
   passphraseResponse = "";
@@ -91,7 +91,7 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     const container_delete_allowed = this.authService.actionAllowed("container_delete");
     return (
       container_delete_allowed ||
-      (this.containerType === "smartphone" &&
+      (this.containerType() === "smartphone" &&
         (this.registrationAllowed() || this.rolloverAllowed() || this.unregisterAllowed()))
     );
   });
@@ -109,7 +109,7 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
   }
 
   enrollTokenInContainer() {
-    this.containerService.selectedContainerSerial.set(this.containerSerial);
+    this.containerService.selectedContainerSerial.set(this.containerSerial());
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT);
   }
 
@@ -125,13 +125,13 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
             type: "destruct"
           },
           itemType: "container",
-          items: [this.containerSerial]
+          items: [this.containerSerial()]
         }
       })
       .afterClosed()
       .subscribe((result) => {
         if (result) {
-          this.containerService.deleteContainer(this.containerSerial).subscribe(() => {
+          this.containerService.deleteContainer(this.containerSerial()).subscribe(() => {
             const prev = this.contentService.previousUrl();
             this.notificationService.success($localize`Container deleted successfully.`);
             if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
@@ -173,7 +173,7 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
     }
     this.containerService
       .registerContainer({
-        container_serial: this.containerSerial,
+        container_serial: this.containerSerial(),
         passphrase_user: this.userStorePW,
         passphrase_response: this.passphraseResponse,
         passphrase_prompt: this.passphrasePrompt,
@@ -184,14 +184,14 @@ export class ContainerDetailsActionsComponent implements OnDestroy {
           this.dialogData.update((data) => (data ? { ...data, response: registerResponse } : data));
         } else {
           this.openRegisterFinalizeDialog(registerResponse, rollover);
-          this.containerService.startPolling(this.containerSerial);
+          this.containerService.startPolling(this.containerSerial());
         }
       });
   }
 
   unregisterContainer() {
     this.containerService
-      .unregister(this.containerSerial)
+      .unregister(this.containerSerial())
       .subscribe((unregisterResponse: PiResponse<ContainerUnregisterData>) => {
         if (unregisterResponse?.result?.value?.success) {
           this.notificationService.success("Container unregistered successfully.");

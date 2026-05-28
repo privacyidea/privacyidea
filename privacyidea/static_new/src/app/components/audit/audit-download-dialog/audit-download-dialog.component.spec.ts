@@ -24,7 +24,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 describe("AuditDownloadDialogComponent", () => {
   let component: AuditDownloadDialogComponent;
   let fixture: ComponentFixture<AuditDownloadDialogComponent>;
-  let mockDialogRef: MockMatDialogRef<AuditDownloadDialogComponent, any>;
+  let mockDialogRef: MockMatDialogRef<AuditDownloadDialogComponent, boolean>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,7 +36,7 @@ describe("AuditDownloadDialogComponent", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(AuditDownloadDialogComponent);
-    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<AuditDownloadDialogComponent, any>;
+    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<AuditDownloadDialogComponent, boolean>;
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

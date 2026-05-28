@@ -51,25 +51,16 @@ export class MockMachineService implements MachineServiceInterface {
   clearFilter = jest.fn();
 
   deleteAssignMachineToToken() {
-    return of({} as any);
+    return of(MockPiResponse.fromValue<number>(0));
   }
 
-  postAssignMachineToToken(_args: {
-    service_id?: string;
-    user?: string;
-    serial: string;
-    application: "ssh" | "offline";
-    machineid: number;
-    resolver: string;
-    count?: number;
-    rounds?: number;
-  }) {
-    return of({} as any);
+  postAssignMachineToToken() {
+    return of(MockPiResponse.fromValue<number>(0));
   }
 
-  postTokenOption = jest.fn().mockReturnValue(of({} as any));
+  postTokenOption = jest.fn().mockReturnValue(of(MockPiResponse.fromValue({ added: 0, deleted: 0 })));
   getAuthItem = jest.fn().mockReturnValue(of({ result: { value: { serial: "", machineid: "", resolver: "" } } }));
-  postToken = jest.fn().mockReturnValue(of({} as any));
+  postToken = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
   getMachine = jest.fn().mockReturnValue(
     of({
       result: {

@@ -24,6 +24,7 @@ import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { PiResponse } from "@app/app.component";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { Observable } from "rxjs";
 
@@ -40,7 +41,7 @@ export interface HotpMachineAssignDialogData {
 })
 export class TokenHotpMachineAssignDialogComponent extends AbstractDialogComponent<
   HotpMachineAssignDialogData,
-  Observable<any> | null
+  Observable<PiResponse<number>> | null
 > {
   private machineService: MachineServiceInterface = inject(MachineService);
   public tokenSerial = this.data.tokenSerial;

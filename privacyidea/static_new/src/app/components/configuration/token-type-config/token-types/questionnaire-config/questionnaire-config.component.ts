@@ -36,11 +36,11 @@ import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 export class QuestionnaireConfigComponent {
   protected readonly QUESTION_NUMBER_OF_ANSWERS = QUESTION_NUMBER_OF_ANSWERS;
 
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
   questionKeys = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  formDataChange = output<Record<string, any>>();
+  formDataChange = output<Record<string, string>>();
   addQuestionRequest = output<string>();
   deleteRequest = output<string>();
 

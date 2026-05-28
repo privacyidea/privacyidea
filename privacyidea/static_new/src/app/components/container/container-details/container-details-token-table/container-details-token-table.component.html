@@ -95,8 +95,11 @@
                     ) {
                       <a
                         (click)="contentService.tokenSelected(element.token.serial)"
+                        (keyup.enter)="contentService.tokenSelected(element.token.serial)"
                         attr.aria-label="{{ column.label }} Link"
-                        class="cursor-pointer">
+                        class="cursor-pointer"
+                        role="button"
+                        tabindex="0">
                         {{ element.token[column.key] }}
                       </a>
                     } @else {
@@ -108,8 +111,11 @@
                   @if (element.status !== "missing") {
                     <span
                       (click)="toggleActive(element.token)"
+                      (keyup.enter)="toggleActive(element.token)"
                       [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)">
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)"
+                      role="button"
+                      tabindex="0">
                       {{ tableUtilsService.getDisplayText(column.key, element.token) }}
                     </span>
                   }
@@ -120,8 +126,11 @@
                       @if (element.token[column.key]) {
                         <a
                           (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          (keyup.enter)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
                           attr.aria-label="{{ column.label }} Link"
-                          class="cursor-pointer">
+                          class="cursor-pointer"
+                          role="button"
+                          tabindex="0">
                           {{ element.token[column.key] }}
                         </a>
                       } @else if (containerService.containerDetails().containers[0]?.users?.length === 1) {

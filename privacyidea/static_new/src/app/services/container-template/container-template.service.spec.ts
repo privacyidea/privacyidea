@@ -298,12 +298,12 @@ describe("ContainerTemplateService", () => {
 
     it("should throw error on delete", async () => {
       const templateName = "template-to-fail";
-      const deletePromise = service.deleteTemplate(templateName).catch(() => { /* noop */ });
+      const deletePromise = service.deleteTemplate(templateName);
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateName}`));
 
       req.flush("Error", { status: 500, statusText: "Server Error" });
 
-      await deletePromise;
+      await expect(deletePromise).rejects.toBeDefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith(
         expect.stringContaining("Failed to delete template")
       );
@@ -351,7 +351,7 @@ describe("ContainerTemplateService", () => {
       const spy = jest.spyOn(service.templatesResource, "reload");
       const templateNames = ["template-1", "template-2"];
 
-      const deletePromise = service.deleteTemplates(templateNames).catch(() => { /* noop */ });
+      const deletePromise = service.deleteTemplates(templateNames);
 
       const req1 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[0]}`));
       req1.flush(
@@ -359,7 +359,7 @@ describe("ContainerTemplateService", () => {
         { status: 500, statusText: "Server Error" }
       );
 
-      await deletePromise;
+      await expect(deletePromise).rejects.toBeDefined();
 
       httpMock.expectNone((req) => req.url.includes(`/container/template/${templateNames[1]}`));
 
@@ -458,12 +458,12 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should show a generic error notification on delete if error response contains no message", async () => {
-      const deletePromise = service.deleteTemplate("some-template").catch(() => { /* noop */ });
+      const deletePromise = service.deleteTemplate("some-template");
 
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/some-template`));
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });
 
-      await deletePromise;
+      await expect(deletePromise).rejects.toBeDefined();
 
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete template. ");
     });
