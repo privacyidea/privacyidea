@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, OnInit, output } from '@angular/core';
+import { Component, inject, OnInit } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -37,12 +37,14 @@ export class EnrollTanComponent implements OnInit {
   protected readonly enrollmentMapper: TanApiPayloadMapper = inject(TanApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  wizard = input(false);
-  additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  @Input() wizard = false;
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
       data: TanEnrollmentData;
       mapper: TokenApiPayloadMapper<TanEnrollmentData>;
-    } | null>();
+    } | null
+  >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

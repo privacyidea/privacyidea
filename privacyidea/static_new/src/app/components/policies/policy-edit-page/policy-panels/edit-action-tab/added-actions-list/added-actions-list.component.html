@@ -12,8 +12,8 @@
         <app-policy-action-item-edit
           [action]="action"
           [actionDetail]="getDetailsOfAction(action.name)"
-          (actionRemoved)="removeActionFromSelectedPolicy(action.name)"
-          (actionUpdated)="updateActionInSelectedPolicy(action.name, $event)" />
+          (removeAction)="removeActionFromSelectedPolicy(action.name)"
+          (updateAction)="updateActionInSelectedPolicy(action.name, $event)" />
       }
     </div>
   </mat-expansion-panel>

@@ -40,9 +40,9 @@ export class QuestionnaireConfigComponent {
   questionKeys = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  formDataChange = output<Record<string, string>>();
-  addQuestionRequest = output<string>();
-  deleteRequest = output<string>();
+  formDataChange = output<Record<string, any>>();
+  addQuestion = output<string>();
+  deleteEntry = output<string>();
 
   newQuestionText = signal("");
 
@@ -53,12 +53,12 @@ export class QuestionnaireConfigComponent {
 
   addQuestion() {
     if (this.newQuestionText()) {
-      this.addQuestionRequest.emit(this.newQuestionText());
+      this.addQuestion.emit(this.newQuestionText());
       this.newQuestionText.set("");
     }
   }
 
   deleteEntry(key: string) {
-    this.deleteRequest.emit(key);
+    this.deleteEntry.emit(key);
   }
 }

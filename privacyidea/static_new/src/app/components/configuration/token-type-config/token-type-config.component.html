@@ -83,8 +83,8 @@
       [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (formDataChange)="formData.set($event)"
-      (addQuestionRequest)="addQuestion($event)"
-      (deleteRequest)="deleteQuestion($event)"
+      (addQuestion)="addQuestion($event)"
+      (deleteEntry)="deleteQuestion($event)"
       [formData]="formData()"
       [questionKeys]="questionKeys"
       [expanded]="expandedPanel === 'questionnaire'"></app-questionnaire-config>
@@ -93,7 +93,7 @@
       [formData]="formData()"
       [expanded]="expandedPanel === 'yubico'"></app-yubico-config>
     <app-yubikey-config
-      (deleteRequest)="deleteSystemEntry($event)"
+      (deleteEntry)="deleteSystemEntry($event)"
       (yubikeyCreateNewKey)="yubikeyAddNewKey($event)"
       [formData]="formData()"
       [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>

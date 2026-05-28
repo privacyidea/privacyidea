@@ -20,7 +20,7 @@
   title="Container Successfully Created"
   i18n-title
   [actions]="dialogActions()"
-  (action)="onDialogAction($event)">
+  (actionTriggered)="onDialogAction($event)">
   <div class="progress-header">
     <span
       class="progress-label"
@@ -34,7 +34,9 @@
     mode="determinate"
     class="progress-bar" />
   <div class="enrollment-data">
-    <p i18n>Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p>
+    <p i18n>
+      Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.
+    </p>
     <app-token-enrollment-data
       [enrolledInputData]="currentToken()"
       [tokenType]="currentToken().type" />

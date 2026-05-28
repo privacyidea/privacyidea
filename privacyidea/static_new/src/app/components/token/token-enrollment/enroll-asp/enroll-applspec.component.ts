@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, signal } from "@angular/core";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   ApplspecApiPayloadMapper,
@@ -42,16 +42,7 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-applspec",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
-    MatOption,
-    MatSelect,
-    MatError,
-    FormField
-  ],
+  imports: [MatFormField, MatInput, MatLabel, MatCheckbox, MatOption, MatSelect, MatError, FormField],
   templateUrl: "./enroll-applspec.component.html",
   styleUrl: "./enroll-applspec.component.scss"
 })
@@ -62,12 +53,14 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   enrollmentData = input<ApplspecEnrollmentData>();
-  wizard = input(false);
-  additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  @Input() wizard = false;
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
       data: ApplspecEnrollmentData;
       mapper: ApplspecApiPayloadMapper;
-    } | null>();
+    } | null
+  >();
   disabled = input<boolean>(false);
 
   serviceId = signal<string>("");
@@ -80,7 +73,10 @@ export class EnrollApplspecComponent implements OnInit {
   });
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("applspec"));
+    disabled(
+      f,
+      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("applspec")
+    );
   });
 
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);

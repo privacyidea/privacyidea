@@ -56,7 +56,9 @@ export interface ResolverData {
   EDITABLE?: boolean | string;
 }
 
-export type Resolvers = Record<string, Resolver>;
+export type Resolvers =Rcord<,>;
+  [key: string]: Resolver;
+}
 
 export interface Resolver {
   censor_keys: string[];

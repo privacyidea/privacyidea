@@ -155,20 +155,23 @@ export class DocumentationService implements DocumentationServiceInterface {
   }
   async openDocumentationPage(page: string): Promise<boolean> {
     // First check the page and when found open it
-    const versionUrl = this.getVersionUrl(page);
-    const found = await this.checkFullUrl(versionUrl);
-    if (found) {
-      window.open(versionUrl, "_blank");
-      return true;
-    }
-    const fallbackUrl = this.getFallbackUrl(page);
-    const foundFallback = await this.checkFullUrl(fallbackUrl);
-    if (foundFallback) {
-      window.open(fallbackUrl, "_blank");
-      return true;
-    }
-    alert("The documentation page is currently not available.");
-    return false;
+    return new Promise(() => {
+      const versionUrl = this.getVersionUrl(page);
+      this.checkFullUrl(versionUrl).then((found) => {
+        if (found) {
+          window.open(versionUrl, "_blank");
+        } else {
+          const fallbackUrl = this.getFallbackUrl(page);
+          this.checkFullUrl(fallbackUrl).then((foundFallback) => {
+            if (foundFallback) {
+              window.open(fallbackUrl, "_blank");
+            } else {
+              alert("The documentation page is currently not available.");
+            }
+          });
+        }
+      });
+    });
   }
   private async _getValidDocUrl(pageUrl: string): Promise<string | null> {
     const versionUrl = this.getVersionUrl(pageUrl);

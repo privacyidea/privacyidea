@@ -83,8 +83,8 @@ export class TemplateAddedTokenRowComponent {
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
 
   readonly index = input.required<number>();
-  readonly editTokenRequest = output<Partial<TokenEnrollmentPayload>>();
-  readonly removeTokenRequest = output<number>();
+  readonly editToken = output<Partial<TokenEnrollmentPayload>>();
+  readonly removeToken = output<number>();
 
   // State Signals
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
@@ -123,12 +123,12 @@ export class TemplateAddedTokenRowComponent {
 
   toggleUserAssign(checked: boolean) {
     this.userAssign.set(checked);
-    this.editTokenRequest.emit({ user: checked });
+    this.editToken.emit({ user: checked });
   }
 
   removeToken() {
     if (this.index() >= 0) {
-      this.removeTokenRequest.emit(this.index());
+      this.removeToken.emit(this.index());
     }
   }
 
@@ -146,7 +146,7 @@ export class TemplateAddedTokenRowComponent {
     });
     if (args) {
       const mappedData = args.mapper.toApiPayload(args.data);
-      this.editTokenRequest.emit(mappedData);
+      this.editToken.emit(mappedData);
     }
   }
 }

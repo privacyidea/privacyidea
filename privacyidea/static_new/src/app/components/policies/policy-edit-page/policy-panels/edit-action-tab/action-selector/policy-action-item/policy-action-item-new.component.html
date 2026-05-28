@@ -45,7 +45,7 @@
             class="flex-1"
             [initialValue]="currentAction().value"
             [values]="actionValues"
-            (onSelect)="addAction($event)" />
+            (selected)="addAction($event)" />
         } @else {
           <mat-form-field
             appearance="fill"

@@ -22,7 +22,6 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
-
 export interface Applications {
   luks: ApplicationLuks;
   offline: ApplicationOffline;

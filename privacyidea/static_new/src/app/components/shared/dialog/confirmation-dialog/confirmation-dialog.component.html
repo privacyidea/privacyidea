@@ -18,10 +18,10 @@
 -->
 <app-dialog-wrapper
   [title]="data.title"
-  (close)="close()"
+  (wrapperClose)="close()"
   [actions]="actions"
   [showCancelButton]="true"
-  (action)="onAction($event)">
+  (actionTriggered)="onAction($event)">
   <div class="margin-right-16">
     <p i18n>
       Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}

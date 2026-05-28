@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
+import { Component } from "@angular/core";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
@@ -27,5 +27,5 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
   styleUrl: "./copyable.component.scss"
 })
 export class CopyableComponent {
-  copyText = input("");
+  @Input() copyText = "";
 }

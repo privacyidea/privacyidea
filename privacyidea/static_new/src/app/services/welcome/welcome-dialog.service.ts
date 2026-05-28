@@ -31,7 +31,6 @@ export class WelcomeDialogService {
     effect(() => {
       const isAuth = this.auth.isAuthenticated();
       const hideWelcome = this.auth.hideWelcome();
-      // const subStatus = this.auth.subscriptionStatus();
 
       if (isAuth && !hideWelcome) {
         this.opened.set(true);

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, inject, input, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -46,12 +46,14 @@ export class EnrollMotpComponent implements OnInit {
   protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  wizard = input(false);
-  additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  @Input() wizard = false;
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
       data: MotpEnrollmentData;
       mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
-    } | null>();
+    } | null
+  >();
 
   disabled = input<boolean>(false);
 
@@ -62,7 +64,10 @@ export class EnrollMotpComponent implements OnInit {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp"));
+    disabled(
+      f,
+      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp")
+    );
   });
 
   motpPinForm = form(this.motpPin, (f) => {

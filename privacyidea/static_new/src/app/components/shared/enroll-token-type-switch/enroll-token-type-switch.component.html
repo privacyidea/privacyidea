@@ -115,7 +115,7 @@
     <app-enroll-push
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)"
+      (enrollmentResponseChange)="onEnrollmentResponseChange.emit($event)"
       (reopenDialogChange)="reopenDialogChange.emit($event)" />
   }
   @case ("question") {
@@ -154,13 +154,13 @@
     <app-enroll-webauthn
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)" />
+      (enrollmentResponseChange)="onEnrollmentResponseChange.emit($event)" />
   }
   @case ("passkey") {
     <app-enroll-passkey
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)"
+      (enrollmentResponseChange)="onEnrollmentResponseChange.emit($event)"
       (reopenDialogChange)="reopenDialogChange.emit($event)" />
   }
 }

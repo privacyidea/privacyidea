@@ -42,7 +42,7 @@ export class EditConditionsTabComponent {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  onPolicyEdit($event: Partial<PolicyDetail>): void {
+  policyEdit($event: Partial<PolicyDetail>): void {
     this.policyEdit.emit($event);
   }
 }

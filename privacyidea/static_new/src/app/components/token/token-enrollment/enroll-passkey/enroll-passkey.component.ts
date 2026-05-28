@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, OnInit, output } from '@angular/core';
+import { Component, inject, OnInit } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
@@ -55,14 +55,18 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  wizard = input(false);
-  additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  @Input() wizard = false;
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
       data: PasskeyEnrollmentData;
       mapper: TokenApiPayloadMapper<PasskeyEnrollmentData>;
-    } | null>();
-  reopenDialogChange = output<ReopenDialogFn>();
-  enrollmentResponseChange = output<(enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>>();
+    } | null
+  >();
+  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
+  @Output() enrollmentResponseChange = new EventEmitter<
+    (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
+  >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
@@ -172,10 +176,12 @@ export class EnrollPasskeyComponent implements OnInit {
       this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       return null;
     }
-    const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred: { id: string; type: PublicKeyCredentialType }) => ({
-      id: this.base64Service.base64URLToBytes(cred.id),
-      type: cred.type
-    }));
+    const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
+      (cred: { id: string; type: PublicKeyCredentialType }) => ({
+        id: this.base64Service.base64URLToBytes(cred.id),
+        type: cred.type
+      })
+    );
 
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       rp: passkeyRegOptions.rp,

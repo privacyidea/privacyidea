@@ -20,8 +20,8 @@
 <app-dialog-wrapper
   title="Search for Token"
   [actions]="[action]"
-  (close)="close()"
-  (onAction)="onAction($event)">
+  (wrapperClose)="close()"
+  (actionTriggered)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">
       <span i18n>

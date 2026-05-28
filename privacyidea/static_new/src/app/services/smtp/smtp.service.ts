@@ -132,9 +132,12 @@ export class SmtpService implements SmtpServiceInterface {
   }
 
   async deleteSmtpServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<boolean>>(`${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<boolean>>(
+      `${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     try {
       await lastValueFrom(request);
       this.notificationService.success($localize`Successfully deleted SMTP server: ${identifier}.`);

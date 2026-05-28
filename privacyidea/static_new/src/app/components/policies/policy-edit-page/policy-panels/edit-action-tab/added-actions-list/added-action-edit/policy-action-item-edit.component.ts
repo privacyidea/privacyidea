@@ -51,8 +51,8 @@ import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@serv
 export class PolicyActionItemEditComponent<T extends string | number = string | number> {
   readonly action = input.required<{ name: string; value: T }>();
   readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
-  readonly actionRemoved = output<void>();
-  readonly actionUpdated = output<T | undefined>();
+  readonly removeAction = output<void>();
+  readonly updateAction = output<T | undefined>();
 
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
@@ -74,15 +74,15 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
   }
 
   removeAction() {
-    this.actionRemoved.emit();
+    this.removeAction.emit();
   }
 
   updateAction(value?: T | T[]): void {
     if (Array.isArray(value)) {
       const stringValue = value.map((v) => v.toString()).join(" ");
-      this.actionUpdated.emit(stringValue as T);
+      this.updateAction.emit(stringValue as T);
     } else {
-      this.actionUpdated.emit(value as T);
+      this.updateAction.emit(value as T);
     }
   }
   isNumber(value: T): boolean {

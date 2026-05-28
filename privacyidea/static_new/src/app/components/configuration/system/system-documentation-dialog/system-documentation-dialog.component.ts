@@ -30,15 +30,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
   templateUrl: "./system-documentation-dialog.component.html",
   styleUrls: ["./system-documentation-dialog.component.scss"],
   standalone: true,
-  imports: [
-    MatDialogModule,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatButton,
-    CdkTextareaAutosize,
-    CopyableComponent
-  ]
+  imports: [MatDialogModule, MatFormField, MatLabel, MatInput, MatButton, CdkTextareaAutosize, CopyableComponent]
 })
 export class SystemDocumentationDialogComponent implements AfterViewInit {
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;

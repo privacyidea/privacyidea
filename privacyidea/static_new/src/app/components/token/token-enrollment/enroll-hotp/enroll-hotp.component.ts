@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, OnInit, output, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -41,17 +41,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
 
 @Component({
   selector: "app-enroll-hotp",
-  imports: [
-    MatCheckbox,
-    MatSelect,
-    MatOption,
-    MatLabel,
-    MatFormField,
-    MatInput,
-    MatHint,
-    MatError,
-    FormField
-  ],
+  imports: [MatCheckbox, MatSelect, MatOption, MatLabel, MatFormField, MatInput, MatHint, MatError, FormField],
   templateUrl: "./enroll-hotp.component.html",
   styleUrl: "./enroll-hotp.component.scss",
   standalone: true
@@ -71,11 +61,13 @@ export class EnrollHotpComponent implements OnInit {
   ];
 
   enrollmentData = input<HotpEnrollmentData | null>();
-  wizard = input(false);
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  @Input() wizard = false;
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
       data: HotpEnrollmentData;
       mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
-    } | null>();
+    } | null
+  >();
   additionalFormFieldsChange = output<Record<string, unknown>>();
   disabled = input<boolean>(false);
 

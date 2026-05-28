@@ -576,8 +576,9 @@ export class PolicyService implements PolicyServiceInterface {
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
     if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
       // remove scope temporarily and then compare to ignore scope changes
-      const keysToCompare = Object.keys(originalPolicy).filter((key) => key !== "scope");
-      return JSON.stringify(editedPolicy, keysToCompare) !== JSON.stringify(originalPolicy, keysToCompare);
+      const selectedWithoutScope = Object.fromEntries(Object.entries(editedPolicy).filter(([k]) => k !== "scope"));
+      const originalWithoutScope = Object.fromEntries(Object.entries(originalPolicy).filter(([k]) => k !== "scope"));
+      return JSON.stringify(selectedWithoutScope) !== JSON.stringify(originalWithoutScope);
     } else {
       return JSON.stringify(editedPolicy) !== JSON.stringify(originalPolicy);
     }

@@ -52,7 +52,7 @@ export class YubikeyConfigComponent {
   yubikeyApiIds = input.required<string[]>();
 
   yubikeyCreateNewKey = output<ApiKeyData>();
-  deleteRequest = output<string>();
+  deleteEntry = output<string>();
 
   newYubikeyApiId = signal("");
   newYubikeyApiKey = signal("");
@@ -73,6 +73,6 @@ export class YubikeyConfigComponent {
   }
 
   deleteEntry(key: string) {
-    this.deleteRequest.emit(key);
+    this.deleteEntry.emit(key);
   }
 }

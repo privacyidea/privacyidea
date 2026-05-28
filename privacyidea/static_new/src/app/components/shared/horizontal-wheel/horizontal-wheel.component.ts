@@ -27,7 +27,6 @@ import {
   inject,
   Input,
   linkedSignal,
-  output,
   Signal,
   viewChildren,
   WritableSignal
@@ -42,9 +41,9 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  @Input({ required: true }) values!: Signal<string[]>;
-  @Input({ required: true }) initialValue!: string;
-  itemSelected = output<string>();
+  @Input({ required: true }) values!: Signal<any[]>;
+  @Input({ required: true }) initialValue!: any;
+  @Output() selected: EventEmitter<string> = new EventEmitter<string>();
 
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
     source: () => this.values(),
@@ -65,8 +64,8 @@ export class HorizontalWheelComponent implements AfterViewInit {
   private containerElement: HTMLElement | null = null;
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
-  constructor() {
-    effect(() => this.itemSelected.emit(this.selectedValue()));
+  constructor(private elementRef: ElementRef) {
+    effect(() => this.select.emit(this.selectedValue()));
 
     effect(() => {
       this.items();

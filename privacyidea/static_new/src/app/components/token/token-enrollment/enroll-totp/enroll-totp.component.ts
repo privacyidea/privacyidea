@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -44,17 +44,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-totp",
   standalone: true,
-  imports: [
-    MatCheckbox,
-    MatFormField,
-    MatHint,
-    MatInput,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatError,
-    FormField
-  ],
+  imports: [MatCheckbox, MatFormField, MatHint, MatInput, MatLabel, MatOption, MatSelect, MatError, FormField],
   templateUrl: "./enroll-totp.component.html",
   styleUrl: "./enroll-totp.component.scss"
 })
@@ -74,12 +64,14 @@ export class EnrollTotpComponent implements OnInit {
   readonly timeStepOptions = [30, 60];
 
   enrollmentData = input<TotpEnrollmentData>();
-  wizard = input(false);
-  additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  @Input() wizard = false;
+  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+  @Output() enrollmentArgsGetterChange = new EventEmitter<
+    (basicOptions: TokenEnrollmentData) => {
       data: TotpEnrollmentData;
       mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
-    } | null>();
+    } | null
+  >();
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("totp"));
