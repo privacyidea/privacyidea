@@ -29,7 +29,7 @@ describe("ContentService", () => {
   let events$: Subject<NavigationEnd>;
   let mockRouter: {
     url: string;
-    events: any;
+    events: Subject<NavigationEnd>;
     navigateByUrl: jest.Mock<Promise<boolean>, [string]>;
   };
 

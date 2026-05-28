@@ -33,7 +33,8 @@ const routerMock = {
 } as unknown as Router;
 
 describe("AuthGuard — CanMatch helpers", () => {
-  const runMatch = (fn: any) => TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
+  const runMatch = (fn: (route: Route, segments: UrlSegment[]) => boolean) =>
+    TestBed.runInInjectionContext(() => fn({} as Route, [] as UrlSegment[])) as boolean;
   let authMock: MockAuthService;
 
   beforeEach(() => {
@@ -99,7 +100,7 @@ describe("AuthGuard class", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockReturnValue();
     (routerMock.navigate as jest.Mock).mockClear();
   });
 
@@ -147,7 +148,7 @@ describe("AuthGuard class", () => {
   it("does not show snackbar if router.navigate never resolves (simulates failure without unhandled rejection)", async () => {
     authService.isAuthenticated.set(false);
 
-    (routerMock.navigate as jest.Mock).mockImplementationOnce(() => new Promise<boolean>(() => {}));
+    (routerMock.navigate as jest.Mock).mockImplementationOnce(() => new Promise<boolean>(() => undefined));
 
     expect(guard.canActivate()).toBe(false);
     expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);

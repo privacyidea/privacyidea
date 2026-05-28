@@ -24,23 +24,23 @@ import { AuthService, JwtData } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import {
-    MockContainerService,
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockRealmService,
-    MockTableUtilsService,
-    MockTokenService
+  MockContainerService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockRealmService,
+  MockTableUtilsService,
+  MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
-import { RealmService } from "@services/realm/realm.service";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -58,7 +58,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
-    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockReturnValue();
   });
 
   beforeEach(async () => {

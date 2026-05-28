@@ -20,17 +20,6 @@ describe("FilterOption", () => {
     };
   }
 
-  const createMockItem = (overrides: Partial<ComplexMock> = {}): ComplexMock => {
-    return {
-      id: 1,
-      details: {
-        tags: [],
-        owner: { name: "root", active: true }
-      },
-      ...overrides
-    };
-  };
-
   const mockFilterValue = {
     hasKey: jest.fn()
   } as unknown as FilterValueGeneric<ComplexMock>;

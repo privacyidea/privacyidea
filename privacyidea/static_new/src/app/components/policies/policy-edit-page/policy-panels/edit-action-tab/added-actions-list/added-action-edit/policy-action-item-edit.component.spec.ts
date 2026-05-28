@@ -18,23 +18,12 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
-
-@Component({
-  selector: "app-selector-buttons",
-  standalone: true,
-  template: ""
-})
-class MockSelectorButtonsComponent {
-  values = input.required<any[]>();
-  initialValue = input<any>();
-  select = output<any>();
-}
 
 describe("PolicyActionItemEditComponent", () => {
   let component: PolicyActionItemEditComponent;

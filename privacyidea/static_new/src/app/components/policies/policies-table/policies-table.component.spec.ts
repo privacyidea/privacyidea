@@ -125,7 +125,7 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {
-    const dialogSpy = jest.spyOn(mockDialogService, "openDialog").mockReturnValue({
+    jest.spyOn(mockDialogService, "openDialog").mockReturnValue({
       afterClosed: () => of(null)
     } as any);
 

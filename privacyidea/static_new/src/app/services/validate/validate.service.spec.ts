@@ -55,7 +55,7 @@ describe("ValidateService", () => {
     http = TestBed.inject(HttpClient);
     postSpy = jest.spyOn(http, "post");
 
-    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockReturnValue();
 
     notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;

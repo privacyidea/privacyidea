@@ -44,7 +44,6 @@ describe("UserDetailsTokenTableComponent", () => {
   let component: UserDetailsTokenTableComponent;
 
   let tokenServiceMock: MockTokenService;
-  let userServiceMock: MockUserService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -65,7 +64,6 @@ describe("UserDetailsTokenTableComponent", () => {
     }).compileComponents();
 
     tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
-    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
 
     fixture = TestBed.createComponent(UserDetailsTokenTableComponent);
     component = fixture.componentInstance;

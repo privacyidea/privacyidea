@@ -24,6 +24,7 @@ import { MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
 import { SubscriptionExpiryService } from "./subscription-expiry.service";
+import { SubscriptionService } from "./subscription.service";
 
 function makeSubs(value: Record<string, any>) {
   return MockPiResponse.fromValue<Record<string, any>>(value);
@@ -44,7 +45,7 @@ describe("SubscriptionExpiryService", () => {
         SubscriptionExpiryService,
         { provide: MatDialog, useValue: dialogMock },
         { provide: AuthService, useValue: authMock },
-        { provide: require("./subscription.service").SubscriptionService, useValue: subsMock }
+        { provide: SubscriptionService, useValue: subsMock }
       ]
     });
   });
@@ -65,7 +66,7 @@ describe("SubscriptionExpiryService", () => {
     expect(service.opened()).toBe(true);
     expect(dialogMock.open).toHaveBeenCalled();
 
-    const [_, config] = dialogMock.open.mock.calls[0];
+    const [, config] = dialogMock.open.mock.calls[0];
     // expect(config.data.items.length).toBe(1);
     expect(config.data.items[0].application).toBe("app1");
   });

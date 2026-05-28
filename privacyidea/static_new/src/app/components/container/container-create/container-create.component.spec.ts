@@ -66,8 +66,8 @@ class MockIntersectionObserver {
   disconnect = jest.fn();
 
   constructor(
-    private callback: any,
-    private options?: any
+    private callback: IntersectionObserverCallback,
+    private options?: IntersectionObserverInit
   ) {}
 }
 
@@ -78,27 +78,28 @@ Object.defineProperty(global, "IntersectionObserver", {
 });
 
 class IOStub {
-  private cb: (entries: any[]) => void;
+  private cb: (entries: IntersectionObserverEntry[]) => void;
   observe = jest.fn();
   disconnect = jest.fn();
 
-  constructor(cb: any, _opts?: any) {
-    this.cb = (entries: any[]) => cb(entries, this as any);
+  constructor(cb: IntersectionObserverCallback, _opts?: IntersectionObserverInit) {
+    void _opts;
+    this.cb = (entries: IntersectionObserverEntry[]) => cb(entries, this as unknown as IntersectionObserver);
   }
 
-  trigger(entries: any[]) {
+  trigger(entries: IntersectionObserverEntry[]) {
     this.cb(entries);
   }
 }
 
-let lastIO: IOStub | null = null;
+const lastIOInstances: IOStub[] = [];
 Object.defineProperty(global, "IntersectionObserver", {
   configurable: true,
   writable: true,
   value: class extends IOStub {
-    constructor(cb: any, opts?: any) {
+    constructor(cb: IntersectionObserverCallback, opts?: IntersectionObserverInit) {
       super(cb, opts);
-      lastIO = this;
+      lastIOInstances.push(this);
     }
   }
 });
@@ -131,7 +132,7 @@ describe("ContainerCreateComponent", () => {
     httpClientMock = {
       get: jest.fn().mockReturnValue(of(""))
     };
-    let DummyVersioningService;
+    class DummyVersioningService {}
     await TestBed.configureTestingModule({
       imports: [ContainerCreateComponent],
       providers: [

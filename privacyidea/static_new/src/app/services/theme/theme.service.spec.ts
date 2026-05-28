@@ -24,7 +24,7 @@ import { DOCUMENT, Renderer2, RendererFactory2 } from "@angular/core";
 import { APP_THEME_STORAGE_KEY } from "@core/constants";
 
 class DomRendererFactory implements RendererFactory2 {
-  createRenderer(_: any, __: any): Renderer2 {
+  createRenderer(): Renderer2 {
     return {
       addClass: (el: Element, name: string) => el.classList.add(name),
       removeClass: (el: Element, name: string) => el.classList.remove(name)

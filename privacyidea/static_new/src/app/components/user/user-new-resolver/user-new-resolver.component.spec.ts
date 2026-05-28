@@ -35,18 +35,11 @@ import { of, throwError } from "rxjs";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
 
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-
-  disconnect() {}
-
-  observe() {}
-
-  unobserve() {}
-
-  takeRecords() {
-    return [];
-  }
-} as any;
+  disconnect = jest.fn();
+  observe = jest.fn();
+  unobserve = jest.fn();
+  takeRecords = jest.fn().mockReturnValue([]);
+} as unknown as typeof IntersectionObserver;
 
 describe("UserNewResolverComponent", () => {
   let component: UserNewResolverComponent;
@@ -76,7 +69,7 @@ describe("UserNewResolverComponent", () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            paramMap: of({ get: (key: string) => "" })
+            paramMap: of({ get: (_key: string) => "" })
           }
         },
         {

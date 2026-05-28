@@ -18,10 +18,11 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, input, model, output, ViewChild } from "@angular/core";
+import { Component, input, model, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { ActionSelectorComponent } from "./action-selector.component";
 
@@ -34,19 +35,6 @@ class MockPolicyActionItemComponent {
   selectableAction = input.required<any>();
   actionValue = input<any>();
   focusFirstInput = jest.fn();
-}
-
-@Component({
-  selector: "app-selector-buttons",
-  template: "<div></div>",
-  standalone: true
-})
-class MockSelectorButtonsComponent {
-  values = input.required<string[]>();
-  initialValue = input<string>();
-  allowDeselect = input<boolean>();
-  disabled = input<boolean>();
-  select = output<string | null>();
 }
 
 @Component({

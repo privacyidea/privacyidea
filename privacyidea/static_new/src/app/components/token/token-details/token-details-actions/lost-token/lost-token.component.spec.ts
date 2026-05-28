@@ -69,7 +69,7 @@ describe("LostTokenComponent", () => {
     tokenService = TestBed.inject(TokenService) as any;
     notification = TestBed.inject(NotificationService) as any;
 
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockReturnValue();
     fixture.detectChanges();
   });
 
