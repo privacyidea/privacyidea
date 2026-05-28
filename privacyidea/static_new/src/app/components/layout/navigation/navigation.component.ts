@@ -185,7 +185,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();
-    (event as any).stopImmediatePropagation?.();
+    event.stopImmediatePropagation?.();
     event.stopPropagation();
 
     this.router.navigate([route_path]);

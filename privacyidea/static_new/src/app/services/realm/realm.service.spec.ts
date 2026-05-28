@@ -30,7 +30,6 @@ import { RealmService } from "./realm.service";
 describe("RealmService", () => {
   let realmService: RealmService;
   let httpMock: HttpTestingController;
-  let authService: MockAuthService;
   let contentService: MockContentService;
 
   beforeEach(() => {
@@ -48,7 +47,6 @@ describe("RealmService", () => {
 
     realmService = TestBed.inject(RealmService);
     httpMock = TestBed.inject(HttpTestingController);
-    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 

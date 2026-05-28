@@ -62,7 +62,7 @@ describe("UiPolicyService", () => {
   });
 
   it("falls back to defaults and warns when appConfig is missing", () => {
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const warn = jest.spyOn(console, "warn").mockReturnValue();
 
     const srv = new UiPolicyService();
 

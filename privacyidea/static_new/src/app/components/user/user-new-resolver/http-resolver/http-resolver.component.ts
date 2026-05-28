@@ -275,7 +275,7 @@ export class HttpResolverComponent {
   ]);
   protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
     const existing = (this.mergedData() as any)?.attribute_mapping;
-    let rows: AttributeMappingRow[] = [];
+    let rows: AttributeMappingRow[];
     if (existing && Object.keys(existing).length > 0) {
       rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
         privacyideaAttr,
@@ -512,14 +512,14 @@ export class HttpResolverComponent {
     return sanitized;
   }
 
-  private formatConfigValue(value: {} | null): string {
+  private formatConfigValue(value: object | null): string {
     if (typeof value === "object" && value !== null) {
       if (Object.keys(value).length === 0) {
         return "";
       }
       return JSON.stringify(value);
     }
-    return (value as string) ?? "";
+    return value != null ? String(value) : "";
   }
 
   protected onMappingChanged(): void {

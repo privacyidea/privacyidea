@@ -113,7 +113,7 @@ describe("SessionTimerService", () => {
   });
 
   it("startTimer warns when logout time is not defined and does not schedule timeout", () => {
-    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const warnSpy = jest.spyOn(console, "warn").mockReturnValue();
     authService.logoutTimeS.set(null);
     authService.jwtLogoutTimeS.set(null);
     service.startTimer();

@@ -46,7 +46,7 @@ class MockSelectorButtonsComponent {
   initialValue = input<string>();
   allowDeselect = input<boolean>();
   disabled = input<boolean>();
-  onSelect = output<string | null>();
+  select = output<string | null>();
 }
 
 @Component({

@@ -43,8 +43,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  @Input({ required: true }) values!: Signal<any[]>;
-  @Input({ required: true }) initialValue!: any;
+  @Input({ required: true }) values!: Signal<string[]>;
+  @Input({ required: true }) initialValue!: string;
   @Output() itemSelected: EventEmitter<string> = new EventEmitter<string>();
 
   // Linked signal will not work here. Computation will not be called when values change.

@@ -86,9 +86,7 @@ describe("EventService", () => {
     const event = { name: "fail", handlermodule: "mod" };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeUndefined();
-      expect(notificationMock.error).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to save event handler.")
-      );
+      expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to save event handler."));
     });
     const req = httpMock.expectOne(service.eventBaseUrl);
     expect(req.request.method).toBe("POST");
@@ -112,9 +110,7 @@ describe("EventService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to enable event handler!")
-    );
+    expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to enable event handler!"));
     expect(service.allEventsResource.reload).toHaveBeenCalled();
   });
 
@@ -134,9 +130,7 @@ describe("EventService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to disable event handler!")
-    );
+    expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to disable event handler!"));
   });
 
   it("should delete an event handler", () => {
@@ -157,10 +151,8 @@ describe("EventService", () => {
         // Should not be called
         fail("Expected error, but got success response");
       },
-      error: (err) => {
-        expect(notificationMock.error).toHaveBeenCalledWith(
-          expect.stringContaining("Failed to delete event handler.")
-        );
+      error: () => {
+        expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete event handler."));
         done();
       }
     });

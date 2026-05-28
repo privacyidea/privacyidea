@@ -21,7 +21,7 @@
   title="Search for Token"
   [actions]="[action]"
   (close)="close()"
-  (action)="onAction($event)">
+  (onAction)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">
       <span i18n>

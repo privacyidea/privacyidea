@@ -32,7 +32,7 @@
         .
       </div>
     }
-    @if (username() && userRealm() !== "" && !onlyAddToRealm()) {
+    @if (username() && userRealm() != "" && !onlyAddToRealm()) {
       <div i18n>
         The user
         @if (authService.actionAllowed("userlist")) {

@@ -341,7 +341,8 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     this.newRealmName.set(input.value);
   }
 
-  setNewRealmResolverPriority(nodeId: string, resolverName: string, priority: any): void {
+  setNewRealmResolverPriority(args: { nodeId: string; resolverName: string; priority?: string }): void {
+    const { nodeId, resolverName, priority } = args;
     const current = { ...this.newRealmNodeResolvers() };
     const list = current[nodeId] ?? [];
     const entry = list.find((r) => r.name === resolverName);
@@ -349,7 +350,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const num = Number(priority);
     let value: number | null;
 
-    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
+    if (priority === "" || Number.isNaN(num)) {
       value = null;
     } else {
       value = Math.min(999, Math.max(1, num));
@@ -469,7 +470,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     this.editNodeResolvers.set({ ...current, [nodeId]: updated });
   }
 
-  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
+  setEditResolverPriority(nodeId: string, resolverName: string, priority: string | null | undefined): void {
     const current = this.editNodeResolvers();
     const list = [...(current[nodeId] ?? [])];
     const entry = list.find((r) => r.name === resolverName);

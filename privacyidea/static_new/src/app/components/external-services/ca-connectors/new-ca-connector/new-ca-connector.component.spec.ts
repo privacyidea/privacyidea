@@ -22,9 +22,9 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DialogService } from "@services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { CaConnector, CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockCaConnectorService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { of } from "rxjs";
@@ -65,19 +65,34 @@ describe("NewCaConnectorComponent", () => {
   it("should initialize form with local type by default", () => {
     expect(component.caConnectorModel().type).toBe("local");
     // cacert is required when type is local
-    expect(component.caConnectorForm.cacert().errors().some(e => e.kind === "required")).toBe(true);
+    expect(
+      component.caConnectorForm
+        .cacert()
+        .errors()
+        .some((e) => e.kind === "required")
+    ).toBe(true);
   });
 
   it("should update validators when type changes", () => {
-    component.caConnectorModel.update(m => ({ ...m, type: "microsoft" }));
+    component.caConnectorModel.update((m) => ({ ...m, type: "microsoft" }));
     // cacert should no longer be required for microsoft type
-    expect(component.caConnectorForm.cacert().errors().some(e => e.kind === "required")).toBe(false);
+    expect(
+      component.caConnectorForm
+        .cacert()
+        .errors()
+        .some((e) => e.kind === "required")
+    ).toBe(false);
     // hostname should be required for microsoft type
-    expect(component.caConnectorForm.hostname().errors().some(e => e.kind === "required")).toBe(true);
+    expect(
+      component.caConnectorForm
+        .hostname()
+        .errors()
+        .some((e) => e.kind === "required")
+    ).toBe(true);
   });
 
   it("should load available CAs for microsoft type", async () => {
-    component.caConnectorModel.update(m => ({ ...m, type: "microsoft", hostname: "test", port: "123" }));
+    component.caConnectorModel.update((m) => ({ ...m, type: "microsoft", hostname: "test", port: "123" }));
 
     component.loadAvailableCas();
     await caConnectorServiceMock.getCaSpecificOptions.mock.results[0].value;
@@ -91,7 +106,7 @@ describe("NewCaConnectorComponent", () => {
 
   it("should call save when form is valid", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.caConnectorModel.update(m => ({
+    component.caConnectorModel.update((m) => ({
       ...m,
       connectorname: "test",
       type: "local",
@@ -109,7 +124,7 @@ describe("NewCaConnectorComponent", () => {
 
   it("save should return false on error", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.caConnectorModel.update(m => ({
+    component.caConnectorModel.update((m) => ({
       ...m,
       connectorname: "test",
       type: "local",
@@ -269,9 +284,7 @@ describe("NewCaConnectorComponent edit mode", () => {
 
     caConnectorServiceMock.getCaSpecificOptions.mockRejectedValueOnce(new Error("fail"));
     component.loadAvailableCas();
-    try {
-      await caConnectorServiceMock.getCaSpecificOptions.mock.results[1].value;
-    } catch {}
+    await expect(caConnectorServiceMock.getCaSpecificOptions.mock.results[1].value).rejects.toThrow("fail");
     await new Promise((r) => setTimeout(r, 0));
     expect(component.isLoadingCas()).toBe(false);
   });

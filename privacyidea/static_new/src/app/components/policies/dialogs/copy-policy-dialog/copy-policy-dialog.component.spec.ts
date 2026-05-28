@@ -34,8 +34,8 @@ class MockMatDialogRef {
 class MockDialogWrapperComponent {
   title = input.required<string>();
   actions = input.required<any[]>();
-  close = output<void>();
-  onAction = output<any>();
+  closeDialog = output<void>();
+  actionEvent = output<any>();
 }
 
 describe("CopyPolicyDialogComponent", () => {

@@ -33,14 +33,12 @@ import { PolicyActionItemEditComponent } from "./policy-action-item-edit.compone
 class MockSelectorButtonsComponent {
   values = input.required<any[]>();
   initialValue = input<any>();
-  onSelect = output<any>();
+  select = output<any>();
 }
 
 describe("PolicyActionItemEditComponent", () => {
   let component: PolicyActionItemEditComponent;
   let fixture: ComponentFixture<PolicyActionItemEditComponent>;
-  let policyServiceMock: MockPolicyService;
-
   const defaultAction = { name: "test_action", value: "test_value" };
   const defaultDetail: PolicyActionDetail = {
     type: "str",
@@ -62,8 +60,6 @@ describe("PolicyActionItemEditComponent", () => {
 
     fixture = TestBed.createComponent(PolicyActionItemEditComponent);
     component = fixture.componentInstance;
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
-
     fixture.componentRef.setInput("action", defaultAction);
     fixture.componentRef.setInput("actionDetail", defaultDetail);
 

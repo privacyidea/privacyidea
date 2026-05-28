@@ -375,7 +375,6 @@ describe("UserService", () => {
 
   describe("selectedUser", () => {
     let contentService: MockContentService;
-    let tokenService: MockTokenService;
     let authService: MockAuthService;
 
     beforeEach(() => {

@@ -32,7 +32,7 @@ import { PolicyActionItemComponent, SelectableAction } from "./policy-action-ite
 class MockSelectorButtonsComponent {
   initialValue = input<any>();
   values = input.required<any[]>();
-  onSelect = output<any>();
+  select = output<any>();
   focusFirst = jest.fn();
 }
 

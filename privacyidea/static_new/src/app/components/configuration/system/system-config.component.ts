@@ -36,6 +36,29 @@ import { SystemService, SystemServiceInterface } from "@services/system/system.s
 import { isChecked } from "@utils/parse-boolean-value";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
 
+export interface SystemConfigParams {
+  splitAtSign?: boolean;
+  IncFailCountOnFalsePin?: boolean;
+  no_auth_counter?: boolean;
+  PrependPin?: boolean;
+  ReturnSamlAttributes?: boolean;
+  ReturnSamlAttributesOnFail?: boolean;
+  AutoResync?: boolean;
+  UiLoginDisplayHelpButton?: boolean;
+  UiLoginDisplayRealmBox?: boolean;
+  AutoResyncTimeout?: string;
+  OverrideAuthorizationClient?: string;
+  UserCacheExpiration?: string;
+  failcounter_clear_timeout?: string;
+  DefaultChallengeValidityTime?: string;
+  DefaultCountWindow?: string;
+  DefaultMaxFailCount?: string;
+  DefaultOtpLen?: string;
+  DefaultSyncWindow?: string;
+  "recovery.identifier"?: string;
+  [key: string]: string | boolean | undefined;
+}
+
 @Component({
   selector: "app-system-config",
   templateUrl: "./system-config.component.html",
@@ -64,7 +87,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
 
-  params = signal<Record<string, string | boolean>>({});
+  params = signal<SystemConfigParams>({});
   isDirty = signal(false);
   smtpIdentifiers: string[] = [];
 

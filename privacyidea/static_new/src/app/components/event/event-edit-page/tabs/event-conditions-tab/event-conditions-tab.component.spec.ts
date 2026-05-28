@@ -26,7 +26,6 @@ import { EventConditionsTabComponent } from "./event-conditions-tab.component";
 describe("EventConditionsTabComponent", () => {
   let component: EventConditionsTabComponent;
   let fixture: ComponentFixture<EventConditionsTabComponent>;
-  let mockEventService: MockEventService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -39,7 +38,6 @@ describe("EventConditionsTabComponent", () => {
     fixture.componentRef.setInput("conditions", { test_condition: "test_value" });
     fixture.componentRef.setInput("isEditMode", true);
     component.newConditions = { emit: jest.fn() } as any;
-    mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     fixture.detectChanges();
   });
 

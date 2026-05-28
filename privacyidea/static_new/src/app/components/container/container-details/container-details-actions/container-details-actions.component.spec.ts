@@ -25,6 +25,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
   MockContainerService,
   MockContentService,
@@ -70,7 +71,7 @@ describe("ContainerDetailsActionsComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: MatDialog, useValue: { open: dialogOpen, closeAll: dialogCloseAll } },
         { provide: MAT_DIALOG_DATA, useValue: {} },
-        { provide: MatDialogRef, useValue: { close: () => {} } },
+        { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: Router, useValue: routerMock },
         MockLocalService,
         MockNotificationService
