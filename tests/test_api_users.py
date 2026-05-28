@@ -8,13 +8,13 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_object
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
-from .base import MyApiTestCase
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
+from .base import MyApiTestCase, PristineSqliteFixtures
 
 PWFILE = "tests/testdata/passwd"
 
 
-class APIUsersTestCase(MyApiTestCase):
+class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser-api.sqlite",
@@ -29,6 +29,10 @@ class APIUsersTestCase(MyApiTestCase):
                     "phone": "phone", \
                     "mobile": "mobile"}'
                   }
+
+    # SQL-resolver fixture this test class writes to (create/update/delete
+    # user, password re-salting); kept pristine via PristineSqliteFixtures.
+    pristine_fixtures = ["tests/testdata/testuser-api.sqlite"]
 
     def _create_user_wordy(self):
         """
@@ -631,42 +635,131 @@ class APIUsersTestCase(MyApiTestCase):
         delete_policy("custom_create_user")
 
     def test_11_internal_custom_user_attributes(self):
+        """The ``last_used_token_`` prefix used to be reserved in
+        customuserattribute because internal state was stored there. Now
+        that internal state lives in a separate table, admins are free to
+        use the prefix as a regular custom-attribute name."""
         self.setUp_user_realms()
-        # Allow to set custom attributes
         set_policy("custom_attribute", scope=SCOPE.ADMIN,
                    action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:*:*,{PolicyAction.DELETE_USER_ATTRIBUTES}='*'")
 
-        # try to set an internal custom user attribute
+        attrkey = f"{InternalUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp"
+
+        # Setting a key with the (formerly reserved) prefix is now allowed.
         with self.app.test_request_context("/user/attribute",
                                            method="POST",
                                            data={"user": "hans",
                                                  "realm": self.realm1,
-                                                 "key": f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp",
+                                                 "key": attrkey,
                                                  "value": "push"},
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
-            result = res.json.get("result")
-            self.assertFalse(result.get("status"), res.data)
-            error = result.get("error")
-            self.assertEqual(905, error.get("code"))
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result", {}).get("status"), res.data)
 
-        # set an internal attribute
-        user = User("hans", self.realm1)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push",
-                           INTERNAL_USAGE)
-        # Delete internal attribute is allowed
+        # And deleting it works the same as any other custom attribute.
         with self.app.test_request_context(
-                f"/user/attribute/{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp/hans/{self.realm1}",
+                f"/user/attribute/{attrkey}/hans/{self.realm1}",
                 method="DELETE",
                 data={},
                 headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"), res.data)
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result", {}).get("status"), res.data)
 
         delete_policy("custom_attribute")
+
+    def test_11b_get_internal_attributes(self):
+        """The /user/internal_attribute endpoint exposes the diagnostic
+        cache (fido2_user_id, last_used_token) to admins."""
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        user.set_internal_attribute("last_used_token", {"privacyidea-cp": "push"})
+        user.set_internal_attribute("fido2_user_id", "abc123")
+
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "hans", "realm": self.realm1},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result", {}).get("value")
+            self.assertEqual({"privacyidea-cp": "push"}, value.get("last_used_token"))
+            self.assertEqual("abc123", value.get("fido2_user_id"))
+
+        user.delete_internal_attribute()
+
+    def test_11c_get_internal_attributes_realm_scoped(self):
+        """A realm-restricted admin may only read internal attributes of
+        users in their own realm(s)."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        realm1_user = User("hans", self.realm1)
+        realm1_user.set_internal_attribute("fido2_user_id", "realm1-id")
+        realm2_user = User("cornelius", self.realm2)
+        realm2_user.set_internal_attribute("fido2_user_id", "realm2-id")
+
+        # Admin policy that grants the right only for realm1
+        set_policy("internal_attr_realm1", scope=SCOPE.ADMIN,
+                   action=PolicyAction.GET_USER_INTERNAL_ATTRIBUTES,
+                   realm=self.realm1)
+
+        # Reading a realm1 user is allowed
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "hans", "realm": self.realm1},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), res.data)
+            self.assertEqual("realm1-id", result.get("value").get("fido2_user_id"))
+
+        # Reading a realm2 user is denied for this realm-restricted admin
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "cornelius", "realm": self.realm2},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.data)
+            self.assertIn(PolicyAction.GET_USER_INTERNAL_ATTRIBUTES,
+                          result.get("error").get("message"))
+
+        delete_policy("internal_attr_realm1")
+        realm1_user.delete_internal_attribute()
+        realm2_user.delete_internal_attribute()
+
+    def test_11d_get_internal_attributes_no_realm_no_bypass(self):
+        """Omitting the realm must not let a realm-restricted admin read a
+        user in a different (default) realm. The realm used to read the data
+        must match the realm the policy authorized, not the default realm
+        that request.User would otherwise resolve to."""
+        self.setUp_user_realms()      # realm1 is the default realm
+        self.setUp_user_realm2()
+        # The secret lives on the user in the DEFAULT realm (realm1)
+        default_user = User("hans", self.realm1)
+        default_user.set_internal_attribute("fido2_user_id", "realm1-secret")
+
+        # Admin is restricted to realm2 only
+        set_policy("internal_attr_realm2", scope=SCOPE.ADMIN,
+                   action=PolicyAction.GET_USER_INTERNAL_ATTRIBUTES,
+                   realm=self.realm2)
+
+        # Request without a realm: realmadmin injects realm2, so the user must
+        # be resolved in realm2 (hans@realm2 has no internal attributes) and
+        # the realm1 secret must never leak.
+        with self.app.test_request_context("/user/internal_attribute",
+                                           method="GET",
+                                           query_string={"user": "hans"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            value = (res.json.get("result") or {}).get("value") or {}
+            self.assertNotEqual("realm1-secret", value.get("fido2_user_id"), res.data)
+
+        delete_policy("internal_attr_realm2")
+        default_user.delete_internal_attribute()
 
     def test_12_get_users(self):
         self.setUp_user_realms()
