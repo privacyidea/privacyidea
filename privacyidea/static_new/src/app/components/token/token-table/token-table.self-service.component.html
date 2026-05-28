@@ -22,10 +22,9 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  <div #stickySentinel></div>
   <div
-    #stickyHeader
-    class="filter-paginator-container sticky-header">
+    class="filter-paginator-container sticky-header"
+    [appStickyHeader]="scrollContainer">
     <h3
       class="selfservice-paginator-label"
       i18n>

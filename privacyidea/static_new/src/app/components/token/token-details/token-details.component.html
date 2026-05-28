@@ -285,7 +285,9 @@
                       appAutofocus
                       matInput />
                   </app-clearable-input>
-                  <mat-autocomplete #containerAuto="matAutocomplete">
+                  <mat-autocomplete
+                    #containerAuto="matAutocomplete"
+                    (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
                     @for (option of containerService.containersForTokenType(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
                     }

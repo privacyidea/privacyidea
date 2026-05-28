@@ -23,7 +23,6 @@
   class="edit-event-handler-layout"
   i18n-aria-label>
   <div class="edit-event-handler-container">
-
     <h3 class="margin-8 flex-row flex-nowrap ali-center">
       {{ title() }}
       @if (!isNewEvent()) {
@@ -34,12 +33,8 @@
     </h3>
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
         <mat-slide-toggle
           (change)="updateEventHandler('active', $event.checked)"
@@ -55,7 +50,7 @@
           }
         </mat-slide-toggle>
         <button
-          (click)="$event.stopPropagation(); saveEvent();"
+          (click)="$event.stopPropagation(); saveEvent()"
           [disabled]="!canSave()"
           class="action-button-primary button-width-s"
           mat-stroked-button>
@@ -88,11 +83,14 @@
                 required
                 type="text" />
             </app-clearable-input>
-            @if (showNameError() && editEvent().name === '') {
+            @if (showNameError() && editEvent().name === "") {
               <mat-error i18n>Name is <strong>required</strong>.</mat-error>
             }
-            @if (showNameError() && editEvent().name !== '') {
-              <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+            @if (showNameError() && editEvent().name !== "") {
+              <mat-error i18n
+                >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
+                hyphens are allowed.</mat-error
+              >
             }
           </mat-form-field>
           <mat-form-field class="input-width-l">
@@ -106,9 +104,7 @@
                 <mat-option [value]="module">{{ module }}</mat-option>
               }
             </mat-select>
-            <mat-error i18n>
-              Selecting a handler module is <strong>required</strong>.
-            </mat-error>
+            <mat-error i18n> Selecting a handler module is <strong>required</strong>. </mat-error>
           </mat-form-field>
         </div>
       }
@@ -173,6 +169,5 @@
         </mat-tab>
       }
     </mat-tab-group>
-
   </div>
 </div>
