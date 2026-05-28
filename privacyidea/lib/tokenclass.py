@@ -2157,3 +2157,6 @@ class TokenClass:
         self.add_tokeninfo_dict(token_information.setdefault("info_list", {}))
         self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
         self.save()
+
+    def log_authentication(self):
+        pass
