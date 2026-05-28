@@ -361,7 +361,7 @@ def check_application_tokentype(request=None, action=None):
     Check ACTION.APPLICATION_TOKENTYPE
 
     This decorator should wrap
-        /validate/check, /validate/samlcheck and /validate/triggerchallenge.
+        /validate/check and /validate/triggerchallenge.
 
     :param request: The request that is intercepted during the API call
     :type request: Request Object
