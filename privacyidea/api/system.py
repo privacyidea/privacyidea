@@ -69,8 +69,10 @@ from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.health import get_certificate_status
+from privacyidea.lib.metrics import get_metrics, cleanup_old_metrics
 from privacyidea.lib.usercache import delete_user_cache
-from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode, is_true
 from .auth import admin_required
 from .lib.utils import (getLowerParams,
                         send_result, send_file)
@@ -556,6 +558,152 @@ def list_nodes():
     return send_result(nodes)
 
 
+@system_blueprint.route("/health/certificates", methods=['GET'])
+@admin_required
+@log_with(log)
+def get_health_certificates():
+    """
+    Return certificate expiry information for all configured LDAP resolvers
+    (where the resolver uses ldaps:// or START_TLS) and for the privacyIDEA
+    server certificate.
+
+    Server-certificate sources are admin-configured via two pi.cfg keys:
+
+    * ``PI_SERVER_CERT_FILE`` - path to a cert file on disk to read.
+    * ``PI_HEALTH_CERT_PROBES`` - list of ``{"host": "...", "port": int}``
+      dicts naming TLS endpoints to probe over the network.
+
+    Both are opt-in. With neither configured, only LDAP resolver entries
+    are returned. The endpoint never derives probe targets from request
+    headers - that would be an SSRF primitive.
+
+    The result is cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds
+    (default 3600). Pass ``?refresh=1`` to bypass the cache.
+
+    Each entry has a ``status`` of ``ok`` (>30 days), ``warning`` (<=30 days),
+    ``critical`` (<=7 days), ``expired`` (<=0 days), or ``error`` (probe failed).
+
+    :queryparam refresh: If truthy, bypass the cache and re-check.
+    :>json list value: List of certificate status entries.
+    :reqheader PI-Authorization: The authorization token
+    """
+    refresh = is_true(get_optional(request.all_data, "refresh"))
+    # Server-cert sources are admin-configured (PI_SERVER_CERT_FILE /
+    # PI_HEALTH_CERT_PROBES); never derived from the request, so a crafted
+    # Host header can't be used as an SSRF primitive.
+    result = get_certificate_status(refresh=refresh)
+    g.audit_object.log({"success": True})
+    return send_result(result)
+
+
+@system_blueprint.route("/health/resolver_timing", methods=['GET'])
+@admin_required
+@log_with(log)
+def get_health_resolver_timing():
+    """
+    Return rolling resolver-operation timing aggregates per resolver and op.
+
+    Reads pre-aggregated counters/buckets stored by
+    :func:`privacyidea.lib.metrics.observe` calls wrapped around every
+    ``UserIdResolver`` public method (``get_user_info``, ``get_user_list``,
+    ``check_pass``, ``add_user``, ``update_user``, ``delete_user``,
+    ``get_user_id``, ``get_username``). Covers all resolver types
+    uniformly (LDAP, SQL, HTTP, EntraID, Keycloak, passwd).
+
+    The returned ``count``, ``avg``, ``p50``, ``p95``, ``max`` are summed
+    across all privacyIDEA nodes and 5-minute windows that fall within
+    the requested window.
+
+    :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
+    :>json list value: One entry per ``(resolver, resolver_type, op)`` triple.
+    :reqheader PI-Authorization: The authorization token
+    """
+    try:
+        since_seconds = int(get_optional(request.all_data, "since_seconds") or 3600)
+    except (TypeError, ValueError):
+        since_seconds = 3600
+    raw = get_metrics(name="resolver_op_duration_seconds", since_seconds=since_seconds)
+    g.audit_object.log({"success": True})
+    return send_result(raw)
+
+
+def _aggregate_delivery_channel(counter_name, duration_name, key_label, since_seconds):
+    """Fold counter rows by their key label into one entry per key.
+
+    Counter rows are grouped by the value of ``key_label`` (e.g. ``"provider"``,
+    ``"gateway"``, ``"identifier"``). Each group's outcome counts (ok / failed /
+    error) come from ``counter_name``; latency stats come from
+    ``duration_name`` rows with the same key.
+    """
+    counters = get_metrics(name=counter_name, since_seconds=since_seconds)
+    durations = get_metrics(name=duration_name, since_seconds=since_seconds)
+
+    by_key = {}
+    for c in counters:
+        labels = c.get("labels") or {}
+        key = labels.get(key_label, "?")
+        result = labels.get("result", "?")
+        entry = by_key.setdefault(key, {
+            "key": key, "ok": 0, "failed": 0, "error": 0, "total": 0,
+        })
+        cnt = c.get("count") or 0
+        if result in ("ok", "failed", "error"):
+            entry[result] += cnt
+        entry["total"] += cnt
+
+    for d in durations:
+        labels = d.get("labels") or {}
+        key = labels.get(key_label, "?")
+        entry = by_key.setdefault(key, {
+            "key": key, "ok": 0, "failed": 0, "error": 0, "total": 0,
+        })
+        entry["avg"] = d.get("avg")
+        entry["p50"] = d.get("p50")
+        entry["p95"] = d.get("p95")
+        entry["max"] = d.get("max")
+        entry["duration_count"] = d.get("count") or 0
+
+    return sorted(by_key.values(), key=lambda e: e["total"], reverse=True)
+
+
+@system_blueprint.route("/health/notification_delivery", methods=['GET'])
+@admin_required
+@log_with(log)
+def get_health_notification_delivery():
+    """
+    Return rolling delivery counters and latency for the three notification
+    channels (push, SMS, email).
+
+    Each channel folds rows by its primary label dimension:
+
+    * push: ``gateway`` (the SMS gateway identifier configured for Firebase)
+    * sms: ``gateway`` (the SMS gateway identifier)
+    * email: ``identifier`` (the SMTP server identifier)
+
+    :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
+    :reqheader PI-Authorization: The authorization token
+    """
+    try:
+        since_seconds = int(get_optional(request.all_data, "since_seconds") or 3600)
+    except (TypeError, ValueError):
+        since_seconds = 3600
+
+    result = {
+        "push": _aggregate_delivery_channel(
+            "push_delivery_total", "push_delivery_duration_seconds",
+            "gateway", since_seconds),
+        "sms": _aggregate_delivery_channel(
+            "sms_send_total", "sms_send_duration_seconds",
+            "gateway", since_seconds),
+        "email": _aggregate_delivery_channel(
+            "email_send_total", "email_send_duration_seconds",
+            "identifier", since_seconds),
+        "since_seconds": since_seconds,
+    }
+    g.audit_object.log({"success": True})
+    return send_result(result)
+
+
 @system_blueprint.route("/user-cache", methods=['DELETE'])
 @admin_required
 def delete_user_cache_api():
@@ -590,3 +738,28 @@ def delete_user_cache_api():
     row_count = delete_user_cache()
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
     return send_result({"status": True, "deleted": row_count})
+
+
+@system_blueprint.route("/metricscleanup", methods=['POST'])
+@admin_required
+@log_with(log)
+def metricscleanup_api():
+    """
+    Delete metric_aggregate rows older than ``older_than_hours`` hours.
+    Mirrors what the ``MetricsCleanup`` periodic task does, but on demand.
+
+    :jsonparam older_than_hours: retention threshold in hours. Default 24.
+                                 Values < 1 are clamped to 1 to prevent wiping
+                                 the live (in-progress) bucket.
+    :reqheader PI-Authorization: The authorization token
+    """
+    try:
+        hours = int(get_optional(request.all_data, "older_than_hours") or 24)
+    except (TypeError, ValueError):
+        hours = 24
+    if hours < 1:
+        hours = 1
+    deleted = cleanup_old_metrics(older_than_seconds=hours * 3600)
+    g.audit_object.log({"success": True,
+                        "info": f"Deleted {deleted} metric_aggregate row(s) older than {hours}h"})
+    return send_result({"status": True, "deleted": deleted, "older_than_hours": hours})

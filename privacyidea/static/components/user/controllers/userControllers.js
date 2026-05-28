@@ -407,8 +407,9 @@ angular.module("privacyideaApp")
         function ($scope) {
             // Change the pagination
             $scope.pageChanged = function () {
-                //debug: console.log('Page changed to: ' + $scope.params.page);
-                $scope._applyPageSlice();
+                // Pagination is client-side over the cached full list - no
+                // server round-trip and no loading banner needed.
+                $scope._applyPaging();
             };
             $scope.$on("piReload", function () {
                 $scope._getUsers(false);
@@ -438,6 +439,7 @@ angular.module("privacyideaApp")
                 $location.path("/user/list");
             }
 
+            $scope.usersLoading = false;
             $scope._getUsers = function (live_search) {
                 if ((!$rootScope.search_on_enter) || ($rootScope.search_on_enter && !live_search)) {
                     // We shall only search, if either we do not search on enter or
@@ -457,19 +459,27 @@ angular.module("privacyideaApp")
                     }
                     params.attributes = "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
                     params.include_custom_attributes = false;
+                    $scope.usersLoading = true;
                     UserFactory.getUsers(params,
                         function (data) {
-                            //debug: console.log("success");
-                            // The backend returns the complete list of users; pagination is done client-side.
-                            $scope._allUsers = data.result.value;
+                            // The endpoint returns the complete list of users; we cache it
+                            // and paginate client-side so paging through doesn't refetch.
+                            $scope._allUsers = data.result.value || [];
                             $scope.userCount = $scope._allUsers.length;
-                            $scope._applyPageSlice();
-                            //debug: console.log($scope.userlist);
+                            $scope._applyPaging();
+                            $scope.usersLoading = false;
+                        },
+                        function (error) {
+                            // Cancelled in-flight requests come through here too
+                            // (status -1); a follow-up call will re-set the flag.
+                            if (error && error.status !== -1) {
+                                $scope.usersLoading = false;
+                            }
                         });
                 }
             };
 
-            $scope._applyPageSlice = function () {
+            $scope._applyPaging = function () {
                 const all = $scope._allUsers || [];
                 const start = ($scope.params.page - 1) * $scope.usersPerPage;
                 const stop = start + $scope.usersPerPage;
@@ -505,6 +515,11 @@ angular.module("privacyideaApp")
 
             $scope.changeRealm = function () {
                 $scope.params = {page: 1};
+                // Clear stale entries so the user immediately sees that the
+                // previous realm's data is gone while the new search runs.
+                $scope.userlist = [];
+                $scope._allUsers = [];
+                $scope.userCount = 0;
                 $scope._getUsers();
             };
 

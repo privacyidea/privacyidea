@@ -17,6 +17,7 @@
 #
 import logging
 import smtplib
+import time
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from time import gmtime, strftime
@@ -31,6 +32,7 @@ from sqlalchemy import select
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -205,6 +207,16 @@ def send_or_enqueue_email(config, recipient, subject, body, sender=None, reply_t
     return send(config, recipient, subject, body, sender, reply_to, mimetype)
 
 
+def _record_email_send(identifier, start, success, error=False):
+    labels = {"identifier": identifier}
+    observe("email_send_duration_seconds", time.monotonic() - start, labels)
+    if error:
+        result = "error"
+    else:
+        result = "ok" if success else "failed"
+    inc("email_send_total", {**labels, "result": result})
+
+
 @log_with(log)
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
                           reply_to=None, mimetype="plain"):
@@ -222,8 +234,15 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
     :return: True or False
     """
     smtp_server = get_smtpserver(identifier)
-    return smtp_server.send_email(recipient, subject, body, sender, reply_to,
-                                  mimetype)
+    start = time.monotonic()
+    try:
+        success = smtp_server.send_email(recipient, subject, body, sender, reply_to,
+                                         mimetype)
+    except Exception:
+        _record_email_send(identifier, start, False, error=True)
+        raise
+    _record_email_send(identifier, start, success)
+    return success
 
 
 @log_with(log)
@@ -250,7 +269,14 @@ def send_email_data(mailserver, subject, message, mail_from,
                             password=password, port=port, tls=email_tls, timeout=timeout,
                             enqueue_job=False)
     smtpserver = SMTPServer(dbserver)
-    return smtpserver.send_email(recipient, subject, message)
+    start = time.monotonic()
+    try:
+        success = smtpserver.send_email(recipient, subject, message)
+    except Exception:
+        _record_email_send("emailtoken", start, False, error=True)
+        raise
+    _record_email_send("emailtoken", start, success)
+    return success
 
 
 @log_with(log)

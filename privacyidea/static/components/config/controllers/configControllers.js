@@ -831,6 +831,35 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
             });
         };
 
+        $scope.metricsCleanupHours = 24;
+        $scope.cleanupMetrics = function () {
+            var hours = parseInt($scope.metricsCleanupHours, 10);
+            // Match the API's behavior: non-numeric input falls back to the
+            // 24h default; numeric-but-too-small values clamp up to 1 so the
+            // in-progress 5-minute window is never wiped.
+            if (isNaN(hours)) hours = 24;
+            else if (hours < 1) hours = 1;
+            ConfigFactory.cleanupMetrics(hours, function (data) {
+                if (data.result.status === true) {
+                    var deleted = data.result.value.deleted;
+                    var hrs = data.result.value.older_than_hours;
+                    if (deleted > 0) {
+                        inform.add(gettextCatalog.getString(
+                                "Deleted " + deleted + " metric row(s) older than " + hrs + "h."),
+                            {type: "success", ttl: 4000});
+                    } else {
+                        inform.add(gettextCatalog.getString(
+                                "No metric rows older than " + hrs + "h."),
+                            {type: "info", ttl: 4000});
+                    }
+                } else {
+                    inform.add(gettextCatalog.getString(
+                            "Could not delete old metrics."),
+                        {type: "danger", ttl: 8000});
+                }
+            });
+        };
+
     }]);
 
 myApp.controller("PasswdResolverController", ["$scope", "ConfigFactory",

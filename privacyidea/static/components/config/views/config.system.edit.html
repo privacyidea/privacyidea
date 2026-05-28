@@ -112,6 +112,27 @@
     </div>
 
     <div class="form-group">
+        <label class="col-sm-7 control-label" translate>
+            Delete metric rows older than (hours)
+        </label>
+
+        <div class="col-sm-2">
+            <button type="button"
+                    ng-click="cleanupMetrics()"
+                    class="btn btn-transparent btn-danger"
+                    translate>
+            Delete Old Metrics
+            </button>
+        </div>
+        <div class="col-sm-3">
+            <input name="MetricsCleanupHours" class="form-control" type="number" min="1"
+                   ng-model="metricsCleanupHours"
+                   placeholder="24"/>
+        </div>
+        <br/>
+    </div>
+
+    <div class="form-group">
         <label for="OverrideAuthorizationClient"
                class="col-sm-4 control-label" translate>
             Override Authorization Clients
