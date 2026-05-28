@@ -25,6 +25,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
   MockContainerService,
   MockContentService,
@@ -70,7 +71,7 @@ describe("ContainerDetailsActionsComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: MatDialog, useValue: { open: dialogOpen, closeAll: dialogCloseAll } },
         { provide: MAT_DIALOG_DATA, useValue: {} },
-        { provide: MatDialogRef, useValue: { close: () => {} } },
+        { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: Router, useValue: routerMock },
         MockLocalService,
         MockNotificationService
@@ -83,8 +84,8 @@ describe("ContainerDetailsActionsComponent", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     mockNotificationService = TestBed.inject(NotificationService) as any;
 
-    component.containerSerial = "SMPH-1";
-    component.containerType = "smartphone";
+    fixture.componentRef.setInput("containerSerial", "SMPH-1");
+    fixture.componentRef.setInput("containerType", "smartphone");
   });
 
   it("should create", () => {

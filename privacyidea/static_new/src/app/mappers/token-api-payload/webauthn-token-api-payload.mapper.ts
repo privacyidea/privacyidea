@@ -89,7 +89,7 @@ export class WebAuthnApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): WebAuthnEnrollmentData {
+  override fromApiPayload(payload: WebAuthnEnrollmentPayload): WebAuthnEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebAuthnEnrollmentData;
   }
@@ -122,12 +122,12 @@ export class WebAuthnFinalizeApiPayloadMapper implements TokenApiPayloadMapper<W
     return payload;
   }
 
-  fromApiPayload(payload: any): WebauthnFinalizeData {
+  fromApiPayload(payload: WebAuthnFinalizePayload): WebauthnFinalizeData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebauthnFinalizeData;
   }
 
-  fromTokenDetailsToEnrollmentData(details: TokenDetails): WebauthnFinalizeData {
+  fromTokenDetailsToEnrollmentData(): WebauthnFinalizeData {
     return {} as WebauthnFinalizeData;
   }
 }

@@ -16,55 +16,60 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
 import { computed, signal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { EventActions, EventCondition, EventHandler, EventServiceInterface } from "@services/event/event.service";
+import {
+  EventActions,
+  EventCondition,
+  EventHandler,
+  EventHandlerSaveParams,
+  EventServiceInterface
+} from "@services/event/event.service";
 import { of } from "rxjs";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockEventService implements EventServiceInterface {
   selectedHandlerModule: WritableSignal<string | null> = signal(null);
 
-  readonly allEventsResource: HttpResourceRef<PiResponse<EventHandler[]> | undefined> = {
-    value: jest.fn(() => ({ result: { value: [] } })),
-    reload: jest.fn()
-  } as any;
+  readonly allEventsResource = new MockHttpResourceRef<PiResponse<EventHandler[]> | undefined>(
+    MockPiResponse.fromValue<EventHandler[]>([])
+  );
 
   eventHandlers: WritableSignal<EventHandler[] | undefined> = signal([]);
 
-  saveEventHandler = jest.fn((event: Record<string, any>) => of({ result: { value: 1 } } as PiResponse<number, any>));
+  saveEventHandler = jest.fn((_event: EventHandlerSaveParams) => of(MockPiResponse.fromValue<number>(1)));
 
-  enableEvent = jest.fn((eventId: number) => Promise.resolve({}));
+  enableEvent = jest.fn((_eventId: number | null) => Promise.resolve({}));
 
-  disableEvent = jest.fn((eventId: number) => Promise.resolve({}));
+  disableEvent = jest.fn((_eventId: number | null) => Promise.resolve({}));
 
-  deleteEvent = jest.fn((eventId: number) => of({ result: { value: 1 } } as PiResponse<number, any>));
+  deleteEvent = jest.fn((_eventId: number) => of(MockPiResponse.fromValue<number>(1)));
 
-  deleteWithConfirmDialog = jest.fn((event: EventHandler, dialog: any, afterDelete?: () => void) => {
+  deleteWithConfirmDialog = jest.fn((_event: EventHandler, afterDelete?: () => void) => {
     if (afterDelete) afterDelete();
   });
 
-  readonly eventHandlerModulesResource: HttpResourceRef<PiResponse<string[]> | undefined> = {
-    value: jest.fn(() => ({ result: { value: ["mockModule"] } }))
-  } as any;
+  readonly eventHandlerModulesResource = new MockHttpResourceRef<PiResponse<string[]>>(
+    MockPiResponse.fromValue<string[]>(["mockModule"])
+  );
 
   eventHandlerModules: Signal<string[]> = computed(() => ["mockModule", "anotherModule"]);
 
-  readonly availableEventsResource: HttpResourceRef<PiResponse<string[]> | undefined> = {
-    value: jest.fn(() => ({ result: { value: ["mockEvent"] } }))
-  } as any;
+  readonly availableEventsResource = new MockHttpResourceRef<PiResponse<string[]>>(
+    MockPiResponse.fromValue<string[]>(["mockEvent"])
+  );
 
   availableEvents: Signal<string[]> = computed(() => ["eventA", "eventAB", "eventB", "eventC"]);
 
-  readonly modulePositionsResource: HttpResourceRef<PiResponse<string[]> | undefined> = {
-    value: jest.fn(() => ({ result: { value: ["mockPosition"] } }))
-  } as any;
+  readonly modulePositionsResource = new MockHttpResourceRef<PiResponse<string[]>>(
+    MockPiResponse.fromValue<string[]>(["mockPosition"])
+  );
 
   modulePositions: Signal<string[]> = computed(() => ["pre", "post"]);
 
-  readonly moduleActionsResource: HttpResourceRef<PiResponse<EventActions> | undefined> = {
-    value: jest.fn(() => ({ result: { value: {} } }))
-  } as any;
+  readonly moduleActionsResource = new MockHttpResourceRef<PiResponse<EventActions>>(
+    MockPiResponse.fromValue<EventActions>({})
+  );
 
   moduleActions: Signal<EventActions> = computed(() => ({
     actionA: {
@@ -81,9 +86,9 @@ export class MockEventService implements EventServiceInterface {
     }
   }));
 
-  readonly moduleConditionsResource: HttpResourceRef<PiResponse<Record<string, EventCondition>> | undefined> = {
-    value: jest.fn(() => ({ result: { value: {} } }))
-  } as any;
+  readonly moduleConditionsResource = new MockHttpResourceRef<PiResponse<Record<string, EventCondition>>>(
+    MockPiResponse.fromValue<Record<string, EventCondition>>({})
+  );
 
   moduleConditions: Signal<Record<string, EventCondition>> = computed(() => ({
     condA: { type: "bool", desc: "descA" },

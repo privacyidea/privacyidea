@@ -25,9 +25,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-type Tokengroups = {
-  [key: string]: _Tokengroup;
-};
+type Tokengroups = Record<string, _Tokengroup>;
 
 interface _Tokengroup {
   description: string;

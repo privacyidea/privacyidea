@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { CommonModule } from "@angular/common";
-import { Component, computed, effect, inject, input, OnDestroy, signal, untracked } from "@angular/core";
+import { Component, OnDestroy, computed, effect, inject, input, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { FormField, disabled, form, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatOptionModule } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -41,7 +42,10 @@ import {
   SmsProvider
 } from "@services/sms-gateway/sms-gateway.service";
 
-type KeyValueRow = { key: string; value: string };
+interface KeyValueRow {
+  key: string;
+  value: string;
+}
 
 interface SmsFormModel {
   name: string;
@@ -212,12 +216,12 @@ export class NewSmsGatewayComponent implements OnDestroy {
     );
   }
 
-  providerEntries(): Array<{ key: string; value: SmsProvider }> {
+  providerEntries(): { key: string; value: SmsProvider }[] {
     const providersObj = this.providers() ?? {};
     return Object.entries(providersObj).map(([key, value]) => ({ key, value }));
   }
 
-  parameterEntries(): Array<{ key: string; value: any }> {
+  parameterEntries(): { key: string; value: any }[] {
     const paramsObj = this.selectedProvider()?.parameters ?? {};
     return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
   }
@@ -308,7 +312,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -355,7 +359,8 @@ export class NewSmsGatewayComponent implements OnDestroy {
   }
 
   deleteOption(key: string): void {
-    const { [key]: _, ...rest } = this.customOptions;
+    const rest = { ...this.customOptions };
+    delete rest[key];
     this.customOptions = rest;
   }
 
@@ -372,7 +377,8 @@ export class NewSmsGatewayComponent implements OnDestroy {
   }
 
   deleteHeader(key: string): void {
-    const { [key]: _, ...rest } = this.customHeaders;
+    const rest = { ...this.customHeaders };
+    delete rest[key];
     this.customHeaders = rest;
   }
 

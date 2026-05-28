@@ -21,11 +21,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { UserData, UserService } from "@services/user/user.service";
-import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
-import { MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
-import { TokenService } from "@services/token/token.service";
 import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserData, UserService } from "@services/user/user.service";
+import { MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;
@@ -201,13 +201,13 @@ describe("SelectedUserAssignDialogComponent", () => {
 
   describe("onAction", () => {
     it("should call onConfirm when value is 'submit'", () => {
-      const spy = jest.spyOn(component, "onConfirm").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "onConfirm").mockReturnValue();
       component.onAction("submit");
       expect(spy).toHaveBeenCalled();
     });
 
     it("should call onCancel when value is null", () => {
-      const spy = jest.spyOn(component, "onCancel").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "onCancel").mockReturnValue();
       component.onAction(null);
       expect(spy).toHaveBeenCalled();
     });

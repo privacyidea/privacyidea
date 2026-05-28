@@ -28,7 +28,6 @@ import { EventActionTabComponent } from "./event-action-tab.component";
 describe("EventActionTabComponent", () => {
   let component: EventActionTabComponent;
   let fixture: ComponentFixture<EventActionTabComponent>;
-  let mockEventService: MockEventService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -46,7 +45,6 @@ describe("EventActionTabComponent", () => {
     fixture.componentRef.setInput("options", { key: "test_key", value: "test_value" });
     component.newAction = { emit: jest.fn() } as any;
     component.newOptions = { emit: jest.fn() } as any;
-    mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     fixture.detectChanges();
   });
 

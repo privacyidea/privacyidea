@@ -36,16 +36,6 @@ describe("PrivacyideaServerService", () => {
   let contentService: MockContentService;
 
   beforeEach(() => {
-    const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({})
-    };
-    const notificationServiceMock = {
-      success: jest.fn(),
-      error: jest.fn(),
-      warning: jest.fn(),
-      handleResourceError: jest.fn()
-    };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),

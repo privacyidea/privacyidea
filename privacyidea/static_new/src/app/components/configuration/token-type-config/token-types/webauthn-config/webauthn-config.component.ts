@@ -33,10 +33,10 @@ import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
 export class WebauthnConfigComponent {
   protected readonly WEBAUTHN_TRUST_ANCHOR_DIR = WEBAUTHN_TRUST_ANCHOR_DIR;
 
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
+  formDataChange = output<Record<string, string>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

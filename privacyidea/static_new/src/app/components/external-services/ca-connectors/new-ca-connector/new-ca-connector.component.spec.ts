@@ -22,9 +22,9 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DialogService } from "@services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { CaConnector, CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockCaConnectorService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { of } from "rxjs";
@@ -33,7 +33,7 @@ import { NewCaConnectorComponent } from "./new-ca-connector.component";
 describe("NewCaConnectorComponent", () => {
   let component: NewCaConnectorComponent;
   let fixture: ComponentFixture<NewCaConnectorComponent>;
-  let caConnectorServiceMock: any;
+  let caConnectorServiceMock: MockCaConnectorService;
   let router: Router;
 
   beforeEach(async () => {
@@ -49,7 +49,7 @@ describe("NewCaConnectorComponent", () => {
       ]
     }).compileComponents();
 
-    caConnectorServiceMock = TestBed.inject(CaConnectorService);
+    caConnectorServiceMock = TestBed.inject(CaConnectorService) as unknown as MockCaConnectorService;
     caConnectorServiceMock.getCaSpecificOptions.mockResolvedValue({ available_cas: ["CA1", "CA2"] });
     router = TestBed.inject(Router);
 
@@ -65,19 +65,34 @@ describe("NewCaConnectorComponent", () => {
   it("should initialize form with local type by default", () => {
     expect(component.caConnectorModel().type).toBe("local");
     // cacert is required when type is local
-    expect(component.caConnectorForm.cacert().errors().some(e => e.kind === "required")).toBe(true);
+    expect(
+      component.caConnectorForm
+        .cacert()
+        .errors()
+        .some((e) => e.kind === "required")
+    ).toBe(true);
   });
 
   it("should update validators when type changes", () => {
-    component.caConnectorModel.update(m => ({ ...m, type: "microsoft" }));
+    component.caConnectorModel.update((m) => ({ ...m, type: "microsoft" }));
     // cacert should no longer be required for microsoft type
-    expect(component.caConnectorForm.cacert().errors().some(e => e.kind === "required")).toBe(false);
+    expect(
+      component.caConnectorForm
+        .cacert()
+        .errors()
+        .some((e) => e.kind === "required")
+    ).toBe(false);
     // hostname should be required for microsoft type
-    expect(component.caConnectorForm.hostname().errors().some(e => e.kind === "required")).toBe(true);
+    expect(
+      component.caConnectorForm
+        .hostname()
+        .errors()
+        .some((e) => e.kind === "required")
+    ).toBe(true);
   });
 
   it("should load available CAs for microsoft type", async () => {
-    component.caConnectorModel.update(m => ({ ...m, type: "microsoft", hostname: "test", port: "123" }));
+    component.caConnectorModel.update((m) => ({ ...m, type: "microsoft", hostname: "test", port: "123" }));
 
     component.loadAvailableCas();
     await caConnectorServiceMock.getCaSpecificOptions.mock.results[0].value;
@@ -91,7 +106,7 @@ describe("NewCaConnectorComponent", () => {
 
   it("should call save when form is valid", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.caConnectorModel.update(m => ({
+    component.caConnectorModel.update((m) => ({
       ...m,
       connectorname: "test",
       type: "local",
@@ -109,7 +124,7 @@ describe("NewCaConnectorComponent", () => {
 
   it("save should return false on error", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.caConnectorModel.update(m => ({
+    component.caConnectorModel.update((m) => ({
       ...m,
       connectorname: "test",
       type: "local",
@@ -174,7 +189,7 @@ describe("NewCaConnectorComponent", () => {
         })
       })
     );
-    expect((caConnectorServiceMock.postCaConnector.mock.calls[0][0].data as any).cacert).toBeUndefined();
+    expect(caConnectorServiceMock.postCaConnector.mock.calls[0][0]?.data.cacert).toBeUndefined();
   });
 
   it("hasChanges should reflect form dirty state", () => {
@@ -200,7 +215,7 @@ describe("NewCaConnectorComponent", () => {
 describe("NewCaConnectorComponent edit mode", () => {
   let component: NewCaConnectorComponent;
   let fixture: ComponentFixture<NewCaConnectorComponent>;
-  let caConnectorServiceMock: any;
+  let caConnectorServiceMock: MockCaConnectorService;
   let dialogService: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
   let router: Router;
@@ -233,8 +248,8 @@ describe("NewCaConnectorComponent edit mode", () => {
       ]
     }).compileComponents();
 
-    caConnectorServiceMock = TestBed.inject(CaConnectorService);
-    (caConnectorServiceMock as any).caConnectors.set([existingConnector]);
+    caConnectorServiceMock = TestBed.inject(CaConnectorService) as unknown as MockCaConnectorService;
+    caConnectorServiceMock.caConnectors.set([existingConnector]);
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     router = TestBed.inject(Router);
@@ -269,9 +284,7 @@ describe("NewCaConnectorComponent edit mode", () => {
 
     caConnectorServiceMock.getCaSpecificOptions.mockRejectedValueOnce(new Error("fail"));
     component.loadAvailableCas();
-    try {
-      await caConnectorServiceMock.getCaSpecificOptions.mock.results[1].value;
-    } catch {}
+    await expect(caConnectorServiceMock.getCaSpecificOptions.mock.results[1].value).rejects.toThrow("fail");
     await new Promise((r) => setTimeout(r, 0));
     expect(component.isLoadingCas()).toBe(false);
   });
@@ -284,7 +297,7 @@ describe("NewCaConnectorComponent edit mode", () => {
   });
 
   describe("onCancel", () => {
-    let mockDialogRef: any;
+    let mockDialogRef: { afterClosed: jest.Mock };
 
     beforeEach(() => {
       mockDialogRef = { afterClosed: jest.fn() };

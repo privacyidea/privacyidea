@@ -52,20 +52,20 @@ export interface AuditData {
   date?: string;
   duration?: number;
   info?: string;
-  log_level?: any;
+  log_level?: string;
   missing_line?: string;
   number?: number;
-  policies?: any;
+  policies?: string;
   privacyidea_server?: string;
-  realm?: any;
-  resolver?: any;
+  realm?: string;
+  resolver?: string;
   serial?: string;
   sig_check?: string;
   startdate?: string;
   success?: boolean;
   thread_id?: string;
-  token_type?: any;
-  user?: any;
+  token_type?: string;
+  user?: string;
   user_agent?: string;
   user_agent_version?: string;
 }
@@ -248,7 +248,7 @@ export class AuditService implements AuditServiceInterface {
           a.click();
           window.URL.revokeObjectURL(url);
         },
-        error: (_) => {
+        error: () => {
           this.notificationService.error($localize`Failed to download audit log.`);
         }
       });

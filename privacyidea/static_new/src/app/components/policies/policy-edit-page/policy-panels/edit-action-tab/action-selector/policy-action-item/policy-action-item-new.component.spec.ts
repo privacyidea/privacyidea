@@ -17,24 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
-
-@Component({
-  selector: "app-selector-buttons",
-  template: "",
-  standalone: true
-})
-class MockSelectorButtonsComponent {
-  initialValue = input<any>();
-  values = input.required<any[]>();
-  onSelect = output<any>();
-  focusFirst = jest.fn();
-}
 
 describe("PolicyActionItemComponent", () => {
   let component: PolicyActionItemComponent;

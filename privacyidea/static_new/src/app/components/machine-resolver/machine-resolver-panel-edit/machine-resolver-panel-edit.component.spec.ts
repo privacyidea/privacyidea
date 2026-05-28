@@ -57,7 +57,6 @@ describe("MachineResolverPanelEditComponent", () => {
   let fixture: ComponentFixture<MachineResolverPanelEditComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let dialogServiceMock: MockDialogService;
-  let notificationServiceMock: MockNotificationService;
   let contentServiceMock: MockContentService;
   let pendingChangesService: MockPendingChangesService;
 
@@ -95,7 +94,6 @@ describe("MachineResolverPanelEditComponent", () => {
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 

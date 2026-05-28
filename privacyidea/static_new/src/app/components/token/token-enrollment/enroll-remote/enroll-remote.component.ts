@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, inject, input, OnInit, signal, output } from '@angular/core';
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -56,13 +56,11 @@ export class EnrollRemoteComponent implements OnInit {
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   enrollmentData = input<RemoteEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: RemoteEnrollmentData;
       mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
-    } | null
-  >();
+    } | null>();
   disabled = input<boolean>(false);
 
   checkPinLocally = signal<boolean>(false);

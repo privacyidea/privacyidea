@@ -37,12 +37,12 @@ export class RadiusConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly RADIUS_SERVER = RADIUS_SERVER;
 
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
+  formDataChange = output<Record<string, string>>();
   radiusServers = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

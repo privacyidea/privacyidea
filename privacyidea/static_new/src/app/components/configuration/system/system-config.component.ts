@@ -36,6 +36,29 @@ import { SystemService, SystemServiceInterface } from "@services/system/system.s
 import { isChecked } from "@utils/parse-boolean-value";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
 
+export interface SystemConfigParams {
+  splitAtSign?: boolean;
+  IncFailCountOnFalsePin?: boolean;
+  no_auth_counter?: boolean;
+  PrependPin?: boolean;
+  ReturnSamlAttributes?: boolean;
+  ReturnSamlAttributesOnFail?: boolean;
+  AutoResync?: boolean;
+  UiLoginDisplayHelpButton?: boolean;
+  UiLoginDisplayRealmBox?: boolean;
+  AutoResyncTimeout?: string;
+  OverrideAuthorizationClient?: string;
+  UserCacheExpiration?: string;
+  failcounter_clear_timeout?: string;
+  DefaultChallengeValidityTime?: string;
+  DefaultCountWindow?: string;
+  DefaultMaxFailCount?: string;
+  DefaultOtpLen?: string;
+  DefaultSyncWindow?: string;
+  "recovery.identifier"?: string;
+  [key: string]: string | boolean | undefined;
+}
+
 @Component({
   selector: "app-system-config",
   templateUrl: "./system-config.component.html",
@@ -64,7 +87,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
 
-  params = signal<any>({});
+  params = signal<SystemConfigParams>({});
   isDirty = signal(false);
   smtpIdentifiers: string[] = [];
 
@@ -109,7 +132,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     this.pendingChangesService.registerSave(() => this._saveAndReturn());
   }
 
-  updateParam(key: string, value: any): void {
+  updateParam(key: string, value: string | boolean): void {
     this.params.set({ ...this.params(), [key]: value });
     this.isDirty.set(true);
   }
@@ -122,14 +145,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     const body = { ...this.params() };
 
     this.systemService.saveSystemConfig(body).subscribe({
-      next: (response: any) => {
-        if (response.result.status) {
+      next: (response) => {
+        if (response.result?.status) {
           this.notificationService.success("System configuration saved successfully.");
         } else {
           this.notificationService.error("Failed to save system configuration.");
         }
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error saving system configuration:", error);
         this.notificationService.error("Error saving system configuration.");
       }
@@ -139,8 +162,8 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   private _saveAndReturn(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       this.systemService.saveSystemConfig({ ...this.params() }).subscribe({
-        next: (response: any) => {
-          if (response.result.status) {
+        next: (response) => {
+          if (response.result?.status) {
             this.notificationService.success("System configuration saved successfully.");
             resolve(true);
           } else {
@@ -158,14 +181,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
 
   deleteUserCache(): void {
     this.systemService.deleteUserCache().subscribe({
-      next: (response: any) => {
-        if (response.result.status) {
+      next: (response) => {
+        if (response.result?.status) {
           this.notificationService.success("User cache deleted successfully.");
         } else {
           this.notificationService.error("Failed to delete user cache.");
         }
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error deleting user cache:", error);
         this.notificationService.error("Error deleting user cache.");
       }
@@ -185,7 +208,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
           data: { documentation }
         });
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error loading system documentation:", error);
         this.notificationService.error("Error loading system documentation.");
       }

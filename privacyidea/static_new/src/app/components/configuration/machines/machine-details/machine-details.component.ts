@@ -88,7 +88,7 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
   editingIds = new Set<number>();
-  editedOptions: { [id: number]: Record<string, any> } = {};
+  editedOptions: Record<number, Record<string, string>> = {};
 
   constructor() {
     this.routeMachineId = this.route.snapshot.paramMap.get("id");

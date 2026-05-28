@@ -30,13 +30,10 @@ import { BehaviorSubject } from "rxjs";
 import { EventEditPageComponent } from "./event-edit-page.component";
 
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  unobserve() {}
-  takeRecords() {
-    return [];
-  }
+  disconnect = jest.fn();
+  observe = jest.fn();
+  unobserve = jest.fn();
+  takeRecords = (): IntersectionObserverEntry[] => [];
 } as any;
 
 const mockEventHandler: EventHandler = {

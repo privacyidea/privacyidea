@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, EventEmitter, Input, Output, WritableSignal } from "@angular/core";
+import { Component, Input, WritableSignal, output } from '@angular/core';
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -58,8 +58,8 @@ export class ContainerAddTokenComponent {
   @Input({ required: true }) tokenOptions!: any[];
   @Input() inputClass = "margin-bottom-16 input-width-xl";
 
-  @Output() pageEvent = new EventEmitter<PageEvent>();
-  @Output() filterInput = new EventEmitter<Event>();
-  @Output() clearFilter = new EventEmitter<void>();
-  @Output() addToken = new EventEmitter<any>();
+  pageEvent = output<PageEvent>();
+  filterInput = output<Event>();
+  clearFilter = output<void>();
+  addToken = output<any>();
 }

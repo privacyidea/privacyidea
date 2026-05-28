@@ -23,7 +23,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
 import { Tokens, TokenService } from "@services/token/token.service";
-import { UserAttributePolicy, UserData, UserService } from "./user.service";
+import { EditUserData, UserAttributePolicy, UserData, UserService } from "./user.service";
 
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
@@ -375,7 +375,6 @@ describe("UserService", () => {
 
   describe("selectedUser", () => {
     let contentService: MockContentService;
-    let tokenService: MockTokenService;
     let authService: MockAuthService;
 
     beforeEach(() => {
@@ -574,7 +573,7 @@ describe("UserService", () => {
   describe("UserService createUser", () => {
     it("should create user successfully", () => {
       const resolver = "test";
-      const userData = { username: "new-user" } as any;
+      const userData: EditUserData = { username: "new-user" };
       let resultValue: boolean | undefined;
       userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -587,7 +586,7 @@ describe("UserService", () => {
 
     it("should handle shallow failure of creating user", () => {
       const resolver = "test";
-      const userData = { username: "new-user" } as any;
+      const userData: EditUserData = { username: "new-user" };
       let resultValue: boolean | undefined;
       userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -600,7 +599,7 @@ describe("UserService", () => {
 
     it("should handle create user failure", () => {
       const resolver = "test";
-      const userData = { username: "fail-user" } as any;
+      const userData: EditUserData = { username: "fail-user" };
       let resultValue: boolean | undefined;
       userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -618,7 +617,7 @@ describe("UserService", () => {
   describe("UserService editUser", () => {
     it("should edit user successfully", () => {
       const resolver = "test";
-      const userData = { username: "edit-user" } as any;
+      const userData: EditUserData = { username: "edit-user" };
       let resultValue: boolean | undefined;
       userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -631,7 +630,7 @@ describe("UserService", () => {
 
     it("should handle shallow edit user failure", () => {
       const resolver = "test";
-      const userData = { username: "edit-user" } as any;
+      const userData: EditUserData = { username: "edit-user" };
       let resultValue: boolean | undefined;
       userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -644,7 +643,7 @@ describe("UserService", () => {
 
     it("should handle edit user failure", () => {
       const resolver = "test";
-      const userData = { username: "fail-user" } as any;
+      const userData: EditUserData = { username: "fail-user" };
       let resultValue: boolean | undefined;
       userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;

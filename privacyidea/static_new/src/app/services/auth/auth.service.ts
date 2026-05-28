@@ -33,6 +33,13 @@ import { Observable, catchError, tap, throwError } from "rxjs";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
+export interface ContainerWizardConfig {
+  enabled: boolean;
+  type: string;
+  registration: boolean;
+  template: string | null;
+}
+
 export interface AuthData {
   log_level: number;
   menus: string[];
@@ -69,12 +76,7 @@ export interface AuthData {
   logout_redirect_url: string;
   require_description: string[];
   rss_age: number;
-  container_wizard: {
-    enabled: boolean;
-    type: string;
-    registration: boolean;
-    template: string | null;
-  };
+  container_wizard: ContainerWizardConfig;
 }
 
 export interface JwtData {
@@ -180,7 +182,7 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
-  authenticate(params: any): Observable<AuthResponse>;
+  authenticate(params: Record<string, string>): Observable<AuthResponse>;
   acceptAuthentication(): void;
   logout(): void;
   actionAllowed(action: PolicyAction): boolean;
@@ -293,7 +295,7 @@ export class AuthService implements AuthServiceInterface {
     });
   }
 
-  authenticate(params: any): Observable<AuthResponse> {
+  authenticate(params: Record<string, string>): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({

@@ -163,7 +163,7 @@ export class MachineResolverPanelNewComponent implements OnInit, OnDestroy {
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
-    } catch (error) {
+    } catch {
       return false;
     }
     this.resetMachineResolver();

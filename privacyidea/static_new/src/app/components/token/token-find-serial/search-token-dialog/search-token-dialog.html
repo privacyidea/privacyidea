@@ -4,7 +4,7 @@
   [actions]="[action]"
   [showCancelButton]="true"
   (close)="close()"
-  (onAction)="onAction($event)">
+  (action)="onAction($event)">
   <div>
     <p i18n>
       This search request will check {{ data }} tokens in the system for the given OTP value.

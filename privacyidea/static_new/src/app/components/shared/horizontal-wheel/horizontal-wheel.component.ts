@@ -18,19 +18,19 @@
  **/
 
 import {
-    AfterViewInit,
-    ChangeDetectionStrategy,
-    Component,
-    ElementRef,
-    EventEmitter,
-    HostListener,
-    Input,
-    Output,
-    Signal,
-    WritableSignal,
-    effect,
-    linkedSignal,
-    viewChildren
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  ElementRef,
+  HostListener,
+  inject,
+  Input,
+  linkedSignal,
+  output,
+  Signal,
+  viewChildren,
+  WritableSignal
 } from "@angular/core";
 
 @Component({
@@ -42,21 +42,17 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  @Input({ required: true }) values!: Signal<any[]>;
-  @Input({ required: true }) initialValue!: any;
-  @Output() onSelect: EventEmitter<string> = new EventEmitter<string>();
+  @Input({ required: true }) values!: Signal<string[]>;
+  @Input({ required: true }) initialValue!: string;
+  itemSelected = output<string>();
 
-  // Linked signal will not work here. Computation will not be called when values change.
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
     source: () => this.values(),
     computation: (source, previous) => {
-      if (source.length === 0 && !previous) {
-        return null;
-      }
       if (previous?.value) {
         return previous.value;
       }
-      return this.initialValue || source[0];
+      return this.initialValue || source[0] || "";
     }
   });
 
@@ -65,11 +61,12 @@ export class HorizontalWheelComponent implements AfterViewInit {
   startX = 0;
   scrollLeft = 0;
 
+  private elementRef = inject(ElementRef);
   private containerElement: HTMLElement | null = null;
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
-  constructor(private elementRef: ElementRef) {
-    effect(() => this.onSelect.emit(this.selectedValue()));
+  constructor() {
+    effect(() => this.itemSelected.emit(this.selectedValue()));
 
     effect(() => {
       this.items();
@@ -160,7 +157,6 @@ export class HorizontalWheelComponent implements AfterViewInit {
   }
 
   onItemClick(e: MouseEvent, index: number) {
-    const walk = e.pageX - this.startX;
     // Check if a drag movement occurred to prevent click event.
     if (this.isDragging) return;
     e.preventDefault();
@@ -199,8 +195,8 @@ export class HorizontalWheelComponent implements AfterViewInit {
     this.scrollLeft = this.containerElement.scrollLeft;
   }
 
-  @HostListener("window:mouseup", ["$event"])
-  onMouseUp(e: MouseEvent) {
+  @HostListener("window:mouseup")
+  onMouseUp() {
     this.isMouseDown = false;
     if (this.isDragging) {
       // Delay isDragging false to prevent click event after dragging.

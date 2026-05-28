@@ -28,9 +28,6 @@ describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsMachineComponent;
   let fixture: ComponentFixture<TokenDetailsMachineComponent>;
 
-  let machineService: MockMachineService;
-  let contentService: MockContainerService;
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenDetailsMachineComponent],
@@ -41,9 +38,6 @@ describe("TokenDetailsInfoComponent", () => {
         { provide: ContentService, useClass: MockContainerService }
       ]
     }).compileComponents();
-
-    machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
-    contentService = TestBed.inject(ContentService) as unknown as MockContainerService;
 
     fixture = TestBed.createComponent(TokenDetailsMachineComponent);
     component = fixture.componentInstance;

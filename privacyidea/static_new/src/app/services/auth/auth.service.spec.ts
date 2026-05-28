@@ -41,7 +41,6 @@ describe("AuthService", () => {
   let authService: AuthService;
   let httpMock: HttpTestingController;
   let mockLocal: MockLocalService;
-  let mockVersioning: MockVersioningService;
   let routerMock: { url: string; navigate: jest.Mock };
   let notifications: MockNotificationService;
 
@@ -67,9 +66,8 @@ describe("AuthService", () => {
     authService = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
     mockLocal = TestBed.inject(LocalService) as any;
-    mockVersioning = TestBed.inject(VersioningService) as any;
     notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockReturnValue();
     ensureAtob();
   });
 
@@ -109,7 +107,7 @@ describe("AuthService", () => {
   });
 
   describe("check rights", () => {
-    let jwtData = {
+    const jwtData = {
       username: "alice",
       realm: "defrealm",
       nonce: "fake_nonce",
@@ -180,7 +178,7 @@ describe("AuthService", () => {
   });
 
   describe("checkForceServerGenerateOTPKey", () => {
-    let jwtData = {
+    const jwtData = {
       username: "alice",
       realm: "defrealm",
       nonce: "fake_nonce",

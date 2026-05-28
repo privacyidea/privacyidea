@@ -30,19 +30,20 @@ import { MatSelectModule } from "@angular/material/select";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
+import { PiResponse } from "@app/app.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
 import { Observable } from "rxjs";
 
-export type SshMachineAssignDialogData = {
+export interface SshMachineAssignDialogData {
   tokenSerial: string;
   tokenDetails: Record<string, any>;
   tokenType: string;
-};
+}
 
 @Component({
-  selector: "token-ssh-machine-attach-dialog",
+  selector: "app-token-ssh-machine-attach-dialog",
   styleUrls: ["./token-ssh-machine-attach-dialog.component.scss"],
   templateUrl: "./token-ssh-machine-attach-dialog.component.html",
   standalone: true,
@@ -61,7 +62,7 @@ export type SshMachineAssignDialogData = {
 })
 export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponent<
   SshMachineAssignDialogData,
-  Observable<any> | null
+  Observable<PiResponse<number>> | null
 > {
   /// Data for the dialog ///
   private applicationService: ApplicationServiceInterface = inject(ApplicationService);
@@ -85,7 +86,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   availableApplications = linkedSignal({
     source: this.applicationService.applications,
     computation: (source) => {
-      var availableApps = [];
+      const availableApps = [];
       if (source.ssh.options.sshkey.service_id.value.length > 0) {
         availableApps.push("ssh");
       }
@@ -129,11 +130,11 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   selectedMachineForm = form(this.selectedMachineValue, (f) => {
     validate(f, (ctx) => {
       const value = ctx.value();
-      if (!value) return [{ kind: "required" as any }];
-      if (typeof value === "string") return [{ kind: "required" as any }];
+      if (!value) return [{ kind: "required" }];
+      if (typeof value === "string") return [{ kind: "required" }];
       const machine = value as Machine;
       if (!machine.id || !machine.hostname || !machine.ip || !machine.resolver_name) {
-        return [{ kind: "invalidMachine" as any }];
+        return [{ kind: "invalidMachine" }];
       }
       return [];
     });
@@ -149,10 +150,8 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     required(f);
   });
 
-  isFormValid = computed(() =>
-    this.selectedMachineForm().valid() &&
-    this.selectedServiceIdForm().valid() &&
-    this.selectedUserForm().valid()
+  isFormValid = computed(
+    () => this.selectedMachineForm().valid() && this.selectedServiceIdForm().valid() && this.selectedUserForm().valid()
   );
 
   constructor() {
@@ -202,7 +201,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
       resolver: machine!.resolver_name
     });
     request.subscribe({
-      next: (_) => {
+      next: () => {
         this.machineService.machinesResource.reload();
         this.machineService.tokenApplicationResource.reload();
       },

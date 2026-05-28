@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Directive, ElementRef, HostListener, OnDestroy, Renderer2 } from "@angular/core";
+import { Directive, ElementRef, HostListener, inject, OnDestroy, Renderer2 } from "@angular/core";
 
 @Directive({
   selector: "[appScrollToTop]",
@@ -28,10 +28,10 @@ export class ScrollToTopDirective implements OnDestroy {
   private isButtonVisible = false;
   private clickListenerDispose?: () => void;
 
-  constructor(
-    private el: ElementRef,
-    private renderer: Renderer2
-  ) {
+  private el = inject(ElementRef);
+  private renderer = inject(Renderer2);
+
+  constructor() {
     this.createButton();
   }
 

@@ -46,7 +46,7 @@ describe("QuestionnaireConfigComponent", () => {
   it("should emit formDataChange when updateFormData is called", () => {
     jest.spyOn(component.formDataChange, "emit");
     const newValue = 10;
-    component.updateFormData(QUESTION_NUMBER_OF_ANSWERS, newValue);
+    component.updateFormData(QUESTION_NUMBER_OF_ANSWERS, newValue); // FIX: in html it can only be string, but we test it with number. Invastigate the type of value in updateFormData and adjust.
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [QUESTION_NUMBER_OF_ANSWERS]: newValue });
   });
 
@@ -60,12 +60,12 @@ describe("QuestionnaireConfigComponent", () => {
     expect(component.formData()[QUESTION_NUMBER_OF_ANSWERS]).toEqual(7);
   });
 
-  it("should emit onAddQuestion when addQuestion is called with text", () => {
-    jest.spyOn(component.onAddQuestion, "emit");
+  it("should emit addQuestionRequest when addQuestion is called with text", () => {
+    jest.spyOn(component.addQuestionRequest, "emit");
     const questionText = "What is your favorite color?";
     component.newQuestionText.set(questionText);
     component.addQuestion();
-    expect(component.onAddQuestion.emit).toHaveBeenCalledWith(questionText);
+    expect(component.addQuestionRequest.emit).toHaveBeenCalledWith(questionText);
   });
 
   it("should clear newQuestionText after adding a question", () => {
@@ -76,18 +76,18 @@ describe("QuestionnaireConfigComponent", () => {
     expect(component.newQuestionText()).toBe("");
   });
 
-  it("should not emit onAddQuestion when addQuestion is called with empty text", () => {
-    jest.spyOn(component.onAddQuestion, "emit");
+  it("should not emit addQuestionRequest when addQuestion is called with empty text", () => {
+    jest.spyOn(component.addQuestionRequest, "emit");
     component.newQuestionText.set("");
     component.addQuestion();
-    expect(component.onAddQuestion.emit).not.toHaveBeenCalled();
+    expect(component.addQuestionRequest.emit).not.toHaveBeenCalled();
   });
 
-  it("should emit onDeleteEntry when deleteEntry is called", () => {
-    jest.spyOn(component.onDeleteEntry, "emit");
+  it("should emit deleteRequest when deleteEntry is called", () => {
+    jest.spyOn(component.deleteRequest, "emit");
     const keyToDelete = "question.question.1";
     component.deleteEntry(keyToDelete);
-    expect(component.onDeleteEntry.emit).toHaveBeenCalledWith(keyToDelete);
+    expect(component.deleteRequest.emit).toHaveBeenCalledWith(keyToDelete);
   });
 
   it("should handle multiple question keys", () => {

@@ -90,7 +90,7 @@ describe("ApplicationService", () => {
     req.flush(MockPiResponse.fromValue(apiApplications));
     await Promise.resolve();
 
-    let applications = applicationService.applications();
+    const applications = applicationService.applications();
     expect(applications).toEqual(apiApplications);
   });
 

@@ -24,10 +24,10 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 
-export type GetSerialResultDialogData = {
+export interface GetSerialResultDialogData {
   foundSerial: string;
   otpValue: string;
-};
+}
 
 export type GetSerialResultDialogReturn = "reset";
 

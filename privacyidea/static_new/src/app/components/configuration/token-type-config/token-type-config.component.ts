@@ -120,7 +120,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     source: () => this.systemService.systemConfig(),
     computation: (config) => ({ ...config })
   });
-  nextQuestionIndex = linkedSignal<any, number>({
+  nextQuestionIndex = linkedSignal<Record<string, string>, number>({
     source: () => this.systemService.systemConfig(),
     computation: (config) => {
       let max = -1;
@@ -135,7 +135,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
       return max + 1;
     }
   });
-  pendingDeletes = linkedSignal<any, Set<string>>({
+  pendingDeletes = linkedSignal<Record<string, string>, Set<string>>({
     source: () => this.systemService.systemConfig(),
     computation: () => new Set<string>()
   });
@@ -171,7 +171,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   hashLibs = computed<string[]>(() => this.systemConfigInit()?.hashlibs ?? ["sha1", "sha256", "sha512"]);
   totpSteps = computed<string[]>(() => {
     const steps = this.systemConfigInit()?.totpSteps ?? [30, 60];
-    return (Array.isArray(steps) ? steps : [steps]).map((s: any) => String(s));
+    return (Array.isArray(steps) ? steps : [steps]).map((s) => String(s));
   });
 
   expandedPanel: string | null = null;
@@ -220,11 +220,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   deleteQuestion(key: string) {
-    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+    const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f };
       delete next[key];
       return next;
     });
@@ -240,11 +240,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   deleteSystemEntry(key: string) {
-    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+    const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f };
       delete next[key];
       return next;
     });
@@ -276,13 +276,14 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
             headers: this.authService.getHeaders()
           })
         );
-        if (response?.result?.value) {
+        const generatedKey = response?.result?.value;
+        if (generatedKey) {
           this.formData.update((f) => ({
             ...f,
-            [`yubikey.apiid.${apiId}`]: response.result?.value
+            [`yubikey.apiid.${apiId}`]: generatedKey
           }));
         }
-      } catch (e) {
+      } catch {
         this.notificationService.error($localize`Failed to generate API key.`);
       }
     } else {
@@ -316,7 +317,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         this.notificationService.error($localize`Failed to save token configuration.`);
         return false;
       }
-    } catch (e) {
+    } catch {
       this.notificationService.error($localize`Error saving token configuration.`);
       return false;
     }
@@ -326,7 +327,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  onCheckboxChange(key: string, event: any) {
+  onCheckboxChange(key: string, event: { checked: boolean }) {
     this.formData.update((f) => ({
       ...f,
       [key]: event.checked ? "True" : "False"

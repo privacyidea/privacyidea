@@ -94,7 +94,11 @@
                 <app-copyable [copyText]="element.serial">
                   <a
                     (click)="serialClicked(element)"
-                    class="flex ali-center">
+                    (keydown.enter)="serialClicked(element)"
+                    (keydown.space)="$event.preventDefault(); serialClicked(element)"
+                    class="flex ali-center"
+                    role="button"
+                    tabindex="0">
                     {{ element.serial }}
                   </a>
                 </app-copyable>

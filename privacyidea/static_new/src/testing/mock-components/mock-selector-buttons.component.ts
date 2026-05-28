@@ -16,16 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+
+import { Component, input, output } from "@angular/core";
 
 @Component({
-  selector: "app-copyable",
+  selector: "app-selector-buttons",
   standalone: true,
-  imports: [CopyButtonComponent],
-  templateUrl: "./copyable.component.html",
-  styleUrl: "./copyable.component.scss"
+  template: ""
 })
-export class CopyableComponent {
-  copyText = input("");
+export class MockSelectorButtonsComponent<T> {
+  readonly initialValue = input.required<T | undefined>();
+  readonly values = input.required<T[]>();
+  readonly labels = input<T[] | undefined>(undefined);
+  readonly allowDeselect = input<boolean>(false);
+  readonly disabled = input<boolean>(false);
+  readonly valueSelected = output<T | undefined>();
+  focusFirst = jest.fn();
 }

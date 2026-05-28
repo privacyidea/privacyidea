@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, OnInit, output, signal } from '@angular/core';
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -74,14 +74,12 @@ export class EnrollTotpComponent implements OnInit {
   readonly timeStepOptions = [30, 60];
 
   enrollmentData = input<TotpEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  wizard = input(false);
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: TotpEnrollmentData;
       mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
-    } | null
-  >();
+    } | null>();
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("totp"));
@@ -103,7 +101,7 @@ export class EnrollTotpComponent implements OnInit {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled() || this.generateOnServer() || this.twoStepEnabled());
   });
 

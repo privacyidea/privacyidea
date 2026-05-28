@@ -40,7 +40,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
   let component: TokenApplicationsSshComponent;
 
-  let mockTokenService: Partial<TokenService> = {};
+  const mockTokenService: Partial<TokenService> = {};
   let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {

@@ -83,8 +83,8 @@ export class TemplateAddedTokenRowComponent {
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
 
   readonly index = input.required<number>();
-  readonly onEditToken = output<Partial<TokenEnrollmentPayload>>();
-  readonly onRemoveToken = output<number>();
+  readonly editTokenRequest = output<Partial<TokenEnrollmentPayload>>();
+  readonly removeTokenRequest = output<number>();
 
   // State Signals
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
@@ -94,12 +94,12 @@ export class TemplateAddedTokenRowComponent {
 
   readonly enrollmentArgsGetterSignal = signal<enrollmentArgsGetterFn | null>(null);
 
-  readonly tokenEnrollmentData = linkedSignal<any, Partial<TokenEnrollmentData> | null>({
+  readonly tokenEnrollmentData = linkedSignal({
     source: () => ({
       payload: this.tokenEnrollmentPayload(),
       enrollmentArgsGetter: this.enrollmentArgsGetterSignal()
     }),
-    computation: (source) => {
+    computation: (source): Partial<TokenEnrollmentData> | null => {
       const mapper = getTokenApiPayloadMapper(source.payload?.type);
       if (!mapper) return null;
       const enrollmentData = mapper.fromApiPayload(source.payload);
@@ -117,18 +117,18 @@ export class TemplateAddedTokenRowComponent {
   }
 
   // Token Management Methods
-  updateAdditionalFormFields(fields: Record<string, any>) {
+  updateAdditionalFormFields(fields: Record<string, unknown>) {
     this.childHadForm.set(Object.keys(fields).length > 0);
   }
 
   toggleUserAssign(checked: boolean) {
     this.userAssign.set(checked);
-    this.onEditToken.emit({ user: checked });
+    this.editTokenRequest.emit({ user: checked });
   }
 
   removeToken() {
     if (this.index() >= 0) {
-      this.onRemoveToken.emit(this.index());
+      this.removeTokenRequest.emit(this.index());
     }
   }
 
@@ -146,8 +146,7 @@ export class TemplateAddedTokenRowComponent {
     });
     if (args) {
       const mappedData = args.mapper.toApiPayload(args.data);
-      this.onEditToken.emit(mappedData);
+      this.editTokenRequest.emit(mappedData);
     }
   }
-
 }

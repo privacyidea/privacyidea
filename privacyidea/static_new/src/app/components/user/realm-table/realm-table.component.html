@@ -293,7 +293,7 @@
                             <div class="resolver-priority-item">
                               <span class="priority-label">{{ r.name }}</span>
                               <input
-                                (input)="setNewRealmResolverPriority(group.id, r.name, $event.target['value'])"
+                                (input)="setNewRealmResolverPriority({ nodeId: group.id, resolverName: r.name, priority: $any($event.target).value })"
                                 [value]="r.priority"
                                 class="resolver-priority-input"
                                 max="999"

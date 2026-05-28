@@ -37,8 +37,6 @@ describe("NewSmtpServerComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
 
-  beforeEach(() => {});
-
   afterEach(() => {
     jest.clearAllMocks();
   });

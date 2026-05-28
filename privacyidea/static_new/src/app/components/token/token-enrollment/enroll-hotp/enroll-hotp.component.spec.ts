@@ -30,9 +30,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
   let fixture: ComponentFixture<EnrollHotpComponent>;
-  let tokenService: MockTokenService;
   let authService: MockAuthService;
-  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -50,9 +48,7 @@ describe("EnrollHotpComponent", () => {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
 
-    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
     jest.spyOn(component.additionalFormFieldsChange, "emit");
     jest.spyOn(component.enrollmentArgsGetterChange, "emit");

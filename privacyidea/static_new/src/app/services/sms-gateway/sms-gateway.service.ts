@@ -95,7 +95,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   });
 
   async postSmsGateway(gateway: any): Promise<void> {
-    const request = this.http.post<PiResponse<any>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success($localize`Successfully saved SMS gateway.`);
@@ -109,7 +109,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   }
 
   async deleteSmsGateway(name: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${encodeURIComponent(name)}`, {
+    const request = this.http.delete<PiResponse<number>>(`${this.baseUrl}/${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

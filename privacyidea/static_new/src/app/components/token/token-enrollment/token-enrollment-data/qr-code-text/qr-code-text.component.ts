@@ -28,5 +28,5 @@ import { Component, Input } from "@angular/core";
 export class QrCodeTextComponent {
   @Input() tokenType!: string;
   @Input() url!: string;
-  @Input() showRegenerateText: boolean = true;
+  @Input() showRegenerateText = true;
 }

@@ -20,7 +20,7 @@
 import { Component, computed, signal } from "@angular/core";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-import { form, FormField, required, validate } from "@angular/forms/signals";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";

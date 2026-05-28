@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, linkedSignal, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -75,14 +75,12 @@ export class EnrollDaypasswordComponent implements OnInit {
   ];
 
   enrollmentData = input<DaypasswordEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  wizard = input(false);
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: DaypasswordEnrollmentData;
       mapper: DaypasswordApiPayloadMapper;
-    } | null
-  >();
+    } | null>();
   disabled = input<boolean>(false);
 
   generateOnServer = signal<boolean>(true);
@@ -97,7 +95,7 @@ export class EnrollDaypasswordComponent implements OnInit {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
   });
 

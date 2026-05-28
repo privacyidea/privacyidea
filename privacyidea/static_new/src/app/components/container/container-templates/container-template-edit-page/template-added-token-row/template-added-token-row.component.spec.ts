@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, output } from '@angular/core';
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
@@ -29,7 +29,7 @@ import { TemplateAddedTokenRowComponent } from "./template-added-token-row.compo
   template: ""
 })
 class MockEnrollHotpComponent {
-  @Output() additionalFormFieldsChange = new EventEmitter<any>();
+  additionalFormFieldsChange = output<Record<string, unknown>>();
 }
 
 describe("TemplateAddedTokenRowComponent", () => {
@@ -77,7 +77,7 @@ describe("TemplateAddedTokenRowComponent", () => {
 
     it("should emit onRemoveToken when delete button is clicked", () => {
       fixture.componentRef.setInput("index", 5);
-      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      const spy = jest.spyOn(component.removeTokenRequest, "emit");
       fixture.detectChanges();
 
       const deleteBtn = fixture.debugElement.query(By.css("button[mat-icon-button]"));
@@ -87,12 +87,15 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("emits onEditToken when the enrollmentArgsGetter is registered and returns args", () => {
-      const spy = jest.spyOn(component.onEditToken, "emit");
+      const spy = jest.spyOn(component.editTokenRequest, "emit");
       fixture.detectChanges();
 
       component.updateEnrollmentArgsGetter((data) => ({
-        data: { ...data, testKey: "updatedValue" } as any,
-        mapper: { toApiPayload: (d: any) => d } as any
+        data: { ...data, testKey: "updatedValue" } as TokenEnrollmentData,
+        mapper: {
+          toApiPayload: (d: TokenEnrollmentData) => d as unknown as TokenEnrollmentPayload,
+          fromApiPayload: (d: TokenEnrollmentPayload) => d as unknown as TokenEnrollmentData
+        } as TokenApiPayloadMapper<TokenEnrollmentData>
       }));
 
       expect(spy).toHaveBeenCalledWith(
@@ -137,7 +140,7 @@ describe("TemplateAddedTokenRowComponent", () => {
 
     it("should handle invalid index by not emitting remove event", () => {
       fixture.componentRef.setInput("index", -1);
-      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      const spy = jest.spyOn(component.removeTokenRequest, "emit");
       fixture.detectChanges();
 
       component.removeToken();

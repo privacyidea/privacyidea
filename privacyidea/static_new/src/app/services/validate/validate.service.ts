@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -54,13 +54,46 @@ export interface ValidateCheckDetail {
 
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
+export interface WebAuthnSignRequestCredential {
+  id: string;
+  type?: PublicKeyCredentialType;
+  transports?: AuthenticatorTransport[];
+}
+
+export interface WebAuthnSignRequest {
+  challenge: string;
+  allowCredentials: WebAuthnSignRequestCredential[];
+  rpId: string;
+  userVerification: UserVerificationRequirement;
+  timeout?: number;
+}
+
+export interface PasskeyInitDetail {
+  passkey: {
+    challenge: string;
+    rpId: string;
+    transaction_id: string;
+  };
+}
+
+export type PasskeyInitResponse = PiResponse<boolean, PasskeyInitDetail>;
+
+export interface PasskeyCheckParams {
+  transaction_id: string;
+  credential_id: string;
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string;
+}
+
 export interface ValidateServiceInterface {
   testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
   authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
 
   authenticateWebAuthn(args: {
-    signRequest: any;
+    signRequest: WebAuthnSignRequest;
     transaction_id: string;
     username: string;
     isTest?: boolean;
@@ -94,7 +127,7 @@ export class ValidateService implements ValidateServiceInterface {
         { headers }
       )
       .pipe(
-        catchError((error: any) => {
+        catchError((error: HttpErrorResponse) => {
           console.error("Failed to test token.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error("Failed to test token. " + message);
@@ -110,13 +143,13 @@ export class ValidateService implements ValidateServiceInterface {
     }
     return from(PublicKeyCredential.isConditionalMediationAvailable()).pipe(
       switchMap(() => {
-        return this.http.post<any>(`${this.baseUrl}initialize`, {
+        return this.http.post<PasskeyInitResponse>(`${this.baseUrl}initialize`, {
           type: "passkey"
         });
       }),
-      switchMap((initResponse: any) => {
+      switchMap((initResponse) => {
         const data = initResponse.detail.passkey;
-        let userVerification: UserVerificationRequirement = "required";
+        const userVerification: UserVerificationRequirement = "required";
         return from(
           navigator.credentials.get({
             publicKey: {
@@ -126,16 +159,16 @@ export class ValidateService implements ValidateServiceInterface {
             }
           })
         ).pipe(
-          switchMap((credential: any) => {
-            const params = {
+          switchMap((credential) => {
+            const pkCredential = credential as PublicKeyCredential;
+            const response = pkCredential.response as AuthenticatorAssertionResponse;
+            const params: PasskeyCheckParams = {
               transaction_id: data.transaction_id,
-              credential_id: credential.id,
-              authenticatorData: this.base64Service.bytesToBase64(
-                new Uint8Array(credential.response.authenticatorData)
-              ),
-              clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(credential.response.clientDataJSON)),
-              signature: this.base64Service.bytesToBase64(new Uint8Array(credential.response.signature)),
-              userHandle: this.base64Service.bytesToBase64(new Uint8Array(credential.response.userHandle))
+              credential_id: pkCredential.id,
+              authenticatorData: this.base64Service.bytesToBase64(new Uint8Array(response.authenticatorData)),
+              clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(response.clientDataJSON)),
+              signature: this.base64Service.bytesToBase64(new Uint8Array(response.signature)),
+              userHandle: this.base64Service.bytesToBase64(new Uint8Array(response.userHandle!))
             };
             return args?.isTest
               ? this.http.post<AuthResponse>(`${this.baseUrl}check`, params)
@@ -143,7 +176,7 @@ export class ValidateService implements ValidateServiceInterface {
           })
         );
       }),
-      catchError((error: any) => {
+      catchError((error: HttpErrorResponse) => {
         console.error("Error during passkey authentication", error);
         const errorMessage = error.error?.result?.error?.message || error.message || "Error during authentication";
         this.notificationService.error(errorMessage);
@@ -153,7 +186,7 @@ export class ValidateService implements ValidateServiceInterface {
   }
 
   authenticateWebAuthn(args: {
-    signRequest: any;
+    signRequest: WebAuthnSignRequest;
     transaction_id: string;
     username: string;
     isTest?: boolean;
@@ -166,11 +199,12 @@ export class ValidateService implements ValidateServiceInterface {
     try {
       const signRequest = args.signRequest;
 
-      const publicKey: any = {
-        challenge: this.base64Service.webAuthnBase64DecToArr(signRequest.challenge),
-        allowCredentials: signRequest.allowCredentials.map((cred: any) => ({
+      const publicKey: PublicKeyCredentialRequestOptions = {
+        challenge: this.base64Service.webAuthnBase64DecToArr(signRequest.challenge) as BufferSource,
+        allowCredentials: signRequest.allowCredentials.map((cred) => ({
           ...cred,
-          id: this.base64Service.webAuthnBase64DecToArr(cred.id)
+          type: cred.type ?? ("public-key" as PublicKeyCredentialType),
+          id: this.base64Service.webAuthnBase64DecToArr(cred.id) as BufferSource
         })),
         rpId: signRequest.rpId,
         userVerification: signRequest.userVerification,
@@ -178,16 +212,18 @@ export class ValidateService implements ValidateServiceInterface {
       };
 
       return from(navigator.credentials.get({ publicKey })).pipe(
-        switchMap((credential: any) => {
+        switchMap((credential) => {
+          const pkCredential = credential as PublicKeyCredential;
+          const response = pkCredential.response as AuthenticatorAssertionResponse;
           const finalParams = {
             transaction_id: args.transaction_id,
             username: args.username,
-            credential_id: credential.id, // This is already base64url encoded
-            authenticatorData: this.base64Service.webAuthnBase64EncArr(credential.response.authenticatorData),
-            clientDataJSON: this.base64Service.webAuthnBase64EncArr(credential.response.clientDataJSON),
-            signature: this.base64Service.webAuthnBase64EncArr(credential.response.signature),
-            userHandle: credential.response.userHandle
-              ? this.base64Service.utf8ArrToStr(credential.response.userHandle)
+            credential_id: pkCredential.id, // This is already base64url encoded
+            authenticatorData: this.base64Service.webAuthnBase64EncArr(response.authenticatorData),
+            clientDataJSON: this.base64Service.webAuthnBase64EncArr(response.clientDataJSON),
+            signature: this.base64Service.webAuthnBase64EncArr(response.signature),
+            userHandle: response.userHandle
+              ? this.base64Service.utf8ArrToStr(new Uint8Array(response.userHandle))
               : null
           };
 
@@ -195,7 +231,7 @@ export class ValidateService implements ValidateServiceInterface {
             ? this.http.post<AuthResponse>(`${this.baseUrl}check`, finalParams)
             : this.authenticationService.authenticate(finalParams);
         }),
-        catchError((error: any) => {
+        catchError((error: HttpErrorResponse) => {
           console.error("Error during WebAuthn authentication", error);
           const errorMessage =
             error.error?.result?.error?.message || error.message || "Error during WebAuthn authentication";
@@ -214,7 +250,7 @@ export class ValidateService implements ValidateServiceInterface {
   pollTransaction(transactionId: string): Observable<boolean> {
     const headers = this.authService.getHeaders();
     return this.http
-      .get<PiResponse<boolean, any>>(`${this.baseUrl}polltransaction`, {
+      .get<PiResponse<boolean>>(`${this.baseUrl}polltransaction`, {
         params: {
           transaction_id: transactionId
         },
@@ -224,7 +260,7 @@ export class ValidateService implements ValidateServiceInterface {
         map((response) => {
           return response.result?.authentication === "ACCEPT" && response.result?.value === true;
         }),
-        catchError((error: any) => {
+        catchError((error: HttpErrorResponse) => {
           console.error("Failed to poll transaction.", error);
           const message = error.error?.result?.error?.message || "Polling for transaction failed.";
           this.notificationService.error(message);

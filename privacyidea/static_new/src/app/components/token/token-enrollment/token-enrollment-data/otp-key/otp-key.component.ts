@@ -33,5 +33,5 @@ import {
 })
 export class OtpKeyComponent {
   @Input() otpKeyHex!: string;
-  @Input() otpKeyBase32: string = "";
+  @Input() otpKeyBase32 = "";
 }

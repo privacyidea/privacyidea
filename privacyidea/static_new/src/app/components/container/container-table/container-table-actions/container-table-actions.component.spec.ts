@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatMenuTrigger } from "@angular/material/menu";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -111,7 +112,7 @@ describe("ContainerTableActionsComponent", () => {
       tableUtilsService.toggleBooleanInFilter.mockReturnValue(newFilter);
       const setSpy = jest.spyOn(containerService.containerFilter, "set");
       const openMenu = jest.fn();
-      jest.spyOn(component, "advancedFilterTrigger").mockReturnValue({ openMenu } as any);
+      jest.spyOn(component, "advancedFilterTrigger").mockReturnValue({ openMenu } as Partial<MatMenuTrigger> as MatMenuTrigger);
 
       component.onAdvancedFilterClick("assigned");
 

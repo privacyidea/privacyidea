@@ -29,14 +29,10 @@ export type ThemeMode = "light" | "dark" | "system";
 export class ThemeService {
   public readonly currentTheme = signal<ThemeMode>("system");
   private readonly visualTheme = signal<"light" | "dark">("light");
-  private renderer: Renderer2;
-  private htmlElement: HTMLHtmlElement;
+  private rendererFactory = inject(RendererFactory2);
+  private renderer: Renderer2 = this.rendererFactory.createRenderer(null, null);
+  private htmlElement: HTMLHtmlElement = inject(DOCUMENT).documentElement as HTMLHtmlElement;
   private mediaQueryListener?: (event: MediaQueryListEvent) => void;
-
-  constructor(private rendererFactory: RendererFactory2) {
-    this.renderer = this.rendererFactory.createRenderer(null, null);
-    this.htmlElement = inject(DOCUMENT).documentElement as HTMLHtmlElement;
-  }
 
   public initializeTheme(): void {
     const savedTheme = localStorage.getItem(APP_THEME_STORAGE_KEY) as ThemeMode;

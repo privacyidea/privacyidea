@@ -159,7 +159,7 @@ export class UserTableComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof UserData;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: UserData, b: UserData) => {
       const va = (a?.[key] ?? "").toString().toLowerCase();
       const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;

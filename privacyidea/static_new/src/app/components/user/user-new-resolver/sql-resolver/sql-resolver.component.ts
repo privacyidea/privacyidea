@@ -27,6 +27,12 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ResolverService, SQLResolverData } from "@services/resolver/resolver.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 
+interface SqlPreset {
+  name: string;
+  table: string;
+  map: string;
+}
+
 interface SqlFormModel {
   Driver: string;
   Server: string;
@@ -138,7 +144,7 @@ export class SqlResolverComponent {
   isDirty = () => this.sqlForm().dirty();
   getValue = () => this.model();
 
-  applySqlPreset(preset: any): void {
+  applySqlPreset(preset: SqlPreset): void {
     this.model.update(m => ({
       ...m,
       Table: preset.table,

@@ -82,7 +82,7 @@ export class ContainerTemplateEditPageComponent {
   initTemplate = signal<ContainerTemplate | null>(null);
 
   // --- State Signals ---
-  readonly template = linkedSignal<any, ContainerTemplate>({
+  readonly template = linkedSignal<{ initialData: ContainerTemplate; defaultType: string }, ContainerTemplate>({
     source: () => ({
       initialData: this.initTemplate() ?? this.containerTemplateService.emptyContainerTemplate,
       defaultType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
