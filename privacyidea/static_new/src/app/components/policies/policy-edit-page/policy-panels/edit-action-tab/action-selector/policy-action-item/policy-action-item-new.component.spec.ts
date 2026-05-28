@@ -156,6 +156,13 @@ describe("PolicyActionItemComponent", () => {
   });
 
   describe("inputIsValid", () => {
+    it("should return false when actionValue is empty", () => {
+      fixture.componentRef.setInput("actionValue", "");
+      fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "desc" } });
+      fixture.detectChanges();
+      expect(component.inputIsValid()).toBe(false);
+    });
+
     it("should return false when actionValue is undefined", () => {
       fixture.componentRef.setInput("actionValue", undefined);
       fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "desc" } });
