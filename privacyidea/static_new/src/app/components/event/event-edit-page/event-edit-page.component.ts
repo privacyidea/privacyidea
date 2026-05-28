@@ -234,14 +234,14 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
     this.hasChanges.set(true);
   }
 
-  setNewOptions(options: Record<string, unknown>): void {
+  setNewOptions(options: any): void {
     const current = this.editEvent().options || {};
     if (JSON.stringify(options) === JSON.stringify(current)) return;
     this.editEvent.set({ ...this.editEvent(), options });
     this.hasChanges.set(true);
   }
 
-  setNewConditions(conditions: Record<string, unknown>): void {
+  setNewConditions(conditions: any): void {
     this.editEvent.set({ ...this.editEvent(), conditions });
     this.hasChanges.set(true);
   }
@@ -261,7 +261,7 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
     this.hasChanges.set(true);
   }
 
-  getSaveParameters(): Record<string, unknown> {
+  getSaveParameters(): EventHandlerSaveParams {
     type EventHandlerParams = EventHandlerSaveParams & { options?: Record<string, unknown> };
     const eventParams = deepCopy(this.editEvent()) as unknown as EventHandlerParams;
     const options = eventParams.options ?? {};

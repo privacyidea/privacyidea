@@ -42,6 +42,8 @@ export interface EnrollmentResponseDetail {
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
   verify?: { message: string };
+  registrationcode?: string;
+  otps?: string[];
 
   [key: string]: unknown;
 }

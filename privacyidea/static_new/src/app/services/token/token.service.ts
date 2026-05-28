@@ -175,19 +175,14 @@ export interface TokenType {
 
 export interface WebAuthnRegisterRequest {
   attestation: string;
-  authenticatorSelection: {
-    userVerification: string;
-  };
+  authenticatorSelection: AuthenticatorSelectionCriteria;
   displayName: string;
   message: string;
   name: string;
   nonce: string;
   excludeCredentials?: { id: string; type: string; transports?: string[] }[];
   extensions?: Record<string, unknown>;
-  pubKeyCredAlgorithms: {
-    alg: number;
-    type: string;
-  }[];
+  pubKeyCredAlgorithms: PublicKeyCredentialParameters[];
   relyingParty: {
     id: string;
     name: string;
@@ -1110,7 +1105,10 @@ export class TokenService implements TokenServiceInterface {
       switchMap(() => {
         return this.getTokenDetails(this.tokenSerial());
       }),
-      takeWhile((response: any) => response.result?.value.tokens[0].rollout_state === "clientwait", true),
+      takeWhile(
+        (response: PiResponse<Tokens>) => response.result?.value?.tokens[0].rollout_state === "clientwait",
+        true
+      ),
       catchError((error) => {
         console.error("Failed to poll token state.", error);
         const message = error.error?.result?.error?.message || "";

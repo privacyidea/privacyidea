@@ -160,7 +160,7 @@ export class ClientsComponent {
           if (property === "lastseen") {
             return item.lastseen ? item.lastseen.getTime() : 0;
           }
-          return (item as any)[property];
+          return item[property as keyof FlattenedClientRow] as string | number;
         };
         return dataSource;
       }

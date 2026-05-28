@@ -19,17 +19,20 @@
 
 import { CommonModule, NgClass } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   effect,
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
+  OnInit,
   Renderer2,
   signal,
   untracked,
   ViewChild,
-  WritableSignal, OnInit, AfterViewInit, OnDestroy
+  WritableSignal
 } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -39,8 +42,6 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
-import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import {
   ContainerCreatedDialogComponent,
   ContainerCreationDialogData
@@ -54,6 +55,8 @@ import {
   ContainerTokensEnrolledDialogData
 } from "@components/container/container-create/container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
 import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
+import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
@@ -148,7 +151,6 @@ export class ContainerCreateComponent implements OnInit, AfterViewInit, OnDestro
   userStorePassphrase = signal(false);
 
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
-  pollResponse = signal<any>(null);
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
   constructor() {

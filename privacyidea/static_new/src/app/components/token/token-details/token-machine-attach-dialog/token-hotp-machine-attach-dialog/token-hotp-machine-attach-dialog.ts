@@ -32,17 +32,11 @@ export interface HotpMachineAssignDialogData {
 }
 
 @Component({
-  selector: "token-ssh-machine-attach-dialog",
+  selector: "app-token-hotp-machine-attach-dialog",
   styleUrls: ["./token-hotp-machine-attach-dialog.component.scss"],
   templateUrl: "./token-hotp-machine-attach-dialog.component.html",
   standalone: true,
-  imports: [
-    FormField,
-    MatInputModule,
-    MatButtonModule,
-    MatDialogModule,
-    DialogWrapperComponent
-  ]
+  imports: [FormField, MatInputModule, MatButtonModule, MatDialogModule, DialogWrapperComponent]
 })
 export class TokenHotpMachineAssignDialogComponent extends AbstractDialogComponent<
   HotpMachineAssignDialogData,

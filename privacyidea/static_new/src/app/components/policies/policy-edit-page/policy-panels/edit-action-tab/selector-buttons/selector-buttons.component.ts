@@ -36,7 +36,7 @@ export class SelectorButtonsComponent<T> {
   readonly disabled = input<boolean>(false);
 
   // Outputs
-  readonly onSelect = output<T | undefined>();
+  readonly valueSelected = output<T | undefined>();
 
   // Component State
   selectedValue: WritableSignal<T | undefined> = linkedSignal({
@@ -55,12 +55,12 @@ export class SelectorButtonsComponent<T> {
     if (this.selectedValue() === value) {
       if (this.allowDeselect()) {
         this.selectedValue.set(undefined);
-        this.onSelect.emit(undefined);
+        this.valueSelected.emit(undefined);
       }
       return;
     }
     this.selectedValue.set(value);
-    this.onSelect.emit(value);
+    this.valueSelected.emit(value);
   }
 
   public focusFirst(): void {

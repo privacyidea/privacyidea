@@ -18,7 +18,7 @@
 -->
 <app-dialog-wrapper
   (close)="close()"
-  (onAction)="onAction($event)"
+  (action)="onAction($event)"
   [actions]="actions()"
   i18n-title="@@tokenEnrolledTitle"
   title="Token Successfully Enrolled">
@@ -33,7 +33,6 @@
         (switchRoute)="onSwitchRoute()"
         [rollover]="data.rollover ?? false"
         [serial]="serial"></app-token-enrolled-text>
-
     }
     <div class="flex-row gap-16">
       @if (showQRCode() && qrCode) {

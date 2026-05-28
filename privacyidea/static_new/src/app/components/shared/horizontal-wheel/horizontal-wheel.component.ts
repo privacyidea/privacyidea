@@ -45,7 +45,7 @@ import {
 export class HorizontalWheelComponent implements AfterViewInit {
   @Input({ required: true }) values!: Signal<any[]>;
   @Input({ required: true }) initialValue!: any;
-  @Output() onSelect: EventEmitter<string> = new EventEmitter<string>();
+  @Output() itemSelected: EventEmitter<string> = new EventEmitter<string>();
 
   // Linked signal will not work here. Computation will not be called when values change.
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
@@ -71,7 +71,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
   constructor() {
-    effect(() => this.onSelect.emit(this.selectedValue()));
+    effect(() => this.itemSelected.emit(this.selectedValue()));
 
     effect(() => {
       this.items();

@@ -64,7 +64,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
 
-  params = signal<any>({});
+  params = signal<Record<string, string | boolean>>({});
   isDirty = signal(false);
   smtpIdentifiers: string[] = [];
 
@@ -109,7 +109,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     this.pendingChangesService.registerSave(() => this._saveAndReturn());
   }
 
-  updateParam(key: string, value: any): void {
+  updateParam(key: string, value: string | boolean): void {
     this.params.set({ ...this.params(), [key]: value });
     this.isDirty.set(true);
   }
