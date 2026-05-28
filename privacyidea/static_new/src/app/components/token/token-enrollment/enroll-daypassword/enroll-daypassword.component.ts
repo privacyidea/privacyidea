@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, Input, linkedSignal, OnInit, signal, output } from '@angular/core';
+import { Component, computed, effect, inject, input, linkedSignal, OnInit, output, signal } from '@angular/core';
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -75,7 +75,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   ];
 
   enrollmentData = input<DaypasswordEnrollmentData>();
-  @Input() wizard = false;
+  wizard = input(false);
   additionalFormFieldsChange = output<Record<string, unknown>>();
   enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: DaypasswordEnrollmentData;

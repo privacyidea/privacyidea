@@ -69,7 +69,7 @@ describe("UserNewResolverComponent", () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            paramMap: of({ get: (_key: string) => "" })
+            paramMap: of({ get: () => "" })
           }
         },
         {

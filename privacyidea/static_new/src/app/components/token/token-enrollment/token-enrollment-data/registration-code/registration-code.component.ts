@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input } from "@angular/core";
+import { Component, input } from "@angular/core";
 import {
   MatAccordion,
   MatExpansionPanel,
@@ -32,5 +32,5 @@ import {
   styleUrl: "./registration-code.component.scss"
 })
 export class RegistrationCodeComponent {
-  @Input() registrationCode!: string;
+  registrationCode = input.required<string>();
 }

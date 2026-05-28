@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, Input, OnInit, output } from '@angular/core';
+import { Component, inject, input, OnInit, output } from '@angular/core';
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -40,7 +40,7 @@ export class EnrollSpassComponent implements OnInit {
   protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(SpassApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Input() wizard = false;
+  wizard = input(false);
   additionalFormFieldsChange = output<Record<string, unknown>>();
   enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: SpassEnrollmentData;

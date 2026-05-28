@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input, OnInit, inject, signal, output } from '@angular/core';
+import { Component, inject, input, OnInit, output, signal } from '@angular/core';
 import { MatDialogRef } from "@angular/material/dialog";
 import { PiResponse } from "@app/app.component";
 import {
@@ -49,7 +49,7 @@ export class EnrollPushComponent implements OnInit {
 
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
-  @Input() wizard = false;
+  wizard = input(false);
   additionalFormFieldsChange = output<Record<string, unknown>>();
   enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: PushEnrollmentData;
