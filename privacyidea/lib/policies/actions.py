@@ -20,6 +20,7 @@ class PolicyAction:
     CHALLENGETEXT_HEADER = "challenge_text_header"
     CHALLENGETEXT_FOOTER = "challenge_text_footer"
     GETCHALLENGES = "getchallenges"
+    CANCELCHALLENGE = "cancelchallenge"
     COPYTOKENPIN = "copytokenpin"
     COPYTOKENUSER = "copytokenuser"
     DEFAULT_TOKENTYPE = "default_tokentype"

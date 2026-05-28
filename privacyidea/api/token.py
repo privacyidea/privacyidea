@@ -434,7 +434,7 @@ def get_challenges_api(serial=None):
 
 @token_blueprint.route('/challenges/transaction/<transaction_id>', methods=['DELETE'])
 @admin_required
-@prepolicy(check_base_action, request, action=PolicyAction.GETCHALLENGES)
+@prepolicy(check_base_action, request, action=PolicyAction.CANCELCHALLENGE)
 @event("token_cancelchallenge", request, g)
 @log_with(log)
 def cancel_challenge_api(transaction_id):

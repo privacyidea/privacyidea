@@ -181,9 +181,15 @@ def fake_redis_in_store(fake: FakeRedis | None = None, enable_challenges: bool =
     store['_redis_client'] = fake
 
     flag_key = 'PI_REDIS_CACHE_CHALLENGES'
+    url_key = 'PI_REDIS_URL'
     had_flag = flag_key in current_app.config
+    had_url = url_key in current_app.config
     old_flag = current_app.config.get(flag_key)
+    old_url = current_app.config.get(url_key)
     current_app.config[flag_key] = enable_challenges
+    # redis_cache_configured() checks PI_REDIS_URL independent of the live
+    # client, so the cleanup paths need it stubbed too.
+    current_app.config[url_key] = "redis://fake:6379/0"
     try:
         yield fake
     finally:
@@ -199,6 +205,10 @@ def fake_redis_in_store(fake: FakeRedis | None = None, enable_challenges: bool =
             current_app.config[flag_key] = old_flag
         else:
             current_app.config.pop(flag_key, None)
+        if had_url:
+            current_app.config[url_key] = old_url
+        else:
+            current_app.config.pop(url_key, None)
 
 
 def _make_dto(serial='SE_CACHE_1', txn='txn-test-001', challenge='abc',

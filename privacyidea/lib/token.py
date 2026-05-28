@@ -2696,12 +2696,11 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         token_object.reset()
                         token_object.post_success()
 
-                    # Clean up all challenges with this transaction_id
+                    # Clean up all challenges with this transaction_id from
+                    # both Redis (when active) and the DB.
+                    from privacyidea.lib.challenge import cancel_challenge
                     transaction_id = options.get("transaction_id") or options.get("state")
-                    session = db.session
-                    stmt = delete(Challenge).where(Challenge.transaction_id == str(transaction_id))
-                    session.execute(stmt)
-                    session.commit()
+                    cancel_challenge(str(transaction_id))
                     # Authentication is successful, stop here
                     break
 

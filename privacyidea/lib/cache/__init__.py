@@ -1,6 +1,7 @@
 from privacyidea.lib.cache.redis import (  # noqa: F401
     get_redis,
     redis_feature_enabled,
+    redis_cache_configured,
     cache_challenge,
     evict_challenge,
     evict_challenges_for_serial,

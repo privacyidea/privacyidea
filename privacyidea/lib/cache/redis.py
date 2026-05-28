@@ -37,10 +37,33 @@ per-feature flag is set.
 """
 import json
 import logging
+import time
 from datetime import datetime
+from urllib.parse import urlparse, urlunparse
 
 from privacyidea.lib.framework import get_app_config_value, get_app_local_store
 from privacyidea.models.utils import utc_now
+
+# How long to wait before retrying connection after a failed init attempt.
+# Keeps boot-order races (worker starts before Redis container is ready) from
+# permanently disabling the cache, without hammering a genuinely down Redis
+# server on every request.
+_INIT_RETRY_COOLDOWN_SECONDS = 30
+
+
+def _redact_url(url: str) -> str:
+    """Strip any user:password embedded in a Redis URL before logging."""
+    try:
+        parts = urlparse(url)
+        if parts.username or parts.password:
+            host = parts.hostname or ""
+            if parts.port:
+                host = f"{host}:{parts.port}"
+            netloc = f"***@{host}" if (parts.username or parts.password) else host
+            return urlunparse(parts._replace(netloc=netloc))
+        return url
+    except Exception:
+        return "<redis-url>"
 
 log = logging.getLogger(__name__)
 
@@ -57,34 +80,51 @@ def get_redis():
     """
     Return a connected Redis client if PI_REDIS_URL is configured, else None.
 
-    The client is initialised once per Flask app instance (per worker) and
-    cached in the app-local store.  If the initial connection fails, or if any
-    later operation fails, the client is set to None for the lifetime of the
-    worker — so Redis is never retried and can never add latency to auth
-    requests after a failure.
+    Connection lifecycle:
+
+    * Successful connect: client is cached in the app-local store for the
+      lifetime of the worker.
+    * Runtime failure (``_disable_redis``): one-way latch — never retried,
+      avoids paying timeouts on every subsequent auth request.
+    * Initial connect failure: *not* latched. A bounded cooldown
+      (``_INIT_RETRY_COOLDOWN_SECONDS``) gates the next attempt so a brief
+      boot-order race (worker up before Redis container) doesn't permanently
+      disable caching, but a Redis that is genuinely down doesn't get
+      hammered either.
     """
     store = get_app_local_store()
-    if '_redis_initialized' not in store:
-        store['_redis_initialized'] = True
-        url = get_app_config_value('PI_REDIS_URL')
-        if url:
-            try:
-                import redis as redis_lib
-                client = redis_lib.Redis.from_url(
-                    url,
-                    decode_responses=True,
-                    socket_connect_timeout=2,
-                    socket_timeout=2,
-                )
-                client.ping()
-                store['_redis_client'] = client
-                log.info("Redis cache connected (%s).", url)
-            except Exception as e:
-                log.warning("Redis not available at '%s': %s — falling back to DB only.", url, e)
-                store['_redis_client'] = None
-        else:
-            store['_redis_client'] = None
-    return store.get('_redis_client')
+    client = store.get('_redis_client')
+    if client is not None:
+        return client
+    # Runtime _disable_redis sets this flag — honor it as a permanent latch.
+    if store.get('_redis_runtime_disabled'):
+        return None
+    url = get_app_config_value('PI_REDIS_URL')
+    if not url:
+        return None
+    now = time.monotonic()
+    retry_after = store.get('_redis_init_retry_after', 0)
+    if now < retry_after:
+        return None
+    try:
+        import redis as redis_lib
+        client = redis_lib.Redis.from_url(
+            url,
+            decode_responses=True,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        client.ping()
+        store['_redis_client'] = client
+        store.pop('_redis_init_retry_after', None)
+        log.info("Redis cache connected (%s).", _redact_url(url))
+        return client
+    except Exception as e:
+        store['_redis_init_retry_after'] = now + _INIT_RETRY_COOLDOWN_SECONDS
+        log.warning("Redis not available at '%s': %s — falling back to DB only "
+                    "(will retry in %ds).",
+                    _redact_url(url), e, _INIT_RETRY_COOLDOWN_SECONDS)
+        return None
 
 
 def redis_feature_enabled(feature: str) -> bool:
@@ -102,6 +142,55 @@ def redis_feature_enabled(feature: str) -> bool:
     return bool(get_app_config_value(key, False))
 
 
+def redis_cache_configured(feature: str) -> bool:
+    """
+    Return True if the operator has *configured* this Redis cache, regardless
+    of whether the current worker still has a live client.
+
+    Cleanup paths (challenge eviction, token/container deletion) need this
+    weaker check: once a worker has tripped ``_disable_redis`` locally, the
+    shared Redis instance may still hold this token's challenges, and other
+    healthy workers can still resolve them. So we must still attempt eviction
+    rather than silently leaving entries behind.
+    """
+    if not get_app_config_value('PI_REDIS_URL'):
+        return False
+    key = f"PI_REDIS_CACHE_{feature.upper()}"
+    return bool(get_app_config_value(key, False))
+
+
+def _redis_for_cleanup():
+    """
+    Return a Redis client suitable for a best-effort cleanup operation.
+
+    Uses the cached client when available; otherwise attempts a single fresh
+    connection (without caching it) so that a worker which previously
+    disabled Redis after a runtime failure can still try to evict entries
+    that other workers may still see. Bypasses both the runtime-disable
+    latch and the init-retry cooldown. Returns None on failure.
+    """
+    store = get_app_local_store()
+    client = store.get('_redis_client')
+    if client is not None:
+        return client
+    url = get_app_config_value('PI_REDIS_URL')
+    if not url:
+        return None
+    try:
+        import redis as redis_lib
+        client = redis_lib.Redis.from_url(
+            url,
+            decode_responses=True,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        client.ping()
+        return client
+    except Exception as e:
+        log.debug("Best-effort Redis reconnect for cleanup failed: %s", e)
+        return None
+
+
 def _disable_redis(e: Exception):
     """
     Mark Redis as unavailable for this worker after an operation-level failure.
@@ -114,6 +203,9 @@ def _disable_redis(e: Exception):
     log.warning("Redis operation failed: %s — disabling cache for this worker.", e)
     store = get_app_local_store()
     store['_redis_client'] = None
+    # Runtime failures are a one-way latch — distinguish them from init-time
+    # failures so get_redis() does not re-establish the client.
+    store['_redis_runtime_disabled'] = True
 
 
 class ChallengeDTO:
@@ -249,10 +341,18 @@ def evict_challenge(transaction_id: str, serial: str):
     """
     Remove a challenge from Redis.
     Called from ChallengeDTO.delete() and can be called on explicit invalidation.
+
+    Uses ``redis_cache_configured`` (config-only) rather than
+    ``redis_feature_enabled`` so a worker that has locally disabled Redis
+    after a runtime failure still attempts the eviction — leaving entries
+    behind would let other healthy workers keep resolving cancelled
+    challenges until TTL.
     """
-    if not redis_feature_enabled("challenges"):
+    if not redis_cache_configured("challenges"):
         return
-    r = get_redis()
+    r = _redis_for_cleanup()
+    if r is None:
+        return
     try:
         pipe = r.pipeline()
         pipe.delete(_TXN_KEY.format(transaction_id))
@@ -272,11 +372,14 @@ def evict_challenges_for_serial(serial: str):
     Used when a token or container is deleted so that in-flight transaction
     IDs cannot continue to resolve against the cache after their owning
     object is gone. Iterates the serial-set and deletes each per-transaction
-    key plus the set itself.
+    key plus the set itself. See ``evict_challenge`` for why this uses the
+    config-only gate instead of ``redis_feature_enabled``.
     """
-    if not redis_feature_enabled("challenges"):
+    if not redis_cache_configured("challenges"):
         return
-    r = get_redis()
+    r = _redis_for_cleanup()
+    if r is None:
+        return
     try:
         serial_key = _SERIAL_KEY.format(serial)
         txn_ids = r.smembers(serial_key)

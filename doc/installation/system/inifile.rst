@@ -429,6 +429,14 @@ round-trip every challenge through a clustered database (e.g. Galera with
 ProxySQL). More workloads (metrics, …) may opt into Redis later; each one ships
 behind its own feature flag and stays off by default.
 
+.. note::
+
+   Redis **7 or later** is required. The challenge cache relies on the
+   ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep per-token TTLs
+   consistent across concurrent writes; these were introduced in Redis 7.
+   Earlier versions will reject the command and the worker will disable the
+   cache for its lifetime on the first write.
+
 Configuration is two-stage:
 
 1. Point privacyIDEA at a Redis instance with ``PI_REDIS_URL``.

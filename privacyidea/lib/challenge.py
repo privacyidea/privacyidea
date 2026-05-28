@@ -34,7 +34,8 @@ import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
-from .cache import evict_challenge, evict_challenges_for_serial, get_challenges_from_cache, redis_feature_enabled
+from .cache import (evict_challenge, evict_challenges_for_serial, get_challenges_from_cache,
+                    redis_cache_configured, redis_feature_enabled)
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -105,10 +106,21 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
-    # When Redis is active and a specific filter is given, serve from cache.
-    # Pagination/sorting are applied in-memory since Redis has no native support.
-    if redis_feature_enabled("challenges") and (serial or transaction_id):
-        cached = get_challenges_from_cache(serial=serial, transaction_id=transaction_id)
+    # When Redis is active and a specific exact-match filter is given, serve
+    # from cache. Wildcard filters like "*foo*" (sent by the admin "List
+    # Challenges" view) cannot be answered by Redis key lookups, so fall
+    # through to the DB path — which, when caching is enabled and challenges
+    # only live in Redis, will return an empty list. That is a known
+    # limitation of the cache-only mode; the unfiltered admin listing
+    # requires Redis-side scanning that we don't implement here.
+    def _is_exact(v):
+        return v is not None and "*" not in v
+
+    if redis_feature_enabled("challenges") and (_is_exact(serial) or _is_exact(transaction_id)):
+        cached = get_challenges_from_cache(
+            serial=serial if _is_exact(serial) else None,
+            transaction_id=transaction_id if _is_exact(transaction_id) else None,
+        )
         if cached is not None:
             # Apply in-memory sort
             reverse = sortdir == "desc"
@@ -216,8 +228,15 @@ def delete_challenges(serial: str = None, transaction_id: str = None, commit: bo
     :return: number of challenges removed across both stores
     """
     removed = 0
-    if redis_feature_enabled("challenges"):
+    # Gate on the configured cache, not on the per-worker live state. A worker
+    # that has locally tripped _disable_redis must still attempt eviction so
+    # cancelled challenges don't linger on the shared Redis instance and get
+    # resolved by other healthy workers until TTL.
+    if redis_cache_configured("challenges"):
         if transaction_id is not None:
+            # The read may still fail (worker locally disabled), so treat a
+            # None return as "unknown" and fall through to the unconditional
+            # evict_challenge call below.
             cached = get_challenges_from_cache(transaction_id=transaction_id) or []
             # Apply the optional serial filter the same way the SQL DELETE would.
             if serial is not None:
@@ -225,6 +244,10 @@ def delete_challenges(serial: str = None, transaction_id: str = None, commit: bo
             for dto in cached:
                 evict_challenge(dto.transaction_id, dto.serial)
                 removed += 1
+            if not cached:
+                # We don't know the serial here, so pass "" — evict_challenge
+                # tolerates that and only the txn key gets deleted.
+                evict_challenge(transaction_id, serial or "")
         elif serial is not None:
             # Iterate the serial-set so we can count removed entries.
             cached = get_challenges_from_cache(serial=serial) or []
