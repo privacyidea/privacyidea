@@ -373,12 +373,12 @@
         <uib-accordion close-others="false">
             <div uib-accordion-group
                  class="panel-default"
-                 is-open="internalAttributesAccordionOpen">
+                 is-open="accordionState.internalAttributesOpen">
                 <uib-accordion-heading>
                     <translate>Internal attributes</translate>
                     <span class="pull-right glyphicon" aria-hidden="true"
-                          ng-class="{'glyphicon-chevron-down': internalAttributesAccordionOpen,
-                                     'glyphicon-chevron-right': !internalAttributesAccordionOpen}">
+                          ng-class="{'glyphicon-chevron-down': accordionState.internalAttributesOpen,
+                                     'glyphicon-chevron-right': !accordionState.internalAttributesOpen}">
                     </span>
                 </uib-accordion-heading>
                 <table class="table table-hover" ng-show="internalAttributesLoaded">
