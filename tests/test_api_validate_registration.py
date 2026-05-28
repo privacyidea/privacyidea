@@ -93,7 +93,6 @@ class RegistrationValidity(MyApiTestCase):
             self.assertEqual("Outside validity period", detail.get("message"), (detail, password))
 
 
-
 class RegistrationAndPasswordToken(MyApiTestCase):
 
     def setUp(self):
