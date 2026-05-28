@@ -106,56 +106,10 @@ describe("EventsSelectionComponent", () => {
     expect(result).toEqual([]);
   });
 
-  it("should reopen autocomplete panel after selecting an option", () => {
-    // Mock the MatAutocompleteTrigger
-    component.autocompleteTrigger = {
-      openPanel: jest.fn()
-    } as any;
-    // Simulate selecting an option
-    const event = { option: { viewValue: "eventB", deselect: jest.fn() } } as any;
-    component.lastSearchTerm = "ev";
-    component.selected(event);
-    setTimeout(() => {
-      // The panel should be reopened
-      expect(component.autocompleteTrigger.openPanel).toHaveBeenCalled();
-    });
-  });
-
-  it("should keep the search term after selecting an option", () => {
-    component.searchTerm.set("ev");
-    component.lastSearchTerm = "ev";
-    const event = { option: { viewValue: "eventB", deselect: jest.fn() } } as any;
-    component.selected(event);
-    // The search term should remain unchanged
-    expect(component.searchTerm()).toBe("ev");
-  });
-
   it("should remove an event and emit the updated list", () => {
     component.selectedEvents.set(["eventA", "eventB"]);
     component.removeEvent("eventA");
     expect(component.selectedEvents()).toEqual(["eventB"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventB"]);
-  });
-
-  it("should update searchTerm and lastSearchTerm on input changes", () => {
-    const event = { target: { value: "foobar" } };
-    component.onSearchInputChanges(event);
-    expect(component.lastSearchTerm).toBe("foobar");
-    expect(component.searchTerm()).toBe("foobar");
-  });
-
-  it("should handle empty string in onSearchInputChanges", () => {
-    const event = { target: { value: "" } };
-    component.onSearchInputChanges(event);
-    expect(component.lastSearchTerm).toBe("");
-    expect(component.searchTerm()).toBe("");
-  });
-
-  it("should clear search term and lastSearchTerm", () => {
-    component.searchTerm.set("something");
-    component.lastSearchTerm = "something";
-    component.clearSearchTerm();
-    expect(component.searchTerm()).toBe("");
-    expect(component.lastSearchTerm).toBe("");
   });
 });

@@ -1,10 +1,97 @@
-@use "styles";
+@use "buttons";
 
-.mat-mdc-form-field-icon-suffix {
-  align-self: flex-end !important;
-  margin-bottom: 8px !important;
+.event-selection-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
 }
 
-.height-unset {
-  height: unset !important;
+.selected-events-container,
+.add-events-container {
+  --mat-expansion-container-background-color: transparent;
+  --mat-expansion-container-elevation-shadow: none;
+  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
+  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.selected-events-empty {
+  color: var(--mat-sys-error);
+  margin: 0;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+.search-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  padding: var(--half-global-padding) 0;
+  width: 100%;
+
+  &:focus {
+    border-bottom-color: var(--mat-sys-primary);
+    outline: none;
+  }
+}
+
+.event-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quarter-global-padding);
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+.event-item {
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-low);
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  gap: var(--global-gap);
+  min-height: 44px;
+  padding: var(--half-global-padding) var(--global-padding);
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container);
+  }
+}
+
+.event-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-event-button {
+  appearance: none;
+  background-color: var(--mat-sys-surface-variant);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  color: var(--mat-sys-on-surface-variant);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  height: 40px;
+  padding: 0;
+  width: 44px;
+
+  &:focus-visible {
+    outline: buttons.$button-focus-outline;
+    outline-offset: 1px;
+  }
 }

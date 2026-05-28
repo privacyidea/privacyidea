@@ -1,51 +1,69 @@
-@use "styles";
-
-.conditions-container {
+.event-conditions-container {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 32px;
+  flex-direction: column;
+  gap: var(--global-gap);
+  width: 100%;
+
+  --mat-expansion-container-background-color: transparent;
+  --mat-expansion-container-elevation-shadow: none;
+  --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
+  --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.configured-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-gap);
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+.search-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  padding: var(--half-global-padding) 0;
   width: 100%;
 }
 
-.condition-column {
-  flex: 1 1 0;
+.search-input:focus {
+  border-bottom-color: var(--mat-sys-primary);
+  outline: none;
 }
 
-// override hover style for read only view to not change on hover
-.selected-actions-container .action-card:hover {
-  background-color: var(--mat-sys-surface-container) !important;
-  color: var(--mat-sys-on-surface) !important;
-  cursor: default !important;
+.conditions-list {
+  overflow: auto;
+  overflow-x: hidden;
 }
 
-.add-conditions-container {
+.selector-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--global-gap);
+
+  .selector-label {
+    min-width: 60px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .flex-1 {
+    flex: 1;
+  }
+}
+
+.flex-column {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
-  overflow: auto;
-}
-
-.small-icon {
-  font-size: 20px; /* or any smaller value you prefer */
-  width: 20px;
-  height: 20px;
-  line-height: 20px;
-  align-self: center;
-}
-
-.add-conditions-list-container {
-  max-height: 22.1rem;
-  overflow-y: scroll;
-  margin-top: calc(var(--global-gap) / 2);
-}
-
-.configured-conditions-list-container {
-  max-height: 30rem;
-  overflow-y: scroll;
-  margin-top: calc(var(--global-gap) / 2);
-}
-
-.mat-mdc-card {
-  border-radius: var(--border-radius);
+  gap: calc(var(--global-gap) / 4);
+  justify-content: center;
 }

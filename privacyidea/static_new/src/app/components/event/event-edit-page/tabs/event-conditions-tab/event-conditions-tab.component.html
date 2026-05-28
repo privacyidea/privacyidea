@@ -17,98 +17,89 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="conditions-container">
-  <div class="condition-column margin-bottom-16">
-    <mat-card>
-      <mat-card-header>
-        <div class="flex margin-bottom-8 gap-8">
-          <mat-icon class="small-icon">add_circle_outline</mat-icon>
-          <h4
-            class="margin-0"
-            i18n>Add New Conditions
-          </h4>
+<div class="event-conditions-container">
+  @if (Object.keys(selectedConditions()).length > 0) {
+    <mat-expansion-panel [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <p i18n>Configured Conditions</p>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="configured-list">
+        <app-event-condition-list
+          [conditions]="selectedConditions()"
+          [action]="'delete'"
+          [emitOnConditionValueChange]="true"
+          [inputRequired]="true"
+          [toolTipText]="removeToolTip"
+          (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
+          [focusConditionName]="addedCondition()"
+          (actionButtonClicked)="removeCondition($event.conditionName)" />
+      </div>
+    </mat-expansion-panel>
+  }
+
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <p i18n>Add New Conditions</p>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <div class="panel-content">
+      @if (availableNonEmptyGroups().length > 1) {
+        <div class="selector-row">
+          <p
+            class="selector-label"
+            i18n>
+            Group:
+          </p>
+          <app-selector-buttons
+            class="flex-1"
+            [values]="availableNonEmptyGroups()"
+            [initialValue]="selectedGroup()"
+            (onSelect)="selectedGroup.set($event ?? '')" />
         </div>
-      </mat-card-header>
+      }
 
-      <mat-card-content>
-        <div class="add-conditions-container expansion-well">
-          <mat-form-field>
-            <mat-label i18n>Search condition ...</mat-label>
-            <app-clearable-input
-              (clearButtonClick)="searchTerm.set('')"
-              [showClearButton]="searchTerm().length > 0">
-              <input
-                matInput
-                type="text"
-                placeholder="Search condition ..."
-                [value]="searchTerm()"
-                (input)="searchTerm.set($event['target']['value'])" />
-            </app-clearable-input>
-          </mat-form-field>
+      <app-clearable-input
+        (clearButtonClick)="searchTerm.set('')"
+        [showClearButton]="searchTerm().length > 0">
+        <input
+          clearableInput
+          type="text"
+          placeholder="Search conditions..."
+          i18n-placeholder
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          class="search-input" />
+      </app-clearable-input>
 
-          <mat-tab-group
-            #conditionTabs
-            mat-stretch-tabs="false"
-            [(selectedIndex)]="selectedGroupIndex"
-            animationDuration="0ms">
-            @for (group of availableGroups(); track $index) {
-              <mat-tab
-                class="overflow-hidden"
-                [disabled]="Object.keys(remainingConditionsByGroup()[group]).length === 0">
-                <ng-template mat-tab-label>
-                  {{ group | titlecase }}
-                </ng-template>
-                <!-- Conditions in Group -->
-                <div class="add-conditions-list-container">
-                  <app-event-condition-list
-                    [conditions]="remainingConditionsByGroup()[group]"
-                    [action]="'add'"
-                    [emitOnConditionValueChange]="false"
-                    [actionOnEnter]="true"
-                    [toolTipText]="addToolTip"
-                    (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
-                    (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"></app-event-condition-list>
-                </div>
-              </mat-tab>
-            }
-          </mat-tab-group>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <div class="condition-column">
-    <mat-card>
-      <mat-card-header>
-        <div class="flex margin-bottom-8 gap-8">
-          <mat-icon class="small-icon">settings</mat-icon>
-          <h4
-            class="margin-0"
-            i18n>Configured Conditions
-          </h4>
-        </div>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div class="configured-conditions-list-container expansion-well">
+      @if (Object.keys(remainingConditionsInSelectedGroup()).length > 0) {
+        <div class="conditions-list">
           <app-event-condition-list
-            [conditions]="selectedConditions()"
-            [action]="'delete'"
-            [emitOnConditionValueChange]="true"
-            [inputRequired]="true"
-            [toolTipText]="removeToolTip"
-            (newConditionValue)="onConditionValueChange($event.conditionName, $event.conditionValue)"
-            [focusConditionName]="addedCondition()"
-            (actionButtonClicked)="removeCondition($event.conditionName)"></app-event-condition-list>
-          @if (Object.keys(selectedConditions()).length === 0) {
-            <div
-              class="italic"
+            [conditions]="remainingConditionsInSelectedGroup()"
+            [action]="'add'"
+            [emitOnConditionValueChange]="false"
+            [actionOnEnter]="true"
+            [toolTipText]="addToolTip"
+            (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
+            (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)" />
+        </div>
+      } @else {
+        <div class="flex-column">
+          @if (searchTerm() !== '') {
+            <p i18n>No conditions match the search filter.</p>
+            <button
+              mat-stroked-button
+              (click)="searchTerm.set('')"
               i18n>
-              No conditions configured yet.
-            </div>
+              Clear Filter
+            </button>
+          } @else {
+            <p i18n>All available conditions have been configured.</p>
           }
         </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
+      }
+    </div>
+  </mat-expansion-panel>
 </div>

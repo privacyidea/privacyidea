@@ -17,59 +17,24 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ENTER } from "@angular/cdk/keycodes";
-import {
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  linkedSignal,
-  model,
-  output,
-  signal,
-  ViewChild,
-  ViewEncapsulation
-} from "@angular/core";
-import {
-  MatAutocomplete,
-  MatAutocompleteSelectedEvent,
-  MatAutocompleteTrigger,
-  MatOption
-} from "@angular/material/autocomplete";
+import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { MatChipsModule } from "@angular/material/chips";
-import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-selection",
-  imports: [
-    MatAutocomplete,
-    MatAutocompleteTrigger,
-    MatChipsModule,
-    MatFormFieldModule,
-    MatHint,
-    MatIcon,
-    MatLabel,
-    MatOption,
-    MatInput,
-    ClearButtonComponent,
-    ErrorStateDirective
-  ],
+  imports: [FormsModule, MatChipsModule, MatExpansionModule, MatIcon, ClearableInputComponent],
   templateUrl: "./event-selection.component.html",
-  styleUrl: "./event-selection.component.scss",
-  encapsulation: ViewEncapsulation.None
+  styleUrl: "./event-selection.component.scss"
 })
 export class EventSelectionComponent {
   protected readonly eventService = inject(EventService);
   events = input.required<string[]>();
   newEvents = output<string[]>();
-
-  toolTipClearSearch = $localize`Clear Search Term`;
 
   selectedEvents = signal<string[]>([]);
   touched = signal(false);
@@ -82,9 +47,7 @@ export class EventSelectionComponent {
     });
   }
 
-  searchTerm = model("");
-  lastSearchTerm = "";
-  readonly separatorKeysCodes: number[] = [ENTER];
+  searchTerm = signal("");
 
   markTouched(): void {
     this.touched.set(true);
@@ -110,21 +73,6 @@ export class EventSelectionComponent {
     }
   }
 
-  @ViewChild("autocompleteTrigger") autocompleteTrigger!: MatAutocompleteTrigger;
-
-  selected(event: MatAutocompleteSelectedEvent): void {
-    this.addEvent(event.option.viewValue);
-    this.searchTerm.set(this.lastSearchTerm);
-    setTimeout(() => {
-      this.autocompleteTrigger.openPanel();
-    });
-  }
-
-  onSearchInputChanges(event: any): void {
-    this.lastSearchTerm = event.target.value;
-    this.searchTerm.set(event.target.value);
-  }
-
   remainingEvents = linkedSignal({
     source: () => ({
       available: this.eventService.availableEvents(),
@@ -136,9 +84,4 @@ export class EventSelectionComponent {
         (event) => !selected.includes(event) && (!search || event.toLowerCase().includes(search.toLowerCase()))
       )
   });
-
-  clearSearchTerm(): void {
-    this.searchTerm.set("");
-    this.lastSearchTerm = "";
-  }
 }
