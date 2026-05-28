@@ -21,7 +21,6 @@
   appScrollToTop
   class="ca-connector-page-layout">
   <div class="ca-connector-page-container">
-
     @if (isEditMode()) {
       <h3
         class="margin-8"
@@ -37,12 +36,8 @@
     }
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
         <button
           (click)="onCancel()"
@@ -62,7 +57,6 @@
     </div>
 
     <div class="ca-connector-form">
-
       <div class="flex-row gap-16">
         <mat-form-field
           appearance="fill"
@@ -80,7 +74,10 @@
             <mat-error i18n>Connector Name is <strong>required</strong></mat-error>
           }
           @if (caConnectorForm.connectorname().errors().some(e => e.kind === 'pattern')) {
-            <mat-error i18n>Connector Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+            <mat-error i18n
+              >Connector Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
+              underscores and hyphens are allowed.</mat-error
+            >
           }
         </mat-form-field>
 
@@ -95,11 +92,13 @@
             required>
             <mat-option
               i18n
-              value="local">Local
+              value="local"
+              >Local
             </mat-option>
             <mat-option
               i18n
-              value="microsoft">Microsoft
+              value="microsoft"
+              >Microsoft
             </mat-option>
           </mat-select>
           @if (caConnectorForm.type().errors().some(e => e.kind === 'required')) {
@@ -108,7 +107,7 @@
         </mat-form-field>
       </div>
 
-      @if (caConnectorModel().type === 'local') {
+      @if (caConnectorModel().type === "local") {
         <h4 i18n>Base Config</h4>
 
         <div class="flex-row gap-16 margin-bottom-16">
@@ -147,7 +146,6 @@
           </mat-form-field>
         </div>
         <div class="flex-row gap-16 margin-bottom-16">
-
           <mat-form-field
             appearance="fill"
             class="input-width-l">
@@ -226,7 +224,8 @@
 
         <h4
           class="margin-top-32"
-          i18n>CRL Configuration
+          i18n>
+          CRL Configuration
         </h4>
         <mat-form-field
           appearance="fill"
@@ -240,8 +239,8 @@
               matInput
               placeholder="/opt/myCA/certs/crl.pem" />
           </app-clearable-input>
-          <mat-hint i18n>This is the CRL file, which is written when a certificate is revoked or the CRL is created
-                         otherwise.
+          <mat-hint i18n
+            >This is the CRL file, which is written when a certificate is revoked or the CRL is created otherwise.
           </mat-hint>
         </mat-form-field>
 
@@ -270,7 +269,7 @@
             <mat-hint i18n>Number of days a new CRL should be generated before the current CRL expires.</mat-hint>
           </mat-form-field>
         </div>
-      } @else if (caConnectorModel().type === 'microsoft') {
+      } @else if (caConnectorModel().type === "microsoft") {
         <h4 i18n>Base Config</h4>
         <div class="flex-row gap-16">
           <mat-form-field
@@ -308,14 +307,16 @@
         <mat-checkbox
           [checked]="caConnectorModel().http_proxy"
           (change)="caConnectorModel.update(m => ({...m, http_proxy: $event.checked}))"
-          i18n>Use HTTP proxy
+          i18n
+          >Use HTTP proxy
         </mat-checkbox>
 
         <h4 i18n>SSL Config</h4>
         <mat-checkbox
           [checked]="caConnectorModel().use_ssl"
           (change)="caConnectorModel.update(m => ({...m, use_ssl: $event.checked}))"
-          i18n>Use SSL
+          i18n
+          >Use SSL
         </mat-checkbox>
 
         @if (caConnectorModel().use_ssl) {

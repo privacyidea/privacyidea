@@ -17,19 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild,
-  viewChild
-} from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
@@ -43,6 +31,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -77,6 +66,7 @@ interface ResolverNameModel {
     MatCardModule,
     PasswdResolverComponent,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     LdapResolverComponent,
     SqlResolverComponent,
     ScimResolverComponent,
@@ -88,7 +78,7 @@ interface ResolverNameModel {
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
 })
-export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
+export class UserNewResolverComponent implements OnDestroy {
   private readonly _resolverService = inject(ResolverService);
   private readonly _notificationService = inject(NotificationService);
   private readonly _router = inject(Router);
@@ -96,14 +86,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
 
-  protected readonly _renderer: Renderer2 = inject(Renderer2);
-
-  private _observer!: IntersectionObserver;
   private _editInitialized = false;
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   ldapResolver = viewChild(LdapResolverComponent);
   sqlResolver = viewChild(SqlResolverComponent);
@@ -218,31 +201,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     );
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) {
-          return;
-        }
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this._renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this._renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this._resolverService.selectedResolverName.set("");
     this._pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   onTypeChange(type: ResolverType): void {

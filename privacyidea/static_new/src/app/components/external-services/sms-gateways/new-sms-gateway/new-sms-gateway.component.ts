@@ -17,19 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject, input,
-  OnDestroy,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
-} from "@angular/core";
+import { Component, computed, effect, inject, input, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
@@ -43,6 +31,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
@@ -79,18 +68,18 @@ const EMPTY_SMS_FORM: SmsFormModel = {
     MatOptionModule,
     MatTableModule,
     ClearableInputComponent,
-    CommonModule
+    CommonModule,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-sms-gateway.component.html",
   styleUrl: "./new-sms-gateway.component.scss"
 })
-export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
+export class NewSmsGatewayComponent implements OnDestroy {
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly renderer = inject(Renderer2);
 
   protected data: SmsGateway | null = null;
   private gatewayName: string | null = null;
@@ -122,12 +111,12 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   parametersDirty = signal(false);
 
   updateParameter(key: string, value: string): void {
-    this.parametersModel.update(m => ({ ...m, [key]: value }));
+    this.parametersModel.update((m) => ({ ...m, [key]: value }));
     this.parametersDirty.set(true);
   }
 
   clearParameter(key: string): void {
-    this.parametersModel.update(m => ({ ...m, [key]: '' }));
+    this.parametersModel.update((m) => ({ ...m, [key]: "" }));
     this.parametersDirty.set(true);
   }
 
@@ -151,12 +140,6 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   });
 
   selectedProvider = signal<SmsProvider | undefined>(undefined);
-
-  private _observer!: IntersectionObserver;
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -287,26 +270,8 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   async save(): Promise<boolean> {
