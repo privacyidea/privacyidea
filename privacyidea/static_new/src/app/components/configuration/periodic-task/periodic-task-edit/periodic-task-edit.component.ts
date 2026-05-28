@@ -19,18 +19,14 @@
 
 import { DatePipe } from "@angular/common";
 import {
-  AfterViewInit,
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
-  Renderer2,
   signal,
   untracked,
-  ViewChild,
   WritableSignal
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -50,6 +46,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -72,6 +69,7 @@ import { firstValueFrom } from "rxjs";
   standalone: true,
   imports: [
     ScrollToTopDirective,
+    StickyHeaderDirective,
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
@@ -97,7 +95,7 @@ import { firstValueFrom } from "rxjs";
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
 })
-export class PeriodicTaskEditComponent implements AfterViewInit, OnDestroy {
+export class PeriodicTaskEditComponent implements OnDestroy {
   protected readonly periodicTaskService: PeriodicTaskServiceInterface = inject(PeriodicTaskService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly systemService = inject(SystemService);
@@ -105,13 +103,6 @@ export class PeriodicTaskEditComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly renderer: Renderer2 = inject(Renderer2);
-
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-
-  private stickyObserver?: IntersectionObserver;
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;
@@ -159,7 +150,7 @@ export class PeriodicTaskEditComponent implements AfterViewInit, OnDestroy {
     if (opt.required) return;
     const options = { ...this.editTask().options };
     if (checked) {
-      options[key] = opt.type === "bool" ? "true" : opt.value ?? "";
+      options[key] = opt.type === "bool" ? "true" : (opt.value ?? "");
     } else {
       delete options[key];
     }
@@ -223,27 +214,8 @@ export class PeriodicTaskEditComponent implements AfterViewInit, OnDestroy {
     this.periodicTaskService.fetchAllModuleOptions();
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    this.stickyObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this.stickyObserver.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.stickyObserver?.disconnect();
   }
 
   hasChanges(): boolean {

@@ -16,18 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
-} from "@angular/core";
+import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
@@ -41,6 +30,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -90,25 +80,19 @@ const EMPTY_RADIUS_FORM: RadiusFormModel = {
     MatIconModule,
     MatTooltip,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-radius-server.component.html",
   styleUrl: "./new-radius-server.component.scss"
 })
-export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
+export class NewRadiusServerComponent implements OnDestroy {
   protected readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
-
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-
-  private observer!: IntersectionObserver;
 
   isEditMode = signal(false);
   isTesting = signal(false);
@@ -163,30 +147,8 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
     return this.authService.actionAllowed("radiusserver_write") && this.radiusForm().valid();
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-      if (shouldFloat) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.observer?.disconnect();
   }
 
   private loadData(data: RadiusServer | null): void {

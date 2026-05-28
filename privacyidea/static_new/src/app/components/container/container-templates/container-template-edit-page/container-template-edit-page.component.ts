@@ -32,6 +32,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 import {
@@ -62,7 +63,8 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatFormFieldModule,
     MatListModule,
     MatCheckboxModule,
-    ContainerTemplateEditComponent
+    ContainerTemplateEditComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./container-template-edit-page.component.html",
   styleUrl: "./container-template-edit-page.component.scss"

@@ -21,7 +21,6 @@
   appScrollToTop
   class="privacyidea-server-page-layout">
   <div class="privacyidea-server-page-container">
-
     @if (isEditMode()) {
       <h3
         class="margin-8"
@@ -37,12 +36,8 @@
     }
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
         <button
           (click)="onCancel()"
@@ -62,7 +57,6 @@
     </div>
 
     <div class="privacyidea-server-form">
-
       <div class="flex-row gap-16 margin-bottom-16">
         <mat-form-field
           appearance="fill"
@@ -80,8 +74,9 @@
             <mat-error i18n>Identifier is <strong>required</strong></mat-error>
           }
           @if (privacyideaForm.identifier().errors().some(e => e.kind === 'pattern')) {
-            <mat-error
-              i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            <mat-error i18n
+              >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+              and hyphens are allowed.
             </mat-error>
           }
           <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
