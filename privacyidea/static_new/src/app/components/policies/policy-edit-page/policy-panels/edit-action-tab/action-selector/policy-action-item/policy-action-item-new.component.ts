@@ -59,7 +59,7 @@ export class PolicyActionItemComponent {
   readonly inputIsValid = computed<boolean>(() => {
     const detail = this.selectableAction().detail;
     const actionValue = this.currentAction()?.value;
-    if (!detail || actionValue === undefined) return false;
+    if (!detail || actionValue === undefined || actionValue === "") return false;
     return this.policyService.actionValueIsValid(detail, actionValue);
   });
   readonly selectActionByName = output<string>();
