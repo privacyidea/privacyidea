@@ -38,7 +38,7 @@ export interface PasskeyFinalizeData extends PasskeyEnrollmentData {
   authenticatorAttachment: string | null;
   transaction_id: string;
   serial: string;
-  credProps?: any;
+  credProps?: CredentialPropertiesOutput;
 }
 
 export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
@@ -49,7 +49,7 @@ export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
   authenticatorAttachment: string | null;
   transaction_id: string;
   serial: string;
-  credProps?: any;
+  credProps?: CredentialPropertiesOutput;
 }
 
 @Injectable({ providedIn: "root" })

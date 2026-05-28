@@ -18,7 +18,7 @@
  **/
 
 import { Component, signal } from "@angular/core";
-import { form, FormField } from "@angular/forms/signals";
+import { FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatCheckbox } from "@angular/material/checkbox";

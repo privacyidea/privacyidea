@@ -77,7 +77,7 @@ export class FilterValueGeneric<T> {
   get rawValue(): string {
     return Array.from(this.filterMap.values())
       .map((option) => {
-        const isDummy = (option as any).isDummy;
+        const isDummy = option instanceof DummyFilterOption;
         if (isDummy && option.value === null) {
           return option.key;
         }
@@ -88,7 +88,7 @@ export class FilterValueGeneric<T> {
 
   get apiFilterString(): string {
     return Array.from([...this.filterMap.values(), ...this.hiddenFilterMap.values()])
-      .filter((option) => !(option as any).isDummy)
+      .filter((option) => !(option instanceof DummyFilterOption))
       .filter((option) => option.value !== null && !/^\**$/.test(option.value!))
       .map((option) => `${option.key}: ${option.value}`)
       .join(" ");
@@ -234,8 +234,8 @@ function parseToMap(text: string): Map<string, string | null> {
     const colonStr = colonMatch[0];
     tempRemaining = tempRemaining.slice(colonStr.length);
 
-    let value: string | null = "";
-    let valMatch: RegExpMatchArray | null = null;
+    let value: string | null;
+    let valMatch: RegExpMatchArray | null;
 
     if ((valMatch = tempRemaining.match(RE_QUOTED_DBL))) {
       value = valMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, "\\");

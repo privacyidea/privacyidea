@@ -157,7 +157,7 @@ export class TokenImportComponent implements OnDestroy, OnInit, AfterViewInit {
           const total = success + failed;
           this.notificationService.success(success + "/" + total + " tokens imported successfully.");
         },
-        error: (error) => {
+        error: () => {
           // error handled in the token service
         }
       });

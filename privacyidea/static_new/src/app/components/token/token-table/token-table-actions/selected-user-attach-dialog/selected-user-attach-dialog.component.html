@@ -20,7 +20,7 @@
   [title]="'Assign Selected Token to User'"
   [showCancelButton]="true"
   [actions]="actions()"
-  (onAction)="onAction($event)"
+  (action)="onAction($event)"
   (close)="onCancel()">
   @if (selectionContainsAssignedToken()) {
     <p

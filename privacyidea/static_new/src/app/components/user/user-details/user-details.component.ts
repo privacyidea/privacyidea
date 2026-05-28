@@ -126,7 +126,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   };
   readonly excludedKeys = new Set(["editable"]);
   customAttributeKeys: Signal<Set<string>> = computed(() => {
-    const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
+    const attributeKeys = Object.values(this.userService.userAttributesList()).map((attribute) => attribute.key);
     return new Set(attributeKeys);
   });
 

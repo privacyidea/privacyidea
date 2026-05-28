@@ -67,7 +67,7 @@ export class FourEyesApiPayloadMapper
 
   override fromApiPayload(payload: FourEyesEnrollmentPayload): FourEyesEnrollmentData {
     const requiredTokenOfRealms = Object.entries(payload["4eyes"] || {})
-      .filter(([_, value]) => value.selected)
+      .filter(([, value]) => value.selected)
       .map(([realm, value]) => ({
         realm,
         tokens: value.count

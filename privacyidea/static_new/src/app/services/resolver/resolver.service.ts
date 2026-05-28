@@ -46,7 +46,15 @@ export interface LdapPreset {
 
 export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";
 
-export type ResolverData = Record<string, any>;
+export interface ResolverData {
+  [key: string]: unknown;
+  USERINFO?: string;
+  Map?: string;
+  attribute_mapping?: Record<string, string>;
+  Editable?: boolean | string;
+  editable?: boolean | string;
+  EDITABLE?: boolean | string;
+}
 
 export type Resolvers = Record<string, Resolver>;
 
@@ -163,19 +171,19 @@ export interface SCIMResolverData extends ResolverData {
 export interface ResolverServiceInterface {
   resolversResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   selectedResolverName: WritableSignal<string>;
-  selectedResolverResource: HttpResourceRef<PiResponse<any> | undefined>;
+  selectedResolverResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   resolvers: Signal<Resolver[]>;
   resolverOptions: Signal<string[]>;
   editableResolvers: Signal<string[]>;
   userAttributes: Signal<string[]>;
 
-  postResolverTest(data: any): Observable<PiResponse<any, any>>;
+  postResolverTest(data: ResolverData): Observable<PiResponse<unknown>>;
 
-  postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>>;
+  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<unknown>>;
 
-  deleteResolver(resolverName: string): Observable<PiResponse<any, any>>;
+  deleteResolver(resolverName: string): Observable<PiResponse<unknown>>;
 
-  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>>;
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<unknown>>;
 }
 
 @Injectable()
@@ -208,7 +216,7 @@ export class ResolverService implements ResolverServiceInterface {
     };
   });
   selectedResolverName = signal<string>("");
-  selectedResolverResource = httpResource<PiResponse<any>>(() => {
+  selectedResolverResource = httpResource<PiResponse<Resolvers>>(() => {
     const resolverName = this.selectedResolverName();
     if (resolverName === "") {
       return undefined;
@@ -283,9 +291,9 @@ export class ResolverService implements ResolverServiceInterface {
     return editableResolverNames;
   });
 
-  postResolverTest(data: any = {}): Observable<PiResponse<any, any>> {
+  postResolverTest(data: ResolverData = {}): Observable<PiResponse<unknown>> {
     return this.http
-      .post<PiResponse<any, any>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
+      .post<PiResponse<unknown>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error("Error during resolver test:", error);
@@ -296,10 +304,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>> {
+  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<unknown>> {
     return this.http
       .post<
-        PiResponse<any, any>
+        PiResponse<unknown>
       >(this.resolverBaseUrl + encodeURIComponent(resolverName), data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
@@ -311,10 +319,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  deleteResolver(resolverName: string): Observable<PiResponse<any, any>> {
+  deleteResolver(resolverName: string): Observable<PiResponse<unknown>> {
     return this.http
       .delete<
-        PiResponse<any, any>
+        PiResponse<unknown>
       >(this.resolverBaseUrl + encodeURIComponent(resolverName), { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
@@ -326,10 +334,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>> {
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<unknown>> {
     return this.http
       .get<
-        PiResponse<any, any>
+        PiResponse<unknown>
       >(this.resolverBaseUrl + encodeURIComponent(resolverType) + "/default", { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {

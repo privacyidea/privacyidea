@@ -278,8 +278,6 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     }
   });
 
-  constructor() {}
-
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>

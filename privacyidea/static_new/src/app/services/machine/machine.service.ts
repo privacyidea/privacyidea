@@ -33,6 +33,9 @@ import { Observable, shareReplay } from "rxjs";
 
 export type TokenApplications = TokenApplication[];
 
+export type AuthItemFields = Record<string, string>;
+export type AuthItemResponse = Record<string, AuthItemFields[]>;
+
 export type Machines = Machine[];
 
 export interface Machine {
@@ -102,7 +105,11 @@ export interface MachineServiceInterface {
     options: Record<string, string>
   ): Observable<PiResponse<{ added: number; deleted: number }>>;
 
-  getAuthItem(challenge: string, hostname: string, application?: string): Observable<PiResponse<Record<string, unknown>>>;
+  getAuthItem(
+    challenge: string,
+    hostname: string,
+    application?: string
+  ): Observable<PiResponse<AuthItemResponse>>;
 
   postToken(
     hostname: string,
@@ -357,11 +364,15 @@ export class MachineService implements MachineServiceInterface {
       .pipe(shareReplay(1));
   }
 
-  getAuthItem(challenge: string, hostname: string, application?: string): Observable<PiResponse<Record<string, unknown>>> {
+  getAuthItem(
+    challenge: string,
+    hostname: string,
+    application?: string
+  ): Observable<PiResponse<AuthItemResponse>> {
     const headers = this.authService.getHeaders();
     const params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
     return this.http
-      .get<PiResponse<Record<string, unknown>>>(
+      .get<PiResponse<AuthItemResponse>>(
         application ? `${this.baseUrl}authitem/${encodeURIComponent(application)}` : `${this.baseUrl}authitem`,
         {
           headers,

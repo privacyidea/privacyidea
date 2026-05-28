@@ -24,6 +24,7 @@ import {
     ElementRef,
     EventEmitter,
     HostListener,
+    inject,
     Input,
     Output,
     Signal,
@@ -65,10 +66,11 @@ export class HorizontalWheelComponent implements AfterViewInit {
   startX = 0;
   scrollLeft = 0;
 
+  private elementRef = inject(ElementRef);
   private containerElement: HTMLElement | null = null;
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
-  constructor(private elementRef: ElementRef) {
+  constructor() {
     effect(() => this.onSelect.emit(this.selectedValue()));
 
     effect(() => {
@@ -160,7 +162,6 @@ export class HorizontalWheelComponent implements AfterViewInit {
   }
 
   onItemClick(e: MouseEvent, index: number) {
-    const walk = e.pageX - this.startX;
     // Check if a drag movement occurred to prevent click event.
     if (this.isDragging) return;
     e.preventDefault();
@@ -199,8 +200,8 @@ export class HorizontalWheelComponent implements AfterViewInit {
     this.scrollLeft = this.containerElement.scrollLeft;
   }
 
-  @HostListener("window:mouseup", ["$event"])
-  onMouseUp(e: MouseEvent) {
+  @HostListener("window:mouseup")
+  onMouseUp() {
     this.isMouseDown = false;
     if (this.isDragging) {
       // Delay isDragging false to prevent click event after dragging.

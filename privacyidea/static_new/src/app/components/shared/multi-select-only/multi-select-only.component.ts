@@ -114,4 +114,3 @@ export class MultiSelectOnlyComponent<T = string | number> {
     this.selectionChange.emit(this.isAllSelected() ? [] : this.uniqueItems());
   }
 }
-const typasd = MultiSelectOnlyComponent<string | number>;

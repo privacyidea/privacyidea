@@ -208,7 +208,7 @@ export class HttpResolverComponent {
 
   model = signal<HttpResolverModel>(emptyHttpModel());
 
-  httpForm = form(this.model, (f) => {
+  httpForm = form(this.model, () => {
     // Validators applied conditionally in template, but form-level validation
     // is handled via isValid() which checks required fields based on mode
   });

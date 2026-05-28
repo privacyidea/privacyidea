@@ -88,6 +88,6 @@ export class EnrollTokenTypeSwitchComponent {
 
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<OnEnrollmentResponseFn>();
+  @Output() enrollmentResponseChange = new EventEmitter<OnEnrollmentResponseFn>();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
 }

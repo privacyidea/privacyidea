@@ -29,7 +29,7 @@ export interface TiqrEnrollmentData extends TokenEnrollmentData {
   type: "tiqr";
 }
 
-export interface TiqrEnrollmentPayload extends TokenEnrollmentPayload {}
+export type TiqrEnrollmentPayload = TokenEnrollmentPayload;
 
 @Injectable({ providedIn: "root" })
 export class TiqrApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<TiqrEnrollmentData> {

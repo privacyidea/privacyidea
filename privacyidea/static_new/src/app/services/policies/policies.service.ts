@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
@@ -163,57 +163,31 @@ export interface PolicyServiceInterface {
   readonly allPolicies: Signal<PolicyDetail[]>;
   allPoliciesResource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
   policyActionResource: HttpResourceRef<PiResponse<ScopedPolicyActions> | undefined>;
-
   getEmptyPolicy(): PolicyDetail;
-
   filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
-
   getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
-
   getGroupOfAction(actionName: string, scope: string): string | null;
-
   getScopeOfAction(name: string): string | null;
-
   canSavePolicy(policy: PolicyDetail): boolean;
-
   getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null;
-
-  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
-
-  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
-
+  copyPolicy(oldName: string, newName: string): Promise<PiResponse<Record<string, number>>>;
+  createPolicy(policyData: PolicyDetail): Promise<PiResponse<Record<string, number>>>;
   deletePolicy(name: string): Promise<PiResponse<number>>;
-
-  enablePolicy(name: string): Promise<PiResponse<any>>;
-
-  disablePolicy(name: string): Promise<PiResponse<any>>;
-
+  enablePolicy(name: string): Promise<PiResponse<number>>;
+  disablePolicy(name: string): Promise<PiResponse<number>>;
   isScopeChangeable(policy: PolicyDetail): boolean;
-
   getActionNamesOf(scope?: string, group?: string): string[];
-
   getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
-
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
-
   saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean>;
-
   policyHasConditions(policy: PolicyDetail): boolean;
-
   policyHasAdminConditions(policy: PolicyDetail): boolean;
-
   policyHasUserConditions(policy: PolicyDetail): boolean;
-
   policyHasEnvironmentConditions(policy: PolicyDetail): boolean;
-
   policyHasAdditionalConditions(policy: PolicyDetail): boolean;
-
   policyHasActions(policy: PolicyDetail): boolean;
-
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
-
   togglePolicyActive(policy: PolicyDetail): void;
-
   savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean>;
 }
 
@@ -274,7 +248,7 @@ export class PolicyService implements PolicyServiceInterface {
 
   readonly isEditMode = linkedSignal({
     source: () => this.contentService.routeUrl(),
-    computation: (_) => false
+    computation: () => false
   });
   policyActions = computed(() => {
     if (!this.policyActionResource.hasValue()) return {};
@@ -398,7 +372,7 @@ export class PolicyService implements PolicyServiceInterface {
     return this.allPolicyActionsFlat()[actionName] ?? null;
   }
 
-  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {
+  copyPolicy(oldName: string, newName: string): Promise<PiResponse<Record<string, number>>> {
     const policyData = this.allPolicies().find((p) => p.name === oldName);
     if (!policyData) return Promise.reject("Policy not found");
     const copiedPolicy: PolicyDetail = { ...policyData, name: String(newName) };
@@ -409,16 +383,18 @@ export class PolicyService implements PolicyServiceInterface {
   // 2.3 Computed Signals (Derived State)
   // -----------------------------------
 
-  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
+  createPolicy(policyData: PolicyDetail): Promise<PiResponse<Record<string, number>>> {
     const allPoliciesCopy = [...this.allPolicies()];
     allPoliciesCopy.push({ ...policyData });
     this.allPolicies.set(allPoliciesCopy);
 
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${encodeURIComponent(policyData.name)}`, policyData, {
-        headers
-      })
+      this.http.post<PiResponse<Record<string, number>>>(
+        `${this.policyBaseUrl}${encodeURIComponent(policyData.name)}`,
+        policyData,
+        { headers }
+      )
     );
   }
 
@@ -447,17 +423,17 @@ export class PolicyService implements PolicyServiceInterface {
     return result;
   }
 
-  enablePolicy(name: string): Promise<PiResponse<any>> {
+  enablePolicy(name: string): Promise<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${encodeURIComponent(name)}`, {}, { headers })
+      this.http.post<PiResponse<number>>(`${this.policyBaseUrl}enable/${encodeURIComponent(name)}`, {}, { headers })
     );
   }
 
-  disablePolicy(name: string): Promise<PiResponse<any>> {
+  disablePolicy(name: string): Promise<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${encodeURIComponent(name)}`, {}, { headers })
+      this.http.post<PiResponse<number>>(`${this.policyBaseUrl}disable/${encodeURIComponent(name)}`, {}, { headers })
     );
   }
 
@@ -597,13 +573,11 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return false;
   }
-
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
     if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
       // remove scope temporarily and then compare to ignore scope changes
-      const { scope: _, ...selectedWithoutScope } = editedPolicy;
-      const { scope: __, ...originalWithoutScope } = originalPolicy;
-      return JSON.stringify(selectedWithoutScope) !== JSON.stringify(originalWithoutScope);
+      const keysToCompare = Object.keys(originalPolicy).filter((key) => key !== "scope");
+      return JSON.stringify(editedPolicy, keysToCompare) !== JSON.stringify(originalPolicy, keysToCompare);
     } else {
       return JSON.stringify(editedPolicy) !== JSON.stringify(originalPolicy);
     }
@@ -655,9 +629,10 @@ export class PolicyService implements PolicyServiceInterface {
       this.allPoliciesResource.reload();
       this.notificationService.success($localize`Policy updated successfully`);
       return true;
-    } catch (error: any) {
+    } catch (error) {
       this.allPolicies.set(lastStableState);
-      let errorMessage = error?.error?.result?.error?.message || "";
+      const httpError = error as HttpErrorResponse;
+      let errorMessage = httpError?.error?.result?.error?.message || "";
       errorMessage = errorMessage ? `: ${errorMessage}` : "";
       this.notificationService.error($localize`Saving policy failed` + errorMessage);
       return false;

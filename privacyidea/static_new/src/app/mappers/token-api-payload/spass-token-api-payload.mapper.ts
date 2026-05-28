@@ -29,7 +29,7 @@ export interface SpassEnrollmentData extends TokenEnrollmentData {
   type: "spass";
 }
 
-export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
+export type SpassEnrollmentPayload = TokenEnrollmentPayload;
 
 @Injectable({ providedIn: "root" })
 export class SpassApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {

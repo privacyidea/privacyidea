@@ -28,7 +28,7 @@ import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/
 import { NavigationComponent } from "./navigation/navigation.component";
 
 @Component({
-  selector: "layout",
+  selector: "app-layout",
   templateUrl: "layout.component.html",
   standalone: true,
   imports: [

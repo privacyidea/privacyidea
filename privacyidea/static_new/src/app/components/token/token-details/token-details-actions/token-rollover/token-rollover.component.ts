@@ -100,9 +100,9 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly userService: UserServiceInterface = inject(UserService);
 
-  token: WritableSignal<any> = signal(null);
+  token: WritableSignal<TokenEnrollmentData | null> = signal<TokenEnrollmentData | null>(null);
   title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
-  serial = signal(null);
+  serial = signal<string | null>(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
   childValid = signal<boolean>(true);
@@ -138,9 +138,9 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
-    this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
+    this.tokenService.selectedTokenType.set({ key: this.token()!.type, name: "", text: "", info: "" });
     this.formGroupInvalid.set(!this.childValid());
-    this.serial.set(this.token().serial);
+    this.serial.set(this.token()!.serial ?? null);
   }
 
   enrollmentArgsGetter?: enrollmentArgsGetterFn;
@@ -280,7 +280,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       data: this.enrolledDialogData()
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(() => {
       this.tokenService.tokenDetailResource.reload();
     });
   }
@@ -296,7 +296,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.openLastStepDialog(response);
   }
 
-  updateAdditionalFormFields(_event: Record<string, any>): void {
+  updateAdditionalFormFields(): void {
     // Child validation happens in the child components themselves.
     // Treat parent form as always valid; child validity state is managed per-child.
     this.childValid.set(true);

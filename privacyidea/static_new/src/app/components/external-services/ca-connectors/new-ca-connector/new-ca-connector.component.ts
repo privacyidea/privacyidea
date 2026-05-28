@@ -288,7 +288,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
     const type = model.type;
     const connectorname = model.connectorname;
 
-    const data: Record<string, any> = { type };
+    const data: Record<string, string | number | boolean | string[]> = { type };
 
     if (type === "local") {
       const localFields = [

@@ -70,7 +70,7 @@ export class TokenDetailsMachineComponent {
       });
   }
 
-  dataSourceFromMachine(machine: TokenApplication): CdkTableDataSourceInput<any> {
+  dataSourceFromMachine(machine: TokenApplication): CdkTableDataSourceInput<TokenApplication> {
     return new Array(machine);
   }
 }

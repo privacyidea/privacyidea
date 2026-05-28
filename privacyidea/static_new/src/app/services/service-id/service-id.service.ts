@@ -86,7 +86,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   async postServiceId(serviceId: ServiceId): Promise<void> {
     const url = `${this.serviceIdBaseUrl}${encodeURIComponent(serviceId.servicename)}`;
-    const request = this.http.post<PiResponse<any>>(url, serviceId, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(url, serviceId, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
@@ -101,7 +101,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   }
 
   async deleteServiceId(servicename: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.serviceIdBaseUrl}${encodeURIComponent(servicename)}`, {
+    const request = this.http.delete<PiResponse<number>>(`${this.serviceIdBaseUrl}${encodeURIComponent(servicename)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
