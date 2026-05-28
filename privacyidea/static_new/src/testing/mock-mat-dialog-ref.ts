@@ -29,7 +29,7 @@ export class MockMatDialogRef<T, R = any> implements PublicPart<MatDialogRef<T, 
   componentInstance: T = {} as T;
   readonly componentRef: ComponentRef<T> | null = null;
   disableClose: boolean | undefined = undefined;
-  id: string = "mock-dialog-ref";
+  id = "mock-dialog-ref";
 
   // --- Internal Subjects for Event Control ---
   private _backdropClick$ = new Subject<MouseEvent>();

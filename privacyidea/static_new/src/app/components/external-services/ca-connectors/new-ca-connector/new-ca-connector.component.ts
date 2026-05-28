@@ -250,7 +250,7 @@ export class NewCaConnectorComponent implements OnDestroy {
     const type = model.type;
     const connectorname = model.connectorname;
 
-    const data: Record<string, any> = { type };
+    const data: Record<string, string | number | boolean | string[]> = { type };
 
     if (type === "local") {
       const localFields = [
@@ -302,7 +302,7 @@ export class NewCaConnectorComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -23,13 +23,13 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService } from "@services/auth/auth.service";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { EnrollSmsComponent } from "./enroll-sms.component";
-import { SystemService } from "@services/system/system.service";
-import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
-import { TokenService } from "@services/token/token.service";
 import { ContentService } from "@services/content/content.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SystemService } from "@services/system/system.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { EnrollSmsComponent } from "./enroll-sms.component";
 
 describe("EnrollSmsComponent", () => {
   let component: EnrollSmsComponent;
@@ -49,7 +49,7 @@ describe("EnrollSmsComponent", () => {
         { provide: SystemService, useClass: MockSystemService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: SmsGatewayService, useClass: MockSmsGatewayService}
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService }
       ]
     }).compileComponents();
 
@@ -180,33 +180,39 @@ describe("EnrollSmsComponent", () => {
     it("should reject malformed numbers", () => {
       component.phoneNumber.set("abc");
       expect(
-        component.phoneNumberForm().errors().some((e: any) => e.kind === "invalidPhoneNumber")
+        component
+          .phoneNumberForm()
+          .errors()
+          .some((e: any) => e.kind === "invalidPhoneNumber")
       ).toBe(true);
     });
 
     it("should accept E.164-style numbers", () => {
       component.phoneNumber.set("+4915112345678");
       expect(
-        component.phoneNumberForm().errors().some((e: any) => e.kind === "invalidPhoneNumber")
+        component
+          .phoneNumberForm()
+          .errors()
+          .some((e: any) => e.kind === "invalidPhoneNumber")
       ).toBe(false);
     });
   });
 
   describe("onSmsConfigKeydown", () => {
     it("should navigate when Enter pressed", () => {
-      const spy = jest.spyOn(component, "goToSmsConfig").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "Enter" }));
       expect(spy).toHaveBeenCalled();
     });
 
     it("should navigate when Space pressed", () => {
-      const spy = jest.spyOn(component, "goToSmsConfig").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: " " }));
       expect(spy).toHaveBeenCalled();
     });
 
     it("should ignore other keys", () => {
-      const spy = jest.spyOn(component, "goToSmsConfig").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "a" }));
       expect(spy).not.toHaveBeenCalled();
     });

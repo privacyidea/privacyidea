@@ -44,7 +44,7 @@ describe("ContainerCreatedDialogComponent", () => {
   const dialogAfterClosed = jest.fn(() => afterClosed$.asObservable());
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
-  const registerContainer = jest.fn((containerSerial: string, regenerate: boolean) => {});
+  const registerContainer = jest.fn();
   const matDialogData = signal({
     response: { result: { value: { container_url: { img: "" } } } },
     containerSerial: signal("C-001"),

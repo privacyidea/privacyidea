@@ -301,7 +301,7 @@ export class TokenDetailsComponent implements OnInit, OnDestroy {
     if (this.isEditingInfo()) {
       const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
       if (infoElement) {
-        this.infoChild?.saveInfo(infoElement as any);
+        this.infoChild?.saveInfo(infoElement as EditableElement<Record<string, string>>);
       } else {
         this.isEditingInfo.set(false);
       }

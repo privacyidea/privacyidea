@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, inject, OnInit, output } from '@angular/core';
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -37,13 +37,11 @@ export class EnrollU2fComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: U2fApiPayloadMapper = inject(U2fApiPayloadMapper);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: U2fEnrollmentData;
       mapper: TokenApiPayloadMapper<U2fEnrollmentData>;
-    } | null
-  >();
+    } | null>();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

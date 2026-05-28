@@ -61,7 +61,7 @@ export class ActionSelectorComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
   readonly policy = input.required<PolicyDetail>();
-  readonly actionAdd = output<{ action: { name: string; value: any }; newScope?: string | null }>();
+  readonly actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
   readonly scopeChange = output<string | undefined>();
 
   readonly allPolicyScopes = this.policyService.allPolicyScopes();
@@ -138,7 +138,7 @@ export class ActionSelectorComponent {
     this.selectedActionGroup.set(group ?? "");
   }
 
-  addPolicyAction(action: { name: string; value: any }, itemScope?: string | null) {
+  addPolicyAction(action: { name: string; value: string | boolean }, itemScope?: string | null) {
     if (this.policy().scope) {
       this.actionAdd.emit({ action });
     } else {

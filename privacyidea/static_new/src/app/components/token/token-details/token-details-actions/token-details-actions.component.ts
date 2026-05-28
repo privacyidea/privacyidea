@@ -209,7 +209,7 @@ export class TokenDetailsActionsComponent {
         resolver: ""
       })
       .subscribe({
-        next: (_) => {
+        next: () => {
           this.machineService.tokenApplicationResource.reload();
         },
         error: (error) => {
@@ -227,7 +227,7 @@ export class TokenDetailsActionsComponent {
         mtid: `${mtid}`
       })
       .subscribe({
-        next: (_) => {
+        next: () => {
           this.machineService.tokenApplicationResource.reload();
         },
         error: (error) => {

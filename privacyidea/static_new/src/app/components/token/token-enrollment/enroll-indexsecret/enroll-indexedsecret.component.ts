@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, inject, input, OnInit, signal, output } from '@angular/core';
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -46,18 +46,16 @@ export class EnrollIndexedsecretComponent implements OnInit {
 
   disabled = input<boolean>(false);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: IndexedSecretEnrollmentData;
       mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
-    } | null
-  >();
+    } | null>();
 
   otpKey = signal<string>("");
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled());
   });
 

@@ -19,7 +19,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { signal } from "@angular/core";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";

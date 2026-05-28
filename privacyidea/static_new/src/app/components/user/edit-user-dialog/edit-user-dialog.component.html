@@ -18,8 +18,8 @@
 -->
 
 <app-dialog-wrapper
-  (close)="close()"
-  (onAction)="save()"
+  (wrapperClose)="close()"
+  (actionTriggered)="save()"
   [showCancelButton]="true"
   [handleCloseExternally]="true"
   [title]="title()"

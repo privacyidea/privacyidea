@@ -83,7 +83,7 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("should save machineResolver", async () => {
-    const panel = { close: () => {} } as any;
+    const panel = { close: jest.fn() } as any;
     jest.spyOn(panel, "close");
     machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
     await component.saveMachineResolver(panel);
@@ -101,7 +101,7 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("should handle collapse and discard on confirm", async () => {
-    const panel = { close: () => {}, open: () => {} } as any;
+    const panel = { close: jest.fn(), open: jest.fn() } as any;
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });

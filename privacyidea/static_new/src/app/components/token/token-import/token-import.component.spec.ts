@@ -59,8 +59,6 @@ describe("TokenImportComponent", () => {
     class IO {
       observe = jest.fn();
       disconnect = jest.fn();
-
-      constructor(_: any, __?: any) {}
     }
 
     (global as any).IntersectionObserver = IO;

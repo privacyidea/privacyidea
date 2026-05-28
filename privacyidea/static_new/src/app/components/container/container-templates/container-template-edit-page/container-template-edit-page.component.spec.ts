@@ -22,7 +22,9 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -74,8 +76,8 @@ describe("ContainerTemplateEditPageComponent", () => {
   });
 
   it("should detect name conflicts using the service", () => {
-    const existing = { name: "Conflict" };
-    containerTemplateServiceMock.templates.set([existing as any]);
+    const existing = { name: "Conflict" } as ContainerTemplate;
+    containerTemplateServiceMock.templates.set([existing]);
 
     component.template.update((t) => ({ ...t, name: "Conflict" }));
 
@@ -87,29 +89,29 @@ describe("ContainerTemplateEditPageComponent", () => {
     const initialCount = component.template().template_options.tokens.length;
     component.template.update((t) => ({
       ...t,
-      template_options: { tokens: [...t.template_options.tokens, { type: "totp" } as any] }
+      template_options: { tokens: [...t.template_options.tokens, { type: "totp" } as TokenEnrollmentPayload] }
     }));
     expect(component.template().template_options.tokens.length).toBe(initialCount + 1);
-    expect((component.template().template_options.tokens[initialCount] as any).type).toBe("totp");
+    expect(component.template().template_options.tokens[initialCount].type).toBe("totp");
   });
 
   it("should update a specific token by index", () => {
     component.template.update((t) => ({
       ...t,
-      template_options: { tokens: [{ type: "hotp" } as any] }
+      template_options: { tokens: [{ type: "hotp" } as TokenEnrollmentPayload] }
     }));
     component.template.update((t) => {
       const tokens = [...t.template_options.tokens];
-      tokens[0] = { ...tokens[0], description: "Updated" } as any;
+      tokens[0] = { ...tokens[0], description: "Updated" };
       return { ...t, template_options: { tokens } };
     });
-    expect((component.template().template_options.tokens[0] as any).description).toBe("Updated");
+    expect(component.template().template_options.tokens[0].description).toBe("Updated");
   });
 
   it("should remove a token by index", () => {
     component.template.update((t) => ({
       ...t,
-      template_options: { tokens: [{ type: "hotp" } as any] }
+      template_options: { tokens: [{ type: "hotp" } as TokenEnrollmentPayload] }
     }));
     component.template.update((t) => ({
       ...t,
@@ -179,7 +181,7 @@ describe("ContainerTemplateEditPageComponent", () => {
 
   it("should call pendingChangesService.save and navigate on save-exit choice in onCancel dialog", async () => {
     const pendingChangesService = TestBed.inject(PendingChangesService);
-    const saveSpy = jest.spyOn(pendingChangesService, "save").mockReturnValue(true as any);
+    const saveSpy = jest.spyOn(pendingChangesService, "save").mockResolvedValue(true);
     const clearAllSpy = jest.spyOn(pendingChangesService, "clearAllRegistrations");
     const navigateSpy = jest.spyOn(router, "navigateByUrl");
 

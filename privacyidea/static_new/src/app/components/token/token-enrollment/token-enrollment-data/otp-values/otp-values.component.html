@@ -21,7 +21,7 @@
     <mat-expansion-panel-header>
       <mat-panel-title class="gap-16">
         <span i18n>OTP Values</span>
-        @if (otpValues) {
+        @if (otpValues()) {
           <button
             (click)="$event.stopPropagation(); printOtps()"
             mat-icon-button
@@ -33,7 +33,7 @@
     </mat-expansion-panel-header>
     <div id="otp-values">
       <div class="otp-values">
-        @for (otp of Object.entries(otpValues); track otp[0]) {
+        @for (otp of Object.entries(otpValues()); track otp[0]) {
           <span class="otp-value"> #{{ otp[0] }}: {{ otp[1] }}</span>
         }
       </div>

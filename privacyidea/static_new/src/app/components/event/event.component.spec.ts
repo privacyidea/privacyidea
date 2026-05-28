@@ -106,7 +106,7 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    component.onEditEventHandler(handler as any);
+    component.onEditEventHandler(handler);
     expect(spy).toHaveBeenCalled();
   });
 
@@ -119,7 +119,8 @@ describe("EventComponent", () => {
 
   it("should call eventService.deleteWithConfirmDialog on delete", () => {
     const spy = jest.spyOn(component["eventService"], "deleteWithConfirmDialog");
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "foo",
       event: [],
       handlermodule: "",
@@ -130,13 +131,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    component.onDeleteEventHandler(handler as any);
+    component.onDeleteEventHandler(handler);
     expect(spy).toHaveBeenCalled();
   });
 
   it("should filter eventHandlerDataSource by name", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "SpecialName",
       handlermodule: "mod",
       position: "pos",
@@ -147,13 +149,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "specialname")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "specialname")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by handlermodule", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "ModuleX",
       position: "p",
@@ -164,13 +167,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "modulex")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "modulex")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by position", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "PosY",
@@ -181,13 +185,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "posy")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "posy")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by action", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -198,13 +203,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "actionz")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "actionz")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by options", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -215,15 +221,16 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "foo: baropt")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "foo")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "baropt")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "foo: baropt")).toBe(true);
+    expect(ds.filterPredicate(handler, "foo")).toBe(true);
+    expect(ds.filterPredicate(handler, "baropt")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by events", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -234,13 +241,14 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "eventa")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "eventa")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should filter eventHandlerDataSource by conditions", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -251,15 +259,16 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "cond: condval")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "cond")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "condval")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "notfound")).toBe(false);
+    expect(ds.filterPredicate(handler, "cond: condval")).toBe(true);
+    expect(ds.filterPredicate(handler, "cond")).toBe(true);
+    expect(ds.filterPredicate(handler, "condval")).toBe(true);
+    expect(ds.filterPredicate(handler, "notfound")).toBe(false);
   });
 
   it("should return true for empty filter in filterPredicate", () => {
     const ds = component.eventHandlerDataSource();
-    const handler = {
+    const handler: EventHandler = {
+      id: null,
       name: "n",
       handlermodule: "m",
       position: "p",
@@ -270,8 +279,8 @@ describe("EventComponent", () => {
       active: true,
       ordering: 1
     };
-    expect(ds.filterPredicate(handler as any, "")).toBe(true);
-    expect(ds.filterPredicate(handler as any, "   ")).toBe(true);
+    expect(ds.filterPredicate(handler, "")).toBe(true);
+    expect(ds.filterPredicate(handler, "   ")).toBe(true);
   });
 
   it("should update totalLength when eventHandlers changes", () => {

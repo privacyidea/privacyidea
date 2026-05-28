@@ -47,10 +47,10 @@ export class TiqrConfigComponent {
   protected readonly TIQR_INFO_URL = TIQR_INFO_URL;
   protected readonly TIQR_OCRASUITE = TIQR_OCRASUITE;
 
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
+  formDataChange = output<Record<string, string>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

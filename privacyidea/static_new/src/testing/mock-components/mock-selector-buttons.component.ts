@@ -16,23 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CdkCopyToClipboard } from "@angular/cdk/clipboard";
-import { Component, signal } from "@angular/core";
-import { MatIcon } from "@angular/material/icon";
+
+import { Component, input, output } from "@angular/core";
 
 @Component({
-  selector: "app-copy-button",
+  selector: "app-selector-buttons",
   standalone: true,
-  imports: [CdkCopyToClipboard, MatIcon],
-  templateUrl: "./copy-button.component.html",
-  styleUrls: ["./copy-button.component.scss"]
+  template: ""
 })
-export class CopyButtonComponent {
-  @Input() copyText = "";
-  copied = signal(false);
-
-  onCopy(): void {
-    this.copied.set(true);
-    setTimeout(() => this.copied.set(false), 1600);
-  }
+export class MockSelectorButtonsComponent<T> {
+  readonly initialValue = input.required<T | undefined>();
+  readonly values = input.required<T[]>();
+  readonly labels = input<T[] | undefined>(undefined);
+  readonly allowDeselect = input<boolean>(false);
+  readonly disabled = input<boolean>(false);
+  readonly valueSelected = output<T | undefined>();
+  focusFirst = jest.fn();
 }

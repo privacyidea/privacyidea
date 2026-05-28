@@ -40,7 +40,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
   let component: TokenApplicationsOfflineComponent;
   let machineServiceMock: MockMachineService;
-  let mockTokenService: Partial<TokenService> = {};
+  const mockTokenService: Partial<TokenService> = {};
 
   beforeEach(async () => {
     TestBed.resetTestingModule();

@@ -28,8 +28,11 @@ import { TokenDetailsComponent } from "@components/token/token-details/token-det
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
@@ -45,9 +48,6 @@ import {
 } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
-import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { RealmService } from "@services/realm/realm.service";
-import { ContentService } from "@services/content/content.service";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -474,7 +474,7 @@ describe("ContainerDetailsComponent", () => {
         isEditing: signal(false)
       } as any;
       (component as any).containerDetailData = () => [editingRow, idleRow];
-      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
+      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockReturnValue();
 
       const result = await component.saveAllInlineEdits();
 
@@ -486,7 +486,7 @@ describe("ContainerDetailsComponent", () => {
     it("saveAllInlineEdits calls saveUser when isEditingUser", async () => {
       (component as any).containerDetailData = () => [];
       component.isEditingUser.set(true);
-      const userSaveSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+      const userSaveSpy = jest.spyOn(component, "saveUser").mockReturnValue();
 
       await component.saveAllInlineEdits();
 
@@ -520,8 +520,8 @@ describe("ContainerDetailsComponent", () => {
       (component as any).infoData = () => [];
       component.isEditingUser.set(false);
       component.isEditingInfo.set(false);
-      const editSpy = jest.spyOn(component, "saveContainerEdit").mockImplementation(() => {});
-      const userSpy = jest.spyOn(component, "saveUser").mockImplementation(() => {});
+      const editSpy = jest.spyOn(component, "saveContainerEdit").mockReturnValue();
+      const userSpy = jest.spyOn(component, "saveUser").mockReturnValue();
       component.infoChild = { saveInfo: jest.fn() } as any;
 
       const result = await component.saveAllInlineEdits();

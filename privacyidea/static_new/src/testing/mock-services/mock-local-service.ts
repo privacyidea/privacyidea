@@ -20,7 +20,7 @@ import { LocalServiceInterface } from "@services/local/local.service";
 
 export class MockLocalService implements LocalServiceInterface {
   private data: Record<string, string> = {};
-  key: string = "mockLocalServiceKey";
+  key = "mockLocalServiceKey";
   saveData = jest.fn().mockImplementation((key: string, value: string) => {
     this.data[key] = value;
   });

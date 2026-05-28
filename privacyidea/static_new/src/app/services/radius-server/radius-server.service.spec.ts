@@ -178,7 +178,7 @@ describe("RadiusServerService", () => {
       contentServiceMock.onExternalRadius = signal(true);
       TestBed.tick();
 
-      let req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
         status: 403,
         statusText: "Permission denied"

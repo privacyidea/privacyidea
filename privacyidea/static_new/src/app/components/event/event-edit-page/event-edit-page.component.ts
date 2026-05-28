@@ -46,7 +46,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventService } from "@services/event/event.service";
+import { EMPTY_EVENT, EventHandlerSaveParams, EventService } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
@@ -176,7 +176,7 @@ export class EventEditPageComponent implements OnDestroy {
   validOptions = signal(false);
 
   sectionValidity = computed(() => {
-    const validity: Record<string, any> = {};
+    const validity: Record<string, boolean> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
     validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
@@ -223,27 +223,29 @@ export class EventEditPageComponent implements OnDestroy {
     this.hasChanges.set(true);
   }
 
-  updateEventHandler(key: string, value: any): void {
+  updateEventHandler(key: string, value: string | number | boolean): void {
     this.editEvent.set({ ...this.editEvent(), [key]: value });
     this.hasChanges.set(true);
   }
 
-  getSaveParameters(): Record<string, any> {
-    let eventParams = deepCopy(this.editEvent()) as Record<string, any>;
-    for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
+  getSaveParameters(): EventHandlerSaveParams {
+    type EventHandlerParams = EventHandlerSaveParams & { options?: Record<string, unknown> };
+    const eventParams = deepCopy(this.editEvent()) as unknown as EventHandlerParams;
+    const options = eventParams.options ?? {};
+    for (const [optionKey, optionValue] of Object.entries(options)) {
       eventParams["option." + optionKey] = optionValue;
     }
-    if (eventParams["id"] != null) {
-      eventParams["id"] = eventParams["id"].toString();
+    if (eventParams.id != null) {
+      eventParams.id = String(eventParams.id);
     }
-    eventParams["handlermodule"] = this.eventService.selectedHandlerModule();
-    delete eventParams["options"];
+    eventParams.handlermodule = this.eventService.selectedHandlerModule();
+    delete eventParams.options;
     return eventParams;
   }
 
   saveEvent(): Promise<boolean> {
     return new Promise((resolve) => {
-      let eventParams = this.getSaveParameters();
+      const eventParams = this.getSaveParameters();
       if (this.isNewEvent()) {
         delete eventParams["id"];
       }

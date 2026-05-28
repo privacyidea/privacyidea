@@ -33,7 +33,7 @@ import { of } from "rxjs";
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
   policy = input.required<any>();
-  onPolicyEdit = output<any>();
+  policyEdit = output<any>();
 }
 
 function createTestBed(paramName: string | null) {

@@ -26,7 +26,6 @@ import { EventConditionListComponent } from "./event-condition-list.component";
 describe("EventConditionListComponent", () => {
   let component: EventConditionListComponent;
   let fixture: ComponentFixture<EventConditionListComponent>;
-  let mockEventService: MockEventService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,7 +35,6 @@ describe("EventConditionListComponent", () => {
 
     fixture = TestBed.createComponent(EventConditionListComponent);
     component = fixture.componentInstance;
-    mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     fixture.componentRef.setInput("conditions", { condA: "valA", condB: "valB" });
     fixture.componentRef.setInput("action", "add");
     fixture.detectChanges();

@@ -167,7 +167,7 @@ export class LdapResolverComponent {
   constructor() {
     effect(() => {
       const initial = this.data();
-      this.model.update(m => ({
+      this.model.update((m) => ({
         ...m,
         ...(initial.SCOPE !== undefined ? { SCOPE: initial.SCOPE } : {}),
         ...(initial.LDAPBASE !== undefined ? { LDAPBASE: initial.LDAPBASE } : {}),
@@ -184,7 +184,9 @@ export class LdapResolverComponent {
         ...(initial.SIZELIMIT !== undefined ? { SIZELIMIT: Number(initial.SIZELIMIT) } : {}),
         ...(initial.SERVERPOOL_ROUNDS !== undefined ? { SERVERPOOL_ROUNDS: Number(initial.SERVERPOOL_ROUNDS) } : {}),
         ...(initial.SERVERPOOL_SKIP !== undefined ? { SERVERPOOL_SKIP: Number(initial.SERVERPOOL_SKIP) } : {}),
-        ...(initial.SERVERPOOL_PERSISTENT !== undefined ? { SERVERPOOL_PERSISTENT: parseBooleanValue(initial.SERVERPOOL_PERSISTENT) } : {}),
+        ...(initial.SERVERPOOL_PERSISTENT !== undefined
+          ? { SERVERPOOL_PERSISTENT: parseBooleanValue(initial.SERVERPOOL_PERSISTENT) }
+          : {}),
         ...(initial.EDITABLE !== undefined ? { EDITABLE: parseBooleanValue(initial.EDITABLE) } : {}),
         ...(initial.OBJECT_CLASSES !== undefined ? { OBJECT_CLASSES: initial.OBJECT_CLASSES } : {}),
         ...(initial.DN_TEMPLATE !== undefined ? { DN_TEMPLATE: initial.DN_TEMPLATE } : {}),
@@ -193,11 +195,15 @@ export class LdapResolverComponent {
         ...(initial.LDAPSEARCHFILTER !== undefined ? { LDAPSEARCHFILTER: initial.LDAPSEARCHFILTER } : {}),
         ...(initial.USERINFO !== undefined ? { USERINFO: initial.USERINFO } : {}),
         ...(initial.MULTIVALUEATTRIBUTES !== undefined ? { MULTIVALUEATTRIBUTES: initial.MULTIVALUEATTRIBUTES } : {}),
-        ...(initial.recursive_group_search !== undefined ? { recursive_group_search: parseBooleanValue(initial.recursive_group_search) } : {}),
+        ...(initial.recursive_group_search !== undefined
+          ? { recursive_group_search: parseBooleanValue(initial.recursive_group_search) }
+          : {}),
         ...(initial.group_base_dn !== undefined ? { group_base_dn: initial.group_base_dn } : {}),
         ...(initial.group_search_filter !== undefined ? { group_search_filter: initial.group_search_filter } : {}),
         ...(initial.group_name_attribute !== undefined ? { group_name_attribute: initial.group_name_attribute } : {}),
-        ...(initial.group_attribute_mapping_key !== undefined ? { group_attribute_mapping_key: initial.group_attribute_mapping_key } : {}),
+        ...(initial.group_attribute_mapping_key !== undefined
+          ? { group_attribute_mapping_key: initial.group_attribute_mapping_key }
+          : {}),
         ...(initial.NOREFERRALS !== undefined ? { NOREFERRALS: parseBooleanValue(initial.NOREFERRALS) } : {}),
         ...(initial.NOSCHEMAS !== undefined ? { NOSCHEMAS: parseBooleanValue(initial.NOSCHEMAS) } : {})
       }));
@@ -206,7 +212,7 @@ export class LdapResolverComponent {
   }
 
   applyLdapPreset(preset: LdapPreset): void {
-    this.model.update(m => ({
+    this.model.update((m) => ({
       ...m,
       LOGINNAMEATTRIBUTE: preset.loginName,
       LDAPSEARCHFILTER: preset.searchFilter,

@@ -192,11 +192,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
+  enrollResponse = linkedSignal<TokenType, EnrollmentResponse | null>({
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
-  tokenTypeDescription: WritableSignal<any> = linkedSignal({
+  tokenTypeDescription = linkedSignal({
     source: this.tokenService.tokenTypeOptions,
     computation: (tokenTypes) => {
       return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
@@ -283,7 +283,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () => this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
+      () =>
+        this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
     );
     this.pendingChangesService.registerValidChanges(
       () =>

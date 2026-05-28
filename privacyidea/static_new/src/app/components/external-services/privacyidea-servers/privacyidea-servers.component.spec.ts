@@ -70,7 +70,7 @@ describe("PrivacyideaServersComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;

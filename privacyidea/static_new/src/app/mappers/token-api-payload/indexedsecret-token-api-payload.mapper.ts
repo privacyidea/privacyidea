@@ -53,7 +53,7 @@ export class IndexedSecretApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): IndexedSecretEnrollmentData {
+  override fromApiPayload(payload: IndexedSecretEnrollmentPayload): IndexedSecretEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as IndexedSecretEnrollmentData;
   }

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, inject, input, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -46,7 +46,7 @@ export class EnrollMotpComponent implements OnInit {
   protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -64,17 +64,20 @@ export class EnrollMotpComponent implements OnInit {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp"));
+    disabled(
+      f,
+      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("motp")
+    );
   });
 
   motpPinForm = form(this.motpPin, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 4 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 4 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled());
   });
 
   repeatMotpPinForm = form(this.repeatMotpPin, (f) => {
-    validate(f, (ctx) => (ctx.value() !== this.motpPin() ? [{ kind: "motpPinMismatch" as any }] : []));
+    validate(f, (ctx) => (ctx.value() !== this.motpPin() ? [{ kind: "motpPinMismatch" }] : []));
     disabled(f, () => this.disabled());
   });
 

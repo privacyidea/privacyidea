@@ -27,7 +27,7 @@ describe("MessageDialogComponent", () => {
   let dialogRef: MatDialogRef<MessageDialogComponent>;
 
   const mockDialogRef = {
-    close: () => {}
+    close: jest.fn()
   };
 
   const dialogData: MessageDialogData = {

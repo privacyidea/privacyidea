@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from "@angular/core";
+import { Component, inject, OnInit, signal } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { PiResponse } from "@app/app.component";
 import {
@@ -30,7 +30,7 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import { TokenService, TokenServiceInterface, Tokens } from "@services/token/token.service";
+import { Tokens, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
 
 @Component({
@@ -49,7 +49,7 @@ export class EnrollPushComponent implements OnInit {
 
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -58,14 +58,14 @@ export class EnrollPushComponent implements OnInit {
     } | null
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<
+  @Output() enrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse) => Promise<EnrollmentResponse | null>
   >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
+    this.enrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
   enrollmentArgsGetter = (

@@ -134,10 +134,10 @@ describe("UserSourcesComponent", () => {
     fixture.detectChanges();
 
     const ds = component.resolversDataSource();
-    expect(ds.filterPredicate(resolvers[0] as any, "admin")).toBeTruthy();
-    expect(ds.filterPredicate(resolvers[0] as any, "passwd")).toBeTruthy();
-    expect(ds.filterPredicate(resolvers[0] as any, "nomatch")).toBeFalsy();
-    expect(ds.filterPredicate(resolvers[0] as any, "  ")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "admin")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "passwd")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "nomatch")).toBeFalsy();
+    expect(ds.filterPredicate(resolvers[0], "  ")).toBeTruthy();
   });
 
   it("onEditResolver should open dialog", () => {

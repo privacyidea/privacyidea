@@ -53,7 +53,7 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     const payload: HotpEnrollmentPayload = {
       ...basePayload,
       genkey: data.generateOnServer ? 1 : 0,
-      ...(data.generateOnServer ? { otpkey: null as any } : data.otpKey !== undefined && { otpkey: data.otpKey }),
+      ...(data.generateOnServer ? { otpkey: undefined } : data.otpKey !== undefined && { otpkey: data.otpKey }),
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
       ...(data.twoStepInit !== undefined && { "2stepinit": data.twoStepInit }),

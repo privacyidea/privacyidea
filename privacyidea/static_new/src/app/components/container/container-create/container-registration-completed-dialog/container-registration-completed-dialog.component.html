@@ -24,7 +24,12 @@
 <mat-dialog-content>
   <span
     i18n>The container
-    <a (click)="containerSelected(data.containerSerial)"> {{ data.containerSerial }} </a> was successfully
+    <a
+      (click)="containerSelected(data.containerSerial)"
+      (keyup.enter)="containerSelected(data.containerSerial)"
+      role="button"
+      tabindex="0">
+      {{ data.containerSerial }} </a> was successfully
          registered.</span>
 </mat-dialog-content>
 <mat-dialog-actions>

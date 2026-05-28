@@ -42,7 +42,7 @@ export interface LoadingServiceInterface {
   providedIn: "root"
 })
 export class LoadingService implements LoadingServiceInterface {
-  listeners: { [key: string]: (isLoading: boolean) => void } = {};
+  listeners: Record<string, (isLoading: boolean) => void> = {};
   loadings: { key: string; subscription: Subscription; url: string }[] = [];
 
   addListener(id: string, listener: (isLoading: boolean) => void): void {
@@ -62,7 +62,7 @@ export class LoadingService implements LoadingServiceInterface {
       complete: () => {
         this.removeLoading(loading.key);
       },
-      error: (_) => {
+      error: () => {
         this.removeLoading(loading.key);
       }
     });

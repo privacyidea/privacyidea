@@ -16,12 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, OnDestroy, signal } from "@angular/core";
+
+import { AfterViewInit, Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatError, MatFormField, MatHint, MatLabel, MatSelect } from "@angular/material/select";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -49,9 +50,12 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatError
   ]
 })
-export class TokenImportComponent implements OnDestroy {
+export class TokenImportComponent implements OnDestroy, OnInit, AfterViewInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  ngAfterViewInit(): void {
+    throw new Error("Method not implemented.");
+  }
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
@@ -128,7 +132,7 @@ export class TokenImportComponent implements OnDestroy {
           const total = success + failed;
           this.notificationService.success(success + "/" + total + " tokens imported successfully.");
         },
-        error: (error) => {
+        error: () => {
           // error handled in the token service
         }
       });

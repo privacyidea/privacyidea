@@ -18,29 +18,16 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
-
-@Component({
-  selector: "app-selector-buttons",
-  standalone: true,
-  template: ""
-})
-class MockSelectorButtonsComponent {
-  values = input.required<any[]>();
-  initialValue = input<any>();
-  onSelect = output<any>();
-}
 
 describe("PolicyActionItemEditComponent", () => {
   let component: PolicyActionItemEditComponent;
   let fixture: ComponentFixture<PolicyActionItemEditComponent>;
-  let policyServiceMock: MockPolicyService;
-
   const defaultAction = { name: "test_action", value: "test_value" };
   const defaultDetail: PolicyActionDetail = {
     type: "str",
@@ -62,8 +49,6 @@ describe("PolicyActionItemEditComponent", () => {
 
     fixture = TestBed.createComponent(PolicyActionItemEditComponent);
     component = fixture.componentInstance;
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
-
     fixture.componentRef.setInput("action", defaultAction);
     fixture.componentRef.setInput("actionDetail", defaultDetail);
 

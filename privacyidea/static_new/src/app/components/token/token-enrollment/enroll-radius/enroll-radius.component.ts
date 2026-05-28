@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, OnInit, signal } from "@angular/core";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -46,17 +46,7 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-radius",
   standalone: true,
-  imports: [
-    MatCheckbox,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatHint,
-    MatError,
-    FormField
-  ],
+  imports: [MatCheckbox, MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatHint, MatError, FormField],
   templateUrl: "./enroll-radius.component.html",
   styleUrl: "./enroll-radius.component.scss"
 })
@@ -68,7 +58,7 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   enrollmentData = input<RadiusEnrollmentData>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

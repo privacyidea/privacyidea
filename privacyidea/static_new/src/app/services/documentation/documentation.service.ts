@@ -20,10 +20,10 @@ import { inject, Injectable } from "@angular/core";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { VersioningService } from "@services/version/version.service";
 
-export type ActionDocumentation = {
+export interface ActionDocumentation {
   info: string[];
   notes: string[];
-};
+}
 export interface DocumentationServiceInterface {
   openDocumentation(page: string): Promise<void>;
   getVersionUrl(pageUrl: string): string;
@@ -153,9 +153,9 @@ export class DocumentationService implements DocumentationServiceInterface {
       }
     });
   }
-  openDocumentationPage(page: string): Promise<boolean> {
+  async openDocumentationPage(page: string): Promise<boolean> {
     // First check the page and when found open it
-    return new Promise((_) => {
+    return new Promise(() => {
       const versionUrl = this.getVersionUrl(page);
       this.checkFullUrl(versionUrl).then((found) => {
         if (found) {

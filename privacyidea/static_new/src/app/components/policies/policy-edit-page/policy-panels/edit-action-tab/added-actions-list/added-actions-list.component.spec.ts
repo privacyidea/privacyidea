@@ -32,8 +32,8 @@ import { AddedActionsListComponent } from "./added-actions-list.component";
 class MockPolicyActionItemEditComponent {
   action = input.required<{ name: string; value: any }>();
   actionDetail = input.required<any>();
-  onRemoveAction = output<void>();
-  onUpdateAction = output<any>();
+  removeAction = output<void>();
+  updateAction = output<any>();
 }
 
 describe("AddedActionsListComponent", () => {

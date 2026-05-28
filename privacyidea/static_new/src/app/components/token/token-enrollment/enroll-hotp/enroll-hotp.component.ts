@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, OnInit, output, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -41,17 +41,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
 
 @Component({
   selector: "app-enroll-hotp",
-  imports: [
-    MatCheckbox,
-    MatSelect,
-    MatOption,
-    MatLabel,
-    MatFormField,
-    MatInput,
-    MatHint,
-    MatError,
-    FormField
-  ],
+  imports: [MatCheckbox, MatSelect, MatOption, MatLabel, MatFormField, MatInput, MatHint, MatError, FormField],
   templateUrl: "./enroll-hotp.component.html",
   styleUrl: "./enroll-hotp.component.scss",
   standalone: true
@@ -71,14 +61,14 @@ export class EnrollHotpComponent implements OnInit {
   ];
 
   enrollmentData = input<HotpEnrollmentData | null>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: HotpEnrollmentData;
       mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
     } | null
   >();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+  additionalFormFieldsChange = output<Record<string, unknown>>();
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("hotp"));
@@ -99,7 +89,7 @@ export class EnrollHotpComponent implements OnInit {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled() || this.generateOnServer() || this.twoStepEnabled());
   });
 

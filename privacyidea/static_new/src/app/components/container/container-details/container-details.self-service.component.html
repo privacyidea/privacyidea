@@ -30,8 +30,7 @@
       auditTooltip="Show container in audit log"
       (auditClick)="showContainerAuditLog()">
     </app-details-header>
-    <div
-      class="details-flex-layout responsive-flex-row-1310">
+    <div class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="containerDetailData()"
@@ -246,7 +245,7 @@
         <mat-divider class="responsive-divider-1310" />
       </div>
       <div class="flex-column responsive-margin-left-1310">
-        <app-container-details-token-table [containerTokenData]="containerTokenData" />
+        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
         <div class="flex-row gap-32 margin-top-16">
           <app-container-add-token
             [authService]="authService"

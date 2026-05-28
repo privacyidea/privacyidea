@@ -64,7 +64,7 @@ describe("HorizontalWheelComponent", () => {
     (component as any).containerElement = { scrollLeft: 50, offsetWidth: 200, style: {} };
     component.startX = 100;
     component.scrollLeft = 50;
-    const fakeEvent = { preventDefault: () => {}, pageX: 120 } as any as MouseEvent;
+    const fakeEvent = { preventDefault: jest.fn(), pageX: 120 } as any as MouseEvent;
 
     component.onMouseMove(fakeEvent);
 

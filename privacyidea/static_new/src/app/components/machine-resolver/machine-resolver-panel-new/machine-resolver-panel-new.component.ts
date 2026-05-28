@@ -92,10 +92,10 @@ export class MachineResolverPanelNewComponent implements OnInit, OnDestroy {
   });
   readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
 
-  onNewData(newData: MachineResolverData) {
+  newData(newData: MachineResolverData) {
     this.newMachineResolver.set({ ...this.newMachineResolver(), data: newData });
   }
-  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
+  newValidator(newValidator: (data: MachineResolverData) => boolean) {
     this.dataValidatorSignal.set(newValidator);
   }
 
@@ -163,7 +163,7 @@ export class MachineResolverPanelNewComponent implements OnInit, OnDestroy {
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
-    } catch (error) {
+    } catch {
       return false;
     }
     this.resetMachineResolver();

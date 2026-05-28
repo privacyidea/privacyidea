@@ -25,7 +25,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 @Directive()
-export abstract class PendingChangesDialogComponent<D = any, R = any>
+export abstract class PendingChangesDialogComponent<D, R>
   extends AbstractDialogComponent<D, R>
   implements OnInit, OnDestroy
 {
@@ -86,7 +86,7 @@ export abstract class PendingChangesDialogComponent<D = any, R = any>
     }
   }
 
-  override close(dialogResult?: R | undefined): void {
+  override close(): void {
     this.handleCloseAttempt();
   }
 }

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, inject, OnInit } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
@@ -55,7 +55,7 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -64,14 +64,14 @@ export class EnrollPasskeyComponent implements OnInit {
     } | null
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<
+  @Output() enrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
+    this.enrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
   enrollmentArgsGetter = (
@@ -147,6 +147,9 @@ export class EnrollPasskeyComponent implements OnInit {
         data: { enrollmentResponse }
       });
       const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
+      if (publicKeyCred === null) {
+        return null;
+      }
       const resposeLastStep = await this.finalizeEnrollment({
         enrollmentInitData,
         enrollmentResponse,
@@ -166,17 +169,19 @@ export class EnrollPasskeyComponent implements OnInit {
     this.currentStepOneRef?.close();
   }
 
-  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<any | null> {
+  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<PublicKeyCredential | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
       this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       return null;
     }
-    const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred: any) => ({
-      id: this.base64Service.base64URLToBytes(cred.id),
-      type: cred.type
-    }));
+    const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
+      (cred: { id: string; type: PublicKeyCredentialType }) => ({
+        id: this.base64Service.base64URLToBytes(cred.id),
+        type: cred.type
+      })
+    );
 
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       rp: passkeyRegOptions.rp,
@@ -202,16 +207,17 @@ export class EnrollPasskeyComponent implements OnInit {
       .finally(() => {
         this.closeStepOneDialog();
       });
-    return publicKeyCred;
+    return publicKeyCred as PublicKeyCredential | null;
   }
 
   private async finalizeEnrollment(args: {
     enrollmentInitData: PasskeyEnrollmentData;
     enrollmentResponse: EnrollmentResponse;
-    publicKeyCred: any;
+    publicKeyCred: PublicKeyCredential;
   }): Promise<EnrollmentResponse> {
     const { enrollmentInitData, enrollmentResponse, publicKeyCred } = args;
     const detail = enrollmentResponse.detail;
+    const attestationResponse = publicKeyCred.response as AuthenticatorAttestationResponse;
     const passkeyFinalizeData: PasskeyFinalizeData = {
       ...enrollmentInitData,
       transaction_id: detail["transaction_id"]!,
@@ -219,8 +225,8 @@ export class EnrollPasskeyComponent implements OnInit {
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
       authenticatorAttachment: publicKeyCred.authenticatorAttachment,
-      attestationObject: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.attestationObject)),
-      clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON))
+      attestationObject: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.attestationObject)),
+      clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.clientDataJSON))
     };
 
     const extResults = publicKeyCred.getClientExtensionResults();
@@ -235,13 +241,13 @@ export class EnrollPasskeyComponent implements OnInit {
     )
       .catch(async (errorStep3) => {
         this.notificationService.error("Error during final Passkey registration step. Attempting to clean up token.");
-        (await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
+        await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
           this.notificationService.error(
             `Failed to delete token ${detail.serial} after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
-        }),
-          this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`));
+        });
+        this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`);
         throw Error(errorStep3);
       })
       .then((finalResponse) => {

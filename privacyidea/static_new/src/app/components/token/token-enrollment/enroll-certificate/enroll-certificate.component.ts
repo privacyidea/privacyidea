@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, linkedSignal, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, OnInit, signal, output } from '@angular/core';
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatOption } from "@angular/material/core";
@@ -29,6 +29,7 @@ import {
   CertificateEnrollmentData
 } from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { CaConnector } from "@services/ca-connector/ca-connector.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -64,13 +65,11 @@ export class EnrollCertificateComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
 
   enrollmentData = input<CertificateEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: CertificateEnrollmentData;
       mapper: CertificateApiPayloadMapper;
-    } | null
-  >();
+    } | null>();
   disabled = input<boolean>(false);
 
   intention = signal<"generate" | "uploadRequest" | "uploadCert">("generate");
@@ -86,7 +85,9 @@ export class EnrollCertificateComponent implements OnInit {
   caConnectorOptions = computed(
     () =>
       (this.systemService.caConnectorResource?.hasValue()
-        ? this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname)
+        ? this.systemService.caConnectorResource
+            ?.value()
+            ?.result?.value.map((config: CaConnector) => config.connectorname)
         : []) || []
   );
 

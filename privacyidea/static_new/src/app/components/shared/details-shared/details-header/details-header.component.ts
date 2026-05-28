@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, Input, output } from '@angular/core';
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -37,5 +37,5 @@ export class DetailsHeaderComponent {
   @Input() auditRoute = "/audit";
   @Input() auditTooltip = "Show in audit log";
 
-  @Output() auditClick = new EventEmitter<void>();
+  auditClick = output<void>();
 }

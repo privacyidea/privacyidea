@@ -20,8 +20,8 @@
 <app-dialog-wrapper
   title="Search for Token"
   [actions]="[action]"
-  (close)="close()"
-  (onAction)="onAction($event)">
+  (wrapperClose)="close()"
+  (actionTriggered)="onAction($event)">
   @if (data.foundSerial) {
     <div class="alert alert-success">
       <span i18n>
@@ -29,7 +29,11 @@
         <a
           class="link"
           attr.aria-label="{{ data.foundSerial }} Link"
-          (click)="onClickSerial()">
+          (click)="onClickSerial()"
+          (keydown.enter)="onClickSerial()"
+          (keydown.space)="$event.preventDefault(); onClickSerial()"
+          role="button"
+          tabindex="0">
           {{ data.foundSerial }}.</a>
       </span>
     </div>

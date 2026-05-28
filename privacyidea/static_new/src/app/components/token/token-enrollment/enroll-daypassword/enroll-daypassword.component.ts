@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, linkedSignal, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -46,17 +46,7 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-daypassword",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatHint,
-    MatError,
-    MatCheckbox,
-    FormField
-  ],
+  imports: [MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatHint, MatError, MatCheckbox, FormField],
   templateUrl: "./enroll-daypassword.component.html",
   styleUrl: "./enroll-daypassword.component.scss"
 })
@@ -75,7 +65,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   ];
 
   enrollmentData = input<DaypasswordEnrollmentData>();
-  @Input() wizard: boolean = false;
+  @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -97,8 +87,11 @@ export class EnrollDaypasswordComponent implements OnInit {
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" as any }] : []));
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    disabled(
+      f,
+      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("daypassword")
+    );
   });
 
   otpLengthForm = form(this.otpLength, (f) => {

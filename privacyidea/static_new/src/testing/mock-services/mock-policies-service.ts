@@ -49,7 +49,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   });
   isEditMode: Signal<boolean> = signal(false);
   policyActions: Signal<ScopedPolicyActions> = signal({});
-  allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }> = signal({});
+  allPolicyActionsFlat: Signal<Record<string, PolicyActionDetail>> = signal({});
   allPolicyScopes: Signal<string[]> = signal([]);
   policyActionsByGroup: Signal<PolicyActionGroups> = signal({});
   filteredPolicyActionGroups = jest.fn().mockReturnValue({});

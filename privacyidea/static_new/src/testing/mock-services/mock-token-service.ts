@@ -80,7 +80,7 @@ function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
 export class MockTokenService implements TokenServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
   stopPolling$: Subject<void> = new Subject<void>();
-  tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
+  tokenBaseUrl = "mockEnvironment.proxyUrl + '/token'";
   readonly maxDescriptionLength = 80;
   readonly eventPageSize = signal(10);
   tokenSerial = signal("");

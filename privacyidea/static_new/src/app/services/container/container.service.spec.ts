@@ -846,7 +846,7 @@ describe("ContainerService", () => {
       mockableService.containerTypeOptions = containerTypeOptionsSignal;
       mockableService.compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
 
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
     });
 
@@ -937,7 +937,7 @@ describe("ContainerService", () => {
 
   describe("containersForTokenTypeResource loading conditions", () => {
     beforeEach(() => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
     });
 
     it("does not load on containers list route", () => {
@@ -1093,7 +1093,7 @@ describe("ContainerService", () => {
       );
 
     beforeEach(() => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list" as any] });
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       userServiceMock = TestBed.inject(UserService) as any;
       userServiceMock.detailsUsername.set("alice");
       userServiceMock.selectedUserRealm.set("realm1");

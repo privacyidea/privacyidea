@@ -56,7 +56,6 @@ class LocalMockMatDialog {
 describe("RealmTableComponent", () => {
   let component: RealmTableComponent;
   let realmService: MockRealmService;
-  let systemService: MockSystemService;
   let notificationService: MockNotificationService;
   let dialog: LocalMockMatDialog;
   let resolverService: MockResolverService;
@@ -85,7 +84,6 @@ describe("RealmTableComponent", () => {
     component = fixture.componentInstance;
 
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
-    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;

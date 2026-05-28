@@ -107,7 +107,7 @@ describe("DocumentationService", () => {
     });
 
     it("should show alert if no documentation is found", async () => {
-      const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => {});
+      const alertSpy = jest.spyOn(window, "alert").mockReturnValue();
       checkFullUrlSpy.mockResolvedValue(false);
       await service.openDocumentation("tokens");
       expect(alertSpy).toHaveBeenCalledWith("The documentation page is currently not available.");

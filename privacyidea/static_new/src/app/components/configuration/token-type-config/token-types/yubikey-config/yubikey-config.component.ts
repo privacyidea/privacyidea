@@ -26,11 +26,11 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatDivider } from "@angular/material/list";
 
-export type ApiKeyData = {
+export interface ApiKeyData {
   apiId: string;
   apiKey: string;
   generateKey: boolean;
-};
+}
 
 @Component({
   selector: "app-yubikey-config",
@@ -48,11 +48,11 @@ export type ApiKeyData = {
   styleUrl: "./yubikey-config.component.scss"
 })
 export class YubikeyConfigComponent {
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
   yubikeyApiIds = input.required<string[]>();
 
-  onYubikeyCreateNewKey = output<ApiKeyData>();
-  onDeleteEntry = output<string>();
+  yubikeyCreateNewKey = output<ApiKeyData>();
+  deleteEntry = output<string>();
 
   newYubikeyApiId = signal("");
   newYubikeyApiKey = signal("");
@@ -66,13 +66,13 @@ export class YubikeyConfigComponent {
         apiKey: this.newYubikeyApiKey(),
         generateKey: this.newYubikeyGenKey()
       };
-      this.onYubikeyCreateNewKey.emit(newKeyData);
+      this.yubikeyCreateNewKey.emit(newKeyData);
       this.newYubikeyApiId.set("");
       this.newYubikeyApiKey.set("");
     }
   }
 
   deleteEntry(key: string) {
-    this.onDeleteEntry.emit(key);
+    this.deleteEntry.emit(key);
   }
 }

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Output, signal } from "@angular/core";
+import { Component, inject, input, signal, OnInit, output } from '@angular/core';
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -42,7 +42,7 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   templateUrl: "./enroll-sshkey.component.html",
   styleUrl: "./enroll-sshkey.component.scss"
 })
-export class EnrollSshkeyComponent {
+export class EnrollSshkeyComponent implements OnInit {
   disabled = input<boolean>(false);
   protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(SshkeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -53,20 +53,18 @@ export class EnrollSshkeyComponent {
     validate(f, (ctx) => {
       const value = ctx.value();
       if (value && !SSH_KEY_PATTERN.test(value)) {
-        return [{ kind: "invalidSshKey" as any }];
+        return [{ kind: "invalidSshKey" }];
       }
       return [];
     });
     disabled(f, () => this.disabled());
   });
 
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: SshkeyEnrollmentData;
       mapper: TokenApiPayloadMapper<SshkeyEnrollmentData>;
-    } | null
-  >();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
+    } | null>();
+  additionalFormFieldsChange = output<Record<string, unknown>>();
 
   ngOnInit() {
     this.additionalFormFieldsChange.emit({});
