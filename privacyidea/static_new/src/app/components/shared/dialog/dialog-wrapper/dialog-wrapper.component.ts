@@ -43,17 +43,17 @@ export class DialogWrapperComponent<R = any> implements OnInit {
   cancelButtonPrimary = input<boolean>(false);
   handleCloseExternally = input<boolean>(false);
   actions = input<DialogAction<R>[]>([]);
-  onAction = output<R>();
-  close = output<void>();
+  action = output<R>();
+  dialogClose = output<void>();
 
   onActionClick(action: DialogAction<R>): void {
-    this.onAction.emit(action.value);
+    this.action.emit(action.value);
   }
 
   onCancelClick(): void {
     if (this.handleCloseExternally()) {
       // Emit the close event and let the parent handle it
-      this.close.emit();
+      this.dialogClose.emit();
     } else {
       // Close the dialog directly (default behavior)
       this.dialogRef.close();

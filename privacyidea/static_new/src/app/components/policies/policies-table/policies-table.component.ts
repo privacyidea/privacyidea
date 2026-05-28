@@ -152,7 +152,11 @@ export class PoliciesTableComponent {
   updateSelection($event: MatCheckboxChange, policyName: string): void {
     if (!policyName) return;
     const selected = new Set(this.selectedPolicies());
-    $event.checked ? selected.add(policyName) : selected.delete(policyName);
+    if ($event.checked) {
+      selected.add(policyName);
+    } else {
+      selected.delete(policyName);
+    }
     this.selectedPolicies.set(selected);
   }
 

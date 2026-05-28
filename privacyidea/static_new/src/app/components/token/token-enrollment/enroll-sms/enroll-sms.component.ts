@@ -43,17 +43,7 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-sms",
   standalone: true,
-  imports: [
-    MatCheckbox,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatSelect,
-    MatOption,
-    MatHint,
-    MatError,
-    FormField
-  ],
+  imports: [MatCheckbox, MatFormField, MatInput, MatLabel, MatSelect, MatOption, MatHint, MatError, FormField],
   templateUrl: "./enroll-sms.component.html",
   styleUrl: "./enroll-sms.component.scss"
 })
@@ -91,7 +81,7 @@ export class EnrollSmsComponent implements OnInit {
     validate(f, (ctx) => {
       const value = ctx.value();
       const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" as any }];
+      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" }];
       return [];
     });
     disabled(f, () => this.disabled() || this.readNumberDynamically());
@@ -117,8 +107,8 @@ export class EnrollSmsComponent implements OnInit {
       gateways = this.smsGatewayService.smsGateways().map((gw) => gw.name);
     }
 
-    if (defaultId && !gateways.includes(defaultId)) {
-      gateways.push(defaultId);
+    if (defaultId && !gateways.includes(String(defaultId))) {
+      gateways.push(String(defaultId));
     }
 
     return gateways;
@@ -137,7 +127,7 @@ export class EnrollSmsComponent implements OnInit {
       if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[SMS_GATEWAY];
       if (id && !this.smsGatewayInitialized) {
-        this.smsGateway.set(id);
+        this.smsGateway.set(String(id));
         this.smsGatewayInitialized = true;
       }
     });

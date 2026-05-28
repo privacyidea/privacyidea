@@ -18,7 +18,7 @@
 -->
 <app-dialog-wrapper
   (close)="close()"
-  (onAction)="onCloseAction()"
+  (action)="onCloseAction()"
   [showCancelButton]="false"
   [actions]="[closeAction]"
   [title]="'Token ' + data.tokenSerial() + ' is lost?'">

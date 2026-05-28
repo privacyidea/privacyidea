@@ -64,14 +64,14 @@ export class EnrollWebauthnComponent implements OnInit {
     } | null
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<
+  @Output() enrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
+    this.enrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
   enrollmentArgsGetter = (
@@ -136,7 +136,7 @@ export class EnrollWebauthnComponent implements OnInit {
     return responseLastStep;
   }
 
-  readPublicKeyCred = async (enrollmentResponse: WebauthnEnrollmentResponse): Promise<any | null> => {
+  readPublicKeyCred = async (enrollmentResponse: WebauthnEnrollmentResponse): Promise<PublicKeyCredential | null> => {
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
@@ -144,7 +144,7 @@ export class EnrollWebauthnComponent implements OnInit {
       return null;
     }
 
-    const publicKeyOptions: any = {
+    const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       rp: {
         id: request.relyingParty.id,
         name: request.relyingParty.name
@@ -154,31 +154,29 @@ export class EnrollWebauthnComponent implements OnInit {
         name: request.name,
         displayName: request.displayName
       },
-      challenge: this.base64Service.base64URLToBytes(request.nonce),
+      challenge: this.base64Service.base64URLToBytes(request.nonce).buffer as ArrayBuffer,
       pubKeyCredParams: request.pubKeyCredAlgorithms,
       timeout: request.timeout,
       excludeCredentials: request.excludeCredentials
         ? request.excludeCredentials.map((cred) => ({
-            id: this.base64Service.base64URLToBytes(cred.id),
-            type: cred.type,
-            transports: cred.transports
+            id: this.base64Service.base64URLToBytes(cred.id).buffer as ArrayBuffer,
+            type: cred.type as PublicKeyCredentialType,
+            transports: cred.transports as AuthenticatorTransport[] | undefined
           }))
         : [],
       authenticatorSelection: request.authenticatorSelection,
-      attestation: request.attestation,
+      attestation: request.attestation as AttestationConveyancePreference | undefined,
       extensions: request.extensions
     };
 
-    let publicKeyCred: any | null = null;
+    let publicKeyCred: PublicKeyCredential | null = null;
     try {
-      publicKeyCred = await navigator.credentials.create({
+      publicKeyCred = (await navigator.credentials.create({
         publicKey: publicKeyOptions
-      });
-    } catch (browserOrCredentialError: any) {
-      this.notificationService.error(
-        `WebAuthn credential creation failed: ${browserOrCredentialError.message || "Unknown error"}`
-      );
-      publicKeyCred = null;
+      })) as PublicKeyCredential | null;
+    } catch (browserOrCredentialError) {
+      const message = browserOrCredentialError instanceof Error ? browserOrCredentialError.message : "Unknown error";
+      this.notificationService.error(`WebAuthn credential creation failed: ${message}`);
     } finally {
       this.closeStepOneDialog();
     }
@@ -243,6 +241,7 @@ export class EnrollWebauthnComponent implements OnInit {
       return null;
     }
 
+    const attestationResponse = publicKeyCred.response as AuthenticatorAttestationResponse;
     const params: WebauthnFinalizeData = {
       ...webauthnEnrollmentData,
       transaction_id: webAuthnRegisterRequest.transaction_id,
@@ -250,8 +249,8 @@ export class EnrollWebauthnComponent implements OnInit {
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
       authenticatorAttachment: publicKeyCred.authenticatorAttachment,
-      regdata: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.attestationObject)),
-      clientdata: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON))
+      regdata: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.attestationObject)),
+      clientdata: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.clientDataJSON))
     };
 
     const extResults = publicKeyCred.getClientExtensionResults();
@@ -268,9 +267,9 @@ export class EnrollWebauthnComponent implements OnInit {
       );
       response.detail.serial = detail.serial;
       return { ...response };
-    } catch (error: any) {
-      const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
-      this.notificationService.error(errMsg);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.notificationService.error(`WebAuthn finalization failed: ${message}`);
       return null;
     }
   }

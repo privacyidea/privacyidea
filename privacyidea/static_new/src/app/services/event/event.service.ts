@@ -76,20 +76,33 @@ export type ActionOptions = Record<string, ActionOptionDetails>;
 
 export type EventActions = Record<string, ActionOptions>;
 
+export interface EventHandlerSaveParams {
+  id?: string;
+  name: string;
+  active: boolean;
+  handlermodule: string | null;
+  ordering: number;
+  position: string;
+  event: string[];
+  action: string;
+  conditions: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export interface EventServiceInterface {
   selectedHandlerModule: WritableSignal<string | null>;
   readonly allEventsResource: HttpResourceRef<PiResponse<EventHandler[]> | undefined>;
   eventHandlers: Signal<EventHandler[] | undefined>;
 
-  saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined>;
+  saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined>;
 
   enableEvent(eventId: number | null): Promise<object | undefined>;
 
   disableEvent(eventId: number | null): Promise<object | undefined>;
 
-  deleteEvent(eventId: number): Observable<PiResponse<number, any>>;
+  deleteEvent(eventId: number): Observable<PiResponse<number>>;
 
-  deleteWithConfirmDialog(event: EventHandler, dialog: any, afterDelete?: () => void): void;
+  deleteWithConfirmDialog(event: EventHandler): void;
 
   readonly eventHandlerModulesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   eventHandlerModules: Signal<string[]>;
@@ -147,13 +160,13 @@ export class EventService implements EventServiceInterface {
   // Edit functionality for event handlers
   // -------------------------------------
 
-  saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined> {
+  saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined> {
     const headers = this.authService.getHeaders();
-    const params = { ...event } as any;
+    const params = { ...event };
     if (params.id == null) {
       delete params.id;
     }
-    return this.http.post<PiResponse<number, any>>(this.eventBaseUrl, params, { headers }).pipe(
+    return this.http.post<PiResponse<number>>(this.eventBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
         const message = error.error.result?.error?.message || "";
@@ -199,11 +212,11 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  deleteEvent(eventId: number): Observable<PiResponse<number, any>> {
+  deleteEvent(eventId: number): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
 
     return this.http
-      .delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers })
+      .delete<PiResponse<number>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete event handler.", error);
@@ -214,7 +227,7 @@ export class EventService implements EventServiceInterface {
       );
   }
 
-  async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number, any> | undefined> {
+  async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number> | undefined> {
     const confirmation = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -240,7 +253,7 @@ export class EventService implements EventServiceInterface {
 
       this.notificationService.success("Successfully deleted event handler.");
       return result;
-    } catch (error) {
+    } catch {
       // error already handled in deleteEvent
       return;
     }
@@ -351,7 +364,7 @@ export class EventService implements EventServiceInterface {
   });
 
   moduleConditionsByGroup = computed(() => {
-    const conditions: Record<string, any> = {};
+    const conditions: Record<string, Record<string, EventCondition>> = {};
     for (const [conditionName, conditionDetails] of Object.entries(this.moduleConditions())) {
       const group = conditionDetails.group || "miscellaneous";
       if (!(group in conditions)) {

@@ -68,8 +68,8 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
     validate(f, (ctx) => {
       const value = ctx.value();
       const numericValue = Number(value);
-      if (!value || isNaN(numericValue)) return [{ kind: "required" as any }];
-      if (numericValue < 10) return [{ kind: "min" as any }];
+      if (!value || isNaN(numericValue)) return [{ kind: "required" }];
+      if (numericValue < 10) return [{ kind: "min" }];
       return [];
     });
   });
@@ -79,8 +79,8 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
     validate(f, (ctx) => {
       const value = ctx.value();
       const numericValue = Number(value);
-      if (!value || isNaN(numericValue)) return [{ kind: "required" as any }];
-      if (numericValue < 1000) return [{ kind: "min" as any }];
+      if (!value || isNaN(numericValue)) return [{ kind: "required" }];
+      if (numericValue < 1000) return [{ kind: "min" }];
       return [];
     });
   });
@@ -99,7 +99,7 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
       serial: this.data.tokenSerial
     });
     request.subscribe({
-      next: (_) => {
+      next: () => {
         // Subscribed to ensure that the request will be executed
       },
       error: (error) => {

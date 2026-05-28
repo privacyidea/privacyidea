@@ -180,7 +180,7 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
-  authenticate(params: any): Observable<AuthResponse>;
+  authenticate(params: Record<string, string>): Observable<AuthResponse>;
   acceptAuthentication(): void;
   logout(): void;
   actionAllowed(action: PolicyAction): boolean;
@@ -293,7 +293,7 @@ export class AuthService implements AuthServiceInterface {
     });
   }
 
-  authenticate(params: any): Observable<AuthResponse> {
+  authenticate(params: Record<string, string>): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({

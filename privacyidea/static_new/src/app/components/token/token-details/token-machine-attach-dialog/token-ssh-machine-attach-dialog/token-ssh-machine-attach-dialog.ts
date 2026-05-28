@@ -201,7 +201,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
       resolver: machine!.resolver_name
     });
     request.subscribe({
-      next: (_) => {
+      next: () => {
         this.machineService.machinesResource.reload();
         this.machineService.tokenApplicationResource.reload();
       },

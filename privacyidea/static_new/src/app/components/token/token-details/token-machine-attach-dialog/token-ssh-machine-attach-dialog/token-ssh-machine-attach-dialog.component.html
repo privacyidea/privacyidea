@@ -20,7 +20,7 @@
 <app-dialog-wrapper
   title="Assign SSH Machine"
   (close)="close()"
-  (onAction)="onAction($event)"
+  (action)="onAction($event)"
   [actions]="[assignAction]"
   [showCancelButton]="true">
   <mat-form-field

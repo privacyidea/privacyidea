@@ -211,7 +211,9 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       environment.proxyUrl +
       `/container/${encodeURIComponent(template.container_type)}/template/${encodeURIComponent(template.name)}`;
     try {
-      await lastValueFrom(this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() }));
+      await lastValueFrom(
+        this.http.post<PiResponse<{ template_id: number }>>(url, template, { headers: this.authService.getHeaders() })
+      );
       this.templatesResource.reload();
       this.notificationService.success(`Successfully saved template edits.`);
       return true;

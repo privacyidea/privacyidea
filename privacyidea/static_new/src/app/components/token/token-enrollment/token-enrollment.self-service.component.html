@@ -40,7 +40,7 @@
       <app-enroll-token-type-switch
         [tokenTypeKey]="tokenService.selectedTokenType().key"
         (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-        (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+        (enrollmentResponseChange)="updateOnEnrollmentResponse($event)"
         (reopenDialogChange)="updateReopenDialog($event)" />
       <mat-form-field
         class="input-width-xl margin-top-16">

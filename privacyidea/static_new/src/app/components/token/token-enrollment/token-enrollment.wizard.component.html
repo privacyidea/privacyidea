@@ -55,7 +55,7 @@
       [tokenTypeKey]="authService.defaultTokentype() || 'hotp'"
       [wizard]="wizard"
       (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-      (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+      (enrollmentResponseChange)="updateOnEnrollmentResponse($event)"
       (reopenDialogChange)="updateReopenDialog($event)" />
     @if (descriptionRequired()) {
       <mat-form-field class="input-width-l description-form">

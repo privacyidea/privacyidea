@@ -22,7 +22,6 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { empty } from "rxjs";
 
 export interface Applications {
   luks: ApplicationLuks;
@@ -45,8 +44,8 @@ interface ApplicationOffline {
       count: { type: string };
       rounds: { type: string };
     };
-    passkey: {};
-    webauthn: {};
+    passkey: Record<string, never>;
+    webauthn: Record<string, never>;
   };
 }
 

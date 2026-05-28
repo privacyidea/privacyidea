@@ -20,7 +20,7 @@
   [title]="data.rollover ? 'Container Rollover' : 'Register Container'"
   [actions]="[getAction()]"
   (close)="close()"
-  (onAction)="onAction($event)">
+  (action)="onAction($event)">
   <mat-dialog-content>
     <app-container-registration-config
       [containerHasOwner]="data.containerHasOwner"

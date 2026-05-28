@@ -32,7 +32,7 @@ export class ViewActionColumnComponent {
   /**
    * Input received from the policy table row.
    */
-  readonly actions = input.required<Record<string, any>>();
+  readonly actions = input.required<Record<string, string | boolean>>();
   readonly scope = input<string | undefined>(undefined);
 
   /**

@@ -64,14 +64,14 @@ export class EnrollPasskeyComponent implements OnInit {
     } | null
   >();
   @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<
+  @Output() enrollmentResponseChange = new EventEmitter<
     (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
   >();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this.onEnrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
+    this.enrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
   }
 
   enrollmentArgsGetter = (
@@ -239,13 +239,13 @@ export class EnrollPasskeyComponent implements OnInit {
     )
       .catch(async (errorStep3) => {
         this.notificationService.error("Error during final Passkey registration step. Attempting to clean up token.");
-        (await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
+        await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
           this.notificationService.error(
             `Failed to delete token ${detail.serial} after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
-        }),
-          this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`));
+        });
+        this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`);
         throw Error(errorStep3);
       })
       .then((finalResponse) => {

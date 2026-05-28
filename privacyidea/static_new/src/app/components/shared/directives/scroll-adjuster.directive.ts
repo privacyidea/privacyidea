@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, Input, OnDestroy } from "@angular/core";
 
 @Directive({
   selector: "[appScrollAdjuster]",
@@ -28,7 +28,7 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   private mutationObserver!: MutationObserver;
   @Input() scrollItemSelector = ".scroll-item"; // Default selector, can be overridden
 
-  constructor(private el: ElementRef<HTMLElement>) {}
+  private el = inject(ElementRef<HTMLElement>);
 
   ngAfterViewInit(): void {
     const container = this.el.nativeElement;

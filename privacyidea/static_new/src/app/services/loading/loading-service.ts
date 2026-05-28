@@ -62,7 +62,7 @@ export class LoadingService implements LoadingServiceInterface {
       complete: () => {
         this.removeLoading(loading.key);
       },
-      error: (_) => {
+      error: () => {
         this.removeLoading(loading.key);
       }
     });
