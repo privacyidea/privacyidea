@@ -251,7 +251,7 @@ def set_policy_api(name=None):
     user = param.get("user")
     time = param.get("time")
     client = param.get("client")
-    active = param.get("active")
+    active = is_true(param.get("active", True))
     check_all_resolvers = param.get("check_all_resolvers")
     admin_realm = param.get("adminrealm")
     admin_user = param.get("adminuser")
@@ -270,7 +270,7 @@ def set_policy_api(name=None):
                         'info': f"{param!s}"})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
-                     active=active or True, adminrealm=admin_realm,
+                     active=active, adminrealm=admin_realm,
                      adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions,
