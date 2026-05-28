@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, effect, inject, input, OnInit, signal, output } from '@angular/core';
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -50,13 +50,11 @@ export class EnrollFoureyesComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<FourEyesEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: FourEyesEnrollmentData;
       mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
-    } | null
-  >();
+    } | null>();
   disabled = input<boolean>(false);
 
   separator = signal<string>("|");

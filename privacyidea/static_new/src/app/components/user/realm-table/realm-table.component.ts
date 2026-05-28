@@ -595,8 +595,8 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const key = s.active as keyof RealmRow;
 
     return data.sort((a: RealmRow, b: RealmRow) => {
-      let va: any;
-      let vb: any;
+      let va: number | string;
+      let vb: number | string;
       if (key === "isDefault") {
         va = a.isDefault ? 1 : 0;
         vb = b.isDefault ? 1 : 0;

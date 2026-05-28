@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output, Signal, WritableSignal } from "@angular/core";
+import { Component, Input, Signal, WritableSignal, output } from '@angular/core';
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import {
@@ -72,9 +72,9 @@ export class ContainerCreateFormComponent {
   @Input() containerHasOwner = false;
   @Input() templateFieldClass = "input-width-l";
 
-  @Output() validInputChange = new EventEmitter<boolean>();
-  @Output() clearTemplate = new EventEmitter<void>();
-  @Output() templateChange = new EventEmitter<ContainerTemplate>();
+  validInputChange = output<boolean>();
+  clearTemplate = output<void>();
+  templateChange = output<ContainerTemplate>();
 
   compareTemplates(t1: ContainerTemplate | null, t2: ContainerTemplate | null): boolean {
     return t1?.name === t2?.name;

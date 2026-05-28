@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
+import { Component, inject, Input, OnInit, output } from '@angular/core';
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
@@ -56,17 +56,13 @@ export class EnrollWebauthnComponent implements OnInit {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   @Input() wizard = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: WebAuthnEnrollmentData;
       mapper: TokenApiPayloadMapper<WebAuthnEnrollmentData>;
-    } | null
-  >();
-  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() enrollmentResponseChange = new EventEmitter<
-    (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
-  >();
+    } | null>();
+  reopenDialogChange = output<ReopenDialogFn>();
+  enrollmentResponseChange = output<(enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>>();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

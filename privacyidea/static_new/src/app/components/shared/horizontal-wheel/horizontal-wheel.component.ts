@@ -17,22 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-    AfterViewInit,
-    ChangeDetectionStrategy,
-    Component,
-    ElementRef,
-    EventEmitter,
-    HostListener,
-    inject,
-    Input,
-    Output,
-    Signal,
-    WritableSignal,
-    effect,
-    linkedSignal,
-    viewChildren
-} from "@angular/core";
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, Input, Signal, WritableSignal, effect, linkedSignal, viewChildren, output } from '@angular/core';
 
 @Component({
   selector: "app-horizontal-wheel",
@@ -45,7 +30,7 @@ import {
 export class HorizontalWheelComponent implements AfterViewInit {
   @Input({ required: true }) values!: Signal<string[]>;
   @Input({ required: true }) initialValue!: string;
-  @Output() itemSelected: EventEmitter<string> = new EventEmitter<string>();
+  itemSelected = output<string>();
 
   // Linked signal will not work here. Computation will not be called when values change.
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({

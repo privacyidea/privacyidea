@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, inject, input, OnInit, signal, output } from '@angular/core';
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -48,13 +48,11 @@ export class EnrollVascoComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   disabled = input<boolean>(false);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: VascoEnrollmentData;
       mapper: TokenApiPayloadMapper<VascoEnrollmentData>;
-    } | null
-  >();
+    } | null>();
 
   useVascoSerial = signal<boolean>(false);
   otpKey = signal<string>("");

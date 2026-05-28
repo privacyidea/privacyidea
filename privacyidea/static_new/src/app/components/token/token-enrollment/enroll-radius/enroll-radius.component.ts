@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, Input, OnInit, signal, output } from '@angular/core';
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -69,13 +69,11 @@ export class EnrollRadiusComponent implements OnInit {
 
   enrollmentData = input<RadiusEnrollmentData>();
   @Input() wizard = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: RadiusEnrollmentData;
       mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
-    } | null
-  >();
+    } | null>();
   disabled = input<boolean>(false);
 
   radiusUser = signal<string>("");

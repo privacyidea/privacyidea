@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, effect, inject, input, OnInit, signal, output } from '@angular/core';
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { form, FormField, required, validate } from "@angular/forms/signals";
@@ -41,13 +41,11 @@ export class EnrollYubikeyComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<YubikeyEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: YubikeyEnrollmentData;
       mapper: TokenApiPayloadMapper<YubikeyEnrollmentData>;
-    } | null
-  >();
+    } | null>();
 
   testYubiKey = signal<string>("");
   otpKey = signal<string>("");

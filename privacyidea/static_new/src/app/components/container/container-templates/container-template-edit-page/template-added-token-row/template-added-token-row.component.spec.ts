@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, output } from '@angular/core';
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
@@ -29,7 +29,7 @@ import { TemplateAddedTokenRowComponent } from "./template-added-token-row.compo
   template: ""
 })
 class MockEnrollHotpComponent {
-  @Output() additionalFormFieldsChange = new EventEmitter<any>();
+  additionalFormFieldsChange = output<any>();
 }
 
 describe("TemplateAddedTokenRowComponent", () => {

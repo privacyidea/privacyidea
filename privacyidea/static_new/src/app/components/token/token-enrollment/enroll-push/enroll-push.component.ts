@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from "@angular/core";
+import { Component, Input, OnInit, inject, signal, output } from '@angular/core';
 import { MatDialogRef } from "@angular/material/dialog";
 import { PiResponse } from "@app/app.component";
 import {
@@ -50,17 +50,13 @@ export class EnrollPushComponent implements OnInit {
   text = this.tokenService.tokenTypeOptions().find((type) => type.key === "push")?.text;
 
   @Input() wizard = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: PushEnrollmentData;
       mapper: TokenApiPayloadMapper<PushEnrollmentData>;
-    } | null
-  >();
-  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() enrollmentResponseChange = new EventEmitter<
-    (enrollmentResponse: EnrollmentResponse) => Promise<EnrollmentResponse | null>
-  >();
+    } | null>();
+  reopenDialogChange = output<ReopenDialogFn>();
+  enrollmentResponseChange = output<(enrollmentResponse: EnrollmentResponse) => Promise<EnrollmentResponse | null>>();
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

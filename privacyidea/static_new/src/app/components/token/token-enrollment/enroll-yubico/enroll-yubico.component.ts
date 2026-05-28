@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, inject, input, OnInit, signal, output } from '@angular/core';
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
@@ -54,13 +54,11 @@ export class EnrollYubicoComponent implements OnInit {
 
   disabled = input<boolean>(false);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
+  additionalFormFieldsChange = output<Record<string, unknown>>();
+  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
       data: YubicoEnrollmentData;
       mapper: TokenApiPayloadMapper<YubicoEnrollmentData>;
-    } | null
-  >();
+    } | null>();
 
   yubicoIdentifier = signal<string>("");
   yubicoIdentifierForm = form(this.yubicoIdentifier, (f) => {
