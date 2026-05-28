@@ -42,39 +42,39 @@ calling function handle the data.
 
 This lib.crypto is tested in tests/test_lib_crypto.py
 """
+import base64
+import binascii
+import ctypes
 import hmac
 import importlib
 import logging
+import random
+import secrets
+import string
+import traceback
 from dataclasses import dataclass
 from hashlib import sha256
-import secrets
-import random
-import string
-import binascii
-import ctypes
-import base64
-import traceback
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives._serialization import NoEncryption
+from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
+from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from passlib.context import CryptContext
-from privacyidea.lib.log import log_with
+
 from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
                                        get_app_config)
+from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (to_unicode, to_bytes, hexlify_and_unicode,
                                    b64encode_and_unicode)
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
 def safe_compare(a, b):
@@ -92,6 +92,8 @@ DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
 DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
+
+ENCKEY_CHECK_PLAINTEXT = "privacyIDEA enckey check value"
 
 log = logging.getLogger(__name__)
 
@@ -1191,3 +1193,27 @@ def decrypt_aes(secret: bytes, shared_key: bytes, params: dict) -> bytes:
     # If the tag does not match an InvalidTag exception will be raised.
     message = decryptor.update(secret) + decryptor.finalize()
     return message
+
+
+def verify_encryption_key(check_value: str) -> bool:
+    """
+    Verify that the current encryption key can correctly decrypt the given
+    check value to the known plaintext.
+
+    :param check_value: The encrypted check value to verify
+    :type check_value: str
+    :return: True if the encryption key is correct
+    :rtype: bool
+    :raises HSMException: if the encryption key does not match
+    """
+    decrypted = to_unicode(decryptPassword(check_value))
+    if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+        raise HSMException(
+            "Encryption key verification failed! The encryption key does not "
+            "match the one used to encrypt the data. Failed to decrypt check value.")
+    elif decrypted != ENCKEY_CHECK_PLAINTEXT:
+        raise HSMException(
+            "Encryption key verification failed! The encryption key does not "
+            "match the one used to encrypt the data. "
+            "Decrypted check value does not match expected plaintext.")
+    return True

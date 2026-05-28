@@ -49,6 +49,7 @@ from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
                       get_machinetoken_ids)
 from .monitoringstats import MonitoringStats
 from .periodictask import PeriodicTask, PeriodicTaskOption, PeriodicTaskLastRun
+from .pi_internal import PiInternal
 from .policy import Policy, PolicyDescription, PolicyCondition
 from .realm import Realm, ResolverRealm
 from .resolver import Resolver, ResolverConfig
@@ -68,7 +69,7 @@ from .tokengroup import Tokengroup, TokenTokengroup
 __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
            "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
-           "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute",
+           "PRIVACYIDEA_TIMESTAMP", "PiInternal", "CustomUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",

@@ -474,6 +474,151 @@ class TestPIManageSetupClass:
             inspector = sa.inspect(db.engine)
             assert inspector.get_table_names() == []
 
+    def test_03_pimanage_setup_create_tables(self, app):
+        """create_tables must create all DB tables."""
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_tables", "--no-stamp"])
+        assert result.exit_code == 0, result.output
+        with app.app_context():
+            inspector = sa.inspect(db.engine)
+            tables = inspector.get_table_names()
+            assert "token" in tables
+            assert "config" in tables
+            assert "pi_internal" in tables
+
+    def test_04_pimanage_setup_create_tables_no_stamp(self, app):
+        """create_tables --no-stamp must not create alembic_version table."""
+        # Drop and recreate
+        runner = app.test_cli_runner()
+        runner.invoke(pi_manage, ["setup", "drop_tables", "-d", "yes"])
+        result = runner.invoke(pi_manage, ["setup", "create_tables", "--no-stamp"])
+        assert result.exit_code == 0, result.output
+        with app.app_context():
+            inspector = sa.inspect(db.engine)
+            assert "alembic_version" not in inspector.get_table_names()
+
+    def test_05_pimanage_setup_drop_tables_safety(self, app):
+        """drop_tables without --dropit=yes must not drop anything."""
+        # Ensure tables exist
+        runner = app.test_cli_runner()
+        runner.invoke(pi_manage, ["setup", "create_tables", "--no-stamp"])
+        result = runner.invoke(pi_manage, ["setup", "drop_tables"])
+        assert "Not dropping anything!" in result.output
+        with app.app_context():
+            inspector = sa.inspect(db.engine)
+            assert "token" in inspector.get_table_names()
+
+    def test_06_pimanage_setup_create_enckey(self, app, tmp_path):
+        """create_enckey must create a new encryption key file and store check value in DB."""
+        enc_file = tmp_path / "enckey"
+        with app.app_context():
+            app.config["PI_ENCFILE"] = str(enc_file)
+            # Ensure tables exist
+            db.create_all()
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_enckey"])
+        assert result.exit_code == 0, result.output
+        assert "Encryption key written to" in result.output
+        assert enc_file.is_file()
+        # The enckey file should be 96 bytes
+        assert len(enc_file.read_bytes()) == 96
+        # Check value should be stored in DB
+        assert "Encryption key check value stored in database" in result.output
+
+        with app.app_context():
+            from privacyidea.models.pi_internal import PiInternal
+            row = db.session.query(PiInternal).filter_by(name="enckey_check").first()
+            assert row is not None
+            assert row.check_value != ""
+
+    def test_07_pimanage_setup_create_enckey_no_overwrite(self, app, tmp_path):
+        """create_enckey must not overwrite an existing key file."""
+        enc_file = tmp_path / "enckey"
+        enc_file.write_bytes(b"x" * 96)
+        with app.app_context():
+            app.config["PI_ENCFILE"] = str(enc_file)
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_enckey"])
+        assert "already exist" in result.output
+        # File should be unchanged
+        assert enc_file.read_bytes() == b"x" * 96
+
+    def test_08_pimanage_setup_create_enckey_b64(self, app, tmp_path):
+        """create_enckey --enckey_b64 must use the provided key."""
+        import base64
+        enc_file = tmp_path / "enckey_b64"
+        raw_key = b"\x01" * 96
+        b64_key = base64.b64encode(raw_key).decode()
+        with app.app_context():
+            app.config["PI_ENCFILE"] = str(enc_file)
+            db.create_all()
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_enckey", "-e", b64_key])
+        assert result.exit_code == 0, result.output
+        assert "Passing enckey via cli input is considered harmful" in result.output
+        assert enc_file.read_bytes() == raw_key
+
+    def test_09_pimanage_setup_create_enckey_b64_wrong_length(self, app, tmp_path):
+        """create_enckey --enckey_b64 must reject keys that are not 96 bytes."""
+        import base64
+        enc_file = tmp_path / "enckey_bad"
+        b64_key = base64.b64encode(b"\x01" * 50).decode()
+        with app.app_context():
+            app.config["PI_ENCFILE"] = str(enc_file)
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_enckey", "-e", b64_key])
+        assert "enckey must be 96 bytes" in result.output
+
+    def test_10_pimanage_setup_create_audit_keys(self, app, tmp_path):
+        """create_audit_keys must create private and public key files."""
+        priv_key = tmp_path / "audit_priv.pem"
+        pub_key = tmp_path / "audit_pub.pem"
+        with app.app_context():
+            app.config["PI_AUDIT_KEY_PRIVATE"] = str(priv_key)
+            app.config["PI_AUDIT_KEY_PUBLIC"] = str(pub_key)
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_audit_keys"])
+        assert result.exit_code == 0, result.output
+        assert "Signing keys written to" in result.output
+        assert priv_key.is_file()
+        assert pub_key.is_file()
+        # Verify they are PEM formatted
+        assert priv_key.read_bytes().startswith(b"-----BEGIN RSA PRIVATE KEY-----")
+        assert pub_key.read_bytes().startswith(b"-----BEGIN PUBLIC KEY-----")
+
+    def test_11_pimanage_setup_create_audit_keys_no_overwrite(self, app, tmp_path):
+        """create_audit_keys must not overwrite existing key files."""
+        priv_key = tmp_path / "audit_priv.pem"
+        pub_key = tmp_path / "audit_pub.pem"
+        priv_key.write_bytes(b"existing")
+        with app.app_context():
+            app.config["PI_AUDIT_KEY_PRIVATE"] = str(priv_key)
+            app.config["PI_AUDIT_KEY_PUBLIC"] = str(pub_key)
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_audit_keys"])
+        assert "already exist" in result.output
+        assert priv_key.read_bytes() == b"existing"
+
+    def test_12_pimanage_setup_create_audit_keys_custom_keysize(self, app, tmp_path):
+        """create_audit_keys -k should accept a custom key size."""
+        priv_key = tmp_path / "audit_priv_4096.pem"
+        pub_key = tmp_path / "audit_pub_4096.pem"
+        with app.app_context():
+            app.config["PI_AUDIT_KEY_PRIVATE"] = str(priv_key)
+            app.config["PI_AUDIT_KEY_PUBLIC"] = str(pub_key)
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "create_audit_keys", "-k", "4096"])
+        assert result.exit_code == 0, result.output
+        assert priv_key.is_file()
+        assert pub_key.is_file()
+
 
 class TestPIManageConfigExport:
     """Test export functions of pi-manage"""

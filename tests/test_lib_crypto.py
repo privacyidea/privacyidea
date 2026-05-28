@@ -427,11 +427,13 @@ class EllipticCurveCryptoTestCase(MyTestCase):
 
         # Verify signature: Wrong pub_key
         wrong_keys = generate_keypair_ecc("secp384r1")
-        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], wrong_keys.public_key, hash_algorithm)
+        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], wrong_keys.public_key,
+                          hash_algorithm)
 
         # Verify signature: Wrong message/signature
         another_message = b'Top Secret!'
-        self.assertRaises(InvalidSignature, verify_ecc, another_message, sign_res["signature"], wrong_keys.public_key, hash_algorithm)
+        self.assertRaises(InvalidSignature, verify_ecc, another_message, sign_res["signature"], wrong_keys.public_key,
+                          hash_algorithm)
 
         # Verify signature: Wrong hash_algorithm
         self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], ecc_keys.public_key, "SHA512")
@@ -749,6 +751,10 @@ class AESHardwareSecurityModuleLibLevelTestCase(MyTestCase):
         current_app.config["PI_HSM_MODULE"] = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
         current_app.config["PI_HSM_MODULE_MODULE"] = "testmodule"
         current_app.config["PI_HSM_MODULE_PASSWORD"] = "test123!"
+        # Clear cached HSM so init_hsm() re-reads config
+        from privacyidea.lib.framework import get_app_local_store
+        store = get_app_local_store()
+        store.pop("pi_hsm", None)
         with self.pkcs11:
             MyTestCase.setUp(self)
 
@@ -803,6 +809,9 @@ class AESHardwareSecurityModuleLibLevelPasswordTestCase(MyTestCase):
         current_app.config["PI_HSM_MODULE"] = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
         current_app.config["PI_HSM_MODULE_MODULE"] = "testmodule"
         # the config misses the password
+        # Clear cached HSM so init_hsm() re-reads config
+        from privacyidea.lib.framework import get_app_local_store
+        get_app_local_store().pop("pi_hsm", None)
         with self.pkcs11:
             MyTestCase.setUp(self)
 
