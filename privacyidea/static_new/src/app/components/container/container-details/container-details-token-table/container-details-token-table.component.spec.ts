@@ -98,21 +98,24 @@ describe("ContainerDetailsTokenTableComponent", () => {
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 
-    component.containerTokenData = signal(
-      new MatTableDataSource<any>([
-        {
-          serial: "Mock serial",
-          tokentype: "hotp",
-          active: true,
-          username: "userA"
-        },
-        {
-          serial: "Another serial",
-          tokentype: "totp",
-          active: false,
-          username: "userB"
-        }
-      ])
+    fixture.componentRef.setInput(
+      "containerTokenData",
+      signal(
+        new MatTableDataSource<any>([
+          {
+            serial: "Mock serial",
+            tokentype: "hotp",
+            active: true,
+            username: "userA"
+          },
+          {
+            serial: "Another serial",
+            tokentype: "totp",
+            active: false,
+            username: "userB"
+          }
+        ])
+      )
     );
 
     fixture.detectChanges();

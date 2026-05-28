@@ -19,34 +19,28 @@
 
 import { signal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { Resolver, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { Resolver, ResolverData, ResolverServiceInterface, Resolvers } from "@services/resolver/resolver.service";
 import { of } from "rxjs";
+import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockResolverService implements ResolverServiceInterface {
   private _resolversValue: WritableSignal<Resolver[]> = signal([]);
   private _resolverOptionsValue: WritableSignal<string[]> = signal([]);
-  resolversResource: any = {
-    value: () => undefined,
-    reload: jest.fn()
-  };
+  resolversResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
   selectedResolverName: WritableSignal<string> = signal("");
-  selectedResolverResource: any = {
-    value: signal(undefined),
-    status: signal("resolved"),
-    reload: jest.fn()
-  };
+  selectedResolverResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
   resolverOptions: Signal<string[]> = this._resolverOptionsValue.asReadonly();
   editableResolvers: WritableSignal<string[]> = signal([]);
   userAttributes: WritableSignal<string[]> = signal([]);
 
-  postResolverTest = jest.fn(() => of({} as PiResponse<any, any>));
+  postResolverTest = jest.fn(() => of({} as PiResponse<unknown>));
 
-  postResolver = jest.fn((resolverName: string, data: any) => of({} as PiResponse<any, any>));
+  postResolver = jest.fn((_resolverName: string, _data: ResolverData) => of({} as PiResponse<unknown>));
 
-  deleteResolver = jest.fn((resolverName: string) => of({} as PiResponse<any, any>));
+  deleteResolver = jest.fn((_resolverName: string) => of({} as PiResponse<unknown>));
 
-  getDefaultResolverConfig = jest.fn((resolverType: string) => of({} as PiResponse<any, any>));
+  getDefaultResolverConfig = jest.fn((_resolverType: string) => of({} as PiResponse<unknown>));
 
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);

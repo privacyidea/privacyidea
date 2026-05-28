@@ -33,7 +33,7 @@ import { NewCaConnectorComponent } from "./new-ca-connector.component";
 describe("NewCaConnectorComponent", () => {
   let component: NewCaConnectorComponent;
   let fixture: ComponentFixture<NewCaConnectorComponent>;
-  let caConnectorServiceMock: any;
+  let caConnectorServiceMock: MockCaConnectorService;
   let router: Router;
 
   beforeEach(async () => {
@@ -49,7 +49,7 @@ describe("NewCaConnectorComponent", () => {
       ]
     }).compileComponents();
 
-    caConnectorServiceMock = TestBed.inject(CaConnectorService);
+    caConnectorServiceMock = TestBed.inject(CaConnectorService) as unknown as MockCaConnectorService;
     caConnectorServiceMock.getCaSpecificOptions.mockResolvedValue({ available_cas: ["CA1", "CA2"] });
     router = TestBed.inject(Router);
 
@@ -189,7 +189,7 @@ describe("NewCaConnectorComponent", () => {
         })
       })
     );
-    expect((caConnectorServiceMock.postCaConnector.mock.calls[0][0].data as any).cacert).toBeUndefined();
+    expect(caConnectorServiceMock.postCaConnector.mock.calls[0][0]?.data.cacert).toBeUndefined();
   });
 
   it("hasChanges should reflect form dirty state", () => {
@@ -215,7 +215,7 @@ describe("NewCaConnectorComponent", () => {
 describe("NewCaConnectorComponent edit mode", () => {
   let component: NewCaConnectorComponent;
   let fixture: ComponentFixture<NewCaConnectorComponent>;
-  let caConnectorServiceMock: any;
+  let caConnectorServiceMock: MockCaConnectorService;
   let dialogService: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
   let router: Router;
@@ -248,8 +248,8 @@ describe("NewCaConnectorComponent edit mode", () => {
       ]
     }).compileComponents();
 
-    caConnectorServiceMock = TestBed.inject(CaConnectorService);
-    (caConnectorServiceMock as any).caConnectors.set([existingConnector]);
+    caConnectorServiceMock = TestBed.inject(CaConnectorService) as unknown as MockCaConnectorService;
+    caConnectorServiceMock.caConnectors.set([existingConnector]);
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     router = TestBed.inject(Router);
@@ -297,7 +297,7 @@ describe("NewCaConnectorComponent edit mode", () => {
   });
 
   describe("onCancel", () => {
-    let mockDialogRef: any;
+    let mockDialogRef: { afterClosed: jest.Mock };
 
     beforeEach(() => {
       mockDialogRef = { afterClosed: jest.fn() };

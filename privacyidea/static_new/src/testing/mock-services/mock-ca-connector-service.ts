@@ -19,12 +19,12 @@
 import { HttpResourceRef } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { CaConnector, CaConnectors, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
+import { CaConnectors, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
 
 export class MockCaConnectorService implements CaConnectorServiceInterface {
   caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -34,20 +34,20 @@ export class MockCaConnectorService implements CaConnectorServiceInterface {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<CaConnectors> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
 
   caConnectors = signal<CaConnectors>([]);
 
-  postCaConnector = jest.fn(async (_connector: CaConnector): Promise<void> => {
+  postCaConnector = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 
-  deleteCaConnector = jest.fn(async (_connectorname: string): Promise<void> => {
+  deleteCaConnector = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 
-  getCaSpecificOptions = jest.fn(async (_catype: string, _params: any): Promise<any> => {
+  getCaSpecificOptions = jest.fn(async (): Promise<any> => {
     return Promise.resolve({});
   });
 }

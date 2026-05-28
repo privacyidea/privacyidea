@@ -53,7 +53,7 @@ export class EnrollSshkeyComponent implements OnInit {
     validate(f, (ctx) => {
       const value = ctx.value();
       if (value && !SSH_KEY_PATTERN.test(value)) {
-        return [{ kind: "invalidSshKey" as any }];
+        return [{ kind: "invalidSshKey" }];
       }
       return [];
     });

@@ -19,6 +19,7 @@
 
 import { NgClass } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   ElementRef,
@@ -27,7 +28,7 @@ import {
   linkedSignal,
   signal,
   ViewChild,
-  WritableSignal, AfterViewInit
+  WritableSignal
 } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -106,7 +107,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   pageSize = 5;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   pageIndex = this.tokenService.pageIndex;
-  containerTokenData = input.required<WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>>();
+  containerTokenData = input.required<MatTableDataSource<ContainerDetailToken, MatPaginator>>();
 
   filterValue: WritableSignal<string> = signal("");
   containerSerial = this.containerService.containerSerial;
@@ -133,7 +134,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   protected readonly sortedData = computed(() => {
-    const source = this.containerTokenData()();
+    const source = this.containerTokenData();
     const data = source?.data ?? [];
     return this.tableUtilsService.clientsideSortTokenData([...data], this.sort());
   });
@@ -206,12 +207,12 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
     if (assignedUser.user_name === "") {
       return false;
     }
-    const tokens = this.containerTokenData()().data;
+    const tokens = this.containerTokenData().data;
     return tokens.some((token) => token.username === "");
   });
 
   isUnassignableFromAllToken = computed<boolean>(() => {
-    const tokens = this.containerTokenData()().data;
+    const tokens = this.containerTokenData().data;
     return tokens.some((token) => token.username !== "");
   });
 
@@ -219,7 +220,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
     const dataSource = this.dataSource();
     dataSource.paginator = this.paginator;
 
-    const externalDataSource = this.containerTokenData()();
+    const externalDataSource = this.containerTokenData();
     externalDataSource.paginator = this.paginator;
     (externalDataSource as any)._sort = this.sort;
     (dataSource as any)._sort = this.sort;
@@ -238,18 +239,14 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
     const normalised = trimmed.toLowerCase();
     this.dataSource().filter = normalised;
 
-    if (this.containerTokenData) {
-      this.containerTokenData().filter = normalised;
-    }
+    this.containerTokenData().filter = normalised;
   }
 
   clearFilter(): void {
     this.filterValue.set("");
     this.dataSource().filter = "";
 
-    if (this.containerTokenData) {
-      this.containerTokenData().filter = "";
-    }
+    this.containerTokenData().filter = "";
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string) {

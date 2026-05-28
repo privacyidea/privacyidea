@@ -27,10 +27,10 @@ import { ContainerService, ContainerTemplate } from "@services/container/contain
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import {
-    MockContainerService,
-    MockContentService,
-    MockNotificationService,
-    MockPiResponse
+  MockContainerService,
+  MockContentService,
+  MockNotificationService,
+  MockPiResponse
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContainerTemplateService } from "./container-template.service";
@@ -197,7 +197,9 @@ describe("ContainerTemplateService", () => {
       TestBed.tick();
 
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
-      tokenTypesReq.flush({ result: { value: { generic: { token_types: ["hotp"] }, smartphone: { token_types: ["push"] } } } });
+      tokenTypesReq.flush({
+        result: { value: { generic: { token_types: ["hotp"] }, smartphone: { token_types: ["push"] } } }
+      });
       TestBed.tick();
       await Promise.resolve();
 
@@ -304,9 +306,7 @@ describe("ContainerTemplateService", () => {
       req.flush("Error", { status: 500, statusText: "Server Error" });
 
       await expect(deletePromise).rejects.toBeDefined();
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to delete template")
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete template"));
     });
 
     it("should check permissions and throw if denied", async () => {
@@ -319,9 +319,7 @@ describe("ContainerTemplateService", () => {
 
       httpMock.expectNone(`/container/template/${templateName}`);
       expect(authServiceMock.actionAllowed).toHaveBeenCalledWith("container_template_delete");
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        "You are not allowed to delete container templates."
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to delete container templates.");
     });
   });
 

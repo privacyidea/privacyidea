@@ -78,6 +78,15 @@ export interface PasskeyInitDetail {
 
 export type PasskeyInitResponse = PiResponse<boolean, PasskeyInitDetail>;
 
+export interface PasskeyCheckParams {
+  transaction_id: string;
+  credential_id: string;
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string;
+}
+
 export interface ValidateServiceInterface {
   testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
@@ -153,7 +162,7 @@ export class ValidateService implements ValidateServiceInterface {
           switchMap((credential) => {
             const pkCredential = credential as PublicKeyCredential;
             const response = pkCredential.response as AuthenticatorAssertionResponse;
-            const params = {
+            const params: PasskeyCheckParams = {
               transaction_id: data.transaction_id,
               credential_id: pkCredential.id,
               authenticatorData: this.base64Service.bytesToBase64(new Uint8Array(response.authenticatorData)),

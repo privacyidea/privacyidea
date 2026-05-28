@@ -25,7 +25,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockPiResponse } from "@testing/mock-services";
-import { CaConnectorService } from "./ca-connector.service";
+import { CaConnector, CaConnectorService } from "./ca-connector.service";
 
 describe("CaConnectorService", () => {
   let service: CaConnectorService;
@@ -69,7 +69,7 @@ describe("CaConnectorService", () => {
   });
 
   it("should post CA connector", async () => {
-    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
+    const connector: CaConnector = { connectorname: "test/1", type: "local", data: {} };
     const promise = service.postCaConnector(connector);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
@@ -81,7 +81,7 @@ describe("CaConnectorService", () => {
   });
 
   it("should show error notification when posting CA connector fails", async () => {
-    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
+    const connector: CaConnector = { connectorname: "test/1", type: "local", data: {} };
     const promise = service.postCaConnector(connector);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);

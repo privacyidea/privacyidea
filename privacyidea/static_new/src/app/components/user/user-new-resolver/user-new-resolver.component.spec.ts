@@ -18,7 +18,7 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -26,13 +26,19 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { ResolverService } from "@services/resolver/resolver.service";
+import { ResolverService, ResolverType } from "@services/resolver/resolver.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { of, throwError } from "rxjs";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
+
+interface MockResolverResourceShape {
+  value: WritableSignal<unknown>;
+  status: WritableSignal<string>;
+  hasValue: jest.Mock<boolean>;
+}
 
 global.IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
@@ -46,7 +52,7 @@ describe("UserNewResolverComponent", () => {
   let fixture: ComponentFixture<UserNewResolverComponent>;
   let resolverService: MockResolverService;
   let dialogService: MockDialogService;
-  let mockSaveExitDialogRef: MockMatDialogRef<any>;
+  let mockSaveExitDialogRef: MockMatDialogRef<SaveAndExitDialogComponent>;
   let pendingChangesService: MockPendingChangesService;
   let router: Router;
 
@@ -123,9 +129,9 @@ describe("UserNewResolverComponent", () => {
     });
     const resourceStatus = signal("resolved");
 
-    (resolverService.selectedResolverResource as any).value = resourceValue;
-    (resolverService.selectedResolverResource as any).status = resourceStatus;
-    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value = resourceValue;
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).status = resourceStatus;
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
 
     await detectChangesStable();
 
@@ -162,9 +168,9 @@ describe("UserNewResolverComponent", () => {
     });
     const resourceStatus = signal("resolved");
 
-    (resolverService.selectedResolverResource as any).value = resourceValue;
-    (resolverService.selectedResolverResource as any).status = resourceStatus;
-    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value = resourceValue;
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).status = resourceStatus;
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
 
     await detectChangesStable();
 
@@ -193,9 +199,9 @@ describe("UserNewResolverComponent", () => {
     });
     const resourceStatus = signal("resolved");
 
-    (resolverService.selectedResolverResource as any).value = resourceValue;
-    (resolverService.selectedResolverResource as any).status = resourceStatus;
-    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value = resourceValue;
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).status = resourceStatus;
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
 
     await detectChangesStable();
     expect(component.formData["fileName"]).toBe("/initial");
@@ -276,7 +282,7 @@ describe("UserNewResolverComponent", () => {
     component.resolverNameModel.set({ resolverName: "new-res" });
     component.resolverType.set("passwdresolver");
 
-    const successResponse = new MockPiResponse<number, any>({
+    const successResponse = new MockPiResponse<number>({
       result: { status: true, value: 1 }
     });
     resolverService.postResolver.mockReturnValue(of(successResponse));
@@ -301,13 +307,13 @@ describe("UserNewResolverComponent", () => {
         data: { fileName: "/etc/passwd" }
       }
     };
-    (resolverService.selectedResolverResource as any).value.set({
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value.set({
       result: { status: true, value: resolverData }
     });
-    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
     await detectChangesStable();
 
-    const successResponse = new MockPiResponse<number, any>({
+    const successResponse = new MockPiResponse<number>({
       result: { status: true, value: 1 }
     });
     resolverService.postResolver.mockReturnValue(of(successResponse));
@@ -349,7 +355,7 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
 
     component.resolverNameModel.set({ resolverName: "res" });
-    component.resolverType.set("" as any);
+    component.resolverType.set("" as unknown as ResolverType);
     success = await component.onSave();
     expect(success).toBe(false);
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
@@ -382,7 +388,7 @@ describe("UserNewResolverComponent", () => {
   it("should execute test successfully", async () => {
     component.resolverType.set("passwdresolver");
     fixture.detectChanges();
-    const successResponse = new MockPiResponse<number, any>({
+    const successResponse = new MockPiResponse<number>({
       result: { status: true, value: 1 }
     });
     resolverService.postResolverTest.mockReturnValue(of(successResponse));
@@ -417,7 +423,7 @@ describe("UserNewResolverComponent", () => {
   it("should validate before test", async () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    component.resolverType.set("" as any);
+    component.resolverType.set("" as unknown as ResolverType);
     component.onTest();
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
@@ -438,8 +444,8 @@ describe("UserNewResolverComponent", () => {
         data: { fileName: "/etc/passwd" }
       }
     };
-    (resolverService.selectedResolverResource as any).value.set({ result: { status: true, value: resolverData } });
-    (resolverService.selectedResolverResource as any).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value.set({ result: { status: true, value: resolverData } });
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
     await detectChangesStable();
 
     resolverService.postResolverTest.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
@@ -519,7 +525,7 @@ describe("UserNewResolverComponent", () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
-    const successResponse = new MockPiResponse<number, any>({
+    const successResponse = new MockPiResponse<number>({
       result: { status: true, value: 1 }
     });
     resolverService.postResolver.mockReturnValue(of(successResponse));
@@ -541,7 +547,7 @@ describe("UserNewResolverComponent", () => {
     mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
     dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
 
-    const errorResponse = new MockPiResponse<number, any>({
+    const errorResponse = new MockPiResponse<number>({
       result: { status: true, value: -1 },
       detail: { description: "Save failed" }
     });

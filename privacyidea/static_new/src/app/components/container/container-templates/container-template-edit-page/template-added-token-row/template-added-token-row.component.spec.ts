@@ -29,7 +29,7 @@ import { TemplateAddedTokenRowComponent } from "./template-added-token-row.compo
   template: ""
 })
 class MockEnrollHotpComponent {
-  additionalFormFieldsChange = output<any>();
+  additionalFormFieldsChange = output<Record<string, unknown>>();
 }
 
 describe("TemplateAddedTokenRowComponent", () => {
@@ -91,8 +91,11 @@ describe("TemplateAddedTokenRowComponent", () => {
       fixture.detectChanges();
 
       component.updateEnrollmentArgsGetter((data) => ({
-        data: { ...data, testKey: "updatedValue" } as any,
-        mapper: { toApiPayload: (d: any) => d } as any
+        data: { ...data, testKey: "updatedValue" } as TokenEnrollmentData,
+        mapper: {
+          toApiPayload: (d: TokenEnrollmentData) => d as unknown as TokenEnrollmentPayload,
+          fromApiPayload: (d: TokenEnrollmentPayload) => d as unknown as TokenEnrollmentData
+        } as TokenApiPayloadMapper<TokenEnrollmentData>
       }));
 
       expect(spy).toHaveBeenCalledWith(

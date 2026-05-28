@@ -24,6 +24,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   ContainerDetailData,
   ContainerDetails,
+  ContainerRegisterData,
   ContainerServiceInterface,
   ContainerTemplate,
   ContainerType,
@@ -31,7 +32,7 @@ import {
   TemplateComparisonResult
 } from "@services/container/container.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
-import { of, Subject } from "rxjs";
+import { Observable, of, Subject } from "rxjs";
 
 export class MockContainerService implements ContainerServiceInterface {
   containersForTokenType: Signal<string[]> = signal([]);
@@ -61,13 +62,16 @@ export class MockContainerService implements ContainerServiceInterface {
   containerResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  userContainersResource =
-    new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(MockPiResponse.fromValue({ containers: [], count: 0 }));
-  containersForTokenTypeResource =
-    new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(MockPiResponse.fromValue({ containers: [], count: 0 }));
+  userContainersResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
+    MockPiResponse.fromValue({ containers: [], count: 0 })
+  );
+  containersForTokenTypeResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
+    MockPiResponse.fromValue({ containers: [], count: 0 })
+  );
   containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
-  containerTypesResource =
-    new MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined>(MockPiResponse.fromValue<ContainerTypes>(new Map()));
+  containerTypesResource = new MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined>(
+    MockPiResponse.fromValue<ContainerTypes>(new Map())
+  );
   containerTypeOptions: Signal<ContainerType[]> = computed(() => {
     return [
       { containerType: "generic", description: "", token_types: [] } as ContainerType,
@@ -114,7 +118,7 @@ export class MockContainerService implements ContainerServiceInterface {
   deleteContainer = jest.fn().mockReturnValue(of({}));
   deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer = jest.fn(() => of(MockPiResponse.fromValue({})) as any);
+  registerContainer = jest.fn(() => of(MockPiResponse.fromValue({})) as Observable<PiResponse<ContainerRegisterData>>);
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
   containerBelongsToUser = jest.fn().mockReturnValue(false);
@@ -123,8 +127,9 @@ export class MockContainerService implements ContainerServiceInterface {
   stopPolling = jest.fn();
   createContainer = jest.fn();
   startPolling = jest.fn();
-  templatesResource =
-    new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] }));
+  templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
+    MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] })
+  );
   templates: WritableSignal<ContainerTemplate[]> = signal([]);
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));
@@ -152,7 +157,5 @@ export class MockContainerService implements ContainerServiceInterface {
     })
   );
 
-  getContainerDetails(_containerSerial: string) {
-    throw new Error("Method not implemented.");
-  }
+  getContainerDetails = jest.fn();
 }

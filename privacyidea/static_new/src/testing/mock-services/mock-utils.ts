@@ -83,6 +83,11 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 export class MockBase64Service {
   base64URLToBytes = jest.fn((_: string) => new Uint8Array([1, 2]));
   bytesToBase64 = jest.fn(() => "b64");
+  bufferToBase64Url = jest.fn(() => "b64url");
+  webAuthnBase64DecToArr = jest.fn(() => new Uint8Array([1, 2, 3]));
+  webAuthnBase64EncArr = jest.fn(() => "enc");
+  utf8ArrToStr = jest.fn(() => "user");
+  strToUtf8Arr = jest.fn(() => new Uint8Array([1, 2]));
 }
 
 export class MockPiResponse<Value, Detail = unknown> {

@@ -24,7 +24,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { CaConnector, CaConnectorService } from "@services/ca-connector/ca-connector.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -35,7 +35,10 @@ import { CaConnectorsComponent } from "./ca-connectors.component";
 describe("CaConnectorsComponent", () => {
   let component: CaConnectorsComponent;
   let fixture: ComponentFixture<CaConnectorsComponent>;
-  let caConnectorServiceMock: any;
+  let caConnectorServiceMock: {
+    caConnectors: ReturnType<typeof signal<CaConnector[]>>;
+    deleteCaConnector: jest.Mock;
+  };
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
   let router: Router;
@@ -43,8 +46,8 @@ describe("CaConnectorsComponent", () => {
   beforeEach(async () => {
     caConnectorServiceMock = {
       caConnectors: signal([
-        { connectorname: "conn1", type: "local" },
-        { connectorname: "conn2", type: "microsoft" }
+        { connectorname: "conn1", type: "local", data: {} },
+        { connectorname: "conn2", type: "microsoft", data: {} }
       ]),
       deleteCaConnector: jest.fn()
     };
