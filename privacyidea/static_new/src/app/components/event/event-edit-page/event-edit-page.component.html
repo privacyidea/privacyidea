@@ -1,0 +1,173 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Event Handler Editor"
+  class="edit-event-handler-layout"
+  i18n-aria-label>
+  <div class="edit-event-handler-container">
+    <h3 class="margin-8 flex-row flex-nowrap ali-center">
+      {{ title() }}
+      @if (!isNewEvent()) {
+        <span>:&nbsp;</span>
+        <span class="event-name-color">{{ editEvent().name }}</span>
+        <app-copy-button [copyText]="editEvent().name"></app-copy-button>
+      }
+    </h3>
+
+    <div
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
+      <div class="action-buttons">
+        <mat-slide-toggle
+          (change)="updateEventHandler('active', $event.checked)"
+          [checked]="editEvent().active"
+          [disableRipple]="true"
+          [disabled]="!authService.actionAllowed('eventhandling_write')"
+          labelPosition="before"
+          matTooltip="Toggle Active Status">
+          @if (editEvent().active) {
+            <span i18n>Active</span>
+          } @else {
+            <span i18n>Inactive</span>
+          }
+        </mat-slide-toggle>
+        <button
+          (click)="$event.stopPropagation(); saveEvent()"
+          [disabled]="!canSave()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        <button
+          (click)="$event.stopPropagation(); cancelEdit()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-column just-center">
+      @if (isNewEvent()) {
+        <div class="flex-row gap-16">
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>Name</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="updateEventHandler('name', '')"
+              [showClearButton]="!!editEvent().name">
+              <input
+                (input)="updateEventHandler('name', $event['target']['value'])"
+                (blur)="nameTouched.set(true)"
+                [value]="editEvent().name"
+                [appErrorState]="showNameError()"
+                matInput
+                required
+                type="text" />
+            </app-clearable-input>
+            @if (showNameError() && editEvent().name === "") {
+              <mat-error i18n>Name is <strong>required</strong>.</mat-error>
+            }
+            @if (showNameError() && editEvent().name !== "") {
+              <mat-error i18n
+                >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
+                hyphens are allowed.</mat-error
+              >
+            }
+          </mat-form-field>
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>Handler Module</mat-label>
+            <mat-select
+              (selectionChange)="setNewHandlerModule($event.value)"
+              [value]="eventService.selectedHandlerModule()"
+              [appErrorState]="showHandlerModuleError()"
+              required>
+              @for (module of eventService.eventHandlerModules(); track module) {
+                <mat-option [value]="module">{{ module }}</mat-option>
+              }
+            </mat-select>
+            <mat-error i18n> Selecting a handler module is <strong>required</strong>. </mat-error>
+          </mat-form-field>
+        </div>
+      }
+
+      <div class="flex-row gap-16 margin-bottom-32">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Position</mat-label>
+          <mat-select
+            (selectionChange)="updateEventHandler('position', $event.value)"
+            [value]="editEvent().position"
+            [appErrorState]="showPositionError()"
+            required>
+            @for (position of eventService.modulePositions(); track position) {
+              <mat-option [value]="position">{{ position }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.</mat-hint>
+          <mat-error i18n>Selecting a position is <strong>required</strong>.</mat-error>
+        </mat-form-field>
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Ordering</mat-label>
+          <input
+            (input)="updateEventHandler('ordering', +$event['target']['value'])"
+            [value]="editEvent().ordering"
+            [appErrorState]="showOrderingError()"
+            matInput
+            required
+            type="number" />
+          <mat-hint i18n>Event handlers with lower ordering number are executed first.</mat-hint>
+          <mat-error i18n>Ordering is <strong>required</strong>.</mat-error>
+        </mat-form-field>
+      </div>
+
+      <app-event-selection
+        (newEvents)="setNewEvents($event)"
+        [events]="editEvent().event"></app-event-selection>
+    </div>
+
+    <mat-tab-group
+      animationDuration="0ms"
+      mat-align-tabs="start"
+      mat-stretch-tabs="false">
+      @for (tab of availableTabs; track tab) {
+        <mat-tab [label]="tab.toUpperCase()">
+          <div class="tab-container">
+            @switch (tab) {
+              @case ("action") {
+                <app-event-action-tab
+                  (newAction)="setNewAction($event)"
+                  (newOptions)="setNewOptions($event)"
+                  (optionsValid)="validOptions.set($event)"
+                  [action]="event().action || ''"
+                  [options]="event().options || {}"></app-event-action-tab>
+              }
+              @case ("conditions") {
+                <app-event-conditions-tab
+                  (newConditions)="setNewConditions($event)"
+                  [conditions]="event().conditions"></app-event-conditions-tab>
+              }
+            }
+          </div>
+        </mat-tab>
+      }
+    </mat-tab-group>
+  </div>
+</div>

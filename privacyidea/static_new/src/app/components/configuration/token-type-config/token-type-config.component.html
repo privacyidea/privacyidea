@@ -16,10 +16,17 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="token-type-config-container" #scrollContainer>
-  <div #stickySentinel></div>
-  <div class="flex-row just-space-between ali-center sticky-header" #stickyHeader>
-    <h3 class="margin-8" i18n>Token Type Configuration</h3>
+<div
+  class="token-type-config-container"
+  #scrollContainer>
+  <div
+    class="flex-row just-space-between ali-center sticky-header"
+    [appStickyHeader]="scrollContainer">
+    <h3
+      class="margin-8"
+      i18n>
+      Token Type Configuration
+    </h3>
     <div class="flex-row ali-center gap-8">
       <button
         (click)="toggleAllPanels()"
@@ -27,7 +34,7 @@
         [matTooltip]="allPanelsOpen() ? 'Close all' : 'Open all'"
         mat-icon-button
         type="button">
-        <mat-icon>{{ allPanelsOpen() ? 'unfold_less' : 'unfold_more' }}</mat-icon>
+        <mat-icon>{{ allPanelsOpen() ? "unfold_less" : "unfold_more" }}</mat-icon>
       </button>
       <button
         (click)="save()"
@@ -49,8 +56,7 @@
       [formData]="formData()"
       [hashLibs]="hashLibs()"
       [totpSteps]="totpSteps()"></app-totp-config>
-    <app-u2f-config
-      [formData]="formData()"></app-u2f-config>
+    <app-u2f-config [formData]="formData()"></app-u2f-config>
     <app-webauthn-config
       (formDataChange)="formData.set($event)"
       [formData]="formData()"></app-webauthn-config>

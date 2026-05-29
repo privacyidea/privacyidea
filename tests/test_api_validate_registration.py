@@ -52,7 +52,7 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,

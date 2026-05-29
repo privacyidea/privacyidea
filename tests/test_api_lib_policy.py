@@ -45,7 +45,7 @@ from privacyidea.lib.token import (init_token, get_tokens, remove_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.user import User
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import (create_img)
 from .base import (MyApiTestCase)
@@ -1585,9 +1585,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # No preferred client mode policy set only custom user attribute: use user+application preference
         response = jsonify(response_data)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-Shibbole", "u2f",
-                           INTERNAL_USAGE)
+        user.set_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN,
+                                    {"privacyidea-cp": "push", "privacyidea-Shibbole": "u2f"})
 
         preferred_client_mode(request, response)
 
@@ -1653,7 +1652,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         ]
         response_data["detail"]["multi_challenge"] = multi_challenge
         response = jsonify(response_data)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp", "push", INTERNAL_USAGE)
+        user.set_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN, {"privacyidea-cp": "push"})
 
         # set any policy in scope AUTH
         set_policy("challenge", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGERESPONSE: "hotp"})

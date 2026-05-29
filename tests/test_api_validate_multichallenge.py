@@ -52,7 +52,7 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
@@ -468,7 +468,6 @@ class MultiChallenge(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             # custom user attribute not set yet: use default
             self.assertEqual("interactive", detail.get("preferred_client_mode"))
-            self.assertIsNone(user.attributes.get(InternalCustomUserAttributes.LAST_USED_TOKEN))
 
         # answer challenge: custom user attribute shall be set
         # We do poll only, so we need to poll
@@ -503,8 +502,8 @@ class MultiChallenge(MyApiTestCase):
                                            headers={"user_agent": "privacyidea-cp/2.0"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
-            preferred_token_types = user.attributes.get(
-                f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+            preferred_token_types = user.internal_attributes.get(
+                InternalUserAttributes.LAST_USED_TOKEN, {}).get("privacyidea-cp")
             self.assertEqual("push", preferred_token_types)
 
         # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
@@ -552,8 +551,8 @@ class MultiChallenge(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             # custom user attribute changed to interactive
-            preferred_token_types = user.attributes.get(
-                f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+            preferred_token_types = user.internal_attributes.get(
+                InternalUserAttributes.LAST_USED_TOKEN, {}).get("privacyidea-cp")
             self.assertEqual("hotp", preferred_token_types)
         # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set
         with self.app.test_request_context('/validate/check',
@@ -598,7 +597,6 @@ class MultiChallenge(MyApiTestCase):
                 transaction_id = detail.get("transaction_id")
                 # custom user attribute not set yet: use default
                 self.assertEqual("interactive", detail.get("preferred_client_mode"))
-                self.assertIsNone(user.attributes.get(InternalCustomUserAttributes.LAST_USED_TOKEN))
 
             # answer challenge with sms otp: custom user attribute shall be set
             with self.app.test_request_context('/validate/check',
@@ -608,8 +606,8 @@ class MultiChallenge(MyApiTestCase):
                                                headers={"user_agent": "privacyidea-cp/2.0"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
-                preferred_token_types = user.attributes.get(
-                    f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyidea-cp")
+                preferred_token_types = user.internal_attributes.get(
+                    InternalUserAttributes.LAST_USED_TOKEN, {}).get("privacyidea-cp")
                 self.assertEqual("sms", preferred_token_types)
 
             # authenticate with PIN to trigger challenge-response: second auth, custom user attribute set

@@ -1321,7 +1321,6 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     :param name: The name of the policy
     :param scope: The scope of the policy. Something like "admin" or "authentication"
     :param action: A scope specific action or a comma separated list of actions
-    :type active: basestring
     :param realm: A realm, for which this policy is valid
     :param resolver: A resolver, for which this policy is valid
     :param user: A username or a list of usernames
@@ -1765,6 +1764,12 @@ def get_static_policy_definitions(scope=None):
                                         'users.'),
                                     'mainmenu': [MAIN_MENU.USERS],
                                     'group': GROUP.GENERAL},
+            PolicyAction.GET_USER_INTERNAL_ATTRIBUTES: {
+                'type': 'bool',
+                'desc': _('Admin is allowed to read the privacyIDEA-internal '
+                          'attributes of a user (e.g. fido2_user_id).'),
+                'mainmenu': [MAIN_MENU.USERS],
+                'group': GROUP.USER},
             PolicyAction.MACHINELIST: {'type': 'bool',
                                        'desc': _('The Admin is allowed to list '
                                                  'the machines.'),

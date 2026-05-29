@@ -54,7 +54,9 @@
                     [matAutocomplete]="userAuto"
                     matInput />
                 </app-clearable-input>
-                <mat-autocomplete #userAuto="matAutocomplete">
+                <mat-autocomplete
+                  #userAuto="matAutocomplete"
+                  (optionSelected)="userService.selectionFilter.set($event.option.value)">
                   @for (option of userService.selectionFilteredUsernames(); track option) {
                     <mat-option [value]="option">{{ option }}</mat-option>
                   }
