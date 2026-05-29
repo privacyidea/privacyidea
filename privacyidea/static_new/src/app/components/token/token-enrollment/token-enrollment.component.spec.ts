@@ -61,7 +61,7 @@ import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-ser
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
 
 // Mock token enroll strategy
-function installStrategy(component: TokenEnrollmentComponent, strategy: any): void {
+function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
   Object.defineProperty(component, "enrollSwitch", {
     value: () => ({ currentStrategy: () => strategy }),
     configurable: true

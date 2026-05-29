@@ -109,6 +109,40 @@ describe("TemplateAddedTokenRowComponent", () => {
 
       expect(component.getCurrentPayload()).toEqual({ type: "hotp", description: "x", user: true });
     });
+
+    it("getCurrentPayload returns the strategy's mapped payload when valid", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
+      fixture.detectChanges();
+      component.toggleUserAssign(true);
+
+      const buildEnrollmentArgs = jest.fn().mockReturnValue({
+        data: { type: "hotp", customField: "v" },
+        mapper: { toApiPayload: (d: Record<string, unknown>) => ({ ...d, mapped: true }) }
+      });
+      Object.defineProperty(component, "enrollSwitch", {
+        value: () => ({ currentStrategy: () => ({ buildEnrollmentArgs }) }),
+        configurable: true
+      });
+
+      expect(component.getCurrentPayload()).toEqual({
+        type: "hotp",
+        customField: "v",
+        mapped: true,
+        user: true
+      });
+      expect(buildEnrollmentArgs).toHaveBeenCalledWith(expect.objectContaining({ type: "hotp" }));
+    });
+
+    it("getCurrentPayload returns null when the strategy's form is invalid", () => {
+      fixture.detectChanges();
+      const buildEnrollmentArgs = jest.fn().mockReturnValue(null);
+      Object.defineProperty(component, "enrollSwitch", {
+        value: () => ({ currentStrategy: () => ({ buildEnrollmentArgs }) }),
+        configurable: true
+      });
+
+      expect(component.getCurrentPayload()).toBeNull();
+    });
   });
 
   describe("Lifecycle & UI Logic", () => {

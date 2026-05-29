@@ -95,7 +95,7 @@ describe("ContainerTemplateEditBodyComponent", () => {
   });
 
   it("collectTokens returns null when any row's strategy form is invalid and iterates every row", () => {
-    const validPayload: TokenEnrollmentPayload = { type: "hotp", user: false } as any;
+    const validPayload = { type: "hotp", user: false } as unknown as TokenEnrollmentPayload;
     const validSpy = jest.fn(() => validPayload);
     const firstInvalidSpy = jest.fn(() => null);
     const secondInvalidSpy = jest.fn(() => null);
@@ -127,7 +127,7 @@ describe("ContainerTemplateEditBodyComponent", () => {
     component.scrollToFirstInvalid();
 
     expect(scrollSpy).toHaveBeenCalledTimes(1);
-    expect((fakeRows[2] as any).scrollIntoView).not.toHaveBeenCalled();
+    expect((fakeRows[2] as unknown as { scrollIntoView: jest.Mock }).scrollIntoView).not.toHaveBeenCalled();
   });
 
   it("scrollToFirstInvalid is a no-op when collectTokens succeeded", () => {
