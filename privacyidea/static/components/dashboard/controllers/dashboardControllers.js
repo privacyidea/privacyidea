@@ -31,7 +31,41 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
-    $scope.subscriptions = {};
+    $scope.pluginStatus = [];
+    // null = still loading, "ok" = loaded, "error" = request failed
+    $scope.pluginStatusLoadState = null;
+    // Maps plugin status to the bootstrap text-color class for the traffic-light dot.
+    $scope.pluginStatusDot = {
+        "active": "text-success",
+        "expiring": "text-warning",
+        "no_subscription": "text-warning",
+        "exceeded": "text-danger",
+        "expired": "text-danger",
+        "unused": "text-muted"
+    };
+    // Status label per status key. `gettext()` is the angular-gettext no-op
+    // marker so the extractor picks the strings up; the template applies the
+    // `translate` filter so the rendered label reacts to language changes.
+    $scope.pluginStatusText = {
+        "active": gettext("Active"),
+        "expiring": gettext("Expiring soon"),
+        "no_subscription": gettext("No subscription"),
+        "exceeded": gettext("Subscription required"),
+        "expired": gettext("Expired"),
+        "unused": gettext("Not used")
+    };
+    // Display name per plugin application key. The privacyidea- prefix is
+    // dropped — context already makes it obvious. Unknown keys fall back to
+    // the raw application identifier in the view.
+    $scope.pluginDisplayName = {
+        "privacyidea-cp": "Windows Credential Provider",
+        "privacyidea-adfs": "AD FS",
+        "privacyidea-pam": "PAM OTP & Push",
+        "pam-passkey": "PAM Passkey",
+        "privacyidea-shibboleth": "Shibboleth",
+        "privacyidea-keycloak": "Keycloak",
+        "privacyidea": "privacyIDEA Server"
+    };
     $scope.authentications = {"success": 0, "fail": 0};
 
     $scope.get_total_token_number = function () {
@@ -105,9 +139,37 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     };
 
 
-     $scope.getSubscriptions = function() {
-        SubscriptionFactory.get(function (data) {
-            $scope.subscriptions = data.result.value;
+     // Sort priority per status: subscribed first, then used-but-unsubscribed,
+     // then never-used. The server entry (is_server) is always pinned to the
+     // top, regardless of status.
+     var PLUGIN_STATUS_ORDER = {
+         "active": 1, "expiring": 1, "expired": 1,
+         "no_subscription": 2, "exceeded": 2,
+         "unused": 3
+     };
+
+     $scope.getPluginStatus = function() {
+        $scope.pluginStatusLoadState = null;
+        SubscriptionFactory.getStatus(function (data) {
+            var entries = data.result.value;
+            // Decorate with the original index so the sort tiebreaker preserves
+            // the backend's DASHBOARD_PLUGINS order regardless of whether the
+            // JS engine's sort is stable.
+            var sorted = entries.map(function(entry, idx) {
+                    return {entry: entry, idx: idx};
+                }).sort(function(a, b) {
+                    if (a.entry.is_server && !b.entry.is_server) return -1;
+                    if (b.entry.is_server && !a.entry.is_server) return 1;
+                    // Unknown statuses sort to the bottom rather than producing NaN.
+                    var diff = (PLUGIN_STATUS_ORDER[a.entry.status] || 99) -
+                               (PLUGIN_STATUS_ORDER[b.entry.status] || 99);
+                    return diff !== 0 ? diff : a.idx - b.idx;
+                }).map(function(item) { return item.entry; });
+            $scope.pluginStatus = sorted;
+            $scope.pluginStatusLoadState = "ok";
+        }, function () {
+            $scope.pluginStatus = [];
+            $scope.pluginStatusLoadState = "error";
         });
      };
 
@@ -182,7 +244,7 @@ $scope.getAuthentication = function () {
         $scope.get_events();
     }
     if (AuthFactory.checkRight('managesubscription')) {
-        $scope.getSubscriptions();
+        $scope.getPluginStatus();
     }
     if (AuthFactory.checkRight('auditlog')) {
         $scope.getAuthentication();
@@ -203,7 +265,7 @@ $scope.getAuthentication = function () {
             $scope.get_events();
         }
         if (AuthFactory.checkRight('managesubscription')) {
-            $scope.getSubscriptions();
+            $scope.getPluginStatus();
         }
         if (AuthFactory.checkRight('auditlog')) {
             $scope.getAuthentication();

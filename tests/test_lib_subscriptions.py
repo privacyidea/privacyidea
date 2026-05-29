@@ -11,9 +11,13 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            raise_exception_probability,
                                            check_subscription,
                                            SubscriptionError,
-                                           subscription_status)
+                                           subscription_status,
+                                           get_plugin_subscription_status,
+                                           get_server_subscription_status,
+                                           DASHBOARD_PLUGINS)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyTestCase
 
 # 100 users
@@ -173,3 +177,227 @@ class SubscriptionApplicationTestCase(MyTestCase):
         res = subscription_status()
         # Token count < 50
         self.assertEqual(0, res)
+
+
+class PluginSubscriptionStatusTestCase(MyTestCase):
+    """
+    Tests for :func:`get_plugin_subscription_status`. The six status branches
+    (active / expiring / expired / no_subscription / exceeded / unused) are
+    each covered by setting up a ``ClientApplication`` row, optionally a
+    ``Subscription`` row, and (for the exceeded case) mocking the
+    active-token-user count.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Tests in this class manipulate the same rows; isolate them.
+        db.session.query(ClientApplication).delete()
+        db.session.query(Subscription).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _add_clientapp(plugin, version="1.0"):
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype=f"{plugin}/{version} test/1",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.commit()
+
+    @staticmethod
+    def _add_subscription(application, days_left):
+        db.session.add(Subscription(
+            application=application,
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=days_left),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+    def test_01_all_unused_by_default(self):
+        overview = get_plugin_subscription_status()
+        self.assertEqual([e["application"] for e in overview], DASHBOARD_PLUGINS)
+        for entry in overview:
+            self.assertEqual(entry["status"], "unused")
+            self.assertIsNone(entry["last_seen"])
+            self.assertIsNone(entry["date_till"])
+            self.assertIsNone(entry["days_left"])
+
+    def test_02_all_status_branches(self):
+        # ok: used, valid subscription with more than 30 days left
+        self._add_clientapp("privacyidea-keycloak")
+        self._add_subscription("privacyidea-keycloak", days_left=100)
+        # expiring: used, valid subscription with less than 30 days left
+        self._add_clientapp("privacyidea-adfs")
+        self._add_subscription("privacyidea-adfs", days_left=5)
+        # no_subscription: used, no subscription, under free limit
+        # (privacyidea-pam free limit is 10000)
+        self._add_clientapp("privacyidea-pam")
+        # exceeded: used, no subscription, over free limit
+        # (privacyidea-cp free limit is 50)
+        self._add_clientapp("privacyidea-cp")
+        # privacyidea-shibboleth: stays unused
+
+        # mock so token-user count exceeds the cp limit (50) but not pam (10000)
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=1000):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertEqual(overview["privacyidea-keycloak"]["status"], "active")
+        self.assertGreaterEqual(overview["privacyidea-keycloak"]["days_left"], 30)
+        self.assertIsNotNone(overview["privacyidea-keycloak"]["date_till"])
+
+        self.assertEqual(overview["privacyidea-adfs"]["status"], "expiring")
+        self.assertLess(overview["privacyidea-adfs"]["days_left"], 30)
+
+        self.assertEqual(overview["privacyidea-pam"]["status"], "no_subscription")
+        self.assertIsNone(overview["privacyidea-pam"]["date_till"])
+
+        self.assertEqual(overview["privacyidea-cp"]["status"], "exceeded")
+
+        self.assertEqual(overview["privacyidea-shibboleth"]["status"], "unused")
+
+    def test_03_expired_subscription_is_its_own_status(self):
+        # An expired subscription stays distinguishable from never-subscribed.
+        self._add_clientapp("privacyidea-keycloak")
+        self._add_subscription("privacyidea-keycloak", days_left=-5)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=0):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        entry = overview["privacyidea-keycloak"]
+        self.assertEqual(entry["status"], "expired")
+        self.assertIsNotNone(entry["date_till"])
+        self.assertLess(entry["days_left"], 0)
+
+    def test_04_valid_subscription_stays_ok_over_free_limit(self):
+        # Having a subscription means green regardless of token-user count.
+        # privacyidea-cp has a free limit of 50.
+        self._add_clientapp("privacyidea-cp")
+        self._add_subscription("privacyidea-cp", days_left=100)
+
+        with mock.patch(
+                "privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                return_value=10_000):
+            overview = {e["application"]: e
+                        for e in get_plugin_subscription_status()}
+
+        self.assertEqual(overview["privacyidea-cp"]["status"], "active")
+
+    def test_05_unparseable_useragent_is_skipped(self):
+        # A row whose user-agent string does not match the plugin format
+        # must not crash the function or leak into the overview.
+        db.session.add(ClientApplication(
+            ip="1.2.3.4",
+            clienttype="!!! totally not a user-agent !!!",
+            node="localnode",
+            lastseen=datetime.now()))
+        db.session.commit()
+
+        overview = get_plugin_subscription_status()
+        for entry in overview:
+            self.assertEqual(entry["status"], "unused")
+
+    def test_06_null_lastseen_does_not_crash(self):
+        # ClientApplication.lastseen is nullable. If every row for a clienttype
+        # has lastseen=NULL the SQL MAX() is NULL and must not be compared
+        # against a real datetime from another iteration. The column has a
+        # default=datetime.now, so set it to NULL explicitly after insert.
+        row = ClientApplication(
+            ip="1.2.3.4",
+            clienttype="privacyidea-keycloak/1.0 test/1",
+            node="localnode")
+        db.session.add(row)
+        db.session.commit()
+        row.lastseen = None
+        db.session.commit()
+
+        overview = {e["application"]: e
+                    for e in get_plugin_subscription_status()}
+        self.assertEqual(overview["privacyidea-keycloak"]["status"], "unused")
+
+    def test_07_null_application_subscription_is_skipped(self):
+        # Subscription.application is nullable and Subscription.get() drops
+        # None fields. Such rows must not crash the dict comprehension.
+        db.session.add(Subscription(
+            application=None,
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email="v@x",
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=100),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+        overview = get_plugin_subscription_status()
+        # All plugins still report unused (no ClientApplication rows seeded).
+        for entry in overview:
+            self.assertEqual(entry["status"], "unused")
+
+
+class ServerSubscriptionStatusTestCase(MyTestCase):
+    """
+    Tests for :func:`get_server_subscription_status`. Covers the four
+    branches (no_subscription / ok / expiring / expired) plus the
+    duplicate-row tiebreaker.
+    """
+
+    def setUp(self):
+        super().setUp()
+        db.session.query(Subscription).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _add_server_subscription(days_left, by_email="v@x"):
+        db.session.add(Subscription(
+            application="privacyidea",
+            for_name="customer", for_email="c@x", for_phone="0",
+            by_name="vendor", by_email=by_email,
+            date_from=datetime.now() - timedelta(days=10),
+            date_till=datetime.now() + timedelta(days=days_left),
+            num_users=10, num_tokens=10, num_clients=10,
+            level="Gold", signature="0"))
+        db.session.commit()
+
+    def test_01_no_subscription(self):
+        entry = get_server_subscription_status()
+        self.assertTrue(entry["is_server"])
+        self.assertEqual(entry["application"], "privacyidea")
+        self.assertEqual(entry["status"], "no_subscription")
+        self.assertIsNone(entry["date_till"])
+        self.assertIsNone(entry["days_left"])
+
+    def test_02_ok(self):
+        self._add_server_subscription(days_left=100)
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "active")
+        self.assertGreaterEqual(entry["days_left"], 30)
+
+    def test_03_expiring(self):
+        self._add_server_subscription(days_left=5)
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "expiring")
+        self.assertLess(entry["days_left"], 30)
+        self.assertGreaterEqual(entry["days_left"], 0)
+
+    def test_04_expired(self):
+        self._add_server_subscription(days_left=-5)
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "expired")
+        self.assertLess(entry["days_left"], 0)
+
+    def test_05_picks_latest_date_till_when_duplicates_exist(self):
+        # Two rows for the same application — the one with the latest
+        # date_till must win so the dashboard does not flap.
+        self._add_server_subscription(days_left=-5, by_email="old@x")
+        self._add_server_subscription(days_left=100, by_email="new@x")
+        entry = get_server_subscription_status()
+        self.assertEqual(entry["status"], "active")
+        self.assertGreaterEqual(entry["days_left"], 30)
