@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, linkedSignal, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -28,6 +28,10 @@ import {
   DaypasswordApiPayloadMapper,
   DaypasswordEnrollmentData
 } from "@app/mappers/token-api-payload/daypassword-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_OTP_LENGTH, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -58,9 +62,12 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-daypassword.component.html",
-  styleUrl: "./enroll-daypassword.component.scss"
+  styleUrl: "./enroll-daypassword.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollDaypasswordComponent) }
+  ]
 })
-export class EnrollDaypasswordComponent implements OnInit {
+export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrollmentData> {
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -75,13 +82,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   ];
 
   enrollmentData = input<DaypasswordEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: DaypasswordEnrollmentData;
-      mapper: DaypasswordApiPayloadMapper;
-    } | null
-  >();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
   generateOnServer = signal<boolean>(true);
@@ -116,6 +117,8 @@ export class EnrollDaypasswordComponent implements OnInit {
   });
 
   constructor() {
+    super();
+
     // Apply policy defaults when rights load
     effect(() => {
       const hashlib = this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB];
@@ -147,16 +150,7 @@ export class EnrollDaypasswordComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: DaypasswordEnrollmentData;
-    mapper: DaypasswordApiPayloadMapper;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<DaypasswordEnrollmentData> | null {
     if (!this.generateOnServer() && !this.otpKeyForm().valid()) {
       this.otpKeyForm().markAsTouched();
       return null;
@@ -176,5 +170,5 @@ export class EnrollDaypasswordComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

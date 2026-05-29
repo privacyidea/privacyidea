@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -26,11 +26,15 @@ import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   RadiusApiPayloadMapper,
   RadiusEnrollmentData
 } from "@app/mappers/token-api-payload/radius-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RADIUS_SERVER } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -58,9 +62,12 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-radius.component.html",
-  styleUrl: "./enroll-radius.component.scss"
+  styleUrl: "./enroll-radius.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRadiusComponent) }
+  ]
 })
-export class EnrollRadiusComponent implements OnInit {
+export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -68,13 +75,7 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   enrollmentData = input<RadiusEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: RadiusEnrollmentData;
-      mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
-    } | null
-  >();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
   radiusUser = signal<string>("");
@@ -100,6 +101,8 @@ export class EnrollRadiusComponent implements OnInit {
   private radiusServerConfigInitialized = false;
 
   constructor() {
+    super();
+
     effect(() => {
       if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[RADIUS_SERVER];
@@ -116,15 +119,9 @@ export class EnrollRadiusComponent implements OnInit {
       this.radiusServerConfiguration.set(this.enrollmentData()?.radiusServerConfiguration ?? "");
       this.radiusServerConfigInitialized = true;
     }
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: RadiusEnrollmentData;
-    mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<RadiusEnrollmentData> | null {
     if (!this.radiusServerConfigurationForm().valid()) {
       this.radiusServerConfigurationForm().markAsTouched();
       return null;
@@ -142,7 +139,7 @@ export class EnrollRadiusComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
   goToRadiusConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "radius" });

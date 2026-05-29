@@ -20,23 +20,25 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  EventEmitter,
+  forwardRef,
   inject,
   input,
   linkedSignal,
-  OnInit,
-  Output,
   signal,
   Signal
 } from "@angular/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   QuestionApiPayloadMapper,
   QuestionEnrollmentData
 } from "@app/mappers/token-api-payload/question-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { QUESTION_CONFIG_PREFIX, QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -54,9 +56,12 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   imports: [MatFormField, MatInput, MatLabel, MatError],
   templateUrl: "./enroll-question.component.html",
   styleUrl: "./enroll-question.component.scss",
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollQuestionComponent) }
+  ]
 })
-export class EnrollQuestionComponent implements OnInit {
+export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentData> {
   protected readonly enrollmentMapper: QuestionApiPayloadMapper = inject(QuestionApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
@@ -70,12 +75,6 @@ export class EnrollQuestionComponent implements OnInit {
     return cfg && cfg[QUESTION_NUMBER_OF_ANSWERS] ? parseInt(cfg[QUESTION_NUMBER_OF_ANSWERS], 10) : defaultQuestions;
   });
 
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: QuestionEnrollmentData;
-      mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
-    } | null
-  >();
   disabled = input<boolean>(false);
 
   configQuestions = computed(() => {
@@ -106,16 +105,7 @@ export class EnrollQuestionComponent implements OnInit {
     this.answers.update((prev) => ({ ...prev, [question]: value }));
   }
 
-  ngOnInit(): void {
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: QuestionEnrollmentData;
-    mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<QuestionEnrollmentData> | null {
     if (this.answeredCount() < this.configMinNumberOfAnswers()) {
       this.formTouched.set(true);
       return null;
@@ -134,7 +124,7 @@ export class EnrollQuestionComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
   goToQuestionConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "questionnaire" });

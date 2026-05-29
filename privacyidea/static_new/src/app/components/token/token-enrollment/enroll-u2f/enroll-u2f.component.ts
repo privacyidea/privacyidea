@@ -16,11 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, forwardRef, inject } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { U2fApiPayloadMapper, U2fEnrollmentData } from "@app/mappers/token-api-payload/u2f-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   type: "u2f";
@@ -31,29 +35,16 @@ export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-u2f.component.html",
-  styleUrl: "./enroll-u2f.component.scss"
+  styleUrl: "./enroll-u2f.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollU2fComponent) }
+  ]
 })
-export class EnrollU2fComponent implements OnInit {
+export class EnrollU2fComponent extends EnrollTokenBase<U2fEnrollmentData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: U2fApiPayloadMapper = inject(U2fApiPayloadMapper);
 
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: U2fEnrollmentData;
-      mapper: TokenApiPayloadMapper<U2fEnrollmentData>;
-    } | null
-  >();
-
-  ngOnInit(): void {
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: U2fEnrollmentData;
-    mapper: TokenApiPayloadMapper<U2fEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<U2fEnrollmentData> | null {
     const enrollmentData: U2fEnrollmentOptions = {
       ...basicOptions,
       type: "u2f"
@@ -62,5 +53,5 @@ export class EnrollU2fComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

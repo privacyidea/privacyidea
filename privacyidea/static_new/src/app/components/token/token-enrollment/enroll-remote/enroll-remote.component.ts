@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -30,11 +30,15 @@ import {
 } from "@services/privacyidea-server/privacyidea-server.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   RemoteApiPayloadMapper,
   RemoteEnrollmentData
 } from "@app/mappers/token-api-payload/remote-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 
 @Component({
   selector: "app-enroll-remote",
@@ -49,19 +53,16 @@ import {
     MatError,
     FormField
   ],
-  templateUrl: "./enroll-remote.component.html"
+  templateUrl: "./enroll-remote.component.html",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRemoteComponent) }
+  ]
 })
-export class EnrollRemoteComponent implements OnInit {
+export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   enrollmentData = input<RemoteEnrollmentData>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: RemoteEnrollmentData;
-      mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
-    } | null
-  >();
   disabled = input<boolean>(false);
 
   checkPinLocally = signal<boolean>(false);
@@ -98,15 +99,9 @@ export class EnrollRemoteComponent implements OnInit {
       this.remoteRealm.set(this.enrollmentData()?.remoteRealm ?? "");
       this.remoteResolver.set(this.enrollmentData()?.remoteResolver ?? "");
     }
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: RemoteEnrollmentData;
-    mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<RemoteEnrollmentData> | null {
     if (!this.remoteServer()) {
       return null;
     }
@@ -136,5 +131,5 @@ export class EnrollRemoteComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

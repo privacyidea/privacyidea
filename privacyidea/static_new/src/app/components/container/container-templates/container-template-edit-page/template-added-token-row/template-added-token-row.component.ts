@@ -17,19 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData, TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
-import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
 import { tokenTypes } from "@utils/token.utils";
 
 @Component({
@@ -40,14 +35,14 @@ import { tokenTypes } from "@utils/token.utils";
   styleUrls: ["./template-added-token-row.component.scss"]
 })
 export class TemplateAddedTokenRowComponent {
-  // Inputs & Outputs
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
-
   readonly index = input.required<number>();
-  readonly onEditToken = output<Partial<TokenEnrollmentPayload>>();
   readonly onRemoveToken = output<number>();
 
-  // State Signals
+  protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
+  private readonly expansionPanel = viewChild(MatExpansionPanel);
+  private readonly elementRef = inject(ElementRef);
+
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
 
   readonly tokenTypeDescription = computed(() => {
@@ -55,58 +50,42 @@ export class TemplateAddedTokenRowComponent {
     return tokenTypes.find((t) => t.key === type)?.text ?? "";
   });
 
-  readonly enrollmentArgsGetterSignal = signal<enrollmentArgsGetterFn | null>(null);
-
-  readonly tokenEnrollmentData = linkedSignal<any, Partial<TokenEnrollmentData> | null>({
-    source: () => ({
-      payload: this.tokenEnrollmentPayload(),
-      enrollmentArgsGetter: this.enrollmentArgsGetterSignal()
-    }),
-    computation: (source) => {
-      const mapper = getTokenApiPayloadMapper(source.payload?.type);
+  readonly tokenEnrollmentData = linkedSignal<TokenEnrollmentPayload, Partial<TokenEnrollmentData> | null>({
+    source: this.tokenEnrollmentPayload,
+    computation: (payload) => {
+      const mapper = getTokenApiPayloadMapper(payload?.type);
       if (!mapper) return null;
-      const enrollmentData = mapper.fromApiPayload(source.payload);
-      return enrollmentData;
+      return mapper.fromApiPayload(payload);
     }
   });
 
-  updateEnrollmentArgsGetter(
-    enrollmentArgsGetter: (
-      basicOptions: TokenEnrollmentData
-    ) => { data: TokenEnrollmentData; mapper: TokenApiPayloadMapper<TokenEnrollmentData> } | null
-  ) {
-    this.enrollmentArgsGetterSignal.set(enrollmentArgsGetter);
-    this.updateToken(this.tokenEnrollmentData() ?? {});
+  // Pulled by the parent at save time.
+  getCurrentPayload(): TokenEnrollmentPayload | null {
+    const payload = this.tokenEnrollmentPayload();
+    const strategy = this.enrollSwitch()?.currentStrategy();
+    const data = this.tokenEnrollmentData();
+
+    if (!strategy || !data) {
+      return { ...payload, user: this.userAssign() };
+    }
+    const args = strategy.buildEnrollmentArgs({ type: payload.type, ...data });
+    if (!args) return null;
+    return { ...args.mapper.toApiPayload(args.data), user: this.userAssign() };
   }
 
-  // Token Management Methods
+  // Called by the parent body when a save attempt fails:
+  scrollIntoView(): void {
+    this.expansionPanel()?.open();
+    this.elementRef.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   toggleUserAssign(checked: boolean) {
     this.userAssign.set(checked);
-    this.onEditToken.emit({ user: checked });
   }
 
   removeToken() {
     if (this.index() >= 0) {
       this.onRemoveToken.emit(this.index());
-    }
-  }
-
-  private updateToken(enrollmentData: Partial<TokenEnrollmentData>) {
-    const updatedEnrollmentData = { ...this.tokenEnrollmentData(), ...enrollmentData };
-
-    this.tokenEnrollmentData.set(updatedEnrollmentData);
-    const getter = this.enrollmentArgsGetterSignal();
-    if (!getter) {
-      return;
-    }
-    const args = getter({
-      type: this.tokenEnrollmentPayload().type,
-      ...updatedEnrollmentData
-    });
-    if (args) {
-      const mappedData = args.mapper.toApiPayload(args.data);
-      this.onEditToken.emit(mappedData);
     }
   }
 }

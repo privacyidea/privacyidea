@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -28,6 +28,10 @@ import {
   ApplspecApiPayloadMapper,
   ApplspecEnrollmentData
 } from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -53,22 +57,19 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-applspec.component.html",
-  styleUrl: "./enroll-applspec.component.scss"
+  styleUrl: "./enroll-applspec.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollApplspecComponent) }
+  ]
 })
-export class EnrollApplspecComponent implements OnInit {
+export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: ApplspecApiPayloadMapper = inject(ApplspecApiPayloadMapper);
   protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   enrollmentData = input<ApplspecEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: ApplspecEnrollmentData;
-      mapper: ApplspecApiPayloadMapper;
-    } | null
-  >();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
   serviceId = signal<string>("");
@@ -94,15 +95,9 @@ export class EnrollApplspecComponent implements OnInit {
         this.otpKey.set(this.enrollmentData()!.otpKey ?? "");
       }
     }
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: ApplspecEnrollmentData;
-    mapper: ApplspecApiPayloadMapper;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<ApplspecEnrollmentData> | null {
     if (!this.serviceIdForm().valid()) {
       this.serviceIdForm().markAsTouched();
       return null;
@@ -125,5 +120,5 @@ export class EnrollApplspecComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

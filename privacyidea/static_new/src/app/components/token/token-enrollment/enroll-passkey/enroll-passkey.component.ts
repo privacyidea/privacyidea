@@ -17,12 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, forwardRef, inject } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import {
   EnrollmentResponse,
   EnrollmentResponseDetail,
-  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
@@ -33,7 +32,10 @@ import {
 } from "@app/mappers/token-api-payload/passkey-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -45,9 +47,12 @@ import { lastValueFrom } from "rxjs";
   standalone: true,
   imports: [],
   templateUrl: "./enroll-passkey.component.html",
-  styleUrl: "./enroll-passkey.component.scss"
+  styleUrl: "./enroll-passkey.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPasskeyComponent) }
+  ]
 })
-export class EnrollPasskeyComponent implements OnInit {
+export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentData> {
   protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(PasskeyApiPayloadMapper);
   protected readonly finalizeMapper: PasskeyFinalizeApiPayloadMapper = inject(PasskeyFinalizeApiPayloadMapper);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -55,28 +60,9 @@ export class EnrollPasskeyComponent implements OnInit {
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: PasskeyEnrollmentData;
-      mapper: TokenApiPayloadMapper<PasskeyEnrollmentData>;
-    } | null
-  >();
-  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
-  @Output() enrollmentResponseChange = new EventEmitter<
-    (enrollmentResponse: EnrollmentResponse, enrollmentData: TokenEnrollmentData) => Promise<EnrollmentResponse | null>
-  >();
+  currentStepOneRef?: MatDialogRef<AbstractDialogComponent, boolean>;
 
-  ngOnInit(): void {
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this.enrollmentResponseChange.emit(this.onEnrollmentResponse.bind(this));
-  }
-
-  enrollmentArgsGetter = (
-    basicEnrollmentData: TokenEnrollmentData
-  ): {
-    data: PasskeyEnrollmentData;
-    mapper: TokenApiPayloadMapper<PasskeyEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicEnrollmentData: TokenEnrollmentData): EnrollmentArgs<PasskeyEnrollmentData> | null {
     if (!navigator.credentials?.create) {
       const errorMsg = "Passkey/WebAuthn is not supported by this browser.";
       this.notificationService.error(errorMsg);
@@ -92,9 +78,9 @@ export class EnrollPasskeyComponent implements OnInit {
       data: enrollmentInitData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
-  async onEnrollmentResponse(
+  override async onEnrollmentResponse(
     enrollmentResponse: EnrollmentResponse,
     enrollmentInitData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
@@ -127,15 +113,13 @@ export class EnrollPasskeyComponent implements OnInit {
     return resposeLastStep;
   }
 
-  currentStepOneRef?: MatDialogRef<AbstractDialogComponent, boolean>;
-
   openStepOneDialog(args: {
     enrollmentInitData: PasskeyEnrollmentData;
     enrollmentResponse: EnrollmentResponse;
   }): MatDialogRef<AbstractDialogComponent, boolean> {
     const { enrollmentInitData, enrollmentResponse } = args;
 
-    this.reopenDialogChange.emit(async () => {
+    this.reopenDialog.set(async () => {
       if (this.currentStepOneRef && this.dialogService.isDialogOpen(this.currentStepOneRef)) {
         return null;
       }
@@ -242,7 +226,7 @@ export class EnrollPasskeyComponent implements OnInit {
         throw Error(errorStep3);
       })
       .then((finalResponse) => {
-        this.reopenDialogChange.emit(undefined);
+        this.reopenDialog.set(undefined);
         if (finalResponse.detail) {
           finalResponse.detail.serial = detail.serial;
         } else {

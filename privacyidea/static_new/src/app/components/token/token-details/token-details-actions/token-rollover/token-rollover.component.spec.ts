@@ -37,6 +37,14 @@ import { TokenRolloverComponent } from "./token-rollover.component";
 import { UserService } from "@services/user/user.service";
 import { SystemService } from "@services/system/system.service";
 
+// Mock token enroll strategy
+function installStrategy(component: TokenRolloverComponent, strategy: any): void {
+  Object.defineProperty(component, "enrollSwitch", {
+    value: () => ({ currentStrategy: () => strategy }),
+    configurable: true
+  });
+}
+
 describe("TokenRolloverComponent", () => {
   let component: TokenRolloverComponent;
   let fixture: ComponentFixture<TokenRolloverComponent>;
@@ -84,9 +92,11 @@ describe("TokenRolloverComponent", () => {
     };
 
     component.token.set({ type: "hotp", serial: "ABC123" });
-    component.enrollmentArgsGetter = jest.fn().mockReturnValue({
-      data: {},
-      mapper: { map: (x: any) => x }
+    installStrategy(component, {
+      buildEnrollmentArgs: jest.fn().mockReturnValue({
+        data: {},
+        mapper: { map: (x: any) => x }
+      })
     });
 
     const reloadSpy = jest.spyOn(tokenService.tokenDetailResource, "reload");
@@ -110,9 +120,9 @@ describe("TokenRolloverComponent", () => {
     expect(notificationService.warning).toHaveBeenCalledWith("No token selected for rollover.");
   });
 
-  it("should show snackbar if enrollmentArgsGetter is missing", async () => {
+  it("should show snackbar if no strategy is available", async () => {
     component.token.set({ type: "hotp", serial: "ABC123" });
-    component.enrollmentArgsGetter = undefined;
+    installStrategy(component, undefined);
     await component.rolloverToken();
     expect(notificationService.warning).toHaveBeenCalledWith(
       "Rollover action is not available for the selected token type."

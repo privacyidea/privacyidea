@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, linkedSignal, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, linkedSignal, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatOption } from "@angular/material/core";
@@ -29,6 +29,10 @@ import {
   CertificateEnrollmentData
 } from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -56,20 +60,17 @@ export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-certificate.component.html",
-  styleUrl: "./enroll-certificate.component.scss"
+  styleUrl: "./enroll-certificate.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollCertificateComponent) }
+  ]
 })
-export class EnrollCertificateComponent implements OnInit {
+export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: CertificateApiPayloadMapper = inject(CertificateApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
 
   enrollmentData = input<CertificateEnrollmentData>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: CertificateEnrollmentData;
-      mapper: CertificateApiPayloadMapper;
-    } | null
-  >();
   disabled = input<boolean>(false);
 
   intention = signal<"generate" | "uploadRequest" | "uploadCert">("generate");
@@ -107,15 +108,9 @@ export class EnrollCertificateComponent implements OnInit {
       this.caConnector.set(this.enrollmentData()?.caConnector ?? "");
       this.certTemplate.set(this.enrollmentData()?.certTemplate ?? "");
     }
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: CertificateEnrollmentData;
-    mapper: CertificateApiPayloadMapper;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<CertificateEnrollmentData> | null {
     const needsPem = this.intention() === "uploadRequest" || this.intention() === "uploadCert";
 
     if (needsPem && !this.pemForm().valid()) {
@@ -147,7 +142,7 @@ export class EnrollCertificateComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
   clearTemplateSelection(): void {
     this.certTemplate.set("");

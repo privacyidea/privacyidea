@@ -17,23 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
-import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import type { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 
 @Component({
   selector: "app-enroll-token-type-switch",
   standalone: true,
   template: ""
 })
-class MockEnrollTokenTypeSwitchComponent {
+class StubEnrollTokenTypeSwitchComponent {
   @Input() tokenTypeKey!: string;
   @Input() enrollmentData: TokenEnrollmentData | null = null;
-  @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();
 }
 
 describe("TemplateAddedTokenRowComponent", () => {
@@ -46,7 +44,7 @@ describe("TemplateAddedTokenRowComponent", () => {
     })
       .overrideComponent(TemplateAddedTokenRowComponent, {
         remove: { imports: [EnrollTokenTypeSwitchComponent] },
-        add: { imports: [MockEnrollTokenTypeSwitchComponent] }
+        add: { imports: [StubEnrollTokenTypeSwitchComponent] }
       })
       .compileComponents();
 
@@ -96,20 +94,20 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(spy).toHaveBeenCalledWith(5);
     });
 
-    it("emits onEditToken when the enrollmentArgsGetter is registered and returns args", () => {
-      const spy = jest.spyOn(component.onEditToken, "emit");
+    it("toggleUserAssign updates the userAssign signal without side effects", () => {
       fixture.detectChanges();
+      expect(component.userAssign()).toBe(false);
 
-      component.updateEnrollmentArgsGetter((data) => ({
-        data: { ...data, testKey: "updatedValue" } as any,
-        mapper: { toApiPayload: (d: any) => d } as any
-      }));
+      component.toggleUserAssign(true);
+      expect(component.userAssign()).toBe(true);
+    });
 
-      expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          testKey: "updatedValue"
-        })
-      );
+    it("getCurrentPayload falls back to the input payload (with user flag) when no strategy is available", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
+      fixture.detectChanges();
+      component.toggleUserAssign(true);
+
+      expect(component.getCurrentPayload()).toEqual({ type: "hotp", description: "x", user: true });
     });
   });
 
@@ -133,6 +131,21 @@ describe("TemplateAddedTokenRowComponent", () => {
 
       component.removeToken();
       expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("scrollIntoView opens the expansion panel and scrolls", () => {
+      fixture.detectChanges();
+      const hostElement = fixture.debugElement.nativeElement as HTMLElement;
+      const scrollSpy = jest.fn();
+      hostElement.scrollIntoView = scrollSpy;
+
+      const panel = fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance;
+      const openSpy = jest.spyOn(panel, "open");
+
+      component.scrollIntoView();
+
+      expect(openSpy).toHaveBeenCalled();
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
     });
   });
 });

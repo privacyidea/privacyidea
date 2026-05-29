@@ -16,12 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, forwardRef, inject, input } from "@angular/core";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TiqrApiPayloadMapper, TiqrEnrollmentData } from "@app/mappers/token-api-payload/tiqr-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { TIQR_INFO_URL, TIQR_LOGO_URL, TIQR_REG_SERVER } from "@constants/token.constants";
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
@@ -33,20 +37,17 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-tiqr.component.html",
-  styleUrl: "./enroll-tiqr.component.scss"
+  styleUrl: "./enroll-tiqr.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollTiqrComponent) }
+  ]
 })
-export class EnrollTiqrComponent implements OnInit {
+export class EnrollTiqrComponent extends EnrollTokenBase<TiqrEnrollmentData> {
   protected readonly enrollmentMapper: TiqrApiPayloadMapper = inject(TiqrApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Input() wizard: boolean = false;
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: TiqrEnrollmentData;
-      mapper: TokenApiPayloadMapper<TiqrEnrollmentData>;
-    } | null
-  >();
+  wizard = input<boolean>(false);
 
   disabled = input<boolean>(false);
   defaultTiQRIsSet = computed(() => {
@@ -55,16 +56,7 @@ export class EnrollTiqrComponent implements OnInit {
     return !!(cfg?.[TIQR_INFO_URL] && cfg?.[TIQR_LOGO_URL] && cfg?.[TIQR_REG_SERVER]);
   });
 
-  ngOnInit(): void {
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: TiqrEnrollmentData;
-    mapper: TokenApiPayloadMapper<TiqrEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<TiqrEnrollmentData> | null {
     const enrollmentData: TiqrEnrollmentOptions = {
       ...basicOptions,
       type: "tiqr"
@@ -73,5 +65,5 @@ export class EnrollTiqrComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

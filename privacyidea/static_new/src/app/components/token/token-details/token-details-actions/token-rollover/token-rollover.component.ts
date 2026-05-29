@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { Component, WritableSignal, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -25,10 +25,6 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import {
-  OnEnrollmentResponseFn,
-  enrollmentArgsGetterFn
-} from "@components/token/token-enrollment/token-enrollment.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -37,8 +33,7 @@ import {
   TokenDetails,
   TokenEnrollmentDialogData,
   TokenService,
-  TokenServiceInterface,
-  TokenType
+  TokenServiceInterface
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { Observable, lastValueFrom } from "rxjs";
@@ -84,10 +79,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     }
   });
 
-  onEnrollmentResponse = linkedSignal<TokenType, OnEnrollmentResponseFn | undefined>({
-    source: this.tokenService.selectedTokenType,
-    computation: () => undefined
-  });
+  protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
   // Only required if we later add the reopen rollover dialog function
   enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
@@ -104,12 +96,6 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.serial.set(this.token().serial);
   }
 
-  enrollmentArgsGetter?: enrollmentArgsGetterFn;
-
-  updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
-    this.enrollmentArgsGetter = event;
-  }
-
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
     if (observable instanceof Promise) {
       return observable;
@@ -124,7 +110,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
 
-    if (!this.enrollmentArgsGetter) {
+    const strategy = this.enrollSwitch()?.currentStrategy();
+    if (!strategy) {
       this.notificationService.warning("Rollover action is not available for the selected token type.");
       return;
     }
@@ -136,7 +123,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       rollover: true
     };
 
-    const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
+    const enrollmentArgs = strategy.buildEnrollmentArgs(basicOptions);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
@@ -157,9 +144,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     // Complete rollover
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
-    const onEnrollmentResponseFn = this.onEnrollmentResponse();
-    if (onEnrollmentResponseFn && enrollmentResponse) {
-      enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
+    if (strategy.onEnrollmentResponse && enrollmentResponse) {
+      enrollmentResponse = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
     }
 
     // two step enrollment + handles further enrollment steps (verify + success dialog)
@@ -257,7 +243,4 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.openLastStepDialog(response);
   }
 
-  updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
-    this.onEnrollmentResponse.set(event);
-  }
 }

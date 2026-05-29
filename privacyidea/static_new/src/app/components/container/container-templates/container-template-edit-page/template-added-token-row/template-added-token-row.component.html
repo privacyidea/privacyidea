@@ -43,6 +43,5 @@
 
   <app-enroll-token-type-switch
     [tokenTypeKey]="tokenEnrollmentPayload().type"
-    [enrollmentData]="$any(tokenEnrollmentData())"
-    (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+    [enrollmentData]="$any(tokenEnrollmentData())" />
 </mat-expansion-panel>

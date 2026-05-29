@@ -16,14 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, forwardRef, inject } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   RegistrationApiPayloadMapper,
   RegistrationEnrollmentData
 } from "@app/mappers/token-api-payload/registration-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 
 export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   type: "registration";
@@ -34,29 +38,16 @@ export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-registration.component.html",
-  styleUrl: "./enroll-registration.component.scss"
+  styleUrl: "./enroll-registration.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRegistrationComponent) }
+  ]
 })
-export class EnrollRegistrationComponent implements OnInit {
+export class EnrollRegistrationComponent extends EnrollTokenBase<RegistrationEnrollmentData> {
   protected readonly enrollmentMapper: RegistrationApiPayloadMapper = inject(RegistrationApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: RegistrationEnrollmentData;
-      mapper: TokenApiPayloadMapper<RegistrationEnrollmentData>;
-    } | null
-  >();
-
-  ngOnInit(): void {
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: RegistrationEnrollmentData;
-    mapper: TokenApiPayloadMapper<RegistrationEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<RegistrationEnrollmentData> | null {
     const enrollmentData: RegistrationEnrollmentOptions = {
       ...basicOptions,
       type: "registration"
@@ -65,5 +56,5 @@ export class EnrollRegistrationComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }
