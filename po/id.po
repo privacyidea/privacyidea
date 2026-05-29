@@ -59,8 +59,8 @@ msgstr ""
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
 "<li>Support and\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 "                            Service Level Agreements by NetKnights</a>, "
 "Germany.\n"
 "                    </li>\n"
@@ -77,8 +77,8 @@ msgid ""
 "                    <li>Depending on the support level you get help with "
 "updates and yearly consultancy.</li>\n"
 "                    <li>By buying the\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                        you ensure that professional developers can work "
 "full time\n"
 "                        on privacyIDEA, add new features and fix bugs in a "
@@ -88,8 +88,8 @@ msgid ""
 "                    </li>"
 msgstr ""
 "<li>Dukungan dan\n"
-"                        <a target=\"netknights\" href=\"https://netknights."
-"it/en/leistungen/service-level-agreements/\">\n"
+"                        <a target=\"netknights\" href=\"https://"
+"netknights.it/en/leistungen/service-level-agreements/\">\n"
 " Perjanjian Tingkat Layanan oleh NetKnights</a>, Jerman.\n"
 "              </li>\n"
 "                    <li>Paket enterprise stabil untuk Ubuntu dan RHEL "
@@ -315,7 +315,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:252
 #: privacyidea/static/components/config/views/config.events.list.html:27
 #: privacyidea/static/components/config/views/config.policies.details.html:158
-#: privacyidea/static/components/config/views/config.policies.details.html:355
+#: privacyidea/static/components/config/views/config.policies.details.html:354
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
@@ -340,7 +340,7 @@ msgstr "Acara Aktif"
 msgid "Active Policies"
 msgstr "Kebijakan Aktif"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:327
+#: privacyidea/static/components/config/views/config.policies.details.html:326
 #: privacyidea/static/components/token/views/token.containerdetails.html:760
 msgid "Add"
 msgstr "Tambah"
@@ -387,7 +387,7 @@ msgstr "Tambah pengguna"
 msgid "Additional"
 msgstr "Tambahan"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:338
+#: privacyidea/static/components/config/views/config.policies.details.html:337
 msgid "Additional conditions"
 msgstr "Kondisi tambahan"
 
@@ -907,7 +907,7 @@ msgid "Close all containers"
 msgstr "Tutup semua kontainer"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.policies.details.html:389
+#: privacyidea/static/components/config/views/config.policies.details.html:388
 msgid "Close all groups"
 msgstr "Tutup semua grup"
 
@@ -1105,7 +1105,7 @@ msgstr "Jumlah"
 msgid "Count Window"
 msgstr "Jendela Hitung"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:164
+#: privacyidea/static/components/config/views/config.system.edit.html:166
 msgid ""
 "Count Window of\n"
 "                newly enrolled tokens"
@@ -1492,8 +1492,8 @@ msgstr "Jangan verifikasi keaslian"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:15
 msgid ""
-"Do you really want to delete the Token {{ tokenSerial }} from user {{ token."
-"username }}?"
+"Do you really want to delete the Token {{ tokenSerial }} from user "
+"{{ token.username }}?"
 msgstr ""
 "Apakah Anda benar-benar ingin menghapus Token {{ tokenSerial }} dari "
 "pengguna {{ token.username }}?"
@@ -2693,7 +2693,7 @@ msgstr "Pemetaan"
 msgid "Mark the token as lost"
 msgstr "Tandai token sebagai hilang"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:177
+#: privacyidea/static/components/config/views/config.system.edit.html:179
 msgid ""
 "Max Failcount of\n"
 "                newly enrolled tokens"
@@ -2944,7 +2944,7 @@ msgstr "Nilai OTP"
 msgid "OTP length"
 msgstr "Panjang OTP"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:150
+#: privacyidea/static/components/config/views/config.system.edit.html:152
 msgid ""
 "OTP length of\n"
 "                newly enrolled tokens"
@@ -3015,7 +3015,7 @@ msgid "Open all containers"
 msgstr "Buka semua kontainer"
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
-#: privacyidea/static/components/config/views/config.policies.details.html:383
+#: privacyidea/static/components/config/views/config.policies.details.html:382
 msgid "Open all groups"
 msgstr "Buka semua grup"
 
@@ -3242,7 +3242,7 @@ msgstr ""
 "masukkan\n"
 "            kode yang dihasilkan di bawah ini."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:358
+#: privacyidea/static/components/config/views/config.policies.details.html:357
 msgid "Please select a Scope in the top section first to configure actions."
 msgstr ""
 
@@ -3803,7 +3803,7 @@ msgstr "Konfigurasi SMTP disimpan."
 msgid "SMTP server configuration"
 msgstr "Konfigurasi server SMTP"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:133
+#: privacyidea/static/components/config/views/config.system.edit.html:135
 msgid "SMTP server for password recovery"
 msgstr "Server SMTP untuk pemulihan kata sandi"
 
@@ -3870,7 +3870,7 @@ msgstr "Simpan Definisi Penanganan Acara"
 msgid "Save Options"
 msgstr "Simpan Opsi"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:534
+#: privacyidea/static/components/config/views/config.policies.details.html:533
 msgid "Save Policy"
 msgstr "Simpan Kebijakan"
 
@@ -3903,7 +3903,7 @@ msgstr "Simpan ID Layanan"
 msgid "Save States"
 msgstr "Simpan Status"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:244
+#: privacyidea/static/components/config/views/config.system.edit.html:246
 msgid "Save System Config"
 msgstr "Simpan Konfigurasi Sistem"
 
@@ -3992,7 +3992,7 @@ msgstr "Pilih Atribut PrivacyIDEA"
 msgid "Select Realm"
 msgstr "Pilih Ranah"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:142
+#: privacyidea/static/components/config/views/config.system.edit.html:144
 msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
@@ -4137,8 +4137,8 @@ msgid ""
 msgstr ""
 "ID Layanan dapat digunakan untuk melampirkan misalnya kunci SSH ke mesin dan "
 "layanan tertentu.\n"
-"Untuk melihat token yang dilampirkan, buka <a ui-sref=\"token."
-"applications\">aplikasi token</a>."
+"Untuk melihat token yang dilampirkan, buka <a ui-"
+"sref=\"token.applications\">aplikasi token</a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
 msgid "Set Default"
@@ -4187,7 +4187,7 @@ msgstr "Tampilkan kata sandi PKCS12"
 msgid "Show Policy templates"
 msgstr "Tampilkan templat Kebijakan"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:375
+#: privacyidea/static/components/config/views/config.policies.details.html:374
 msgid "Show all actions"
 msgstr "Tampilkan semua tindakan"
 
@@ -4199,7 +4199,7 @@ msgstr "Tampilkan semua kondisi"
 msgid "Show password"
 msgstr "Tampilkan kata sandi"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:369
+#: privacyidea/static/components/config/views/config.policies.details.html:368
 msgid "Show selected actions only"
 msgstr "Tampilkan tindakan yang dipilih saja"
 
@@ -4339,7 +4339,7 @@ msgstr "Nama belakang"
 msgid "Sync Window"
 msgstr "Jendela Sinkronisasi"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:189
+#: privacyidea/static/components/config/views/config.system.edit.html:191
 msgid ""
 "Sync Window of\n"
 "                newly enrolled tokens"
@@ -4944,8 +4944,9 @@ msgid ""
 "validate.html\" target=\"_blank\">\n"
 "        validate API</a> but can also be handled by the\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
 "Permintaan autentikasi dapat ditangani oleh privacyIDEA default\n"
@@ -4953,8 +4954,9 @@ msgstr ""
 "validate.html\" target=\"_blank\">\n"
 "        API validasi</a> tetapi juga dapat ditangani oleh\n"
 "    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
-"tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken."
-"YubikeyTokenClass.api_endpoint\" target=\"_blank\">\n"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
 "        Protokol Validasi Yubico</a>."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
@@ -4992,7 +4994,7 @@ msgstr ""
 "       sertifikat yang dipercaya. Jangan hapus centang ini dalam penggunaan "
 "produktif!"
 
-#: privacyidea/static/components/config/views/config.system.edit.html:202
+#: privacyidea/static/components/config/views/config.system.edit.html:204
 msgid "The challenge validity time"
 msgstr "Waktu validitas tantangan"
 
@@ -5352,8 +5354,8 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
 "The token is currently assigned to container\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5361,8 +5363,8 @@ msgid ""
 "    ."
 msgstr ""
 "Token saat ini ditetapkan ke kontainer\n"
-"    <a ui-sref=\"token.containerdetails({containerSerial: "
-"containerSerial})\" ng-hide=\"!checkRight('container_list')\">\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
 "        {{ containerSerial }}\n"
 "    </a>\n"
 "    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
@@ -5398,33 +5400,33 @@ msgstr "Token berhasil ditandai sebagai hilang."
 #: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "       {{ enrolledToken.serial }}</a>\n"
 "            for user\n"
-"            <a ui-sref=\"user.details({username:newUser.user, realmname:"
-"newUser.realm})\">{{ newUser.user }}</a> in realm\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "          {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
 "The token was successfully enrolled with serial number\n"
-"            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
-"serial})\">\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})"
+"\">\n"
 "       {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
@@ -5501,7 +5503,7 @@ msgstr ""
 "                        that\n"
 "                        contain this resolver."
 
-#: privacyidea/static/components/config/views/config.system.edit.html:125
+#: privacyidea/static/components/config/views/config.system.edit.html:127
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
@@ -5818,8 +5820,8 @@ msgid ""
 "To define service IDs go to <a ui-sref=\"config.serviceid\">Service ID "
 "config</a>"
 msgstr ""
-"Untuk mendefinisikan ID layanan, buka <a ui-sref=\"config."
-"serviceid\">konfigurasi ID Layanan</a>"
+"Untuk mendefinisikan ID layanan, buka <a ui-"
+"sref=\"config.serviceid\">konfigurasi ID Layanan</a>"
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:9
 msgid ""
@@ -5913,7 +5915,7 @@ msgstr "Sinkronisasi ulang token gagal."
 msgid "Token resync successful."
 msgstr "Sinkronisasi ulang token berhasil."
 
-#: privacyidea/static/components/directives/controllers/directives.js:1012
+#: privacyidea/static/components/directives/controllers/directives.js:1083
 #: privacyidea/static/components/token/controllers/tokenControllers.js:692
 msgid "Token successfully verified"
 msgstr "Token berhasil diverifikasi"
@@ -6124,7 +6126,7 @@ msgstr ""
 msgid "User"
 msgstr "Pengguna"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:308
+#: privacyidea/static/components/config/views/config.policies.details.html:307
 msgid "User Agent"
 msgstr "Agen Pengguna"
 
@@ -6668,7 +6670,7 @@ msgstr "gagal"
 msgid "failed users / tokens"
 msgstr "pengguna / token yang gagal"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:398
+#: privacyidea/static/components/config/views/config.policies.details.html:397
 msgid "filter action..."
 msgstr "filter tindakan..."
 
