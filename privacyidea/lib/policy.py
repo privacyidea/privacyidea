@@ -1976,6 +1976,11 @@ def get_static_policy_definitions(scope=None):
                                                    "challenges."),
                                          'mainmenu': [MAIN_MENU.TOKENS],
                                          'group': GROUP.GENERAL},
+            PolicyAction.CANCELCHALLENGE: {'type': 'bool',
+                                           'desc': _("Admin is allowed to cancel "
+                                                     "(delete) active challenges."),
+                                           'mainmenu': [MAIN_MENU.TOKENS],
+                                           'group': GROUP.GENERAL},
             PolicyAction.SMTPSERVERWRITE: {'type': 'bool',
                                            'desc': _("Admin is allowed to write new "
                                                      "SMTP server definitions."),

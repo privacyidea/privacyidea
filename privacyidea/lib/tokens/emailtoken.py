@@ -70,6 +70,7 @@ import traceback
 
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
@@ -83,7 +84,6 @@ from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
@@ -314,13 +314,12 @@ class EmailTokenClass(HotpTokenClass):
                 # Create the challenge in the database
                 if is_true(get_from_config("email.concurrent_challenges")):
                     data = self.get_otp()[2]
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=options.get("challenge"),
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
-                db_challenge.save()
+                db_challenge = create_challenge(self.token.serial,
+                                               transaction_id=transactionid,
+                                               challenge=options.get("challenge"),
+                                               data=data,
+                                               session=options.get("session"),
+                                               validitytime=validity)
                 transactionid = transactionid or db_challenge.transaction_id
 
             except Exception as e:

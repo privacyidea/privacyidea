@@ -85,7 +85,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params,
                                            force_server_generate_key)
-from privacyidea.lib.challenge import get_challenges_paginate, cleanup_expired_challenges
+from privacyidea.lib.challenge import cancel_challenge, get_challenges_paginate, cleanup_expired_challenges
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -430,6 +430,26 @@ def get_challenges_api(serial=None):
                                          sortdir=sdir, page=page, psize=psize)
     g.audit_object.log({"success": True})
     return send_result(challenges)
+
+
+@token_blueprint.route('/challenges/transaction/<transaction_id>', methods=['DELETE'])
+@admin_required
+@prepolicy(check_base_action, request, action=PolicyAction.CANCELCHALLENGE)
+@event("token_cancelchallenge", request, g)
+@log_with(log)
+def cancel_challenge_api(transaction_id):
+    """
+    Cancel (delete) a single active challenge by its transaction ID. Removes
+    it from both the Redis cache (when active) and the database.
+
+    :param transaction_id: The transaction ID of the challenge to cancel.
+    :return: json with ``deleted`` count.
+    """
+    g.audit_object.log({"info": f"Cancel challenge {transaction_id}"})
+    deleted = cancel_challenge(transaction_id)
+    g.audit_object.log({"success": True, "info": f"Cancelled {deleted} challenge(s) for transaction "
+                                                 f"{transaction_id}"})
+    return send_result({"status": True, "deleted": deleted})
 
 
 @token_blueprint.route("/challenges/expired", methods=['DELETE'])

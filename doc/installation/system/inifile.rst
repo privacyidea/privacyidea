@@ -413,3 +413,53 @@ You can do this using the following config values::
 
 In this example the file ``mystatic/templates/myindex.html`` would be loaded
 as the initial single page application.
+
+
+.. _redis_cache:
+
+Redis cache
+-----------
+
+.. index:: Redis, cache, HA, high availability
+
+privacyIDEA can offload selected short-lived state to Redis instead of the SQL
+database. The current use-case is challenge data for challenge-response token
+flows in HA setups, where multiple privacyIDEA nodes would otherwise have to
+round-trip every challenge through a clustered database (e.g. Galera with
+ProxySQL). More workloads (metrics, …) may opt into Redis later; each one ships
+behind its own feature flag and stays off by default.
+
+.. note::
+
+   Redis **7 or later** is required. The challenge cache relies on the
+   ``EXPIRE ... NX`` and ``EXPIRE ... GT`` options to keep per-token TTLs
+   consistent across concurrent writes; these were introduced in Redis 7.
+   Earlier versions will reject the command and the worker will disable the
+   cache for its lifetime on the first write.
+
+Configuration is two-stage:
+
+1. Point privacyIDEA at a Redis instance with ``PI_REDIS_URL``.
+2. Enable the per-workload flag(s) for the data you want to cache.
+
+::
+
+    # Connection (no caching is enabled by setting this alone)
+    PI_REDIS_URL = "redis://localhost:6379/0"
+
+    # Per-feature opt-in
+    PI_REDIS_CACHE_CHALLENGES = True
+
+When ``PI_REDIS_CACHE_CHALLENGES`` is enabled, challenges are written to Redis
+only and the SQL ``INSERT`` is skipped. Redis' TTL handles expiry — challenges
+are ephemeral by nature. If a Redis operation fails at runtime the worker
+disables Redis for its lifetime (so failures never add latency to subsequent
+requests) and the next ``create_challenge`` falls back to the database, so a
+challenge is never silently lost.
+
+If ``PI_REDIS_URL`` is not set, every cache call degrades to a no-op and
+privacyIDEA behaves exactly as a database-only deployment.
+
+In a Docker deployment, the URL can be loaded from a secret file via
+``PI_REDIS_URL_FILE`` (e.g. ``/run/secrets/redis_url``) instead of being passed
+in the environment.

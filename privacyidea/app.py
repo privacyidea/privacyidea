@@ -414,6 +414,12 @@ def create_app(config_name="development",
             engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
             engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
+    # Redis init, optional. get_redis() logs success/failure itself.
+    if app.config.get(ConfigKey.REDIS_URL):
+        with app.app_context():
+            from privacyidea.lib.cache import get_redis
+            get_redis()
+
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
     app.config[ConfigKey.APP_READY] = True
@@ -499,6 +505,12 @@ def create_docker_app():
             log.debug("Database Connection successful!")
         except Exception as e:
             raise RuntimeError(f"Could not connect to database: {e}")
+
+    # Redis init, optional. get_redis() logs success/failure itself.
+    if app.config.get(ConfigKey.REDIS_URL):
+        with app.app_context():
+            from privacyidea.lib.cache import get_redis
+            get_redis()
 
     _setup_node_configuration(app)
 

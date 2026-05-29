@@ -1,12 +1,11 @@
 import logging
-import json
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from sqlalchemy import select
 from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required
 from privacyidea.lib import fido2
+from privacyidea.lib.challenge import get_challenges, cancel_challenge
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ResourceNotFoundError, AuthError
@@ -15,7 +14,6 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.models import Challenge, db
 
 log = logging.getLogger(__name__)
 
@@ -64,9 +62,9 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
     # uniformly without knowing about the raw "user_verification" string.
     data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
 
-    db_challenge = Challenge(serial or "", transaction_id=transaction_id, challenge=nonce,
-                             data=json.dumps(data), validitytime=validity)
-    db_challenge.save()
+    from privacyidea.lib.token import create_challenge
+    db_challenge = create_challenge(serial=serial or "", transaction_id=transaction_id,
+                                    challenge=nonce, data=data, validitytime=validity)
     transaction_id = db_challenge.transaction_id
     return {
         "transaction_id": transaction_id,
@@ -81,7 +79,9 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
 @dataclass
 class FIDOVerificationResult:
     success: int
-    challenge: Challenge
+    # Either a Challenge model row or a ChallengeDTO from the Redis cache —
+    # both expose the same get_data()/is_valid()/challenge attribute surface.
+    challenge: object
 
 
 def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> FIDOVerificationResult:
@@ -99,8 +99,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
     """
-    stmt = select(Challenge).where(Challenge.transaction_id == transaction_id)
-    db_challenges = db.session.scalars(stmt).all()
+    db_challenges = get_challenges(transaction_id=transaction_id)
     if not db_challenges:
         raise ResourceNotFoundError(f"Challenge with transaction_id {transaction_id} not found.")
 
@@ -145,10 +144,10 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
     result = FIDOVerificationResult(ret, challenge)
-    # On success, remove all challenges with the transaction_id
+    # On success, remove all challenges with the transaction_id from both
+    # Redis (when active) and the DB.
     if result.success > 0:
-        for db_challenge in db_challenges:
-            db_challenge.delete()
+        cancel_challenge(transaction_id)
         # Update the last_auth token info
         token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
     return result
