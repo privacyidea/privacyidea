@@ -42,14 +42,10 @@
     </button>
   </div>
 
-  <div
-    #stickySentinel
-    class="sticky-sentinel"></div>
-
   @if (userData().editable) {
     <div
-      #stickyHeader
-      class="flex gap-8 sticky-header">
+      class="flex gap-8 sticky-header"
+      [appStickyHeader]="scrollContainer">
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
         @if (!editMode()) {
           <button

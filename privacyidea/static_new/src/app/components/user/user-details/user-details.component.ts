@@ -30,7 +30,6 @@ import {
   Renderer2,
   Signal,
   signal,
-  viewChild,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -67,6 +66,7 @@ import { filter, firstValueFrom, map } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 
 @Component({
   selector: "app-user-details",
@@ -90,7 +90,8 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
     MatTooltip,
     RouterLink,
     CopyableComponent,
-    UserDetailsEditComponent
+    UserDetailsEditComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./user-details.component.html",
   styleUrl: "./user-details.component.scss"
@@ -108,10 +109,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly renderer = inject(Renderer2);
-
-  readonly scrollContainer = viewChild<ElementRef<HTMLElement>>("scrollContainer");
-  readonly stickyHeader = viewChild<ElementRef<HTMLElement>>("stickyHeader");
-  readonly stickySentinel = viewChild<ElementRef<HTMLElement>>("stickySentinel");
 
   private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
   private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
@@ -214,28 +211,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       } else {
         this.keyMode.set("select");
       }
-    });
-
-    effect((onCleanup) => {
-      const root = this.scrollContainer()?.nativeElement;
-      const header = this.stickyHeader()?.nativeElement;
-      const sentinel = this.stickySentinel()?.nativeElement;
-      if (!root || !header || !sentinel) return;
-
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (!entry.rootBounds) return;
-          const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-          if (shouldFloat) {
-            this.renderer.addClass(header, "is-sticky");
-          } else {
-            this.renderer.removeClass(header, "is-sticky");
-          }
-        },
-        { root, threshold: [0, 1] }
-      );
-      observer.observe(sentinel);
-      onCleanup(() => observer.disconnect());
     });
   }
 
@@ -399,9 +374,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   editIsDirty = computed(() => {
     if (!this.editMode()) return false;
     const original: Record<string, unknown> = this.userData() ?? {};
-    return Object.entries(this.editedUserData()).some(
-      ([key, value]) => (value ?? "") !== (original[key] ?? "")
-    );
+    return Object.entries(this.editedUserData()).some(([key, value]) => (value ?? "") !== (original[key] ?? ""));
   });
 
   editUser() {
