@@ -65,7 +65,6 @@ describe("TokenDetailsComponent", () => {
   let tokenSvc: MockTokenService;
   let containerSvc: MockContainerService;
   let realmSvc: MockRealmService;
-  let contentSvc: MockContentService;
   let machineSvc: MockMachineService;
   let validateSvc: MockValidateService;
   let router: { navigateByUrl: jest.Mock };
@@ -114,7 +113,6 @@ describe("TokenDetailsComponent", () => {
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
     realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
-    contentSvc = TestBed.inject(ContentService) as unknown as MockContentService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
     validateSvc = TestBed.inject(ValidateService) as unknown as MockValidateService;
 
@@ -147,7 +145,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header .token-serial");
+    const header = fixture.nativeElement.querySelector(".details-header .serial");
     expect(header.textContent).toContain("Mock serial");
   });
 
