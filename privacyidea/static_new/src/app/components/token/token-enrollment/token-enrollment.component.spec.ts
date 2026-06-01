@@ -20,6 +20,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -33,7 +38,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { SystemService } from "@services/system/system.service";
-import { TokenService } from "@services/token/token.service";
+import { EnrollTokenArguments, TokenService, TokenType } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
@@ -51,20 +56,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { EnrollTokenArguments, TokenType } from "@services/token/token.service";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
-
-interface TokenEnrollmentComponentInternals {
-  _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
-  openLastStepDialog: (response: EnrollmentResponse | null) => void;
-  handleCompleteEnrollment: (response: EnrollmentResponse | null) => void;
-  handleVerifyEnrollment: (response: EnrollmentResponse | null) => void;
-}
 import {
   NO_QR_CODE_TOKEN_TYPES,
   NO_REGENERATE_TOKEN_TYPES,
@@ -72,6 +64,13 @@ import {
 } from "./token-enrollment.constants";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
+
+interface TokenEnrollmentComponentInternals {
+  _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
+  openLastStepDialog: (response: EnrollmentResponse | null) => void;
+  handleCompleteEnrollment: (response: EnrollmentResponse | null) => void;
+  handleVerifyEnrollment: (response: EnrollmentResponse | null) => void;
+}
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -377,12 +376,10 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest
-            .fn()
-            .mockReturnValue({
-              type: "totp",
-              "2stepinit": true
-            }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          mapper: jest.fn().mockReturnValue({
+            type: "totp",
+            "2stepinit": true
+          }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
         component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
 
@@ -446,12 +443,10 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest
-            .fn()
-            .mockReturnValue({
-              type: "totp",
-              "2stepinit": true
-            }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          mapper: jest.fn().mockReturnValue({
+            type: "totp",
+            "2stepinit": true
+          }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
         component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
 

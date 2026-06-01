@@ -120,7 +120,8 @@ export class EventSelectionComponent {
     });
   }
 
-  onSearchInputChanges(value: string): void {
+  onSearchInputChanges(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
     this.lastSearchTerm = value;
     this.searchTerm.set(value);
   }

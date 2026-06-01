@@ -113,9 +113,9 @@
                   [toggleEdit]="toggleContainerEdit.bind(this)"
                   [saveEdit]="saveContainerEdit.bind(this)"
                   [cancelEdit]="cancelContainerEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditing"
-                  [isEditingUser]="isEditingUser"
-                  [isEditingInfo]="isEditingInfo"
+                  [shouldHideEdit]="isAnyEditing()"
+                  [isEditingUser]="isEditingUser()"
+                  [isEditingInfo]="isEditingInfo()"
                   [element]="element"></app-edit-buttons>
               }
             </td>
@@ -221,9 +221,9 @@
                       [toggleEdit]="toggleContainerEdit.bind(this)"
                       [saveEdit]="saveContainerEdit.bind(this)"
                       [cancelEdit]="cancelContainerEdit.bind(this)"
-                      [shouldHideEdit]="isAnyEditing"
-                      [isEditingUser]="isEditingUser"
-                      [isEditingInfo]="isEditingInfo"
+                      [shouldHideEdit]="isAnyEditing()"
+                      [isEditingUser]="isEditingUser()"
+                      [isEditingInfo]="isEditingInfo()"
                       [element]="element"></app-edit-buttons>
                   }
                 }
@@ -236,11 +236,11 @@
             mat-row></tr>
         </table>
         <app-container-details-info
-          [detailData]="containerDetailData"
-          [infoData]="infoData"
-          [isAnyEditingOrRevoked]="isAnyEditing"
-          [isEditingInfo]="isEditingInfo"
-          [isEditingUser]="isEditingUser" />
+          [detailData]="containerDetailData()"
+          [infoData]="infoData()"
+          [isAnyEditingOrRevoked]="isAnyEditing()"
+          [(isEditingInfo)]="isEditingInfo"
+          [isEditingUser]="isEditingUser()" />
         <mat-divider class="responsive-divider-1310" />
       </div>
       <div class="flex-column responsive-margin-left-1310">

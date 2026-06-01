@@ -86,15 +86,15 @@
         <app-machine-resolver-hosts-tab
           [isEditMode]="true"
           [machineResolverData]="newMachineResolver().data"
-          (newData)="onNewData($event)"
-          (newValidator)="onNewValidator($event)" />
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
       }
       @case ("ldap") {
         <app-machine-resolver-ldap-tab
           [isEditMode]="true"
           [machineResolverData]="newMachineResolver().data"
-          (newData)="onNewData($event)"
-          (newValidator)="onNewValidator($event)" />
+          (onNewData)="onNewData($event)"
+          (onNewValidator)="onNewValidator($event)" />
       }
       @default {
         <!-- Fallback for unknown types -->

@@ -244,16 +244,14 @@ describe("ActionSelectorComponent", () => {
 
       const mockItem = { focusFirstInput: jest.fn() };
       jest.spyOn(component, "actionItems").mockReturnValue([mockItem as any]);
-      jest
-        .spyOn(component, "actionsFiltered")
-        .mockReturnValue([
-          {
-            actionName: "container_add_token",
-            scope: "admin",
-            label: "container_add_token",
-            detail: { type: "bool" as const, desc: "Admin can do this." }
-          }
-        ]);
+      jest.spyOn(component, "actionsFiltered").mockReturnValue([
+        {
+          actionName: "container_add_token",
+          scope: "admin",
+          label: "container_add_token",
+          detail: { type: "bool" as const, desc: "Admin can do this." }
+        }
+      ]);
 
       component.focusNextActionItem("container_add_token", "admin");
       await new Promise((resolve) => setTimeout(resolve, 0));

@@ -125,10 +125,10 @@
                 <app-edit-buttons
                   [cancelEdit]="cancelUserEdit.bind(this)"
                   [element]="element"
-                  [isEditingInfo]="isEditingInfo"
-                  [isEditingUser]="isEditingUser"
+                  [isEditingInfo]="isEditingInfo()"
+                  [isEditingUser]="isEditingUser()"
                   [saveEdit]="saveUser.bind(this)"
-                  [shouldHideEdit]="isAnyEditingOrRevoked"
+                  [shouldHideEdit]="isAnyEditingOrRevoked()"
                   [toggleEdit]="toggleUserEdit.bind(this)"></app-edit-buttons>
               }
             }

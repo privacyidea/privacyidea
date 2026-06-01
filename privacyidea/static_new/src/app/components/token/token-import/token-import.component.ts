@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { AfterViewInit, Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
+import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
@@ -50,12 +50,9 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatError
   ]
 })
-export class TokenImportComponent implements OnDestroy, OnInit, AfterViewInit {
+export class TokenImportComponent implements OnDestroy, OnInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
-  ngAfterViewInit(): void {
-    throw new Error("Method not implemented.");
-  }
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);

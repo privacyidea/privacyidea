@@ -379,13 +379,11 @@ describe("UserService", () => {
 
     beforeEach(() => {
       contentService = TestBed.inject(ContentService) as unknown as MockContentService;
-      tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
       authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
       contentService.routeUrl.set(ROUTE_PATHS.USERS);
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", username: "enduser" });
 
-      // tokenService.tokenDetailResource = new MockHttpResourceRef(undefined as any);
       userService.selectionFilter.set("");
       userService.selectedUserRealm.set("realm1");
       userService.usersResource = new MockHttpResourceRef(MockPiResponse.fromValue(users));

@@ -34,8 +34,8 @@
     <app-template-added-token-row
       [tokenEnrollmentPayload]="token"
       [index]="$index"
-      (editToken)="onEditToken($event, $index)"
-      (removeToken)="onDeleteToken($index)">
+      (editTokenRequest)="onEditToken($event, $index)"
+      (removeTokenRequest)="onDeleteToken($index)">
     </app-template-added-token-row>
   }
 </div>

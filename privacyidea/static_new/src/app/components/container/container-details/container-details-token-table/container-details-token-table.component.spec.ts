@@ -19,7 +19,6 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { NavigationEnd, Router } from "@angular/router";
@@ -100,22 +99,20 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
     fixture.componentRef.setInput(
       "containerTokenData",
-      signal(
-        new MatTableDataSource<any>([
-          {
-            serial: "Mock serial",
-            tokentype: "hotp",
-            active: true,
-            username: "userA"
-          },
-          {
-            serial: "Another serial",
-            tokentype: "totp",
-            active: false,
-            username: "userB"
-          }
-        ])
-      )
+      new MatTableDataSource<any>([
+        {
+          serial: "Mock serial",
+          tokentype: "hotp",
+          active: true,
+          username: "userA"
+        },
+        {
+          serial: "Another serial",
+          tokentype: "totp",
+          active: false,
+          username: "userB"
+        }
+      ])
     );
 
     fixture.detectChanges();

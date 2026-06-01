@@ -38,7 +38,7 @@ export class ContainerTemplateEditBodyComponent {
 
   protected readonly tokens = computed(() => this.template().template_options?.tokens || []);
 
-  protected editToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
+  protected onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
     const updatedTokens = this.tokens().map((token, i) => {
       if (i !== index) return token;
       const updatedToken = { ...token, ...patch };
@@ -56,7 +56,7 @@ export class ContainerTemplateEditBodyComponent {
     this._updateTokens(this.tokens().filter((_, i) => i !== index));
   }
 
-  protected addToken(tokenType: string) {
+  protected onAddToken(tokenType: string) {
     const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
     this._updateTokens(updatedTokens);
   }

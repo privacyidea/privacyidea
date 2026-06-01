@@ -278,10 +278,10 @@
                   <app-edit-buttons
                     [cancelEdit]="cancelTokenEdit.bind(this)"
                     [element]="element"
-                    [isEditingInfo]="isEditingInfo"
-                    [isEditingUser]="isEditingUser"
+                    [isEditingInfo]="isEditingInfo()"
+                    [isEditingUser]="isEditingUser()"
                     [saveEdit]="saveTokenEdit.bind(this)"
-                    [shouldHideEdit]="isAnyEditingOrRevoked"
+                    [shouldHideEdit]="isAnyEditingOrRevoked()"
                     [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
                 }
               </div>

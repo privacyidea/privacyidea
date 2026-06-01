@@ -231,9 +231,9 @@
                     [toggleEdit]="toggleTokenEdit.bind(this)"
                     [saveEdit]="saveTokenEdit.bind(this)"
                     [cancelEdit]="cancelTokenEdit.bind(this)"
-                    [shouldHideEdit]="isAnyEditingOrRevoked"
-                    [isEditingUser]="isEditingUser"
-                    [isEditingInfo]="isEditingInfo"
+                    [shouldHideEdit]="isAnyEditingOrRevoked()"
+                    [isEditingUser]="isEditingUser()"
+                    [isEditingInfo]="isEditingInfo()"
                     [element]="element"></app-edit-buttons>
                 }
               </div>

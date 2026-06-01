@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, Input, input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -53,7 +53,7 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   enrollmentData = input<ApplspecEnrollmentData>();
-  @Input() wizard = false;
+  wizard = input(false);
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

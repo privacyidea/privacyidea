@@ -33,10 +33,10 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class ContainerTemplateAddTokenComponent {
   readonly tokenTypes = input.required<string[]>();
-  readonly addToken = output<string>();
+  readonly addTokenRequest = output<string>();
 
   addToken(tokenType: string) {
-    this.addToken.emit(tokenType);
+    this.addTokenRequest.emit(tokenType);
   }
 
   protected _toTitleCase(str: string): string {

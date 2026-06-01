@@ -55,7 +55,7 @@ export class PolicyPanelEditComponent {
   /**
    * Notifies the parent about any attribute changes.
    */
-  readonly policyEdit = output<Partial<PolicyDetail>>();
+  readonly onPolicyEdit = output<Partial<PolicyDetail>>();
 
   readonly activeTab = signal<PolicyTab>("actions");
 
@@ -90,7 +90,7 @@ export class PolicyPanelEditComponent {
    */
   public addPolicyEdit(edits: Partial<PolicyDetail>): void {
     this.policyEdits.set({ ...this.policyEdits(), ...edits });
-    this.policyEdit.emit(edits);
+    this.onPolicyEdit.emit(edits);
   }
 
   public updateActions(actions: Record<string, string | boolean>): void {

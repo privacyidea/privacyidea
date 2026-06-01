@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { Component, inject, input, linkedSignal, model, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -64,11 +64,11 @@ export class ContainerDetailsInfoComponent {
 
   protected readonly Object = Object;
   containerSerial = this.containerService.containerSerial;
-  @Input() infoData!: WritableSignal<ContainerInfoDetail[]>;
-  @Input() detailData!: WritableSignal<ContainerInfoDetail[]>;
-  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
+  infoData = input.required<ContainerInfoDetail[]>();
+  detailData = input.required<ContainerInfoDetail[]>();
+  isAnyEditingOrRevoked = input.required<boolean>();
+  isEditingInfo = model.required<boolean>();
+  isEditingUser = input.required<boolean>();
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
     source: this.isEditingInfo,
     computation: () => {

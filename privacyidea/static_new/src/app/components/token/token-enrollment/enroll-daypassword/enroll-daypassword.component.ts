@@ -17,16 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-  Input,
-  Output,
-  EventEmitter,
   Component,
   computed,
   effect,
+  EventEmitter,
   inject,
   input,
   linkedSignal,
   OnInit,
+  Output,
   signal
 } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
@@ -77,7 +76,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   ];
 
   enrollmentData = input<DaypasswordEnrollmentData>();
-  @Input() wizard = false;
+  wizard = input(false);
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

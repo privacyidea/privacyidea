@@ -20,6 +20,11 @@
 import { Component, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import {
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 

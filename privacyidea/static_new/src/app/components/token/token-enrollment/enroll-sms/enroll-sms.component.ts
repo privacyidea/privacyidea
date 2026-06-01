@@ -56,7 +56,7 @@ export class EnrollSmsComponent implements OnInit {
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
 
   enrollmentData = input<SmsEnrollmentData>();
-  @Input() wizard = false;
+  wizard = input(false);
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {

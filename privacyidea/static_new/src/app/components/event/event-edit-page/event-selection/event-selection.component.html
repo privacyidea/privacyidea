@@ -40,7 +40,7 @@
       matInput
       placeholder="New Event..."
       [value]="searchTerm()"
-      (input)="onSearchInputChanges($event.target.value)"
+      (input)="onSearchInputChanges($event)"
       (blur)="markTouched()"
       [matChipInputFor]="chipGrid"
       [matAutocomplete]="auto"

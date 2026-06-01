@@ -102,11 +102,11 @@ export class MachineResolverPanelEditComponent {
     return dataValidator(current.data);
   });
 
-  newData(newData: MachineResolverData) {
+  onNewData(newData: MachineResolverData) {
     this.editedMachineResolver.set({ ...this.currentMachineResolver(), data: newData });
   }
 
-  newValidator(newValidator: (data: MachineResolverData) => boolean) {
+  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
     this.dataValidatorSignal.set(newValidator);
   }
 

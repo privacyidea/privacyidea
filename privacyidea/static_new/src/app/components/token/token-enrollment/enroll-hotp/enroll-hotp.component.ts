@@ -23,7 +23,6 @@ import {
   EventEmitter,
   inject,
   input,
-  Input,
   OnInit,
   output,
   Output,
@@ -73,7 +72,7 @@ export class EnrollHotpComponent implements OnInit {
   ];
 
   enrollmentData = input<HotpEnrollmentData | null>();
-  @Input() wizard = false;
+  wizard = input(false);
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
       data: HotpEnrollmentData;
