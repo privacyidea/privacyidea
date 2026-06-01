@@ -1,0 +1,270 @@
+# (c) NetKnights GmbH 2026,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+from datetime import datetime, timezone, timedelta
+
+from .base import MyTestCase
+from privacyidea.lib.conditional_access.authentication_log import (
+    create_authentication_log,
+    update_authentication_log,
+    delete_authentication_log,
+    get_authentication_log,
+    get_authentication_logs,
+    cleanup_authentication_log,
+)
+
+
+class AuthenticationLogTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+    def test_create_required_fields_only(self):
+        event_id = create_authentication_log(resolver="res1", uid="user1", realm="realm1", event_type="auth")
+        self.assertIsNotNone(event_id)
+        self.assertGreater(event_id, 0)
+
+        entry = get_authentication_log(event_id)
+        assert entry is not None
+        self.assertEqual("res1", entry.resolver)
+        self.assertEqual("user1", entry.uid)
+        self.assertEqual("realm1", entry.realm)
+        self.assertEqual("auth", entry.event_type)
+        self.assertIsNone(entry.source_ip)
+        self.assertIsNone(entry.client_label)
+        self.assertIsNone(entry.serial)
+        self.assertIsNone(entry.transaction_id)
+        self.assertIsNone(entry.other_info)
+
+    def test_create_all_fields(self):
+        event_id = create_authentication_log(
+            resolver="res1", uid="user1", realm="realm1", event_type="auth",
+            source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
+            transaction_id="txn-123", other_info={"key": "value"}
+        )
+
+        entry = get_authentication_log(event_id)
+        assert entry is not None
+        self.assertEqual("192.168.1.1", entry.source_ip)
+        self.assertEqual("vpn", entry.client_label)
+        self.assertEqual("TOK001", entry.serial)
+        self.assertEqual("txn-123", entry.transaction_id)
+        self.assertEqual({"key": "value"}, entry.other_info)
+
+    def test_create_returns_unique_ids(self):
+        id1 = create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        id2 = create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        self.assertNotEqual(id1, id2)
+
+    def test_update_single_field(self):
+        event_id = create_authentication_log(resolver="res1", uid="user1", realm="realm1", event_type="auth")
+        update_authentication_log(event_id, event_type="success")
+
+        entry = get_authentication_log(event_id)
+        assert entry is not None
+        self.assertEqual("success", entry.event_type)
+        self.assertEqual("res1", entry.resolver)
+
+    def test_update_multiple_fields(self):
+        event_id = create_authentication_log(resolver="res1", uid="user1", realm="realm1", event_type="auth")
+        update_authentication_log(event_id, serial="TOK001", source_ip="10.0.0.1", other_info={"result": "ok"})
+
+        entry = get_authentication_log(event_id)
+        assert entry is not None
+        self.assertEqual("TOK001", entry.serial)
+        self.assertEqual("10.0.0.1", entry.source_ip)
+        self.assertEqual({"result": "ok"}, entry.other_info)
+        self.assertEqual("auth", entry.event_type)
+
+    def test_update_no_fields_is_noop(self):
+        event_id = create_authentication_log(resolver="res1", uid="user1", realm="realm1", event_type="auth")
+        entry_before = get_authentication_log(event_id)
+        assert entry_before is not None
+        ts_before = entry_before.timestamp
+
+        update_authentication_log(event_id)
+
+        entry_after = get_authentication_log(event_id)
+        assert entry_after is not None
+        self.assertEqual("auth", entry_after.event_type)
+        self.assertEqual(ts_before, entry_after.timestamp)
+
+    def test_delete_existing_entry(self):
+        event_id = create_authentication_log(resolver="res1", uid="user1", realm="realm1", event_type="auth")
+        self.assertIsNotNone(get_authentication_log(event_id))
+
+        delete_authentication_log(event_id)
+
+        self.assertIsNone(get_authentication_log(event_id))
+
+    def test_delete_nonexistent_is_noop(self):
+        delete_authentication_log(999999)
+
+    def test_get_nonexistent_returns_none(self):
+        self.assertIsNone(get_authentication_log(999999))
+
+    def test_get_authentication_logs_no_filter(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res2", uid="u2", realm="r2", event_type="auth")
+
+        results = get_authentication_logs()
+        self.assertEqual(2, len(results))
+
+    def test_get_authentication_logs_filter_by_resolver(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res2", uid="u2", realm="r1", event_type="auth")
+
+        results = get_authentication_logs(resolver="res1")
+        self.assertEqual(1, len(results))
+        self.assertEqual("res1", results[0].resolver)
+
+    def test_get_authentication_logs_filter_by_uid(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res1", uid="u2", realm="r1", event_type="auth")
+
+        results = get_authentication_logs(uid="u1")
+        self.assertEqual(1, len(results))
+        self.assertEqual("u1", results[0].uid)
+
+    def test_get_authentication_logs_filter_by_realm(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res1", uid="u1", realm="r2", event_type="auth")
+
+        results = get_authentication_logs(realm="r2")
+        self.assertEqual(1, len(results))
+        self.assertEqual("r2", results[0].realm)
+
+    def test_get_authentication_logs_filter_by_event_type(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="success")
+
+        results = get_authentication_logs(event_type="success")
+        self.assertEqual(1, len(results))
+        self.assertEqual("success", results[0].event_type)
+
+    def test_get_authentication_logs_filter_by_serial(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth", serial="TOK001")
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth", serial="TOK002")
+
+        results = get_authentication_logs(serial="TOK001")
+        self.assertEqual(1, len(results))
+        self.assertEqual("TOK001", results[0].serial)
+
+    def test_get_authentication_logs_filter_by_source_ip(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth", source_ip="10.0.0.1")
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth", source_ip="10.0.0.2")
+
+        results = get_authentication_logs(source_ip="10.0.0.1")
+        self.assertEqual(1, len(results))
+        self.assertEqual("10.0.0.1", results[0].source_ip)
+
+    def test_get_authentication_logs_filter_by_transaction_id(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth", transaction_id="txn-a")
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth", transaction_id="txn-b")
+
+        results = get_authentication_logs(transaction_id="txn-a")
+        self.assertEqual(1, len(results))
+        self.assertEqual("txn-a", results[0].transaction_id)
+
+    def test_get_authentication_logs_combined_filters(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res1", uid="u2", realm="r1", event_type="auth")
+        create_authentication_log(resolver="res2", uid="u1", realm="r1", event_type="auth")
+
+        results = get_authentication_logs(resolver="res1", uid="u1")
+        self.assertEqual(1, len(results))
+        self.assertEqual("res1", results[0].resolver)
+        self.assertEqual("u1", results[0].uid)
+
+    def test_get_authentication_logs_no_match_returns_empty(self):
+        create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+
+        results = get_authentication_logs(resolver="nonexistent")
+        self.assertEqual([], results)
+
+    def test_get_authentication_logs_timestamp_filters(self):
+        from unittest.mock import patch
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        past = now - timedelta(hours=2)
+        future = now + timedelta(hours=2)
+
+        with patch('privacyidea.models.utils.datetime') as mock_dt:
+            mock_dt.now.return_value.replace.return_value = past
+            id1 = create_authentication_log(resolver="res1", uid="u1", realm="r1", event_type="auth")
+
+        with patch('privacyidea.models.utils.datetime') as mock_dt:
+            mock_dt.now.return_value.replace.return_value = future
+            id2 = create_authentication_log(resolver="res1", uid="u2", realm="r1", event_type="auth")
+
+        # only the past entry
+        results = get_authentication_logs(end_timestamp=now)
+        self.assertEqual(1, len(results))
+        self.assertEqual(id1, results[0].event_id)
+
+        # only the future entry
+        results = get_authentication_logs(start_timestamp=now)
+        self.assertEqual(1, len(results))
+        self.assertEqual(id2, results[0].event_id)
+
+        # both entries
+        results = get_authentication_logs(start_timestamp=past, end_timestamp=future)
+        self.assertEqual(2, len(results))
+
+    def test_create_user_unknown_event(self):
+        event_id = create_authentication_log(event_type="USER_UNKNOWN", source_ip="10.0.0.1")
+
+        entry = get_authentication_log(event_id)
+        assert entry is not None
+        self.assertEqual("USER_UNKNOWN", entry.event_type)
+        self.assertIsNone(entry.resolver)
+        self.assertIsNone(entry.uid)
+        self.assertIsNone(entry.realm)
+        self.assertEqual("10.0.0.1", entry.source_ip)
+
+    def test_cleanup_removes_old_entries(self):
+        from unittest.mock import patch
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        old_ts = now - timedelta(days=30)
+        recent_ts = now - timedelta(hours=1)
+
+        with patch('privacyidea.models.utils.datetime') as mock_dt:
+            mock_dt.now.return_value.replace.return_value = old_ts
+            old_id = create_authentication_log(event_type="auth", resolver="res1", uid="u1", realm="r1")
+
+        with patch('privacyidea.models.utils.datetime') as mock_dt:
+            mock_dt.now.return_value.replace.return_value = recent_ts
+            recent_id = create_authentication_log(event_type="auth", resolver="res1", uid="u2", realm="r1")
+
+        cutoff = now - timedelta(days=7)
+        deleted = cleanup_authentication_log(older_than=cutoff)
+
+        self.assertEqual(1, deleted)
+        self.assertIsNone(get_authentication_log(old_id))
+        self.assertIsNotNone(get_authentication_log(recent_id))
+
+    def test_cleanup_returns_zero_when_nothing_to_delete(self):
+        create_authentication_log(event_type="auth", resolver="res1", uid="u1", realm="r1")
+
+        future_cutoff = datetime(2000, 1, 1)
+        deleted = cleanup_authentication_log(older_than=future_cutoff)
+
+        self.assertEqual(0, deleted)
