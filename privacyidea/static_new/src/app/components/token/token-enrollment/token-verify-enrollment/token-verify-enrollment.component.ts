@@ -56,7 +56,9 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Toke
   protected readonly enrollData: TokenEnrollmentData | null = this.enrollParameters?.data;
 
   verifyOTP_value = signal<string>("");
-  verifyOTPForm = form(this.verifyOTP_value, (f) => { required(f); });
+  verifyOTPForm = form(this.verifyOTP_value, (f) => {
+    required(f);
+  });
   invalidInputSignal = computed(() => !this.verifyOTPForm().valid());
 
   readonly dialogActions = computed<DialogAction<string>[]>(() => [

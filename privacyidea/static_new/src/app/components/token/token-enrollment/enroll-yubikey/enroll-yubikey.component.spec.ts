@@ -28,8 +28,7 @@ describe("EnrollYubikeyComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      providers: [provideHttpClient(),
-        { provide: TokenService, useClass: MockTokenService }],
+      providers: [provideHttpClient(), { provide: TokenService, useClass: MockTokenService }],
       imports: [EnrollYubikeyComponent]
     }).compileComponents();
 

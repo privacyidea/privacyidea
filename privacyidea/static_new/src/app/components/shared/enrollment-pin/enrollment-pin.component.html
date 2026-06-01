@@ -40,9 +40,14 @@
         matInput />
     </mat-form-field>
   </div>
-  @if (repeatPinControl().errors().some(e => e.kind === 'pinMismatch') &&
-  (setPinControl().touched() || repeatPinControl().touched())) {
-    <mat-error class="pin-error" i18n>PINs do not match.</mat-error>
+  @if (
+    repeatPinControl().errors().some(e => e.kind === 'pinMismatch') &&
+  (setPinControl().touched() || repeatPinControl().touched())
+  ) {
+    <mat-error
+      class="pin-error"
+      i18n
+      >PINs do not match.</mat-error
+    >
   }
 </div>
-

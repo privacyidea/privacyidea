@@ -208,8 +208,7 @@
                       (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       (keydown.space)="
-                        $event.preventDefault();
-                        contentService.navigateContainerDetails(tokenDetails.container_serial)
+                        $event.preventDefault(); contentService.navigateContainerDetails(tokenDetails.container_serial)
                       "
                       attr.aria-label="{{ column.label }} Link"
                       role="button"

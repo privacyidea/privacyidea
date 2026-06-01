@@ -131,7 +131,9 @@ describe("UserNewResolverComponent", () => {
 
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value = resourceValue;
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).status = resourceStatus;
-    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest
+      .fn()
+      .mockReturnValue(true);
 
     await detectChangesStable();
 
@@ -170,7 +172,9 @@ describe("UserNewResolverComponent", () => {
 
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value = resourceValue;
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).status = resourceStatus;
-    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest
+      .fn()
+      .mockReturnValue(true);
 
     await detectChangesStable();
 
@@ -201,7 +205,9 @@ describe("UserNewResolverComponent", () => {
 
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value = resourceValue;
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).status = resourceStatus;
-    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest
+      .fn()
+      .mockReturnValue(true);
 
     await detectChangesStable();
     expect(component.formData["fileName"]).toBe("/initial");
@@ -310,7 +316,9 @@ describe("UserNewResolverComponent", () => {
     (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value.set({
       result: { status: true, value: resolverData }
     });
-    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest
+      .fn()
+      .mockReturnValue(true);
     await detectChangesStable();
 
     const successResponse = new MockPiResponse<number>({
@@ -444,8 +452,12 @@ describe("UserNewResolverComponent", () => {
         data: { fileName: "/etc/passwd" }
       }
     };
-    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value.set({ result: { status: true, value: resolverData } });
-    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest.fn().mockReturnValue(true);
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).value.set({
+      result: { status: true, value: resolverData }
+    });
+    (resolverService.selectedResolverResource as unknown as MockResolverResourceShape).hasValue = jest
+      .fn()
+      .mockReturnValue(true);
     await detectChangesStable();
 
     resolverService.postResolverTest.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));

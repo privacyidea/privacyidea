@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, signal, OnInit, output } from '@angular/core';
+import { Component, inject, input, signal, OnInit, output } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -60,10 +60,12 @@ export class EnrollSshkeyComponent implements OnInit {
     disabled(f, () => this.disabled());
   });
 
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  enrollmentArgsGetterChange = output<
+    (basicOptions: TokenEnrollmentData) => {
       data: SshkeyEnrollmentData;
       mapper: TokenApiPayloadMapper<SshkeyEnrollmentData>;
-    } | null>();
+    } | null
+  >();
   additionalFormFieldsChange = output<Record<string, unknown>>();
 
   ngOnInit() {

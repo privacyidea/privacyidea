@@ -178,7 +178,7 @@ describe("HttpResolverComponent", () => {
   it("should NOT overwrite responseMapping when switching to Advanced mode if it is already set", () => {
     // Initially in Basic mode
     expect(component["basicSettings"]()).toBe(true);
-    component.model.update(m => ({ ...m, responseMapping: '{"custom":"mapping"}' }));
+    component.model.update((m) => ({ ...m, responseMapping: '{"custom":"mapping"}' }));
 
     // Switch to Advanced mode
     component["basicSettings"].set(false);

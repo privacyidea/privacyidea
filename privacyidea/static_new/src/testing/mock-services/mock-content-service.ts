@@ -61,9 +61,7 @@ export class MockContentService implements ContentServiceInterface {
   onAnyUsersRoute = computed(
     () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
-  onContainersTemplates: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES
-  );
+  onContainersTemplates: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES);
   onContainersTemplatesCreate: Signal<boolean> = computed(
     () => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE
   );

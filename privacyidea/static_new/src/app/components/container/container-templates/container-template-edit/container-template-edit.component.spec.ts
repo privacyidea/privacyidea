@@ -61,18 +61,24 @@ describe("ContainerTemplateEditComponent", () => {
   });
 
   it("nameConflict is false when name unchanged", () => {
-    serviceMock.templates.set([{ name: "Existing", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    serviceMock.templates.set([
+      { name: "Existing", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     expect(component.nameConflict()).toBe(false);
   });
 
   it("nameConflict is true when name matches an existing template", () => {
-    serviceMock.templates.set([{ name: "Existing", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    serviceMock.templates.set([
+      { name: "Existing", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     component.editTemplate({ name: "Existing" });
     expect(component.nameConflict()).toBe(true);
   });
 
   it("nameConflict is false when renamed to a unique name", () => {
-    serviceMock.templates.set([{ name: "Other", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    serviceMock.templates.set([
+      { name: "Other", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     component.editTemplate({ name: "UniqueNewName" });
     expect(component.nameConflict()).toBe(false);
   });
@@ -82,7 +88,9 @@ describe("ContainerTemplateEditComponent", () => {
     expect(component.canSaveTemplate()).toBe(true);
     expect(serviceMock.canSaveTemplate).toHaveBeenCalledWith(component.template());
 
-    serviceMock.templates.set([{ name: "Conflict", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    serviceMock.templates.set([
+      { name: "Conflict", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     component.editTemplate({ name: "Conflict" });
     expect(component.canSaveTemplate()).toBe(false);
   });
@@ -128,7 +136,9 @@ describe("ContainerTemplateEditComponent", () => {
   });
 
   it("nameErrorMatcher.isErrorState returns true on conflict", () => {
-    serviceMock.templates.set([{ name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    serviceMock.templates.set([
+      { name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     component.editTemplate({ name: "Taken" });
     expect(component.nameErrorMatcher.isErrorState()).toBe(true);
   });

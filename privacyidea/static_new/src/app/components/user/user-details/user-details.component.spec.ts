@@ -37,15 +37,15 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
-    MockAuditService,
-    MockContainerService,
-    MockContentService,
-    MockDialogService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService,
-    MockTokenService,
-    MockUserService
+  MockAuditService,
+  MockContainerService,
+  MockContentService,
+  MockDialogService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService,
+  MockTokenService,
+  MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";

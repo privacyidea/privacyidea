@@ -88,9 +88,15 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   hidePassword = signal<boolean>(true);
   otp = signal<string>("");
 
-  usernameField = form(this.username, (f) => { required(f); });
-  passwordField = form(this.password, (f) => { required(f); });
-  otpField = form(this.otp, (f) => { required(f); });
+  usernameField = form(this.username, (f) => {
+    required(f);
+  });
+  passwordField = form(this.password, (f) => {
+    required(f);
+  });
+  otpField = form(this.otp, (f) => {
+    required(f);
+  });
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 

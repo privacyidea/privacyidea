@@ -17,8 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <br class="responsive-br-1580" />
-<div
-  class="actions-otp-container responsive-ali-center-1580">
+<div class="actions-otp-container responsive-ali-center-1580">
   <h4 class="margin-8">Token Actions</h4>
   @if (token()?.rollout_state === "verify") {
     <app-verify-enrollment></app-verify-enrollment>
@@ -92,15 +91,16 @@
         </button>
       }
     }
-    @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
-    (!tokenIsActive() && authService.actionAllowed("enable"))) {
+    @if (
+      (tokenIsActive() && authService.actionAllowed("disable")) ||
+      (!tokenIsActive() && authService.actionAllowed("enable"))
+    ) {
       <button
         (click)="toggleActive()"
         [disabled]="tokenIsRevoked()"
-        [ngClass]="[tokenIsActive()
-                      ? 'action-button-delete-primary button-width-m'
-                      : 'action-button-primary button-width-m'
-                ]"
+        [ngClass]="[
+          tokenIsActive() ? 'action-button-delete-primary button-width-m' : 'action-button-primary button-width-m'
+        ]"
         i18n
         mat-stroked-button>
         <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
@@ -128,8 +128,7 @@
         Revoke
       </button>
     }
-    @if (authService.tokenRollover().indexOf(tokenType()) >= 0 &&
-    rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
+    @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
       <button
         (click)="rolloverToken()"
         class="action-button-secondary button-width-m"

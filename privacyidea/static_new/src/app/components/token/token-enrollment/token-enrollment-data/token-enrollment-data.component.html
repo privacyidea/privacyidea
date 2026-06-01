@@ -43,7 +43,8 @@
     }
     @if (enrolledData()?.["password"]) {
       <p i18n>
-        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong>.
+        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
+        >.
       </p>
     }
     @if (enrolledData()?.otpkey?.value && !enrolledData()?.["otps"] && showQRCode()) {

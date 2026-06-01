@@ -229,19 +229,13 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () =>
-        !!this.addKeyInput() ||
-        !!this.addValueInput() ||
-        !!this.selectedKey() ||
-        !!this.selectedValue(),
+      () => !!this.addKeyInput() || !!this.addValueInput() || !!this.selectedKey() || !!this.selectedValue()
     );
-    this.pendingChangesService.registerValidChanges(
-      () => {
-        const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-        const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-        return !!key && !!value;
-      },
-    );
+    this.pendingChangesService.registerValidChanges(() => {
+      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+      return !!key && !!value;
+    });
     this.pendingChangesService.registerSave(() => this.addCustomAttribute());
   }
 

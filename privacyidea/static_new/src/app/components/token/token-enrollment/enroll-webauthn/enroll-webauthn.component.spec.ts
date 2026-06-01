@@ -242,7 +242,10 @@ describe("EnrollWebauthnComponent", () => {
         of(makeEnrollInitResponse() as unknown as EnrollmentResponse) as Observable<EnrollmentResponse>
       )
       .mockReturnValueOnce(
-        of({ detail: { serial: "" }, type: "webauthn" } as unknown as EnrollmentResponse) as Observable<EnrollmentResponse>
+        of({
+          detail: { serial: "" },
+          type: "webauthn"
+        } as unknown as EnrollmentResponse) as Observable<EnrollmentResponse>
       );
 
     await detectChangesStable();

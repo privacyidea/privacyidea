@@ -19,12 +19,12 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import {
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService,
-    MockTokenService,
-    MockUserService
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService,
+  MockTokenService,
+  MockUserService
 } from "@testing/mock-services";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table.component";
 

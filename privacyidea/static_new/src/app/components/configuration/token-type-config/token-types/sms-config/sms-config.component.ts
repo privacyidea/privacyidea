@@ -30,14 +30,7 @@ import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
 @Component({
   selector: "app-sms-config",
   standalone: true,
-  imports: [
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    RouterLink,
-    ClearButtonComponent
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./sms-config.component.html",
   styleUrl: "./sms-config.component.scss"
 })

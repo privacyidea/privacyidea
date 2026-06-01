@@ -21,7 +21,9 @@
   [showCancelButton]="true"
   title="Take action on your authenticator">
   <mat-dialog-content>
-    @if (data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration) {
+    @if (
+      data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
+    ) {
       <p
         class="max-width-600"
         i18n>

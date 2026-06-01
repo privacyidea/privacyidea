@@ -96,7 +96,9 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   });
 
   async postSmsGateway(gateway: any): Promise<void> {
-    const request = this.http.post<PiResponse<number>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(this.baseUrl, gateway, {
+      headers: this.authService.getHeaders()
+    });
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success($localize`Successfully saved SMS gateway.`);

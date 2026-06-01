@@ -263,7 +263,6 @@ describe("TokenService", () => {
         { headers: authService.getHeaders() }
       );
     });
-
   });
 
   describe("pollTokenRolloutState()", () => {

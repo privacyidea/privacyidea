@@ -30,15 +30,17 @@
         Container Registration Completed
       </h3>
     </div>
-    <span
-      i18n>The container
-    <a
-      (click)="containerSelected(data.containerSerial)"
-      (keydown.enter)="containerSelected(data.containerSerial)"
-      role="button"
-      tabindex="0">
-      {{ data.containerSerial }} </a> was successfully
-         registered.</span>
+    <span i18n
+      >The container
+      <a
+        (click)="containerSelected(data.containerSerial)"
+        (keydown.enter)="containerSelected(data.containerSerial)"
+        role="button"
+        tabindex="0">
+        {{ data.containerSerial }}
+      </a>
+      was successfully registered.</span
+    >
   }
 </mat-dialog-content>
 <mat-dialog-actions>

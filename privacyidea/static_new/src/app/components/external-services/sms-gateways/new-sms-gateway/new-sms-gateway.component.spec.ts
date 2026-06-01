@@ -85,7 +85,7 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   it("should update parameters when provider changes", async () => {
-    component.smsModel.update(m => ({ ...m, providermodule: "mod1" }));
+    component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
     fixture.detectChanges();
     await fixture.whenStable();
     expect(component.parametersModel()["p1"]).toBeDefined();
@@ -214,7 +214,7 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.smsModel.update(m => ({ ...m, name: "" }));
+      component.smsModel.update((m) => ({ ...m, name: "" }));
       component.parametersDirty.set(true);
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
@@ -436,9 +436,7 @@ describe("NewSmsGatewayComponent", () => {
 
       await component.save();
 
-      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 99 })
-      );
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalledWith(expect.objectContaining({ id: 99 }));
     });
   });
 

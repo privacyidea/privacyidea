@@ -48,7 +48,9 @@ describe("SetPinActionComponent", () => {
   } as unknown as MatDialog;
 
   const notificationServiceStub = {
-    success: jest.fn(), error: jest.fn(), warning: jest.fn()
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn()
   };
 
   beforeEach(async () => {

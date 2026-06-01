@@ -60,10 +60,7 @@ export interface CaConnectorServiceInterface {
 
   deleteCaConnector(connectorname: string): Promise<void>;
 
-  getCaSpecificOptions(
-    catype: string,
-    params: CaSpecificOptionsParams
-  ): Promise<CaSpecificOptions | undefined>;
+  getCaSpecificOptions(catype: string, params: CaSpecificOptionsParams): Promise<CaSpecificOptions | undefined>;
 }
 
 @Injectable()
@@ -135,10 +132,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       });
   }
 
-  async getCaSpecificOptions(
-    catype: string,
-    params: CaSpecificOptionsParams
-  ): Promise<CaSpecificOptions | undefined> {
+  async getCaSpecificOptions(catype: string, params: CaSpecificOptionsParams): Promise<CaSpecificOptions | undefined> {
     const pstring = new URLSearchParams(params as unknown as Record<string, string>).toString();
     const url = `${this.caConnectorBaseUrl}specific/${encodeURIComponent(catype)}?${pstring}`;
     const request = this.http.get<PiResponse<CaSpecificOptions>>(url, { headers: this.authService.getHeaders() });

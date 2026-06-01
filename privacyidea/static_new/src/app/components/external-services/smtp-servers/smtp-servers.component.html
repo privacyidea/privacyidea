@@ -60,13 +60,13 @@
     class="smtp-servers-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="identifier">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Identifier
+        mat-sort-header>
+        Identifier
       </th>
       <td
         *matCellDef="let server"
@@ -88,11 +88,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> IP/FQDN
+        mat-sort-header>
+        IP/FQDN
       </th>
       <td
         *matCellDef="let server"
-        mat-cell> {{ server.server }}:{{ server.port }}
+        mat-cell>
+        {{ server.server }}:{{ server.port }}
       </td>
     </ng-container>
 
@@ -101,11 +103,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Sender
+        mat-sort-header>
+        Sender
       </th>
       <td
         *matCellDef="let server"
-        mat-cell> {{ server.sender }}
+        mat-cell>
+        {{ server.sender }}
       </td>
     </ng-container>
 
@@ -114,7 +118,8 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> StartTLS
+        mat-sort-header>
+        StartTLS
       </th>
       <td
         *matCellDef="let server"
@@ -132,11 +137,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Description
+        mat-sort-header>
+        Description
       </th>
       <td
         *matCellDef="let server"
-        mat-cell> {{ server.description }}
+        mat-cell>
+        {{ server.description }}
       </td>
     </ng-container>
 
@@ -144,7 +151,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let server"
@@ -166,7 +174,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -175,7 +183,8 @@
       <td
         class="mat-cell"
         colspan="6"
-        i18n>No SMTP servers found.
+        i18n>
+        No SMTP servers found.
       </td>
     </tr>
   </table>

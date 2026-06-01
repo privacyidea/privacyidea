@@ -375,7 +375,9 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "asc" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "asc" });
     expect(sorted.map((e: EventHandler) => e.name)).toEqual(["Alice", "Bob", "Charlie"]);
   });
 
@@ -415,7 +417,9 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "desc" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "desc" });
     expect(sorted.map((e: EventHandler) => e.name)).toEqual(["Charlie", "Bob", "Alice"]);
   });
 
@@ -455,7 +459,9 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "asc" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "asc" });
     expect(sorted.map((e: EventHandler) => e.ordering)).toEqual([1, 2, 3]);
   });
 
@@ -495,7 +501,9 @@ describe("EventComponent", () => {
         ordering: 2
       }
     ];
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "desc" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "desc" });
     expect(sorted.map((e: EventHandler) => e.ordering)).toEqual([3, 2, 1]);
   });
 
@@ -524,18 +532,28 @@ describe("EventComponent", () => {
         ordering: 1
       }
     ];
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "name", direction: "" });
     expect(sorted).toEqual(data);
   });
 
   it("should handle empty array", () => {
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([], { active: "name", direction: "asc" });
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([], { active: "name", direction: "asc" });
     expect(sorted).toEqual([]);
   });
 
   it("should handle missing sort key gracefully", () => {
-    const data = [{ name: "Charlie", ordering: 3 }, { name: "Alice" }, { name: "Bob", ordering: 2 }] as unknown as EventHandler[];
-    const sorted = (component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "asc" });
+    const data = [
+      { name: "Charlie", ordering: 3 },
+      { name: "Alice" },
+      { name: "Bob", ordering: 2 }
+    ] as unknown as EventHandler[];
+    const sorted = (
+      component as unknown as { clientsideSortEventData: (data: EventHandler[], s: Sort) => EventHandler[] }
+    ).clientsideSortEventData([...data] as unknown as EventHandler[], { active: "ordering", direction: "asc" });
     expect(sorted.map((e: EventHandler) => e.ordering)).toEqual([undefined, 2, 3]);
   });
 

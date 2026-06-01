@@ -38,26 +38,19 @@
         (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
         (enrollmentResponseChange)="updateOnEnrollmentResponse($event)"
         (reopenDialogChange)="updateReopenDialog($event)" />
-      <mat-form-field
-        class="input-width-xl margin-top-16">
+      <mat-form-field class="input-width-xl margin-top-16">
         <mat-label i18n>Description</mat-label>
         <textarea
           [formField]="descriptionForm"
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end"
-          >{{ description().length }} / {{ tokenService.maxDescriptionLength }}
-        </mat-hint>
+        <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
         @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
-          <mat-error i18n>
-            Description is <strong>required</strong>.
-          </mat-error>
+          <mat-error i18n> Description is <strong>required</strong>. </mat-error>
         }
         @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
-          <mat-error i18n>
-            Description must not exceed {{ tokenService.maxDescriptionLength }} characters.
-          </mat-error>
+          <mat-error i18n> Description must not exceed {{ tokenService.maxDescriptionLength }} characters. </mat-error>
         }
       </mat-form-field>
       <div class="gap-16">

@@ -30,15 +30,7 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
 
 @Component({
   selector: "app-token-complete-enrollment",
-  imports: [
-    DialogWrapperComponent,
-    MatFormField,
-    MatHint,
-    MatInput,
-    MatLabel,
-    TokenEnrollmentDataComponent,
-    FormField
-  ],
+  imports: [DialogWrapperComponent, MatFormField, MatHint, MatInput, MatLabel, TokenEnrollmentDataComponent, FormField],
   templateUrl: "./token-complete-enrollment.component.html",
   styleUrl: "./token-complete-enrollment.component.scss"
 })
@@ -58,7 +50,9 @@ export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<To
   });
 
   clientPart = signal<string>("");
-  clientPartForm = form(this.clientPart, (f) => { required(f); });
+  clientPartForm = form(this.clientPart, (f) => {
+    required(f);
+  });
   invalidInputSignal = computed(() => !this.clientPartForm().valid());
 
   readonly dialogActions = computed<DialogAction<string>[]>(() => [

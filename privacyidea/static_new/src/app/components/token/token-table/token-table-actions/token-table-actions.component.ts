@@ -169,8 +169,15 @@ export class TokenTableActionsComponent {
             )
             .subscribe({
               next: () => {
-                const actionLabel = action === "activate" ? $localize`activated` : action === "deactivate" ? $localize`deactivated` : $localize`toggled`;
-                this.notificationService.success($localize`Successfully ${actionLabel} ${tokensToProcess.length} token(s).`);
+                const actionLabel =
+                  action === "activate"
+                    ? $localize`activated`
+                    : action === "deactivate"
+                      ? $localize`deactivated`
+                      : $localize`toggled`;
+                this.notificationService.success(
+                  $localize`Successfully ${actionLabel} ${tokensToProcess.length} token(s).`
+                );
                 this.tokenService.tokenResource.reload();
               },
               error: (err) => {
@@ -210,7 +217,9 @@ export class TokenTableActionsComponent {
               )
               .subscribe({
                 next: () => {
-                  this.notificationService.success($localize`Successfully reset failcounter for ${selectedTokens.length} token(s).`);
+                  this.notificationService.success(
+                    $localize`Successfully reset failcounter for ${selectedTokens.length} token(s).`
+                  );
                   this.tokenService.tokenResource.reload();
                   this.tokenService.tokenDetailResource.reload();
                 },
@@ -287,7 +296,9 @@ export class TokenTableActionsComponent {
                 const messages: string[] = [];
 
                 if (count_success) {
-                  messages.push($localize`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`);
+                  messages.push(
+                    $localize`Successfully unassigned ${count_success} token${count_success === 1 ? "" : "s"}.`
+                  );
                 }
 
                 if (failedTokens.length > 0) {

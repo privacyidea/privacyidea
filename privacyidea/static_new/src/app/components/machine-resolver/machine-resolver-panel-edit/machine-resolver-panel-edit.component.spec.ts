@@ -24,9 +24,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import {
-    HostsMachineResolver,
-    HostsMachineResolverData,
-    MachineResolverService
+  HostsMachineResolver,
+  HostsMachineResolverData,
+  MachineResolverService
 } from "@services/machine-resolver/machine-resolver.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -435,9 +435,7 @@ describe("MachineResolverPanelEditComponent", () => {
     });
 
     it("saveMachineResolver resolves false when test fails and user does not confirm", async () => {
-      jest
-        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
-        .mockRejectedValue(new Error("post-failed"));
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockRejectedValue(new Error("post-failed"));
       const dialogRef = new MockMatDialogRef();
       jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
       dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
@@ -446,9 +444,7 @@ describe("MachineResolverPanelEditComponent", () => {
     });
 
     it("saveMachineResolver resolves false when test fails with non post-failed error", async () => {
-      jest
-        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
-        .mockRejectedValue(new Error("other-error"));
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockRejectedValue(new Error("other-error"));
       const result = await component.saveMachineResolver();
       expect(result).toBe(false);
     });

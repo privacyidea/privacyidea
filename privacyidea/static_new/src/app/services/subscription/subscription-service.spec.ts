@@ -30,7 +30,7 @@ describe("SubscriptionService", () => {
   let service: SubscriptionService;
   let httpMock: HttpTestingController;
   let authMock: { getHeaders: jest.Mock };
-  let notifyMock: { warning: jest.Mock, error: jest.Mock };
+  let notifyMock: { warning: jest.Mock; error: jest.Mock };
 
   beforeEach(() => {
     authMock = { getHeaders: jest.fn(() => ({}) as any) } as any;
@@ -43,7 +43,7 @@ describe("SubscriptionService", () => {
         SubscriptionService,
         { provide: AuthService, useValue: authMock },
         { provide: NotificationService, useValue: notifyMock },
-        { provide: ContentService, useClass: MockContentService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
 

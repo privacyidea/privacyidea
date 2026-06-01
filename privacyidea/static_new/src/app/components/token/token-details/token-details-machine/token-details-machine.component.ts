@@ -34,17 +34,7 @@ import {
 @Component({
   selector: "app-token-details-machine",
   standalone: true,
-  imports: [
-    MatTableModule,
-    MatColumnDef,
-    MatCell,
-    MatList,
-    MatListItem,
-    MatIconButton,
-    MatIcon,
-    MatDivider,
-    MatRow
-  ],
+  imports: [MatTableModule, MatColumnDef, MatCell, MatList, MatListItem, MatIconButton, MatIcon, MatDivider, MatRow],
   templateUrl: "./token-details-machine.component.html",
   styleUrl: "./token-details-machine.component.scss"
 })

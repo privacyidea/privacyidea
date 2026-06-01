@@ -39,7 +39,10 @@ describe("SmtpService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -83,7 +86,10 @@ describe("SmtpService", () => {
     const promise = service.postSmtpServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save SMTP server. Something went wrong");
@@ -104,7 +110,10 @@ describe("SmtpService", () => {
     const promise = service.deleteSmtpServer("test");
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to delete SMTP server. Something went wrong");
@@ -128,7 +137,10 @@ describe("SmtpService", () => {
     const promise = service.testSmtpServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/send_test_email`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     const result = await promise;
     expect(result).toBe(false);

@@ -126,7 +126,9 @@
                       @if (element.token[column.key]) {
                         <a
                           (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
-                          (keydown.enter)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          (keydown.enter)="
+                            contentService.userSelected(element.token[column.key], element.token['user_realm'])
+                          "
                           attr.aria-label="{{ column.label }} Link"
                           class="cursor-pointer"
                           role="button"

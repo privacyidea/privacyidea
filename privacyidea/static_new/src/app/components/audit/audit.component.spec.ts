@@ -26,10 +26,10 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
-    MockAuditService,
-    MockContentService,
-    MockLocalService,
-    MockNotificationService
+  MockAuditService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";

@@ -22,15 +22,17 @@
   Container Registration Completed
 </h2>
 <mat-dialog-content>
-  <span
-    i18n>The container
+  <span i18n
+    >The container
     <a
       (click)="containerSelected(data.containerSerial)"
       (keydown.enter)="containerSelected(data.containerSerial)"
       role="button"
       tabindex="0">
-      {{ data.containerSerial }} </a> was successfully
-         registered.</span>
+      {{ data.containerSerial }}
+    </a>
+    was successfully registered.</span
+  >
 </mat-dialog-content>
 <mat-dialog-actions>
   <button

@@ -75,5 +75,4 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
       catchError(() => of("")),
       map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData())))
     );
-
 }

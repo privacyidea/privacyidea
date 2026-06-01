@@ -30,8 +30,11 @@ describe("EnrollSpassComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollSpassComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollSpassComponent);

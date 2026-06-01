@@ -53,18 +53,18 @@ describe("HttpGroupsAttributeComponent", () => {
   it("should reflect active state from model", () => {
     expect(component.model().active).toBe(false);
 
-    modelSignal.update(m => ({ ...m, active: true }));
+    modelSignal.update((m) => ({ ...m, active: true }));
     fixture.detectChanges();
 
     expect(component.model().active).toBe(true);
   });
 
   it("should update model when active changes", () => {
-    modelSignal.update(m => ({ ...m, active: true }));
+    modelSignal.update((m) => ({ ...m, active: true }));
     fixture.detectChanges();
     expect(component.model().active).toBe(true);
 
-    modelSignal.update(m => ({ ...m, active: false }));
+    modelSignal.update((m) => ({ ...m, active: false }));
     fixture.detectChanges();
     expect(component.model().active).toBe(false);
   });
@@ -72,7 +72,7 @@ describe("HttpGroupsAttributeComponent", () => {
   it("should show correct tooltip based on active state", () => {
     expect(component.slideToggleTooltipSignal()).toContain("Enable");
 
-    modelSignal.update(m => ({ ...m, active: true }));
+    modelSignal.update((m) => ({ ...m, active: true }));
     fixture.detectChanges();
     expect(component.slideToggleTooltipSignal()).toContain("Disable");
   });

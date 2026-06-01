@@ -42,7 +42,8 @@ export class UiPolicyService {
   private readonly config: AppConfig;
 
   constructor() {
-    const globalConfig = typeof window !== "undefined" ? (window as Window & { appConfig?: AppConfig }).appConfig : undefined;
+    const globalConfig =
+      typeof window !== "undefined" ? (window as Window & { appConfig?: AppConfig }).appConfig : undefined;
     if (globalConfig) {
       this.config = globalConfig;
     } else {

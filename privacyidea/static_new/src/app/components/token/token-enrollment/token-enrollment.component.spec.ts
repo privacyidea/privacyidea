@@ -173,7 +173,12 @@ describe("TokenEnrollmentComponent", () => {
     component.setPin.set("1234");
     component.repeatPin.set("9999");
     expect(component.repeatPinForm().valid()).toBe(false);
-    expect(component.repeatPinForm().errors().some((e) => e.kind === "pinMismatch")).toBe(true);
+    expect(
+      component
+        .repeatPinForm()
+        .errors()
+        .some((e) => e.kind === "pinMismatch")
+    ).toBe(true);
 
     component.repeatPin.set("1234");
     expect(component.repeatPinForm().valid()).toBe(true);
@@ -372,7 +377,12 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest.fn().mockReturnValue({ type: "totp", "2stepinit": true }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          mapper: jest
+            .fn()
+            .mockReturnValue({
+              type: "totp",
+              "2stepinit": true
+            }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
         component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
 
@@ -436,7 +446,12 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest.fn().mockReturnValue({ type: "totp", "2stepinit": true }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+          mapper: jest
+            .fn()
+            .mockReturnValue({
+              type: "totp",
+              "2stepinit": true
+            }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
         component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
 
@@ -732,7 +747,12 @@ describe("TokenEnrollmentComponent", () => {
         wizardComponent.description.set("");
         wizardComponent.descriptionForm().markAsTouched();
         wizardFixture.detectChanges();
-        expect(wizardComponent.descriptionForm().errors().some((e) => e.kind === "required")).toBe(true);
+        expect(
+          wizardComponent
+            .descriptionForm()
+            .errors()
+            .some((e) => e.kind === "required")
+        ).toBe(true);
       });
 
       it("description form is valid when description is not required", () => {
@@ -747,7 +767,12 @@ describe("TokenEnrollmentComponent", () => {
         wizardComponent.description.set("");
         wizardComponent.descriptionForm().markAsTouched();
         wizardFixture.detectChanges();
-        expect(wizardComponent.descriptionForm().errors().some((e) => e.kind === "required")).toBe(false);
+        expect(
+          wizardComponent
+            .descriptionForm()
+            .errors()
+            .some((e) => e.kind === "required")
+        ).toBe(false);
         expect(wizardComponent.descriptionForm().valid()).toBe(true);
       });
 

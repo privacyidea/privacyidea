@@ -9,10 +9,10 @@ import { Subject } from "rxjs";
 export class ErrorStateDirective {
   appErrorState = input.required<boolean>();
 
-  private readonly control = inject<MatFormFieldControl<unknown> | null>(
-    MatFormFieldControl as never,
-    { self: true, optional: true }
-  );
+  private readonly control = inject<MatFormFieldControl<unknown> | null>(MatFormFieldControl as never, {
+    self: true,
+    optional: true
+  });
 
   constructor() {
     if (!this.control) return;

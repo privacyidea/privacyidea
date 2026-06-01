@@ -112,7 +112,9 @@ describe("ContainerTableActionsComponent", () => {
       tableUtilsService.toggleBooleanInFilter.mockReturnValue(newFilter);
       const setSpy = jest.spyOn(containerService.containerFilter, "set");
       const openMenu = jest.fn();
-      jest.spyOn(component, "advancedFilterTrigger").mockReturnValue({ openMenu } as Partial<MatMenuTrigger> as MatMenuTrigger);
+      jest
+        .spyOn(component, "advancedFilterTrigger")
+        .mockReturnValue({ openMenu } as Partial<MatMenuTrigger> as MatMenuTrigger);
 
       component.onAdvancedFilterClick("assigned");
 

@@ -42,7 +42,6 @@ describe("PeriodicTaskComponent", () => {
   let router: Router;
 
   beforeEach(async () => {
-
     await TestBed.configureTestingModule({
       imports: [PeriodicTaskComponent],
       providers: [
@@ -227,13 +226,15 @@ describe("PeriodicTaskComponent", () => {
     });
 
     it("lists boolean-flag options by key only, with no value", () => {
-      expect(component.formatOptions({ total_tokens: "true", hardware_tokens: "true" }))
-        .toBe("total_tokens, hardware_tokens");
+      expect(component.formatOptions({ total_tokens: "true", hardware_tokens: "true" })).toBe(
+        "total_tokens, hardware_tokens"
+      );
     });
 
     it("renders non-boolean options as 'key: value' and mixes with flag keys", () => {
-      expect(component.formatOptions({ total_tokens: "true", event_counter: "foo" }))
-        .toBe("total_tokens, event_counter: foo");
+      expect(component.formatOptions({ total_tokens: "true", event_counter: "foo" })).toBe(
+        "total_tokens, event_counter: foo"
+      );
     });
   });
 

@@ -68,19 +68,34 @@ describe("CopyPolicyDialogComponent", () => {
   describe("1. Validator Logic", () => {
     it("should reject unchanged names with 'notChanged' error", () => {
       component.nameSignal.set(initialPolicyName);
-      expect(component.nameField().errors().some((e) => e.kind === "notChanged")).toBe(true);
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "notChanged")
+      ).toBe(true);
       expect(component.nameField().valid()).toBe(false);
     });
 
     it("should be valid when the name is changed", () => {
       component.nameSignal.set("Modified_Policy_Name");
-      expect(component.nameField().errors().some((e) => e.kind === "notChanged")).toBe(false);
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "notChanged")
+      ).toBe(false);
       expect(component.nameField().valid()).toBe(true);
     });
 
     it("should reject empty names (required)", () => {
       component.nameSignal.set("");
-      expect(component.nameField().errors().some((e) => e.kind === "required")).toBe(true);
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "required")
+      ).toBe(true);
     });
   });
 

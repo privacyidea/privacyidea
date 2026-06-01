@@ -47,7 +47,7 @@ describe("UserTableActionsComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: RealmService, useClass: MockRealmService },
+        { provide: RealmService, useClass: MockRealmService }
       ],
       imports: [UserTableActionsComponent]
     }).compileComponents();

@@ -39,7 +39,6 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
 
-
 @Component({
   selector: "app-action-selector",
   standalone: true,

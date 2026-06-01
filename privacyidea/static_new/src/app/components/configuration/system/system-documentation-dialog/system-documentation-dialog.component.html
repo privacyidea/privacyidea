@@ -19,11 +19,11 @@
 <div class="system-documentation-dialog-container">
   <h2
     i18n
-    mat-dialog-title>System Documentation
+    mat-dialog-title>
+    System Documentation
   </h2>
   <mat-dialog-content>
-    <p
-      i18n>
+    <p i18n>
       This documentation contains the current configuration of your system in restructured text. You can use this to
       document your installed system.
     </p>
@@ -39,7 +39,7 @@
         matInput
         readonly
         rows="15">
-    </textarea>
+      </textarea>
     </mat-form-field>
     <app-copyable [copyText]="documentation">
       <span i18n>Copy System Documentation:</span>
@@ -50,7 +50,8 @@
     <button
       (click)="onClose()"
       i18n
-      mat-button>Close
+      mat-button>
+      Close
     </button>
   </mat-dialog-actions>
 </div>

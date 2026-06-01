@@ -23,8 +23,7 @@
   <input
     style="display: none"
     type="password" />
-  <mat-form-field
-    class="input-width-l">
+  <mat-form-field class="input-width-l">
     <mat-label>Select Realm of User</mat-label>
     <mat-select
       (selectionChange)="onSelectedRealmChange($event.value)"
@@ -38,8 +37,7 @@
       <mat-error i18n>User Realm is <strong>required</strong></mat-error>
     }
   </mat-form-field>
-  <mat-form-field
-    class="input-width-l">
+  <mat-form-field class="input-width-l">
     <mat-label>Enter User</mat-label>
     <app-clearable-input
       (clearButtonClick)="clearUser()"
@@ -57,7 +55,11 @@
       [displayWith]="displayUser"
       (optionSelected)="onUserSelected($event.option.value)">
       @for (user of userService.selectionFilteredUsers(); track user) {
-        <mat-option class="type-option" [value]="user">{{ user.username }}</mat-option>
+        <mat-option
+          class="type-option"
+          [value]="user"
+          >{{ user.username }}</mat-option
+        >
       }
     </mat-autocomplete>
     @if (!userService.selectedUserRealm() && !onlyAddToRealm()) {

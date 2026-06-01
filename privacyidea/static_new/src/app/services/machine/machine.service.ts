@@ -105,11 +105,7 @@ export interface MachineServiceInterface {
     options: Record<string, string>
   ): Observable<PiResponse<{ added: number; deleted: number }>>;
 
-  getAuthItem(
-    challenge: string,
-    hostname: string,
-    application?: string
-  ): Observable<PiResponse<AuthItemResponse>>;
+  getAuthItem(challenge: string, hostname: string, application?: string): Observable<PiResponse<AuthItemResponse>>;
 
   postToken(
     hostname: string,
@@ -328,10 +324,9 @@ export class MachineService implements MachineServiceInterface {
   }): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete<PiResponse<number>>(
-        `${this.baseUrl}token/${encodeURIComponent(args.serial)}/${encodeURIComponent(args.application)}/${encodeURIComponent(args.mtid)}`,
-        { headers }
-      )
+      .delete<
+        PiResponse<number>
+      >(`${this.baseUrl}token/${encodeURIComponent(args.serial)}/${encodeURIComponent(args.application)}/${encodeURIComponent(args.mtid)}`, { headers })
       .pipe(shareReplay(1));
   }
 
@@ -365,11 +360,7 @@ export class MachineService implements MachineServiceInterface {
       .pipe(shareReplay(1));
   }
 
-  getAuthItem(
-    challenge: string,
-    hostname: string,
-    application?: string
-  ): Observable<PiResponse<AuthItemResponse>> {
+  getAuthItem(challenge: string, hostname: string, application?: string): Observable<PiResponse<AuthItemResponse>> {
     const headers = this.authService.getHeaders();
     const params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
     return this.http
@@ -392,7 +383,9 @@ export class MachineService implements MachineServiceInterface {
   ): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<number>>(`${this.baseUrl}token`, { hostname, machineid, resolver, serial, application }, { headers })
+      .post<
+        PiResponse<number>
+      >(`${this.baseUrl}token`, { hostname, machineid, resolver, serial, application }, { headers })
       .pipe(shareReplay(1));
   }
 
@@ -419,23 +412,26 @@ export class MachineService implements MachineServiceInterface {
       .pipe(shareReplay(1));
   }
 
-  deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<PiResponse<number>> {
+  deleteToken(
+    serial: string,
+    machineid: string,
+    resolver: string,
+    application: string
+  ): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete<PiResponse<number>>(
-        `${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(machineid)}/${encodeURIComponent(resolver)}/${encodeURIComponent(application)}`,
-        { headers }
-      )
+      .delete<
+        PiResponse<number>
+      >(`${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(machineid)}/${encodeURIComponent(resolver)}/${encodeURIComponent(application)}`, { headers })
       .pipe(shareReplay(1));
   }
 
   deleteTokenById(serial: string, application: string, id: string): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete<PiResponse<number>>(
-        `${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(application)}/${encodeURIComponent(id)}`,
-        { headers }
-      )
+      .delete<
+        PiResponse<number>
+      >(`${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(application)}/${encodeURIComponent(id)}`, { headers })
       .pipe(shareReplay(1));
   }
 

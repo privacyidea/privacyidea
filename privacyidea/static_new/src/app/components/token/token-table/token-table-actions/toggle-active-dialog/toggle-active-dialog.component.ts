@@ -63,5 +63,3 @@ export class ToggleActiveDialogComponent extends AbstractDialogComponent<ToggleA
     this.close(value);
   }
 }
-
-

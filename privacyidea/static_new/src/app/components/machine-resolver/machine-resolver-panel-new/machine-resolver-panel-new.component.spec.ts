@@ -20,9 +20,9 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DialogService } from "@services/dialog/dialog.service";
 import {
-    HostsMachineResolverData,
-    LdapMachineResolverData,
-    MachineResolverService
+  HostsMachineResolverData,
+  LdapMachineResolverData,
+  MachineResolverService
 } from "@services/machine-resolver/machine-resolver.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";

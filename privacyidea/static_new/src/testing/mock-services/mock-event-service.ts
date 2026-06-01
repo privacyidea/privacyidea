@@ -18,12 +18,7 @@
  **/
 import { computed, signal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import {
-  EventActions,
-  EventCondition,
-  EventHandler,
-  EventServiceInterface
-} from "@services/event/event.service";
+import { EventActions, EventCondition, EventHandler, EventServiceInterface } from "@services/event/event.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 

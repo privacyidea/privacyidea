@@ -26,7 +26,7 @@ import { CaConnector } from "@services/ca-connector/ca-connector.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollCertificateComponent } from "./enroll-certificate.component";
 import { TokenService } from "@services/token/token.service";
-import { MockTokenService, MockSystemService} from "@testing/mock-services";
+import { MockTokenService, MockSystemService } from "@testing/mock-services";
 import { SystemService } from "@services/system/system.service";
 
 describe("EnrollCertComponent", () => {
@@ -39,7 +39,9 @@ describe("EnrollCertComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollCertificateComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
         { provide: SystemService, useClass: MockSystemService }
       ]
@@ -87,10 +89,7 @@ describe("EnrollCertComponent", () => {
 
     it("should map connectorname from the resource value", () => {
       (systemServiceMock.caConnectorResource as MockHttpResourceRef<any>).set(
-        MockPiResponse.fromValue([
-          { connectorname: "conn-1" },
-          { connectorname: "conn-2" }
-        ])
+        MockPiResponse.fromValue([{ connectorname: "conn-1" }, { connectorname: "conn-2" }])
       );
       const opts = (component as any).caConnectorOptions();
       expect(opts).toEqual(["conn-1", "conn-2"]);

@@ -603,9 +603,9 @@ describe("TokenTableActionsComponent", () => {
       const tokens = [{ serial: "T1" }] as TokenDetails[];
       tokenService.tokenSelection.set(tokens);
 
-      jest.spyOn(tokenService, "bulkUnassignTokens").mockReturnValue(
-        throwError(() => ({ error: { result: { error: { message: "Not allowed" } } } }))
-      );
+      jest
+        .spyOn(tokenService, "bulkUnassignTokens")
+        .mockReturnValue(throwError(() => ({ error: { result: { error: { message: "Not allowed" } } } })));
       mockDialogResult(true);
 
       component.tokenSelection.set(tokens);

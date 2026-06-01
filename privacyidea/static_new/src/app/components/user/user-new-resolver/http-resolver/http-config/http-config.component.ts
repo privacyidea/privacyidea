@@ -36,13 +36,7 @@ export interface HttpConfigModel {
 @Component({
   selector: "app-http-config",
   standalone: true,
-  imports: [
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    ClearableInputComponent
-  ],
+  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, ClearableInputComponent],
   templateUrl: "./http-config.component.html",
   styleUrl: "./http-config.component.scss"
 })

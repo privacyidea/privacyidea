@@ -30,12 +30,12 @@ import { NotificationService } from "@services/notification/notification.service
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
-    MockAuthDetail,
-    MockLocalService,
-    MockNotificationService,
-    MockPiResponse,
-    MockSessionTimerService,
-    MockValidateService
+  MockAuthDetail,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse,
+  MockSessionTimerService,
+  MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";

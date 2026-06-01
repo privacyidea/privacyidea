@@ -16,8 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="user-container responsive-pad-0-1310">
+<div class="user-container responsive-pad-0-1310">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -66,8 +65,7 @@
                   (click)="contentService.userSelected(element.value, element['user_realm'])"
                   (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
                   (keydown.space)="
-                    $event.preventDefault();
-                    contentService.userSelected(element.value, element['user_realm'])
+                    $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
                   "
                   i18n-aria-label="{{ element.keyMap.label }} Link"
                   role="button"
@@ -93,8 +91,7 @@
               </mat-form-field>
             } @else {
               <app-copyable [copyText]="element.value">
-                <span
-                  i18n-aria-label="{{ element.keyMap.label }} Link">
+                <span i18n-aria-label="{{ element.keyMap.label }} Link">
                   {{ element.value }}
                 </span>
               </app-copyable>

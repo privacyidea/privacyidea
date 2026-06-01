@@ -158,11 +158,7 @@ describe("PeriodicTaskEditComponent", () => {
     it("toggleOption removes the option when unchecked", async () => {
       const { component } = await createComponent({});
       seedTask(component);
-      component.toggleOption(
-        "hardware_tokens",
-        { name: "hardware_tokens", description: "", type: "bool" },
-        false
-      );
+      component.toggleOption("hardware_tokens", { name: "hardware_tokens", description: "", type: "bool" }, false);
       expect(component.editTask().options).not.toHaveProperty("hardware_tokens");
     });
 
@@ -357,9 +353,7 @@ describe("PeriodicTaskEditComponent", () => {
 
     it("returns false and does not navigate when the service throws", async () => {
       const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
-      (periodicTaskService.savePeriodicTask as jest.Mock).mockReturnValueOnce(
-        throwError(() => new Error("boom"))
-      );
+      (periodicTaskService.savePeriodicTask as jest.Mock).mockReturnValueOnce(throwError(() => new Error("boom")));
       const result = await component.save();
       expect(result).toBe(false);
       expect(router.navigateByUrl).not.toHaveBeenCalled();

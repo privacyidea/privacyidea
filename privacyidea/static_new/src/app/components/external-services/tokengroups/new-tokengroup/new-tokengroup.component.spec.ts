@@ -74,7 +74,7 @@ describe("NewTokengroupComponent", () => {
   });
 
   it("should call save when form is valid", async () => {
-    component.tokengroupModel.update(m => ({
+    component.tokengroupModel.update((m) => ({
       ...m,
       groupname: "test",
       description: "desc"
@@ -88,7 +88,7 @@ describe("NewTokengroupComponent", () => {
   });
 
   it("should handle error on save", async () => {
-    component.tokengroupModel.update(m => ({
+    component.tokengroupModel.update((m) => ({
       ...m,
       groupname: "test",
       description: "desc"
@@ -122,7 +122,7 @@ describe("NewTokengroupComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.tokengroupModel.update(m => ({
+      component.tokengroupModel.update((m) => ({
         ...m,
         groupname: "test",
         description: "desc"
@@ -143,7 +143,7 @@ describe("NewTokengroupComponent", () => {
 
     it("should close when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.tokengroupModel.update(m => ({
+      component.tokengroupModel.update((m) => ({
         ...m,
         groupname: "test",
         description: "desc"
@@ -159,7 +159,7 @@ describe("NewTokengroupComponent", () => {
     });
 
     it("should close when user selects 'save-exit' and save succeeds", async () => {
-      component.tokengroupModel.update(m => ({
+      component.tokengroupModel.update((m) => ({
         ...m,
         groupname: "test",
         description: "desc"
@@ -177,7 +177,7 @@ describe("NewTokengroupComponent", () => {
     });
 
     it("should NOT close when user selects 'save-exit' but save fails", async () => {
-      component.tokengroupModel.update(m => ({
+      component.tokengroupModel.update((m) => ({
         ...m,
         groupname: "test",
         description: "desc"
@@ -196,7 +196,7 @@ describe("NewTokengroupComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.tokengroupModel.update(m => ({ ...m, groupname: "" }));
+      component.tokengroupModel.update((m) => ({ ...m, groupname: "" }));
       component.tokengroupForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
@@ -211,7 +211,7 @@ describe("NewTokengroupComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
-      component.tokengroupModel.update(m => ({
+      component.tokengroupModel.update((m) => ({
         ...m,
         groupname: "test",
         description: "desc"

@@ -72,9 +72,7 @@ describe("MachineResolverService", () => {
       // Access the signal to trigger its computation
       service.machineResolverResource.value();
       httpMock.expectNone(`${service.machineResolverBaseUrl}`);
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        "You are not allowed to read Machine Resolvers."
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to read Machine Resolvers.");
     });
     it("should make an HTTP GET request and return transformed data on success", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverread" ? true : false));
@@ -137,9 +135,7 @@ describe("MachineResolverService", () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverwrite" ? false : true));
       const promise = service.postTestMachineResolver(testMachineResolver);
       expect(promise).rejects.toThrow(new Error("not-allowed"));
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        "You are not allowed to update Machine Resolvers."
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to update Machine Resolvers.");
     });
   });
   describe("postMachineResolver", () => {
@@ -168,9 +164,7 @@ describe("MachineResolverService", () => {
       const promise = service.postMachineResolver(testMachineResolver);
       await expect(promise).rejects.toThrow(new Error("not-allowed"));
 
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        "You are not allowed to update Machine Resolvers."
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to update Machine Resolvers.");
     });
   });
   describe("deleteMachineResolver", () => {
@@ -199,9 +193,7 @@ describe("MachineResolverService", () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverdelete" ? false : true));
       const promise = service.deleteMachineResolver("test-resolver");
       await expect(promise).rejects.toThrow(new Error("not-allowed"));
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        "You are not allowed to delete Machine Resolvers."
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to delete Machine Resolvers.");
     });
   });
 });

@@ -20,17 +20,17 @@
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       class="inline-hint"
-      i18n>To ease the enrollment of RADIUS tokens you can set default values in the
+      i18n
+      >To ease the enrollment of RADIUS tokens you can set default values in the
       <a
-          role="button"
-          tabindex="0"
-          aria-label="Go to RADIUS token configuration"
-          i18n-aria-label
-          (click)="goToRadiusConfig()"
-          (keydown)="onRadiusConfigKeydown($event)"
-        >
-          RADIUS Token Configuration
-        </a>!
+        role="button"
+        tabindex="0"
+        aria-label="Go to RADIUS token configuration"
+        i18n-aria-label
+        (click)="goToRadiusConfig()"
+        (keydown)="onRadiusConfigKeydown($event)">
+        RADIUS Token Configuration </a
+      >!
     </span>
   }
   <mat-checkbox

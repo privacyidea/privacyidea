@@ -145,7 +145,7 @@ export class SqlResolverComponent {
   getValue = () => this.model();
 
   applySqlPreset(preset: SqlPreset): void {
-    this.model.update(m => ({
+    this.model.update((m) => ({
       ...m,
       Table: preset.table,
       Map: preset.map,
@@ -158,7 +158,7 @@ export class SqlResolverComponent {
   constructor() {
     effect(() => {
       const initial = this.data();
-      this.model.update(m => ({
+      this.model.update((m) => ({
         ...m,
         ...(initial.Driver !== undefined ? { Driver: initial.Driver } : {}),
         ...(initial.Server !== undefined ? { Server: initial.Server } : {}),

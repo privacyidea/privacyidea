@@ -41,8 +41,11 @@ describe("EnrollMotpComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollMotpComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollMotpComponent);
@@ -62,17 +65,32 @@ describe("EnrollMotpComponent", () => {
 
   describe("motpPinForm validation", () => {
     it("should require motpPin", () => {
-      expect(component.motpPinForm().errors().some((e: any) => e.kind === "required")).toBe(true);
+      expect(
+        component
+          .motpPinForm()
+          .errors()
+          .some((e: any) => e.kind === "required")
+      ).toBe(true);
     });
 
     it("should reject pin shorter than 4 chars", () => {
       component.motpPin.set("abc");
-      expect(component.motpPinForm().errors().some((e: any) => e.kind === "minlength")).toBe(true);
+      expect(
+        component
+          .motpPinForm()
+          .errors()
+          .some((e: any) => e.kind === "minlength")
+      ).toBe(true);
     });
 
     it("should accept pin of 4 chars or longer", () => {
       component.motpPin.set("abcd");
-      expect(component.motpPinForm().errors().some((e: any) => e.kind === "minlength")).toBe(false);
+      expect(
+        component
+          .motpPinForm()
+          .errors()
+          .some((e: any) => e.kind === "minlength")
+      ).toBe(false);
     });
   });
 
@@ -80,13 +98,23 @@ describe("EnrollMotpComponent", () => {
     it("should fail when repeat differs from motpPin", () => {
       component.motpPin.set("abcd");
       component.repeatMotpPin.set("abce");
-      expect(component.repeatMotpPinForm().errors().some((e: any) => e.kind === "motpPinMismatch")).toBe(true);
+      expect(
+        component
+          .repeatMotpPinForm()
+          .errors()
+          .some((e: any) => e.kind === "motpPinMismatch")
+      ).toBe(true);
     });
 
     it("should pass when repeat matches motpPin", () => {
       component.motpPin.set("abcd");
       component.repeatMotpPin.set("abcd");
-      expect(component.repeatMotpPinForm().errors().some((e: any) => e.kind === "motpPinMismatch")).toBe(false);
+      expect(
+        component
+          .repeatMotpPinForm()
+          .errors()
+          .some((e: any) => e.kind === "motpPinMismatch")
+      ).toBe(false);
     });
   });
 

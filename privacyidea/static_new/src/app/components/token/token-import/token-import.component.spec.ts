@@ -23,12 +23,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { RealmService } from "@services/realm/realm.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
-import {
-    MockNotificationService,
-    MockRealmService,
-    MockTokenService,
-    MockUserService
-} from "@testing/mock-services";
+import { MockNotificationService, MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { of } from "rxjs";

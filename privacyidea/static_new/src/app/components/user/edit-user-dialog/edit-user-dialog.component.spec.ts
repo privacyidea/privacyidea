@@ -27,7 +27,12 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { ResolverService } from "@services/resolver/resolver.service";
 import { UserService } from "@services/user/user.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockContentService, MockDialogService, MockPendingChangesService, MockUserService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockDialogService,
+  MockPendingChangesService,
+  MockUserService
+} from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EditUserDialogComponent } from "./edit-user-dialog.component";
 

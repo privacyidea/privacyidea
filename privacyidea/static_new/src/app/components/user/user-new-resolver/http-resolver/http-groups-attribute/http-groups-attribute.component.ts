@@ -34,16 +34,7 @@ export interface UserGroupsModel {
 
 @Component({
   selector: "app-http-groups-attribute",
-  imports: [
-    MatFormField,
-    MatHint,
-    MatInput,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatSlideToggle,
-    MatTooltip
-  ],
+  imports: [MatFormField, MatHint, MatInput, MatLabel, MatOption, MatSelect, MatSlideToggle, MatTooltip],
   templateUrl: "./http-groups-attribute.component.html",
   styleUrl: "./http-groups-attribute.component.scss"
 })

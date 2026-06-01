@@ -38,7 +38,7 @@ describe("EditAdditionalConditionsComponent", () => {
       imports: [EditAdditionalConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
-        { provide: DialogService, useClass: MockDialogService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 

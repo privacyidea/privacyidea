@@ -19,7 +19,9 @@ $breakpoint-compact: 1701px;
   gap: 4px;
   padding: 12px;
   background-color: var(--table-color);
-  box-shadow: -8px 0 8px -8px var(--nav-item-border), 8px 0 8px -8px var(--nav-item-border);
+  box-shadow:
+    -8px 0 8px -8px var(--nav-item-border),
+    8px 0 8px -8px var(--nav-item-border);
   border-top-right-radius: var(--border-radius);
   border-top-left-radius: var(--border-radius);
 }

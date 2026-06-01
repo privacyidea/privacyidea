@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input, Signal, WritableSignal, output } from '@angular/core';
+import { Component, Input, Signal, WritableSignal, output } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import {

@@ -40,8 +40,8 @@ import { DialogAction } from "@models/dialog";
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
   readonly nameSignal = signal(this.data ?? "");
   readonly nameField = form(this.nameSignal, (f) => {
-    validate(f, (ctx) => !ctx.value() ? [{ kind: "required" }] : []);
-    validate(f, (ctx) => ctx.value() === this.data ? [{ kind: "notChanged" }] : []);
+    validate(f, (ctx) => (!ctx.value() ? [{ kind: "required" }] : []));
+    validate(f, (ctx) => (ctx.value() === this.data ? [{ kind: "notChanged" }] : []));
   });
 
   readonly isInvalid = computed(() => this.nameField().errors().length > 0);

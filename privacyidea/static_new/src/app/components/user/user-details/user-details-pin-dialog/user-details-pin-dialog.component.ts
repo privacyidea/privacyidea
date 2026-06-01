@@ -31,14 +31,7 @@ import { DialogAction } from "@models/dialog";
   templateUrl: "./user-details-pin-dialog.component.html",
   styleUrls: ["./user-details-pin-dialog.component.scss"],
   standalone: true,
-  imports: [
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatDialogModule,
-    MatIconModule,
-    DialogWrapperComponent
-  ]
+  imports: [MatFormFieldModule, MatInputModule, MatButtonModule, MatDialogModule, MatIconModule, DialogWrapperComponent]
 })
 export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void, string | null> {
   pin = signal("");

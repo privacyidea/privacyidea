@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, OnInit, signal, output } from '@angular/core';
+import { Component, computed, inject, input, OnInit, signal, output } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -56,10 +56,12 @@ export class EnrollEmailComponent implements OnInit {
   enrollmentData = input<EmailEnrollmentData>();
 
   additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  enrollmentArgsGetterChange = output<
+    (basicOptions: TokenEnrollmentData) => {
       data: EmailEnrollmentData;
       mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
-    } | null>();
+    } | null
+  >();
 
   disabled = input<boolean>(false);
 

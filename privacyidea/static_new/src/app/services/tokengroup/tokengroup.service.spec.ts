@@ -38,7 +38,10 @@ describe("TokengroupService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn(),
+      handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -82,7 +85,10 @@ describe("TokengroupService", () => {
     const promise = service.postTokengroup(group);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/tokengroup/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save tokengroup. Something went wrong");
@@ -103,7 +109,10 @@ describe("TokengroupService", () => {
     const promise = service.deleteTokengroup("test");
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/tokengroup/test`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to delete tokengroup. Something went wrong");

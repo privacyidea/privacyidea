@@ -39,16 +39,7 @@ import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-condition-list",
-  imports: [
-    MatFormField,
-    MatIcon,
-    MatIconButton,
-    MatInput,
-    MatOption,
-    MatSelect,
-    MatTooltip,
-    MatError
-  ],
+  imports: [MatFormField, MatIcon, MatIconButton, MatInput, MatOption, MatSelect, MatTooltip, MatError],
   templateUrl: "./event-condition-list.component.html",
   styleUrl: "./event-condition-list.component.scss"
 })

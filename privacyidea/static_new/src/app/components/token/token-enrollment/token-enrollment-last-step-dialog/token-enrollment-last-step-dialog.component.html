@@ -21,8 +21,7 @@
   [showCancelButton]="true"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@closeButtonLabel"
-  title="{{title()}}">
-
+  title="{{ title() }}">
   <app-token-enrolled-text
     (switchRoute)="onSwitchRoute()"
     [containerSerial]="containerSerial"
@@ -38,5 +37,4 @@
       [enrollmentParameters]="data.enrollParameters"
       [tokenType]="data.tokenType"></app-token-enrollment-data>
   }
-
 </app-dialog-wrapper>

@@ -89,7 +89,12 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
   it("countForm: min(10) validator works", () => {
     component.countValue.set("9");
     expect(component.countForm().valid()).toBe(false);
-    expect(component.countForm().errors().some((e) => e.kind === "min")).toBe(true);
+    expect(
+      component
+        .countForm()
+        .errors()
+        .some((e) => e.kind === "min")
+    ).toBe(true);
 
     component.countValue.set("10");
     expect(component.countForm().valid()).toBe(true);
@@ -98,7 +103,12 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
   it("roundsForm: min(1000) validator works", () => {
     component.roundsValue.set("999");
     expect(component.roundsForm().valid()).toBe(false);
-    expect(component.roundsForm().errors().some((e) => e.kind === "min")).toBe(true);
+    expect(
+      component
+        .roundsForm()
+        .errors()
+        .some((e) => e.kind === "min")
+    ).toBe(true);
 
     component.roundsValue.set("1000");
     expect(component.roundsForm().valid()).toBe(true);

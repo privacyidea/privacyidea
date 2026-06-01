@@ -195,17 +195,32 @@ describe("TokenSshMachineAssignDialogComponent", () => {
     it("is invalid when value is falsy or a plain string", () => {
       component.selectedMachineValue.set("");
       expect(component.selectedMachineForm().valid()).toBe(false);
-      expect(component.selectedMachineForm().errors().some((e) => e.kind === "required")).toBe(true);
+      expect(
+        component
+          .selectedMachineForm()
+          .errors()
+          .some((e) => e.kind === "required")
+      ).toBe(true);
 
       component.selectedMachineValue.set("str");
       expect(component.selectedMachineForm().valid()).toBe(false);
-      expect(component.selectedMachineForm().errors().some((e) => e.kind === "required")).toBe(true);
+      expect(
+        component
+          .selectedMachineForm()
+          .errors()
+          .some((e) => e.kind === "required")
+      ).toBe(true);
     });
 
     it("reports invalidMachine when object is missing required fields", () => {
       component.selectedMachineValue.set({ id: 1, hostname: ["h"], ip: "x" } as any);
       expect(component.selectedMachineForm().valid()).toBe(false);
-      expect(component.selectedMachineForm().errors().some((e) => e.kind === "invalidMachine")).toBe(true);
+      expect(
+        component
+          .selectedMachineForm()
+          .errors()
+          .some((e) => e.kind === "invalidMachine")
+      ).toBe(true);
     });
 
     it("is valid for a complete machine object", () => {

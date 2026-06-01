@@ -16,7 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, OnInit, signal, Signal, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  signal,
+  Signal,
+  output
+} from "@angular/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -59,10 +70,12 @@ export class EnrollQuestionComponent implements OnInit {
   });
 
   additionalFormFieldsChange = output<Record<string, unknown>>();
-  enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {
+  enrollmentArgsGetterChange = output<
+    (basicOptions: TokenEnrollmentData) => {
       data: QuestionEnrollmentData;
       mapper: TokenApiPayloadMapper<QuestionEnrollmentData>;
-    } | null>();
+    } | null
+  >();
   disabled = input<boolean>(false);
 
   configQuestions = computed(() => {

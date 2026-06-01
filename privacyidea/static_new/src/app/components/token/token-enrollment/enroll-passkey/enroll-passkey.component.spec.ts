@@ -166,9 +166,7 @@ describe("EnrollPasskeyComponent", () => {
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
-    expect(notif.error).toHaveBeenCalledWith(
-      "Failed to initiate Passkey registration: Invalid server response."
-    );
+    expect(notif.error).toHaveBeenCalledWith("Failed to initiate Passkey registration: Invalid server response.");
     expect(dialogService.openDialog).not.toHaveBeenCalled();
   });
 
@@ -257,7 +255,9 @@ describe("EnrollPasskeyComponent", () => {
 
     const finalize = (serial: string) => ({ detail: { serial } });
 
-    tokenService.enrollToken.mockReturnValueOnce(of(passkeyInit("S-1", "tx-1"))).mockReturnValueOnce(of(finalize("S-1")));
+    tokenService.enrollToken
+      .mockReturnValueOnce(of(passkeyInit("S-1", "tx-1")))
+      .mockReturnValueOnce(of(finalize("S-1")));
 
     let reopenCb: (() => Promise<EnrollmentResponse | null>) | undefined;
 

@@ -26,7 +26,9 @@
         tabindex="0"
         (click)="tokenSelected()"
         (keydown.enter)="tokenSelected()"
-        (keydown.space)="$event.preventDefault(); tokenSelected()"> {{ serial() }} </a>.
+        (keydown.space)="$event.preventDefault(); tokenSelected()">
+        {{ serial() }} </a
+      >.
     </span>
     @if (containerSerial()) {
       <div i18n>
@@ -52,7 +54,9 @@
             (click)="navigateUserDetails()"
             (keydown.enter)="navigateUserDetails()"
             (keydown.space)="$event.preventDefault(); navigateUserDetails()"
-            class="text-link-button cursor-pointer">{{ username() }}</a>
+            class="text-link-button cursor-pointer"
+            >{{ username() }}</a
+          >
         } @else {
           <span>{{ username() }}</span>
         }
@@ -64,7 +68,9 @@
             (click)="navigateRealms()"
             (keydown.enter)="navigateRealms()"
             (keydown.space)="$event.preventDefault(); navigateRealms()"
-            class="text-link-button cursor-pointer">{{ userRealm() }}</a>
+            class="text-link-button cursor-pointer"
+            >{{ userRealm() }}</a
+          >
         } @else {
           <span>{{ userRealm() }}</span>
         }
@@ -80,7 +86,9 @@
             (click)="navigateRealms()"
             (keydown.enter)="navigateRealms()"
             (keydown.space)="$event.preventDefault(); navigateRealms()"
-            class="text-link-button cursor-pointer">{{ userRealm() }}</a>
+            class="text-link-button cursor-pointer"
+            >{{ userRealm() }}</a
+          >
         } @else {
           <span>{{ userRealm() }}</span>
         }
@@ -97,7 +105,9 @@
         tabindex="0"
         (click)="tokenSelected()"
         (keydown.enter)="tokenSelected()"
-        (keydown.space)="$event.preventDefault(); tokenSelected()"> {{ serial() }} </a>
+        (keydown.space)="$event.preventDefault(); tokenSelected()">
+        {{ serial() }}
+      </a>
       was successfully rolled over.
     </span>
   </div>

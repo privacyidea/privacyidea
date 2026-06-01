@@ -80,12 +80,7 @@ describe("ActionSelectorComponent", () => {
     })
       .overrideComponent(ActionSelectorComponent, {
         set: {
-          imports: [
-            CommonModule,
-            MockPolicyActionItemComponent,
-            MockSelectorButtonsComponent,
-            ClearableInputComponent
-          ]
+          imports: [CommonModule, MockPolicyActionItemComponent, MockSelectorButtonsComponent, ClearableInputComponent]
         }
       })
       .compileComponents();
@@ -197,12 +192,12 @@ describe("ActionSelectorComponent", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
       fixture.detectChanges();
 
-      const adminItem = component.actionsFiltered().find(
-        (i) => i.actionName === "container_add_token" && i.scope === "admin"
-      );
-      const userItem = component.actionsFiltered().find(
-        (i) => i.actionName === "container_add_token" && i.scope === "user"
-      );
+      const adminItem = component
+        .actionsFiltered()
+        .find((i) => i.actionName === "container_add_token" && i.scope === "admin");
+      const userItem = component
+        .actionsFiltered()
+        .find((i) => i.actionName === "container_add_token" && i.scope === "user");
 
       expect(adminItem?.detail).toEqual(adminAction);
       expect(userItem?.detail).toEqual(userAction);
@@ -238,9 +233,7 @@ describe("ActionSelectorComponent", () => {
 
       component.addPolicyAction({ name: "configread", value: true });
 
-      expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({ newScope: "admin" })
-      );
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ newScope: "admin" }));
     });
   });
 
@@ -251,9 +244,16 @@ describe("ActionSelectorComponent", () => {
 
       const mockItem = { focusFirstInput: jest.fn() };
       jest.spyOn(component, "actionItems").mockReturnValue([mockItem as any]);
-      jest.spyOn(component, "actionsFiltered").mockReturnValue([
-        { actionName: "container_add_token", scope: "admin", label: "container_add_token", detail: { type: "bool" as const, desc: "Admin can do this." } }
-      ]);
+      jest
+        .spyOn(component, "actionsFiltered")
+        .mockReturnValue([
+          {
+            actionName: "container_add_token",
+            scope: "admin",
+            label: "container_add_token",
+            detail: { type: "bool" as const, desc: "Admin can do this." }
+          }
+        ]);
 
       component.focusNextActionItem("container_add_token", "admin");
       await new Promise((resolve) => setTimeout(resolve, 0));

@@ -99,7 +99,7 @@ describe("NewRadiusServerComponent", () => {
   });
 
   it("should call save when form is valid", async () => {
-    component.radiusModel.update(m => ({
+    component.radiusModel.update((m) => ({
       ...m,
       identifier: "test",
       server: "1.2.3.4",
@@ -117,7 +117,7 @@ describe("NewRadiusServerComponent", () => {
   });
 
   it("should handle error on save", async () => {
-    component.radiusModel.update(m => ({
+    component.radiusModel.update((m) => ({
       ...m,
       identifier: "test",
       server: "1.2.3.4",
@@ -135,7 +135,7 @@ describe("NewRadiusServerComponent", () => {
   });
 
   it("should call test when form is valid", async () => {
-    component.radiusModel.update(m => ({
+    component.radiusModel.update((m) => ({
       ...m,
       identifier: "test",
       server: "1.2.3.4",
@@ -169,7 +169,7 @@ describe("NewRadiusServerComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("discard").asObservable());
-      component.radiusModel.update(m => ({
+      component.radiusModel.update((m) => ({
         ...m,
         identifier: "test",
         server: "1.2.3.4",
@@ -192,7 +192,7 @@ describe("NewRadiusServerComponent", () => {
 
     it("should navigate back when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("discard").asObservable());
-      component.radiusModel.update(m => ({
+      component.radiusModel.update((m) => ({
         ...m,
         identifier: "test",
         server: "1.2.3.4",
@@ -210,7 +210,7 @@ describe("NewRadiusServerComponent", () => {
     });
 
     it("should navigate back when user selects 'save-exit' and save succeeds", async () => {
-      component.radiusModel.update(m => ({
+      component.radiusModel.update((m) => ({
         ...m,
         identifier: "test",
         server: "1.2.3.4",
@@ -230,7 +230,7 @@ describe("NewRadiusServerComponent", () => {
     });
 
     it("should NOT navigate when user selects 'save-exit' but save fails", async () => {
-      component.radiusModel.update(m => ({
+      component.radiusModel.update((m) => ({
         ...m,
         identifier: "test",
         server: "1.2.3.4",
@@ -251,7 +251,7 @@ describe("NewRadiusServerComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.radiusModel.update(m => ({ ...m, identifier: "" }));
+      component.radiusModel.update((m) => ({ ...m, identifier: "" }));
       component.radiusForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("save-exit").asObservable());
 
@@ -266,7 +266,7 @@ describe("NewRadiusServerComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject(undefined).asObservable());
-      component.radiusModel.update(m => ({
+      component.radiusModel.update((m) => ({
         ...m,
         identifier: "test",
         server: "1.2.3.4",

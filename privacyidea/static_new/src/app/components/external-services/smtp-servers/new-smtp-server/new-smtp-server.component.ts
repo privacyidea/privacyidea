@@ -194,7 +194,10 @@ export class NewSmtpServerComponent implements OnDestroy {
       return false;
     }
     const model = this.smtpModel();
-    const server = Object.fromEntries(Object.entries(model).filter(([k]) => k !== "recipient")) as Omit<typeof model, "recipient">;
+    const server = Object.fromEntries(Object.entries(model).filter(([k]) => k !== "recipient")) as Omit<
+      typeof model,
+      "recipient"
+    >;
 
     if (server.private_key_password === this.initialPrivateKeyPassword) {
       delete (server as Partial<SmtpServer>).private_key_password;

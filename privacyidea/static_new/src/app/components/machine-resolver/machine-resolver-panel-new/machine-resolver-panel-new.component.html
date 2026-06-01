@@ -35,7 +35,11 @@
               (click)="$event.stopPropagation(); panel.expanded = true"
               (keydown)="$event.stopPropagation()" />
             @if (nameHasPatternError()) {
-              <mat-error i18n style="font-size: 10px;">Invalid characters.</mat-error>
+              <mat-error
+                i18n
+                style="font-size: 10px"
+                >Invalid characters.</mat-error
+              >
             }
           </div>
         } @else {

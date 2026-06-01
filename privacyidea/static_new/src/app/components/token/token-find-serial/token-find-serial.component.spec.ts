@@ -21,8 +21,8 @@ import { HttpParams, provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import {
-    FindSerialResultDialogComponent,
-    GetSerialResultDialogReturn
+  FindSerialResultDialogComponent,
+  GetSerialResultDialogReturn
 } from "@components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -30,10 +30,10 @@ import { NotificationService } from "@services/notification/notification.service
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-    MockContentService,
-    MockDialogService,
-    MockNotificationService,
-    MockTokenService
+  MockContentService,
+  MockDialogService,
+  MockNotificationService,
+  MockTokenService
 } from "@testing/mock-services";
 import { of, Subject, Subscription } from "rxjs";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";

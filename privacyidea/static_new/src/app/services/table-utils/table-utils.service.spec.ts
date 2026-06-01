@@ -333,11 +333,7 @@ describe("TableUtilsService", () => {
     });
 
     it("sorts ascending by the chosen key (case-insensitive)", () => {
-      const data = [
-        makeToken({ serial: "beta" }),
-        makeToken({ serial: "Alpha" }),
-        makeToken({ serial: "gamma" })
-      ];
+      const data = [makeToken({ serial: "beta" }), makeToken({ serial: "Alpha" }), makeToken({ serial: "gamma" })];
       const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
       expect(result.map((t) => t.serial)).toEqual(["Alpha", "beta", "gamma"]);
     });

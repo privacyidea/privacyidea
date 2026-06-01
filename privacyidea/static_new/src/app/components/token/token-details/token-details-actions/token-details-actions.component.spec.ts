@@ -27,11 +27,11 @@ import { NotificationService } from "@services/notification/notification.service
 import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
-    MockLocalService,
-    MockMachineService,
-    MockNotificationService,
-    MockTokenService,
-    MockValidateService
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
+  MockTokenService,
+  MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
