@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { webcrypto } from "node:crypto";
 import { of } from "rxjs";
 
@@ -82,7 +81,7 @@ describe("TokenDetailsComponent", () => {
     matDialogOpen.mockReturnValue({ afterClosed: () => of(of({})) });
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -679,7 +678,7 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
