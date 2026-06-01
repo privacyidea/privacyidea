@@ -45,7 +45,7 @@ export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-foureyes.component.scss"
 })
 export class EnrollFoureyesComponent implements OnInit {
-  protected readonly enrollmentMapper: FourEyesApiPayloadMapper = inject(FourEyesApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(FourEyesApiPayloadMapper);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 

@@ -35,7 +35,7 @@ export interface U2fEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollU2fComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: U2fApiPayloadMapper = inject(U2fApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(U2fApiPayloadMapper);
 
   additionalFormFieldsChange = output<Record<string, unknown>>();
   enrollmentArgsGetterChange = output<(basicOptions: TokenEnrollmentData) => {

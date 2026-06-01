@@ -23,10 +23,12 @@ import {
   Component,
   effect,
   ElementRef,
+  EventEmitter,
   HostListener,
   inject,
   Input,
   linkedSignal,
+  Output,
   Signal,
   viewChildren,
   WritableSignal
@@ -43,7 +45,7 @@ import {
 export class HorizontalWheelComponent implements AfterViewInit {
   @Input({ required: true }) values!: Signal<any[]>;
   @Input({ required: true }) initialValue!: any;
-  @Output() selected: EventEmitter<string> = new EventEmitter<string>();
+  @Output() selected = new EventEmitter<string>();
 
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
     source: () => this.values(),

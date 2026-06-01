@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -103,7 +103,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   token = signal<TokenEnrollmentData | null>(null);
   title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
   serial = signal<string | null>(null);
-  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
+  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
   childValid = signal<boolean>(true);
 
@@ -129,7 +129,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   });
 
   // Only required if we later add the reopen rollover dialog function
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
+  enrollResponse = signal<EnrollmentResponse | null>(null);
 
   constructor() {
     super();

@@ -216,7 +216,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     computation: () => undefined
   });
 
-  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
+  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
   descriptionRequired = computed(() => {
     const selectedTokenType = this.tokenService.selectedTokenType();

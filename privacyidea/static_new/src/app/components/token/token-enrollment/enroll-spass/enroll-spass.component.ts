@@ -37,7 +37,7 @@ export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-spass.component.scss"
 })
 export class EnrollSpassComponent implements OnInit {
-  protected readonly enrollmentMapper: SpassApiPayloadMapper = inject(SpassApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(SpassApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Input() wizard = false;

@@ -60,7 +60,7 @@ export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-certificate.component.scss"
 })
 export class EnrollCertificateComponent implements OnInit {
-  protected readonly enrollmentMapper: CertificateApiPayloadMapper = inject(CertificateApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(CertificateApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
 

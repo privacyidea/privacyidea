@@ -43,7 +43,7 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollMotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(MotpApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   @Input() wizard = false;

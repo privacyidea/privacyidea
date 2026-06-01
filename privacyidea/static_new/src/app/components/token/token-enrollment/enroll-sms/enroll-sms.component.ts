@@ -48,7 +48,7 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-sms.component.scss"
 })
 export class EnrollSmsComponent implements OnInit {
-  protected readonly enrollmentMapper: SmsApiPayloadMapper = inject(SmsApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(SmsApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

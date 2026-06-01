@@ -43,7 +43,7 @@ import { lastValueFrom } from "rxjs";
 export class EnrollPushComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly enrollmentMapper: PushApiPayloadMapper = inject(PushApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(PushApiPayloadMapper);
 
   pollResponse = signal<PiResponse<Tokens> | undefined>(undefined);
 

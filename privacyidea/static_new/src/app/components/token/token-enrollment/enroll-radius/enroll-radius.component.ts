@@ -51,7 +51,7 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-radius.component.scss"
 })
 export class EnrollRadiusComponent implements OnInit {
-  protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(RadiusApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

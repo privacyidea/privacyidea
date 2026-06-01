@@ -36,7 +36,7 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-tiqr.component.scss"
 })
 export class EnrollTiqrComponent implements OnInit {
-  protected readonly enrollmentMapper: TiqrApiPayloadMapper = inject(TiqrApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(TiqrApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 

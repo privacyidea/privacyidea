@@ -47,7 +47,7 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   standalone: true
 })
 export class EnrollHotpComponent implements OnInit {
-  protected readonly enrollmentMapper: HotpApiPayloadMapper = inject(HotpApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);

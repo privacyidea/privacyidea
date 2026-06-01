@@ -172,9 +172,11 @@
                                 <li class="resolver-item">
                                   <a
                                     (click)="onClickResolver(res.name); $event.preventDefault()"
+                                    (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
                                     attr.aria-label="{{ column.label }} Link"
                                     class="resolver-name"
-                                    role="button">
+                                    role="button"
+                                    tabindex="0">
                                     {{ res.name }}
                                   </a>
                                   @if (res.priority !== null && res.priority !== undefined) {

@@ -46,7 +46,7 @@ export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-yubico.component.scss"
 })
 export class EnrollYubicoComponent implements OnInit {
-  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(YubicoApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

@@ -34,7 +34,7 @@ export interface TanEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-tan.component.scss"
 })
 export class EnrollTanComponent implements OnInit {
-  protected readonly enrollmentMapper: TanApiPayloadMapper = inject(TanApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(TanApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   @Input() wizard = false;

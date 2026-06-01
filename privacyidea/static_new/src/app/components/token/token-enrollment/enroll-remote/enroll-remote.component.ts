@@ -52,7 +52,7 @@ import {
   templateUrl: "./enroll-remote.component.html"
 })
 export class EnrollRemoteComponent implements OnInit {
-  protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(RemoteApiPayloadMapper);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   enrollmentData = input<RemoteEnrollmentData>();

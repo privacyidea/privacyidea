@@ -45,7 +45,7 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EnrollQuestionComponent implements OnInit {
-  protected readonly enrollmentMapper: QuestionApiPayloadMapper = inject(QuestionApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(QuestionApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

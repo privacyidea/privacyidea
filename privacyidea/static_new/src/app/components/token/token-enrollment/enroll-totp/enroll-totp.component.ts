@@ -49,7 +49,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-totp.component.scss"
 })
 export class EnrollTotpComponent implements OnInit {
-  protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);

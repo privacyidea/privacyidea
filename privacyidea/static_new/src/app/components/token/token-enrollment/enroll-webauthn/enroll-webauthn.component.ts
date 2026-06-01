@@ -48,8 +48,8 @@ import { firstValueFrom } from "rxjs";
   styleUrl: "./enroll-webauthn.component.scss"
 })
 export class EnrollWebauthnComponent implements OnInit {
-  protected readonly enrollmentMapper: WebAuthnApiPayloadMapper = inject(WebAuthnApiPayloadMapper);
-  protected readonly finalizeMapper: WebAuthnFinalizeApiPayloadMapper = inject(WebAuthnFinalizeApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(WebAuthnApiPayloadMapper);
+  protected readonly finalizeMapper = inject(WebAuthnFinalizeApiPayloadMapper);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);

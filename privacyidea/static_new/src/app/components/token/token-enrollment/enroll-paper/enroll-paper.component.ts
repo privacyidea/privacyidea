@@ -37,7 +37,7 @@ export interface PaperEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollPaperComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(PaperApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(PaperApiPayloadMapper);
 
   @Input() wizard = false;
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();

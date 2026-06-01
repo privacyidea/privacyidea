@@ -42,7 +42,7 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollIndexedsecretComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(IndexedSecretApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(IndexedSecretApiPayloadMapper);
 
   disabled = input<boolean>(false);
 

@@ -44,7 +44,7 @@ export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-vasco.component.scss"
 })
 export class EnrollVascoComponent implements OnInit {
-  protected readonly enrollmentMapper: VascoApiPayloadMapper = inject(VascoApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(VascoApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   disabled = input<boolean>(false);
 

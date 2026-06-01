@@ -44,7 +44,7 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
 })
 export class EnrollSshkeyComponent implements OnInit {
   disabled = input<boolean>(false);
-  protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(SshkeyApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(SshkeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   sshPublicKey = signal<string>("");

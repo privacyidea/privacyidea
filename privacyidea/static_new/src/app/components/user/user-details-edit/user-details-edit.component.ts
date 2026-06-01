@@ -47,7 +47,7 @@ export class UserDetailsEditComponent {
   updateData = output<EditUserData>();
 
   // Store the latest user data to preserve edits
-  private lastUserData: WritableSignal<EditUserData | null> = signal(null);
+  private lastUserData = signal<EditUserData | null>(null);
 
   protected newUserData: WritableSignal<EditUserData> = linkedSignal(() => {
     const attributes = this.resolverService.userAttributes();

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, OnInit, signal } from "@angular/core";
+import { Component, computed, EventEmitter, inject, Input, input, OnInit, Output, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -47,7 +47,7 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   styleUrl: "./enroll-applspec.component.scss"
 })
 export class EnrollApplspecComponent implements OnInit {
-  protected readonly enrollmentMapper: ApplspecApiPayloadMapper = inject(ApplspecApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(ApplspecApiPayloadMapper);
   protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

@@ -48,8 +48,8 @@ import { lastValueFrom } from "rxjs";
   styleUrl: "./enroll-passkey.component.scss"
 })
 export class EnrollPasskeyComponent implements OnInit {
-  protected readonly enrollmentMapper: PasskeyApiPayloadMapper = inject(PasskeyApiPayloadMapper);
-  protected readonly finalizeMapper: PasskeyFinalizeApiPayloadMapper = inject(PasskeyFinalizeApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(PasskeyApiPayloadMapper);
+  protected readonly finalizeMapper = inject(PasskeyFinalizeApiPayloadMapper);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly base64Service: Base64ServiceInterface = inject(Base64Service);

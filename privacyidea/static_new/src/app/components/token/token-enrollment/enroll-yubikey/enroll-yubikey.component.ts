@@ -37,7 +37,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
   imports: [MatFormFieldModule, MatInputModule, MatOptionModule, FormField]
 })
 export class EnrollYubikeyComponent implements OnInit {
-  protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(YubikeyApiPayloadMapper);
+  protected readonly enrollmentMapper = inject(YubikeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<YubikeyEnrollmentData>();
