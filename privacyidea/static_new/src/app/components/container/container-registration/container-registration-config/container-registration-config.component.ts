@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, Input, Output, Signal, signal } from "@angular/core";
+import { Component, computed, effect, input, model, output, Signal, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
@@ -30,11 +30,11 @@ import { MatInput } from "@angular/material/input";
   imports: [MatFormField, MatInput, MatHint, MatLabel, MatCheckbox, MatIconModule, MatButtonModule, MatSuffix]
 })
 export class ContainerRegistrationConfigComponent {
-  @Input() passphrasePrompt = signal("");
-  @Input() passphraseResponse = signal("");
-  @Input() userStorePassphrase = signal(false);
-  @Input() containerHasOwner = false;
-  @Output() validInputChange = new EventEmitter<boolean>();
+  passphrasePrompt = model("");
+  passphraseResponse = model("");
+  userStorePassphrase = model(false);
+  containerHasOwner = input(false);
+  validInputChange = output<boolean>();
 
   defaultPrompt = "Please enter your user store passphrase.";
 

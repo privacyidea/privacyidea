@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, Input, signal, Signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, model } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -67,11 +67,11 @@ export class TokenDetailsUserComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
-  @Input() userData = signal<EditableElement[]>([]);
-  @Input() tokenSerial!: WritableSignal<string>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
+  userData = input<EditableElement[]>([]);
+  tokenSerial = input.required<string>();
+  isEditingUser = model.required<boolean>();
+  isEditingInfo = input.required<boolean>();
+  isAnyEditingOrRevoked = input.required<boolean>();
   tokenType = computed(() => {
     if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
     const tokenDetail = this.tokenService.tokenDetailResource.value();

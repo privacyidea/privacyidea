@@ -331,7 +331,7 @@
 
     <app-http-groups-attribute
       [resolverType]="type()"
-      [model]="userGroupsModel"></app-http-groups-attribute>
+      [(model)]="userGroupsModel"></app-http-groups-attribute>
 
     <div class="flex-column margin-top-16">
       <mat-form-field class="input-width-xl">
@@ -601,7 +601,7 @@
               </div>
 
               <app-http-config
-                [model]="configAuthModel"
+                [(model)]="configAuthModel"
                 [title]="'Authorization'" />
             }
           </div>
@@ -617,7 +617,7 @@
               <app-http-config
                 [description]="'Configure the endpoint to authenticate the user with its username/userid and password.'"
                 [endpointHint]="checkUserPasswordHint()"
-                [model]="configUserAuthModel"
+                [(model)]="configUserAuthModel"
                 [title]="'Check User Password'" />
             </div>
           </mat-expansion-panel>
@@ -632,7 +632,7 @@
             <app-http-config
               [description]="'Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are added to the request as search parameters if they are available in the request.'"
               [endpointHint]="'Possible tags: {userid} {username} {password} {givenname}'"
-              [model]="configGetUserListModel"
+              [(model)]="configGetUserListModel"
               [title]="'User List'" />
           </div>
         </mat-expansion-panel>
@@ -646,7 +646,7 @@
             <app-http-config
               [description]="'Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token owner. To resolve the complete user, this endpoint is used.'"
               [endpointHint]="'Possible tags: {userid}'"
-              [model]="configGetUserByIdModel"
+              [(model)]="configGetUserByIdModel"
               [title]="'Get User by ID'" />
           </div>
         </mat-expansion-panel>
@@ -660,7 +660,7 @@
             <app-http-config
               [description]="'Configure the endpoint to retrieve a single user for the username. For example, when a user tries to authenticate against privacyIDEA, only the username is provided. To resolve the complete user and evaluate if the user exists, this endpoint is used.'"
               [endpointHint]="'Possible tags: {username}'"
-              [model]="configGetUserByNameModel"
+              [(model)]="configGetUserByNameModel"
               [title]="'Get User by Name'" />
           </div>
         </mat-expansion-panel>
@@ -675,7 +675,7 @@
               <app-http-config
                 [description]="'Configure the endpoint to create a new user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define a password which must be specified in the request mapping using the tag &quot;{password}&quot;.'"
                 [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
-                [model]="configCreateUserModel"
+                [(model)]="configCreateUserModel"
                 [title]="'Create User'" />
             </div>
           </mat-expansion-panel>
@@ -689,7 +689,7 @@
               <app-http-config
                 [description]="'Configure the endpoint to edit an existing user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.'"
                 [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
-                [model]="configEditUserModel"
+                [(model)]="configEditUserModel"
                 [title]="'Edit User'" />
             </div>
           </mat-expansion-panel>
@@ -703,7 +703,7 @@
               <app-http-config
                 [description]="'Configure the endpoint to delete an existing user from the user store.'"
                 [endpointHint]="'Possible tags: {userid}'"
-                [model]="configDeleteUserModel"
+                [(model)]="configDeleteUserModel"
                 [title]="'Delete User'" />
             </div>
           </mat-expansion-panel>

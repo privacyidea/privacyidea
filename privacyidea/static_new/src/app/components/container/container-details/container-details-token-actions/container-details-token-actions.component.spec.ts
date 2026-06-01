@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
-import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { MatTableDataSource } from "@angular/material/table";
@@ -42,32 +41,16 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   let mockContainerService: MockContainerService;
   let mockTokenService: MockTokenService;
 
-  const userSignal: WritableSignal<{
-    user_realm: string;
-    user_name: string;
-    user_resolver: string;
-    user_id: string;
-  }> = signal({
-    user_realm: "realm1",
-    user_name: "alice",
-    user_resolver: "resolver1",
-    user_id: "id1"
-  });
-
-  const tokens = signal<Partial<ContainerDetailToken>[]>([
+  const tokens: Partial<ContainerDetailToken>[] = [
     { serial: "T1", username: "", active: false },
     { serial: "T2", username: "bob", active: true }
-  ]);
-  const tokenDataSignal: WritableSignal<MatTableDataSource<ContainerDetailToken>> = signal(
-    new MatTableDataSource(tokens() as ContainerDetailToken[])
-  );
+  ];
 
   beforeEach(async () => {
     mockDialog = {
       open: jest.fn().mockReturnValue({ afterClosed: () => of({ confirmed: true }) }),
       closeAll: jest.fn()
     };
-    tokenDataSignal.set(new MatTableDataSource(tokens() as ContainerDetailToken[]));
 
     await TestBed.configureTestingModule({
       imports: [ContainerDetailsTokenActionsComponent],
@@ -86,10 +69,14 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     component = fixture.componentInstance;
     mockContainerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-
-    component.containerSerial = "CONT-1";
-    component.user = userSignal;
-    component.tokenData = tokenDataSignal;
+    fixture.componentRef.setInput("containerSerial", "CONT-1");
+    fixture.componentRef.setInput("user", {
+      user_realm: "realm1",
+      user_name: "alice",
+      user_resolver: "resolver1",
+      user_id: "id1"
+    });
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as ContainerDetailToken[]));
     fixture.detectChanges();
   });
 
@@ -103,14 +90,14 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
   it("isAssignableToAllToken should be false if all tokens have a user", () => {
     const tokens = [{ serial: "T1", username: "alice", active: false }];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     fixture.detectChanges();
     expect(component.isAssignableToAllToken()).toBe(false);
   });
 
   it("isAssignableToAllToken should be true if no user information is available", () => {
     const tokens = [{ serial: "T1" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     fixture.detectChanges();
     expect(component.isAssignableToAllToken()).toBe(true);
   });
@@ -124,13 +111,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "T1", username: "", active: false },
       { serial: "T2", username: "", active: false }
     ];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.isUnassignableFromAllToken()).toBe(false);
   });
 
   it("isUnassignableFromAllToken should be false if no user information is available", () => {
     const tokens = [{ serial: "T1" }, { serial: "T2" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.isUnassignableFromAllToken()).toBe(false);
   });
 
@@ -143,13 +130,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "T1", username: "", active: false },
       { serial: "T2", username: "", active: false }
     ];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyActiveTokens()).toBe(false);
   });
 
   it("anyActiveTokens should be false if no active information is available", () => {
     const tokens = [{ serial: "T1" }, { serial: "T2" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyActiveTokens()).toBe(false);
   });
 
@@ -162,13 +149,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "T1", username: "", active: true },
       { serial: "T2", username: "", active: true }
     ];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyDisabledTokens()).toBe(false);
   });
 
   it("anyDisabledTokens should be false if no active information is available", () => {
     const tokens = [{ serial: "T1" }, { serial: "T2" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyDisabledTokens()).toBe(false);
   });
 
@@ -315,7 +302,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     };
     const token2: ContainerDetailToken = { ...token1, serial: "T2" };
     const data = new MatTableDataSource<ContainerDetailToken>([token1, token2]);
-    component.tokenData.set(data);
+    fixture.componentRef.setInput("tokenData", data);
     component.deleteAllTokens();
 
     expect(mockTokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["T1", "T2"], expect.any(Function));

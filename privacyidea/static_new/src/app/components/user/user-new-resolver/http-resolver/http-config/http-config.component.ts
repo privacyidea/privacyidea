@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input, WritableSignal } from "@angular/core";
+import { Component, input, model } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
@@ -41,8 +41,8 @@ export interface HttpConfigModel {
   styleUrl: "./http-config.component.scss"
 })
 export class HttpConfigComponent {
-  @Input({ required: true }) model!: WritableSignal<HttpConfigModel>;
-  @Input({ required: true }) title!: string;
-  @Input() description?: string;
-  @Input() endpointHint?: string;
+  model = model.required<HttpConfigModel>();
+  title = input.required<string>();
+  description = input<string>();
+  endpointHint = input<string>();
 }

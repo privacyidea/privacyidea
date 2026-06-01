@@ -77,9 +77,9 @@ describe("TokenDetailsActionsComponent", () => {
     component = fixture.componentInstance;
 
     component.tokenSerial = signal("SER-1");
-    component.tokenType = signal("hotp");
-    component.setPinValue = signal("");
-    component.repeatPinValue = signal("");
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("setPinValue", "");
+    fixture.componentRef.setInput("repeatPinValue", "");
 
     fixture.detectChanges();
   });
@@ -187,11 +187,11 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("tokenTypeKey is set correctly", () => {
-    component.tokenType.set("yubikey");
+    fixture.componentRef.setInput("tokenType", "yubikey");
     expect(component.tokenTypeKey()).toEqual("yubikey" as TokenTypeKey);
     expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBe(-1);
 
-    component.tokenType.set("daypassword");
+    fixture.componentRef.setInput("tokenType", "daypassword");
     expect(component.tokenTypeKey()).toEqual("daypassword" as TokenTypeKey);
     expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBeGreaterThan(-1);
   });

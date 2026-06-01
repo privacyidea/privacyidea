@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, Input, WritableSignal, output } from "@angular/core";
+import { Component, input, model, output } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -48,15 +48,15 @@ import { AuthServiceInterface } from "@services/auth/auth.service";
   templateUrl: "./container-add-token.component.html"
 })
 export class ContainerAddTokenComponent {
-  @Input({ required: true }) authService!: AuthServiceInterface;
-  @Input({ required: true }) showOnlyTokenNotInContainer!: WritableSignal<boolean>;
-  @Input({ required: true }) total!: number;
-  @Input({ required: true }) pageIndex!: number;
-  @Input({ required: true }) pageSize!: number;
-  @Input({ required: true }) filterValue!: string;
-  @Input({ required: true }) filterIsNotEmpty!: boolean;
-  @Input({ required: true }) tokenOptions!: any[];
-  @Input() inputClass = "margin-bottom-16 input-width-xl";
+  authService = input.required<AuthServiceInterface>();
+  showOnlyTokenNotInContainer = model.required<boolean>();
+  total = input.required<number>();
+  pageIndex = input.required<number>();
+  pageSize = input.required<number>();
+  filterValue = input.required<string>();
+  filterIsNotEmpty = input.required<boolean>();
+  tokenOptions = input.required<any[]>();
+  inputClass = input("margin-bottom-16 input-width-xl");
 
   pageEvent = output<PageEvent>();
   filterInput = output<Event>();

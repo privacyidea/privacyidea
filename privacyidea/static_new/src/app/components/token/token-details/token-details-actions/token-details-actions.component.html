@@ -26,8 +26,8 @@
   @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <div class="flex-column">
       <app-set-pin-action
-        [repeatPinValue]="repeatPinValue"
-        [setPinValue]="setPinValue" />
+        [(repeatPinValue)]="repeatPinValue"
+        [(setPinValue)]="setPinValue" />
       <mat-divider class="margin-top-8 margin-bottom-8" />
     </div>
   }

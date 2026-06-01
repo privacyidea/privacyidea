@@ -24,13 +24,15 @@ import { Component, ViewChild, signal } from "@angular/core";
 
 @Component({
   template: `<app-horizontal-wheel
-    [values]="values"
-    (onSelect)="onSelect($event)"></app-horizontal-wheel>`,
+    [values]="values()"
+    [initialValue]="initialValue"
+    (selected)="onSelect($event)"></app-horizontal-wheel>`,
   standalone: true,
   imports: [HorizontalWheelComponent]
 })
 class TestHostComponent {
   values = signal(["A", "B", "C"]);
+  initialValue = "A";
   selected: string | null = null;
   onSelect(val: string) {
     this.selected = val;

@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (authService.actionAllowed("container_add_token")) {
+@if (authService().actionAllowed("container_add_token")) {
   <div class="flex-column width-100">
     <h4 class="margin-left-16 margin-bottom-0">Add Token</h4>
     <div class="flex-row filter-paginator-container">
@@ -30,21 +30,21 @@
       <mat-paginator
         (page)="pageEvent.emit($event)"
         [hidePageSize]="true"
-        [length]="total"
-        [pageIndex]="pageIndex"
-        [pageSize]="pageSize"></mat-paginator>
+        [length]="total()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"></mat-paginator>
     </div>
-    <mat-form-field [class]="inputClass">
+    <mat-form-field [class]="inputClass()">
       <mat-label i18n>Add Token to Container</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter.emit()"
-        [showClearButton]="filterIsNotEmpty">
+        [showClearButton]="filterIsNotEmpty()">
         <input
           #filterHTMLInputElement
           #tokenAutoTrigger="matAutocompleteTrigger"
           (input)="filterInput.emit($event)"
           [matAutocomplete]="tokenAuto"
-          [value]="filterValue"
+          [value]="filterValue()"
           i18n-placeholder
           matInput
           placeholder="Example query: 'type: hotp serial: 123'" />
@@ -53,7 +53,7 @@
         <mat-hint> Adding a token removes it from its previous container</mat-hint>
       }
       <mat-autocomplete #tokenAuto="matAutocomplete">
-        @for (option of tokenOptions; track option) {
+        @for (option of tokenOptions(); track option) {
           <mat-option
             (click)="addToken.emit(option)"
             class="token-option">

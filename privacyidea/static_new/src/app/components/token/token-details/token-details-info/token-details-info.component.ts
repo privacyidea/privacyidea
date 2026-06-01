@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { Component, inject, input, linkedSignal, model, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -56,11 +56,11 @@ export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
-  @Input() infoData!: WritableSignal<EditableElement[]>;
-  @Input() detailData!: WritableSignal<EditableElement[]>;
-  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
+  infoData = input.required<EditableElement[]>();
+  detailData = input.required<EditableElement[]>();
+  isAnyEditingOrRevoked = input.required<boolean>();
+  isEditingInfo = model.required<boolean>();
+  isEditingUser = input.required<boolean>();
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
     source: () => this.isEditingInfo(),
     computation: () => {

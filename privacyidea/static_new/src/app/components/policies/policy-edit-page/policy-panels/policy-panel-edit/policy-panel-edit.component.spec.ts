@@ -127,7 +127,7 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
   });
 
   it("should emit onPolicyEdit whenever addPolicyEdit is called", () => {
-    const emitSpy = jest.spyOn(component.onPolicyEdit, "emit");
+    const emitSpy = jest.spyOn(component.policyEdit, "emit");
     const editPayload = { description: "New Description" };
 
     component.addPolicyEdit(editPayload);

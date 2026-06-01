@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, Input, WritableSignal } from "@angular/core";
+import { Component, computed, input, model } from "@angular/core";
 import { MatFormField, MatHint } from "@angular/material/form-field";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -39,8 +39,8 @@ export interface UserGroupsModel {
   styleUrl: "./http-groups-attribute.component.scss"
 })
 export class HttpGroupsAttributeComponent {
-  @Input({ required: true }) model!: WritableSignal<UserGroupsModel>;
-  @Input({ required: true }) resolverType!: string;
+  model = model.required<UserGroupsModel>();
+  resolverType = input.required<string>();
 
   readonly slideToggleTooltipSignal = computed(() =>
     this.model().active ? $localize`Disable user groups retrieval` : $localize`Enable user groups retrieval`

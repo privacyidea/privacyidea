@@ -26,10 +26,9 @@ import {
   EventEmitter,
   HostListener,
   inject,
-  Input,
+  input,
   linkedSignal,
   Output,
-  Signal,
   viewChildren,
   WritableSignal
 } from "@angular/core";
@@ -43,8 +42,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  @Input({ required: true }) values!: Signal<any[]>;
-  @Input({ required: true }) initialValue!: any;
+  values = input.required<any[]>();
+  initialValue = input.required<any>();
   @Output() selected = new EventEmitter<string>();
 
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({
@@ -53,7 +52,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
       if (previous?.value) {
         return previous.value;
       }
-      return this.initialValue || source[0] || "";
+      return this.initialValue() || source[0] || "";
     }
   });
 
@@ -95,7 +94,7 @@ export class HorizontalWheelComponent implements AfterViewInit {
     }
   }
 
-  @HostListener("window:resize", ["$event"])
+  @HostListener("window:resize")
   onResize() {
     this.setDynamicPadding();
     this._transformItemsOnScroll();

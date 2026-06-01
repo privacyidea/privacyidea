@@ -296,26 +296,26 @@
       <div class="responsive-flex-row-1580">
         <div class="flex-column">
           <app-token-details-user
-            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
-            [tokenSerial]="tokenSerial"
-            [userData]="userData"
+            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+            [isEditingInfo]="isEditingInfo()"
+            [(isEditingUser)]="isEditingUser"
+            [tokenSerial]="tokenSerial()"
+            [userData]="userData()"
             class="flex"></app-token-details-user>
           <app-token-details-info
-            [detailData]="tokenDetailData"
-            [infoData]="infoData"
-            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"></app-token-details-info>
+            [detailData]="tokenDetailData()"
+            [infoData]="infoData()"
+            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+            [(isEditingInfo)]="isEditingInfo"
+            [isEditingUser]="isEditingUser()"></app-token-details-info>
           @if (tokenType() === "sshkey" || tokenType() === "hotp") {
             <app-token-details-machine />
           }
         </div>
         <app-token-details-actions
-          [repeatPinValue]="repeatPinValue"
-          [setPinValue]="setPinValue"
-          [tokenType]="tokenType"
+          [(repeatPinValue)]="repeatPinValue"
+          [(setPinValue)]="setPinValue"
+          [tokenType]="tokenType()"
           [token]="tokenDetails()"></app-token-details-actions>
       </div>
     </div>

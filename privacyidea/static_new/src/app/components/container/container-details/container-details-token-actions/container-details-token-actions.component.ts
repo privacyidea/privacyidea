@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, Input, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -43,14 +43,14 @@ export class ContainerDetailsTokenActionsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  @Input() containerSerial!: string;
-  @Input() user!: WritableSignal<{
+  containerSerial = input.required<string>();
+  user = input.required<{
     user_realm: string;
     user_name: string;
     user_resolver: string;
     user_id: string;
-  }>;
-  @Input() tokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken>>;
+  }>();
+  tokenData = input.required<MatTableDataSource<ContainerDetailToken>>();
 
   isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.user();
@@ -155,7 +155,7 @@ export class ContainerDetailsTokenActionsComponent {
       .subscribe({
         next: (result) => {
           if (result) {
-            this.containerService.removeAll(this.containerSerial).subscribe({
+            this.containerService.removeAll(this.containerSerial()).subscribe({
               next: () => {
                 this.containerService.containerDetailsResource.reload();
               }

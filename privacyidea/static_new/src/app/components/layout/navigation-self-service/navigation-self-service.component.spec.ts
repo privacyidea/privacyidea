@@ -268,7 +268,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   });
 
@@ -281,7 +281,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).not.toContain(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   });
 
@@ -294,7 +294,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.AUDIT);
   });
 
@@ -307,7 +307,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.CONTAINERS);
   });
 });

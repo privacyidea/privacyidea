@@ -18,7 +18,7 @@
  **/
 
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, Input, input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, model, signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
@@ -72,9 +72,9 @@ export class TokenDetailsActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private router = inject(Router);
-  @Input() setPinValue!: WritableSignal<string>;
-  @Input() repeatPinValue!: WritableSignal<string>;
-  @Input() tokenType!: WritableSignal<string>;
+  setPinValue = model.required<string>();
+  repeatPinValue = model.required<string>();
+  tokenType = input.required<string>();
   token = input<TokenDetails>();
   tokenSerial = this.tokenService.tokenSerial;
   tokenIsActive = this.tokenService.tokenIsActive;

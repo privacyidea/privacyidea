@@ -248,7 +248,7 @@
         <div class="flex-row gap-32 margin-top-16">
           <app-container-add-token
             [authService]="authService"
-            [showOnlyTokenNotInContainer]="showOnlyTokenNotInContainer"
+            [(showOnlyTokenNotInContainer)]="showOnlyTokenNotInContainer"
             [total]="total()"
             [pageIndex]="pageIndex()"
             [pageSize]="pageSize()"
@@ -269,8 +269,8 @@
           [containerType]="containerType()"></app-container-details-actions>
         <app-container-details-token-actions
           [containerSerial]="containerSerial()"
-          [user]="rawUserData"
-          [tokenData]="containerTokenData"></app-container-details-token-actions>
+          [user]="rawUserData()"
+          [tokenData]="containerTokenData()"></app-container-details-token-actions>
       </div>
     </div>
   </div>

@@ -18,7 +18,6 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -93,9 +92,6 @@ describe("TokenDetailsUserComponent", () => {
   let userService: MockUserService;
   let realmService: MockRealmService;
 
-  let tokenSerial!: WritableSignal<string>;
-  let isEditingUser!: WritableSignal<boolean>;
-
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -124,13 +120,10 @@ describe("TokenDetailsUserComponent", () => {
     selfFixture = TestBed.createComponent(TokenDetailsUserSelfServiceComponent);
     selfComponent = selfFixture.componentInstance;
 
-    tokenSerial = signal("Mock serial");
-    isEditingUser = signal(false);
-
-    component.tokenSerial = tokenSerial;
-    component.isEditingUser = isEditingUser;
-    component.isEditingInfo = signal(false);
-    component.isAnyEditingOrRevoked = signal(false);
+    fixture.componentRef.setInput("tokenSerial", "Mock serial");
+    fixture.componentRef.setInput("isEditingUser", false);
+    fixture.componentRef.setInput("isEditingInfo", false);
+    fixture.componentRef.setInput("isAnyEditingOrRevoked", false);
 
     fixture.detectChanges();
   });
@@ -160,20 +153,20 @@ describe("TokenDetailsUserComponent", () => {
   });
 
   it("toggleUserEdit flips the flag and reloads default realm", () => {
-    expect(isEditingUser()).toBe(false);
+    expect(component.isEditingUser()).toBe(false);
 
     component.toggleUserEdit();
 
-    expect(isEditingUser()).toBe(true);
+    expect(component.isEditingUser()).toBe(true);
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });
 
   it("cancelUserEdit flips the flag back and clears the selection filter", () => {
-    isEditingUser.set(true);
+    component.isEditingUser.set(true);
 
     component.cancelUserEdit();
 
-    expect(isEditingUser()).toBe(false);
+    expect(component.isEditingUser()).toBe(false);
     expect(userService.selectionFilter()).toBe("");
   });
 
@@ -192,6 +185,6 @@ describe("TokenDetailsUserComponent", () => {
     expect(userService.selectionFilter()).toBe("");
     expect(userService.selectedUserRealm()).toBe("");
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
-    expect(isEditingUser()).toBe(true);
+    expect(component.isEditingUser()).toBe(true);
   });
 });
