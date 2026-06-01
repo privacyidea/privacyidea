@@ -44,8 +44,8 @@ export interface DialogServiceInterface {
 
 @Injectable({ providedIn: "root" })
 export class DialogService implements DialogServiceInterface {
-  private readonly dialog: MatDialog = inject(MatDialog);
-  private readonly injector: EnvironmentInjector = inject(EnvironmentInjector);
+  private readonly dialog = inject(MatDialog);
+  private readonly injector = inject(EnvironmentInjector);
   public openDialogs = new Set<MatDialogRef<AbstractDialogComponent>>();
   closeAllDialogs(): void {
     this.dialog.closeAll();

@@ -70,10 +70,10 @@ export interface ChallengesServiceInterface {
 
 @Injectable()
 export class ChallengesService implements ChallengesServiceInterface {
-  private readonly http = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly http = inject(HttpClient);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   challengesFilter = linkedSignal({

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal, Signal, WritableSignal } from "@angular/core";
+import { computed, signal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
   EventActions,
@@ -28,13 +28,13 @@ import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockEventService implements EventServiceInterface {
-  selectedHandlerModule: WritableSignal<string | null> = signal(null);
+  selectedHandlerModule = signal<string | null>(null);
 
   readonly allEventsResource = new MockHttpResourceRef<PiResponse<EventHandler[]> | undefined>(
     MockPiResponse.fromValue<EventHandler[]>([])
   );
 
-  eventHandlers: WritableSignal<EventHandler[] | undefined> = signal([]);
+  eventHandlers = signal<EventHandler[] | undefined>([]);
 
   saveEventHandler = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
 

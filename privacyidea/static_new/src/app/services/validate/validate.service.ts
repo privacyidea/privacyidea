@@ -106,11 +106,11 @@ export interface ValidateServiceInterface {
   providedIn: "root"
 })
 export class ValidateService implements ValidateServiceInterface {
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly authenticationService: AuthServiceInterface = inject(AuthService);
+  private readonly http = inject(HttpClient);
 
   private baseUrl = environment.proxyUrl + "/validate/";
 

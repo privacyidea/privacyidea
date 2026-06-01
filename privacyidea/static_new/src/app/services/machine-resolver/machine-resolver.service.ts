@@ -88,12 +88,12 @@ export interface MachineResolverServiceInterface {
 @Injectable()
 export class MachineResolverService implements MachineResolverServiceInterface {
   readonly allMachineResolverTypes: string[] = ["hosts", "ldap"];
-  readonly machineResolverBaseUrl = environment.proxyUrl + "/machineresolver/";
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
-  readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly contentService: ContentServiceInterface = inject(ContentService);
-  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  readonly http: HttpClient = inject(HttpClient);
+  readonly machineResolverBaseUrl = environment.proxyUrl + "/machineresolver/";
 
   constructor() {
     effect(() => {

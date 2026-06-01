@@ -74,6 +74,7 @@ export interface ApplicationServiceInterface {
 export class ApplicationService implements ApplicationServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+
   readonly applicationBaseUrl = environment.proxyUrl + "/application/";
 
   private readonly empty: Applications = {

@@ -121,12 +121,12 @@ export interface EventServiceInterface {
 export class EventService implements EventServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   readonly eventBaseUrl = environment.proxyUrl + "/event";
-  selectedHandlerModule: WritableSignal<string | null> = signal(null);
+  selectedHandlerModule = signal<string | null>(null);
 
   // ----------------------------
   // Read existing event handlers

@@ -58,11 +58,11 @@ export interface SystemServiceInterface {
 
 @Injectable()
 export class SystemService implements SystemServiceInterface {
-  private readonly systemBaseUrl = environment.proxyUrl + "/system/";
-
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
+
+  private readonly systemBaseUrl = environment.proxyUrl + "/system/";
   private onAllowedRoutes = computed(() => {
     return (
       this.contentService.onTokenEnrollmentLikely() ||

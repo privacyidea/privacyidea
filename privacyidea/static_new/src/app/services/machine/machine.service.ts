@@ -146,12 +146,12 @@ export interface MachineServiceInterface {
 
 @Injectable()
 export class MachineService implements MachineServiceInterface {
-  private readonly http: HttpClient = inject(HttpClient);
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly document: Document = inject(DOCUMENT);
+  private readonly http = inject(HttpClient);
   private baseUrl = environment.proxyUrl + "/machine/";
   sshApiFilter = ["serial", "service_id"];
   offlineApiFilter = ["serial", "count", "rounds"];

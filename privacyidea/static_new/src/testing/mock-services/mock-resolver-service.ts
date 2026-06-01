@@ -17,22 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal, Signal, WritableSignal } from "@angular/core";
+import { signal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { Resolver, Resolvers, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockResolverService implements ResolverServiceInterface {
-  private _resolversValue: WritableSignal<Resolver[]> = signal([]);
-  private _resolverOptionsValue: WritableSignal<string[]> = signal([]);
+  private _resolversValue = signal<Resolver[]>([]);
+  private _resolverOptionsValue = signal<string[]>([]);
   resolversResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
-  selectedResolverName: WritableSignal<string> = signal("");
+  selectedResolverName = signal("");
   selectedResolverResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
   resolverOptions: Signal<string[]> = this._resolverOptionsValue.asReadonly();
-  editableResolvers: WritableSignal<string[]> = signal([]);
-  userAttributes: WritableSignal<string[]> = signal([]);
+  editableResolvers = signal<string[]>([]);
+  userAttributes = signal<string[]>([]);
 
   postResolverTest = jest.fn(() => of({} as PiResponse<unknown>));
   postResolver = jest.fn(() => of({} as PiResponse<unknown>));

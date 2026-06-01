@@ -27,7 +27,6 @@ import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
 import { Observable, catchError, tap, throwError } from "rxjs";
 
@@ -199,13 +198,12 @@ export interface AuthServiceInterface {
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
-  protected readonly router: Router = inject(Router);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authUrl = environment.proxyUrl + "/auth";
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  protected readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly http = inject(HttpClient);
 
   // Writable Signals
   readonly jwtData = signal<JwtData | null>(null);

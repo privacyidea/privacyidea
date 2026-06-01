@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { effect, inject, Injectable, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
@@ -44,6 +44,7 @@ export class ClientsService implements ClientsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService = inject(NotificationService);
+
   private clientsBaseUrl = environment.proxyUrl + "/client/";
 
   private autocompleteRequested = signal(false);

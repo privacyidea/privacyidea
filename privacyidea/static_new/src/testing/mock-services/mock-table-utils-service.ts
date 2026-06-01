@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { WritableSignal, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource } from "@angular/material/table";
 import { ContainerDetailToken } from "@services/container/container.service";
@@ -24,7 +24,7 @@ import { TokenApplication } from "@services/machine/machine.service";
 import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
-  pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
+  pageSizeOptions = signal([5, 10, 25, 50]);
   emptyDataSource = jest.fn().mockImplementation(() => new MatTableDataSource<TokenApplication>([]));
   toggleKeywordInFilter = jest.fn();
   public toggleBooleanInFilter = jest.fn();

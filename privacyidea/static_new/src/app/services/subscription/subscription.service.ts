@@ -51,10 +51,10 @@ export interface Subscription {
 
 @Injectable()
 export class SubscriptionService {
-  private http = inject(HttpClient);
-  private authService = inject(AuthService);
-  private contentService = inject(ContentService);
-  private notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
+  private readonly contentService = inject(ContentService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
 

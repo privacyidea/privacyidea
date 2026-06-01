@@ -124,8 +124,8 @@ export class UserService implements UserServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
-  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   constructor() {
     effect(() => {

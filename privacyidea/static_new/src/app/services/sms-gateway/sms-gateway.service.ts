@@ -65,7 +65,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
     if (!this.contentService.onExternalSms() && !this.contentService.onConfigurationTokenTypes()) {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -85,7 +85,7 @@ export class MockTokenService implements TokenServiceInterface {
   readonly maxDescriptionLength = 80;
   readonly eventPageSize = signal(10);
   tokenSerial = signal("");
-  selectedTokenType: WritableSignal<TokenType> = signal({
+  selectedTokenType = signal<TokenType>({
     key: "hotp",
     name: "HOTP",
     info: "",
@@ -100,7 +100,7 @@ export class MockTokenService implements TokenServiceInterface {
   readonly userTokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(
     MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })
   );
-  detailsUsername: WritableSignal<string> = signal("");
+  detailsUsername = signal("");
   userRealm = signal("");
   tokenTypeOptions = signal<TokenType[]>([
     { key: "hotp", name: "HOTP", info: "", text: "HMAC-based One-Time Password" },
@@ -108,19 +108,19 @@ export class MockTokenService implements TokenServiceInterface {
     { key: "push", name: "PUSH", info: "", text: "Push Notification" }
   ]);
   readonly pageSize = signal(10);
-  readonly tokenIsActive: WritableSignal<boolean> = signal(true);
-  readonly tokenIsRevoked: WritableSignal<boolean> = signal(false);
+  readonly tokenIsActive = signal(true);
+  readonly tokenIsRevoked = signal(false);
   defaultSizeOptions: number[] = [10, 25, 50];
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
-  sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
+  sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
-  tokenResourceValue: WritableSignal<Tokens | null> = signal(null);
+  tokenResourceValue = signal<Tokens | null>(null);
   readonly tokenSerialResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
-  readonly tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
-  selectedToken: WritableSignal<string | null> = signal(null);
-  tokenOptions: WritableSignal<string[]> = signal<string[]>([]);
+  readonly tokenSelection = signal<TokenDetails[]>([]);
+  selectedToken = signal<string | null>(null);
+  tokenOptions = signal<string[]>([]);
   filteredTokenOptions: Signal<string[]> = computed(() => {
     const filter = (this.selectedToken() || "").toLowerCase();
     return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));

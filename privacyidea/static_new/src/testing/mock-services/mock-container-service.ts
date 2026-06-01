@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -42,7 +42,7 @@ export class MockContainerService implements ContainerServiceInterface {
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];
   advancedApiFilter: string[] = [];
-  stopPolling$: Subject<void> = new Subject<void>();
+  stopPolling$ = new Subject<void>();
   readonly containerBaseUrl = "mockEnvironment.proxyUrl + '/container'";
   readonly eventPageSize = signal(10);
   states = signal<string[]>([]);
@@ -68,7 +68,7 @@ export class MockContainerService implements ContainerServiceInterface {
   containersForTokenTypeResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
-  containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
+  containerSelection = signal<ContainerDetailData[]>([]);
   containerTypesResource = new MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined>(
     MockPiResponse.fromValue<ContainerTypes>(new Map())
   );
@@ -100,7 +100,7 @@ export class MockContainerService implements ContainerServiceInterface {
   );
   containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
   containerDetail = signal<ContainerDetailData | null>(null);
-  templateComparison: WritableSignal<TemplateComparisonResult | null> = signal(null);
+  templateComparison = signal<TemplateComparisonResult | null>(null);
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));
@@ -130,7 +130,7 @@ export class MockContainerService implements ContainerServiceInterface {
   templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
     MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] })
   );
-  templates: WritableSignal<ContainerTemplate[]> = signal([]);
+  templates = signal<ContainerTemplate[]>([]);
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));
   pollContainerRolloutState = jest.fn();

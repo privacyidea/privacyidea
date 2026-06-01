@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { WritableSignal, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
@@ -32,17 +32,17 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 export class MockMachineService implements MachineServiceInterface {
   getMachineTokens = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<TokenApplications>([])));
   baseUrl = "environment.mockProxyUrl + '/machine/'";
-  filterValue: WritableSignal<Record<string, string>> = signal({});
+  filterValue = signal<Record<string, string>>({});
   sshApiFilter: string[] = [];
   offlineApiFilter: string[] = [];
   advancedApiFilter: string[] = [];
-  machines: WritableSignal<Machines> = signal<Machines>([]);
-  tokenApplications: WritableSignal<TokenApplication[]> = signal([]);
+  machines = signal<Machines>([]);
+  tokenApplications = signal<TokenApplication[]>([]);
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = signal(10);
-  machineFilter: WritableSignal<FilterValue> = signal(new FilterValue());
+  machineFilter = signal(new FilterValue());
   filterParams = signal<Record<string, string>>({});
-  sort: WritableSignal<Sort> = signal({ active: "", direction: "" });
+  sort = signal<Sort>({ active: "", direction: "" });
   pageIndex = signal(0);
   machinesResource = new MockHttpResourceRef(MockPiResponse.fromValue<Machines>([]));
   tokenApplicationResource = new MockHttpResourceRef(MockPiResponse.fromValue([]));

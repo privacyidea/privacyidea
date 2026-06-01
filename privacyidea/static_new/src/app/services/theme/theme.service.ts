@@ -29,9 +29,9 @@ export type ThemeMode = "light" | "dark" | "system";
 export class ThemeService {
   public readonly currentTheme = signal<ThemeMode>("system");
   private readonly visualTheme = signal<"light" | "dark">("light");
-  private rendererFactory = inject(RendererFactory2);
+  private readonly rendererFactory = inject(RendererFactory2);
   private renderer: Renderer2 = this.rendererFactory.createRenderer(null, null);
-  private htmlElement: HTMLHtmlElement = inject(DOCUMENT).documentElement as HTMLHtmlElement;
+  private readonly htmlElement: HTMLHtmlElement = inject(DOCUMENT).documentElement as HTMLHtmlElement;
   private mediaQueryListener?: (event: MediaQueryListEvent) => void;
 
   public initializeTheme(): void {

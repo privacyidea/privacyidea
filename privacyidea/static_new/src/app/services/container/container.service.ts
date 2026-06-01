@@ -260,12 +260,15 @@ export interface ContainerServiceInterface {
 
 @Injectable()
 export class ContainerService implements ContainerServiceInterface {
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  private readonly http = inject(HttpClient);
+
+  containerBaseUrl = environment.proxyUrl + "/container/";
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
@@ -275,10 +278,7 @@ export class ContainerService implements ContainerServiceInterface {
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-
   stopPolling$ = new Subject<void>();
-  containerBaseUrl = environment.proxyUrl + "/container/";
-  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   readonly eventPageSize = signal(10);
 
   states = signal<string[]>([]);

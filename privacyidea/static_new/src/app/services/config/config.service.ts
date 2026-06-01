@@ -49,7 +49,7 @@ export interface ConfigServiceInterface {
 @Injectable({ providedIn: "root" })
 export class ConfigService implements ConfigServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
   config = signal({
     remote_user: "",
     force_remote_user: false,

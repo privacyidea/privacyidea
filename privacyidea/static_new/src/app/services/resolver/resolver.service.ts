@@ -214,11 +214,12 @@ export interface ResolverServiceInterface {
 
 @Injectable()
 export class ResolverService implements ResolverServiceInterface {
-  readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
+
+  readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
 
   constructor() {
     effect(() => {

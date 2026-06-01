@@ -3,23 +3,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { HttpResourceRef } from "@angular/common/http";
-import { computed, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { AdminRealms, Realm, Realms, RealmServiceInterface } from "@services/realm/realm.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockRealmService implements RealmServiceInterface {
-  realms: WritableSignal<Realms> = signal({});
+  realms = signal<Realms>({});
   adminRealmResource: HttpResourceRef<PiResponse<AdminRealms, unknown> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
-  adminRealmOptions: WritableSignal<string[]> = signal([]);
+  adminRealmOptions = signal<string[]>([]);
   selectedRealms = signal<string[]>([]);
 
   realmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(MockPiResponse.fromValue<Realms>({} as any));
 
-  realmOptions: WritableSignal<string[]> = signal([]);
+  realmOptions = signal<string[]>([]);
 
   defaultRealmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(
     MockPiResponse.fromValue<Realms>({

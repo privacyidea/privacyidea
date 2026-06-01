@@ -50,7 +50,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 

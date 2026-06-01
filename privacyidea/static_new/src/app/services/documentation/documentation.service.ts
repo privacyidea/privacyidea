@@ -42,7 +42,7 @@ export interface DocumentationServiceInterface {
 }
 @Injectable()
 export class DocumentationService implements DocumentationServiceInterface {
-  private _versioningService = inject(VersioningService);
+  private readonly _versioningService = inject(VersioningService);
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
   getVersionUrl(pageUrl: string): string {
     pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes

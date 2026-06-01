@@ -195,9 +195,10 @@ export interface PolicyServiceInterface {
 export class PolicyService implements PolicyServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  readonly policyBaseUrl = environment.proxyUrl + "/policy/";
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly http = inject(HttpClient);
+
+  readonly policyBaseUrl = environment.proxyUrl + "/policy/";
   readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => {
     // Only load policy definitions on the policies route.
     if (!this.contentService.onPolicies()) {

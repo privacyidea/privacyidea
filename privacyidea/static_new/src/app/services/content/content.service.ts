@@ -83,7 +83,7 @@ export interface ContentServiceInterface {
 @Injectable()
 export class ContentService implements ContentServiceInterface {
   detailsUsername = signal("");
-  router = inject(Router);
+  readonly router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
