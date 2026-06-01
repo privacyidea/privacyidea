@@ -34,16 +34,16 @@ export class MockServiceIdService implements ServiceIdServiceInterface {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<any> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
 
   serviceIds = signal<ServiceId[]>([]);
 
-  postServiceId = jest.fn(async (_serviceId: ServiceId): Promise<void> => {
+  postServiceId = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 
-  deleteServiceId = jest.fn(async (_servicename: string): Promise<void> => {
+  deleteServiceId = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 }

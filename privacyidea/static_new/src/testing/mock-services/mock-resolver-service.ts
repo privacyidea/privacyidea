@@ -19,7 +19,7 @@
 
 import { signal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { Resolver, ResolverData, ResolverServiceInterface, Resolvers } from "@services/resolver/resolver.service";
+import { Resolver, Resolvers, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef } from "./mock-utils";
 
@@ -35,12 +35,9 @@ export class MockResolverService implements ResolverServiceInterface {
   userAttributes: WritableSignal<string[]> = signal([]);
 
   postResolverTest = jest.fn(() => of({} as PiResponse<unknown>));
-
-  postResolver = jest.fn((_resolverName: string, _data: ResolverData) => of({} as PiResponse<unknown>));
-
-  deleteResolver = jest.fn((_resolverName: string) => of({} as PiResponse<unknown>));
-
-  getDefaultResolverConfig = jest.fn((_resolverType: string) => of({} as PiResponse<unknown>));
+  postResolver = jest.fn(() => of({} as PiResponse<unknown>));
+  deleteResolver = jest.fn(() => of({} as PiResponse<unknown>));
+  getDefaultResolverConfig = jest.fn(() => of({} as PiResponse<unknown>));
 
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);

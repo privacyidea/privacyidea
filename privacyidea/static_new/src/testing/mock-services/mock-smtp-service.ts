@@ -24,7 +24,7 @@ import { SmtpServer, SmtpServers } from "@services/smtp/smtp.service";
 export class MockSmtpService {
   smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -34,20 +34,10 @@ export class MockSmtpService {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<SmtpServers> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
-
   smtpServers = computed<SmtpServer[]>(() => []);
-
-  postSmtpServer = jest.fn(async (_server: SmtpServer): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  testSmtpServer = jest.fn(async (_params: any): Promise<boolean> => {
-    return Promise.resolve(true);
-  });
-
-  deleteSmtpServer = jest.fn(async (_identifier: string): Promise<void> => {
-    return Promise.resolve();
-  });
+  postSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
+  testSmtpServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
+  deleteSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
 }

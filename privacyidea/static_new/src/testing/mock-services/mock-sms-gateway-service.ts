@@ -24,7 +24,7 @@ import { SmsGateway, SmsGatewayServiceInterface, SmsProviders } from "@services/
 export class MockSmsGatewayService implements SmsGatewayServiceInterface {
   smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -34,12 +34,12 @@ export class MockSmsGatewayService implements SmsGatewayServiceInterface {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<SmsGateway[]> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
 
   smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -49,16 +49,10 @@ export class MockSmsGatewayService implements SmsGatewayServiceInterface {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<SmsProviders> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
 
   smsGateways = computed<SmsGateway[]>(() => []);
-
-  postSmsGateway = jest.fn(async (_gateway: any): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  deleteSmsGateway = jest.fn(async (_name: string): Promise<void> => {
-    return Promise.resolve();
-  });
+  postSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
+  deleteSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
 }

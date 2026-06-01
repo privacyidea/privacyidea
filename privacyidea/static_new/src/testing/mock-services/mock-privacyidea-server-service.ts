@@ -28,7 +28,7 @@ import {
 export class MockPrivacyideaServerService implements PrivacyideaServerServiceInterface {
   remoteServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -38,20 +38,10 @@ export class MockPrivacyideaServerService implements PrivacyideaServerServiceInt
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<PrivacyideaServers> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
-
   remoteServerOptions = computed<PrivacyideaServer[]>(() => []);
-
-  postPrivacyideaServer = jest.fn(async (_server: PrivacyideaServer): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  deletePrivacyideaServer = jest.fn(async (_identifier: string): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  testPrivacyideaServer = jest.fn(async (_params: any): Promise<boolean> => {
-    return Promise.resolve(true);
-  });
+  postPrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
+  deletePrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
+  testPrivacyideaServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
 }

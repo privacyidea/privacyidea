@@ -59,7 +59,8 @@ export class MockRealmService implements RealmServiceInterface {
   deleteRealm = jest.fn().mockImplementation((realm: string) => {
     const current = (this.realmResource.value()?.result?.value as any) ?? {};
     if (current[realm]) {
-      const { [realm]: _, ...rest } = current;
+      const rest = { ...current };
+      delete rest[realm];
       (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
         MockPiResponse.fromValue<Realms>(rest as any)
       );

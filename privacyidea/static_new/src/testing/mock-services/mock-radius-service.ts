@@ -28,7 +28,7 @@ import {
 export class MockRadiusService implements RadiusServerServiceInterface {
   radiusServerResource: HttpResourceRef<PiResponse<RadiusServers> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -38,20 +38,10 @@ export class MockRadiusService implements RadiusServerServiceInterface {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<RadiusServers> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
-
   radiusServers = computed<RadiusServer[]>(() => []);
-
-  postRadiusServer = jest.fn(async (_server: RadiusServer): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  testRadiusServer = jest.fn(async (_params: any): Promise<boolean> => {
-    return Promise.resolve(true);
-  });
-
-  deleteRadiusServer = jest.fn(async (_identifier: string): Promise<void> => {
-    return Promise.resolve();
-  });
+  postRadiusServer = jest.fn(async (): Promise<void> => Promise.resolve());
+  testRadiusServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
+  deleteRadiusServer = jest.fn(async (): Promise<void> => Promise.resolve());
 }

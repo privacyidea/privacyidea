@@ -25,11 +25,7 @@ import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "@services/tabl
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
   pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
-  emptyDataSource = jest.fn().mockImplementation((_pageSize: number, _columns: { key: string; label: string }[]) => {
-    const dataSource = new MatTableDataSource<TokenApplication>([]);
-    (dataSource as any).isEmpty = true;
-    return dataSource;
-  });
+  emptyDataSource = jest.fn().mockImplementation(() => new MatTableDataSource<TokenApplication>([]));
   toggleKeywordInFilter = jest.fn();
   public toggleBooleanInFilter = jest.fn();
   isLink = jest.fn().mockReturnValue(false);
@@ -46,20 +42,21 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
   getDisplayTextForState = jest.fn().mockReturnValue("");
 
   pickColumns<const K extends readonly ColumnKey[]>(...keys: K) {
-    return keys.map((k) => ({ key: k as any, label: String(k) })) as any;
+    return keys.map((k) => ({ key: k, label: String(k) })) as {
+      readonly [I in keyof K]: ColumnDef<Extract<K[I], ColumnKey>>;
+    };
   }
 
   getColumnKeys<const C extends readonly ColumnDef[]>(cols: C) {
-    return cols.map((c) => c.key) as any;
+    return cols.map((c) => c.key) as {
+      readonly [I in keyof C]: C[I] extends ColumnDef<infer KK> ? KK : never;
+    };
   }
 
-  getSortIcon(_columnKey: string, _sort: Sort): string {
-    return "";
-  }
-
-  onSortButtonClick(_key: string, _sort: WritableSignal<Sort>): void {}
-
+  getSortIcon = jest.fn().mockReturnValue("");
+  onSortButtonClick = jest.fn();
   clientsideSortTokenData(data: ContainerDetailToken[], _s: Sort): ContainerDetailToken[] {
+    void _s;
     return data;
   }
 
