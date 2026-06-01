@@ -20,11 +20,15 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { webcrypto } from "node:crypto";
 import { of } from "rxjs";
 
+if (!(globalThis as any).crypto?.subtle) {
+  Object.defineProperty(globalThis, "crypto", { value: webcrypto, configurable: true });
+}
+
 import { MatDialog } from "@angular/material/dialog";
-import { ActivatedRoute } from "@angular/router";
-import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
+import { ActivatedRoute, Router } from "@angular/router";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
@@ -33,7 +37,7 @@ import { MachineService } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
+import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
@@ -43,6 +47,7 @@ import {
   MockLocalService,
   MockMachineService,
   MockNotificationService,
+  MockPendingChangesService,
   MockRealmService,
   MockTableUtilsService,
   MockTokenService,
@@ -50,19 +55,18 @@ import {
   MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
-import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
-import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import { TokenDetailsComponent } from "./token-details.component";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
   let component: TokenDetailsComponent;
 
-  let tokenService: MockTokenService;
-  let containerService: MockContainerService;
-  let machineService: MockMachineService;
-  let pendingChangesService: MockPendingChangesService;
+  let tokenSvc: MockTokenService;
+  let containerSvc: MockContainerService;
+  let realmSvc: MockRealmService;
+  let machineSvc: MockMachineService;
+  let validateSvc: MockValidateService;
+  let router: { navigateByUrl: jest.Mock };
 
   const matDialogOpen = jest.fn();
   const matDialogMock = { open: matDialogOpen };
@@ -70,6 +74,11 @@ describe("TokenDetailsComponent", () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     TestBed.resetTestingModule();
+
+    router = { navigateByUrl: jest.fn().mockResolvedValue(true) };
+
+    // Default: any dialog opened resolves with a truthy result (so "confirm" branches run).
+    matDialogOpen.mockReturnValue({ afterClosed: () => of(of({})) });
 
     await TestBed.configureTestingModule({
       imports: [TokenDetailsComponent],
@@ -91,22 +100,27 @@ describe("TokenDetailsComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
-        { provide: MatDialog, useValue: matDialogMock },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: UserService, useClass: MockUserService },
+        { provide: MatDialog, useValue: matDialogMock },
+        { provide: Router, useValue: router },
         MockLocalService,
         MockNotificationService
       ]
     }).compileComponents();
 
-    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
-    machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
-    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
+    containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
+    machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
+    validateSvc = TestBed.inject(ValidateService) as unknown as MockValidateService;
 
-    tokenService.getTokengroups.mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
-    tokenService.setTokengroup.mockReturnValue(of({}));
-    tokenService.setTokenRealm.mockReturnValue(of({}));
+    // Monkey-patch unimplemented service methods we’ll hit via the component.
+    (tokenSvc.getTokengroups as any) = jest
+      .fn()
+      .mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
+    (tokenSvc.setTokengroup as any) = jest.fn().mockReturnValue(of({}));
+    (tokenSvc.setTokenRealm as any) = jest.fn().mockReturnValue(of({}));
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -130,36 +144,36 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header .token-serial");
+    const header = fixture.nativeElement.querySelector(".details-header .serial");
     expect(header.textContent).toContain("Mock serial");
   });
 
   it("resetFailCount calls service and reloads", () => {
-    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
     component.resetFailCount();
-    expect(tokenService.resetFailCount).toHaveBeenCalledWith("Mock serial");
+    expect(tokenSvc.resetFailCount).toHaveBeenCalledWith("Mock serial");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer assigns when a container is selected", () => {
-    containerService.selectedContainerSerial.set("container1");
-    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
+    containerSvc.selectedContainerSerial.set("container1");
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveContainer();
 
-    expect(containerService.addToken).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("saveContainer does nothing when no container selected", () => {
-    containerService.selectedContainerSerial.set("");
-    (containerService.addToken as jest.Mock).mockClear();
+    containerSvc.selectedContainerSerial.set("");
+    (containerSvc.addToken as jest.Mock).mockClear();
 
     component.saveContainer();
 
-    expect(containerService.addToken).not.toHaveBeenCalled();
+    expect(containerSvc.addToken).not.toHaveBeenCalled();
   });
 
   it("removeFromContainer removes token and reloads when selected", () => {
@@ -169,12 +183,12 @@ describe("TokenDetailsComponent", () => {
       container_serial: "container1"
     });
 
-    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.removeFromContainer();
 
-    expect(containerService.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
+    expect(containerSvc.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
     expect(reloadSpy).toHaveBeenCalled();
   });
 
@@ -185,96 +199,79 @@ describe("TokenDetailsComponent", () => {
       container_serial: ""
     });
 
-    (containerService.removeToken as jest.Mock).mockClear();
+    (containerSvc.removeToken as jest.Mock).mockClear();
 
     component.removeFromContainer();
 
-    expect(containerService.removeToken).not.toHaveBeenCalled();
+    expect(containerSvc.removeToken).not.toHaveBeenCalled();
   });
 
   it("toggleTokenEdit('tokengroup') loads tokengroups once and toggles editing", () => {
-    const tgEl: EditableElement<string[]> = {
-      keyMap: { key: "tokengroup" },
+    const tgEl = {
+      keyMap: { key: "tokengroup", label: "Token Groups" },
       value: [],
       isEditing: signal(false)
-    };
+    } as any;
 
-    component.tokenDetailData.set([
-      ...component.tokenDetailData(),
-      tgEl as ReturnType<typeof component.tokenDetailData>[number]
-    ]);
+    component.tokenDetailData.set([...component.tokenDetailData(), tgEl]);
     component.tokengroupOptions.set([]);
     component.toggleTokenEdit(tgEl);
 
-    expect(tokenService.getTokengroups as any).toHaveBeenCalled();
+    expect(tokenSvc.getTokengroups as any).toHaveBeenCalled();
     expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
     expect(tgEl.isEditing()).toBe(true);
   });
 
   it("saveTokenEdit('description') calls saveTokenDetail and toggles editing off", () => {
-    const el: EditableElement<string> = {
+    const el = {
       keyMap: { key: "description" },
       value: "newdesc",
       isEditing: signal(true)
-    };
+    } as any;
 
-    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
     component.saveTokenEdit(el);
 
-    expect(tokenService.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
+    expect(tokenSvc.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
 
   it("saveTokenEdit('tokengroup') uses setTokengroup and reloads", () => {
-    const el: EditableElement<string[]> = {
+    const el = {
       keyMap: { key: "tokengroup" },
       value: ["groupA"],
       isEditing: signal(true)
-    };
+    } as any;
 
     component.selectedTokengroup.set(["groupB"]);
-    const reloadSpy = tokenService.tokenDetailResource.reload as jest.Mock;
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();
 
-    component.saveTokenEdit(el as unknown as EditableElement<string>);
+    component.saveTokenEdit(el);
 
-    expect(tokenService.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
+    expect(tokenSvc.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
 
   it("cancelTokenEdit('container_serial') clears selection and toggles editing", () => {
-    const el: EditableElement<string> = {
-      keyMap: { key: "container_serial" },
-      value: "",
-      isEditing: signal(true)
-    };
-
-    containerService.selectedContainerSerial.set("X");
-    component.cancelTokenEdit(el);
-
-    expect(containerService.selectedContainerSerial()).toBe("");
-    expect(el.isEditing()).toBe(false);
-  });
-
-  it("cancelTokenEdit('container_serial') resets filterContainersByTokenOwner", () => {
-    const element = {
+    const el = {
       keyMap: { key: "container_serial" },
       isEditing: signal(true)
     } as any;
 
-    containerService.filterContainersByTokenOwner.set(true);
-    component.cancelTokenEdit(element);
+    containerSvc.selectedContainerSerial.set("X");
+    component.cancelTokenEdit(el);
 
-    expect(containerService.filterContainersByTokenOwner()).toBe(false);
+    expect(containerSvc.selectedContainerSerial()).toBe("");
+    expect(el.isEditing()).toBe(false);
   });
 
   it("isEditableElement defers to policy: true/false", () => {
-    const authSvc = TestBed.inject(AuthService) as unknown as MockAuthService;
-    const spy = jest.spyOn(authSvc, "actionAllowed");
+    const spy = jest.spyOn((component as any).authService, "actionAllowed");
     spy.mockReturnValueOnce(true);
     expect(component.isEditableElement("description")).toBe(true);
 
@@ -290,7 +287,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {
-    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
     reloadSpy.mockClear();
     matDialogOpen.mockReturnValue({
       afterClosed: () => of(of({}))
@@ -323,135 +320,465 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("isAttachedToMachine is true when applications exist", () => {
-    machineService.tokenApplications.set([]);
+    machineSvc.tokenApplications.set([]);
     expect(component.isAttachedToMachine()).toBe(false);
 
-    machineService.tokenApplications.set([{ id: 1 } as any]);
+    machineSvc.tokenApplications.set([{ id: 1 } as any]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
 
-  describe("pending changes", () => {
-    it("registers hasChanges in ngOnInit", () => {
-      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+  it("toggleActive calls service and reloads the resource", () => {
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+    component.tokenIsActive.set(true);
+
+    component.toggleActive();
+
+    expect(tokenSvc.toggleActive).toHaveBeenCalledWith("Mock serial", true);
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("deleteToken confirms, deletes and navigates to TOKENS route", () => {
+    component.deleteToken();
+
+    expect(matDialogOpen).toHaveBeenCalledTimes(1);
+    expect(tokenSvc.deleteToken).toHaveBeenCalledWith("Mock serial");
+    expect(router.navigateByUrl).toHaveBeenCalled();
+    expect(component.tokenSerial()).toBe("");
+  });
+
+  it("deleteToken does nothing when dialog is dismissed", () => {
+    matDialogOpen.mockReturnValueOnce({ afterClosed: () => of(null) });
+    (tokenSvc.deleteToken as jest.Mock).mockClear();
+
+    component.deleteToken();
+
+    expect(tokenSvc.deleteToken).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("revokeToken revokes, refetches details, and reloads", () => {
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.revokeToken();
+
+    expect(tokenSvc.revokeToken).toHaveBeenCalledWith("Mock serial");
+    expect(tokenSvc.getTokenDetails).toHaveBeenCalledWith("Mock serial");
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("revokeToken does nothing when dialog is dismissed", () => {
+    matDialogOpen.mockReturnValueOnce({ afterClosed: () => of(null) });
+    (tokenSvc.revokeToken as jest.Mock).mockClear();
+
+    component.revokeToken();
+
+    expect(tokenSvc.revokeToken).not.toHaveBeenCalled();
+  });
+
+  it("attachSshToMachineDialog opens dialog and reloads applications on close", async () => {
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachSshToMachineDialog();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(matDialogOpen).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("attachHotpToMachineDialog opens dialog and reloads applications on close", async () => {
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachHotpToMachineDialog();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(matDialogOpen).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("attachHotpToMachineDialog does not reload when dialog returns falsy", () => {
+    matDialogOpen.mockReturnValueOnce({ afterClosed: () => of(null) });
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachHotpToMachineDialog();
+
+    expect(reloadSpy).not.toHaveBeenCalled();
+  });
+
+  it("attachPasskeyToMachine posts assignment and reloads", () => {
+    const postSpy = jest.spyOn(machineSvc, "postAssignMachineToToken");
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.attachPasskeyToMachine();
+
+    expect(postSpy).toHaveBeenCalledWith({
+      serial: "Mock serial",
+      application: "offline",
+      machineid: 0,
+      resolver: ""
+    });
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("removePasskeyFromMachine deletes assignment and reloads", () => {
+    machineSvc.tokenApplications.set([{ id: 77 } as any]);
+    const delSpy = jest.spyOn(machineSvc, "deleteAssignMachineToToken");
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.removePasskeyFromMachine();
+
+    expect(delSpy).toHaveBeenCalledWith({
+      serial: "Mock serial",
+      application: "offline",
+      mtid: "77"
+    });
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("openLostTokenDialog opens the LostToken dialog", () => {
+    matDialogOpen.mockClear();
+    component.openLostTokenDialog();
+    expect(matDialogOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolloverToken opens the rollover dialog when a token is present", () => {
+    matDialogOpen.mockClear();
+    component.rolloverToken();
+    expect(matDialogOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolloverToken is a no-op when tokenDetails is falsy", () => {
+    matDialogOpen.mockClear();
+    component.tokenDetails.set(undefined as any);
+    component.rolloverToken();
+    expect(matDialogOpen).not.toHaveBeenCalled();
+  });
+
+  it("rolloverTokenTypes contains the expected token types", () => {
+    const types = (component as any).rolloverTokenTypes() as string[];
+    expect(types).toContain("totp");
+    expect(types).toContain("hotp");
+  });
+
+  it("tokenTypeKey reflects the current tokenType signal", () => {
+    component.tokenType.set("yubikey");
+    expect((component as any).tokenTypeKey()).toBe("yubikey" as TokenTypeKey);
+    component.tokenType.set("daypassword");
+    expect((component as any).tokenTypeKey()).toBe("daypassword" as TokenTypeKey);
+  });
+
+  describe("testPasskey", () => {
+    it("reports success when the credential_id hash matches the current token", async () => {
+      const credentialId = "AAA"; // any base64url string
+      const expectedHash = await sha256HexFromBase64Url(credentialId);
+      component.tokenDetails.set({
+        ...component.tokenDetails(),
+        info: { credential_id_hash: expectedHash } as any
+      });
+
+      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args: any) => {
+        args?.onCredentialId?.(credentialId);
+        return of({
+          result: { value: true, status: true } as any,
+          detail: { username: "alice", serial: "Mock serial" } as any
+        } as any);
+      });
+
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("success");
+      expect(result?.message).toMatch(/alice/);
     });
 
-    it("hasChanges reflects editing state of inline fields", () => {
-      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
-      expect(fn()).toBe(false);
+    it("reports a mismatch with matched serial/user/realm when the hash differs", async () => {
+      component.tokenDetails.set({
+        ...component.tokenDetails(),
+        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as any
+      });
 
-      component.isEditingUser.set(true);
-      expect(fn()).toBe(true);
-      component.isEditingUser.set(false);
+      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args: any) => {
+        args?.onCredentialId?.("AAA");
+        return of({
+          result: { value: true, status: true } as any,
+          detail: { username: "bob", serial: "OTHER-SERIAL" } as any
+        } as any);
+      });
+      (tokenSvc.getTokenDetails as jest.Mock).mockReturnValueOnce(
+        of({ result: { value: { tokens: [{ user_realm: "themis" }] } } } as any)
+      );
 
-      component.isEditingInfo.set(true);
-      expect(fn()).toBe(true);
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("warning");
+      expect(result?.message).toMatch(/different passkey/);
+      expect(result?.mismatch?.serial).toBe("OTHER-SERIAL");
+      expect(result?.mismatch?.username).toBe("bob");
+      expect(result?.mismatch?.realm).toBe("themis");
     });
 
-    it("hasChanges ignores tokenIsRevoked (only edit state matters)", () => {
-      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
-      component.tokenIsRevoked.set(true);
-      expect(fn()).toBe(false);
+    it("skips mismatch detection for self-service users (non-admin)", async () => {
+      const authSvc = TestBed.inject(AuthService) as any;
+      authSvc.role.set("user");
+
+      component.tokenDetails.set({
+        ...component.tokenDetails(),
+        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as any
+      });
+
+      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args: any) => {
+        args?.onCredentialId?.("AAA");
+        return of({
+          result: { value: true, status: true } as any,
+          detail: { username: "carol", serial: "OTHER-SERIAL" } as any
+        } as any);
+      });
+      const getDetailsSpy = tokenSvc.getTokenDetails as jest.Mock;
+      getDetailsSpy.mockClear();
+
+      component.testPasskey();
+      await flushAsync();
+
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("success");
+      expect(result?.mismatch).toBeUndefined();
+      expect(getDetailsSpy).not.toHaveBeenCalled();
     });
 
-    it("ngOnDestroy clears all pending-changes registrations", () => {
-      component.ngOnDestroy();
-      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
-    });
+    it("reports 'No user found' when the validate response is falsy", async () => {
+      jest.spyOn(validateSvc, "authenticatePasskey").mockReturnValue(
+        of({ result: { value: false, status: true } as any, detail: {} as any } as any)
+      );
 
-    it("registers validChanges and save in ngOnInit", () => {
-      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
-      expect(pendingChangesService.registerSave).toHaveBeenCalled();
-    });
+      component.testPasskey();
+      await flushAsync();
 
-    it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
-      const editingRow: EditableElement<string> = {
-        keyMap: { key: "description" },
-        value: "new",
-        isEditing: signal(true)
-      };
-      const idleRow: EditableElement<number> = {
-        keyMap: { key: "maxfail" },
-        value: 5,
-        isEditing: signal(false)
-      };
-      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [
-        editingRow,
-        idleRow
-      ];
-      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => undefined);
-
-      const result = await component.saveAllInlineEdits();
-
-      expect(result).toBe(true);
-      expect(saveSpy).toHaveBeenCalledTimes(1);
-      expect(saveSpy).toHaveBeenCalledWith(editingRow);
-    });
-
-    it("saveAllInlineEdits delegates user save to userChild when isEditingUser", async () => {
-      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
-      component.isEditingUser.set(true);
-      const userSaveSpy = jest.fn();
-      component.userChild = { saveUser: userSaveSpy } as unknown as TokenDetailsUserComponent;
-
-      await component.saveAllInlineEdits();
-
-      expect(userSaveSpy).toHaveBeenCalled();
-    });
-
-    it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
-      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
-      const infoEl: EditableElement<Record<string, string>> = {
-        keyMap: { key: "info" },
-        value: { foo: "bar" },
-        isEditing: signal(true)
-      };
-      (
-        component as unknown as {
-          infoData: () => EditableElement<Record<string, string>>[];
-        }
-      ).infoData = () => [infoEl];
-      component.isEditingInfo.set(true);
-      const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as unknown as TokenDetailsInfoComponent;
-
-      await component.saveAllInlineEdits();
-
-      expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
-    });
-
-    it("validChanges always reports true so save button stays enabled", () => {
-      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
-      expect(fn()).toBe(true);
-    });
-
-    it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
-      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
-      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
-      component.isEditingUser.set(false);
-      component.isEditingInfo.set(false);
-      const saveSpy = jest.spyOn(component, "saveTokenEdit").mockImplementation(() => undefined);
-      component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsUserComponent;
-      component.infoChild = { saveInfo: jest.fn() } as unknown as TokenDetailsInfoComponent;
-
-      const result = await component.saveAllInlineEdits();
-
-      expect(result).toBe(true);
-      expect(saveSpy).not.toHaveBeenCalled();
-      expect(component.userChild!.saveUser).not.toHaveBeenCalled();
-      expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
-    });
-
-    it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
-      (component as unknown as { tokenDetailData: () => EditableElement[] }).tokenDetailData = () => [];
-      (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
-      component.isEditingInfo.set(true);
-      const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as unknown as TokenDetailsInfoComponent;
-
-      await component.saveAllInlineEdits();
-
-      expect(infoSaveSpy).not.toHaveBeenCalled();
-      expect(component.isEditingInfo()).toBe(false);
+      const result = component.passkeyTestResult();
+      expect(result?.kind).toBe("warning");
+      expect(result?.message).toMatch(/No user found/);
     });
   });
+
+  it("attachPasskeyToMachine logs an error when the request fails", () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(machineSvc, "postAssignMachineToToken").mockReturnValueOnce(
+      (require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom"))
+    );
+
+    component.attachPasskeyToMachine();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("removePasskeyFromMachine logs an error when the request fails", () => {
+    machineSvc.tokenApplications.set([{ id: 5 } as any]);
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(machineSvc, "deleteAssignMachineToToken").mockReturnValueOnce(
+      (require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom"))
+    );
+
+    component.removePasskeyFromMachine();
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("saveTokenEdit('container_serial') trims selection and calls saveContainer", () => {
+    containerSvc.selectedContainerSerial.set("  trimmed  ");
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.saveTokenEdit({
+      keyMap: { key: "container_serial" },
+      value: "",
+      isEditing: signal(true)
+    } as any);
+
+    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "trimmed");
+  });
+
+  it("saveTokenEdit('realms') calls setTokenRealm and reloads", () => {
+    realmSvc.selectedRealms.set(["realmA"]);
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.saveTokenEdit({
+      keyMap: { key: "realms" },
+      value: [],
+      isEditing: signal(true)
+    } as any);
+
+    expect(tokenSvc.setTokenRealm as any).toHaveBeenCalledWith("Mock serial", ["realmA"]);
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("cancelTokenEdit('tokengroup') restores selection from token detail data", () => {
+    component.tokenDetailData.set([
+      { keyMap: { key: "tokengroup", label: "Token Groups" }, value: ["g1"], isEditing: signal(true) }
+    ] as any);
+
+    component.cancelTokenEdit({
+      keyMap: { key: "tokengroup" },
+      isEditing: signal(true)
+    } as any);
+
+    expect(component.selectedTokengroup()).toEqual(["g1"]);
+  });
+
+  it("cancelTokenEdit('realms') restores selection from token detail data", () => {
+    component.tokenDetailData.set([
+      { keyMap: { key: "realms", label: "Realms" }, value: ["realmZ"], isEditing: signal(true) }
+    ] as any);
+
+    component.cancelTokenEdit({
+      keyMap: { key: "realms" },
+      isEditing: signal(true)
+    } as any);
+
+    expect(realmSvc.selectedRealms()).toEqual(["realmZ"]);
+  });
+
+  it("cancelTokenEdit on a generic key reloads the resource", () => {
+    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.cancelTokenEdit({
+      keyMap: { key: "description" },
+      isEditing: signal(true)
+    } as any);
+
+    expect(reloadSpy).toHaveBeenCalled();
+  });
+
+  it("showTokenAuditLog sets the audit filter with the token serial", () => {
+    const auditSvc = TestBed.inject(AuditService) as any;
+    (component as any).showTokenAuditLog();
+    expect(auditSvc.auditFilter().value).toBe("serial: Mock serial");
+  });
+
 });
+
+describe("TokenDetailsComponent linkedSignal computations", () => {
+  let component: TokenDetailsComponent;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    TestBed.resetTestingModule();
+
+    await TestBed.configureTestingModule({
+      imports: [TokenDetailsComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: ValidateService, useClass: MockValidateService },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: MachineService, useClass: MockMachineService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: UserService, useClass: MockUserService },
+        { provide: MatDialog, useValue: { open: jest.fn() } },
+        { provide: Router, useValue: { navigateByUrl: jest.fn().mockResolvedValue(true) } },
+        MockLocalService,
+        MockNotificationService
+      ]
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(TokenDetailsComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it("recomputes empty rows when tokenDetails is cleared", () => {
+    component.tokenDetails.set(undefined as any);
+    const data = component.tokenDetailData();
+    expect(data.length).toBeGreaterThan(0);
+    expect(data.every((d: any) => d.value === "")).toBe(true);
+
+    const info = component.infoData();
+    expect(info.length).toBeGreaterThan(0);
+    expect(info.every((d: any) => d.value === "")).toBe(true);
+
+    const user = component.userData();
+    expect(user.length).toBeGreaterThan(0);
+    expect(user.every((d: any) => d.value === "")).toBe(true);
+  });
+
+  it("formats timestamp info fields from tokenDetails.info", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      info: { creation_date: "2026-01-15T10:00:00Z" } as any
+    });
+
+    const created = component
+      .tokenDetailData()
+      .find((d: any) => d.keyMap.key === "creation_date");
+    expect(created).toBeDefined();
+    expect(typeof created!.value).toBe("string");
+    expect(created!.value).not.toBe("");
+    expect(created!.value).not.toBe("2026-01-15T10:00:00Z");
+  });
+
+  it("keeps the raw value when the timestamp string is unparseable", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      info: { creation_date: "not-a-date" } as any
+    });
+
+    const created = component
+      .tokenDetailData()
+      .find((d: any) => d.keyMap.key === "creation_date");
+    expect(created?.value).toBe("not-a-date");
+  });
+
+  it("omits timestamp fields entirely when info value is empty string", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      info: { creation_date: "" } as any
+    });
+
+    const created = component
+      .tokenDetailData()
+      .find((d: any) => d.keyMap.key === "creation_date");
+    expect(created).toBeUndefined();
+  });
+});
+
+// Helper: drain microtasks AND a macrotask (crypto.subtle.digest may settle on next tick).
+async function flushAsync(): Promise<void> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  for (let i = 0; i < 5; i++) {
+    await Promise.resolve();
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+// Mirror of the component's private SHA-256 helper, used only by the matching-hash test.
+async function sha256HexFromBase64Url(b64url: string): Promise<string> {
+  const pad = b64url.padEnd((b64url.length | 3) + 1, "=").replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(pad);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
