@@ -58,7 +58,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 })
 export class MachinesComponent {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);

@@ -80,7 +80,7 @@ export interface SystemConfigParams {
 })
 export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly systemService: SystemServiceInterface = inject(SystemService);
-  protected readonly authService: AuthService = inject(AuthService);
+  protected readonly authService = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);

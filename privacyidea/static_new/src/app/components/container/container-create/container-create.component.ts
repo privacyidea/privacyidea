@@ -96,7 +96,7 @@ import { firstValueFrom } from "rxjs";
 export class ContainerCreateComponent implements OnInit, OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
+  protected readonly containerTemplateService = inject(ContainerTemplateService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);

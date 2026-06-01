@@ -74,6 +74,8 @@
         <app-copyable [copyText]="gateway.name">
           <a
             (click)="onEditGateway(gateway)"
+            (keydown.enter)="onEditGateway(gateway)"
+            tabindex="0"
             class="flex ali-center">
             {{ gateway.name }}
           </a>

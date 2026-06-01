@@ -169,7 +169,14 @@
                 <app-copyable [copyText]="element[column.key]">
                   <a
                     (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                    attr.aria-label="{{ column.label }} Link">
+                    (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                    (keydown.space)="
+                      $event.preventDefault();
+                      contentService.userSelected(element[column.key], element['user_realm'])
+                    "
+                    attr.aria-label="{{ column.label }} Link"
+                    role="button"
+                    tabindex="0">
                     {{ element[column.key] }}
                   </a>
                 </app-copyable>

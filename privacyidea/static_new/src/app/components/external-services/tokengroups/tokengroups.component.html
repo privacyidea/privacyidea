@@ -88,6 +88,8 @@
         <app-copyable [copyText]="group.groupname">
           <a
             (click)="onEditTokengroup(group)"
+            (keydown.enter)="onEditTokengroup(group)"
+            tabindex="0"
             class="flex ali-center">
             {{ group.groupname }}
           </a>
