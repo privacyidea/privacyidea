@@ -43,7 +43,7 @@
   <div
     #stickyHeader
     class="sticky-header">
-    <div class="header-status-actions">
+    <div class="header-status-actions" appOverflowNav>
       @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
       (!tokenIsActive() && authService.actionAllowed("enable"))) {
         <button
@@ -277,48 +277,50 @@
             <div class="value-content">
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <mat-label i18n>Enter Container</mat-label>
-                      <app-clearable-input
-                        (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
-                        [showClearButton]="containerService.selectedContainerSerial() !== ''">
-                        <input
-                          [value]="containerService.selectedContainerSerial()"
-                          (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
-                          [matAutocomplete]="containerAuto"
-                          appAutofocus
-                          matInput />
-                      </app-clearable-input>
-                      <mat-autocomplete
-                        #containerAuto="matAutocomplete"
-                        (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
-                        @for (option of containerService.containersForTokenType(); track option) {
-                          <mat-option [value]="option">{{ option }}</mat-option>
+                  <div class="container-serial-row">
+                    @if (element.isEditing()) {
+                      <mat-form-field
+                        class="input-width-m height-52"
+                        subscriptSizing="dynamic">
+                        <mat-label i18n>Enter Container</mat-label>
+                        <app-clearable-input
+                          (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
+                          [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                          <input
+                            [value]="containerService.selectedContainerSerial()"
+                            (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
+                            [matAutocomplete]="containerAuto"
+                            appAutofocus
+                            matInput />
+                        </app-clearable-input>
+                        <mat-autocomplete
+                          #containerAuto="matAutocomplete"
+                          (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
+                          @for (option of containerService.containersForTokenType(); track option) {
+                            <mat-option [value]="option">{{ option }}</mat-option>
+                          }
+                        </mat-autocomplete>
+                      </mat-form-field>
+                      <mat-checkbox
+                        [checked]="containerService.filterContainersByTokenOwner()"
+                        (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
+                        [disabled]="!tokenDetails().username"
+                        i18n>
+                        Filter by token owner
+                      </mat-checkbox>
+                    } @else {
+                      <div class="flex-row flex-nowrap ali-center">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.value)"
+                          attr.aria-label="{{ element.keyMap.label }} Link">
+                          {{ element.value }}
+                        </a>
+                        @if (element.value !== "") {
+                          <app-copy-button [copyText]="element.value"></app-copy-button>
                         }
-                      </mat-autocomplete>
-                    </mat-form-field>
-                    <mat-checkbox
-                      [checked]="containerService.filterContainersByTokenOwner()"
-                      (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
-                      [disabled]="!tokenDetails().username"
-                      i18n>
-                      Filter by token owner
-                    </mat-checkbox>
-                  } @else {
-                    <div class="flex-row flex-nowrap ali-center">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.value)"
-                        attr.aria-label="{{ element.keyMap.label }} Link">
-                        {{ element.value }}
-                      </a>
-                      @if (element.value !== "") {
-                        <app-copy-button [copyText]="element.value"></app-copy-button>
-                      }
-                    </div>
-                  }
+                      </div>
+                    }
+                  </div>
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {

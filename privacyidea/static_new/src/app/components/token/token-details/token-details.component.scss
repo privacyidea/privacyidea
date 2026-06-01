@@ -102,9 +102,26 @@
 .header-status-actions {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
+  overflow: hidden;
+
+  ::ng-deep .overflow-more-btn {
+    border: 1px solid var(--mat-sys-primary) !important;
+    background: var(--mat-sys-surface-container-lowest) !important;
+    color: var(--mat-sys-primary) !important;
+    box-sizing: border-box !important;
+    height: var(--mdc-outlined-button-container-height, 40px) !important;
+    border-radius: var(--border-radius) !important;
+    width: 180px;
+    min-width: 180px;
+
+    &:hover {
+      background: var(--sky-bg) !important;
+      color: var(--mat-sys-primary) !important;
+    }
+  }
 }
 
 .description-row {
@@ -163,8 +180,8 @@
 
 .details-card--identity { order: 1; }
 .details-card-user { order: 2; }
-.details-card--counters { order: 3; }
-.details-card--assignment { order: 4; }
+.details-card--assignment { order: 3; }
+.details-card--counters { order: 4; }
 .details-card-machine { order: 5; display: contents; }
 .details-card-actions { display: contents; }
 
@@ -214,4 +231,12 @@
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;
+}
+
+.container-serial-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 101px;
 }

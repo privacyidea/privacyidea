@@ -67,6 +67,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
+import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -171,7 +172,8 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     CopyButtonComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
-    DetailsHeaderComponent
+    DetailsHeaderComponent,
+    OverflowNavDirective
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]

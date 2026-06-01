@@ -9,7 +9,7 @@
 
 .token-info-panel {
   display: block;
-  width: fit-content;
+  width: 585px;
   max-width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--mat-sys-outline-variant);
@@ -123,6 +123,5 @@
 
 .info-add-row {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
 }

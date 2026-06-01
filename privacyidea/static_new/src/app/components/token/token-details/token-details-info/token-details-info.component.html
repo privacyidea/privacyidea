@@ -43,7 +43,7 @@
             @if (isEditingInfo()) {
               <div class="info-edit-row">
                 <mat-form-field
-                  class="info-edit-field"
+                  class="info-edit-field input-width-l"
                   subscriptSizing="dynamic">
                   <textarea
                     [(ngModel)]="info[key]"
@@ -66,14 +66,19 @@
       @if (isEditingInfo()) {
         <mat-divider class="margin-8" />
         <div class="info-add-row">
-          <mat-form-field subscriptSizing="dynamic">
+          <mat-form-field
+            class="input-width-m"
+            subscriptSizing="dynamic">
             <input
               [(ngModel)]="newInfo().key"
               i18n-placeholder
               matInput
               placeholder="Add new key" />
           </mat-form-field>
-          <mat-form-field subscriptSizing="dynamic">
+          <span class="margin-right-16 flex ali-center">:</span>
+          <mat-form-field
+            class="input-width-m"
+            subscriptSizing="dynamic">
             <textarea
               [(ngModel)]="newInfo().value"
               i18n-placeholder
