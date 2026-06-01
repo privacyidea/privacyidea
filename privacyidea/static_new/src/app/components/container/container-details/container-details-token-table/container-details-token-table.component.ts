@@ -109,7 +109,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   pageIndex = this.tokenService.pageIndex;
   containerTokenData = input.required<MatTableDataSource<ContainerDetailToken, MatPaginator>>();
 
-  filterValue: WritableSignal<string> = signal("");
+  filterValue = signal("");
   containerSerial = this.containerService.containerSerial;
 
   assignedUser: WritableSignal<{

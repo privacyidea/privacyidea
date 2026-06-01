@@ -17,12 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthData, AuthDetail, AuthResponse, AuthRole, ContainerWizardConfig } from "@services/auth/auth.service";
-import {
-  ValidateCheckResponse,
-  ValidateServiceInterface,
-  WebAuthnSignRequest
-} from "@services/validate/validate.service";
-import { Observable, of } from "rxjs";
+import { ValidateCheckResponse, ValidateServiceInterface } from "@services/validate/validate.service";
+import { of } from "rxjs";
 import { MockPiResponse } from "./mock-utils";
 
 export class MockAuthData implements AuthData {
@@ -74,33 +70,30 @@ export class MockAuthDetail implements AuthDetail {
 }
 
 export class MockValidateService implements ValidateServiceInterface {
-  testToken(_tokenSerial: string, _otpOrPinToTest: string, _otponly?: string): Observable<ValidateCheckResponse> {
-    return of({
+  testToken = jest.fn().mockReturnValue(
+    of({
       id: 1,
       jsonrpc: "2.0",
       result: { status: true, value: true },
       detail: {},
       signature: "",
-      time: Date.now(),
+      time: 0,
       version: "1.0",
       versionnumber: "1.0"
-    });
-  }
+    } as ValidateCheckResponse)
+  );
 
-  authenticatePasskey(_args?: { isTest?: boolean }): Observable<AuthResponse> {
-    return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as AuthResponse);
-  }
+  authenticatePasskey = jest
+    .fn()
+    .mockReturnValue(
+      of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as AuthResponse)
+    );
 
-  authenticateWebAuthn(_args: {
-    signRequest: WebAuthnSignRequest;
-    transaction_id: string;
-    username: string;
-    isTest?: boolean;
-  }): Observable<AuthResponse> {
-    return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as AuthResponse);
-  }
+  authenticateWebAuthn = jest
+    .fn()
+    .mockReturnValue(
+      of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as AuthResponse)
+    );
 
-  pollTransaction(_transactionId: string): Observable<boolean> {
-    return of(true);
-  }
+  pollTransaction = jest.fn().mockReturnValue(of(true));
 }

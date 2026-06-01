@@ -24,7 +24,7 @@ import { Tokengroup, TokengroupServiceInterface } from "@services/tokengroup/tok
 export class MockTokengroupService implements TokengroupServiceInterface {
   tokengroupResource: HttpResourceRef<PiResponse<any> | undefined> = {
     value: signal(undefined),
-    status: signal(0) as any,
+    status: signal(0),
     error: signal(null),
     isLoading: signal(false),
     reload: jest.fn(),
@@ -34,16 +34,16 @@ export class MockTokengroupService implements TokengroupServiceInterface {
     hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<any> | undefined, undefined>> {
       return this.value() !== undefined;
     },
-    destroy: function (): void {}
+    destroy: jest.fn()
   } as any;
 
   tokengroups = signal<Tokengroup[]>([]);
 
-  postTokengroup = jest.fn(async (_tokengroup: Tokengroup): Promise<void> => {
+  postTokengroup = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 
-  deleteTokengroup = jest.fn(async (_groupname: string): Promise<void> => {
+  deleteTokengroup = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 }

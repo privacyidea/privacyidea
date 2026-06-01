@@ -63,9 +63,9 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<u
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  pin: WritableSignal<string> = signal("");
-  pinRepeat: WritableSignal<string> = signal("");
-  hidePin: WritableSignal<boolean> = signal(true);
+  pin = signal("");
+  pinRepeat = signal("");
+  hidePin = signal(true);
   selectedRealm = signal(this.userService.selectedUserRealm());
   selectedUser = signal<UserData | null>(null);
   userFilter = signal(this.userService.selectionFilter());

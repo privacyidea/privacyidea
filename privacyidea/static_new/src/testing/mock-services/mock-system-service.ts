@@ -18,6 +18,7 @@
  **/
 import { HttpResourceRef } from "@angular/common/http";
 import { computed, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
 import { CaConnectors } from "@services/ca-connector/ca-connector.service";
 import { NodeInfo, SystemServiceInterface } from "@services/system/system.service";
 import { Observable, of } from "rxjs";
@@ -25,9 +26,9 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockSystemService implements SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
-  radiusServerResource: HttpResourceRef<any>;
-  nodesResource: HttpResourceRef<any>;
-  systemConfig: WritableSignal<any>;
+  radiusServerResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  nodesResource: HttpResourceRef<PiResponse<NodeInfo[]> | undefined>;
+  systemConfig: WritableSignal<Record<string, string>>;
   systemConfigInit: Signal<any>;
   nodes: Signal<NodeInfo[]>;
 
@@ -78,19 +79,8 @@ export class MockSystemService implements SystemServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  saveSystemConfig(config: any) {
-    return of(MockPiResponse.fromValue({ status: true }));
-  }
-
-  deleteSystemConfig(key: string) {
-    return of(MockPiResponse.fromValue({ status: true }));
-  }
-
-  deleteUserCache() {
-    return of(MockPiResponse.fromValue({ status: true }));
-  }
-
-  loadSmtpIdentifiers() {
-    return of(MockPiResponse.fromValue({ smtp1: "smtp1", smtp2: "smtp2" }));
-  }
+  saveSystemConfig = jest.fn(() => of(MockPiResponse.fromValue<Record<string, "insert" | "update">>({})));
+  deleteSystemConfig = jest.fn(() => of(MockPiResponse.fromValue(true)));
+  deleteUserCache = jest.fn(() => of(MockPiResponse.fromValue({ status: true, deleted: 0 })));
+  loadSmtpIdentifiers = jest.fn(() => of(MockPiResponse.fromValue({ smtp1: "smtp1", smtp2: "smtp2" })));
 }

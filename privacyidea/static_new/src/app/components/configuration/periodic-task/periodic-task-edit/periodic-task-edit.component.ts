@@ -108,7 +108,7 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   protected readonly parseBooleanValue = parseBooleanValue;
 
   isNewTask = signal<boolean>(false);
-  editTask: WritableSignal<PeriodicTask> = signal<PeriodicTask>({ ...EMPTY_PERIODIC_TASK });
+  editTask = signal<PeriodicTask>({ ...EMPTY_PERIODIC_TASK });
 
   readonly title = computed(() => (this.isNewTask() ? $localize`Create Periodic Task` : $localize`Edit Periodic Task`));
 

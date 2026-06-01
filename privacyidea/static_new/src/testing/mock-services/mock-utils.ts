@@ -59,7 +59,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
     return this.value() !== undefined;
   }
 
-  destroy(): void {}
+  destroy = jest.fn();
 
   snapshot: Signal<ResourceSnapshot<T>> = computed(() => {
     const status = this.status();
@@ -77,11 +77,10 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   constructor(initial: T) {
     this.value = signal(initial) as WritableSignal<T>;
   }
-  snapshot: Signal<ResourceSnapshot<T>>;
 }
 
 export class MockBase64Service {
-  base64URLToBytes = jest.fn((_: string) => new Uint8Array([1, 2]));
+  base64URLToBytes = jest.fn(() => new Uint8Array([1, 2]));
   bytesToBase64 = jest.fn(() => "b64");
   bufferToBase64Url = jest.fn(() => "b64url");
   webAuthnBase64DecToArr = jest.fn(() => new Uint8Array([1, 2, 3]));

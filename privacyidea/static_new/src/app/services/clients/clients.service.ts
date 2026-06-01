@@ -46,7 +46,7 @@ export class ClientsService implements ClientsServiceInterface {
   private readonly notificationService = inject(NotificationService);
   private clientsBaseUrl = environment.proxyUrl + "/client/";
 
-  private autocompleteRequested: WritableSignal<boolean> = signal(false);
+  private autocompleteRequested = signal(false);
 
   constructor() {
     effect(() => {

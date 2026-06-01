@@ -78,8 +78,9 @@ function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
 }
 
 export class MockTokenService implements TokenServiceInterface {
+  tokenDetailResourceValue = signal<Tokens | undefined>(undefined);
   apiFilterKeyMap: Record<string, string> = {};
-  stopPolling$: Subject<void> = new Subject<void>();
+  stopPolling$ = new Subject<void>();
   tokenBaseUrl = "mockEnvironment.proxyUrl + '/token'";
   readonly maxDescriptionLength = 80;
   readonly eventPageSize = signal(10);
@@ -91,9 +92,9 @@ export class MockTokenService implements TokenServiceInterface {
     text: "HMAC-based One-Time Password"
   });
   showOnlyTokenNotInContainer = signal(false);
-  tokenFilter: WritableSignal<FilterValue> = signal(new FilterValue());
+  tokenFilter = signal(new FilterValue());
   readonly tokenDetailResource = new MockHttpResourceRef<PiResponse<Tokens>>(makeTokenDetailResponse("hotp"));
-  readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<{}, unknown> | undefined>(
+  readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<any, unknown> | undefined>(
     MockPiResponse.fromValue({})
   );
   readonly userTokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(
@@ -101,7 +102,7 @@ export class MockTokenService implements TokenServiceInterface {
   );
   detailsUsername: WritableSignal<string> = signal("");
   userRealm = signal("");
-  tokenTypeOptions: WritableSignal<TokenType[]> = signal<TokenType[]>([
+  tokenTypeOptions = signal<TokenType[]>([
     { key: "hotp", name: "HOTP", info: "", text: "HMAC-based One-Time Password" },
     { key: "totp", name: "TOTP", info: "", text: "Time-based One-Time Password" },
     { key: "push", name: "PUSH", info: "", text: "Push Notification" }

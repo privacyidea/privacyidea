@@ -107,7 +107,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
     computation: () => this.userService.users().map((user) => user.username)
   });
 
-  machineFilter: WritableSignal<string> = signal("");
+  machineFilter = signal("");
   filteredMachines = computed(() => {
     const filterString = this.machineFilter().trim().toLowerCase();
     if (!filterString) return this.machineService.machines();
@@ -116,7 +116,7 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
       ?.filter((machine) => this.getFullMachineName(machine).toLowerCase().includes(filterString));
   });
 
-  userFilter: WritableSignal<string> = signal("");
+  userFilter = signal("");
   filteredUsers = computed(() => {
     const filterString = this.userFilter().trim().toLowerCase();
     if (!filterString) {

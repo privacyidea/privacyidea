@@ -41,9 +41,9 @@ import { DialogAction } from "@models/dialog";
   ]
 })
 export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void, string | null> {
-  pin: WritableSignal<string> = signal("");
-  pinRepeat: WritableSignal<string> = signal("");
-  hidePin: WritableSignal<boolean> = signal(true);
+  pin = signal("");
+  pinRepeat = signal("");
+  hidePin = signal(true);
   pinsMatch = computed(() => this.pin() === this.pinRepeat());
 
   dialogActions = computed((): DialogAction<string>[] => {

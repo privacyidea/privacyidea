@@ -100,7 +100,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly userService: UserServiceInterface = inject(UserService);
 
-  token: WritableSignal<TokenEnrollmentData | null> = signal<TokenEnrollmentData | null>(null);
+  token = signal<TokenEnrollmentData | null>(null);
   title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
   serial = signal<string | null>(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
