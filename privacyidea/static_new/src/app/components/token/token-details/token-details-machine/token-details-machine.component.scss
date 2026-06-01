@@ -2,13 +2,14 @@
 @use "table";
 
 :host {
-  display: block;
-  width: 100%;
+  display: contents;
 }
 
 .machine-panel {
-  width: 100%;
   box-sizing: border-box;
+  width: fit-content;
+  order: 5;
+  align-self: flex-start;
 }
 
 .machine-panel-row {

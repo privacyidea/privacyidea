@@ -4,15 +4,18 @@
 $padding-horizontal: 16px;
 
 :host {
-  display: block;
-  width: 100%;
+  display: contents;
 }
 
 .actions-otp-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0;
+  display: contents;
+
+  app-verify-enrollment,
+  > mat-divider {
+    flex-basis: 100%;
+    width: 100%;
+    order: 0;
+  }
 
   .actions-status-row {
     display: flex;
@@ -27,11 +30,7 @@ $padding-horizontal: 16px;
   }
 
   .actions-sections-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 16px;
+    display: contents;
   }
 
   .actions-section {
@@ -40,12 +39,12 @@ $padding-horizontal: 16px;
     gap: 8px;
     flex: 0 0 auto;
     width: fit-content;
+    align-self: flex-start;
   }
 
-  .actions-section--wide {
-    flex: 0 0 auto;
-    width: fit-content;
-  }
+  .actions-section--pin { order: 6; }
+  .actions-section--test { order: 7; }
+  .actions-section--sync { order: 8; }
 
   .test-sync-section {
     app-resync-token-action,

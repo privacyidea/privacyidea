@@ -24,7 +24,7 @@
 
   <div class="actions-sections-row">
     @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
-      <section class="actions-section actions-section--wide">
+      <section class="actions-section actions-section--pin">
         <app-set-pin-action
           [repeatPinValue]="repeatPinValue"
           [setPinValue]="setPinValue">
@@ -34,7 +34,7 @@
     }
 
     @if (tokenType() === "passkey") {
-      <section class="actions-section actions-section--wide">
+      <section class="actions-section actions-section--test">
         <div class="passkey-test-panel">
           <h4 class="details-card-title" i18n>Test</h4>
           <button
@@ -73,7 +73,7 @@
     }
 
     @if (tokenType() !== "passkey" && tokenType() !== "webauthn" && authService.actionAllowed("resync")) {
-      <section class="actions-section actions-section--wide test-sync-section">
+      <section class="actions-section actions-section--sync test-sync-section">
         <app-resync-token-action>
           <h4 panelTitle class="details-card-title" i18n>Sync</h4>
         </app-resync-token-action>
@@ -81,7 +81,7 @@
     }
 
     @if (tokenType() !== "passkey" && tokenType() !== "webauthn") {
-      <section class="actions-section actions-section--wide test-sync-section">
+      <section class="actions-section actions-section--test test-sync-section">
         <app-test-otp-pin-action>
           <h4 panelTitle class="details-card-title" i18n>Test</h4>
         </app-test-otp-pin-action>

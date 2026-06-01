@@ -4,6 +4,18 @@
 $border-color: var(--mat-sys-outline-variant);
 
 .user-container {
+  app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover app-edit-buttons,
+  td.padding-0 app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .value-row {
     display: flex;
     flex-direction: row;
@@ -43,20 +55,6 @@ $border-color: var(--mat-sys-outline-variant);
 
     tr.mat-mdc-row:nth-child(even) td {
       background: transparent;
-    }
-
-    tr.mat-mdc-row {
-      app-edit-buttons {
-        opacity: 0;
-        transition: opacity 120ms ease;
-        pointer-events: none;
-      }
-
-      &:hover app-edit-buttons,
-      td.padding-0 app-edit-buttons {
-        opacity: 1;
-        pointer-events: auto;
-      }
     }
 
     th,

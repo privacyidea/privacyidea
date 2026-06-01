@@ -54,7 +54,6 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 8px;
   }
 
   .value-content {
@@ -86,19 +85,6 @@
     }
   }
 
-  .details-table tr.mat-mdc-row {
-    app-edit-buttons {
-      opacity: 0;
-      transition: opacity 120ms ease;
-      pointer-events: none;
-    }
-
-    &:hover app-edit-buttons,
-    td.padding-0 app-edit-buttons {
-      opacity: 1;
-      pointer-events: auto;
-    }
-  }
 }
 
 .details-header h3 {
@@ -107,6 +93,10 @@
 
 .sticky-sentinel {
   height: 0;
+}
+
+::ng-deep .sticky-header.is-sticky {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18) !important;
 }
 
 .header-status-actions {
@@ -118,14 +108,21 @@
 }
 
 .description-row {
-  width: 100%;
-  min-height: 56px;
+  min-height: 102px;
   padding: 8px 14px;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   box-sizing: border-box;
   display: flex;
   align-items: center;
+  width: 340px;
+  align-self: flex-start;
+  order: 9;
+
+  .value-edit {
+    min-width: 80px;
+    justify-content: flex-end;
+  }
 
   app-edit-buttons {
     opacity: 0;
@@ -156,28 +153,42 @@
 }
 
 .details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 16px;
-  align-items: start;
+  align-items: flex-start;
+  margin-top: 8px;
 }
 
 .details-card--identity { order: 1; }
 .details-card-user { order: 2; }
 .details-card--counters { order: 3; }
 .details-card--assignment { order: 4; }
-.details-card-machine { order: 5; }
-.details-card-actions { order: 6; }
+.details-card-machine { order: 5; display: contents; }
+.details-card-actions { display: contents; }
 
 .details-card--group,
-.details-card-user,
-.details-card-machine,
-.details-card-actions {
+.details-card-user {
   display: block;
   min-width: 0;
-  max-width: 100%;
-  align-self: start;
+  align-self: flex-start;
   box-sizing: border-box;
+  max-width: 585px;
+}
+
+.details-card--group {
+  app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover app-edit-buttons,
+  ::ng-deep td.padding-0 app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .action-button-warn-secondary {
@@ -198,10 +209,9 @@
   }
 }
 
-.details-card-actions {
-  grid-column: 1 / -1;
-}
-
 .details-info-area {
-  width: 100%;
+  order: 10;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
 }
