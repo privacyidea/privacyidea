@@ -74,13 +74,13 @@ describe("PolicyActionItemEditComponent", () => {
   });
 
   it("should emit onUpdateAction when updateAction is called", () => {
-    const spy = jest.spyOn(component.onUpdateAction, "emit");
-    component.updateAction("new_value");
+    const spy = jest.spyOn(component.updateAction, "emit");
+    component.handleUpdateAction("new_value");
     expect(spy).toHaveBeenCalledWith("new_value");
   });
 
   it("should emit onRemoveAction when delete button is clicked", () => {
-    const spy = jest.spyOn(component.onRemoveAction, "emit");
+    const spy = jest.spyOn(component.removeAction, "emit");
     const deleteBtn = fixture.debugElement.query(By.css(".delete-icon-button"));
     deleteBtn.nativeElement.click();
     expect(spy).toHaveBeenCalled();

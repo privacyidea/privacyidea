@@ -77,7 +77,7 @@ describe("MachineResolverLdapTabComponent", () => {
   });
 
   it("should update data with patch only", () => {
-    jest.spyOn(component.onNewData, "emit");
+    jest.spyOn(component.newData, "emit");
     const initialData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
@@ -100,11 +100,11 @@ describe("MachineResolverLdapTabComponent", () => {
     fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { LDAPURI: "ldap://updated" };
     component.updateData(patch);
-    expect(component.onNewData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "ldap" });
+    expect(component.newData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "ldap" });
   });
 
   it("should update data with patch and remove", () => {
-    jest.spyOn(component.onNewData, "emit");
+    jest.spyOn(component.newData, "emit");
     const initialData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
@@ -144,11 +144,11 @@ describe("MachineResolverLdapTabComponent", () => {
       HOSTNAMEATTRIBUTE: "",
       NOREFERRALS: "False"
     };
-    expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
+    expect(component.newData.emit).toHaveBeenCalledWith(expectedData);
   });
 
   it("should update data with remove only", () => {
-    jest.spyOn(component.onNewData, "emit");
+    jest.spyOn(component.newData, "emit");
     const initialData: LdapMachineResolverData = {
       type: "ldap",
       LDAPURI: "ldap://test",
@@ -192,7 +192,7 @@ describe("MachineResolverLdapTabComponent", () => {
       BINDPW: "password",
       TLS_VERIFY: false
     };
-    expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
+    expect(component.newData.emit).toHaveBeenCalledWith(expectedData);
   });
 
   it("should update tls verify", () => {

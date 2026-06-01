@@ -16,30 +16,30 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@switch (tokenTypeKey) {
+@switch (tokenTypeKey()) {
   @case ("hotp") {
     <app-enroll-hotp
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("totp") {
     <app-enroll-totp
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("spass") {
     <app-enroll-spass
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("motp") {
     <app-enroll-motp
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("sshkey") {
     <app-enroll-sshkey
@@ -65,13 +65,13 @@
     <app-enroll-radius
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("sms") {
     <app-enroll-sms
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("4eyes") {
     <app-enroll-foureyes
@@ -82,13 +82,13 @@
     <app-enroll-applspec
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("daypassword") {
     <app-enroll-daypassword
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("certificate") {
     <app-enroll-certificate
@@ -109,13 +109,13 @@
     <app-enroll-paper
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("push") {
     <app-enroll-push
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="onEnrollmentResponseChange.emit($event)"
+      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)"
       (reopenDialogChange)="reopenDialogChange.emit($event)" />
   }
   @case ("question") {
@@ -132,13 +132,13 @@
     <app-enroll-tan
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("tiqr") {
     <app-enroll-tiqr
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      [wizard]="wizard" />
+      [wizard]="wizard()" />
   }
   @case ("u2f") {
     <app-enroll-u2f
@@ -154,13 +154,13 @@
     <app-enroll-webauthn
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="onEnrollmentResponseChange.emit($event)" />
+      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)" />
   }
   @case ("passkey") {
     <app-enroll-passkey
       (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
       (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
-      (enrollmentResponseChange)="onEnrollmentResponseChange.emit($event)"
+      (enrollmentResponseChange)="enrollmentResponseChange.emit($event)"
       (reopenDialogChange)="reopenDialogChange.emit($event)" />
   }
 }

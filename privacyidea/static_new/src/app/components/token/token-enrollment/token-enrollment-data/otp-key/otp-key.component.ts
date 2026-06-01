@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input } from "@angular/core";
+import { Component, input } from "@angular/core";
 import {
   MatAccordion,
   MatExpansionPanel,
@@ -32,6 +32,6 @@ import {
   styleUrl: "./otp-key.component.scss"
 })
 export class OtpKeyComponent {
-  @Input() otpKeyHex!: string;
-  @Input() otpKeyBase32 = "";
+  otpKeyHex = input.required<string>();
+  otpKeyBase32 = input("");
 }

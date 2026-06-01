@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, input, Output } from "@angular/core";
 import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
@@ -83,8 +83,8 @@ import type {
   templateUrl: "./enroll-token-type-switch.component.html"
 })
 export class EnrollTokenTypeSwitchComponent {
-  @Input({ required: true }) tokenTypeKey!: string;
-  @Input() wizard = false;
+  tokenTypeKey = input.required<string>();
+  wizard = input(false);
 
   @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();

@@ -17,19 +17,19 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="details-header">
-  <h3 i18n>Details for {{ entityLabel }}:</h3>
+  <h3 i18n>Details for {{ entityLabel() }}:</h3>
   <app-copyable
     class="flex-row flex-nowrap ali-center"
-    [copyText]="serial">
-    <h3 class="token-serial">{{ serial }}</h3>
+    [copyText]="serial()">
+    <h3 class="token-serial">{{ serial() }}</h3>
   </app-copyable>
   <ng-content select="[headerExtra]"></ng-content>
-  @if (showAuditButton) {
+  @if (showAuditButton()) {
     <button
       (click)="auditClick.emit()"
-      [routerLink]="[auditRoute]"
+      [routerLink]="[auditRoute()]"
       mat-icon-button
-      [matTooltip]="auditTooltip">
+      [matTooltip]="auditTooltip()">
       <mat-icon>receipt_long</mat-icon>
     </button>
   }

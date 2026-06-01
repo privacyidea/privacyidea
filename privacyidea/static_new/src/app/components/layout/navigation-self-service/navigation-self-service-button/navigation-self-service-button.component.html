@@ -29,18 +29,18 @@
         <mat-icon
           [ngClass]="
             [
-              matIconSize ?? 'tile-icon-large',
-              matIconSize === 'tile-icon-x-large' ? 'wh-3em' : null,
-              matIconClass ?? null
+              matIconSize() ?? 'tile-icon-large',
+              matIconSize() === 'tile-icon-x-large' ? 'wh-3em' : null,
+              matIconClass() ?? null
             ].filter(Boolean)
           ">
-          {{ matIconName }}
+          {{ matIconName() }}
         </mat-icon>
       </div>
       <div
         class="bottom-content"
         i18n>
-        {{ title }}
+        {{ title() }}
       </div>
     </div>
   </a>

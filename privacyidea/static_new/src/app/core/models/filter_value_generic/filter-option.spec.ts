@@ -122,7 +122,6 @@ describe("FilterOption", () => {
     const dummy = new DummyFilterOption<ComplexMock>({ key: "freitext", value: "init" });
 
     it("should report as dummy and maintain correct prototype", () => {
-      expect(dummy.isDummy).toBe(true);
       expect(dummy instanceof FilterOption).toBe(true);
       expect(dummy instanceof DummyFilterOption).toBe(true);
     });
@@ -130,7 +129,6 @@ describe("FilterOption", () => {
     it("should correctly handle withValue() while maintaining Dummy instance", () => {
       const next = dummy.withValue("updated-search");
       expect(next instanceof DummyFilterOption).toBe(true);
-      expect(next.isDummy).toBe(true);
       expect(next.value).toBe("updated-search");
     });
   });

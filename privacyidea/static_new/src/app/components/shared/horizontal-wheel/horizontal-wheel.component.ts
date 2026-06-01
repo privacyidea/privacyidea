@@ -66,8 +66,8 @@ export class HorizontalWheelComponent implements AfterViewInit {
   private containerElement: HTMLElement | null = null;
   private items = viewChildren<ElementRef<HTMLElement>>("item");
 
-  constructor(private elementRef: ElementRef) {
-    effect(() => this.select.emit(this.selectedValue()));
+  constructor() {
+    effect(() => this.selected.emit(this.selectedValue()));
 
     effect(() => {
       this.items();

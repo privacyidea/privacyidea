@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input, output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -31,11 +31,11 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
   styleUrl: "./details-header.component.scss"
 })
 export class DetailsHeaderComponent {
-  @Input({ required: true }) serial!: string;
-  @Input() entityLabel = "Token";
-  @Input() showAuditButton = false;
-  @Input() auditRoute = "/audit";
-  @Input() auditTooltip = "Show in audit log";
+  serial = input.required<string>();
+  entityLabel = input("Token");
+  showAuditButton = input(false);
+  auditRoute = input("/audit");
+  auditTooltip = input("Show in audit log");
 
   auditClick = output<void>();
 }

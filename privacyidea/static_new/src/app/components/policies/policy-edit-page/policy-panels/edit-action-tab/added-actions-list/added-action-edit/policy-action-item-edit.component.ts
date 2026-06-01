@@ -73,11 +73,11 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
     return this.actionDetail()?.type === "bool";
   }
 
-  removeAction() {
+  handleRemoveAction() {
     this.removeAction.emit();
   }
 
-  updateAction(value?: T | T[]): void {
+  handleUpdateAction(value?: T | T[]): void {
     if (Array.isArray(value)) {
       const stringValue = value.map((v) => v.toString()).join(" ");
       this.updateAction.emit(stringValue as T);
