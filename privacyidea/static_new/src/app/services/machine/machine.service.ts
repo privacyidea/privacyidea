@@ -152,6 +152,7 @@ export class MachineService implements MachineServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly document: Document = inject(DOCUMENT);
   private readonly http = inject(HttpClient);
+
   private baseUrl = environment.proxyUrl + "/machine/";
   sshApiFilter = ["serial", "service_id"];
   offlineApiFilter = ["serial", "count", "rounds"];

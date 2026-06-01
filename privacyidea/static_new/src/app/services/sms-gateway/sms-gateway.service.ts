@@ -61,11 +61,12 @@ export interface SmsGatewayServiceInterface {
 
 @Injectable()
 export class SmsGatewayService implements SmsGatewayServiceInterface {
-  private readonly baseUrl = environment.proxyUrl + "/smsgateway";
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
+
+  private readonly baseUrl = environment.proxyUrl + "/smsgateway";
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
     if (!this.contentService.onExternalSms() && !this.contentService.onConfigurationTokenTypes()) {
