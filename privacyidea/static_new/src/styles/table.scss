@@ -301,15 +301,15 @@ th:nth-child(even) {
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-lowest);
   padding: 8px 12px 12px;
+}
 
-  .details-card-title {
-    margin: 0 0 4px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--mat-sys-on-surface-variant);
-  }
+.details-card-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .details-cards-column {
@@ -344,8 +344,6 @@ th:nth-child(even) {
   .details-header {
     display: flex;
     align-items: center;
-    gap: $gap-small;
-    margin-left: 8px;
   }
 
   .details-flex-layout {
@@ -387,14 +385,10 @@ th:nth-child(even) {
     padding-left: 16px !important;
   }
 
-  .details-table .mat-mdc-form-field-infix {
-    padding-bottom: 10px;
-    margin-bottom: -6px;
+  .details-table .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+    --mat-form-field-container-height: 52px;
+    --mat-form-field-container-vertical-padding: 8px;
   }
-
-  // .details-table .description .mat-mdc-form-field-infix {
-  //   padding-top: 0;
-  // }
 
   .mat-mdc-row {
     font-size: 14px;

@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="set-pin-panel">
+  <ng-content select="[panelTitle]"></ng-content>
   @if (authService.actionAllowed("setpin")) {
     <div class="set-pin-fields">
       <input
@@ -26,7 +27,7 @@
         class="hidden-input"
         type="password" />
       <mat-form-field
-        class="input-width-s"
+        class="input-width-m"
         subscriptSizing="dynamic">
         <mat-label i18n>PIN</mat-label>
         <input
@@ -36,7 +37,7 @@
           matInput />
       </mat-form-field>
       <mat-form-field
-        class="input-width-s"
+        class="input-width-m"
         subscriptSizing="dynamic">
         <mat-label i18n>Repeat PIN</mat-label>
         <input

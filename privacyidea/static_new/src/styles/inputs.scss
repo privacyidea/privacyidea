@@ -141,11 +141,6 @@ $input-focus-outline: theme.$focus-outline;
   max-width: 240px;
 }
 
-.set-pin-panel mat-form-field,
-.test-sync-section mat-form-field {
-  height: 60px;
-}
-
 .input-width-l {
   width: 100%;
   max-width: 300px;
@@ -161,10 +156,9 @@ $input-focus-outline: theme.$focus-outline;
   max-width: 932px;
 }
 
-mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(
-    .condition-value-container *
-  ):not(.login-form *):not(.set-pin-panel *):not(.test-sync-section *):not(.description-row *) {
-  height: 76.5px;
+mat-form-field.height-52 {
+  --mat-form-field-container-height: 52px;
+  --mat-form-field-container-vertical-padding: 8px;
 }
 
 mat-form-field.height-77 {

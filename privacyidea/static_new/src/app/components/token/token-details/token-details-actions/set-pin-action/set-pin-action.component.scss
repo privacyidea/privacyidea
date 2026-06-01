@@ -4,35 +4,27 @@
 :host {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: fit-content;
 }
 
 .set-pin-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 14px;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 12px;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   box-sizing: border-box;
-  flex: 1 1 auto;
+  width: fit-content;
 }
 
 .set-pin-fields {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   width: 100%;
-
-  mat-form-field {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: none !important;
-    width: auto !important;
-    --mat-form-field-container-height: 44px;
-    --mat-form-field-container-vertical-padding: 8px;
-  }
 }
 
 .set-pin-buttons {
@@ -41,10 +33,4 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-
-  button {
-    flex: 1 1 0;
-    width: auto !important;
-    min-width: 0 !important;
-  }
 }

@@ -4,34 +4,17 @@
 :host {
   display: flex !important;
   flex-direction: column !important;
-  gap: 12px !important;
-  width: 100%;
+  gap: 8px !important;
+  width: fit-content;
 }
 
 .actions-pin-input {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-
-  mat-form-field {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: none !important;
-    width: auto !important;
-    --mat-form-field-container-height: 44px;
-    --mat-form-field-container-vertical-padding: 8px;
-  }
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .actions-pin-input-button {
   display: flex;
-  width: 100%;
-
-  button {
-    flex: 1 1 0;
-    width: auto !important;
-    min-width: 0 !important;
-  }
 }
