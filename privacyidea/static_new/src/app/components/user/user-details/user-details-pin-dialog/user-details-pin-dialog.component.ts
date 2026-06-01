@@ -40,7 +40,7 @@ import { DialogAction } from "@models/dialog";
     DialogWrapperComponent
   ]
 })
-export class UserDetailsPinDialogComponent extends AbstractDialogComponent<any, string | null> {
+export class UserDetailsPinDialogComponent extends AbstractDialogComponent<void, string | null> {
   pin: WritableSignal<string> = signal("");
   pinRepeat: WritableSignal<string> = signal("");
   hidePin: WritableSignal<boolean> = signal(true);

@@ -90,7 +90,7 @@
                         <a
                           attr.aria-label="{{ column.label }} Link"
                           (click)="contentService.tokenSelected(element.serial)"
-                          (keyup.enter)="contentService.tokenSelected(element.serial)"
+                          (keydown.enter)="contentService.tokenSelected(element.serial)"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
@@ -103,7 +103,7 @@
                   @case ("active") {
                     <span
                       (click)="toggleActive(element)"
-                      (keyup.enter)="toggleActive(element)"
+                      (keydown.enter)="toggleActive(element)"
                       [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                       role="button"

@@ -106,7 +106,7 @@
                 <app-copyable [copyText]="element.serial">
                   <a
                     (click)="contentService.navigateContainerDetails(element.serial)"
-                    (keyup.enter)="contentService.navigateContainerDetails(element.serial)"
+                    (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
                     attr.aria-label="{{ column.label }} Link"
                     role="button"
                     tabindex="0">
@@ -129,7 +129,7 @@
               @case ("states") {
                 <span
                   (click)="handleStateClick(element)"
-                  (keyup.enter)="handleStateClick(element)"
+                  (keydown.enter)="handleStateClick(element)"
                   [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
                   role="button"
                   tabindex="0">
@@ -177,7 +177,7 @@
                     @if (containerService.containerBelongsToUser(token.container_serial)) {
                       <a
                         (click)="contentService.tokenSelected(token.serial)"
-                        (keyup.enter)="contentService.tokenSelected(token.serial)"
+                        (keydown.enter)="contentService.tokenSelected(token.serial)"
                         role="button"
                         tabindex="0">
                         {{ token.serial }}

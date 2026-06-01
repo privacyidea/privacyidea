@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
 
 import { HttpClient, provideHttpClient } from "@angular/common/http";
-import { Renderer2, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";

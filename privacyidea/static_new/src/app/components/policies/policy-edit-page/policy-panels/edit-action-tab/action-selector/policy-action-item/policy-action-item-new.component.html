@@ -18,7 +18,11 @@
 -->
 <div
   class="policy-action-item"
-  (click)="selectActionByName.emit(selectableAction().actionName)">
+  tabindex="0"
+  role="button"
+  (click)="selectActionByName.emit(selectableAction().actionName)"
+  (keydown.enter)="selectActionByName.emit(selectableAction().actionName)"
+  (keydown.space)="$event.preventDefault(); selectActionByName.emit(selectableAction().actionName)">
   <span
     class="detail-label"
     [matTooltip]="selectableAction().actionName">

@@ -91,7 +91,7 @@
                     <app-copyable [copyText]="element.value">
                       <a
                         (click)="contentService.navigateContainerDetails(element.value)"
-                        (keyup.enter)="contentService.navigateContainerDetails(element.value)"
+                        (keydown.enter)="contentService.navigateContainerDetails(element.value)"
                         tabindex="0"
                         attr.aria-label="{{ element.keyMap.label }} Link">
                         {{ element.value }}

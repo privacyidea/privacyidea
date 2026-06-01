@@ -155,12 +155,16 @@ export class HorizontalWheelComponent implements AfterViewInit {
     }
   }
 
+  selectItem(index: number) {
+    this.selectedValue.set(this.values()[index]);
+    this.centerElementByIndex(index);
+  }
+
   onItemClick(e: MouseEvent, index: number) {
     // Check if a drag movement occurred to prevent click event.
     if (this.isDragging) return;
     e.preventDefault();
-    this.selectedValue.set(this.values()[index]);
-    this.centerElementByIndex(index);
+    this.selectItem(index);
   }
 
   private centerElementByIndex(index: number, args: { retrys: number } = { retrys: 0 }) {

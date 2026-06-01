@@ -60,6 +60,8 @@
         <app-copyable [copyText]="machine.resolver_name">
           <a
             (click)="onMachineResolverClick(machine.resolver_name)"
+            (keydown.enter)="onMachineResolverClick(machine.resolver_name)"
+            tabindex="0"
             class="value">{{ machine.resolver_name }}
           </a>
         </app-copyable>
@@ -94,6 +96,8 @@
             <div class="flex-row flex-nowrap ali-center">
               <a
                 (click)="onTokenClick(token.serial)"
+                (keydown.enter)="onTokenClick(token.serial)"
+                tabindex="0"
                 class="flex ali-center clickable">
                 {{ token.serial }}
               </a>

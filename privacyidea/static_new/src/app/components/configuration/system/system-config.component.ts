@@ -95,7 +95,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     effect(() => {
       const config = this.systemService.systemConfig();
       if (config && Object.keys(config).length > 0) {
-        const newParams = { ...config };
+        const newParams: Record<string, string | boolean> = { ...config };
         const booleanKeys = [
           "splitAtSign",
           "IncFailCountOnFalsePin",
@@ -112,7 +112,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
             newParams[key] = isChecked(newParams[key]);
           }
         });
-        this.params.set(newParams);
+        this.params.set(newParams as SystemConfigParams);
         this.isDirty.set(false);
       }
     });

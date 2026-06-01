@@ -109,6 +109,10 @@
                     @if (authService.actionAllowed("policywrite")) {
                       <a
                         (click)="$event.stopPropagation(); editPolicy(policy)"
+                        (keydown.enter)="$event.stopPropagation(); editPolicy(policy)"
+                        (keydown.space)="$event.stopPropagation(); $event.preventDefault(); editPolicy(policy)"
+                        tabindex="0"
+                        role="button"
                         class="flex ali-center bold">
                         {{ policy.name }}
                       </a>

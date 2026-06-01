@@ -25,7 +25,9 @@
         class="wheel-item"
         [class.active]="value === selectedValue()"
         #item
-        (click)="onItemClick($event, $index)">
+        tabindex="0"
+        (click)="onItemClick($event, $index)"
+        (keydown.enter)="selectItem($index)">
         {{ value }}
       </div>
     }

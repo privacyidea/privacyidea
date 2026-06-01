@@ -101,6 +101,8 @@
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
                       (click)="onEditEventHandler(element)"
+                      (keydown.enter)="onEditEventHandler(element)"
+                      (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
                       [innerHTML]="element.name | highlight:filterString()"
                       tabindex="0"></a>
                   } @else {

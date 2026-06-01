@@ -56,9 +56,7 @@ export interface ResolverData {
   EDITABLE?: boolean | string;
 }
 
-export type Resolvers =Rcord<,>;
-  [key: string]: Resolver;
-}
+export type Resolvers = Record<string, Resolver>;
 
 export interface Resolver {
   censor_keys: string[];
@@ -126,6 +124,31 @@ export interface PasswdResolverData extends ResolverData {
   filename?: string;
 }
 
+/**
+ * Configuration of a single HTTP request the resolver performs, matching the
+ * backend `RequestConfig` (see lib/resolvers/HTTPResolver.py). The mapping and
+ * header fields can be sent/received either as objects or as JSON strings.
+ */
+export interface HTTPRequestConfig {
+  method?: string;
+  endpoint?: string;
+  headers?: Record<string, string> | string;
+  requestMapping?: Record<string, unknown> | string;
+  responseMapping?: Record<string, unknown> | string;
+  hasSpecialErrorHandler?: boolean;
+  errorResponse?: Record<string, unknown> | string;
+}
+
+/**
+ * Like {@link HTTPRequestConfig} but with the extra fields the backend reads
+ * for the user-groups endpoint (see lib/resolvers/HTTPResolver.py).
+ */
+export interface HTTPUserGroupsConfig extends HTTPRequestConfig {
+  active?: boolean;
+  pi_user_groups_key?: string;
+  user_groups_attribute?: string;
+}
+
 export interface HTTPResolverData extends ResolverData {
   base_url?: string;
   attribute_mapping?: Record<string, string>;
@@ -134,15 +157,16 @@ export interface HTTPResolverData extends ResolverData {
   tls_ca_path?: string;
   timeout?: number;
   advanced?: boolean;
-  config_get_user_list?: any;
-  config_get_user_by_id?: any;
-  config_get_user_by_name?: any;
-  config_create_user?: any;
-  config_edit_user?: any;
-  config_delete_user?: any;
-  config_authorization?: any;
-  config_user_auth?: any;
-  config_get_user_groups?: any;
+  config_get_user_list?: HTTPRequestConfig;
+  config_get_user_by_id?: HTTPRequestConfig;
+  config_get_user_by_name?: HTTPRequestConfig;
+  config_create_user?: HTTPRequestConfig;
+  config_edit_user?: HTTPRequestConfig;
+  config_delete_user?: HTTPRequestConfig;
+  config_authorization?: HTTPRequestConfig;
+  // The backend also accepts this as a JSON string.
+  config_user_auth?: HTTPRequestConfig | string;
+  config_get_user_groups?: HTTPUserGroupsConfig;
 }
 
 export interface EntraIDResolverData extends HTTPResolverData {

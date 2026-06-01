@@ -26,7 +26,7 @@
     >The container was successfully created with serial number
     <a
       (click)="navigateContainerDetails(data()!.containerSerial())"
-      (keyup.enter)="navigateContainerDetails(data()!.containerSerial())"
+      (keydown.enter)="navigateContainerDetails(data()!.containerSerial())"
       role="button"
       tabindex="0">
       {{ data()?.containerSerial() }} </a>.</span

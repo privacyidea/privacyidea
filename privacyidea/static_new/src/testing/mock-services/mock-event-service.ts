@@ -22,7 +22,6 @@ import {
   EventActions,
   EventCondition,
   EventHandler,
-  EventHandlerSaveParams,
   EventServiceInterface
 } from "@services/event/event.service";
 import { of } from "rxjs";
@@ -37,13 +36,13 @@ export class MockEventService implements EventServiceInterface {
 
   eventHandlers: WritableSignal<EventHandler[] | undefined> = signal([]);
 
-  saveEventHandler = jest.fn((_event: EventHandlerSaveParams) => of(MockPiResponse.fromValue<number>(1)));
+  saveEventHandler = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
 
-  enableEvent = jest.fn((_eventId: number | null) => Promise.resolve({}));
+  enableEvent = jest.fn().mockResolvedValue({});
 
-  disableEvent = jest.fn((_eventId: number | null) => Promise.resolve({}));
+  disableEvent = jest.fn().mockResolvedValue({});
 
-  deleteEvent = jest.fn((_eventId: number) => of(MockPiResponse.fromValue<number>(1)));
+  deleteEvent = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
 
   deleteWithConfirmDialog = jest.fn((_event: EventHandler, afterDelete?: () => void) => {
     if (afterDelete) afterDelete();

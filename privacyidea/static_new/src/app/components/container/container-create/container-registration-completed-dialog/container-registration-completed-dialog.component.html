@@ -26,7 +26,7 @@
     i18n>The container
     <a
       (click)="containerSelected(data.containerSerial)"
-      (keyup.enter)="containerSelected(data.containerSerial)"
+      (keydown.enter)="containerSelected(data.containerSerial)"
       role="button"
       tabindex="0">
       {{ data.containerSerial }} </a> was successfully

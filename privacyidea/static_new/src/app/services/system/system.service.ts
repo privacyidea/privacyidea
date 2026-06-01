@@ -32,25 +32,27 @@ export interface NodeInfo {
   uuid: string;
 }
 
+export interface DeleteUserCacheResult {
+  status: boolean;
+  deleted: number;
+}
+
 export interface SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
-  radiusServerResource: HttpResourceRef<any>;
+  radiusServerResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   caConnectorResource?: HttpResourceRef<any>;
   caConnectors?: WritableSignal<CaConnectors>;
-  nodesResource: HttpResourceRef<any>;
-  systemConfig: Signal<any>;
+  nodesResource: HttpResourceRef<PiResponse<NodeInfo[]> | undefined>;
+  systemConfig: Signal<Record<string, string>>;
   systemConfigInit: Signal<any>;
   nodes: Signal<NodeInfo[]>;
   radiusServers: Signal<string[]>;
 
-  saveSystemConfig(config: any): Observable<PiResponse<any>>;
-
-  deleteSystemConfig(key: string): Observable<PiResponse<any>>;
-
-  deleteUserCache(): Observable<PiResponse<any>>;
-
+  saveSystemConfig(config: Record<string, unknown>): Observable<PiResponse<Record<string, "insert" | "update">>>;
+  deleteSystemConfig(key: string): Observable<PiResponse<boolean>>;
+  deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>>;
+  // No backend route exists for this and it is currently unused, so the type is unknown.
   loadSmtpIdentifiers(): Observable<PiResponse<any>>;
-
   getDocumentation(): Observable<string>;
 }
 
@@ -141,7 +143,7 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-  systemConfig = computed<any>(() => {
+  systemConfig = computed<Record<string, string>>(() => {
     if (!this.systemConfigResource.hasValue()) return {};
     return this.systemConfigResource.value()?.result?.value ?? {};
   });
@@ -158,20 +160,20 @@ export class SystemService implements SystemServiceInterface {
     return this.radiusServerResource.value()?.result?.value ?? [];
   });
 
-  saveSystemConfig(config: any): Observable<PiResponse<any>> {
-    return this.http.post<PiResponse<any>>(this.systemBaseUrl + "setConfig", config, {
+  saveSystemConfig(config: Record<string, unknown>): Observable<PiResponse<Record<string, "insert" | "update">>> {
+    return this.http.post<PiResponse<Record<string, "insert" | "update">>>(this.systemBaseUrl + "setConfig", config, {
       headers: this.authService.getHeaders()
     });
   }
 
-  deleteSystemConfig(key: string): Observable<PiResponse<any>> {
-    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${encodeURIComponent(key)}`, {
+  deleteSystemConfig(key: string): Observable<PiResponse<boolean>> {
+    return this.http.delete<PiResponse<boolean>>(`${this.systemBaseUrl}${encodeURIComponent(key)}`, {
       headers: this.authService.getHeaders()
     });
   }
 
-  deleteUserCache(): Observable<PiResponse<any>> {
-    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}user-cache`, {
+  deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>> {
+    return this.http.delete<PiResponse<DeleteUserCacheResult>>(`${this.systemBaseUrl}user-cache`, {
       headers: this.authService.getHeaders()
     });
   }
