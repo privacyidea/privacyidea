@@ -58,14 +58,18 @@
             matInput
             placeholder="resolver1" />
         </app-clearable-input>
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()) {
+        @if (
+          resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()
+        ) {
           <mat-error i18n>
             Resolver name is
             <strong>required</strong>
             .
           </mat-error>
         }
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()) {
+        @if (
+          resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()
+        ) {
           <mat-error i18n>
             Resolver name contains
             <strong>invalid characters</strong>
@@ -92,12 +96,8 @@
     </div>
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="sticky-header">
+      class="sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="sticky-controls ali-center">
         @if (resolverType() !== "passwdresolver") {
           @if (["entraidresolver", "keycloakresolver", "httpresolver"].includes(resolverType())) {

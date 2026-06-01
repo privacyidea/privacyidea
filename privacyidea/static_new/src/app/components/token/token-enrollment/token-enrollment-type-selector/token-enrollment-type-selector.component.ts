@@ -17,23 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  ElementRef,
-  HostBinding,
-  inject,
-  input,
-  OnDestroy,
-  output,
-  Renderer2,
-  ViewChild
-} from "@angular/core";
+import { Component, HostBinding, inject, input, output } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -51,14 +41,14 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatIconButton,
     MatIcon,
     NgClass,
-    MatTooltipModule
+    MatTooltipModule,
+    StickyHeaderDirective
   ],
   providers: [{ provide: MAT_TOOLTIP_DEFAULT_OPTIONS, useValue: CUSTOM_TOOLTIP_OPTIONS }]
 })
-export class TokenEnrollmentTypeSelectorComponent implements AfterViewInit, OnDestroy {
+export class TokenEnrollmentTypeSelectorComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly renderer: Renderer2 = inject(Renderer2);
 
   @HostBinding("class.is-admin") get isAdmin(): boolean {
     return this.authService.role() === "admin";
@@ -68,35 +58,4 @@ export class TokenEnrollmentTypeSelectorComponent implements AfterViewInit, OnDe
   formInvalid = input<boolean>(false);
   canReopenDialog = input<boolean>(false);
   reopenDialog = output<void>();
-
-  @ViewChild("stickySentinel") private stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") private stickyHeader!: ElementRef<HTMLElement>;
-  private observer!: IntersectionObserver;
-
-  ngAfterViewInit(): void {
-    if (!this.stickySentinel || !this.stickyHeader) {
-      return;
-    }
-
-    this.observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (isSticky) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer(), threshold: [0, 1] }
-    );
-
-    this.observer.observe(this.stickySentinel.nativeElement);
-  }
-
-  ngOnDestroy(): void {
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-  }
 }

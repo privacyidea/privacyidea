@@ -24,12 +24,8 @@ import { Renderer2, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import {
-  ContainerRegistrationCompletedDialogComponent
-} from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
-import {
-  ContainerRegistrationCompletedDialogWizardComponent
-} from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { ContainerRegistrationCompletedDialogComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
@@ -56,9 +52,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
-import {
-  ContainerCreatedDialogWizardComponent
-} from "./container-created-dialog/container-created-dialog.wizard.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 
 class MockIntersectionObserver {
@@ -149,7 +143,7 @@ describe("ContainerCreateComponent", () => {
         { provide: VersioningService, useClass: DummyVersioningService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        {provide: ContainerTemplateService, useClass: MockContainerTemplateService},
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         MockLocalService,
         MockNotificationService
       ]
@@ -354,34 +348,6 @@ describe("ContainerCreateComponent", () => {
 
     expect(closeSpy).not.toHaveBeenCalled();
     expect(openSpy).not.toHaveBeenCalled();
-  });
-
-  it("ngAfterViewInit wires IO and toggles sticky class via renderer", () => {
-    const host = fixture.nativeElement as HTMLElement;
-    host.innerHTML = `
-      <div id="scroller">
-        <div id="header"></div>
-        <div class="spacer-200"></div>
-        <div id="sentinel"></div>
-      </div>
-    `;
-    (component as any).scrollContainer = { nativeElement: host.querySelector("#scroller")! };
-    (component as any).stickyHeader = { nativeElement: host.querySelector("#header")! };
-    (component as any).stickySentinel = { nativeElement: host.querySelector("#sentinel")! };
-
-    const addClass = jest.spyOn((component as any).renderer as Renderer2, "addClass");
-    const removeClass = jest.spyOn((component as any).renderer as Renderer2, "removeClass");
-
-    component.ngAfterViewInit();
-
-    expect(lastIO).toBeTruthy();
-    expect(lastIO!.observe).toHaveBeenCalled();
-
-    lastIO!.trigger([{ rootBounds: { top: 0 }, boundingClientRect: { top: -1 } } as any]);
-    expect(addClass).toHaveBeenCalledWith((component as any).stickyHeader.nativeElement, "is-sticky");
-
-    lastIO!.trigger([{ rootBounds: { top: 0 }, boundingClientRect: { top: 1 } } as any]);
-    expect(removeClass).toHaveBeenCalledWith((component as any).stickyHeader.nativeElement, "is-sticky");
   });
 
   it("smartphone without registration wizard policy does not open registration completed dialog", () => {
