@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, WritableSignal, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import { Component, WritableSignal, computed, inject, signal, viewChild } from "@angular/core";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -61,23 +61,14 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   serial = signal(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
-  childValid = signal<boolean>(true);
-
-  formGroupInvalid = signal(false);
-
-  dialogActions = linkedSignal({
-    source: this.formGroupInvalid,
-    computation: (invalid) => {
-      return [
-        {
-          type: "confirm",
-          label: $localize`Rollover`,
-          value: true,
-          disabled: invalid
-        }
-      ] as DialogAction<boolean>[];
+  dialogActions = signal<DialogAction<boolean>[]>([
+    {
+      type: "confirm",
+      label: $localize`Rollover`,
+      value: true,
+      disabled: false
     }
-  });
+  ]);
 
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
@@ -92,7 +83,6 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
     this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
-    this.formGroupInvalid.set(!this.childValid());
     this.serial.set(this.token().serial);
   }
 
