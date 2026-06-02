@@ -23,12 +23,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { AuthData, AuthDetail, AuthService } from "@services/auth/auth.service";
+import { AuthData, AuthDetail, AuthService, MultiChallenge } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
-import { ValidateService } from "@services/validate/validate.service";
+import { ValidateService, WebAuthnSignRequest } from "@services/validate/validate.service";
 import {
   MockAuthDetail,
   MockLocalService,
@@ -232,7 +232,7 @@ describe("LoginComponent", () => {
             }
           ]
         },
-        result: { authentication: "CHALLENGE", status: true, value: false as any }
+        result: { authentication: "CHALLENGE", status: true }
       });
       authService.authenticate.mockReturnValue(of(multiChallengeResponse));
 
@@ -244,7 +244,7 @@ describe("LoginComponent", () => {
       ]);
       expect(component.showOtpField()).toBe(true);
       expect(component.webAuthnTriggered()).toEqual(webAuthnSignRequestData);
-      expect((component as any).transactionId).toBe("02247192477167467513");
+      expect((component as unknown as { transactionId: string }).transactionId).toBe("02247192477167467513");
       expect(component.pushTriggered()).toBe(false); // No push challenge in this specific multi_challenge
 
       expect(localService.saveData).not.toHaveBeenCalled();
@@ -256,7 +256,7 @@ describe("LoginComponent", () => {
     it("should handle a challenge response", () => {
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
         detail: { message: "Please enter OTP" }, // Use detail.message for simple cases
-        result: { authentication: "CHALLENGE", status: true, value: false as any }
+        result: { authentication: "CHALLENGE", status: true }
       });
       authService.authenticate.mockReturnValue(of(challengeResponse));
 
@@ -274,7 +274,7 @@ describe("LoginComponent", () => {
       // GIVEN: The component is in a challenge state
       component.showOtpField.set(true);
       component.otp.set("654321");
-      (component as any).transactionId = "tx123";
+      (component as unknown as { transactionId: string }).transactionId = "tx123";
 
       // WHEN: The form is submitted
       component.onSubmit();
@@ -388,10 +388,10 @@ describe("LoginComponent", () => {
 
   describe("webAuthnLogin", () => {
     it("should call validateService.authenticateWebAuthn with correct data", () => {
-      const signRequest = { challenge: "abc" };
+      const signRequest = { challenge: "abc" } as unknown as WebAuthnSignRequest;
       component.webAuthnTriggered.set(signRequest);
       component.username.set("test-user");
-      (component as any).transactionId = "tx-webauthn";
+      (component as unknown as { transactionId: string }).transactionId = "tx-webauthn";
       const mockResponse = new MockPiResponse<AuthData, AuthDetail>({ detail: new MockAuthDetail() });
       jest.spyOn(validateService, "authenticateWebAuthn").mockReturnValue(of(mockResponse));
 
@@ -424,9 +424,9 @@ describe("LoginComponent", () => {
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
         detail: {
           transaction_id: "tx-push",
-          multi_challenge: [{ type: "push" } as any]
+          multi_challenge: [{ type: "push" } as MultiChallenge]
         },
-        result: { authentication: "CHALLENGE", status: true, value: false as any }
+        result: { authentication: "CHALLENGE", status: true }
       });
       authService.authenticate.mockReturnValue(of(challengeResponse));
 
@@ -445,10 +445,11 @@ describe("LoginComponent", () => {
       jest.spyOn(validateService, "pollTransaction").mockReturnValueOnce(of(false)).mockReturnValueOnce(of(true)); // Succeed on second poll
       const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "push-token" } as AuthData);
       authService.authenticate.mockReturnValue(of(successResponse));
-      (component as any).transactionId = "tx-push-success";
+      const internals = component as unknown as { transactionId: string; startPushPolling: () => void };
+      internals.transactionId = "tx-push-success";
       component.username.set("test-user");
 
-      (component as any).startPushPolling();
+      internals.startPushPolling();
       jest.advanceTimersByTime(500); // 2 polls at 200ms interval + buffer
       await Promise.resolve();
 

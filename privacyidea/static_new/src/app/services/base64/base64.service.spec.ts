@@ -19,8 +19,20 @@
 import { TestBed } from "@angular/core/testing";
 import { Base64Service } from "./base64.service";
 
+interface Base64PrivateAccess {
+  base64EncArr(bytes: ArrayBufferLike): string;
+  base64DecToArr(sBase64: string, nBlockSize?: number): Uint8Array;
+  b64ToUint6(nChr: number): number;
+  uint6ToB64(nUint6: number): number;
+}
+
+interface GlobalBase64Polyfill {
+  atob?: (data: string) => string;
+  btoa?: (data: string) => string;
+}
+
 beforeAll(() => {
-  const g: any = globalThis as any;
+  const g = globalThis as unknown as GlobalBase64Polyfill;
 
   if (typeof g.atob === "undefined") {
     g.atob = (data: string) => Buffer.from(data, "base64").toString("binary");
@@ -128,29 +140,30 @@ describe("Base64Service", () => {
     expect(back).toBe(s);
   });
 
-  it("base64EncArr small input matches window.btoa output", () => {
+  it("base64EncArr small input matches globalThis.btoa output", () => {
     const bytes = new Uint8Array([65, 66, 67, 68, 69]);
     const bin = String.fromCharCode(...bytes);
-    const expected = window.btoa(bin);
-    const actual = (service as any).base64EncArr(bytes.buffer) as string;
+    const expected = globalThis.btoa(bin);
+    const actual = (service as unknown as Base64PrivateAccess).base64EncArr(bytes.buffer);
     expect(actual).toBe(expected);
   });
 
   it("base64EncArr inserts CRLF every 76 chars", () => {
     const bytes = new Uint8Array(60).map((_, i) => i);
-    const out = (service as any).base64EncArr(bytes.buffer) as string;
+    const out = (service as unknown as Base64PrivateAccess).base64EncArr(bytes.buffer);
     expect(out).toContain("\r\n");
   });
 
   it("base64DecToArr respects nBlockSize (pads output length)", () => {
-    const out = (service as any).base64DecToArr("TQ==", 4) as Uint8Array;
+    const out = (service as unknown as Base64PrivateAccess).base64DecToArr("TQ==", 4);
     expect(out.length).toBe(4);
     expect(Array.from(out)).toEqual([77, 0, 0, 0]);
   });
 
   it("b64ToUint6 maps Base64 chars to digits; uint6ToB64 inverses mapping", () => {
-    const b64ToUint6 = (service as any).b64ToUint6.bind(service) as (n: number) => number;
-    const uint6ToB64 = (service as any).uint6ToB64.bind(service) as (n: number) => number;
+    const privateAccess = service as unknown as Base64PrivateAccess;
+    const b64ToUint6 = privateAccess.b64ToUint6.bind(service);
+    const uint6ToB64 = privateAccess.uint6ToB64.bind(service);
 
     expect(b64ToUint6("A".charCodeAt(0))).toBe(0);
     expect(b64ToUint6("Z".charCodeAt(0))).toBe(25);

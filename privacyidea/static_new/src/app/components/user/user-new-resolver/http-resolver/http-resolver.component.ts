@@ -36,7 +36,14 @@ import {
 import { MatError } from "@angular/material/form-field";
 import { MatDivider } from "@angular/material/list";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { ResolverService } from "@services/resolver/resolver.service";
+import {
+  EntraIDResolverData,
+  HTTPRequestConfig,
+  HTTPResolverData,
+  HTTPUserGroupsConfig,
+  KeycloakResolverData,
+  ResolverService
+} from "@services/resolver/resolver.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { HttpConfigComponent, HttpConfigModel } from "./http-config/http-config.component";
 import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute/http-groups-attribute.component";
@@ -52,6 +59,20 @@ export interface ClientCertificateModel {
   private_key_password: string;
   certificate_fingerprint: string;
 }
+
+/**
+ * Shape of the `data` input / `serverDefaults`. The HTTP resolver UI supports
+ * Keycloak and EntraID variants, and additionally exposes the flat
+ * basic-mode fields (endpoint, method, headers, ...) that mirror the
+ * single-request `HTTPRequestConfig` plus simple user/password auth.
+ */
+export type HttpResolverInputData = HTTPResolverData &
+  Partial<EntraIDResolverData> &
+  Partial<KeycloakResolverData> &
+  Partial<HTTPRequestConfig> & {
+    username?: string;
+    password?: string;
+  };
 
 export interface HttpResolverModel {
   // Basic mode fields
@@ -193,10 +214,10 @@ export class HttpResolverComponent {
   protected readonly displayedColumns: string[] = ["privacyideaAttr", "userStoreAttr", "actions"];
   protected readonly CUSTOM_ATTR_VALUE = "__custom__";
   private resolverService = inject(ResolverService);
-  data = input({});
+  data = input<HttpResolverInputData>({});
   type = input<string>("httpresolver");
-  serverDefaults = signal<any>({});
-  mergedData = computed(() => {
+  serverDefaults = signal<HttpResolverInputData>({});
+  mergedData = computed<HttpResolverInputData>(() => {
     const data = this.data();
     if (data && Object.keys(data).length > 0) {
       return data;
@@ -255,7 +276,7 @@ export class HttpResolverComponent {
     if (this.isAdvanced) {
       return false;
     }
-    return (this.mergedData() as any).base_url === undefined;
+    return this.mergedData().base_url === undefined;
   });
 
   // Signals derived from model for reactive sub-component inputs
@@ -274,7 +295,7 @@ export class HttpResolverComponent {
     { privacyideaAttr: "givenname", userStoreAttr: "givenname" }
   ]);
   protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
-    const existing = (this.mergedData() as any)?.attribute_mapping;
+    const existing = this.mergedData()?.attribute_mapping;
     let rows: AttributeMappingRow[];
     if (existing && Object.keys(existing).length > 0) {
       rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
@@ -307,7 +328,7 @@ export class HttpResolverComponent {
         if (Object.keys(this.data()).length === 0) {
           this.resolverService.getDefaultResolverConfig(this.type()).subscribe((resp) => {
             if (resp.result?.status && resp.result?.value) {
-              this.serverDefaults.set(resp.result.value);
+              this.serverDefaults.set(resp.result.value as HttpResolverInputData);
             }
           });
         }
@@ -317,7 +338,7 @@ export class HttpResolverComponent {
 
     effect(() => {
       const basic = this.basicSettings();
-      const data = this.mergedData() as any;
+      const data = this.mergedData();
       if (!basic && !this.model().responseMapping) {
         if (data.responseMapping === undefined) {
           this.model.update((m) => ({ ...m, responseMapping: '{"username":"{username}", "userid":"{userid}"}' }));
@@ -424,7 +445,7 @@ export class HttpResolverComponent {
   }
 
   protected syncControls(): void {
-    const data = this.mergedData() as any;
+    const data = this.mergedData();
     if (!data) return;
 
     const updates: Partial<HttpResolverModel> = {};
@@ -468,51 +489,67 @@ export class HttpResolverComponent {
       this.model.update((m) => ({ ...m, ...updates }));
     }
 
-    if (data.config_get_user_groups) {
-      this.userGroupsModel.update((g) => ({ ...g, ...this.sanitizeConfig(data.config_get_user_groups) }));
+    const userGroupsCfg = data.config_get_user_groups;
+    if (userGroupsCfg) {
+      this.userGroupsModel.update((g) => ({ ...g, ...this.sanitizeConfig(userGroupsCfg) }));
     }
-    if (data.config_authorization) {
-      this.configAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_authorization) }));
+    const authCfg = data.config_authorization;
+    if (authCfg) {
+      this.configAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(authCfg) }));
     }
-    if (data.config_user_auth) {
-      this.configUserAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_user_auth) }));
+    const userAuthCfg = data.config_user_auth;
+    if (userAuthCfg && typeof userAuthCfg !== "string") {
+      this.configUserAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(userAuthCfg) }));
     }
-    if (data.config_get_user_list) {
-      this.configGetUserListModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_get_user_list) }));
+    const listCfg = data.config_get_user_list;
+    if (listCfg) {
+      this.configGetUserListModel.update((c) => ({ ...c, ...this.sanitizeConfig(listCfg) }));
     }
-    if (data.config_get_user_by_id) {
-      this.configGetUserByIdModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_get_user_by_id) }));
+    const byIdCfg = data.config_get_user_by_id;
+    if (byIdCfg) {
+      this.configGetUserByIdModel.update((c) => ({ ...c, ...this.sanitizeConfig(byIdCfg) }));
     }
-    if (data.config_get_user_by_name) {
-      this.configGetUserByNameModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_get_user_by_name) }));
+    const byNameCfg = data.config_get_user_by_name;
+    if (byNameCfg) {
+      this.configGetUserByNameModel.update((c) => ({ ...c, ...this.sanitizeConfig(byNameCfg) }));
     }
-    if (data.config_create_user) {
-      this.configCreateUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_create_user) }));
+    const createCfg = data.config_create_user;
+    if (createCfg) {
+      this.configCreateUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(createCfg) }));
     }
-    if (data.config_edit_user) {
-      this.configEditUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_edit_user) }));
+    const editCfg = data.config_edit_user;
+    if (editCfg) {
+      this.configEditUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(editCfg) }));
     }
-    if (data.config_delete_user) {
-      this.configDeleteUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(data.config_delete_user) }));
+    const deleteCfg = data.config_delete_user;
+    if (deleteCfg) {
+      this.configDeleteUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(deleteCfg) }));
     }
 
     this.httpForm().reset();
   }
 
-  private sanitizeConfig(config: any): any {
-    const sanitized = { ...config };
-    if (sanitized.method) {
-      sanitized.method = sanitized.method.toUpperCase();
+  private sanitizeConfig<T extends HTTPRequestConfig | HTTPUserGroupsConfig>(
+    config: T
+  ): T & { headers?: string; requestMapping?: string; responseMapping?: string; errorResponse?: string } {
+    const sanitized: Record<string, unknown> = { ...config };
+    if (typeof sanitized["method"] === "string") {
+      sanitized["method"] = (sanitized["method"] as string).toUpperCase();
     }
-    ["headers", "requestMapping", "responseMapping", "errorResponse"].forEach((field) => {
+    (["headers", "requestMapping", "responseMapping", "errorResponse"] as const).forEach((field) => {
       if (sanitized[field] !== undefined) {
-        sanitized[field] = this.formatConfigValue(sanitized[field]);
+        sanitized[field] = this.formatConfigValue(sanitized[field] as Record<string, unknown> | string | null);
       }
     });
-    return sanitized;
+    return sanitized as T & {
+      headers?: string;
+      requestMapping?: string;
+      responseMapping?: string;
+      errorResponse?: string;
+    };
   }
 
-  private formatConfigValue(value: object | null): string {
+  private formatConfigValue(value: Record<string, unknown> | string | null | undefined): string {
     if (typeof value === "object" && value !== null) {
       if (Object.keys(value).length === 0) {
         return "";

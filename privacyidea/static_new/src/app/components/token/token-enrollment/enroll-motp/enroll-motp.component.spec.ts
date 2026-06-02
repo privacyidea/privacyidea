@@ -20,7 +20,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ValidationError } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
 import { EnrollMotpComponent } from "./enroll-motp.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
@@ -36,7 +38,7 @@ describe("EnrollMotpComponent", () => {
     validityPeriodStart: "",
     validityPeriodEnd: "",
     pin: ""
-  } as any;
+  } as TokenEnrollmentData;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -69,7 +71,7 @@ describe("EnrollMotpComponent", () => {
         component
           .motpPinForm()
           .errors()
-          .some((e: any) => e.kind === "required")
+          .some((e: ValidationError) => e.kind === "required")
       ).toBe(true);
     });
 
@@ -79,7 +81,7 @@ describe("EnrollMotpComponent", () => {
         component
           .motpPinForm()
           .errors()
-          .some((e: any) => e.kind === "minlength")
+          .some((e: ValidationError) => e.kind === "minlength")
       ).toBe(true);
     });
 
@@ -89,7 +91,7 @@ describe("EnrollMotpComponent", () => {
         component
           .motpPinForm()
           .errors()
-          .some((e: any) => e.kind === "minlength")
+          .some((e: ValidationError) => e.kind === "minlength")
       ).toBe(false);
     });
   });
@@ -102,7 +104,7 @@ describe("EnrollMotpComponent", () => {
         component
           .repeatMotpPinForm()
           .errors()
-          .some((e: any) => e.kind === "motpPinMismatch")
+          .some((e: ValidationError) => e.kind === "motpPinMismatch")
       ).toBe(true);
     });
 
@@ -113,7 +115,7 @@ describe("EnrollMotpComponent", () => {
         component
           .repeatMotpPinForm()
           .errors()
-          .some((e: any) => e.kind === "motpPinMismatch")
+          .some((e: ValidationError) => e.kind === "motpPinMismatch")
       ).toBe(false);
     });
   });
@@ -153,7 +155,7 @@ describe("EnrollMotpComponent", () => {
       expect(result!.data.type).toBe("motp");
       expect(result!.data.generateOnServer).toBe(true);
       expect(result!.data.motpPin).toBe("abcd");
-      expect((result!.data as any).otpKey).toBeUndefined();
+      expect((result!.data as MotpEnrollmentData).otpKey).toBeUndefined();
     });
 
     it("should include otpKey when generateOnServer is false", () => {
@@ -163,7 +165,7 @@ describe("EnrollMotpComponent", () => {
       component.otpKey.set("ABCDEF");
       const result = component.enrollmentArgsGetter(basicOptions);
       expect(result).not.toBeNull();
-      expect((result!.data as any).otpKey).toBe("ABCDEF");
+      expect((result!.data as MotpEnrollmentData).otpKey).toBe("ABCDEF");
       expect(result!.data.generateOnServer).toBe(false);
     });
   });
