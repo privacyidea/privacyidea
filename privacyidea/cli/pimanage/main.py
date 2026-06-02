@@ -56,6 +56,7 @@ from flask.cli import FlaskGroup, run_command
 from privacyidea.cli import create_silent_app, get_version
 from .admin import admin_cli
 from .audit import audit_cli, rotate_audit as audit_rotate_audit
+from .authentication_log import authentication_log_cli
 from .backup import backup_cli
 from .pi_setup import (setup_cli, encrypt_enckey, create_enckey, create_tables,
                        create_pgp_keys, create_audit_keys, drop_tables)
@@ -125,6 +126,7 @@ for cmd, new_name, epilog in deprecated_commands:
 
 cli.add_command(admin_cli)
 cli.add_command(audit_cli)
+cli.add_command(authentication_log_cli)
 cli.add_command(setup_cli)
 cli.add_command(config_cli)
 cli.add_command(backup_cli)

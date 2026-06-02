@@ -30,7 +30,7 @@ from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
-from privacyidea.models import db, Challenge
+from privacyidea.models import db, AuthenticationLog, Challenge
 from .base import CliTestCase
 from ..base import PWFILE
 
@@ -593,3 +593,73 @@ class PIManageChallengeTestCase(CliTestCase):
         self.assertEqual(res.exit_code, 0, res.output)
         self.assertEqual(Challenge.query.count(), 0, "table should be empty after --age")
         self.assertIn("entries deleted", res.output, res)
+
+
+class PIManageAuthenticationLogTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage authlog cleanup``.
+    """
+
+    def _init_entries(self):
+        # Insert two old and one recent authentication log entry.
+        now = dt.datetime.utcnow()
+        for age_days in [10, 5, 0]:
+            AuthenticationLog(event_type="PASSWORD_FAIL",
+                              timestamp=now - dt.timedelta(days=age_days)).save()
+
+    def tearDown(self):
+        AuthenticationLog.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "-h"])
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("Clean up old authentication log entries", res.output, res)
+
+    def test_02_age_is_required(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup"])
+        self.assertNotEqual(res.exit_code, 0, res.output)
+        self.assertIn("--age", res.output, res)
+
+    def test_03_dryrun(self):
+        self._init_entries()
+        before = AuthenticationLog.query.count()
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(
+            pi_manage,
+            ["authlog", "cleanup", "--age", "1", "--dryrun"],
+        )
+
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertIn("Would delete 2 authentication log entries", res.output, res)
+        self.assertEqual(AuthenticationLog.query.count(), before,
+                         "rows were deleted during --dryrun")
+
+    def test_04_cleanup_age(self):
+        self._init_entries()
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "1"])
+
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertEqual(AuthenticationLog.query.count(), 1,
+                         "exactly one recent entry must remain")
+        self.assertIn("entries deleted.", res.output, res)
+
+    def test_05_cleanup_age_chunked(self):
+        self._init_entries()
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(
+            pi_manage,
+            ["authlog", "cleanup", "--age", "1", "--chunksize", "1"],
+        )
+
+        self.assertEqual(res.exit_code, 0, res.output)
+        self.assertEqual(AuthenticationLog.query.count(), 1,
+                         "exactly one recent entry must remain")
+        self.assertIn("entries deleted.", res.output, res)
