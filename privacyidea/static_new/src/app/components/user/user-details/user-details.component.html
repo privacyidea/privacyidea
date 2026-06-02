@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Details"
   class="details-container"
@@ -42,17 +43,35 @@
   </div>
 
   @if (userData().editable) {
-    <div class="flex gap-8 margin-bottom-16">
+    <div
+      class="flex gap-8 sticky-header"
+      [appStickyHeader]="scrollContainer">
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
-        <button
-          (click)="editUser()"
-          class="action-button-secondary button-width-s"
-          mat-stroked-button>
-          <mat-icon>edit</mat-icon>
-          <span i18n>Edit</span>
-        </button>
+        @if (!editMode()) {
+          <button
+            (click)="editUser()"
+            class="action-button-primary button-width-s"
+            mat-stroked-button>
+            <mat-icon>edit</mat-icon>
+            <span i18n>Edit</span>
+          </button>
+        } @else {
+          <button
+            (click)="saveEdit()"
+            class="action-button-primary button-width-s"
+            mat-stroked-button>
+            <mat-icon>save</mat-icon>
+            <span i18n>Save</span>
+          </button>
+          <button
+            (click)="cancelEdit()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button>
+            <span i18n>Cancel</span>
+          </button>
+        }
       }
-      @if (authService.actionAllowed("deleteuser")) {
+      @if (authService.actionAllowed("deleteuser") && !editMode()) {
         <button
           (click)="deleteUser()"
           class="action-button-delete-secondary button-width-s"
@@ -64,43 +83,50 @@
     </div>
   }
 
-  <div class="user-details">
-    @for (col of detailsColumns(); track $index) {
-      <div class="user-details-column">
-        @for (item of col; track item.key) {
-          <div class="label">{{ item.label }}:</div>
-          @if (Array.isArray(item.value) && item.value.length > 1) {
-            <div class="value">
-              <ul class="value-list">
-                @if (isExpanded(item.key)) {
-                  @for (val of item.value; track val) {
-                    <li>{{ val }}</li>
+  @if (editMode()) {
+    <app-user-details-edit
+      [resolver]="userData().resolver"
+      [initialUserData]="userData()"
+      (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+  } @else {
+    <div class="user-details">
+      @for (col of detailsColumns(); track $index) {
+        <div class="user-details-column">
+          @for (item of col; track item.key) {
+            <div class="label">{{ item.label }}:</div>
+            @if (Array.isArray(item.value) && item.value.length > 1) {
+              <div class="value">
+                <ul class="value-list">
+                  @if (isExpanded(item.key)) {
+                    @for (val of item.value; track val) {
+                      <li>{{ val }}</li>
+                    }
+                  } @else {
+                    <li>{{ item.value[0] }}</li>
                   }
-                } @else {
-                  <li>{{ item.value[0] }}</li>
-                }
-              </ul>
-              <button
-                (click)="toggleExpanded(item.key)"
-                [attr.aria-expanded]="isExpanded(item.key)"
-                class="value-toggle"
-                type="button">
-                @if (isExpanded(item.key)) {
-                  <mat-icon>expand_less</mat-icon>
-                  <span i18n>Show less</span>
-                } @else {
-                  <mat-icon>expand_more</mat-icon>
-                  <span i18n>Show {{ item.value.length - 1 }} more</span>
-                }
-              </button>
-            </div>
-          } @else {
-            <div class="value">{{ item.value }}</div>
+                </ul>
+                <button
+                  (click)="toggleExpanded(item.key)"
+                  [attr.aria-expanded]="isExpanded(item.key)"
+                  class="value-toggle"
+                  type="button">
+                  @if (isExpanded(item.key)) {
+                    <mat-icon>expand_less</mat-icon>
+                    <span i18n>Show less</span>
+                  } @else {
+                    <mat-icon>expand_more</mat-icon>
+                    <span i18n>Show {{ item.value.length - 1 }} more</span>
+                  }
+                </button>
+              </div>
+            } @else {
+              <div class="value">{{ item.value }}</div>
+            }
           }
-        }
-      </div>
-    }
-  </div>
+        </div>
+      }
+    </div>
+  }
 
   <div class="flex-column">
     <div class="details-header">

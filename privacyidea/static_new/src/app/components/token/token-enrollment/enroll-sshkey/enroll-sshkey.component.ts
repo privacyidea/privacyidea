@@ -16,17 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Output, signal } from "@angular/core";
+import { Component, forwardRef, inject, input, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   SshkeyApiPayloadMapper,
   SshkeyEnrollmentData
 } from "@app/mappers/token-api-payload/sshkey-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 
 const SSH_KEY_PATTERN =
   /^ssh-(rsa|dss|ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521) [A-Za-z0-9+/=]+( .+)?$/;
@@ -40,9 +44,12 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   selector: "app-enroll-sshkey",
   imports: [FormField, MatFormField, MatInput, MatLabel, MatError],
   templateUrl: "./enroll-sshkey.component.html",
-  styleUrl: "./enroll-sshkey.component.scss"
+  styleUrl: "./enroll-sshkey.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSshkeyComponent) }
+  ]
 })
-export class EnrollSshkeyComponent {
+export class EnrollSshkeyComponent extends EnrollTokenBase<SshkeyEnrollmentData> {
   disabled = input<boolean>(false);
   protected readonly enrollmentMapper: SshkeyApiPayloadMapper = inject(SshkeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -60,25 +67,7 @@ export class EnrollSshkeyComponent {
     disabled(f, () => this.disabled());
   });
 
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: SshkeyEnrollmentData;
-      mapper: TokenApiPayloadMapper<SshkeyEnrollmentData>;
-    } | null
-  >();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-
-  ngOnInit() {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: SshkeyEnrollmentData;
-    mapper: TokenApiPayloadMapper<SshkeyEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<SshkeyEnrollmentData> | null {
     if (!this.sshPublicKeyForm().valid()) {
       this.sshPublicKeyForm().markAsTouched();
       return null;
@@ -101,5 +90,5 @@ export class EnrollSshkeyComponent {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }
