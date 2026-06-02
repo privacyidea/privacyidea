@@ -382,6 +382,21 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
+                getChallengesForUser: function (callback, params, errback) {
+                    // Folded into the regular challenges list endpoint -
+                    // passing ?user=... switches it to user-aggregation mode
+                    // server-side. Distinct path was prone to shadowing by
+                    // tokens with literal serial=='user'.
+                    $http.get(tokenUrl + "/challenges/", {
+                        params: params,
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                        if (errback) { errback(error); }
+                    });
+                },
                 cancelChallenge: function (callback, transactionId) {
                     $http.delete(tokenUrl + "/challenges/transaction/" + transactionId, {
                         headers: {

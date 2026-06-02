@@ -808,10 +808,27 @@
 </div>
 
 <!-- ============ Active Challenges ====================== -->
-<div ng-show="loggedInUser.role === 'admin'
-              && checkRight('getchallenges')
-              && challengedata.count > 0">
-    <h4 translate>Active Challenges</h4>
+<!-- Collapsed by default. The toggle stays visible even when there are
+     zero challenges so admins can confirm the absence rather than
+     wondering whether the section was hidden by policy. Same pattern as
+     user.details.html. -->
+<div ng-show="loggedInUser.role === 'admin' && checkRight('getchallenges')"
+     style="margin-top: 1em;">
+    <button class="btn btn-transparent btn-block"
+            ng-click="toggleChallenges()">
+        <span class="glyphicon"
+              ng-class="{'glyphicon-chevron-down': challengesOpen, 'glyphicon-chevron-right': !challengesOpen}">
+        </span>
+        <span translate>Active Challenges</span>
+        <span>({{ challengedata.count }})</span>
+    </button>
+</div>
+<div ng-show="challengesOpen && loggedInUser.role === 'admin' && checkRight('getchallenges')"
+     style="margin-top: 1em;">
+    <div ng-show="challengedata.count === 0"
+         class="alert alert-info">
+        <span translate>No active challenges for this token.</span>
+    </div>
     <div uib-pagination ng-show="challengedata.count > challengesPerPage"
          total-items="challengedata.count"
          ng-model="challengeParams.page"
@@ -823,7 +840,7 @@
          max-size="5"
          boundary-links="true"
          ng-change="challengePageChanged()"></div>
-    <div class="table-responsive">
+    <div class="table-responsive" ng-show="challengedata.count > 0">
         <table class="table table-bordered table-striped" id="tabletokendetailchallenges">
             <thead>
             <tr>
@@ -832,7 +849,7 @@
                 <th translate>Expiration</th>
                 <th translate>Received</th>
                 <th translate>OTP valid</th>
-                <th></th>
+                <th ng-if="checkRight('cancelchallenge')"></th>
             </tr>
             </thead>
             <tbody>
@@ -845,7 +862,7 @@
                     <span class="label label-success" ng-show="challenge.otp_valid" translate>yes</span>
                     <span class="label label-default" ng-hide="challenge.otp_valid" translate>no</span>
                 </td>
-                <td>
+                <td ng-if="checkRight('cancelchallenge')">
                     <button class="btn btn-transparent btn-danger btn-sm"
                             ng-click="cancelChallenge(challenge.transaction_id, true)"
                             ng-hide="showCancelChallengeDialog[challenge.transaction_id]"

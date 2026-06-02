@@ -752,6 +752,19 @@ class TokenClass:
         # commit=False keeps the SQL DELETE inside this method's outer
         # transaction so token + challenge removal stays atomic on the DB
         # side (Redis eviction has no transaction concept and runs up-front).
+        #
+        # Caveat: if the outer transaction aborts after this point, the SQL
+        # challenge rows are restored but the Redis entries are already gone.
+        # Two cases:
+        # * DB-only challenges (cache off, or fallback writes): the SQL row
+        #   comes back on rollback, the next read finds it via the normal
+        #   cache-miss -> DB-fallback path. No observable loss.
+        # * Redis-only challenges (cache on, the steady state): there is no
+        #   SQL twin to restore. In-flight authentications for those
+        #   transaction IDs immediately fail with "challenge not found" and
+        #   the user has to start the MFA flow over.
+        # Token deletes rarely roll back in practice, but the asymmetry is
+        # real - do not rely on cross-store transactional semantics.
         from privacyidea.lib.challenge import delete_challenges
         delete_challenges(serial=self.token.serial, commit=False)
 

@@ -711,6 +711,11 @@ class PushTokenClass(TokenClass):
             if (challenges and challenges[0].is_valid()
                     and challenges[0].get_session() == ChallengeSession.ENROLLMENT):
                 challenges[0].set_otp_status(True)
+                # Explicit save commits the DB-backed Challenge - the DTO
+                # auto-saves itself, but Challenge.set_otp_status is just
+                # an in-memory mutation. Without this commit, a later
+                # exception in the same request would roll back the
+                # answered state for DB-only deployments.
                 challenges[0].save()
         except ResourceNotFoundError:
             raise ResourceNotFoundError("No token with this serial number in the rollout state 'clientwait'.")
@@ -796,6 +801,10 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                    # Explicit save commits the DB-backed Challenge - the
+                    # DTO auto-saves itself, but Challenge.set_* mutators
+                    # are in-memory only. Without this commit, the verify
+                    # state would not persist on DB-only deployments.
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
@@ -1292,7 +1301,7 @@ class PushTokenClass(TokenClass):
             # Step 2 of code_to_phone: the user submits the display_code shown after
             # the smartphone confirmed. Delegate entirely to check_challenge_response,
             # which enforces transaction_id binding and increments the failcount on
-            # wrong codes — avoiding both the unbounded-challenge-scan and the missing
+            # wrong codes - avoiding both the unbounded-challenge-scan and the missing
             # failcount increment that a hand-rolled loop here would have.
             otp_counter = self.check_challenge_response(passw=passw, options=options)
             if otp_counter >= 0:

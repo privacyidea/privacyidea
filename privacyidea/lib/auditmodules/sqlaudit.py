@@ -208,12 +208,22 @@ class Audit(AuditBase):
 
         :return: None
         """
+        # Columns whose values can legitimately be comma-separated lists.
+        # Truncate them per-entry so they don't get cut mid-token (which
+        # destroys forensic detail) - entries are shortened with a "+"
+        # suffix instead. ``serial`` and ``container_serial`` are nominally
+        # single-value fields, but callers that comma-join into them
+        # (e.g. multi-token operations) get the same protection rather
+        # than a silent mid-serial chop. ``info`` is free-form text, but
+        # callers (e.g. cancel_challenge_api) also use it as the overflow
+        # fallback for serial lists; the "," in data" gate below means
+        # comma-free info messages still get the regular [:length] cut.
+        comma_list_columns = {"policies", "serial", "container_serial", "info"}
         for column, length in self.custom_column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]
                 if isinstance(data, str):
-                    if column == "policies":
-                        # The policies column is shortened per comma entry
+                    if column in comma_list_columns and "," in data:
                         data = truncate_comma_list(data, length)
                     else:
                         data = data[:length]

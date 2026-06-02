@@ -70,6 +70,11 @@ import string
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from privacyidea.lib.cache.redis import ChallengeDTO
+    from privacyidea.models import Challenge
 
 from dateutil.tz import tzlocal
 from flask import Request
@@ -3115,14 +3120,20 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
 
 
 def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
-                     data=None, session: str = '', validitytime: int = 120) -> Challenge:
+                     data=None, session: str = '',
+                     validitytime: int = 120) -> "Challenge | ChallengeDTO":
     """
-    Create a new challenge and persist it — to Redis if available, to the DB otherwise.
+    Create a new challenge and persist it - to Redis if available, to the DB otherwise.
 
     This is the single entry point for challenge creation. When Redis is
     configured (PI_REDIS_URL), the challenge is written to Redis only and the
-    SQL INSERT is skipped.  If Redis is not configured or fails, the challenge
+    SQL INSERT is skipped. If Redis is not configured or fails, the challenge
     falls back to the database so it is never silently lost.
+
+    The concrete runtime type is either ``Challenge`` (DB path, has ``.id``)
+    or ``ChallengeDTO`` (cache path, has no ``.id``). Callers must use
+    ``transaction_id`` for identity - it's the only stable identifier across
+    both backends.
 
     :param serial: Serial number of the token this challenge belongs to
     :param transaction_id: Transaction id of the challenge. A new one is generated if None.

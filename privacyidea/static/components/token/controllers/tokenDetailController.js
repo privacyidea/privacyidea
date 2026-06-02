@@ -562,6 +562,13 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             // bypass it. Empty most of the time since challenges live 2–5 min.
             $scope.challengesPerPage = 15;
             $scope.challengeParams = {page: 1};
+            // Collapsed by default. The challenges section is a
+            // troubleshooting aid, and it stays hidden entirely when the
+            // count is zero - see user.details.html for the same pattern.
+            $scope.challengesOpen = false;
+            $scope.toggleChallenges = function () {
+                $scope.challengesOpen = !$scope.challengesOpen;
+            };
 
             $scope.getChallenges = function () {
                 TokenFactory.getChallenges(function (data) {

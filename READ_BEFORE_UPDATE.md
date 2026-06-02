@@ -1,6 +1,27 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+* A new admin policy action `cancelchallenge` has been added. Cancelling an active challenge via
+  `DELETE /token/challenges/transaction/<transaction_id>` previously required the `getchallenges`
+  right; it now requires the new, write-scoped `cancelchallenge` right. Admins who should only be
+  able to *inspect* open challenges will lose the ability to cancel them after the upgrade unless
+  you explicitly grant the new action. Review your admin policies that reference `getchallenges`
+  and decide whether each admin should also get `cancelchallenge`.
+
+* The optional Redis challenge cache (`PI_REDIS_CACHE_CHALLENGES`) is new in this release. If you
+  enable it, be aware that authentications that are mid-flight at the moment of any subsequent
+  upgrade may need to be restarted by the user - same expectation we already set for the SQL
+  schema upgrade. See the "Redis cache" section of the documentation for the full
+  payload-compatibility policy.
+
+* **HTTP API change** - `GET /token/challenges/...` no longer returns the `id` field for each
+  challenge. The integer ID was the SQL primary key, never a stable cross-deployment identifier,
+  and it was incompatible with the new Redis-backed challenges which have no SQL row. Use
+  `transaction_id` (already present, identical across both backends) instead. The change affects
+  `GET /token/challenges/`, `GET /token/challenges/<serial>`, and the new
+  `GET /token/challenges/user` endpoint. Integrations that indexed responses by `id` need to be
+  updated to use `transaction_id`.
+
 * The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,
   the schema update will flip them to `tokentype='deprecated'` and disable them, preserving the
   original type in `tokeninfo['original_tokentype']`. The migration logs a loud warning with the
@@ -17,7 +38,7 @@
 
   **Event handlers** that use the `rollout_state` condition with an empty string (`""`) to mean
   "fully enrolled" will silently stop matching after the migration. Update any such conditions to
-  use `enrolled` instead. You can find affected event handlers in the WebUI under *Config → Events*
+  use `enrolled` instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
 ## Update from 3.13 to 3.14

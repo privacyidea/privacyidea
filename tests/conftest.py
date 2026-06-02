@@ -19,6 +19,7 @@
 
 import os
 import shutil
+import socket
 
 # Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
 # import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
@@ -30,8 +31,24 @@ if _worker:
         os.environ["TEST_DATABASE_URL"] = f"sqlite:////tmp/pi-test-{_worker}.sqlite"
     elif _base.startswith("sqlite"):
         os.environ["TEST_DATABASE_URL"] = _base.replace(".sqlite", f"-{_worker}.sqlite")
-    else:  # mysql / postgres — suffix the DB name
+    else:  # mysql / postgres - suffix the DB name
         os.environ["TEST_DATABASE_URL"] = f"{_base}_{_worker}"
+
+
+def _redis_reachable(host="127.0.0.1", port=6379, timeout=0.2):
+    """Best-effort probe so the cache tests opt in automatically when a
+    local Redis is already running (e.g. via compose-dev.yml)."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+# Auto-enable real-Redis cache tests when compose-dev's Redis is up. CI
+# already exports TEST_REDIS_URL explicitly, so the probe is a no-op there.
+if "TEST_REDIS_URL" not in os.environ and _redis_reachable():
+    os.environ["TEST_REDIS_URL"] = "redis://127.0.0.1:6379/0"
 
 import pytest
 

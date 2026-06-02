@@ -29,13 +29,15 @@ The method is tested in test_lib_challenges
 """
 import datetime
 import logging
+from typing import NamedTuple
 
 import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
-from .cache import (evict_challenge, evict_challenges_for_serial, get_challenges_from_cache,
-                    redis_cache_configured, redis_feature_enabled)
+from .cache import (ChallengeDTO, evict_challenge,
+                    evict_challenges_for_serial, get_challenges_from_cache,
+                    get_redis, redis_feature_configured, redis_feature_enabled)
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -46,25 +48,47 @@ from privacyidea.models.utils import clob_to_varchar
 log = logging.getLogger(__name__)
 
 
+class DeleteChallengesResult(NamedTuple):
+    """
+    Outcome of a ``delete_challenges`` call.
+
+    ``removed`` counts entries cleared across both stores. ``cache_available``
+    is False only when the operator opted into the cache (PI_REDIS_CACHE_*)
+    but this worker couldn't reach Redis at delete time - i.e. the worker
+    is inside the retry cooldown after a recent failure. Other workers may
+    still be serving the entry from the shared cache until its TTL expires.
+    Callers that care to inform end users (e.g. the cancel-challenge API)
+    can use this to attach a warning to the response.
+    """
+    removed: int
+    cache_available: bool
+
+
 @log_with(log)
-def get_challenges(serial: str = None, transaction_id: str = None, challenge=None) -> list:
+def get_challenges(serial: str = None, transaction_id: str = None,
+                   challenge=None) -> "list[Challenge | ChallengeDTO]":
     """
     Return a list of challenge objects matching the given filters.
 
-    Checks the Redis cache first when available; falls back to the database on
-    a cache miss.  Returned objects are either Challenge SQLAlchemy model
-    instances (DB path) or ChallengeDTO instances (cache path) — both expose
-    the same interface so callers are unaffected.
+    Checks the Redis cache first when available, then falls back to the database
+    on a cache miss. Items are either ``Challenge`` (DB) or ``ChallengeDTO``
+    (cache); both expose the same duck-typed surface - see ``Challenge`` /
+    ``ChallengeDTO`` for the shared methods (``is_valid``, ``get_data``,
+    ``set_otp_status``, ``save``, ``delete``, ...) and attributes
+    (``transaction_id``, ``serial``, ``timestamp``, ``expiration``, ...).
 
     :param serial: challenges for this very serial number
     :param transaction_id: challenges with this very transaction id
     :param challenge: The challenge to be found
     :return: list of challenge objects
     """
-    cached = get_challenges_from_cache(serial=serial, transaction_id=transaction_id,
-                                       challenge=challenge)
-    if cached is not None:
+    cached = get_challenges_from_cache(serial=serial, transaction_id=transaction_id, challenge=challenge)
+    if isinstance(cached, list):
         return cached
+    # CacheState.MISS or CacheState.UNAVAILABLE: fall through to the DB.
+    # MISS still falls through because the DB may legitimately hold
+    # challenges created before caching was enabled - the cache is only
+    # authoritative for what it has, not for what it claims is absent.
 
     stmt = select(Challenge)
     if serial is not None:
@@ -109,7 +133,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     # When Redis is active and a specific exact-match filter is given, serve
     # from cache. Wildcard filters like "*foo*" (sent by the admin "List
     # Challenges" view) cannot be answered by Redis key lookups, so fall
-    # through to the DB path — which, when caching is enabled and challenges
+    # through to the DB path - which, when caching is enabled and challenges
     # only live in Redis, will return an empty list. That is a known
     # limitation of the cache-only mode; the unfiltered admin listing
     # requires Redis-side scanning that we don't implement here.
@@ -121,7 +145,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
             serial=serial if _is_exact(serial) else None,
             transaction_id=transaction_id if _is_exact(transaction_id) else None,
         )
-        if cached is not None:
+        if isinstance(cached, list):
             # Apply in-memory sort
             reverse = sortdir == "desc"
             sort_key = sortby if isinstance(sortby, str) else sortby.key
@@ -129,7 +153,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
                 cached = sorted(cached, key=lambda c: getattr(c, sort_key, c.timestamp),
                                 reverse=reverse)
             except TypeError as e:
-                # Mixed/incomparable types under sort_key — fall back to the
+                # Mixed/incomparable types under sort_key - fall back to the
                 # natural insertion order rather than failing the request.
                 log.debug("Cannot sort cached challenges by %r: %s", sort_key, e)
 
@@ -144,6 +168,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
                 "next": page + 1 if end < total else None,
                 "current": page,
                 "count": total,
+                "redis_cache_enabled": True,
             }
 
     stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
@@ -165,7 +190,12 @@ def get_challenges_paginate(serial=None, transaction_id=None,
         "prev": page - 1 if pagination.has_prev else None,
         "next": page + 1 if pagination.has_next else None,
         "current": page,
-        "count": pagination.total
+        "count": pagination.total,
+        # Surfaced so the admin "List Challenges" view can show a banner
+        # explaining why the list is degraded (Redis-stored challenges are
+        # not listable in aggregate). The exact-serial case in the token
+        # detail page still works via the cache fast-path above.
+        "redis_cache_enabled": redis_feature_enabled("challenges"),
     }
     return ret
 
@@ -210,12 +240,13 @@ def extract_answered_challenges(challenges):
     return answered_challenges
 
 
-def delete_challenges(serial: str = None, transaction_id: str = None, commit: bool = True) -> int:
+def delete_challenges(serial: str = None, transaction_id: str = None,
+                      commit: bool = True) -> DeleteChallengesResult:
     """
     Delete challenges from both the Redis cache (when active) and the
     database. With Redis enabled there are no SQL rows for new challenges,
     so callers that want a token's or container's challenges fully cleared
-    on deletion must reach into both stores — this function does so.
+    on deletion must reach into both stores - this function does so.
 
     :param serial: challenges for this very serial number
     :param transaction_id: challenges with this very transaction id
@@ -224,35 +255,46 @@ def delete_challenges(serial: str = None, transaction_id: str = None, commit: bo
         transaction (e.g. ``TokenClass.delete_token``). Redis eviction is
         always performed up-front and is not rolled back if the outer
         transaction aborts; on rollback the DB rows are restored and the
-        normal cache-miss → DB-fallback path takes over.
-    :return: number of challenges removed across both stores
+        normal cache-miss -> DB-fallback path takes over.
+    :return: a ``DeleteChallengesResult`` carrying the removed count and
+        a ``cache_available`` flag. The flag is False only when caching is
+        configured but this worker is in cooldown - surfacing it lets the
+        API layer warn the caller that the eviction may not have reached
+        every node yet (other workers can still serve the cached entry
+        until TTL).
     """
     removed = 0
-    # Gate on the configured cache, not on the per-worker live state. A worker
-    # that has locally tripped _disable_redis must still attempt eviction so
-    # cancelled challenges don't linger on the shared Redis instance and get
-    # resolved by other healthy workers until TTL.
-    if redis_cache_configured("challenges"):
+    # Distinguish "feature off" (no cache to worry about - cache_available
+    # is True by definition) from "feature on but we can't talk to Redis
+    # right now" (cache_available False). redis_feature_enabled collapses
+    # both into False, so we check the config flag and connectivity
+    # separately to give the caller the operator-meaningful signal.
+    cache_available = True
+    if redis_feature_configured("challenges"):
+        cache_available = get_redis() is not None
+    if cache_available and redis_feature_configured("challenges"):
         if transaction_id is not None:
-            # The read may still fail (worker locally disabled), so treat a
-            # None return as "unknown" and fall through to the unconditional
-            # evict_challenge call below.
-            cached = get_challenges_from_cache(transaction_id=transaction_id) or []
-            # Apply the optional serial filter the same way the SQL DELETE would.
-            if serial is not None:
-                cached = [c for c in cached if c.serial == serial]
-            for dto in cached:
-                evict_challenge(dto.transaction_id, dto.serial)
-                removed += 1
-            if not cached:
-                # We don't know the serial here, so pass "" — evict_challenge
-                # tolerates that and only the txn key gets deleted.
+            cached = get_challenges_from_cache(transaction_id=transaction_id)
+            if isinstance(cached, list):
+                # Apply the optional serial filter the same way the SQL DELETE would.
+                if serial is not None:
+                    cached = [c for c in cached if c.serial == serial]
+                for dto in cached:
+                    evict_challenge(dto.transaction_id, dto.serial)
+                    removed += 1
+            else:
+                # MISS or UNAVAILABLE: defensive evict to close the race
+                # where another worker's cache_challenge lands between
+                # our read and the DB delete.
                 evict_challenge(transaction_id, serial or "")
         elif serial is not None:
             # Iterate the serial-set so we can count removed entries.
-            cached = get_challenges_from_cache(serial=serial) or []
+            # MISS/UNAVAILABLE collapse to an empty list here, the
+            # evict_challenges_for_serial call below is idempotent.
+            cached = get_challenges_from_cache(serial=serial)
             evict_challenges_for_serial(serial)
-            removed += len(cached)
+            if isinstance(cached, list):
+                removed += len(cached)
 
     delete_stmt = delete(Challenge)
     if serial is not None:
@@ -262,14 +304,26 @@ def delete_challenges(serial: str = None, transaction_id: str = None, commit: bo
     result = db.session.execute(delete_stmt)
     if commit:
         db.session.commit()
-    return removed + result.rowcount
+    # Re-sample after the eviction work: if any eviction tripped
+    # _disable_redis mid-pipeline, the client is now None and the cache
+    # eviction didn't actually reach Redis. Reporting cache_available=True
+    # without this re-check would let cancel_challenge_api skip the
+    # stale-cache warning even though other workers may still serve the
+    # cached entry.
+    if cache_available and redis_feature_configured("challenges"):
+        cache_available = get_redis() is not None
+    return DeleteChallengesResult(removed=removed + result.rowcount,
+                                  cache_available=cache_available)
 
 
-def cancel_challenge(transaction_id: str) -> int:
+def cancel_challenge(transaction_id: str) -> DeleteChallengesResult:
     """
     Cancel a single challenge identified by ``transaction_id``, removing it
-    from both Redis (if cached) and the database. Returns the number of
-    challenges actually removed across both stores.
+    from both Redis (if cached) and the database.
+
+    Returns a ``DeleteChallengesResult`` carrying the removed count and a
+    ``cache_available`` flag - see ``delete_challenges`` for the meaning
+    of the flag and why callers may want to surface it.
     """
     return delete_challenges(transaction_id=transaction_id)
 
@@ -356,3 +410,25 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         from .token import remove_token
         remove_token(challenge.serial)
     return True
+
+
+def get_challenges_for_user(user) -> "list[Challenge | ChallengeDTO]":
+    """
+    Aggregate every still-valid challenge belonging to any token owned by
+    ``user``.
+
+    Fan-out is bounded by the number of tokens the user owns (typically a
+    handful), and per-token lookups hit the Redis fast-path when caching is
+    enabled. Intended for the old WebUI's user-detail accordion; the new
+    WebUI should reimplement this against its own state model.
+
+    Expired entries are filtered out: the Redis TTL has a clock-skew buffer
+    beyond ``expiration`` and DB rows live until the cleanup task runs, so
+    raw get_challenges() can return entries that have logically expired.
+    The accordion shows actionable challenges only.
+    """
+    from .token import get_tokens
+    collected = []
+    for token_obj in get_tokens(user=user):
+        collected.extend(get_challenges(serial=token_obj.token.serial))
+    return [c for c in collected if c.is_valid()]

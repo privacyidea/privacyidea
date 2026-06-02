@@ -164,6 +164,62 @@ angular.module("privacyideaApp")
                 }
             };
 
+            // Aggregate open challenges across every token the user owns.
+            // Cheap when Redis caching is on (per-serial Redis lookups),
+            // small fan-out in the DB-only path because users typically
+            // have few tokens. Wired to a collapsed accordion so the
+            // request only fires when the admin actually opens it.
+            $scope.userChallenges = {challenges: [], count: 0};
+            $scope.userChallengesLoaded = false;
+            $scope.userChallengesError = false;
+            $scope.getUserChallenges = function () {
+                $scope.userChallengesError = false;
+                TokenFactory.getChallengesForUser(
+                    function (data) {
+                        $scope.userChallenges = data.result.value;
+                        $scope.userChallengesLoaded = true;
+                    },
+                    {user: $scope.username, realm: $scope.realmname},
+                    function () {
+                        // Mark the fetch as completed (with error) so the
+                        // accordion doesn't auto-refire the request every
+                        // time the user toggles it during a backend outage.
+                        $scope.userChallengesLoaded = true;
+                        $scope.userChallengesError = true;
+                    }
+                );
+            };
+            // Plain button + show/hide div. Replaces an earlier
+            // uib-accordion attempt whose is-open two-way binding silently
+            // didn't write back to this scope in this codebase's
+            // angular-ui-bootstrap version - the visual toggle worked but
+            // the controller flag stayed undefined, so no fetch ever fired.
+            $scope.userChallengesOpen = false;
+            $scope.toggleUserChallenges = function () {
+                $scope.userChallengesOpen = !$scope.userChallengesOpen;
+                if ($scope.userChallengesOpen && !$scope.userChallengesLoaded) {
+                    $scope.getUserChallenges();
+                }
+            };
+
+            // Two-click cancel: first click asks for confirmation, second
+            // click actually issues the DELETE. Mirrors the same flow on
+            // the token-details page (tokenDetailController.cancelChallenge).
+            $scope.showCancelChallengeDialog = {};
+            $scope.cancelChallenge = function (transactionId, ask) {
+                if (ask) {
+                    $scope.showCancelChallengeDialog[transactionId] = true;
+                    return;
+                }
+                $scope.showCancelChallengeDialog[transactionId] = false;
+                TokenFactory.cancelChallenge(function () {
+                    // Re-fetch the user's challenges so the cancelled
+                    // transaction drops out of the table and the count
+                    // updates in the toggle button.
+                    $scope.getUserChallenges();
+                }, transactionId);
+            };
+
             // Change the pagination
             $scope.tokenPageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);

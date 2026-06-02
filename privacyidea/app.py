@@ -414,7 +414,9 @@ def create_app(config_name="development",
             engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
             engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
-    # Redis init, optional. get_redis() logs success/failure itself.
+    # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
+    # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)
+    # and a later request re-attempts transparently once the cooldown expires.
     if app.config.get(ConfigKey.REDIS_URL):
         with app.app_context():
             from privacyidea.lib.cache import get_redis
@@ -506,7 +508,9 @@ def create_docker_app():
         except Exception as e:
             raise RuntimeError(f"Could not connect to database: {e}")
 
-    # Redis init, optional. get_redis() logs success/failure itself.
+    # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
+    # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)
+    # and a later request re-attempts transparently once the cooldown expires.
     if app.config.get(ConfigKey.REDIS_URL):
         with app.app_context():
             from privacyidea.lib.cache import get_redis

@@ -17,32 +17,27 @@
 """
 Tests for the Redis challenge cache (privacyidea/lib/cache/redis.py).
 
-Two test strategies are used:
+All cache-behavior tests run against a real Redis instance. The runtime
+contract (TTL semantics, EXPIRE NX/GT, pipeline atomicity, decode_responses)
+is too subtle to reproduce faithfully with a hand-rolled mock - a real
+backend catches the bugs hand-rolled fakes silently mask.
 
-1. In-memory fake (FakeRedis + fake_redis_in_store)
-   No network required.  A minimal Redis double is injected directly into
-   the app-local store so get_redis() returns it without touching the network.
-   Covers the full DTO / cache logic and all fallback paths.
-   Runs unconditionally in every CI environment.
+Local DX: ``tests/conftest.py`` probes ``127.0.0.1:6379`` and auto-exports
+``TEST_REDIS_URL`` when reachable, so ``docker compose -f compose-dev.yml up -d redis``
+is the only step a developer needs. CI workflows export the URL explicitly
+against a Redis 7 service container.
 
-2. Real Redis (TestRealRedisIntegration)
-   Requires TEST_REDIS_URL to be set (e.g. redis://127.0.0.1:6379/0).
-   Skipped automatically when the env var is absent.  In CI, both the
-   MariaDB and PostgreSQL workflows spin up a Redis service container and
-   export TEST_REDIS_URL, so these tests always run there.
-   Catches issues the fake cannot: serialisation edge cases, pipeline
-   behaviour, actual TTL handling, and connection lifecycle.
-
-Where applicable, the same behaviour is verified against both the Redis
-path (DTO) and the DB fallback path to prove callers are unaffected by
-which backend is active.
+Tests that don't need Redis at all (pure DTO unit tests, the protocol
+contract check, the version-gate behaviour) run unconditionally.
 """
 import os
 import unittest
 from contextlib import contextmanager
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
+import redis as redis_lib
 
 from .base import MyTestCase
 from privacyidea.lib.cache.redis import (
@@ -53,132 +48,42 @@ from privacyidea.lib.cache.redis import (
     get_redis,
 )
 from privacyidea.lib.challenge import get_challenges, get_challenges_paginate
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import create_challenge, init_token, remove_token
 from privacyidea.models import Challenge, db
 from privacyidea.models.utils import utc_now
 
 
-class FakeRedis:
-    """
-    Minimal Redis double that covers the operations used by the cache module:
-    setex, get, mget, delete, sadd, srem, smembers, expire, pipeline.
-    Enough to make real logic run without a network connection.
-    """
-
-    def __init__(self):
-        self._data: dict[str, str] = {}  # key → value
-        self._sets: dict[str, set] = {}  # key → set of members
-        self._ttls: dict[str, int] = {}  # key → ttl seconds (last set)
-        self.ping_raises = False
-
-    def ping(self):
-        if self.ping_raises:
-            raise ConnectionError("fake ping failure")
-
-    def setex(self, key, ttl, value):
-        self._data[key] = value
-        self._ttls[key] = ttl
-
-    def get(self, key):
-        return self._data.get(key)
-
-    def mget(self, keys):
-        return [self._data.get(k) for k in keys]
-
-    def delete(self, *keys):
-        for k in keys:
-            self._data.pop(k, None)
-            self._sets.pop(k, None)
-            self._ttls.pop(k, None)
-
-    def sadd(self, key, *values):
-        self._sets.setdefault(key, set()).update(values)
-
-    def srem(self, key, *values):
-        if key in self._sets:
-            self._sets[key].discard(*values)
-
-    def smembers(self, key):
-        return set(self._sets.get(key, set()))
-
-    def expire(self, key, ttl, nx=False, xx=False, gt=False, lt=False):
-        # Mirror the Redis 7 EXPIRE flag semantics we rely on (NX, GT). The key
-        # must exist (as a value or a set) for any of these to apply.
-        if key not in self._data and key not in self._sets:
-            return 0
-        current = self._ttls.get(key)
-        if nx and current is not None:
-            return 0
-        if xx and current is None:
-            return 0
-        if gt and current is not None and ttl <= current:
-            return 0
-        if lt and current is not None and ttl >= current:
-            return 0
-        self._ttls[key] = ttl
-        return 1
-
-    def ttl(self, key):
-        if key not in self._data and key not in self._sets:
-            return -2
-        return self._ttls.get(key, -1)
-
-    def pipeline(self):
-        return _FakePipeline(self)
+_TEST_REDIS_URL = os.environ.get('TEST_REDIS_URL')
 
 
-class _FakePipeline:
-    """Accumulates commands and executes them all at once on execute()."""
-
-    def __init__(self, redis: FakeRedis):
-        self._r = redis
-        self._cmds = []
-
-    def setex(self, key, ttl, value):
-        self._cmds.append(('setex', key, ttl, value))
-        return self
-
-    def delete(self, *keys):
-        self._cmds.append(('delete', *keys))
-        return self
-
-    def sadd(self, key, *values):
-        self._cmds.append(('sadd', key, *values))
-        return self
-
-    def srem(self, key, *values):
-        self._cmds.append(('srem', key, *values))
-        return self
-
-    def expire(self, key, ttl, nx=False, xx=False, gt=False, lt=False):
-        self._cmds.append(('expire', key, ttl, nx, xx, gt, lt))
-        return self
-
-    def execute(self):
-        for cmd in self._cmds:
-            op, *args = cmd
-            getattr(self._r, op)(*args)
-        self._cmds.clear()
+# -----------------------------------------------------------------------------
+# Test infrastructure
+# -----------------------------------------------------------------------------
 
 
 @contextmanager
-def fake_redis_in_store(fake: FakeRedis | None = None, enable_challenges: bool = True):
+def redis_in_store(client, enable_challenges: bool = True):
     """
-    Context manager: inject *fake* (or None) into the app-local store so that
-    get_redis() returns it without network I/O, and flip on the per-feature
-    cache flag so callers actually exercise the cache path.  Cleans up on exit.
+    Inject *client* (or ``None``) into the app-local store so ``get_redis()``
+    returns it without re-running the connect path, and set the per-feature
+    cache flag so callers actually exercise the cache. Cleans up on exit.
+
+    Pass ``None`` to simulate a worker with no Redis configured at all.
     """
+    import os
     from flask import current_app
     store = get_app_local_store()
-    had_init = '_redis_initialized' in store
-    had_client = '_redis_client' in store
-    old_init = store.get('_redis_initialized')
-    old_client = store.get('_redis_client')
+    had_client = '_redis_client_entry' in store
+    old_client = store.get('_redis_client_entry')
 
-    store['_redis_initialized'] = True
-    store['_redis_client'] = fake
+    # Match the (pid, client) shape get_redis() now uses. client=None
+    # simulates "no Redis configured" and stores no entry.
+    if client is None:
+        store.pop('_redis_client_entry', None)
+    else:
+        store['_redis_client_entry'] = (os.getpid(), client)
 
     flag_key = 'PI_REDIS_CACHE_CHALLENGES'
     url_key = 'PI_REDIS_URL'
@@ -187,20 +92,26 @@ def fake_redis_in_store(fake: FakeRedis | None = None, enable_challenges: bool =
     old_flag = current_app.config.get(flag_key)
     old_url = current_app.config.get(url_key)
     current_app.config[flag_key] = enable_challenges
-    # redis_cache_configured() checks PI_REDIS_URL independent of the live
-    # client, so the cleanup paths need it stubbed too.
-    current_app.config[url_key] = "redis://fake:6379/0"
+    # When a client is given we also stub a URL so the config looks
+    # consistent. When the caller passes ``None`` they want to simulate
+    # "no Redis at all", so drop the URL too - otherwise ``get_redis()``
+    # would try to connect via the URL and produce a live client,
+    # defeating the test setup.
+    if client is None:
+        current_app.config.pop(url_key, None)
+    else:
+        current_app.config[url_key] = _TEST_REDIS_URL or "redis://stub:6379/0"
     try:
-        yield fake
+        yield client
     finally:
-        if had_init:
-            store['_redis_initialized'] = old_init
-        else:
-            store.pop('_redis_initialized', None)
         if had_client:
-            store['_redis_client'] = old_client
+            store['_redis_client_entry'] = old_client
         else:
-            store.pop('_redis_client', None)
+            store.pop('_redis_client_entry', None)
+        # Tests that trip _disable_redis or fail a probe set
+        # _redis_retry_after - clear it so the cooldown doesn't leak into
+        # unrelated tests in the same session.
+        store.pop('_redis_retry_after', None)
         if had_flag:
             current_app.config[flag_key] = old_flag
         else:
@@ -223,6 +134,51 @@ def _make_dto(serial='SE_CACHE_1', txn='txn-test-001', challenge='abc',
         timestamp=now,
         expiration=now + timedelta(seconds=offset_seconds),
     )
+
+
+@pytest.mark.skipif(not _TEST_REDIS_URL,
+                    reason="TEST_REDIS_URL not set - start compose-dev's Redis or export the env var")
+class _RealRedisBase(MyTestCase):
+    """
+    Shared base for tests that need a real Redis client.
+
+    Connects once per class to ``TEST_REDIS_URL``; flushes all ``pi:challenge:*``
+    keys before each test so tests can rely on a clean cache without
+    interfering with each other.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        import redis as redis_lib
+        try:
+            client = redis_lib.Redis.from_url(_TEST_REDIS_URL, decode_responses=True,
+                                              socket_connect_timeout=2, socket_timeout=2)
+            client.ping()
+        except Exception as e:
+            raise unittest.SkipTest(f"Redis not reachable at {_TEST_REDIS_URL}: {e}")
+        cls._real_client = client
+
+    def setUp(self):
+        super().setUp()
+        self._flush_cache()
+
+    def tearDown(self):
+        self._flush_cache()
+        super().tearDown()
+
+    def _flush_cache(self):
+        """Delete every pi:challenge:* key the cache uses. Cheaper than FLUSHDB
+        and doesn't disturb anything else sharing the Redis instance."""
+        client = type(self)._real_client
+        keys = list(client.scan_iter(match="pi:challenge:*"))
+        if keys:
+            client.delete(*keys)
+
+
+# -----------------------------------------------------------------------------
+# Pure DTO unit tests (no Redis needed)
+# -----------------------------------------------------------------------------
 
 
 class TestChallengeDTO(MyTestCase):
@@ -291,10 +247,15 @@ class TestChallengeDTO(MyTestCase):
             self.assertIn(key, result)
 
 
-class TestRedisCacheOperations(MyTestCase):
+# -----------------------------------------------------------------------------
+# Cache primitive behavior (against real Redis)
+# -----------------------------------------------------------------------------
 
-    def _write_dto(self, fake: FakeRedis, dto: ChallengeDTO):
-        with fake_redis_in_store(fake):
+
+class TestRedisCacheOperations(_RealRedisBase):
+
+    def _write_dto(self, dto: ChallengeDTO):
+        with redis_in_store(self._real_client):
             cache_challenge(
                 serial=dto.serial,
                 transaction_id=dto.transaction_id,
@@ -306,13 +267,10 @@ class TestRedisCacheOperations(MyTestCase):
             )
 
     def test_cache_then_read_by_txn(self):
-        fake = FakeRedis()
         dto = _make_dto(serial='RCACHE1', txn='txn-rcache-001')
-        self._write_dto(fake, dto)
-
-        with fake_redis_in_store(fake):
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(transaction_id='txn-rcache-001')
-
         self.assertIsNotNone(result)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].transaction_id, 'txn-rcache-001')
@@ -320,185 +278,146 @@ class TestRedisCacheOperations(MyTestCase):
         self.assertEqual(result[0].challenge, 'abc')
 
     def test_cache_then_read_by_serial(self):
-        fake = FakeRedis()
         dto = _make_dto(serial='RCACHE2', txn='txn-rcache-002')
-        self._write_dto(fake, dto)
-
-        with fake_redis_in_store(fake):
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(serial='RCACHE2')
-
         self.assertIsNotNone(result)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].serial, 'RCACHE2')
 
-    def test_cache_miss_by_txn_returns_none(self):
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+    def test_cache_miss_by_txn_returns_miss(self):
+        """Cache reachable, key absent -> CacheState.MISS (authoritative-empty)."""
+        from privacyidea.lib.cache import CacheState
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(transaction_id='nonexistent-txn')
-        self.assertIsNone(result)
+        self.assertIs(result, CacheState.MISS)
 
-    def test_cache_miss_by_serial_returns_none(self):
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+    def test_cache_miss_by_serial_returns_miss(self):
+        """Serial set not present -> MISS (cache speaks for the negative)."""
+        from privacyidea.lib.cache import CacheState
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(serial='NOSUCHSERIAL')
-        self.assertIsNone(result)
+        self.assertIs(result, CacheState.MISS)
 
-    def test_no_redis_returns_none(self):
-        with fake_redis_in_store(None):
+    def test_no_redis_returns_unavailable(self):
+        """Client absent -> UNAVAILABLE (can't speak for the cache state)."""
+        from privacyidea.lib.cache import CacheState
+        with redis_in_store(None):
             result = get_challenges_from_cache(serial='WHATEVER')
-        self.assertIsNone(result)
+        self.assertIs(result, CacheState.UNAVAILABLE)
 
-    def test_unfiltered_query_returns_none(self):
-        """get_challenges_from_cache(no args) must always return None — can't serve from cache."""
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+    def test_unfiltered_query_returns_unavailable(self):
+        """Unfiltered query can't be served from a key-value store -> UNAVAILABLE."""
+        from privacyidea.lib.cache import CacheState
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache()
-        self.assertIsNone(result)
+        self.assertIs(result, CacheState.UNAVAILABLE)
 
     def test_evict_removes_from_cache(self):
-        fake = FakeRedis()
+        from privacyidea.lib.cache import CacheState
         dto = _make_dto(serial='RCACHE3', txn='txn-rcache-003')
-        self._write_dto(fake, dto)
-
-        with fake_redis_in_store(fake):
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
             evict_challenge('txn-rcache-003', 'RCACHE3')
             result = get_challenges_from_cache(transaction_id='txn-rcache-003')
-
-        self.assertIsNone(result)
+        self.assertIs(result, CacheState.MISS)
 
     def test_multiple_challenges_same_serial(self):
-        fake = FakeRedis()
-        dto1 = _make_dto(serial='RCACHE4', txn='txn-rcache-004a')
-        dto2 = _make_dto(serial='RCACHE4', txn='txn-rcache-004b')
-        self._write_dto(fake, dto1)
-        self._write_dto(fake, dto2)
-
-        with fake_redis_in_store(fake):
+        self._write_dto(_make_dto(serial='RCACHE4', txn='txn-rcache-004a'))
+        self._write_dto(_make_dto(serial='RCACHE4', txn='txn-rcache-004b'))
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(serial='RCACHE4')
-
-        self.assertIsNotNone(result)
         self.assertEqual(len(result), 2)
-        txn_ids = {c.transaction_id for c in result}
-        self.assertEqual(txn_ids, {'txn-rcache-004a', 'txn-rcache-004b'})
+        self.assertEqual({c.transaction_id for c in result},
+                         {'txn-rcache-004a', 'txn-rcache-004b'})
 
     def test_serial_set_ttl_not_shrunk_by_shorter_challenge(self):
-        # Regression: writing a shorter-lived challenge after a longer-lived
-        # one for the same serial used to reset the shared serial-set TTL to
-        # the shorter value, which then expired the set before the longer
-        # challenge's own key — so get_challenges(serial=...) silently lost
-        # still-valid challenges. The fix uses EXPIRE NX + GT so the set TTL
-        # only ever grows.
-        fake = FakeRedis()
-        long_dto = _make_dto(serial='RCACHE_TTL', txn='txn-long', offset_seconds=600)
-        short_dto = _make_dto(serial='RCACHE_TTL', txn='txn-short', offset_seconds=30)
+        """Writing a shorter-lived challenge after a longer-lived one for the
+        same serial must not shrink the shared serial-set TTL. EXPIRE NX + GT
+        guarantees the TTL only grows."""
+        self._write_dto(_make_dto(serial='RCACHE_TTL', txn='txn-long', offset_seconds=600))
+        ttl_after_long = self._real_client.ttl('pi:challenge:serial:RCACHE_TTL')
+        self.assertGreaterEqual(ttl_after_long, 600)
 
-        self._write_dto(fake, long_dto)
-        ttl_after_long = fake.ttl('pi:challenge:serial:RCACHE_TTL')
-        self._write_dto(fake, short_dto)
-        ttl_after_short = fake.ttl('pi:challenge:serial:RCACHE_TTL')
+        self._write_dto(_make_dto(serial='RCACHE_TTL', txn='txn-short', offset_seconds=30))
+        ttl_after_short = self._real_client.ttl('pi:challenge:serial:RCACHE_TTL')
 
         # The shorter write must not have shrunk the set TTL.
-        self.assertGreaterEqual(ttl_after_short, ttl_after_long)
-        # Sanity: the kept TTL is the longer one (plus the buffer).
-        self.assertGreaterEqual(ttl_after_short, 600)
+        self.assertGreaterEqual(ttl_after_short, ttl_after_long - 5)
+        self.assertGreater(ttl_after_short, 60)
 
-        # And the reverse order must still extend the TTL up to the longer one.
-        fake2 = FakeRedis()
-        self._write_dto(fake2, _make_dto(serial='RCACHE_TTL2', txn='txn-s', offset_seconds=30))
-        self._write_dto(fake2, _make_dto(serial='RCACHE_TTL2', txn='txn-l', offset_seconds=600))
-        self.assertGreaterEqual(fake2.ttl('pi:challenge:serial:RCACHE_TTL2'), 600)
+        # Reverse order must still extend up to the longer one.
+        self._write_dto(_make_dto(serial='RCACHE_TTL2', txn='txn-s', offset_seconds=30))
+        self._write_dto(_make_dto(serial='RCACHE_TTL2', txn='txn-l', offset_seconds=600))
+        self.assertGreaterEqual(self._real_client.ttl('pi:challenge:serial:RCACHE_TTL2'), 600)
 
     def test_dto_save_updates_cache(self):
-        fake = FakeRedis()
         dto = _make_dto(serial='RCACHE5', txn='txn-rcache-005')
-        self._write_dto(fake, dto)
-
-        with fake_redis_in_store(fake):
-            result = get_challenges_from_cache(transaction_id='txn-rcache-005')
-            challenge = result[0]
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
+            challenge = get_challenges_from_cache(transaction_id='txn-rcache-005')[0]
             challenge.set_otp_status(True)
             challenge.save()
-
-            # Re-read from cache — otp_valid must now be True
             updated = get_challenges_from_cache(transaction_id='txn-rcache-005')
-
-        self.assertIsNotNone(updated)
         self.assertTrue(updated[0].otp_valid)
         self.assertEqual(updated[0].received_count, 1)
 
     def test_dto_save_updates_data_in_cache(self):
-        fake = FakeRedis()
         dto = _make_dto(serial='RCACHE6', txn='txn-rcache-006')
-        self._write_dto(fake, dto)
-
-        with fake_redis_in_store(fake):
-            result = get_challenges_from_cache(transaction_id='txn-rcache-006')
-            challenge = result[0]
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
+            challenge = get_challenges_from_cache(transaction_id='txn-rcache-006')[0]
             challenge.set_data({"mode": "push", "display_code": "1234"})
             challenge.save()
-
             updated = get_challenges_from_cache(transaction_id='txn-rcache-006')
-
         self.assertEqual(updated[0].get_data(), {"mode": "push", "display_code": "1234"})
 
     def test_dto_delete_evicts_from_cache(self):
-        fake = FakeRedis()
+        from privacyidea.lib.cache import CacheState
         dto = _make_dto(serial='RCACHE7', txn='txn-rcache-007')
-        self._write_dto(fake, dto)
-
-        with fake_redis_in_store(fake):
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(transaction_id='txn-rcache-007')
             result[0].delete()
             after_delete = get_challenges_from_cache(transaction_id='txn-rcache-007')
-
-        self.assertIsNone(after_delete)
+        self.assertIs(after_delete, CacheState.MISS)
 
     def test_cache_and_evict_no_op_when_feature_disabled(self):
-        # Both write paths must short-circuit without ever calling into the
-        # injected client when the per-feature flag is off.
-        from privacyidea.lib.cache import evict_challenge
-        fake = FakeRedis()
-        with fake_redis_in_store(fake, enable_challenges=False):
+        """Both write paths must short-circuit without touching Redis when
+        the per-feature flag is off."""
+        with redis_in_store(self._real_client, enable_challenges=False):
             cache_challenge(serial='RCACHE_OFF', transaction_id='txn-off',
                             challenge='c', data='', session='',
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
             evict_challenge('txn-off', 'RCACHE_OFF')
         # Nothing should have been written.
-        self.assertEqual(fake._data, {})
-        self.assertEqual(fake._sets, {})
+        self.assertIsNone(self._real_client.get('pi:challenge:txn:txn-off'))
+        self.assertEqual(self._real_client.smembers('pi:challenge:serial:RCACHE_OFF'), set())
 
     def test_evict_disables_redis_on_error(self):
-        from privacyidea.lib.cache import evict_challenge
-        fake = FakeRedis()
-
-        def boom(*a, **kw):
-            raise ConnectionError("simulated pipeline failure")
-
-        fake.pipeline = boom
-        with fake_redis_in_store(fake):
-            evict_challenge('txn-err', 'RCACHE_ERR')
+        with redis_in_store(self._real_client):
+            with patch.object(self._real_client, 'pipeline',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated pipeline failure")):
+                evict_challenge('txn-err', 'RCACHE_ERR')
             self.assertIsNone(get_redis())
 
     def test_get_from_cache_disables_redis_on_error(self):
-        fake = FakeRedis()
-
-        def boom(*a, **kw):
-            raise ConnectionError("simulated get failure")
-
-        fake.get = boom
-        with fake_redis_in_store(fake):
-            self.assertIsNone(get_challenges_from_cache(transaction_id='whatever'))
+        from privacyidea.lib.cache import CacheState
+        with redis_in_store(self._real_client):
+            with patch.object(self._real_client, 'get',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated get failure")):
+                self.assertIs(get_challenges_from_cache(transaction_id='whatever'),
+                              CacheState.UNAVAILABLE)
             self.assertIsNone(get_redis())
 
     def test_empty_serial_does_not_create_shared_set(self):
-        # Usernameless passkey auth init writes challenges with serial="".
-        # Those must NOT all be funneled into the single shared key
-        # `pi:challenge:serial:`, otherwise its membership grows unbounded
-        # across the worker lifetime and its TTL never settles (each new
-        # write extends it via GT). They are only ever fetched by
-        # transaction_id, so the set is pointless for them.
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        """Usernameless passkey auth init writes challenges with serial="".
+        Those must NOT all be funneled into the single shared key
+        ``pi:challenge:serial:``, otherwise its membership grows unbounded
+        across the worker lifetime and its TTL never settles. They are
+        only ever fetched by transaction_id, so the set is pointless."""
+        with redis_in_store(self._real_client):
             cache_challenge(serial='', transaction_id='txn-empty-1', challenge='c1',
                             data='', session='',
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
@@ -507,46 +426,42 @@ class TestRedisCacheOperations(MyTestCase):
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
         # Per-transaction keys must exist, but the shared serial set must not.
-        self.assertIn('pi:challenge:txn:txn-empty-1', fake._data)
-        self.assertIn('pi:challenge:txn:txn-empty-2', fake._data)
-        self.assertNotIn('pi:challenge:serial:', fake._sets)
+        self.assertIsNotNone(self._real_client.get('pi:challenge:txn:txn-empty-1'))
+        self.assertIsNotNone(self._real_client.get('pi:challenge:txn:txn-empty-2'))
+        self.assertEqual(self._real_client.smembers('pi:challenge:serial:'), set())
 
         # And txn-keyed retrieval must still work for both.
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             self.assertEqual(len(get_challenges_from_cache(transaction_id='txn-empty-1')), 1)
             self.assertEqual(len(get_challenges_from_cache(transaction_id='txn-empty-2')), 1)
 
     def test_evict_with_empty_serial(self):
-        # evict_challenge() must tolerate serial="" too — there is no set to
-        # SREM from, but the txn key must still go.
-        from privacyidea.lib.cache import evict_challenge
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        """evict_challenge() must tolerate serial="" too - there is no set to
+        SREM from, but the txn key must still go."""
+        with redis_in_store(self._real_client):
             cache_challenge(serial='', transaction_id='txn-evict-empty', challenge='c',
                             data='', session='',
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
-            self.assertIn('pi:challenge:txn:txn-evict-empty', fake._data)
+            self.assertIsNotNone(self._real_client.get('pi:challenge:txn:txn-evict-empty'))
             evict_challenge('txn-evict-empty', '')
-        self.assertNotIn('pi:challenge:txn:txn-evict-empty', fake._data)
+        self.assertIsNone(self._real_client.get('pi:challenge:txn:txn-evict-empty'))
 
     def test_get_from_cache_filters_by_challenge_value(self):
-        # Two challenges on the same serial; query must apply the
-        # ``challenge=`` filter and return only the matching one.
-        fake = FakeRedis()
-        self._write_dto(fake, _make_dto(serial='RCACHE_F', txn='txn-f-1', challenge='alpha'))
-        self._write_dto(fake, _make_dto(serial='RCACHE_F', txn='txn-f-2', challenge='beta'))
-        with fake_redis_in_store(fake):
+        """Two challenges on the same serial; query must apply the
+        ``challenge=`` filter and return only the matching one."""
+        self._write_dto(_make_dto(serial='RCACHE_F', txn='txn-f-1', challenge='alpha'))
+        self._write_dto(_make_dto(serial='RCACHE_F', txn='txn-f-2', challenge='beta'))
+        with redis_in_store(self._real_client):
             result = get_challenges_from_cache(serial='RCACHE_F', challenge='beta')
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].transaction_id, 'txn-f-2')
 
     def test_dto_save_no_op_when_feature_disabled(self):
-        # _update_challenge_in_cache's flag-disabled early return.
-        fake = FakeRedis()
+        """_update_challenge_in_cache's flag-disabled early return."""
         dto = _make_dto(serial='RCACHE_SOFF', txn='txn-soff')
-        self._write_dto(fake, dto)
-        original = fake._data['pi:challenge:txn:txn-soff']
-        with fake_redis_in_store(fake, enable_challenges=False):
+        self._write_dto(dto)
+        original = self._real_client.get('pi:challenge:txn:txn-soff')
+        with redis_in_store(self._real_client, enable_challenges=False):
             cached_dto = ChallengeDTO(
                 transaction_id='txn-soff', serial='RCACHE_SOFF',
                 challenge='c', data='', session='',
@@ -554,112 +469,100 @@ class TestRedisCacheOperations(MyTestCase):
             )
             cached_dto.set_otp_status(True)
             cached_dto.save()  # must short-circuit; key untouched
-        self.assertEqual(fake._data['pi:challenge:txn:txn-soff'], original)
+        self.assertEqual(self._real_client.get('pi:challenge:txn:txn-soff'), original)
 
     def test_save_disables_redis_on_error(self):
-        fake = FakeRedis()
         dto = _make_dto(serial='RCACHE_SAVE_ERR', txn='txn-save-err')
-        self._write_dto(fake, dto)
-
-        def boom(*a, **kw):
-            raise ConnectionError("simulated setex failure")
-
-        fake.setex = boom
-        with fake_redis_in_store(fake):
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
             cached = get_challenges_from_cache(transaction_id='txn-save-err')[0]
             cached.set_otp_status(True)
-            cached.save()  # _update_challenge_in_cache hits boom → _disable_redis
+            with patch.object(self._real_client, 'pipeline',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated setex failure")):
+                cached.save()
             self.assertIsNone(get_redis())
 
     def test_evict_for_serial_no_op_when_feature_disabled(self):
         from privacyidea.lib.cache import evict_challenges_for_serial
-        fake = FakeRedis()
-        with fake_redis_in_store(fake, enable_challenges=False):
+        with redis_in_store(self._real_client, enable_challenges=False):
             evict_challenges_for_serial('RCACHE_DISABLED')  # must not raise / touch Redis
 
     def test_evict_for_serial_disables_redis_on_error(self):
         from privacyidea.lib.cache import evict_challenges_for_serial
-        fake = FakeRedis()
-
-        def boom(*a, **kw):
-            raise ConnectionError("simulated smembers failure")
-
-        fake.smembers = boom
-
-        with fake_redis_in_store(fake):
-            evict_challenges_for_serial('RCACHE_BOOM')
+        with redis_in_store(self._real_client):
+            with patch.object(self._real_client, 'smembers',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated smembers failure")):
+                evict_challenges_for_serial('RCACHE_BOOM')
             self.assertIsNone(get_redis())
 
-    def test_get_from_cache_returns_none_when_all_keys_expired(self):
-        # Serial set has members, but the per-transaction keys have already
-        # expired and evaporated → caller must see a cache miss, not an
-        # empty success.
-        fake = FakeRedis()
-        fake._sets['pi:challenge:serial:RCACHE_GHOST'] = {'gone-1', 'gone-2'}
-        with fake_redis_in_store(fake):
-            self.assertIsNone(get_challenges_from_cache(serial='RCACHE_GHOST'))
+    def test_get_from_cache_returns_unavailable_when_all_keys_expired(self):
+        """Serial set has members, but the per-transaction keys have already
+        expired individually. The cache no longer has authoritative state
+        for this serial -> UNAVAILABLE so the caller falls back to the DB
+        rather than treating the absence as authoritative-empty."""
+        from privacyidea.lib.cache import CacheState
+        # Manually plant a serial set whose members have no backing txn keys.
+        self._real_client.sadd('pi:challenge:serial:RCACHE_GHOST', 'gone-1', 'gone-2')
+        with redis_in_store(self._real_client):
+            result = get_challenges_from_cache(serial='RCACHE_GHOST')
+        self.assertIs(result, CacheState.UNAVAILABLE)
 
-    def test_get_from_cache_returns_none_on_corrupt_payload(self):
-        fake = FakeRedis()
-        fake._data['pi:challenge:txn:txn-corrupt'] = '{"not": "a valid challenge"'  # truncated JSON
-        with fake_redis_in_store(fake):
-            self.assertIsNone(get_challenges_from_cache(transaction_id='txn-corrupt'))
+    def test_get_from_cache_returns_unavailable_on_corrupt_payload(self):
+        """Corrupt payload -> can't trust the cache for this entry -> UNAVAILABLE."""
+        from privacyidea.lib.cache import CacheState
+        self._real_client.set('pi:challenge:txn:txn-corrupt',
+                              '{"not": "a valid challenge"')  # truncated JSON
+        with redis_in_store(self._real_client):
+            self.assertIs(get_challenges_from_cache(transaction_id='txn-corrupt'),
+                          CacheState.UNAVAILABLE)
 
     def test_save_short_circuits_when_already_expired(self):
-        fake = FakeRedis()
         dto = _make_dto(serial='RCACHE_EXP', txn='txn-rcache-exp', offset_seconds=120)
-        self._write_dto(fake, dto)
-        with fake_redis_in_store(fake):
+        self._write_dto(dto)
+        with redis_in_store(self._real_client):
             cached = get_challenges_from_cache(transaction_id='txn-rcache-exp')[0]
             # Force the DTO into the past so _update_challenge_in_cache hits
             # the "already expired" early return without re-writing the key.
-            # Push expiration past the TTL buffer so the early-return fires.
             cached.expiration = utc_now() - timedelta(seconds=120)
-            existing_payload = fake._data['pi:challenge:txn:txn-rcache-exp']
+            existing_payload = self._real_client.get('pi:challenge:txn:txn-rcache-exp')
             cached.set_otp_status(True)
             cached.save()
-        # Key must be unchanged — the save() should not have re-written an
-        # already-expired challenge.
-        self.assertEqual(fake._data['pi:challenge:txn:txn-rcache-exp'], existing_payload)
+        self.assertEqual(self._real_client.get('pi:challenge:txn:txn-rcache-exp'),
+                         existing_payload)
 
     def test_redis_disabled_on_operation_error(self):
         """If a Redis operation raises, the client must be disabled for this worker."""
-        fake = FakeRedis()
-
-        def boom(*a, **kw):
-            raise ConnectionError("simulated mid-flight failure")
-
-        fake.setex = boom
-
-        with fake_redis_in_store(fake):
-            # cache_challenge internally calls pipeline → setex → boom → _disable_redis
+        with redis_in_store(self._real_client):
             dto = _make_dto(serial='RCACHE8', txn='txn-rcache-008')
-            cache_challenge(
-                serial=dto.serial,
-                transaction_id=dto.transaction_id,
-                challenge=dto.challenge,
-                data=dto.data,
-                session=dto.session,
-                timestamp=dto.timestamp,
-                expiration=dto.expiration,
-            )
-            # After the failure, get_redis() must return None
+            with patch.object(self._real_client, 'pipeline',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated mid-flight failure")):
+                cache_challenge(
+                    serial=dto.serial,
+                    transaction_id=dto.transaction_id,
+                    challenge=dto.challenge,
+                    data=dto.data,
+                    session=dto.session,
+                    timestamp=dto.timestamp,
+                    expiration=dto.expiration,
+                )
             self.assertIsNone(get_redis())
 
 
-class TestCreateChallengeIntegration(MyTestCase):
-    """
-    Test create_challenge() and get_challenges() end-to-end.
-    The same assertions run for both the Redis path (DTO) and the DB path,
-    proving that callers are truly transparent to the backend.
-    """
+# -----------------------------------------------------------------------------
+# Higher-level create_challenge / get_challenges integration
+# -----------------------------------------------------------------------------
+
+
+class TestCreateChallengeIntegration(_RealRedisBase):
+    """End-to-end tests for ``create_challenge`` + ``get_challenges`` with the
+    cache layer engaged. The same assertions run for both the Redis path (DTO)
+    and the DB path, proving callers are transparent to the backend."""
 
     serial = 'SE_INTG_CHAL'
 
     def setUp(self):
         super().setUp()
         self._token = init_token({"genkey": 1, "serial": self.serial, "pin": "pin"})
-        # Clean up any leftover challenges
         Challenge.query.filter_by(serial=self.serial).delete()
         db.session.commit()
 
@@ -668,112 +571,88 @@ class TestCreateChallengeIntegration(MyTestCase):
         db.session.commit()
         super().tearDown()
 
-    def _assert_challenge_readable(self, txn_id: str, fake: FakeRedis | None):
+    def _assert_challenge_readable(self, txn_id: str, client):
         """Shared assertions for both backends."""
-        with fake_redis_in_store(fake):
-            # lookup by transaction_id
+        with redis_in_store(client):
             by_txn = get_challenges(serial=self.serial, transaction_id=txn_id)
             self.assertEqual(len(by_txn), 1)
             self.assertEqual(by_txn[0].transaction_id, txn_id)
             self.assertEqual(by_txn[0].serial, self.serial)
             self.assertTrue(by_txn[0].is_valid())
 
-            # lookup by serial
             by_serial = get_challenges(serial=self.serial)
             txn_ids = [c.transaction_id for c in by_serial]
             self.assertIn(txn_id, txn_ids)
 
     def test_create_challenge_db_path(self):
         """With no Redis, challenge must be persisted to the DB."""
-        with fake_redis_in_store(None):
+        with redis_in_store(None):
             ch = create_challenge(self.serial, challenge='testchallenge', validitytime=120)
             txn_id = ch.transaction_id
 
-        # DB row must exist
         row = Challenge.query.filter_by(transaction_id=txn_id).first()
         self.assertIsNotNone(row)
-
         self._assert_challenge_readable(txn_id, None)
 
     def test_create_challenge_redis_path(self):
-        """With Redis available, challenge is stored in cache only — no DB row."""
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        """With Redis available, challenge is stored in cache only - no DB row."""
+        with redis_in_store(self._real_client):
             ch = create_challenge(self.serial, challenge='testchallenge', validitytime=120)
             txn_id = ch.transaction_id
 
-        # No DB row should exist
         row = Challenge.query.filter_by(transaction_id=txn_id).first()
         self.assertIsNone(row, "Challenge must NOT be written to DB when Redis is available")
-
-        self._assert_challenge_readable(txn_id, fake)
+        self._assert_challenge_readable(txn_id, self._real_client)
 
     def test_create_challenge_flag_disabled_writes_to_db(self):
-        """
-        With Redis reachable but PI_REDIS_CACHE_CHALLENGES off, create_challenge()
-        must write through to the DB and skip the cache entirely.
-        """
-        fake = FakeRedis()
-        with fake_redis_in_store(fake, enable_challenges=False):
+        """With Redis reachable but PI_REDIS_CACHE_CHALLENGES off,
+        create_challenge() writes through to the DB and skips the cache."""
+        with redis_in_store(self._real_client, enable_challenges=False):
             ch = create_challenge(self.serial, challenge='flag_off', validitytime=120)
             txn_id = ch.transaction_id
 
         row = Challenge.query.filter_by(transaction_id=txn_id).first()
         self.assertIsNotNone(row, "Challenge must be written to DB when feature flag is off")
-        # And nothing should have been written to Redis
-        self.assertEqual(len(fake._data), 0,
-                         "No keys should exist in Redis when feature flag is off")
+        # And nothing should have been written to Redis.
+        self.assertIsNone(self._real_client.get(f'pi:challenge:txn:{txn_id}'))
 
     def test_get_challenges_flag_disabled_reads_from_db(self):
-        """
-        Even if a stale key happens to be in Redis, get_challenges() must skip
-        the cache and serve from the DB when the feature flag is off.
-        """
+        """Even if a stale key happens to be in Redis, get_challenges() must
+        skip the cache and serve from the DB when the feature flag is off."""
         ch = Challenge(self.serial, transaction_id=None, challenge='db_only',
                        data='', session='', validitytime=120)
         ch.save()
         txn_id = ch.transaction_id
 
-        fake = FakeRedis()
-        with fake_redis_in_store(fake, enable_challenges=False):
+        with redis_in_store(self._real_client, enable_challenges=False):
             result = get_challenges(serial=self.serial, transaction_id=txn_id)
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].transaction_id, txn_id)
-        # Confirm the DB type came back, not a DTO
+        # Confirm the DB type came back, not a DTO.
         self.assertIsInstance(result[0], Challenge)
 
     def test_create_challenge_redis_fallback_to_db_on_write_failure(self):
-        """If cache_challenge() fails, create_challenge() must fall back to DB."""
-        fake = FakeRedis()
+        """If cache_challenge() fails, create_challenge() falls back to DB."""
+        with redis_in_store(self._real_client):
+            with patch.object(self._real_client, 'pipeline',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated write failure")):
+                ch = create_challenge(self.serial, challenge='failover', validitytime=120)
+                txn_id = ch.transaction_id
 
-        def boom(*a, **kw):
-            raise ConnectionError("fake write failure")
-
-        fake.setex = boom
-
-        with fake_redis_in_store(fake):
-            ch = create_challenge(self.serial, challenge='failover', validitytime=120)
-            txn_id = ch.transaction_id
-
-        # Redis was disabled; challenge must have been saved to DB
+        # Redis was disabled, challenge must have been saved to DB.
         row = Challenge.query.filter_by(transaction_id=txn_id).first()
         self.assertIsNotNone(row, "Challenge must fall back to DB when Redis write fails")
 
     def test_get_challenges_falls_back_to_db_on_cache_miss(self):
-        """
-        If a transaction_id is not in Redis (e.g. challenge was created before
-        Redis was enabled), get_challenges() must fall back to the DB.
-        """
-        # Write directly to DB, bypassing cache
+        """A challenge in the DB but not in Redis must still be found
+        (e.g. challenge was created before the cache was enabled)."""
         ch = Challenge(self.serial, transaction_id=None, challenge='db_only',
                        data='', session='', validitytime=120)
         ch.save()
         txn_id = ch.transaction_id
 
-        # Empty fake Redis — the key won't be there
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             result = get_challenges(serial=self.serial, transaction_id=txn_id)
 
         self.assertEqual(len(result), 1)
@@ -781,8 +660,7 @@ class TestCreateChallengeIntegration(MyTestCase):
 
     def test_otp_status_update_survives_roundtrip_redis(self):
         """set_otp_status + save must be visible on the next get_challenges call."""
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             ch = create_challenge(self.serial, challenge='roundtrip', validitytime=120)
             txn_id = ch.transaction_id
 
@@ -798,7 +676,7 @@ class TestCreateChallengeIntegration(MyTestCase):
 
     def test_otp_status_update_survives_roundtrip_db(self):
         """Same as above but with DB path (no Redis)."""
-        with fake_redis_in_store(None):
+        with redis_in_store(None):
             ch = create_challenge(self.serial, challenge='roundtrip_db', validitytime=120)
             txn_id = ch.transaction_id
 
@@ -812,8 +690,7 @@ class TestCreateChallengeIntegration(MyTestCase):
         self.assertTrue(updated[0].otp_valid)
 
     def test_delete_challenge_redis(self):
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             ch = create_challenge(self.serial, challenge='to_delete', validitytime=120)
             txn_id = ch.transaction_id
 
@@ -822,12 +699,11 @@ class TestCreateChallengeIntegration(MyTestCase):
 
             after = get_challenges(serial=self.serial, transaction_id=txn_id)
 
-        # Cache miss → falls back to DB → also nothing there
+        # Cache miss -> falls back to DB -> also nothing there.
         self.assertEqual(len(after), 0)
 
     def test_multiple_challenges_same_serial_redis(self):
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             ch1 = create_challenge(self.serial, challenge='c1', validitytime=120)
             ch2 = create_challenge(self.serial, challenge='c2', validitytime=120)
 
@@ -839,8 +715,7 @@ class TestCreateChallengeIntegration(MyTestCase):
 
     def test_get_challenges_paginate_by_serial_redis(self):
         """get_challenges_paginate filtered by serial must be served from Redis."""
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             ch1 = create_challenge(self.serial, challenge='p1', validitytime=120)
             ch2 = create_challenge(self.serial, challenge='p2', validitytime=120)
 
@@ -850,13 +725,12 @@ class TestCreateChallengeIntegration(MyTestCase):
         txn_ids = {c['transaction_id'] for c in result['challenges']}
         self.assertIn(ch1.transaction_id, txn_ids)
         self.assertIn(ch2.transaction_id, txn_ids)
-        # No DB rows — unfiltered DB query would return 0
+        # No DB rows - unfiltered DB query would return 0.
         self.assertEqual(Challenge.query.filter_by(serial=self.serial).count(), 0)
 
     def test_get_challenges_paginate_by_txn_redis(self):
         """get_challenges_paginate filtered by transaction_id must be served from Redis."""
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        with redis_in_store(self._real_client):
             ch = create_challenge(self.serial, challenge='p_txn', validitytime=120)
             txn_id = ch.transaction_id
 
@@ -866,13 +740,11 @@ class TestCreateChallengeIntegration(MyTestCase):
         self.assertEqual(result['challenges'][0]['transaction_id'], txn_id)
 
     def test_paginate_falls_back_to_natural_order_on_unsortable_field(self):
-        # Sorting by a field whose value is None on some entries (here:
-        # `session` is empty for one challenge and a string for another)
-        # raises TypeError under Python 3 comparisons. The paginator must
-        # swallow the TypeError and return results in natural order rather
-        # than failing the request.
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        """Sorting by a field whose value is None on some entries raises
+        TypeError under Python 3 comparisons. The paginator must swallow
+        the TypeError and return results in natural order rather than
+        failing the request."""
+        with redis_in_store(self._real_client):
             ch1 = create_challenge(self.serial, challenge='ord1', session='b', validitytime=120)
             ch2 = create_challenge(self.serial, challenge='ord2', validitytime=120)
             # Mutate one DTO's session to None to provoke the comparator failure.
@@ -888,156 +760,25 @@ class TestCreateChallengeIntegration(MyTestCase):
         self.assertEqual(returned, {ch1.transaction_id, ch2.transaction_id})
 
     def test_get_challenges_paginate_unfiltered_empty_with_redis(self):
-        """Unfiltered paginate always queries the DB — empty when Redis is active."""
-        fake = FakeRedis()
-        with fake_redis_in_store(fake):
+        """Unfiltered paginate always queries the DB - empty when Redis is active."""
+        with redis_in_store(self._real_client):
             create_challenge(self.serial, challenge='p_nofilt', validitytime=120)
             result = get_challenges_paginate()  # no serial, no txn_id
 
-        # DB has no rows, so result is empty
         self.assertEqual(result['count'], 0)
         self.assertEqual(result['challenges'], [])
 
-
-# Real-Redis integration tests — skipped when TEST_REDIS_URL is not set.
-_TEST_REDIS_URL = os.environ.get('TEST_REDIS_URL')
-
-
-@pytest.mark.skipif(not _TEST_REDIS_URL, reason="TEST_REDIS_URL not set — no Redis server available")
-class TestRealRedisIntegration(MyTestCase):
-    """
-    Runs a subset of the integration tests against a real Redis instance.
-    This catches issues that the in-memory fake cannot: serialisation edge
-    cases, pipeline behaviour, actual TTL handling, connection lifecycle, etc.
-    """
-
-    serial = 'SE_REAL_REDIS'
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        import redis as redis_lib
-        # Verify the server is reachable before the whole class runs.
-        try:
-            client = redis_lib.Redis.from_url(_TEST_REDIS_URL, decode_responses=True,
-                                              socket_connect_timeout=2, socket_timeout=2)
-            client.ping()
-        except Exception as e:
-            raise unittest.SkipTest(f"Redis not reachable at {_TEST_REDIS_URL}: {e}")
-        cls._real_client = client
-
-    def setUp(self):
-        super().setUp()
-        self._token = init_token({"genkey": 1, "serial": self.serial, "pin": "pin"})
-        Challenge.query.filter_by(serial=self.serial).delete()
-        db.session.commit()
-        # Flush any leftover keys from previous runs
-        self._real_client.delete(
-            f"pi:challenge:serial:{self.serial}",
-        )
-
-    def tearDown(self):
-        Challenge.query.filter_by(serial=self.serial).delete()
-        db.session.commit()
-        super().tearDown()
-
-    @contextmanager
-    def _real_redis(self):
-        """Inject the real Redis client into the app-local store."""
-        with fake_redis_in_store(self._real_client):
-            yield
-
-    def test_create_and_read_challenge(self):
-        with self._real_redis():
-            ch = create_challenge(self.serial, challenge='real_redis_test', validitytime=120)
-            txn_id = ch.transaction_id
-
-            # Must be readable from cache
-            by_txn = get_challenges(serial=self.serial, transaction_id=txn_id)
-            self.assertEqual(len(by_txn), 1)
-            self.assertEqual(by_txn[0].transaction_id, txn_id)
-            self.assertTrue(by_txn[0].is_valid())
-
-        # Must NOT be in the DB (Redis-only path)
-        row = Challenge.query.filter_by(transaction_id=txn_id).first()
-        self.assertIsNone(row)
-
-    def test_otp_status_roundtrip(self):
-        with self._real_redis():
-            ch = create_challenge(self.serial, challenge='otp_roundtrip', validitytime=120)
-            txn_id = ch.transaction_id
-
-            challenges = get_challenges(serial=self.serial, transaction_id=txn_id)
-            challenges[0].set_otp_status(True)
-            challenges[0].save()
-
-            updated = get_challenges(serial=self.serial, transaction_id=txn_id)
-
-        self.assertTrue(updated[0].otp_valid)
-        self.assertEqual(updated[0].received_count, 1)
-
-    def test_set_data_roundtrip(self):
-        with self._real_redis():
-            ch = create_challenge(self.serial, challenge='data_roundtrip', validitytime=120)
-            txn_id = ch.transaction_id
-
-            challenges = get_challenges(serial=self.serial, transaction_id=txn_id)
-            challenges[0].set_data({"mode": "push", "display_code": "9876"})
-            challenges[0].save()
-
-            updated = get_challenges(serial=self.serial, transaction_id=txn_id)
-
-        self.assertEqual(updated[0].get_data(), {"mode": "push", "display_code": "9876"})
-
-    def test_delete_challenge(self):
-        with self._real_redis():
-            ch = create_challenge(self.serial, challenge='to_delete', validitytime=120)
-            txn_id = ch.transaction_id
-
-            challenges = get_challenges(serial=self.serial, transaction_id=txn_id)
-            challenges[0].delete()
-
-            after = get_challenges(serial=self.serial, transaction_id=txn_id)
-
-        self.assertEqual(len(after), 0)
-
-    def test_multiple_challenges_same_serial(self):
-        with self._real_redis():
-            ch1 = create_challenge(self.serial, challenge='c1', validitytime=120)
-            ch2 = create_challenge(self.serial, challenge='c2', validitytime=120)
-
-            result = get_challenges(serial=self.serial)
-
-        txn_ids = {c.transaction_id for c in result}
-        self.assertIn(ch1.transaction_id, txn_ids)
-        self.assertIn(ch2.transaction_id, txn_ids)
-
-    def test_cache_miss_falls_back_to_db(self):
-        """Challenge in DB but not in Redis must still be found via get_challenges()."""
-        ch = Challenge(self.serial, transaction_id=None, challenge='db_only',
-                       data='', session='', validitytime=120)
-        ch.save()
-        txn_id = ch.transaction_id
-
-        with self._real_redis():
-            result = get_challenges(serial=self.serial, transaction_id=txn_id)
-
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].transaction_id, txn_id)
-
     def test_cancel_enrollment_via_multichallenge_no_attribute_error(self):
-        """Regression: cancel_enrollment_via_multichallenge() used to log
-        challenge.id, which doesn't exist on Redis-backed ChallengeDTOs and
-        raised AttributeError instead of returning False on the early-out
-        log paths."""
+        """cancel_enrollment_via_multichallenge() must not AttributeError on
+        Redis-backed ChallengeDTOs (no .id) on its early-out log paths."""
         from privacyidea.lib.challenge import cancel_enrollment_via_multichallenge
-        with self._real_redis():
-            # No data on the challenge — hits the "No data found" log/return path.
+        with redis_in_store(self._real_client):
+            # No data on the challenge - hits the "No data found" log path.
             ch = create_challenge(self.serial, challenge='no_data', validitytime=120)
             self.assertFalse(cancel_enrollment_via_multichallenge(ch.transaction_id))
 
-            # Data present but optional flag is False — hits the
-            # "does not have the action ... set to True" log/return path.
+            # Data present but optional flag is False - hits the
+            # "does not have the action ... set to True" log path.
             ch2 = create_challenge(self.serial, challenge='opt_false', validitytime=120,
                                    data={
                                        PolicyAction.ENROLL_VIA_MULTICHALLENGE: "HOTP",
@@ -1046,12 +787,12 @@ class TestRealRedisIntegration(MyTestCase):
             self.assertFalse(cancel_enrollment_via_multichallenge(ch2.transaction_id))
 
     def test_remove_token_evicts_redis_challenges(self):
-        """Regression: deleting a token must drop its Redis-cached challenges
-        so transaction IDs cannot keep resolving until TTL expiry."""
+        """Deleting a token drops its Redis-cached challenges so transaction
+        IDs can't keep resolving until TTL expiry."""
         serial = 'SE_REAL_REDIS_LIFECYCLE'
         init_token({"genkey": 1, "serial": serial, "pin": "pin"})
         try:
-            with self._real_redis():
+            with redis_in_store(self._real_client):
                 ch = create_challenge(serial, challenge='will_be_orphaned', validitytime=600)
                 txn_id = ch.transaction_id
                 # Sanity: transaction is resolvable from the cache pre-deletion.
@@ -1061,23 +802,156 @@ class TestRealRedisIntegration(MyTestCase):
 
                 # Both the per-transaction key and the serial set must be gone.
                 self.assertIsNone(self._real_client.get(f"pi:challenge:txn:{txn_id}"))
-                self.assertEqual(self._real_client.smembers(f"pi:challenge:serial:{serial}"), set())
+                self.assertEqual(
+                    self._real_client.smembers(f"pi:challenge:serial:{serial}"), set())
         finally:
-            # remove_token() above is the cleanup; nothing left to do.
             Challenge.query.filter_by(serial=serial).delete()
             db.session.commit()
 
-    def test_serial_set_ttl_not_shrunk_by_shorter_challenge(self):
-        """Regression: shorter-lived challenge must not shrink the shared serial-set TTL."""
-        serial_key = f"pi:challenge:serial:{self.serial}"
-        with self._real_redis():
-            create_challenge(self.serial, challenge='long_lived', validitytime=600)
-            ttl_after_long = self._real_client.ttl(serial_key)
-            self.assertGreaterEqual(ttl_after_long, 600)
 
-            create_challenge(self.serial, challenge='short_lived', validitytime=30)
-            ttl_after_short = self._real_client.ttl(serial_key)
+# -----------------------------------------------------------------------------
+# DTO behavior contracts (no Redis needed)
+# -----------------------------------------------------------------------------
 
-        # Set TTL must not have been pulled down to ~30s by the shorter write.
-        self.assertGreaterEqual(ttl_after_short, ttl_after_long - 5)
-        self.assertGreater(ttl_after_short, 60)
+
+class TestChallengeDTOIdAttribute(MyTestCase):
+    """Cache-only challenges intentionally do NOT expose ``.id`` - reading
+    it raises AttributeError so misuse is caught at the source rather than
+    silently logging or comparing None on cache-served entries."""
+
+    def test_dto_does_not_expose_id(self):
+        dto = _make_dto(serial='RPROTO', txn='txn-proto-1')
+        with self.assertRaises(AttributeError):
+            _ = dto.id
+
+
+# -----------------------------------------------------------------------------
+# Connection lifecycle: unified cooldown
+# -----------------------------------------------------------------------------
+
+
+class TestCooldownLifecycle(_RealRedisBase):
+    """The connection lifecycle is driven by a single ``_redis_retry_after``
+    timestamp. Any failure (init or runtime) sets the cooldown; ``get_redis``
+    short-circuits to ``None`` inside the window and retries once it
+    expires. No one-way latch, no separate cleanup-only bypass."""
+
+    def test_disable_redis_sets_cooldown_and_clears_client(self):
+        """_disable_redis drops the cached client and arms the cooldown."""
+        from privacyidea.lib.cache.redis import _disable_redis
+        from privacyidea.lib.framework import get_app_local_store
+        with redis_in_store(self._real_client):
+            store = get_app_local_store()
+            self.assertIsNotNone(store.get('_redis_client_entry'))
+            _disable_redis(RuntimeError("simulated"))
+            self.assertIsNone(store.get('_redis_client_entry'))
+            self.assertGreater(store.get('_redis_retry_after', 0), 0)
+
+    def test_get_redis_short_circuits_during_cooldown(self):
+        """Inside the cooldown window get_redis() returns None without
+        attempting a reconnect - that's the guarantee against paying a
+        timeout on every hot-path request during an outage."""
+        from privacyidea.lib.cache.redis import _disable_redis
+        with redis_in_store(self._real_client):
+            _disable_redis(RuntimeError("simulated"))
+            # Even though PI_REDIS_URL is configured and reachable, the
+            # cooldown blocks a retry.
+            self.assertIsNone(get_redis())
+
+    def test_get_redis_recovers_after_cooldown_expires(self):
+        """Once the cooldown elapses, get_redis() reconnects and the cache
+        is back online - no worker restart needed."""
+        import time as _time
+        from privacyidea.lib.cache.redis import _disable_redis
+        from privacyidea.lib.framework import get_app_local_store
+        with redis_in_store(self._real_client):
+            _disable_redis(RuntimeError("simulated"))
+            # Fast-forward the cooldown by rewinding the timestamp.
+            store = get_app_local_store()
+            store['_redis_retry_after'] = _time.monotonic() - 1
+            # Now get_redis() should reconnect.
+            client = get_redis()
+            self.assertIsNotNone(client)
+            # And the cooldown timestamp is cleared on success.
+            self.assertNotIn('_redis_retry_after', store)
+
+    def test_get_redis_reconnects_after_fork(self):
+        """A client cached by a previous PID (e.g. uWSGI fork-after-init or
+        Gunicorn preload_app=True) is invalidated - redis-py sockets are
+        not fork-safe, so each forked child must re-run the connect path
+        once and get its own socket. Simulated by storing an entry under
+        an obviously-not-our PID."""
+        from privacyidea.lib.framework import get_app_local_store
+        with redis_in_store(self._real_client):
+            store = get_app_local_store()
+            # Pretend the cached client was inherited from the parent.
+            store['_redis_client_entry'] = (os.getpid() - 1, self._real_client)
+            client = get_redis()
+            # Reconnect happened: the stored PID now matches ours.
+            self.assertEqual(store['_redis_client_entry'][0], os.getpid())
+            self.assertIsNotNone(client)
+
+    def test_evict_during_cooldown_is_a_noop(self):
+        """Cleanup paths share the same cooldown - during the window they
+        skip the Redis op rather than paying a fresh-connect timeout. The
+        next op after the cooldown expires picks up where we left off."""
+        from privacyidea.lib.cache.redis import _disable_redis
+        # Pre-populate Redis with an entry - it should remain after the
+        # in-cooldown evict (which is a no-op).
+        self._real_client.set('pi:challenge:txn:txn-cooldown', '{"placeholder":1}')
+        with redis_in_store(self._real_client):
+            _disable_redis(RuntimeError("simulated"))
+            evict_challenge('txn-cooldown', 'RCOOL')
+        self.assertEqual(self._real_client.get('pi:challenge:txn:txn-cooldown'),
+                         '{"placeholder":1}')
+
+    def test_evict_after_cooldown_reaches_redis(self):
+        """Once the cooldown expires, cleanup ops resume against Redis."""
+        import time as _time
+        from privacyidea.lib.cache.redis import _disable_redis
+        from privacyidea.lib.framework import get_app_local_store
+        self._real_client.set('pi:challenge:txn:txn-recovered', '{"placeholder":1}')
+        self._real_client.sadd('pi:challenge:serial:RREC', 'txn-recovered')
+        with redis_in_store(self._real_client):
+            _disable_redis(RuntimeError("simulated"))
+            # Skip past the cooldown.
+            get_app_local_store()['_redis_retry_after'] = _time.monotonic() - 1
+            evict_challenge('txn-recovered', 'RREC')
+        # Eviction reached Redis post-cooldown.
+        self.assertIsNone(self._real_client.get('pi:challenge:txn:txn-recovered'))
+        self.assertNotIn('txn-recovered',
+                         self._real_client.smembers('pi:challenge:serial:RREC'))
+
+
+# -----------------------------------------------------------------------------
+# Server-version gate (uses unittest.mock, no real Redis needed)
+# -----------------------------------------------------------------------------
+
+
+class TestRedisVersionGate(MyTestCase):
+    """_build_client refuses to use a Redis < 7 server because the challenge
+    cache writes depend on EXPIRE NX/GT (Redis 7.0+)."""
+
+    def test_build_client_refuses_redis_6(self):
+        from unittest.mock import MagicMock
+        from privacyidea.lib.cache.redis import _build_client
+        fake = MagicMock()
+        fake.ping.return_value = True
+        fake.info.return_value = {"redis_version": "6.2.7"}
+        import redis as _redis_lib
+        with patch.object(_redis_lib.Redis, "from_url", return_value=fake):
+            with self.assertRaises(RuntimeError) as cm:
+                _build_client("redis://anywhere:6379/0")
+        self.assertIn("6.2.7", str(cm.exception))
+        self.assertIn("Redis 7", str(cm.exception))
+
+    def test_build_client_accepts_redis_7(self):
+        from unittest.mock import MagicMock
+        from privacyidea.lib.cache.redis import _build_client
+        fake = MagicMock()
+        fake.ping.return_value = True
+        fake.info.return_value = {"redis_version": "7.2.4"}
+        import redis as _redis_lib
+        with patch.object(_redis_lib.Redis, "from_url", return_value=fake):
+            client = _build_client("redis://anywhere:6379/0")
+        self.assertIs(client, fake)

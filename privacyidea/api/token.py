@@ -85,7 +85,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params,
                                            force_server_generate_key)
-from privacyidea.lib.challenge import cancel_challenge, get_challenges_paginate, cleanup_expired_challenges
+from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
+                                        get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.event import event
@@ -98,6 +99,8 @@ from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
+from ..lib.policy import Match
+from ..models.audit import audit_column_length
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
                          revoke_token,
@@ -118,7 +121,7 @@ token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
 
 __doc__ = """
-The token REST API manages the lifecycle of authentication tokens —
+The token REST API manages the lifecycle of authentication tokens -
 enrollment, listing, assignment to users, PIN management, realm
 membership, tokengroup membership, token info, lost-token handling,
 bulk import, and admin-only attribute editing.
@@ -185,7 +188,7 @@ def init():
     Create or roll over a token. The token type drives both the
     request shape (each token class accepts its own parameters; see
     the corresponding ``TokenClass.update`` method) and the response
-    shape (each token class returns its own enrollment payload —
+    shape (each token class returns its own enrollment payload -
     typically QR codes, ``otpauth://`` URLs, seeds, etc.).
 
     Requires authentication. Authorization is gated by the
@@ -214,7 +217,7 @@ def init():
         accepted values depend on the token class.
     :jsonparam otplen: length of the OTP value (typically ``6`` or
         ``8``).
-    :jsonparam hashlib: HMAC hash algorithm — ``sha1``, ``sha256`` or
+    :jsonparam hashlib: HMAC hash algorithm - ``sha1``, ``sha256`` or
         ``sha512``.
     :jsonparam validity_period_start: start of the validity period.
     :jsonparam validity_period_end: end of the validity period.
@@ -402,34 +405,119 @@ def init():
 @log_with(log)
 def get_challenges_api(serial=None):
     """
-    Return the open challenges. With ``<serial>`` only the challenges
-    for that token are returned; without it, all open challenges
-    across the server are returned (paginated).
+    Return the open challenges.
+
+    Three filter modes (mutually exclusive):
+
+    * ``<serial>`` path component -> challenges for that token (paginated).
+    * ``?user=<name>[&realm=<realm>]`` query -> every challenge across all
+      tokens owned by that user. Used by the user-detail view.
+    * neither -> all open challenges across the server, paginated.
 
     Requires admin authentication and the policy action
-    :ref:`policy_getchallenges`.
+    :ref:`policy_getchallenges`. Realm-scoping is enforced against the
+    target's owning user when a serial or user filter is given.
 
     :param serial: optional path component, the token serial.
-    :query sortby: sort column, default ``timestamp``.
+    :query user: optional username - switches to user-aggregation mode.
+    :query realm: optional realm for the user lookup.
+    :query sortby: sort column, default ``timestamp`` (paginated mode only).
     :query sortdir: ``asc`` (default) or ``desc``.
     :query page: 1-indexed page number.
     :query pagesize: page size (default ``15``).
-    :query transaction_id: restrict to challenges with this
-        transaction id (useful for push or TiQR tokens).
-    :status 200: paginated challenge list in ``result.value``.
+    :query transaction_id: restrict to challenges with this transaction id.
+    :status 200: challenge list in ``result.value``.
     """
     param = request.all_data
+    # user-aggregation mode kicks in only when the caller explicitly passes
+    # the ``user`` query param. An empty string is rejected so the absence
+    # of an actual username can never be mistaken for "every user" - that
+    # was the cross-realm leak the v3.14 review caught.
+    if "user" in param:
+        if serial is not None:
+            # The three filter modes (path serial / ?user= / list-all) are
+            # mutually exclusive per the endpoint docstring. Reject the
+            # ambiguous combination loudly rather than silently picking one
+            # - the older code dropped the path serial on the floor here,
+            # which surprised admins and obscured realm-scope semantics.
+            raise ParameterError("Specify either a path serial or the 'user' "
+                                 "query parameter, not both.")
+        user = get_user_from_param(param, optional_or_required=False)
+        if user.is_empty():
+            raise ParameterError("user is required")
+        g.audit_object.log({"user": user.login, "realm": user.realm})
+        # @prepolicy(check_base_action, ...) confirms the admin has the
+        # action *somewhere*. Re-match against the target user so that an
+        # admin whose getchallenges policy is scoped to realm A cannot
+        # read challenges of users in realm B. .allowed() honors the
+        # default-allow-when-no-policies semantic.
+        if not Match.admin(g, action=PolicyAction.GETCHALLENGES, user_obj=user).allowed():
+            raise PolicyError(f"You are not allowed to view challenges for user "
+                              f"{user.login!s}@{user.realm!s}.")
+        from privacyidea.lib.cache import redis_feature_enabled
+        challenges = get_challenges_for_user(user)
+        payload = {
+            "challenges": [c.get() for c in challenges],
+            "count": len(challenges),
+            "redis_cache_enabled": redis_feature_enabled("challenges"),
+        }
+        g.audit_object.log({"success": True})
+        return send_result(payload)
+
     page = int(get_optional(param, "page", default=1))
     sort = get_optional(param, "sortby", default="timestamp")
     sdir = get_optional(param, "sortdir", default="asc")
     psize = int(get_optional(param, "pagesize", default=15))
     transaction_id = get_optional(param, "transaction_id")
     g.audit_object.log({"serial": serial})
+    # Realm-scope check when a specific serial is targeted, so a realm-
+    # restricted admin can't read challenges of tokens outside their realm.
+    # The list-all variants - serial is None, or a wildcard pattern like
+    # ``*`` or ``**`` that the WebUI uses to populate the global challenges
+    # table - preserve existing behavior. They predate this PR and should
+    # be revisited separately. A wildcard pattern can't be reduced to a
+    # single owning realm without resolving every match first.
+    if serial and "*" not in serial:
+        # Missing serial here is a real 404: the resource the admin
+        # addressed (the token) doesn't exist.
+        token_obj = get_one_token(serial=serial)
+        _check_admin_realm_for_token(token_obj, PolicyAction.GETCHALLENGES,
+                                     "view challenges for")
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
                                          transaction_id=transaction_id,
                                          sortdir=sdir, page=page, psize=psize)
     g.audit_object.log({"success": True})
     return send_result(challenges)
+
+
+def _check_admin_realm_for_token(token_obj, action: str, verb: str):
+    """
+    Re-scope an admin action to the realm of a known token's owner.
+
+    The ``@prepolicy(check_base_action, ...)`` decorator only confirms the
+    admin has ``action`` granted *somewhere*. This helper additionally
+    matches the same action against the target token's owning user so
+    that an admin whose ``getchallenges`` / ``cancelchallenge`` policy is
+    scoped to realm A cannot operate on a token whose owner lives in
+    realm B.
+
+    Token resolution is the caller's job because the two callsites differ:
+    GET wants ``ResourceNotFoundError`` on a missing serial (the addressed
+    resource doesn't exist); the cancel-by-transaction-id path wants to
+    tolerate it (the orphaned cache entry is exactly what needs cleanup).
+
+    Tokens with no owner (e.g. usernameless passkey challenges) cannot
+    be realm-checked; the base-action policy is the only gate for them.
+    """
+    if token_obj.user is None:
+        return
+    # .allowed() honors privacyidea's default-allow-when-no-policies semantic.
+    # .policies() truthiness alone would invert that into default-deny and
+    # break factory-fresh installs that have no admin-scope policies defined.
+    if not Match.admin(g, action=action, user_obj=token_obj.user).allowed():
+        raise PolicyError(f"You are not allowed to {verb} token "
+                          f"{token_obj.token.serial!s} "
+                          f"(realm {token_obj.user.realm!s}).")
 
 
 @token_blueprint.route('/challenges/transaction/<transaction_id>', methods=['DELETE'])
@@ -445,11 +533,79 @@ def cancel_challenge_api(transaction_id):
     :param transaction_id: The transaction ID of the challenge to cancel.
     :return: json with ``deleted`` count.
     """
-    g.audit_object.log({"info": f"Cancel challenge {transaction_id}"})
-    deleted = cancel_challenge(transaction_id)
-    g.audit_object.log({"success": True, "info": f"Cancelled {deleted} challenge(s) for transaction "
-                                                 f"{transaction_id}"})
-    return send_result({"status": True, "deleted": deleted})
+    # Look up the serial before deletion so the audit row carries it.
+    # The lookup goes through the same cache+DB path as the deletion,
+    # so worst case it's the same I/O the cancel itself would make.
+    existing = get_challenges(transaction_id=transaction_id)
+    serials = sorted({c.serial for c in existing if getattr(c, 'serial', None)})
+    # Realm-scope each affected token. If the admin lacks cancelchallenge
+    # for any of the target realms, deny the whole call rather than
+    # partially cancelling - atomicity matters for an action with audit
+    # impact. We deliberately do NOT log the target serials before the
+    # realm check passes - otherwise a realm-A admin could probe arbitrary
+    # transaction_ids and observe realm-B token serials in the audit log.
+    #
+    # ``serials`` can legitimately be empty in two cases - both allowed by
+    # design under the base CANCELCHALLENGE policy:
+    #   1. Usernameless passkey challenges, which are written with
+    #      serial="" (cache_challenge skips the serial set for these) and
+    #      filtered out by the truthy-comprehension above. There is no
+    #      realm to scope against - the base-action policy is the only gate.
+    #   2. The challenge already evaporated (TTL expired or concurrent
+    #      cancel). cancel_challenge below is a safe no-op in this case.
+    # Both fall under "no realm context exists to enforce against."
+    #
+    # Per-serial token resolution is wrapped in try/except: an orphan
+    # transaction (token already deleted, cache entry surviving) is
+    # exactly what an admin would call this endpoint to clean up, so a
+    # missing token here is not a reason to refuse the cancel.
+    for s in serials:
+        try:
+            token_obj = get_one_token(serial=s)
+        except ResourceNotFoundError:
+            continue
+        _check_admin_realm_for_token(token_obj, PolicyAction.CANCELCHALLENGE,
+                                     "cancel challenges for")
+    result = cancel_challenge(transaction_id)
+    # Build a single audit entry now that the realm check passed and the
+    # cancel result is known. The `serial` column is 40 chars by default -
+    # plenty for the common case (one transaction -> one token, with
+    # default 8-char serials, 4-5 still fit comma-joined). Pack whole
+    # serials in arrival order up to the column budget; if some had to be
+    # dropped, also stuff the full list into `info` (500 chars) so the
+    # forensic detail isn't lost. This avoids the audit-module's
+    # ``+``-abbreviation fallback (still in place as a backstop for
+    # callers that don't pre-pack like we do here).
+    serial_limit = audit_column_length.get("serial")
+    packed_serials = ""
+    fitted = 0
+    for s in serials:
+        candidate = f"{packed_serials},{s}" if packed_serials else s
+        if len(candidate) > serial_limit:
+            break
+        packed_serials = candidate
+        fitted += 1
+    info = (f"Cancelled {result.removed} challenge(s) for transaction "
+            f"{transaction_id}")
+    if serials and fitted < len(serials):
+        info += f" (serials: {','.join(serials)})"
+    g.audit_object.log({
+        "success": True,
+        "serial": packed_serials or None,
+        "info": info,
+    })
+    payload = {"status": True, "deleted": result.removed}
+    if not result.cache_available:
+        # The worker handling this request is in its Redis retry cooldown,
+        # so the cache eviction did not run. Other workers still have a
+        # live Redis client and may continue serving this challenge from
+        # cache until its TTL expires (typically minutes). Surfacing the
+        # warning lets the operator know the cancel may not have propagated
+        # cluster-wide yet.
+        payload["warning"] = ("Redis cache unreachable on this worker; the "
+                              "challenge may still be served from cache by "
+                              "other nodes until its TTL expires.")
+    return send_result(payload)
 
 
 @token_blueprint.route("/challenges/expired", methods=['DELETE'])
@@ -511,10 +667,10 @@ def list_api():
     :query type: filter by token type. Substring match via ``*``
         (e.g. ``*otp*`` matches hotp and totp).
     :query type_list: comma-separated list of token types.
-    :query user: **admin only** — filter by this user. Accepts
+    :query user: **admin only** - filter by this user. Accepts
         ``user@realm`` syntax. If both ``user`` and ``realm`` are
         given, ``realm`` wins. Ignored for user-role callers.
-    :query realm: **admin only** — filter by realm of the assigned
+    :query realm: **admin only** - filter by realm of the assigned
         user. Without a ``user`` parameter, returns every token
         assigned to any user in this realm. Ignored for user-role
         callers.
@@ -666,10 +822,10 @@ def unassign_api():
     Remove the user assignment from a token. Three call shapes are
     supported:
 
-    * ``serial=...`` (single, or comma-separated list) — operate on
+    * ``serial=...`` (single, or comma-separated list) - operate on
       these tokens.
-    * ``serials=[...]`` — operate on this list of tokens.
-    * ``user=...&realm=...`` (no serial) — operate on every token
+    * ``serials=[...]`` - operate on this list of tokens.
+    * ``user=...&realm=...`` (no serial) - operate on every token
       currently assigned to that user.
 
     Requires authentication and the policy action ``unassign``.
@@ -744,7 +900,7 @@ def revoke_api(serial=None):
     :param serial: optional path component, the token serial.
     :jsonparam serial: token serial (alternative to the path
         component).
-    :jsonparam user: login name (only when no serial is given —
+    :jsonparam user: login name (only when no serial is given -
         revokes every token of the user).
     :jsonparam realm: realm of the user.
     :status 200: number of revoked tokens in ``result.value``.
@@ -776,7 +932,7 @@ def enable_api(serial=None):
     :param serial: optional path component, the token serial.
     :jsonparam serial: token serial (alternative to the path
         component).
-    :jsonparam user: login name (only when no serial is given —
+    :jsonparam user: login name (only when no serial is given -
         enables every token of the user).
     :jsonparam realm: realm of the user.
     :status 200: number of enabled tokens in ``result.value``.
@@ -807,7 +963,7 @@ def disable_api(serial=None):
     :param serial: optional path component, the token serial.
     :jsonparam serial: token serial (alternative to the path
         component).
-    :jsonparam user: login name (only when no serial is given —
+    :jsonparam user: login name (only when no serial is given -
         disables every token of the user).
     :jsonparam realm: realm of the user.
     :status 200: number of disabled tokens in ``result.value``.
@@ -835,7 +991,7 @@ def delete_api(serial=None):
     * single serial via the ``<serial>`` path component, or
       ``serial=...`` (or comma-separated list);
     * ``serials=[...]`` list;
-    * ``user=...&realm=...`` (no serial) — delete every token of
+    * ``user=...&realm=...`` (no serial) - delete every token of
       that user.
 
     Requires authentication and the policy action ``delete``.
@@ -900,7 +1056,7 @@ def reset_api(serial=None):
     :param serial: optional path component, the token serial.
     :jsonparam serial: token serial (alternative to the path
         component).
-    :jsonparam user: login name (only when no serial is given —
+    :jsonparam user: login name (only when no serial is given -
         resets every token of the user).
     :jsonparam realm: realm of the user.
     :status 200: ``True`` on success in ``result.value``.
@@ -961,10 +1117,10 @@ def setpin_api(serial=None):
     """
     Set one or more PINs on a token. Three PIN slots are supported:
 
-    * ``userpin`` — the user PIN of a smartcard, also used by mOTP
+    * ``userpin`` - the user PIN of a smartcard, also used by mOTP
       tokens to store the mOTP PIN.
-    * ``sopin`` — the security-officer PIN of a smartcard.
-    * ``otppin`` — the regular OTP PIN that gates token use.
+    * ``sopin`` - the security-officer PIN of a smartcard.
+    * ``otppin`` - the regular OTP PIN that gates token use.
 
     Each supplied field is set independently; omitted fields are
     untouched.
@@ -1022,7 +1178,7 @@ def setrandompin_api(serial=None):
 
     The freshly generated PIN is included in the response under
     ``detail.pin`` so that the calling principal can show or relay
-    it once. Treat the response body accordingly — do not log or
+    it once. Treat the response body accordingly - do not log or
     persist it past handing it to the user.
 
     Requires authentication and the policy action ``setrandompin``.
@@ -1189,7 +1345,7 @@ def set_api(serial=None):
 def tokenrealm_api(serial=None):
     """
     Replace the realms a token belongs to. The full set of realms is
-    replaced — realms not listed in the request are removed. For
+    replaced - realms not listed in the request are removed. For
     realm-admin callers, the call is restricted to realms the
     caller's policies cover.
 
@@ -1252,7 +1408,7 @@ def loadtokens_api(filename=None):
         the imported file.
     :reqheader Content-Type: ``multipart/form-data`` (required).
     :formparam file: the file contents (required).
-    :jsonparam type: file format — ``aladdin-xml``, ``oathcsv``
+    :jsonparam type: file format - ``aladdin-xml``, ``oathcsv``
         (alias ``OATH CSV``), ``yubikeycsv`` (alias ``Yubikey CSV``),
         or ``pskc`` (required).
     :jsonparam tokenrealms: comma-separated list of realms to assign
@@ -1261,7 +1417,7 @@ def loadtokens_api(filename=None):
         characters / 128 bits).
     :jsonparam password: passphrase for PSKC import when keys are
         password-derived.
-    :jsonparam pskcValidateMAC: PSKC MAC handling — ``no_check``
+    :jsonparam pskcValidateMAC: PSKC MAC handling - ``no_check``
         skips MAC verification, ``check_fail_soft`` warns,
         ``check_fail_hard`` (default) rejects on bad MAC.
     :status 200: ``{"n_imported": <int>, "n_not_imported": <int>}``
@@ -1561,7 +1717,7 @@ def assign_tokengroup_api(serial, groupname=None):
 
     * with the ``<groupname>`` path component, the named tokengroup
       is added to the token (additive, single membership).
-    * without the path component, the body must carry ``groups`` —
+    * without the path component, the body must carry ``groups`` -
       the token's membership is **replaced** with that list, so any
       tokengroup not in ``groups`` is removed.
 
@@ -1569,7 +1725,7 @@ def assign_tokengroup_api(serial, groupname=None):
     ``tokengroups``.
 
     :param serial: path component, the token serial.
-    :param groupname: optional path component — if present, add this
+    :param groupname: optional path component - if present, add this
         tokengroup; if absent, replace membership from ``groups``.
     :jsonparam groups: list (or comma-separated string) of
         tokengroup names. Required when ``groupname`` is omitted;

@@ -72,6 +72,7 @@ class ConfigKey:
 
     REDIS_URL = "PI_REDIS_URL"
     REDIS_CACHE_CHALLENGES = "PI_REDIS_CACHE_CHALLENGES"
+    REDIS_RETRY_COOLDOWN = "PI_REDIS_RETRY_COOLDOWN"
 
     AUDIT_SQL_URI = "PI_AUDIT_SQL_URI"
     AUDIT_SQL_OPTIONS = "PI_AUDIT_SQL_OPTIONS"
@@ -221,6 +222,9 @@ class ProductionConfig(Config):
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "public.pem")
     PI_LOGLEVEL = logging.INFO
     SUPERUSER_REALM = ['superuser']
+    # Optional Redis cache. Production also accepts the URL via env so secret
+    # rotation doesn't require editing pi.cfg.
+    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
 
 
 docker_secrets_dir = Path("/run/secrets/")

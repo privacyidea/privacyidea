@@ -10,11 +10,16 @@
     </button>
 </div>
 
-<div class="alert alert-info" ng-show="challengedata.count === 0">
+<div class="alert alert-warning" ng-show="challengedata.redis_cache_enabled">
+    <strong translate>Redis challenge cache is enabled.</strong>
+    <span translate>Active challenges are stored in Redis and cannot be listed in aggregate
+        here. To inspect challenges for a specific token, open the token detail page and use
+        the Active Challenges section.</span>
+</div>
+
+<div class="alert alert-info"
+     ng-show="challengedata.count === 0 && !challengedata.redis_cache_enabled">
     <strong translate>No challenges to display.</strong>
-    <span translate>If your deployment uses the Redis challenge cache, this list shows only
-        challenges stored in the database. Active Redis-cached challenges are visible on the
-        respective token's detail page (Active Challenges section).</span>
 </div>
 
 <div uib-pagination ng-show="challengedata.count > 15"

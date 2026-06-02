@@ -2229,15 +2229,15 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(challenges[0].get("transaction_id"),
                              transaction_id)
 
-        # There is no challenge for token CHAL2
+        # A nonexistent serial - the realm-scope helper resolves the token
+        # for its owner, so it raises ResourceNotFoundError -> 404. (Before
+        # the v3.14 review fix this returned 200/empty, which silently
+        # bypassed the realm check for unknown serials.)
         with self.app.test_request_context('/token/challenges/CHAL2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            value = result.get("value")
-            self.assertEqual(value.get("count"), 0)
+            self.assertEqual(res.status_code, 404, res.data)
 
         # create a second challenge and a third challenge
         check_serial_pass(serial, "pin")
@@ -2270,6 +2270,91 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(challenges[0].get("transaction_id"), transaction_ids[0])
 
         delete_policy("chalresp")
+
+    def test_19a_get_challenges_user_filter_requires_non_empty(self):
+        """GET /token/challenges/?user= rejects an empty user. Sending the
+        empty string (alone or together with ?realm=) would otherwise
+        construct an empty User that flows through get_tokens unfiltered,
+        dumping every token's challenges to the caller."""
+        # Explicit empty string user -> rejected by the is_empty() check.
+        with self.app.test_request_context('/token/challenges/',
+                                           query_string={"user": ""},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json.get("result", {}).get("status", True))
+
+        # Empty user with a realm - same rejection.
+        with self.app.test_request_context('/token/challenges/',
+                                           query_string={"user": "", "realm": self.realm1},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+
+    def test_19c_get_challenges_rejects_serial_and_user_combination(self):
+        """GET /token/challenges/<serial>?user=... rejects the ambiguous
+        combination of a path serial and the user filter. The three filter
+        modes are documented as mutually exclusive; silently dropping the
+        path serial (the previous behavior) hid the conflict and the
+        downstream realm-scope check became dependent on which one was
+        picked."""
+        with self.app.test_request_context('/token/challenges/SERIAL_X',
+                                           query_string={"user": "cornelius"},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json.get("result", {}).get("status", True))
+
+    def test_19b_challenge_endpoints_work_without_admin_policies(self):
+        """When no admin-scope policies are defined, the realm-scoped
+        challenge endpoints honor the default-allow semantic - GET per
+        serial, DELETE per transaction, and GET per user all return 200
+        for an admin acting on a user-owned token."""
+        set_policy("chalresp_19b", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        from privacyidea.lib.user import User
+        token = init_token({"genkey": 1, "serial": "CHAL19B", "pin": "pin"})
+        # Owner-less tokens make _enforce_challenge_action_for_serial
+        # early-exit before the policy match. Assign a user so the
+        # realm-scoped check actually runs.
+        token.add_user(User(login="cornelius", realm=self.realm1))
+        r = check_serial_pass(token.token.serial, "pin")
+        self.assertEqual(r[0], False)
+        transaction_id = r[1].get("transaction_id")
+
+        # GET per-serial - must succeed because no admin policy is defined.
+        with self.app.test_request_context('/token/challenges/CHAL19B',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"]["count"], 1)
+
+        # DELETE per-transaction - same: default-allow must apply.
+        with self.app.test_request_context(
+                f'/token/challenges/transaction/{transaction_id}',
+                method='DELETE',
+                headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertTrue(res.json["result"]["value"]["status"])
+
+        # GET per-user - same idiom in the user endpoint must also default-allow.
+        r = check_serial_pass(token.token.serial, "pin")
+        self.assertEqual(r[0], False)
+        with self.app.test_request_context('/token/challenges/',
+                                           query_string={"user": "cornelius",
+                                                         "realm": self.realm1},
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+
+        delete_policy("chalresp_19b")
+        remove_token("CHAL19B")
 
     def test_20_init_yubikey(self):
         # save yubikey.prefix
@@ -3564,7 +3649,7 @@ class APITokenTestCase(MyApiTestCase):
                                 user=User(login="hans", realm=self.realm2,
                                           resolver=self.resolvername1))
 
-        # realm filter without user param — must succeed and only return realm1 tokens
+        # realm filter without user param - must succeed and only return realm1 tokens
         with self.app.test_request_context("/token/",
                                            method="GET",
                                            query_string=urlencode({"realm": self.realm1}),
@@ -3596,7 +3681,7 @@ class APITokenTestCase(MyApiTestCase):
                                          resolver=self.resolvername1))
 
         try:
-            # Attempt 1: user role tries ?user=cornelius — must only see own tokens
+            # Attempt 1: user role tries ?user=cornelius - must only see own tokens
             with self.app.test_request_context("/token/",
                                                method="GET",
                                                query_string=urlencode({
@@ -3614,7 +3699,7 @@ class APITokenTestCase(MyApiTestCase):
                 self.assertIn(own_token.get_serial(), serials,
                               "user role must still see their own token")
 
-            # Attempt 2: user role tries ?realm=realm1 without user — must only see own tokens
+            # Attempt 2: user role tries ?realm=realm1 without user - must only see own tokens
             with self.app.test_request_context("/token/",
                                                method="GET",
                                                query_string=urlencode({"realm": self.realm1}),

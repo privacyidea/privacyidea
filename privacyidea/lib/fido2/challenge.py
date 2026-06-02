@@ -5,8 +5,10 @@ from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required
 from privacyidea.lib import fido2
+from privacyidea.lib.cache.redis import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, cancel_challenge
 from privacyidea.lib.config import get_from_config
+from privacyidea.models import Challenge
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
@@ -79,9 +81,7 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
 @dataclass
 class FIDOVerificationResult:
     success: int
-    # Either a Challenge model row or a ChallengeDTO from the Redis cache —
-    # both expose the same get_data()/is_valid()/challenge attribute surface.
-    challenge: object
+    challenge: "Challenge | ChallengeDTO"
 
 
 def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> FIDOVerificationResult:
