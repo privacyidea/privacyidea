@@ -114,6 +114,7 @@ class PolicyAction:
     TRIGGERCHALLENGE = "triggerchallenge"
     UNASSIGN = "unassign"
     USERLIST = "userlist"
+    GET_USER_INTERNAL_ATTRIBUTES = "get_user_internal_attributes"
     USERPAGESIZE = "user_page_size"
     ADDUSER = "adduser"
     DELETEUSER = "deleteuser"

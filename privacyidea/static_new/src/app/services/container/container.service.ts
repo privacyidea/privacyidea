@@ -324,7 +324,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   pageSize = linkedSignal({
     source: () => ({ filter: this.containerFilter(), size: this.eventPageSize() }),
-    computation: ({ size }): number => ([5, 10, 15].includes(size) ? size : 10)
+    computation: ({ size }): number => (size > 0 ? size : 10)
   });
 
   pageIndex = linkedSignal({

@@ -10,7 +10,7 @@ from mock import patch
 from privacyidea.lib.error import UserError
 from tests import ldap3mock
 from tests.test_mock_ldap3 import LDAPDirectory
-from .base import MyTestCase
+from .base import MyTestCase, PristineSqliteFixtures
 from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_object)
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
@@ -23,10 +23,11 @@ from datetime import datetime
 from privacyidea.models import UserCache, db
 
 
-class UserCacheTestCase(MyTestCase):
+class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
     """
     Test the user on the database level
     """
+    pristine_fixtures = ["tests/testdata/testusercache.sqlite"]
     PWFILE = "tests/testdata/passwd"
     resolvername1 = "resolver1"
     realm1 = "realm1"

@@ -17,19 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
-} from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { disabled, email, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
@@ -45,6 +33,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -102,30 +91,24 @@ const EMPTY_SMTP_FORM: SmtpFormModel = {
     MatIconModule,
     MatTooltip,
     ClearableInputComponent,
-    MatDivider
+    MatDivider,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"
 })
-export class NewSmtpServerComponent implements AfterViewInit, OnDestroy {
+export class NewSmtpServerComponent implements OnDestroy {
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly renderer = inject(Renderer2);
 
   protected data: SmtpServer | null = null;
   isEditMode = signal(false);
   isTesting = signal(false);
   private editIdentifier: string | null = null;
   private initialPrivateKeyPassword = "";
-
-  private _observer!: IntersectionObserver;
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   smtpModel = signal<SmtpFormModel>({ ...EMPTY_SMTP_FORM });
 
@@ -202,26 +185,8 @@ export class NewSmtpServerComponent implements AfterViewInit, OnDestroy {
     this.smtpForm().reset();
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   async save(): Promise<boolean> {
