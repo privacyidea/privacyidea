@@ -40,15 +40,15 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   }
 
   asReadonly(): Resource<T> {
-    return {
+    const readonlyResource: Resource<T> = {
       value: this.value,
-      reload: this.reload,
       error: this.error,
-      hasValue: this.hasValue.bind(this),
+      hasValue: this.hasValue.bind(this) as Resource<T>["hasValue"],
       status: this.status,
       isLoading: this.isLoading,
       snapshot: this.snapshot
-    } as any;
+    };
+    return readonlyResource;
   }
 
   headers: Signal<HttpHeaders | undefined> = signal(undefined);
@@ -89,7 +89,7 @@ export class MockBase64Service {
   strToUtf8Arr = jest.fn(() => new Uint8Array([1, 2]));
 }
 
-export class MockPiResponse<Value, Detail = unknown> {
+export class MockPiResponse<Value, Detail = unknown, Init = unknown> {
   error?: { code: number; message: string };
   id: number;
   jsonrpc: string;
@@ -98,7 +98,7 @@ export class MockPiResponse<Value, Detail = unknown> {
     authentication?: "CHALLENGE" | "POLL" | "PUSH";
     status: boolean;
     value?: Value;
-    init?: any;
+    init?: Init;
     error?: { code: number; message: string };
   };
   signature: string;
@@ -112,7 +112,7 @@ export class MockPiResponse<Value, Detail = unknown> {
       authentication?: "CHALLENGE" | "POLL" | "PUSH";
       status: boolean;
       value?: Value;
-      init?: any;
+      init?: Init;
       error?: { code: number; message: string };
     };
     error?: { code: number; message: string };
@@ -134,12 +134,12 @@ export class MockPiResponse<Value, Detail = unknown> {
     this.versionnumber = args.versionnumber ?? "1.0";
   }
 
-  static fromValue<Value, Detail = unknown>(
+  static fromValue<Value, Detail = unknown, Init = unknown>(
     value: Value,
     detail: Detail = {} as Detail,
-    init: any = {}
-  ): MockPiResponse<Value, Detail> {
-    return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value, init } });
+    init: Init = {} as Init
+  ): MockPiResponse<Value, Detail, Init> {
+    return new MockPiResponse<Value, Detail, Init>({ detail, result: { status: true, value, init } });
   }
 
   static fromError<Value = unknown, Detail = unknown>(

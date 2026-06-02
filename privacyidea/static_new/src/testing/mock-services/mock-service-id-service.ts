@@ -16,26 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { ServiceId, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+
+type ServiceIdsRecord = Record<string, { description: string; id: number }>;
 
 export class MockServiceIdService implements ServiceIdServiceInterface {
-  serviceIdResource: HttpResourceRef<PiResponse<any> | undefined> = {
-    value: signal(undefined),
-    status: signal(0) as any,
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<any> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: jest.fn()
-  } as any;
+  serviceIdResource = new MockHttpResourceRef<PiResponse<ServiceIdsRecord> | undefined>(
+    MockPiResponse.fromValue<ServiceIdsRecord>({})
+  );
 
   serviceIds = signal<ServiceId[]>([]);
 

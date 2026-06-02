@@ -24,6 +24,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService, ContainerTemplate } from "@services/container/container.service";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import {
@@ -472,7 +473,7 @@ describe("ContainerTemplateService", () => {
         name: "Original",
         container_type: "generic",
         default: true,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       const promise = service.copyTemplate(source, "Copy");
 
@@ -491,7 +492,7 @@ describe("ContainerTemplateService", () => {
         name: "bad name!",
         container_type: "generic",
         default: false,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       expect(service.canSaveTemplate(template)).toBe(false);
     });
@@ -501,7 +502,7 @@ describe("ContainerTemplateService", () => {
         name: "",
         container_type: "generic",
         default: false,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       expect(service.canSaveTemplate(template)).toBe(false);
     });
@@ -511,7 +512,7 @@ describe("ContainerTemplateService", () => {
         name: "valid",
         container_type: "",
         default: false,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       expect(service.canSaveTemplate(template)).toBe(false);
     });

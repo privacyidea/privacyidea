@@ -30,6 +30,7 @@ import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;
   let fixture: ComponentFixture<SelectedUserAssignDialogComponent>;
+  let userService: MockUserService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -47,6 +48,7 @@ describe("SelectedUserAssignDialogComponent", () => {
 
     fixture = TestBed.createComponent(SelectedUserAssignDialogComponent);
     component = fixture.componentInstance;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     fixture.detectChanges();
   });
 
@@ -56,7 +58,7 @@ describe("SelectedUserAssignDialogComponent", () => {
 
   it("should close the dialog with null on cancel", () => {
     component.onCancel();
-    expect((component as any).dialogRef.close).toHaveBeenCalledWith(null);
+    expect(component.dialogRef.close).toHaveBeenCalledWith(null);
   });
 
   it("should toggle pin visibility", () => {
@@ -100,7 +102,7 @@ describe("SelectedUserAssignDialogComponent", () => {
 
     component.onConfirm();
 
-    expect((component as any).dialogRef.close).toHaveBeenCalledWith({
+    expect(component.dialogRef.close).toHaveBeenCalledWith({
       username: testUser.username,
       realm: testRealm,
       pin: testPin
@@ -131,13 +133,13 @@ describe("SelectedUserAssignDialogComponent", () => {
     component.pin.set(testPin);
     component.pinRepeat.set(testPin);
     component.onConfirm();
-    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+    expect(component.dialogRef.close).not.toHaveBeenCalled();
 
     // No realm selected
     component.selectedUser.set(testUser);
     component.selectedRealm.set("");
     component.onConfirm();
-    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+    expect(component.dialogRef.close).not.toHaveBeenCalled();
 
     // Pins do not match
     component.selectedUser.set(testUser);
@@ -145,7 +147,7 @@ describe("SelectedUserAssignDialogComponent", () => {
     component.pin.set(testPin);
     component.pinRepeat.set("654321");
     component.onConfirm();
-    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+    expect(component.dialogRef.close).not.toHaveBeenCalled();
   });
 
   describe("realm and user filter interactions", () => {
@@ -159,7 +161,7 @@ describe("SelectedUserAssignDialogComponent", () => {
       expect(component.selectedRealm()).toBe("newRealm");
       expect(component.selectedUser()).toBeNull();
       expect(component.userFilter()).toBe("");
-      expect(component.userService.selectedUserRealm()).toBe("newRealm");
+      expect(userService.selectedUserRealm()).toBe("newRealm");
     });
 
     it("onUserFilterInput should clear selectedUser when filter is empty", () => {

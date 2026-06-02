@@ -38,8 +38,8 @@ export interface EventHandler {
   position: string;
   event: string[];
   action: string;
-  options: Record<string, any> | null;
-  conditions: Record<string, any>;
+  options: Record<string, string> | null;
+  conditions: Record<string, string>;
 }
 
 export const EMPTY_EVENT: EventHandler = {
@@ -55,11 +55,15 @@ export const EMPTY_EVENT: EventHandler = {
   conditions: {}
 };
 
+export interface EventConditionMultiValue {
+  name: string;
+}
+
 export interface EventCondition {
   desc: string;
   type: string;
   group?: string;
-  value?: any[];
+  value?: EventConditionMultiValue[] | string[];
 }
 
 export interface ActionOptionDetails {
@@ -67,9 +71,9 @@ export interface ActionOptionDetails {
   desc?: string;
   description?: string;
   required?: boolean;
-  value?: any[];
+  value?: string[];
   visibleIf?: string;
-  visibleValue?: any;
+  visibleValue?: string;
 }
 
 export type ActionOptions = Record<string, ActionOptionDetails>;

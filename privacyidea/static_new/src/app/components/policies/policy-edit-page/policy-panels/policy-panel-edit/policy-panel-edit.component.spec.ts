@@ -20,7 +20,7 @@
 import { Component, input, output, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DialogService } from "@services/dialog/dialog.service";
-import { PolicyService } from "@services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
 
@@ -52,15 +52,15 @@ class MockDescComp {
 
 @Component({ selector: "app-edit-action-tab", standalone: true, template: "" })
 class MockActionTab {
-  policy = input.required<any>();
-  actionsUpdate = output<any>();
-  policyScopeChange = output<any>();
+  policy = input.required<PolicyDetail>();
+  actionsUpdate = output<Record<string, string | boolean>>();
+  policyScopeChange = output<string | undefined>();
 }
 
 @Component({ selector: "app-edit-conditions-tab", standalone: true, template: "" })
 class MockCondTab {
-  policy = input.required<any>();
-  policyEdit = output<any>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 }
 
 describe("PolicyPanelEditComponent - Extended Tests", () => {

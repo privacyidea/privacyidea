@@ -60,7 +60,7 @@ describe("RealmService", () => {
 
   it("createRealm for global realm sends resolver names and only priorities that are set", () => {
     const realmName = "my realm";
-    const resolvers = [{ name: "res1", priority: 10 }, { name: "res2", priority: null }, { name: "res3" } as any];
+    const resolvers = [{ name: "res1", priority: 10 }, { name: "res2", priority: null }, { name: "res3" }];
 
     realmService.createRealm(realmName, "", resolvers).subscribe();
 
@@ -78,7 +78,7 @@ describe("RealmService", () => {
 
   it("createRealm for global realm ignores non-numeric priority values", () => {
     const realmName = "realm";
-    const resolvers = [{ name: "res1", priority: "not-a-number" as any }];
+    const resolvers = [{ name: "res1", priority: "not-a-number" as unknown as number }];
 
     realmService.createRealm(realmName, "", resolvers).subscribe();
 
@@ -95,7 +95,7 @@ describe("RealmService", () => {
   it("createRealm for node-specific realm sends resolver objects with optional priority", () => {
     const realmName = "node realm";
     const nodeId = "node-1";
-    const resolvers = [{ name: "res1", priority: null }, { name: "res2", priority: 5 }, { name: "res3" } as any];
+    const resolvers = [{ name: "res1", priority: null }, { name: "res2", priority: 5 }, { name: "res3" }];
 
     realmService.createRealm(realmName, nodeId, resolvers).subscribe();
 
@@ -112,8 +112,8 @@ describe("RealmService", () => {
     const realmName = "realm-node";
     const nodeId = "node-2";
     const resolvers = [
-      { name: "res1", priority: "7" as any },
-      { name: "res2", priority: "not-a-number" as any }
+      { name: "res1", priority: "7" as unknown as number },
+      { name: "res2", priority: "not-a-number" as unknown as number }
     ];
 
     realmService.createRealm(realmName, nodeId, resolvers).subscribe();

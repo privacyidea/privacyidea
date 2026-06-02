@@ -35,7 +35,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
-import { EventService } from "@services/event/event.service";
+import { EventConditionMultiValue, EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-condition-list",
@@ -45,7 +45,7 @@ import { EventService } from "@services/event/event.service";
 })
 export class EventConditionListComponent {
   protected readonly eventService = inject(EventService);
-  conditions = input.required<Record<string, any>>();
+  conditions = input.required<Record<string, string | string[]>>();
   action = input<string>();
   emitOnConditionValueChange = input<boolean>(false);
   inputRequired = input<boolean>(false);
@@ -102,10 +102,11 @@ export class EventConditionListComponent {
   }
 
   availableConditionValues = computed(() => {
-    const valueMap: Record<string, any> = {};
+    const valueMap: Record<string, string[] | EventConditionMultiValue[]> = {};
     for (const [name, details] of Object.entries(this.eventService.moduleConditions())) {
       if (details.type == "multi") {
-        valueMap[name] = details.value?.map((valueMap) => valueMap.name) || [];
+        const multiValues = (details.value ?? []) as { name: string }[];
+        valueMap[name] = multiValues.map((entry) => entry.name);
       } else if (details.value) {
         valueMap[name] = details.value;
       }

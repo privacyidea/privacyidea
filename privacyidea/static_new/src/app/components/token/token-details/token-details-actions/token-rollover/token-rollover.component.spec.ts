@@ -22,9 +22,12 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
 import {
   MockDialogService,
   MockNotificationService,
@@ -32,10 +35,9 @@ import {
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of } from "rxjs";
 import { TokenRolloverComponent } from "./token-rollover.component";
-import { UserService } from "@services/user/user.service";
-import { SystemService } from "@services/system/system.service";
 
 describe("TokenRolloverComponent", () => {
   let component: TokenRolloverComponent;
@@ -67,9 +69,9 @@ describe("TokenRolloverComponent", () => {
 
     fixture = TestBed.createComponent(TokenRolloverComponent);
     component = fixture.componentInstance;
-    tokenService = TestBed.inject(TokenService) as any;
-    notificationService = TestBed.inject(NotificationService) as any;
-    dialogService = TestBed.inject(DialogService) as any;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -78,19 +80,20 @@ describe("TokenRolloverComponent", () => {
   });
 
   it("should call enrollToken and close dialog on successful rollover", async () => {
-    const mockEnrollResp = {
-      result: { status: true },
-      detail: { rollout_state: "done", serial: "ABC123", verify: false }
-    };
+    const mockEnrollResp = MockPiResponse.fromValue<boolean>(true, {
+      type: "hotp",
+      serial: "ABC123",
+      rollout_state: "done"
+    }) as unknown as EnrollmentResponse;
 
     component.token.set({ type: "hotp", serial: "ABC123" });
     component.enrollmentArgsGetter = jest.fn().mockReturnValue({
-      data: {},
-      mapper: { map: (x: any) => x }
+      data: {} as TokenEnrollmentData,
+      mapper: { map: (x: TokenEnrollmentData) => x }
     });
 
     const reloadSpy = jest.spyOn(tokenService.tokenDetailResource, "reload");
-    tokenService.enrollToken.mockReturnValue(of(mockEnrollResp) as any);
+    tokenService.enrollToken.mockReturnValue(of(mockEnrollResp));
 
     await component.rolloverToken();
 
@@ -120,7 +123,7 @@ describe("TokenRolloverComponent", () => {
   });
 
   it("updateAdditionalFormFields keeps dialog actions enabled (child handles its own validation)", () => {
-    component.updateAdditionalFormFields({ anyChildField: {} });
+    component.updateAdditionalFormFields();
     fixture.detectChanges();
 
     expect(component.formGroupInvalid()).toBe(false);

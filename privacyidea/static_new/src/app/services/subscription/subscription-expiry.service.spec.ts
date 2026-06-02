@@ -24,20 +24,20 @@ import { MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
 import { SubscriptionExpiryService } from "./subscription-expiry.service";
-import { SubscriptionService } from "./subscription.service";
+import { Subscription, SubscriptionService } from "./subscription.service";
 
-function makeSubs(value: Record<string, any>) {
-  return MockPiResponse.fromValue<Record<string, any>>(value);
+function makeSubs(value: Record<string, Partial<Subscription>>) {
+  return MockPiResponse.fromValue<Record<string, Partial<Subscription>>>(value);
 }
 
 describe("SubscriptionExpiryService", () => {
   let dialogMock: { open: jest.Mock };
-  let authMock: MockAuthService;
+  let authMock: Pick<MockAuthService, "isAuthenticated">;
   let subsMock: MockSubscriptionService;
 
   beforeEach(() => {
     dialogMock = { open: jest.fn() };
-    authMock = { isAuthenticated: signal(false) } as any;
+    authMock = { isAuthenticated: signal(false) };
     subsMock = new MockSubscriptionService();
 
     TestBed.configureTestingModule({
@@ -78,7 +78,7 @@ describe("SubscriptionExpiryService", () => {
         b: { application: "app2", timedelta: 5, date_till: "2026-03-01" }
       })
     );
-    (authMock.isAuthenticated as any).set(true);
+    authMock.isAuthenticated.set(true);
 
     const service = TestBed.inject(SubscriptionExpiryService);
 

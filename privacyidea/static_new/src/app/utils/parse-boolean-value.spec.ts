@@ -94,17 +94,17 @@ describe("parseBooleanValue", () => {
   });
 
   it("should return false for null", () => {
-    expect(parseBooleanValue(null as unknown as any)).toBe(false);
+    expect(parseBooleanValue(null as unknown as boolean)).toBe(false);
   });
 
   it("should return false for undefined", () => {
-    expect(parseBooleanValue(undefined as unknown as any)).toBe(false);
+    expect(parseBooleanValue(undefined as unknown as boolean)).toBe(false);
   });
 
   it("should call assert for an object", () => {
     const obj = {};
     const errMsg = `Initial value for parseBooleanValue must be boolean, 0, 1, "true", "false", "1" or "0", but was ${obj}`;
-    expect(() => parseBooleanValue(obj as any)).toThrow(errMsg);
+    expect(() => parseBooleanValue(obj as unknown as boolean)).toThrow(errMsg);
     expect(assert).toHaveBeenCalledWith(false, errMsg);
   });
 
@@ -123,6 +123,6 @@ describe("parseBooleanValue", () => {
     expect(isChecked("0")).toBe(false);
     expect(isChecked(0)).toBe(false);
     expect(isChecked(undefined)).toBe(false);
-    expect(isChecked(null as unknown as any)).toBe(false);
+    expect(isChecked(null)).toBe(false);
   });
 });

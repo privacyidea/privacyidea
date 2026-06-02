@@ -69,7 +69,7 @@ export class MockEventService implements EventServiceInterface {
     actionA: {
       opt1: { type: "bool", desc: "desc1", required: true },
       opt2: { type: "int", desc: "desc2", visibleIf: "opt1" },
-      opt3: { type: "str", desc: "desc3", visibleIf: "opt2", visibleValue: 3 }
+      opt3: { type: "str", desc: "desc3", visibleIf: "opt2", visibleValue: "3" }
     },
     actionB: {
       opt3: { type: "text", desc: "desc3" }
@@ -87,7 +87,7 @@ export class MockEventService implements EventServiceInterface {
   moduleConditions: Signal<Record<string, EventCondition>> = computed(() => ({
     condA: { type: "bool", desc: "descA" },
     condB: { type: "str", desc: "descB" },
-    condC: { type: "int", desc: "descC", value: [1, 2, 3] },
+    condC: { type: "int", desc: "descC", value: ["1", "2", "3"] },
     condD: { type: "multi", desc: "descD", value: [{ name: "option1" }, { name: "option2" }], group: "group1" }
   }));
 

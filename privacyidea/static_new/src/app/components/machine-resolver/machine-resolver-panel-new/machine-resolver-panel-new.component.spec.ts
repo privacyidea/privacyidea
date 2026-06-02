@@ -18,6 +18,7 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatExpansionPanel } from "@angular/material/expansion";
 import { DialogService } from "@services/dialog/dialog.service";
 import {
   HostsMachineResolverData,
@@ -83,7 +84,7 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("should save machineResolver", async () => {
-    const panel = { close: jest.fn() } as any;
+    const panel = { close: jest.fn() } as unknown as MatExpansionPanel;
     jest.spyOn(panel, "close");
     machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
     await component.saveMachineResolver(panel);
@@ -93,7 +94,7 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("handleCollapse without edits just resets to default without dialog", () => {
-    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
     // newMachineResolver is at default → isEdited() is false
     component.handleCollapse(panel);
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
@@ -101,7 +102,7 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("should handle collapse and discard on confirm", async () => {
-    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
     jest.spyOn(panel, "close");
     jest.spyOn(panel, "open");
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
@@ -115,7 +116,7 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("should re-open panel when collapse dialog is cancelled", async () => {
-    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(null));
@@ -127,20 +128,20 @@ describe("MachineResolverPanelNewComponent", () => {
   });
 
   it("should save and exit when collapse dialog returns save-exit", async () => {
-    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
     component.dataValidatorSignal.set(() => true);
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-    const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(undefined);
+    const saveSpy = jest.spyOn(component, "saveMachineResolver").mockResolvedValue(true);
     component.handleCollapse(panel);
     await Promise.resolve();
     expect(saveSpy).toHaveBeenCalledWith(panel);
   });
 
   it("should re-open panel on save-exit when canSave is false", async () => {
-    const panel = { close: jest.fn(), open: jest.fn() } as any;
+    const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
     component.dataValidatorSignal.set(() => false);
     component.newMachineResolver.set({ ...component.newMachineResolver(), resolvername: "test" });
     const dialogRefMock = new MockMatDialogRef();

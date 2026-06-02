@@ -34,17 +34,17 @@ global.IntersectionObserver = class IntersectionObserver {
   observe = jest.fn();
   unobserve = jest.fn();
   takeRecords = (): IntersectionObserverEntry[] => [];
-} as any;
+} as unknown as typeof IntersectionObserver;
 
 const mockEventHandler: EventHandler = {
-  id: "1",
+  id: 1,
   name: "TestHandler",
   handlermodule: "mockModule",
   active: true,
   event: ["eventA", "eventB"],
   action: "actionB",
   options: { opt3: "true" },
-  conditions: { condA: true },
+  conditions: { condA: "true" },
   position: "post",
   ordering: 0
 };
@@ -148,16 +148,25 @@ describe("EventEditPageComponent — edit mode", () => {
   });
 
   it("validConditionsDefinition should be true if all conditions have a value defined", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: false } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: "1", cond2: false } as unknown as Record<string, string>
+    });
     expect(component.validConditionsDefinition()).toBe(true);
   });
 
   it("validConditionsDefinition should be false if at least one condition has no value", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: null } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: "1", cond2: null } as unknown as Record<string, string>
+    });
     expect(component.validConditionsDefinition()).toBe(false);
     component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: "" } });
     expect(component.validConditionsDefinition()).toBe(false);
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: undefined } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: "1", cond2: undefined } as unknown as Record<string, string>
+    });
     expect(component.validConditionsDefinition()).toBe(false);
   });
 
@@ -243,7 +252,10 @@ describe("EventEditPageComponent — edit mode", () => {
   });
 
   it("canSave should be false if the conditions are invalid", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: null } });
+    component.editEvent.set({
+      ...component.editEvent(),
+      conditions: { cond1: null } as unknown as Record<string, string>
+    });
     expect(component.sectionValidity()["events"]).toBe(true);
     expect(component.sectionValidity()["action"]).toBe(true);
     expect(component.sectionValidity()["name"]).toBe(true);
@@ -286,7 +298,7 @@ describe("EventEditPageComponent — edit mode", () => {
       event: ["eventA", "eventB"],
       action: "actionB",
       "option.opt3": "true",
-      conditions: { condA: true },
+      conditions: { condA: "true" },
       position: "post",
       ordering: 0
     };
@@ -383,7 +395,7 @@ describe("EventEditPageComponent — create new mode", () => {
       event: ["eventA", "eventB"],
       action: "actionB",
       "option.opt3": "true",
-      conditions: { condA: true },
+      conditions: { condA: "true" },
       position: "pre",
       ordering: 0
     };

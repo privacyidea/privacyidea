@@ -29,7 +29,7 @@ import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
-import { MachineService } from "@services/machine/machine.service";
+import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -206,7 +206,7 @@ describe("TokenDetailsComponent", () => {
     component.tokengroupOptions.set([]);
     component.toggleTokenEdit(tgEl);
 
-    expect(tokenService.getTokengroups as any).toHaveBeenCalled();
+    expect(tokenService.getTokengroups).toHaveBeenCalled();
     expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
     expect(tgEl.isEditing()).toBe(true);
   });
@@ -241,7 +241,7 @@ describe("TokenDetailsComponent", () => {
 
     component.saveTokenEdit(el as unknown as EditableElement<string>);
 
-    expect(tokenService.setTokengroup as any).toHaveBeenCalledWith("Mock serial", ["groupB"]);
+    expect(tokenService.setTokengroup).toHaveBeenCalledWith("Mock serial", ["groupB"]);
     expect(reloadSpy).toHaveBeenCalled();
     expect(el.isEditing()).toBe(false);
   });
@@ -264,7 +264,7 @@ describe("TokenDetailsComponent", () => {
     const element = {
       keyMap: { key: "container_serial" },
       isEditing: signal(true)
-    } as any;
+    } as unknown as EditableElement;
 
     containerService.filterContainersByTokenOwner.set(true);
     component.cancelTokenEdit(element);
@@ -326,7 +326,7 @@ describe("TokenDetailsComponent", () => {
     machineService.tokenApplications.set([]);
     expect(component.isAttachedToMachine()).toBe(false);
 
-    machineService.tokenApplications.set([{ id: 1 } as any]);
+    machineService.tokenApplications.set([{ id: 1 } as Partial<TokenApplication> as TokenApplication]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
 

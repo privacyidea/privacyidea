@@ -203,12 +203,9 @@ export interface ResolverServiceInterface {
   editableResolvers: Signal<string[]>;
   userAttributes: Signal<string[]>;
 
-  postResolverTest(data: ResolverData): Observable<PiResponse<unknown>>;
-
-  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<unknown>>;
-
-  deleteResolver(resolverName: string): Observable<PiResponse<unknown>>;
-
+  postResolverTest(data: ResolverData): Observable<PiResponse<boolean, { description: string }>>;
+  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>>;
+  deleteResolver(resolverName: string): Observable<PiResponse<number>>;
   getDefaultResolverConfig(resolverType: string): Observable<PiResponse<unknown>>;
 }
 
@@ -260,7 +257,7 @@ export class ResolverService implements ResolverServiceInterface {
     if (!resolverResource) return [];
     const resolverConfig = resolverResource[this.selectedResolverName()];
     const resolverType = resolverConfig?.type;
-    let userInfo: Record<string, any> | string = {};
+    let userInfo: Record<string, string> | string = {};
 
     switch (resolverType) {
       case "ldapresolver":
@@ -318,9 +315,11 @@ export class ResolverService implements ResolverServiceInterface {
     return editableResolverNames;
   });
 
-  postResolverTest(data: ResolverData = {}): Observable<PiResponse<unknown>> {
+  postResolverTest(data: ResolverData = {}): Observable<PiResponse<boolean, { description: string }>> {
     return this.http
-      .post<PiResponse<unknown>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
+      .post<
+        PiResponse<boolean, { description: string }>
+      >(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error("Error during resolver test:", error);
@@ -331,10 +330,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<unknown>> {
+  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>> {
     return this.http
       .post<
-        PiResponse<unknown>
+        PiResponse<number>
       >(this.resolverBaseUrl + encodeURIComponent(resolverName), data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
@@ -346,10 +345,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  deleteResolver(resolverName: string): Observable<PiResponse<unknown>> {
+  deleteResolver(resolverName: string): Observable<PiResponse<number>> {
     return this.http
       .delete<
-        PiResponse<unknown>
+        PiResponse<number>
       >(this.resolverBaseUrl + encodeURIComponent(resolverName), { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {

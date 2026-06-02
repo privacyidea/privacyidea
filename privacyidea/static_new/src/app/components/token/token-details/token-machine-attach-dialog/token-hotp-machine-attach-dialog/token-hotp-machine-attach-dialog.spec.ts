@@ -24,15 +24,21 @@ import { Observable } from "rxjs";
 
 import { TokenHotpMachineAssignDialogComponent } from "./token-hotp-machine-attach-dialog";
 
+import { PiResponse } from "@app/app.component";
+import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+
+type PostAssignArgs = Parameters<MachineServiceInterface["postAssignMachineToToken"]>[0];
+
 class MockMachineService {
   subscribed = false;
-  lastArgs: any = null;
+  lastArgs: PostAssignArgs | null = null;
 
-  postAssignMachineToToken = jest.fn().mockImplementation((args: any) => {
+  postAssignMachineToToken = jest.fn().mockImplementation((args: PostAssignArgs) => {
     this.lastArgs = args;
-    return new Observable((observer) => {
+    return new Observable<PiResponse<number>>((observer) => {
       this.subscribed = true;
-      observer.next({ ok: true });
+      observer.next(MockPiResponse.fromValue<number>(0) as unknown as PiResponse<number>);
       observer.complete();
     });
   });
@@ -56,10 +62,7 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: { tokenSerial: "SERIAL-1" } },
         { provide: MatDialogRef, useValue: dialogRef },
-        {
-          provide: (await import("@services/machine/machine.service")).MachineService,
-          useValue: machineService
-        }
+        { provide: MachineService, useValue: machineService }
       ]
     }).compileComponents();
 
@@ -142,17 +145,18 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
 
     expect(machineService.subscribed).toBe(true);
 
-    const returned$ = (machineService.postAssignMachineToToken as jest.Mock).mock.results[0].value as Observable<any>;
+    const returned$ = (machineService.postAssignMachineToToken as jest.Mock).mock.results[0]
+      .value as Observable<PiResponse<number>>;
     expect(dialogRef.close).toHaveBeenCalledWith(returned$);
   });
 
   it("close: closes with undefined", () => {
-    (component as any).close();
+    (component as unknown as { close: (value?: unknown) => void }).close();
     expect(dialogRef.close).toHaveBeenCalledWith(undefined);
   });
 
   it("close: closes with given value", () => {
-    (component as any).close("test-value");
+    (component as unknown as { close: (value?: unknown) => void }).close("test-value");
     expect(dialogRef.close).toHaveBeenCalledWith("test-value");
   });
 });
