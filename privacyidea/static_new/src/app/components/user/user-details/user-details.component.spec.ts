@@ -22,10 +22,13 @@ import { BehaviorSubject, map, of } from "rxjs";
 import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ElementRef } from "@angular/core";
 import { UserDetailsComponent } from "./user-details.component";
 
+import { MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatDialog } from "@angular/material/dialog";
-import { ActivatedRoute } from "@angular/router";
+import { PageEvent } from "@angular/material/paginator";
+import { ActivatedRoute, Router } from "@angular/router";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -34,8 +37,10 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
-import { UserService } from "@services/user/user.service";
+import { TokenDetails, TokenService } from "@services/token/token.service";
+import { UserData, UserService } from "@services/user/user.service";
+import { HttpResourceRef } from "@angular/common/http";
+import { PiResponse } from "@app/app.component";
 import {
   MockAuditService,
   MockContainerService,
@@ -144,16 +149,16 @@ describe("UserDetailsComponent", () => {
       count: 2,
       current: 2,
       tokens: [
-        { serial: "T-1", revoked: false, locked: false } as any,
-        { serial: "T-2", revoked: false, locked: false } as any
-      ]
+        { serial: "T-1", revoked: false, locked: false },
+        { serial: "T-2", revoked: false, locked: false }
+      ] as TokenDetails[]
     });
     fixture.detectChanges();
 
     expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
     expect(component.total()).toBe(2);
 
-    tokenServiceMock.tokenResource.value.set(undefined as any);
+    tokenServiceMock.tokenResource.value.set(undefined);
     fixture.detectChanges();
 
     expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
@@ -237,7 +242,7 @@ describe("UserDetailsComponent", () => {
     const reloadUserTokenSpy = jest.spyOn(tokenServiceMock.userTokenResource, "reload");
     const reloadTokenSpy = jest.spyOn(tokenServiceMock.tokenResource, "reload");
 
-    const tokenOption = { serial: "SER-999" } as any;
+    const tokenOption = { serial: "SER-999" } as TokenDetails;
     component.assignUserToToken(tokenOption);
 
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
@@ -253,11 +258,13 @@ describe("UserDetailsComponent", () => {
 
   it("onPageEvent updates service page size/index and opens autocomplete panel", async () => {
     const focus = jest.fn();
-    (component as any).filterHTMLInputElement = { nativeElement: { focus } };
+    component.filterHTMLInputElement = {
+      nativeElement: { focus }
+    } as unknown as ElementRef<HTMLInputElement>;
     const openPanel = jest.fn();
-    (component as any).tokenAutoTrigger = { openPanel };
+    component.tokenAutoTrigger = { openPanel } as unknown as MatAutocompleteTrigger;
 
-    component.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as any);
+    component.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as PageEvent);
     expect(tokenServiceMock.eventPageSize()).toBe(25);
     expect(tokenServiceMock.pageIndex()).toBe(2);
 
@@ -322,8 +329,11 @@ describe("UserDetailsComponent", () => {
   it("should navigateByUrl and reload usersResource on deleteUser success", () => {
     component.userData.set(mockUserData);
     const deleteSpy = jest.spyOn(userServiceMock, "deleteUser").mockReturnValue(of(true));
-    const routerSpy = jest.spyOn((component as any).router, "navigateByUrl").mockResolvedValue(true);
-    userServiceMock.usersResource = { reload: jest.fn() } as any;
+    const router = (component as unknown as { router: Router }).router;
+    const routerSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    userServiceMock.usersResource = {
+      reload: jest.fn()
+    } as unknown as HttpResourceRef<PiResponse<UserData[], undefined> | undefined>;
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({
       afterClosed: () => of(true)
     });

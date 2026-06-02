@@ -28,12 +28,13 @@ import { VersioningService } from "@services/version/version.service";
 import { MockLocalService, MockNotificationService, MockVersioningService } from "@testing/mock-services";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
-const b64url = (obj: any) =>
+const b64url = (obj: object) =>
   Buffer.from(JSON.stringify(obj)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 const ensureAtob = () => {
-  if (!(global as any).atob) {
-    (global as any).atob = (s: string) => Buffer.from(s, "base64").toString("binary");
+  const g = global as unknown as { atob?: (s: string) => string };
+  if (!g.atob) {
+    g.atob = (s: string) => Buffer.from(s, "base64").toString("binary");
   }
 };
 
@@ -65,7 +66,7 @@ describe("AuthService", () => {
 
     authService = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
-    mockLocal = TestBed.inject(LocalService) as any;
+    mockLocal = TestBed.inject(LocalService) as unknown as MockLocalService;
     notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     jest.spyOn(console, "error").mockReturnValue();
     ensureAtob();
@@ -217,7 +218,7 @@ describe("AuthService", () => {
     authService.acceptAuthentication();
     expect(authService.isAuthenticated()).toBe(false);
 
-    (authService as any).authData.set({
+    authService.authData.set({
       token: "t",
       realm: "",
       rights: [],
@@ -253,14 +254,19 @@ describe("AuthService", () => {
       logout_redirect_url: "",
       require_description: [],
       rss_age: 0,
-      container_wizard: { enabled: false }
+      container_wizard: {
+        enabled: false,
+        type: "",
+        registration: false,
+        template: null
+      }
     });
     expect(authService.isAuthenticated()).toBe(true);
 
     authService.logout();
     expect(authService.isAuthenticated()).toBe(false);
-    expect((authService as any).authData()).toBeNull();
-    expect((authService as any).jwtData()).toBeNull();
+    expect(authService.authData()).toBeNull();
+    expect(authService.jwtData()).toBeNull();
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await (routerMock.navigate as jest.Mock).mock.results[0].value;
@@ -283,7 +289,7 @@ describe("AuthService", () => {
       exp: Math.floor(Date.now() / 1000) + 120,
       rights: []
     };
-    (authService as any).jwtData.set(jwt);
+    authService.jwtData.set(jwt);
 
     expect(authService.authtype()).toBe("cookie");
     expect(authService.jwtExpDate()).toEqual(new Date(jwt.exp * 1000));
@@ -306,7 +312,7 @@ describe("AuthService", () => {
       authtype: "cookie",
       rights: []
     };
-    (authService as any).jwtData.set(jwt);
+    authService.jwtData.set(jwt as unknown as JwtData);
 
     expect(authService.jwtExpDate()).toBeNull();
     expect(authService.jwtLogoutTimeS()).toBeNull();
@@ -388,8 +394,8 @@ describe("AuthService", () => {
     req.flush(body);
 
     expect(mockLocal.saveData).toHaveBeenCalled();
-    expect((authService as any).authData()).not.toBeNull();
-    expect((authService as any).jwtData()).toMatchObject(payload);
+    expect(authService.authData()).not.toBeNull();
+    expect(authService.jwtData()).toMatchObject(payload);
     expect(authService.isAuthenticated()).toBe(true);
 
     sub.unsubscribe();
@@ -410,7 +416,7 @@ describe("AuthService", () => {
 
   it("isSelfServiceUser reflects role === 'user'", () => {
     expect(authService.isSelfServiceUser()).toBe(false);
-    (authService as any).jwtData.set({
+    authService.jwtData.set({
       username: "u",
       realm: "r",
       nonce: "n",

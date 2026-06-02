@@ -20,6 +20,7 @@ import { HttpClient, HttpHeaders, provideHttpClient } from "@angular/common/http
 import { TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
 
+import { PiResponse } from "@app/app.component";
 import { AuthResponse, AuthService } from "@services/auth/auth.service";
 import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -282,7 +283,9 @@ describe("ValidateService", () => {
           of({ detail: { passkey: { challenge: "x", rpId: "r", transaction_id: "t" } } })
         );
 
-        const authSpy = jest.spyOn(auth, "authenticate").mockReturnValue(of({ success: true }) as never);
+        const authSpy = jest
+          .spyOn(auth, "authenticate")
+          .mockReturnValue(of({ success: true } as unknown as AuthResponse));
 
         let final: AuthResponse | undefined;
         await new Promise<void>((resolve) => {
@@ -353,17 +356,17 @@ describe("ValidateService", () => {
           })
         );
 
-        let captured: any;
+        let captured: Record<string, unknown> | undefined;
         postSpy.mockImplementationOnce((url, body) => {
-          captured = body;
+          captured = body as Record<string, unknown>;
           return of({ success: true });
         });
 
-        let final: any;
+        let final: AuthResponse | undefined;
         await new Promise<void>((resolve) => {
           validateService
             .authenticateWebAuthn({
-              signRequest: okSignRequest as any,
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
               transaction_id: "T-1",
               username: "alice",
               isTest: true
@@ -404,16 +407,18 @@ describe("ValidateService", () => {
           })
         );
 
-        const authSpy = jest.spyOn(auth as any, "authenticate").mockReturnValue(of({ ok: 1 }));
+        const authSpy = jest
+          .spyOn(auth, "authenticate")
+          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
         postSpy.mockImplementation(() => {
           throw new Error("should not POST in this branch");
         });
 
-        let final: any;
+        let final: AuthResponse | undefined;
         await new Promise<void>((resolve) => {
           validateService
             .authenticateWebAuthn({
-              signRequest: okSignRequest as any,
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
               transaction_id: "T-2",
               username: "bob",
               isTest: false
@@ -431,11 +436,11 @@ describe("ValidateService", () => {
       it("handles navigator.credentials.get rejection (catchError path)", async () => {
         setWebAuthn(() => Promise.reject({ error: { result: { error: { message: "nope" } } } }));
 
-        let caught: any;
+        let caught: Error | undefined;
         await new Promise<void>((resolve) => {
           validateService
             .authenticateWebAuthn({
-              signRequest: okSignRequest as any,
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
               transaction_id: "T-3",
               username: "eve",
               isTest: true
@@ -449,16 +454,16 @@ describe("ValidateService", () => {
             });
         });
 
-        expect(caught.message).toBe("nope");
+        expect(caught?.message).toBe("nope");
         expect(notif.error).toHaveBeenCalledWith("nope");
       });
 
       it("unsupported WebAuthn shows snack and throws", (done) => {
-        (window as any).PublicKeyCredential = undefined;
+        (window as WindowWithPasskey).PublicKeyCredential = undefined;
 
         validateService
           .authenticateWebAuthn({
-            signRequest: okSignRequest as any,
+            signRequest: okSignRequest as unknown as WebAuthnSignRequest,
             transaction_id: "T-4",
             username: "mallory",
             isTest: true
@@ -478,7 +483,9 @@ describe("ValidateService", () => {
       it("returns true only when authentication=ACCEPT and value=true", (done) => {
         const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
 
-        httpGet.mockReturnValueOnce(of({ result: { authentication: "ACCEPT", value: true } } as any));
+        httpGet.mockReturnValueOnce(
+          of({ result: { authentication: "ACCEPT", value: true } } as unknown as PiResponse<boolean>)
+        );
 
         validateService.pollTransaction("tid").subscribe((res) => {
           expect(res).toBe(true);
@@ -489,7 +496,9 @@ describe("ValidateService", () => {
       it("returns false for other combinations", (done) => {
         const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
 
-        httpGet.mockReturnValueOnce(of({ result: { authentication: "ACCEPT", value: false } } as any));
+        httpGet.mockReturnValueOnce(
+          of({ result: { authentication: "ACCEPT", value: false } } as unknown as PiResponse<boolean>)
+        );
 
         validateService.pollTransaction("tid").subscribe((res) => {
           expect(res).toBe(false);

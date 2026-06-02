@@ -17,25 +17,25 @@ export class MockRealmService implements RealmServiceInterface {
   adminRealmOptions = signal<string[]>([]);
   selectedRealms = signal<string[]>([]);
 
-  realmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(MockPiResponse.fromValue<Realms>({} as any));
+  realmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(MockPiResponse.fromValue<Realms>({}));
 
   realmOptions = signal<string[]>([]);
 
   defaultRealmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(
     MockPiResponse.fromValue<Realms>({
-      realm1: { default: true, id: 1, option: "", resolver: [] } as Realm
-    } as any)
+      realm1: { default: true, id: 1, option: "", resolver: [] }
+    })
   );
 
   defaultRealm: Signal<string> = computed(() => {
-    const data = this.defaultRealmResource.value()?.result?.value as any;
-    return data ? Object.keys(data)[0] : "";
+    const data = this.defaultRealmResource.value()?.result?.value;
+    return data ? (Object.keys(data)[0] ?? "") : "";
   });
 
   createRealm = jest
     .fn()
     .mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
-      const current = (this.realmResource.value()?.result?.value as any) ?? {};
+      const current: Realms = this.realmResource.value()?.result?.value ?? {};
       const existing: Realm | undefined = current[realm];
 
       const newResolverEntries = resolvers.map((r) => ({
@@ -47,42 +47,39 @@ export class MockRealmService implements RealmServiceInterface {
 
       const updatedRealm: Realm = existing
         ? { ...existing, resolver: [...(existing.resolver ?? []), ...newResolverEntries] }
-        : ({ default: false, id: Object.keys(current).length + 1, option: "", resolver: newResolverEntries } as Realm);
+        : { default: false, id: Object.keys(current).length + 1, option: "", resolver: newResolverEntries };
 
-      const updatedRealms = { ...current, [realm]: updatedRealm };
-      (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-        MockPiResponse.fromValue<Realms>(updatedRealms as any)
-      );
-      return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
+      const updatedRealms: Realms = { ...current, [realm]: updatedRealm };
+      this.realmResource.set(MockPiResponse.fromValue<Realms>(updatedRealms));
+      return of(MockPiResponse.fromValue<{ realm: string; nodeId: string; resolvers: typeof resolvers }>({
+        realm,
+        nodeId,
+        resolvers
+      }));
     });
 
   deleteRealm = jest.fn().mockImplementation((realm: string) => {
-    const current = (this.realmResource.value()?.result?.value as any) ?? {};
+    const current: Realms = this.realmResource.value()?.result?.value ?? {};
     if (current[realm]) {
       const rest = { ...current };
       delete rest[realm];
-      (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-        MockPiResponse.fromValue<Realms>(rest as any)
-      );
+      this.realmResource.set(MockPiResponse.fromValue<Realms>(rest));
     }
     return of(MockPiResponse.fromValue<number>(1));
   });
 
   setDefaultRealm = jest.fn().mockImplementation((realm: string) => {
-    const current = (this.realmResource.value()?.result?.value as any) ?? {};
-
-    Object.keys(current).forEach((key) => {
-      current[key] = { ...(current[key] as Realm), default: key === realm };
-    });
-
-    (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-      MockPiResponse.fromValue<Realms>(current as any)
+    const current: Realms = this.realmResource.value()?.result?.value ?? {};
+    const next: Realms = Object.fromEntries(
+      Object.entries(current).map(([key, value]) => [key, { ...value, default: key === realm }])
     );
 
-    (this.defaultRealmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
+    this.realmResource.set(MockPiResponse.fromValue<Realms>(next));
+
+    this.defaultRealmResource.set(
       MockPiResponse.fromValue<Realms>({
-        [realm]: current[realm] ?? ({ default: true, id: 1, option: "", resolver: [] } as Realm)
-      } as any)
+        [realm]: next[realm] ?? { default: true, id: 1, option: "", resolver: [] }
+      })
     );
 
     return of(MockPiResponse.fromValue<number>(1));

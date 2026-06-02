@@ -21,6 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
 import { Base64Service } from "@services/base64/base64.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -42,7 +43,7 @@ describe("EnrollPasskeyComponent", () => {
 
   const origCreds = navigator.credentials;
 
-  function setNavigatorCredentials(obj: any) {
+  function setNavigatorCredentials(obj: Partial<CredentialsContainer> | undefined) {
     Object.defineProperty(navigator, "credentials", {
       configurable: true,
       get: () => obj
@@ -67,10 +68,10 @@ describe("EnrollPasskeyComponent", () => {
     fixture = TestBed.createComponent(EnrollPasskeyComponent);
     component = fixture.componentInstance;
 
-    tokenService = TestBed.inject(TokenService) as any;
-    dialogService = TestBed.inject(DialogService) as any;
-    b64 = TestBed.inject(Base64Service) as any;
-    notif = TestBed.inject(NotificationService) as any;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
+    notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     fixture.detectChanges();
   });
@@ -133,7 +134,7 @@ describe("EnrollPasskeyComponent", () => {
     const initData = {
       description: "x",
       passkeyRegOptions: {}
-    } as any;
+    } as unknown as TokenEnrollmentData;
     const args = component.enrollmentArgsGetter(initData);
     expect(args).not.toBeNull();
     const dialogRefMock = new MockMatDialogRef();
@@ -162,7 +163,7 @@ describe("EnrollPasskeyComponent", () => {
     setNavigatorCredentials({
       create: jest.fn()
     });
-    const enrollmentArgs = component.enrollmentArgsGetter({} as any);
+    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
@@ -206,7 +207,7 @@ describe("EnrollPasskeyComponent", () => {
       create: jest.fn().mockResolvedValue(createdCred)
     });
 
-    const enrollmentArgs = component.enrollmentArgsGetter({} as any);
+    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
 
@@ -259,11 +260,11 @@ describe("EnrollPasskeyComponent", () => {
       .mockReturnValueOnce(of(passkeyInit("S-1", "tx-1")))
       .mockReturnValueOnce(of(finalize("S-1")));
 
-    let reopenCb: (() => Promise<EnrollmentResponse | null>) | undefined;
+    let reopenCb: ReopenDialogFn | undefined;
 
-    component.reopenDialogChange.subscribe((fn) => (reopenCb = fn as any));
+    component.reopenDialogChange.subscribe((fn: ReopenDialogFn) => (reopenCb = fn));
 
-    const enrollmentArgs = component.enrollmentArgsGetter({} as any);
+    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,

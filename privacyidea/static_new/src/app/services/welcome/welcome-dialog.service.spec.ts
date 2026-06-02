@@ -16,23 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { WelcomeDialogService } from "./welcome-dialog.service";
 
+interface AuthMock {
+  isAuthenticated: WritableSignal<boolean>;
+  hideWelcome: WritableSignal<boolean>;
+  subscriptionStatus: WritableSignal<number>;
+}
+
 describe("WelcomeDialogService", () => {
-  let dialogMock: { open: jest.Mock };
-  let authMock: Pick<InstanceType<typeof AuthService>, "isAuthenticated" | "hideWelcome" | "subscriptionStatus">;
+  let dialogMock: Pick<MatDialog, "open">;
+  let authMock: AuthMock;
 
   beforeEach(() => {
-    dialogMock = { open: jest.fn() };
+    dialogMock = { open: jest.fn() } as unknown as Pick<MatDialog, "open">;
     authMock = {
-      isAuthenticated: signal(false) as any,
-      hideWelcome: signal(false) as any,
-      subscriptionStatus: signal(0) as any
-    } as any;
+      isAuthenticated: signal(false),
+      hideWelcome: signal(false),
+      subscriptionStatus: signal(0)
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -44,9 +50,9 @@ describe("WelcomeDialogService", () => {
   });
 
   it("opens dialog when authenticated and not explicitly hidden by status===3", () => {
-    (authMock.isAuthenticated as any).set(true);
-    (authMock.hideWelcome as any).set(false);
-    (authMock.subscriptionStatus as any).set(2);
+    authMock.isAuthenticated.set(true);
+    authMock.hideWelcome.set(false);
+    authMock.subscriptionStatus.set(2);
     const service = TestBed.inject(WelcomeDialogService);
     TestBed.tick();
 
@@ -54,9 +60,9 @@ describe("WelcomeDialogService", () => {
   });
 
   it("does NOT open when hideWelcome is true and subscriptionStatus===3", () => {
-    (authMock.isAuthenticated as any).set(true);
-    (authMock.hideWelcome as any).set(true);
-    (authMock.subscriptionStatus as any).set(3);
+    authMock.isAuthenticated.set(true);
+    authMock.hideWelcome.set(true);
+    authMock.subscriptionStatus.set(3);
     const service = TestBed.inject(WelcomeDialogService);
     TestBed.tick();
 
@@ -64,7 +70,7 @@ describe("WelcomeDialogService", () => {
   });
 
   it("does NOT open when not authenticated", () => {
-    (authMock.isAuthenticated as any).set(false);
+    authMock.isAuthenticated.set(false);
     const service = TestBed.inject(WelcomeDialogService);
     TestBed.tick();
 

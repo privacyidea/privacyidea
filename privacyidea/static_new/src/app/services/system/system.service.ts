@@ -37,14 +37,48 @@ export interface DeleteUserCacheResult {
   deleted: number;
 }
 
+/**
+ * Frontend-supplied default values that accompany the system config response.
+ * Backend `GET /system/` returns `result.value` as `Record<string, string>`;
+ * `result.init` holds additional UI defaults (e.g. allowed hash libs, TOTP
+ * step choices) which may be extended over time.
+ */
+export interface SystemConfigInit {
+  hashlibs?: string[];
+  totpSteps?: number | number[];
+  smsProviders?: string[];
+  [key: string]: unknown;
+}
+
+/**
+ * Shape of the `GET /system/` response. Mirrors `PiResponse` but
+ * declares `result` explicitly to surface the WebUI-only `init` field.
+ */
+export interface SystemConfigResponse {
+  id: number;
+  jsonrpc: string;
+  detail: unknown;
+  result?: {
+    authentication?: "CHALLENGE" | "POLL" | "PUSH" | "ACCEPT" | "REJECT";
+    status: boolean;
+    value?: Record<string, string>;
+    init?: SystemConfigInit;
+    error?: { code: number; message: string };
+  };
+  signature: string;
+  time: number;
+  version: string;
+  versionnumber: string;
+}
+
 export interface SystemServiceInterface {
-  systemConfigResource: HttpResourceRef<any>;
+  systemConfigResource: HttpResourceRef<SystemConfigResponse | undefined>;
   radiusServerResource: HttpResourceRef<PiResponse<string[]> | undefined>;
-  caConnectorResource?: HttpResourceRef<any>;
+  caConnectorResource?: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
   caConnectors?: WritableSignal<CaConnectors>;
   nodesResource: HttpResourceRef<PiResponse<NodeInfo[]> | undefined>;
   systemConfig: Signal<Record<string, string>>;
-  systemConfigInit: Signal<any>;
+  systemConfigInit: Signal<SystemConfigInit>;
   nodes: Signal<NodeInfo[]>;
   radiusServers: Signal<string[]>;
 
@@ -52,7 +86,7 @@ export interface SystemServiceInterface {
   deleteSystemConfig(key: string): Observable<PiResponse<boolean>>;
   deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>>;
   // No backend route exists for this and it is currently unused, so the type is unknown.
-  loadSmtpIdentifiers(): Observable<PiResponse<any>>;
+  loadSmtpIdentifiers(): Observable<PiResponse<Record<string, string>>>;
   getDocumentation(): Observable<string>;
 }
 
@@ -71,7 +105,7 @@ export class SystemService implements SystemServiceInterface {
     );
   });
 
-  systemConfigResource = httpResource<any>(() => {
+  systemConfigResource = httpResource<SystemConfigResponse>(() => {
     // Only load system config on enrollment or wizard routes.
     if (!this.onAllowedRoutes()) {
       return undefined;
@@ -99,7 +133,7 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-  caConnectorResource = httpResource<any>(() => {
+  caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => {
     // Do not load CA connectors details if the action is not allowed.
     if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
       return undefined;
@@ -147,7 +181,7 @@ export class SystemService implements SystemServiceInterface {
     if (!this.systemConfigResource.hasValue()) return {};
     return this.systemConfigResource.value()?.result?.value ?? {};
   });
-  systemConfigInit = computed<any>(() => {
+  systemConfigInit = computed<SystemConfigInit>(() => {
     if (!this.systemConfigResource.hasValue()) return {};
     return this.systemConfigResource.value()?.result?.init ?? {};
   });
@@ -178,8 +212,8 @@ export class SystemService implements SystemServiceInterface {
     });
   }
 
-  loadSmtpIdentifiers(): Observable<PiResponse<any>> {
-    return this.http.get<PiResponse<any>>(`${this.systemBaseUrl}names/smtp`, {
+  loadSmtpIdentifiers(): Observable<PiResponse<Record<string, string>>> {
+    return this.http.get<PiResponse<Record<string, string>>>(`${this.systemBaseUrl}names/smtp`, {
       headers: this.authService.getHeaders()
     });
   }
