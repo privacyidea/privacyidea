@@ -17,36 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, WritableSignal, computed, inject, linkedSignal, signal } from "@angular/core";
+import { Component, WritableSignal, computed, inject, signal, viewChild } from "@angular/core";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
-import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "@components/token/token-enrollment/enroll-email/enroll-email.component";
-import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "@components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollMotpComponent } from "@components/token/token-enrollment/enroll-motp/enroll-motp.component";
-import { EnrollPaperComponent } from "@components/token/token-enrollment/enroll-paper/enroll-paper.component";
-import { EnrollPushComponent } from "@components/token/token-enrollment/enroll-push/enroll-push.component";
-import { EnrollQuestionComponent } from "@components/token/token-enrollment/enroll-questionnaire/enroll-question.component";
-import { EnrollRegistrationComponent } from "@components/token/token-enrollment/enroll-registration/enroll-registration.component";
-import { EnrollSmsComponent } from "@components/token/token-enrollment/enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "@components/token/token-enrollment/enroll-spass/enroll-spass.component";
-import { EnrollSshkeyComponent } from "@components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component";
-import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "@components/token/token-enrollment/enroll-u2f/enroll-u2f.component";
-import { EnrollVascoComponent } from "@components/token/token-enrollment/enroll-vasco/enroll-vasco.component";
-import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import {
-  OnEnrollmentResponseFn,
-  enrollmentArgsGetterFn
-} from "@components/token/token-enrollment/token-enrollment.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -55,36 +33,14 @@ import {
   TokenDetails,
   TokenEnrollmentDialogData,
   TokenService,
-  TokenServiceInterface,
-  TokenType
+  TokenServiceInterface
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { Observable, lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-token-rollover",
-  imports: [
-    EnrollApplspecComponent,
-    EnrollDaypasswordComponent,
-    EnrollEmailComponent,
-    EnrollHotpComponent,
-    EnrollIndexedsecretComponent,
-    EnrollMotpComponent,
-    EnrollPaperComponent,
-    EnrollQuestionComponent,
-    EnrollRegistrationComponent,
-    EnrollSmsComponent,
-    EnrollSpassComponent,
-    EnrollSshkeyComponent,
-    EnrollTanComponent,
-    EnrollTiqrComponent,
-    EnrollTotpComponent,
-    EnrollU2fComponent,
-    EnrollVascoComponent,
-    DialogWrapperComponent,
-    EnrollPushComponent,
-    EnrollWebauthnComponent
-  ],
+  imports: [DialogWrapperComponent, EnrollTokenTypeSwitchComponent],
   standalone: true,
   templateUrl: "./token-rollover.component.html",
   styleUrl: "./token-rollover.component.scss"
@@ -105,28 +61,16 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   serial = signal(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
-  childValid = signal<boolean>(true);
-
-  formGroupInvalid = signal(false);
-
-  dialogActions = linkedSignal({
-    source: this.formGroupInvalid,
-    computation: (invalid) => {
-      return [
-        {
-          type: "confirm",
-          label: $localize`Rollover`,
-          value: true,
-          disabled: invalid
-        }
-      ] as DialogAction<boolean>[];
+  dialogActions = signal<DialogAction<boolean>[]>([
+    {
+      type: "confirm",
+      label: $localize`Rollover`,
+      value: true,
+      disabled: false
     }
-  });
+  ]);
 
-  onEnrollmentResponse = linkedSignal<TokenType, OnEnrollmentResponseFn | undefined>({
-    source: this.tokenService.selectedTokenType,
-    computation: () => undefined
-  });
+  protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
   // Only required if we later add the reopen rollover dialog function
   enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
@@ -139,14 +83,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
     this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
-    this.formGroupInvalid.set(!this.childValid());
     this.serial.set(this.token().serial);
-  }
-
-  enrollmentArgsGetter?: enrollmentArgsGetterFn;
-
-  updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
-    this.enrollmentArgsGetter = event;
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
@@ -163,7 +100,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
 
-    if (!this.enrollmentArgsGetter) {
+    const strategy = this.enrollSwitch()?.currentStrategy();
+    if (!strategy) {
       this.notificationService.warning("Rollover action is not available for the selected token type.");
       return;
     }
@@ -175,7 +113,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       rollover: true
     };
 
-    const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
+    const enrollmentArgs = strategy.buildEnrollmentArgs(basicOptions);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
@@ -196,9 +134,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     // Complete rollover
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
-    const onEnrollmentResponseFn = this.onEnrollmentResponse();
-    if (onEnrollmentResponseFn && enrollmentResponse) {
-      enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
+    if (strategy.onEnrollmentResponse && enrollmentResponse) {
+      enrollmentResponse = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
     }
 
     // two step enrollment + handles further enrollment steps (verify + success dialog)
@@ -296,14 +233,4 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     this.openLastStepDialog(response);
   }
 
-  updateAdditionalFormFields(_event: { [key: string]: any }): void {
-    // Child validation happens in the child components themselves.
-    // Treat parent form as always valid; child validity state is managed per-child.
-    this.childValid.set(true);
-    this.formGroupInvalid.set(false);
-  }
-
-  updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
-    this.onEnrollmentResponse.set(event);
-  }
 }

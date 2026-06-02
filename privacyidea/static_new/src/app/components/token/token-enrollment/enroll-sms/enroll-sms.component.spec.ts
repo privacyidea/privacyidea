@@ -138,10 +138,10 @@ describe("EnrollSmsComponent", () => {
     });
   });
 
-  describe("enrollmentArgsGetter", () => {
+  describe("buildEnrollmentArgs", () => {
     it("should return null and mark smsGateway form touched when no gateway selected", () => {
       component.smsGateway.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.smsGatewayForm().touched()).toBe(true);
     });
@@ -150,7 +150,7 @@ describe("EnrollSmsComponent", () => {
       component.smsGateway.set("gw1");
       component.readNumberDynamically.set(false);
       component.phoneNumber.set("not-a-number");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.phoneNumberForm().touched()).toBe(true);
     });
@@ -159,7 +159,7 @@ describe("EnrollSmsComponent", () => {
       component.smsGateway.set("gw1");
       component.readNumberDynamically.set(true);
       component.phoneNumber.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.readNumberDynamically).toBe(true);
       expect((result!.data as any).phoneNumber).toBeUndefined();
@@ -169,7 +169,7 @@ describe("EnrollSmsComponent", () => {
       component.smsGateway.set("gw1");
       component.readNumberDynamically.set(false);
       component.phoneNumber.set("+12345678");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.smsGateway).toBe("gw1");
       expect((result!.data as any).phoneNumber).toBe("+12345678");
