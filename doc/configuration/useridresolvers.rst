@@ -229,8 +229,8 @@ The above attributes are used for privacyIDEA's normal functionality and are
 listed in the :ref:`user_details`. To return additional attributes alongside
 the authentication response, enable the :ref:`policy_add_user_in_response`
 policy on :http:post:`/validate/check`. To return arbitrary attributes from
-the LDAP you can add additional keys to the attribute mapping with a key you
-make up and the LDAP attribute like::
+LDAP, you can add additional keys to the attribute mapping with a key you
+make up and the LDAP attribute, like::
 
    "homedir": "homeDirectory",
    "studentID": "objectGUID"
