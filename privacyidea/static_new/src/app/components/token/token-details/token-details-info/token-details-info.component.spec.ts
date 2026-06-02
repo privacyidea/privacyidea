@@ -127,6 +127,18 @@ describe("TokenDetailsInfoComponent", () => {
     expect(component.isEditingInfo()).toBe(false);
   });
 
+  it("template cast helpers pass values through and hide timestamp keys", () => {
+    expect(component.asInfoMap(undefined)).toEqual({});
+    expect(component.asInfoMap({ a: "1" })).toEqual({ a: "1" });
+
+    const el = makeInfoEl({ a: "1" });
+    expect(component.asInfoElement(el as unknown as EditableElement)).toBe(el);
+
+    expect(component.visibleInfoKeys({ a: "1", creation_date: "x", assignment_date: "y", last_auth: "z" })).toEqual([
+      "a"
+    ]);
+  });
+
   it("deleteInfo calls service, marks info section as editing, and reloads", () => {
     component.isEditingInfo.set(false);
     tokenService.tokenSerial.set("SER");

@@ -557,9 +557,9 @@ describe("TokenDetailsComponent", () => {
     });
 
     it("reports 'No user found' when the validate response is falsy", async () => {
-      jest.spyOn(validateSvc, "authenticatePasskey").mockReturnValue(
-        of({ result: { value: false, status: true } as any, detail: {} as any } as any)
-      );
+      jest
+        .spyOn(validateSvc, "authenticatePasskey")
+        .mockReturnValue(of({ result: { value: false, status: true } as any, detail: {} as any } as any));
 
       component.testPasskey();
       await flushAsync();
@@ -572,9 +572,9 @@ describe("TokenDetailsComponent", () => {
 
   it("attachPasskeyToMachine logs an error when the request fails", () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    jest.spyOn(machineSvc, "postAssignMachineToToken").mockReturnValueOnce(
-      (require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom"))
-    );
+    jest
+      .spyOn(machineSvc, "postAssignMachineToToken")
+      .mockReturnValueOnce((require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom")));
 
     component.attachPasskeyToMachine();
 
@@ -585,9 +585,9 @@ describe("TokenDetailsComponent", () => {
   it("removePasskeyFromMachine logs an error when the request fails", () => {
     machineSvc.tokenApplications.set([{ id: 5 } as any]);
     const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-    jest.spyOn(machineSvc, "deleteAssignMachineToToken").mockReturnValueOnce(
-      (require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom"))
-    );
+    jest
+      .spyOn(machineSvc, "deleteAssignMachineToToken")
+      .mockReturnValueOnce((require("rxjs") as typeof import("rxjs")).throwError(() => new Error("boom")));
 
     component.removePasskeyFromMachine();
 
@@ -668,6 +668,58 @@ describe("TokenDetailsComponent", () => {
     expect(auditSvc.auditFilter().value).toBe("serial: Mock serial");
   });
 
+  it("saveAllInlineEdits saves editing rows and open user/info edits", async () => {
+    const row = component.tokenDetailData()[0];
+    row.isEditing.set(true);
+    const saveTokenEditSpy = jest.spyOn(component, "saveTokenEdit").mockReturnValue(undefined);
+
+    component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsComponent["userChild"];
+    component.isEditingUser.set(true);
+
+    component.infoChild = { saveInfo: jest.fn() } as unknown as TokenDetailsComponent["infoChild"];
+    component.isEditingInfo.set(true);
+
+    await expect(component.saveAllInlineEdits()).resolves.toBe(true);
+
+    expect(saveTokenEditSpy).toHaveBeenCalledWith(row);
+    expect(component.userChild!.saveUser).toHaveBeenCalled();
+    expect(component.infoChild!.saveInfo).toHaveBeenCalledWith(component.infoData()[0]);
+  });
+
+  it("saveAllInlineEdits turns off info editing when no info element exists", async () => {
+    component.infoData.set([]);
+    component.isEditingInfo.set(true);
+
+    await expect(component.saveAllInlineEdits()).resolves.toBe(true);
+
+    expect(component.isEditingInfo()).toBe(false);
+  });
+
+  it("sticky header floats while the sentinel is above the scroll container", () => {
+    let observerCallback: IntersectionObserverCallback | undefined;
+    (global.IntersectionObserver as unknown as jest.Mock).mockImplementation((cb: IntersectionObserverCallback) => {
+      observerCallback = cb;
+      return { observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn() };
+    });
+
+    component.ngAfterViewInit();
+    expect(observerCallback).toBeDefined();
+    const header = component.stickyHeader.nativeElement;
+    const observer = {} as IntersectionObserver;
+    const entryAt = (top: number, rootTop: number | null): IntersectionObserverEntry[] =>
+      [
+        { boundingClientRect: { top }, rootBounds: rootTop === null ? null : { top: rootTop } }
+      ] as unknown as IntersectionObserverEntry[];
+
+    observerCallback!(entryAt(-10, 0), observer);
+    expect(header.classList.contains("is-sticky")).toBe(true);
+
+    observerCallback!(entryAt(10, 0), observer);
+    expect(header.classList.contains("is-sticky")).toBe(false);
+
+    observerCallback!(entryAt(-10, null), observer);
+    expect(header.classList.contains("is-sticky")).toBe(false);
+  });
 });
 
 describe("TokenDetailsComponent linkedSignal computations", () => {
@@ -727,9 +779,7 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
       info: { creation_date: "2026-01-15T10:00:00Z" } as any
     });
 
-    const created = component
-      .tokenDetailData()
-      .find((d: any) => d.keyMap.key === "creation_date");
+    const created = component.tokenDetailData().find((d: any) => d.keyMap.key === "creation_date");
     expect(created).toBeDefined();
     expect(typeof created!.value).toBe("string");
     expect(created!.value).not.toBe("");
@@ -742,9 +792,7 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
       info: { creation_date: "not-a-date" } as any
     });
 
-    const created = component
-      .tokenDetailData()
-      .find((d: any) => d.keyMap.key === "creation_date");
+    const created = component.tokenDetailData().find((d: any) => d.keyMap.key === "creation_date");
     expect(created?.value).toBe("not-a-date");
   });
 
@@ -754,9 +802,7 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
       info: { creation_date: "" } as any
     });
 
-    const created = component
-      .tokenDetailData()
-      .find((d: any) => d.keyMap.key === "creation_date");
+    const created = component.tokenDetailData().find((d: any) => d.keyMap.key === "creation_date");
     expect(created).toBeUndefined();
   });
 });
@@ -772,7 +818,10 @@ async function flushAsync(): Promise<void> {
 
 // Mirror of the component's private SHA-256 helper, used only by the matching-hash test.
 async function sha256HexFromBase64Url(b64url: string): Promise<string> {
-  const pad = b64url.padEnd((b64url.length | 3) + 1, "=").replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b64url
+    .padEnd((b64url.length | 3) + 1, "=")
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
   const binary = atob(pad);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
