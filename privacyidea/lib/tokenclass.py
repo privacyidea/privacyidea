@@ -88,6 +88,7 @@ from flask_babel import lazy_gettext
 from sqlalchemy import select, delete
 
 from privacyidea.lib import _
+from privacyidea.lib.conditional_access.event_types import AUTH_DETAILS_INPUT_TOO_SHORT
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey, encryptPassword)
 from privacyidea.lib.params import get_optional, get_required
@@ -571,6 +572,12 @@ class TokenClass:
             pin_match = self.check_pin(pin, user=user, options=options)
             if pin_match is True:
                 otp_counter = self.check_otp(otpval, options=options)
+        else:
+            # The submitted password was too short to even contain an OTP
+            # value, so the PIN was never checked. Record that, so the
+            # authentication log classification can distinguish this case
+            # from a wrong PIN.
+            self.auth_details[AUTH_DETAILS_INPUT_TOO_SHORT] = True
 
         return pin_match, otp_counter, reply
 
@@ -2157,6 +2164,3 @@ class TokenClass:
         self.add_tokeninfo_dict(token_information.setdefault("info_list", {}))
         self.add_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
         self.save()
-
-    def log_authentication(self):
-        pass

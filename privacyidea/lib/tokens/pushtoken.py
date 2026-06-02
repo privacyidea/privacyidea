@@ -57,6 +57,8 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    PrivacyIDEAError, ConfigAdminError, PolicyError)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.conditional_access.event_types import (AUTH_DETAILS_FAILURE_REASON,
+                                                            AuthenticationEventType)
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
@@ -1335,6 +1337,13 @@ class PushTokenClass(TokenClass):
             challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
             for challenge in challenges:
+                if challenge.get_session() == ChallengeSession.DECLINED:
+                    # The user actively declined this challenge on the
+                    # smartphone. Record the precise reason for the
+                    # authentication log classification.
+                    self.auth_details[AUTH_DETAILS_FAILURE_REASON] = \
+                        AuthenticationEventType.CHALLENGE_DECLINED.value
+                    continue
                 # Check that the challenge is not expired
                 if challenge.is_valid():
                     data = challenge.get_data()

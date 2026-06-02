@@ -18,6 +18,19 @@
 from enum import Enum
 from typing import Iterable, Optional
 
+# Well-known keys in ``TokenClass.auth_details``:
+#
+# A token class (or a lib-layer policy decorator) can record a more precise
+# failure reason for the current authentication attempt under this key. The
+# value should be an ``AuthenticationEventType`` value; the classification
+# ignores unknown values. Tokens only write a string into a dict they already
+# own — they must never write to the authentication log themselves.
+AUTH_DETAILS_FAILURE_REASON = "failure_reason"
+# Set by ``TokenClass.authenticate`` when the submitted password was shorter
+# than the OTP length, so the PIN was never checked. Disambiguates "wrong PIN"
+# from "input too short to even attempt the PIN check".
+AUTH_DETAILS_INPUT_TOO_SHORT = "input_too_short"
+
 
 class AuthenticationEventType(str, Enum):
     __doc__ = """The event type codes written to the authentication log.

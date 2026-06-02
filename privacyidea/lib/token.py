@@ -82,6 +82,8 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
+from privacyidea.lib.conditional_access.classify import token_outcome, log_request_outcome
+from privacyidea.lib.conditional_access.event_types import AuthenticationEventType
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF,
@@ -2362,12 +2364,27 @@ def check_user_pass(user, passw, options=None):
     :rtype: tuple
     """
     token_type = options.pop("token_type", None)
-    token_objects = get_tokens(user=user, tokentype=token_type)
+    try:
+        token_objects = get_tokens(user=user, tokentype=token_type)
+    except UserError:
+        # The username could not be resolved in any resolver. The identity
+        # tuple of the entry stays empty, the attempted login name goes to
+        # other_info (e.g. for spraying detection on nonexistent users).
+        log_request_outcome([(AuthenticationEventType.USER_UNKNOWN, None)],
+                            other_info={"login": user.login, "realm": user.realm})
+        raise
     reply_dict = {}
     if not token_objects:
         # The user has no tokens assigned
         res = False
         reply_dict["message"] = _("The user has no tokens assigned")
+        if user and user.login and user.uid in (None, ""):
+            # The login was given with an explicit resolver, but the user does
+            # not exist in it
+            log_request_outcome([(AuthenticationEventType.USER_UNKNOWN, None)],
+                                other_info={"login": user.login, "realm": user.realm})
+        else:
+            log_request_outcome([(AuthenticationEventType.NO_TOKEN, None)], user=user)
     else:
         token_object = token_objects[0]
         res, reply_dict = check_token_list(token_objects, passw,
@@ -2498,6 +2515,11 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     """
     res = False
     reply_dict = {}
+    # Per-token outcomes for the authentication log. The whole request is
+    # classified by reducing these with the fixed precedence, so that one
+    # request produces exactly one log entry.
+    auth_outcomes = []
+    log_transaction_id = None
     increase_auth_counters = not is_true(get_from_config(key="no_auth_counter"))
 
     # Add the user to the options, so that every token with access to options can see the user
@@ -2628,6 +2650,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
                 # The token is active and the auth counters are ok.
                 res = True
+                auth_outcomes.append((AuthenticationEventType.LOGIN_SUCCESS, token_obj))
                 if not reply_dict.get("type"):
                     reply_dict["type"] = token_obj.token.tokentype
                 if reply_dict["type"] != token_obj.token.tokentype:
@@ -2636,6 +2659,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 token_obj.reset()
                 # Run the token post method. e.g. registration token deletes itself.
                 token_obj.post_success()
+            else:
+                # The OTP matched, but the token is not usable for this
+                # authentication (e.g. exceeded auth counters)
+                auth_outcomes.append((AuthenticationEventType.NO_TOKEN, token_obj))
         if len(valid_token_list) == 1:
             # If only one token was found, we add the serial number,
             # the token type and the OTP length
@@ -2655,6 +2682,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
     elif challenge_response_token_list:
         # The RESPONSE for a previous request of a challenge response token was found.
+        log_transaction_id = options.get("transaction_id") or options.get("state")
         matching_challenge = False
         further_challenge = False
         for token_object in challenge_response_token_list:
@@ -2668,9 +2696,12 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     log.info("Received a valid response to a "
                              "challenge for a non-fit token {!s}. {!s}".format(token_object.token.serial,
                                                                                reply_dict["message"]))
+                    # The response was correct, but the token is not usable
+                    auth_outcomes.append((AuthenticationEventType.NO_TOKEN, token_object))
                 else:
                     # Challenge matches, token is active and token is fit for challenge
                     res = True
+                    auth_outcomes.append((AuthenticationEventType.CHALLENGE_ANSWERED_OK, token_object))
                     if increase_auth_counters:
                         token_object.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
@@ -2711,6 +2742,11 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 if not token_obj.is_outofband():
                     token_obj.inc_failcount()
             if not matching_challenge:
+                # A token class may have recorded a more precise reason
+                # (e.g. the push token records CHALLENGE_DECLINED)
+                auth_outcomes.extend(
+                    token_outcome(token_obj, AuthenticationEventType.CHALLENGE_ANSWERED_FAIL)
+                    for token_obj in challenge_response_token_list)
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
                     reply_dict["type"] = challenge_response_token_list[0].token.tokentype
@@ -2724,17 +2760,33 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         active_challenge_token = [t for t in challenge_request_token_list if t.token.active]
         if len(active_challenge_token) == 0:
             reply_dict["message"] = _("No active challenge response token found")
+            auth_outcomes.extend((AuthenticationEventType.NO_TOKEN, token_obj)
+                                 for token_obj in challenge_request_token_list)
         else:
             for token_obj in challenge_request_token_list:
                 token_obj.check_reset_failcount()
                 if is_true(options.get("increase_failcounter_on_challenge")):
                     token_obj.inc_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
+            log_transaction_id = next(iter(reply_dict.get("transaction_ids") or []), None)
+            triggered_serials = {challenge.get("serial")
+                                 for challenge in reply_dict.get("multi_challenge", [])}
+            for token_obj in active_challenge_token:
+                if token_obj.token.serial in triggered_serials:
+                    auth_outcomes.append((AuthenticationEventType.CHALLENGE_TRIGGERED, token_obj))
+                else:
+                    # The token did not issue a challenge (e.g. exceeded auth counters)
+                    auth_outcomes.append((AuthenticationEventType.NO_TOKEN, token_obj))
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.
         # But there are tokens, with a matching pin.
         # So we increase the failcounter. Return failure.
+        # The PIN/password was correct, but the second factor was wrong: this
+        # is the high-signal MFA_FAIL case. The auth_otppin decorator records
+        # OTP_FAIL instead, if the PIN match was vacuous (otppin=none).
+        auth_outcomes.extend(token_outcome(token_object, AuthenticationEventType.MFA_FAIL)
+                             for token_object in pin_matching_token_list)
         for token_object in pin_matching_token_list:
             token_object.inc_failcount()
             if get_from_config(SYSCONF.RESET_FAILCOUNTER_ON_PIN_ONLY, False, return_bool=True):
@@ -2760,6 +2812,10 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         # There were only tokens, that did not match the OTP value and
         # not even the PIN.
         # Depending on IncFailCountOnFalsePin, we increase the failcounter.
+        # The auth_otppin decorator records PASSWORD_FAIL instead, if the PIN
+        # was checked against the userstore (otppin=userstore).
+        auth_outcomes.extend(token_outcome(token_object, AuthenticationEventType.PIN_FAIL)
+                             for token_object in invalid_token_list)
         reply_dict["message"] = _("wrong otp pin")
         if get_inc_fail_count_on_false_pin():
             for token_object in invalid_token_list:
@@ -2768,11 +2824,17 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     token_object.inc_count_auth()
 
     elif messages:
+        # The user has tokens, but none of them is usable for this request
+        auth_outcomes.extend((AuthenticationEventType.NO_TOKEN, token_object)
+                             for token_object in token_object_list)
         reply_dict["message"] = ", ".join(set(messages))
 
     else:
         # There is no suitable token for authentication
+        auth_outcomes.append((AuthenticationEventType.NO_TOKEN, None))
         reply_dict["message"] = _("No suitable token found for authentication.")
+
+    log_request_outcome(auth_outcomes, user=user, transaction_id=log_transaction_id)
 
     return res, reply_dict
 

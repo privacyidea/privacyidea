@@ -50,6 +50,8 @@ import pyrad
 from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
+from privacyidea.lib.conditional_access.event_types import (AUTH_DETAILS_FAILURE_REASON,
+                                                            AuthenticationEventType)
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
@@ -546,12 +548,23 @@ def auth_otppin(wrapped_function, *args, **kwds):
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
+                    # There is no first factor on this token: if the OTP check
+                    # fails later, the request is an OTP_FAIL and not the
+                    # high-signal MFA_FAIL (password correct, OTP wrong).
+                    if token is not None:
+                        token.auth_details[AUTH_DETAILS_FAILURE_REASON] = \
+                            AuthenticationEventType.OTP_FAIL.value
                     return True
                 else:
                     return False
 
             if list(otppin_dict)[0] == ACTIONVALUE.USERSTORE:
                 rv = user_object.check_password(pin)
+                if rv is None and token is not None:
+                    # The userstore password was wrong: classify the attempt
+                    # as PASSWORD_FAIL instead of PIN_FAIL.
+                    token.auth_details[AUTH_DETAILS_FAILURE_REASON] = \
+                        AuthenticationEventType.PASSWORD_FAIL.value
                 return rv is not None
 
     # Call and return the original check_pin function
