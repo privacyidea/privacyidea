@@ -432,6 +432,18 @@ class TokenModelTestCase(MyTestCase):
         self.assertTrue(c.get_otp_status()[0], c.get_otp_status())
         self.assertFalse(c.get_otp_status()[1], c.get_otp_status())
 
+    def test_13_challenge_timestamp_default_is_per_insert(self):
+        # The timestamp column default must be the utc_now callable, evaluated on every
+        # INSERT - not utc_now() evaluated once at import time. With the latter, every row
+        # that relies on the column default would receive the process-start time. For the
+        # challenge table that value feeds straight into is_valid()/expiration, so a frozen
+        # default would silently misjudge challenge validity.
+        timestamp_default = Challenge.__table__.c.timestamp.default
+        self.assertTrue(
+            timestamp_default.is_callable,
+            f"challenge.timestamp default is frozen at import ({timestamp_default.arg!r}); "
+            f"it must be 'default=utc_now' (a callable), not 'default=utc_now()'")
+
     def test_15_add_and_delete_tokeninfo(self):
         t1 = Token("serialTI")
         t1.save()
