@@ -18,7 +18,12 @@
  **/
 
 import { provideHttpClient } from "@angular/common/http";
+import { OutputEmitterRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import {
+  MatAutocompleteSelectedEvent,
+  MatAutocompleteTrigger
+} from "@angular/material/autocomplete";
 import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventSelectionComponent } from "./event-selection.component";
@@ -36,7 +41,7 @@ describe("EventsSelectionComponent", () => {
     fixture = TestBed.createComponent(EventSelectionComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("events", ["eventA", "eventB"]);
-    component.newEvents = { emit: jest.fn() } as any;
+    component.newEvents = { emit: jest.fn() } as unknown as OutputEmitterRef<string[]>;
     fixture.detectChanges();
   });
 
@@ -110,9 +115,11 @@ describe("EventsSelectionComponent", () => {
     // Mock the MatAutocompleteTrigger
     component.autocompleteTrigger = {
       openPanel: jest.fn()
-    } as any;
+    } as unknown as MatAutocompleteTrigger;
     // Simulate selecting an option
-    const event = { option: { viewValue: "eventB", deselect: jest.fn() } } as any;
+    const event = {
+      option: { viewValue: "eventB", deselect: jest.fn() }
+    } as unknown as MatAutocompleteSelectedEvent;
     component.lastSearchTerm = "ev";
     component.selected(event);
     setTimeout(() => {
@@ -124,7 +131,9 @@ describe("EventsSelectionComponent", () => {
   it("should keep the search term after selecting an option", () => {
     component.searchTerm.set("ev");
     component.lastSearchTerm = "ev";
-    const event = { option: { viewValue: "eventB", deselect: jest.fn() } } as any;
+    const event = {
+      option: { viewValue: "eventB", deselect: jest.fn() }
+    } as unknown as MatAutocompleteSelectedEvent;
     component.selected(event);
     // The search term should remain unchanged
     expect(component.searchTerm()).toBe("ev");

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
@@ -95,15 +95,16 @@ export class RadiusServerService implements RadiusServerServiceInterface {
 
   async postRadiusServer(server: RadiusServer): Promise<void> {
     const url = `${this.radiusServerBaseUrl}${encodeURIComponent(server.identifier)}`;
-    const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<boolean>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success($localize`Successfully saved RADIUS server.`);
         this.radiusServerResource.reload();
       })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
+      .catch((error: HttpErrorResponse) => {
+        const body = error.error as PiResponse<boolean> | undefined;
+        const message = body?.result?.error?.message || "";
         this.notificationService.error($localize`Failed to save RADIUS server. ` + message);
         throw new Error("post-failed");
       });
@@ -123,23 +124,29 @@ export class RadiusServerService implements RadiusServerServiceInterface {
 
       this.notificationService.error($localize`RADIUS request failed!`);
       return false;
-    } catch (error: any) {
-      const message = error.error?.result?.error?.message || "";
+    } catch (error) {
+      const httpError = error as HttpErrorResponse;
+      const body = httpError.error as PiResponse<boolean> | undefined;
+      const message = body?.result?.error?.message || "";
       this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
       return false;
     }
   }
   async deleteRadiusServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<boolean>>(
+      `${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success($localize`Successfully deleted RADIUS server: ${identifier}.`);
         this.radiusServerResource.reload();
       })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
+      .catch((error: HttpErrorResponse) => {
+        const body = error.error as PiResponse<boolean> | undefined;
+        const message = body?.result?.error?.message || "";
         this.notificationService.error($localize`Failed to delete RADIUS server. ` + message);
         throw new Error("delete-failed");
       });

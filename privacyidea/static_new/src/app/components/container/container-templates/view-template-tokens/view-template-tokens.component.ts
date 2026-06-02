@@ -21,6 +21,10 @@ import { CommonModule } from "@angular/common";
 import { Component, input } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+
+type TemplateTokenValue = TokenEnrollmentPayload[keyof TokenEnrollmentPayload];
+
 @Component({
   selector: "app-view-template-tokens",
   standalone: true,
@@ -29,17 +33,17 @@ import { MatListModule } from "@angular/material/list";
   styleUrl: "./view-template-tokens.component.scss"
 })
 export class ViewTemplateTokensComponent {
-  readonly templateTokens = input.required<any[] | undefined>();
+  readonly templateTokens = input.required<TokenEnrollmentPayload[] | undefined>();
 
-  isObject(value: any): boolean {
+  isObject(value: TemplateTokenValue): boolean {
     return value !== null && typeof value === "object" && !Array.isArray(value);
   }
 
-  asObject(value: any): object {
-    return value as object;
+  asObject(value: TemplateTokenValue): Record<string, TemplateTokenValue> {
+    return value as unknown as Record<string, TemplateTokenValue>;
   }
 
-  isValidValue(val: any): boolean {
+  isValidValue(val: TemplateTokenValue): boolean {
     return val !== null && val !== undefined && val !== "" && typeof val !== "function";
   }
 }

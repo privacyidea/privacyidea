@@ -18,6 +18,7 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { TokenEnrollmentPayload } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { MockContainerTemplateService } from "../../../../../testing/mock-services/mock-container-template-service";
 import { ContainerTemplateEditComponent } from "./container-template-edit.component";
@@ -55,9 +56,11 @@ describe("ContainerTemplateEditComponent", () => {
   it("tokens computed returns template_options.tokens", () => {
     expect(component.tokens()).toEqual([]);
 
-    component.editTemplate({ template_options: { tokens: [{ type: "hotp" } as any] } });
+    component.editTemplate({
+      template_options: { tokens: [{ type: "hotp" } as unknown as TokenEnrollmentPayload] }
+    });
     expect(component.tokens().length).toBe(1);
-    expect((component.tokens()[0] as any).type).toBe("hotp");
+    expect((component.tokens()[0] as Partial<TokenEnrollmentPayload>).type).toBe("hotp");
   });
 
   it("nameConflict is false when name unchanged", () => {
@@ -122,7 +125,9 @@ describe("ContainerTemplateEditComponent", () => {
   });
 
   it("hasToken is true when tokens are present", () => {
-    component.editTemplate({ template_options: { tokens: [{ type: "hotp" } as any] } });
+    component.editTemplate({
+      template_options: { tokens: [{ type: "hotp" } as unknown as TokenEnrollmentPayload] }
+    });
     expect(component.hasToken()).toBe(true);
   });
 

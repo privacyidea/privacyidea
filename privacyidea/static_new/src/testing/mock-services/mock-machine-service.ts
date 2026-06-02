@@ -80,8 +80,8 @@ export class MockMachineService implements MachineServiceInterface {
       }
     })
   );
-  deleteToken = jest.fn().mockReturnValue(of({} as any));
-  deleteTokenById = jest.fn().mockReturnValue(of({} as any));
+  deleteToken = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
+  deleteTokenById = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(0)));
   onPageEvent = jest.fn();
   onSortEvent = jest.fn();
   toggleFilter = jest.fn();

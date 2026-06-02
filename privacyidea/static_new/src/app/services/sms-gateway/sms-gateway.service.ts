@@ -49,12 +49,21 @@ export interface SmsGateway {
   headers: Record<string, string>;
 }
 
+export interface SmsGatewayPayload {
+  name: string;
+  module: string;
+  description?: string;
+  id?: number;
+  [key: `option.${string}`]: string | number | undefined;
+  [key: `header.${string}`]: string | number | undefined;
+}
+
 export interface SmsGatewayServiceInterface {
   smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined>;
   smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined>;
   readonly smsGateways: Signal<SmsGateway[]>;
 
-  postSmsGateway(gateway: any): Promise<void>;
+  postSmsGateway(gateway: SmsGatewayPayload): Promise<void>;
 
   deleteSmsGateway(name: string): Promise<void>;
 }
@@ -95,7 +104,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
     return this.smsGatewayResource.value()?.result?.value ?? [];
   });
 
-  async postSmsGateway(gateway: any): Promise<void> {
+  async postSmsGateway(gateway: SmsGatewayPayload): Promise<void> {
     const request = this.http.post<PiResponse<number>>(this.baseUrl, gateway, {
       headers: this.authService.getHeaders()
     });

@@ -396,9 +396,7 @@ describe("UserNewResolverComponent", () => {
   it("should execute test successfully", async () => {
     component.resolverType.set("passwdresolver");
     fixture.detectChanges();
-    const successResponse = new MockPiResponse<number>({
-      result: { status: true, value: 1 }
-    });
+    const successResponse = MockPiResponse.fromValue<boolean, { description: string }>(true, { description: "ok" });
     resolverService.postResolverTest.mockReturnValue(of(successResponse));
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 

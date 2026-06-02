@@ -20,6 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, convertToParamMap, ParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -37,7 +38,7 @@ import { NewRadiusServerComponent } from "./new-radius-server.component";
 describe("NewRadiusServerComponent", () => {
   let component: NewRadiusServerComponent;
   let fixture: ComponentFixture<NewRadiusServerComponent>;
-  let radiusServiceMock: any;
+  let radiusServiceMock: MockRadiusService;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
   let authService: MockAuthService;
@@ -62,7 +63,7 @@ describe("NewRadiusServerComponent", () => {
       ]
     }).compileComponents();
 
-    radiusServiceMock = TestBed.inject(RadiusServerService);
+    radiusServiceMock = TestBed.inject(RadiusServerService) as unknown as MockRadiusService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
@@ -149,13 +150,15 @@ describe("NewRadiusServerComponent", () => {
   });
 
   describe("onCancel", () => {
-    let mockSaveExitDialogRef: any;
+    let mockSaveExitDialogRef: { afterClosed: jest.Mock };
 
     beforeEach(() => {
       mockSaveExitDialogRef = {
         afterClosed: jest.fn()
       };
-      dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
+      dialogService.openDialog.mockReturnValue(
+        mockSaveExitDialogRef as unknown as MatDialogRef<SaveAndExitDialogComponent>
+      );
       authService.actionAllowed = jest.fn().mockReturnValue(true);
       routerMock.navigateByUrl.mockClear();
     });

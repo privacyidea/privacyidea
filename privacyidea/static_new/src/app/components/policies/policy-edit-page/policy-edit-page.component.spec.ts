@@ -25,15 +25,15 @@ import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/p
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { PolicyService } from "@services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockContentService, MockPendingChangesService, MockPolicyService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
-  policy = input.required<any>();
-  policyEdit = output<any>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 }
 
 function createTestBed(paramName: string | null) {

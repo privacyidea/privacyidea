@@ -62,14 +62,18 @@ describe("HorizontalWheelComponent", () => {
   });
 
   it("should handle mouse move when dragging", () => {
+    const componentWithPrivates = component as unknown as HorizontalWheelComponent & {
+      containerElement: HTMLElement | null;
+    };
+    const fakeContainer: Partial<HTMLElement> = { scrollLeft: 50, offsetWidth: 200, style: {} as CSSStyleDeclaration };
     component.isDragging = true;
-    (component as any).containerElement = { scrollLeft: 50, offsetWidth: 200, style: {} };
+    componentWithPrivates.containerElement = fakeContainer as HTMLElement;
     component.startX = 100;
     component.scrollLeft = 50;
-    const fakeEvent = { preventDefault: jest.fn(), pageX: 120 } as any as MouseEvent;
+    const fakeEvent: Partial<MouseEvent> = { preventDefault: jest.fn(), pageX: 120 };
 
-    component.onMouseMove(fakeEvent);
+    component.onMouseMove(fakeEvent as MouseEvent);
 
-    expect((component as any).containerElement.scrollLeft).toBe(30);
+    expect(componentWithPrivates.containerElement!.scrollLeft).toBe(30);
   });
 });

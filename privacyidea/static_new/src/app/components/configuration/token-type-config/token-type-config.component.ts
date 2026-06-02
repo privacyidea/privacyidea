@@ -116,7 +116,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     }
   }
 
-  formData = linkedSignal<any, Record<string, any>>({
+  formData = linkedSignal<Record<string, string>, Record<string, string>>({
     source: () => this.systemService.systemConfig(),
     computation: (config) => ({ ...config })
   });

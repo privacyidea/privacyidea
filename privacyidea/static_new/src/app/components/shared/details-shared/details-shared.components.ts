@@ -68,7 +68,7 @@ export class DetailsListDisplayComponent {
   `
 })
 export class DetailsDescriptionCellComponent {
-  value = model.required<any>();
+  value = model.required<string>();
   isEditing = input(false);
   maxlength = input(80);
   rows = input(4);
@@ -109,7 +109,7 @@ export class DetailsDescriptionCellComponent {
   `
 })
 export class DetailsDefaultValueCellComponent {
-  value = model.required<any>();
+  value = model.required<string>();
   isEditing = input(false);
   isNumber = input(false);
   divClass = input("");

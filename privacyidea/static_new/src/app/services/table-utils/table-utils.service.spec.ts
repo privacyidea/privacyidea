@@ -22,6 +22,7 @@ import { TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
 import { TableUtilsService } from "./table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
@@ -304,7 +305,7 @@ describe("TableUtilsService", () => {
   });
 
   describe("clientsideSortTokenData", () => {
-    const makeToken = (overrides: any = {}) =>
+    const makeToken = (overrides: Partial<ContainerDetailToken> & Record<string, unknown> = {}) =>
       ({
         active: true,
         container_serial: "C1",
@@ -323,7 +324,7 @@ describe("TableUtilsService", () => {
         user_realm: "",
         username: "",
         ...overrides
-      }) as any;
+      }) as unknown as ContainerDetailToken;
 
     it("returns the input untouched when direction is empty", () => {
       const data = [makeToken({ serial: "B" }), makeToken({ serial: "A" })];

@@ -33,13 +33,13 @@ describe("EnrollRemoteComponent", () => {
 
   const basicOptions: TokenEnrollmentData = {
     type: "remote"
-  } as any;
+  } as TokenEnrollmentData;
 
   const mockRemoteServer: RemoteServer = {
     identifier: "remote-1",
     name: "remote-1",
     url: "https://test.example"
-  } as any;
+  } as Partial<RemoteServer> as RemoteServer;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

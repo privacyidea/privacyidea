@@ -19,9 +19,13 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogResult
+} from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
@@ -34,7 +38,7 @@ import { NewServiceIdComponent } from "./new-service-id.component";
 describe("NewServiceIdComponent", () => {
   let component: NewServiceIdComponent;
   let fixture: ComponentFixture<NewServiceIdComponent>;
-  let serviceIdServiceMock: any;
+  let serviceIdServiceMock: MockServiceIdService;
   let router: Router;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
@@ -56,7 +60,7 @@ describe("NewServiceIdComponent", () => {
       ]
     }).compileComponents();
 
-    serviceIdServiceMock = TestBed.inject(ServiceIdService);
+    serviceIdServiceMock = TestBed.inject(ServiceIdService) as unknown as MockServiceIdService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
@@ -106,7 +110,9 @@ describe("NewServiceIdComponent", () => {
   });
 
   describe("onCancel", () => {
-    let mockSaveExitDialogRef: any;
+    let mockSaveExitDialogRef: Partial<MatDialogRef<SaveAndExitDialogComponent, SaveAndExitDialogResult>> & {
+      afterClosed: jest.Mock;
+    };
 
     beforeEach(() => {
       mockSaveExitDialogRef = {

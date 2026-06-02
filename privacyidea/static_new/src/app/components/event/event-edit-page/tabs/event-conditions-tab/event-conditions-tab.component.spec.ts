@@ -18,6 +18,7 @@
  **/
 
 import { provideHttpClient } from "@angular/common/http";
+import { OutputEmitterRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
@@ -37,7 +38,7 @@ describe("EventConditionsTabComponent", () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput("conditions", { test_condition: "test_value" });
     fixture.componentRef.setInput("isEditMode", true);
-    component.newConditions = { emit: jest.fn() } as any;
+    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, string>>;
     fixture.detectChanges();
   });
 
@@ -116,7 +117,7 @@ describe("EventConditionsTabComponent", () => {
   it("should update selectedConditions and emit newConditions on onConditionValueChange", () => {
     component.selectedConditions.set({ condY: "oldVal" });
     const emitSpy = jest.fn();
-    component.newConditions = { emit: emitSpy } as any;
+    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, string>>;
     component.onConditionValueChange("condY", "newVal");
     expect(component.selectedConditions()).toEqual({ condY: "newVal" });
     expect(emitSpy).toHaveBeenCalledWith({ condY: "newVal" });
@@ -125,7 +126,7 @@ describe("EventConditionsTabComponent", () => {
   it("should set addedCondition when value is empty in onConditionValueChange", () => {
     component.selectedConditions.set({ condZ: "something" });
     component.addedCondition.set("");
-    component.newConditions = { emit: jest.fn() } as any;
+    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, string>>;
     component.onConditionValueChange("condZ", "");
     expect(component.addedCondition()).toBe("condZ");
   });

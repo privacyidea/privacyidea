@@ -24,7 +24,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { MockNotificationService, MockTokenService } from "@testing/mock-services";
-import { Subject } from "rxjs";
+import { Observable, Subject } from "rxjs";
 import { LostTokenComponent } from "./lost-token.component";
 
 describe("LostTokenComponent", () => {
@@ -32,7 +32,7 @@ describe("LostTokenComponent", () => {
   let fixture: ComponentFixture<LostTokenComponent>;
 
   let afterClosed$!: Subject<void>;
-  let dialogRefMock!: { disableClose: boolean; close: jest.Mock; afterClosed: () => any };
+  let dialogRefMock!: { disableClose: boolean; close: jest.Mock; afterClosed: () => Observable<void> };
 
   let isLost!: WritableSignal<boolean>;
   let tokenSerial!: WritableSignal<string>;
@@ -66,8 +66,8 @@ describe("LostTokenComponent", () => {
     fixture = TestBed.createComponent(LostTokenComponent);
     component = fixture.componentInstance;
 
-    tokenService = TestBed.inject(TokenService) as any;
-    notification = TestBed.inject(NotificationService) as any;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    notification = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     jest.spyOn(console, "error").mockReturnValue();
     fixture.detectChanges();

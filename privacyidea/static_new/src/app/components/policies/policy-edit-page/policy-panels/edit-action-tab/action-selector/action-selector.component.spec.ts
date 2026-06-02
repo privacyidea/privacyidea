@@ -216,7 +216,7 @@ describe("ActionSelectorComponent", () => {
       component.addPolicyAction({ name: "container_add_token", value: "" }, "user");
 
       expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({ action: { name: "container_add_token", value: undefined }, newScope: "user" })
+        expect.objectContaining({ action: { name: "container_add_token", value: "" }, newScope: "user" })
       );
     });
 

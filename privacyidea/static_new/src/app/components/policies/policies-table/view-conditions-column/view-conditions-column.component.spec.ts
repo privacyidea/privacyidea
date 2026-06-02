@@ -19,7 +19,12 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatIconModule } from "@angular/material/icon";
-import { PolicyDetail } from "@services/policies/policies.service";
+import {
+  ComparatorOptionKey,
+  HandleMissingDataOptionKey,
+  PolicyDetail,
+  SectionOptionKey
+} from "@services/policies/policies.service";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
 
@@ -122,14 +127,18 @@ describe("ConditionsTabComponent", () => {
   });
 
   it("should return key if section label not found", () => {
-    expect(component.getSectionLabel("nonExistentKey" as any)).toBe("nonExistentKey");
+    expect(component.getSectionLabel("nonExistentKey" as unknown as SectionOptionKey)).toBe("nonExistentKey");
   });
 
   it("should return key if comparator label not found", () => {
-    expect(component.getComparatorLabel("nonExistentKey" as any)).toBe("nonExistentKey");
+    expect(component.getComparatorLabel("nonExistentKey" as unknown as ComparatorOptionKey)).toBe(
+      "nonExistentKey"
+    );
   });
 
   it("should return key if missing data label not found", () => {
-    expect(component.getMissingDataLabel("nonExistentKey" as any)).toBe("nonExistentKey");
+    expect(
+      component.getMissingDataLabel("nonExistentKey" as unknown as HandleMissingDataOptionKey)
+    ).toBe("nonExistentKey");
   });
 });

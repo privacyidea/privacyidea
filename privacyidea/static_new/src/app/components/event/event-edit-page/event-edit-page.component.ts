@@ -51,7 +51,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
-import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
+import { EventActionOptionValues, EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
 
 export type eventTab = "events" | "action" | "conditions";
@@ -201,14 +201,14 @@ export class EventEditPageComponent implements OnDestroy {
     this.hasChanges.set(true);
   }
 
-  setNewOptions(options: any): void {
+  setNewOptions(options: EventActionOptionValues): void {
     const current = this.editEvent().options || {};
     if (JSON.stringify(options) === JSON.stringify(current)) return;
-    this.editEvent.set({ ...this.editEvent(), options });
+    this.editEvent.set({ ...this.editEvent(), options: options as unknown as Record<string, string> | null });
     this.hasChanges.set(true);
   }
 
-  setNewConditions(conditions: any): void {
+  setNewConditions(conditions: Record<string, string>): void {
     this.editEvent.set({ ...this.editEvent(), conditions });
     this.hasChanges.set(true);
   }

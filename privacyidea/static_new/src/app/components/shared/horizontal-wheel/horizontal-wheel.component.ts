@@ -42,8 +42,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HorizontalWheelComponent implements AfterViewInit {
-  values = input.required<any[]>();
-  initialValue = input.required<any>();
+  values = input.required<string[]>();
+  initialValue = input.required<string>();
   @Output() selected = new EventEmitter<string>();
 
   selectedValue: WritableSignal<string> = linkedSignal<string[], string>({

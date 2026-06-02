@@ -37,9 +37,11 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   SmsGateway,
+  SmsGatewayPayload,
   SmsGatewayService,
   SmsGatewayServiceInterface,
-  SmsProvider
+  SmsProvider,
+  SmsProviderParameter
 } from "@services/sms-gateway/sms-gateway.service";
 
 interface KeyValueRow {
@@ -221,7 +223,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
     return Object.entries(providersObj).map(([key, value]) => ({ key, value }));
   }
 
-  parameterEntries(): { key: string; value: any }[] {
+  parameterEntries(): { key: string; value: SmsProviderParameter }[] {
     const paramsObj = this.selectedProvider()?.parameters ?? {};
     return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
   }
@@ -242,7 +244,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
     if (provider && provider.parameters) {
       Object.entries(provider.parameters).forEach(([name, param]) => {
-        if ((param as any).required) {
+        if (param.required) {
           newRequired.add(name);
         }
 
@@ -285,14 +287,14 @@ export class NewSmsGatewayComponent implements OnDestroy {
     const formValue = this.smsModel();
     const paramValue = this.parametersModel();
 
-    const payload: any = {
+    const payload: SmsGatewayPayload = {
       name: formValue.name,
       description: formValue.description,
       module: formValue.providermodule
     };
 
     if (this.isEditMode()) {
-      payload.id = this.data?.id;
+      payload["id"] = this.data?.id;
     }
 
     Object.entries(paramValue).forEach(([key, value]) => {

@@ -22,7 +22,7 @@ import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
-import { MachineService } from "@services/machine/machine.service";
+import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService, TokenTypeKey } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
@@ -92,7 +92,7 @@ describe("TokenDetailsActionsComponent", () => {
     machineService.tokenApplications.set([]);
     expect(component.isAttachedToMachine()).toBe(false);
 
-    machineService.tokenApplications.set([{ id: 42 } as any]);
+    machineService.tokenApplications.set([{ id: 42 } as Partial<TokenApplication> as TokenApplication]);
     expect(component.isAttachedToMachine()).toBe(true);
   });
 
@@ -165,7 +165,7 @@ describe("TokenDetailsActionsComponent", () => {
   });
 
   it("removePasskeyFromMachine deletes assignment using first token application id and reloads", () => {
-    machineService.tokenApplications.set([{ id: 77 } as any]);
+    machineService.tokenApplications.set([{ id: 77 } as Partial<TokenApplication> as TokenApplication]);
 
     const delSpy = jest.spyOn(machineService, "deleteAssignMachineToToken");
     const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;

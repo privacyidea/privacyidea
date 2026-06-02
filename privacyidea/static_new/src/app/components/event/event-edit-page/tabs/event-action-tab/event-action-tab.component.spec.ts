@@ -18,12 +18,13 @@
  **/
 
 import { provideHttpClient } from "@angular/common/http";
+import { OutputEmitterRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { EventService } from "@services/event/event.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
-import { EventActionTabComponent } from "./event-action-tab.component";
+import { EventActionOptionValues, EventActionTabComponent } from "./event-action-tab.component";
 
 describe("EventActionTabComponent", () => {
   let component: EventActionTabComponent;
@@ -43,8 +44,8 @@ describe("EventActionTabComponent", () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput("action", "add_token_info");
     fixture.componentRef.setInput("options", { key: "test_key", value: "test_value" });
-    component.newAction = { emit: jest.fn() } as any;
-    component.newOptions = { emit: jest.fn() } as any;
+    component.newAction = { emit: jest.fn() } as unknown as OutputEmitterRef<string>;
+    component.newOptions = { emit: jest.fn() } as unknown as OutputEmitterRef<EventActionOptionValues>;
     fixture.detectChanges();
   });
 
@@ -117,7 +118,7 @@ describe("EventActionTabComponent", () => {
   it("checkOptionVisibility returns true if visibleIf is set and value matches", () => {
     component.selectedAction.set("actionA");
     fixture.detectChanges();
-    component.selectedOptions.set({ opt1: true, opt2: 3 });
+    component.selectedOptions.set({ opt1: true, opt2: "3" });
     fixture.detectChanges();
     expect(component.checkOptionVisibility("opt3")).toBe(true);
   });
@@ -125,7 +126,7 @@ describe("EventActionTabComponent", () => {
   it("checkOptionVisibility returns false if visibleIf is set and value does not match", () => {
     component.selectedAction.set("actionA");
     fixture.detectChanges();
-    component.selectedOptions.set({ opt1: true, opt2: 1 });
+    component.selectedOptions.set({ opt1: true, opt2: "1" });
     fixture.detectChanges();
     expect(component.checkOptionVisibility("opt3")).toBe(false);
   });

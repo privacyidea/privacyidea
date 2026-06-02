@@ -52,7 +52,7 @@ export interface WebauthnFinalizeData extends WebAuthnEnrollmentData {
   authenticatorAttachment: string | null; // Attachment type of the authenticator (e.g, 'platform', 'cross-platform', or null)
   regdata: string; // Base64-encoded attestation object
   clientdata: string; // Base64-encoded client data JSON
-  credProps?: any; // Optional credential properties, if available
+  credProps?: CredentialPropertiesOutput; // Optional credential properties, if available
 }
 
 export interface WebAuthnEnrollmentPayload extends TokenEnrollmentPayload {
@@ -67,7 +67,7 @@ export interface WebAuthnFinalizePayload extends TokenEnrollmentPayload {
   serial: string;
   rawId: string;
   authenticatorAttachment: string | null;
-  credProps?: any;
+  credProps?: CredentialPropertiesOutput;
 }
 
 @Injectable({ providedIn: "root" })

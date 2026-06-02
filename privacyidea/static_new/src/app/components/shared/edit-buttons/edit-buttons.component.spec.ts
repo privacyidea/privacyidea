@@ -19,11 +19,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { signal } from "@angular/core";
-import { EditButtonsComponent } from "./edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "./edit-buttons.component";
 
 describe("EditButtonsComponent", () => {
-  let component: EditButtonsComponent<any>;
-  let fixture: ComponentFixture<EditButtonsComponent<any>>;
+  let component: EditButtonsComponent<EditableElement>;
+  let fixture: ComponentFixture<EditButtonsComponent<EditableElement>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

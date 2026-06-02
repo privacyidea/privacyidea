@@ -18,6 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
 import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
@@ -220,7 +221,7 @@ describe("EnrollHotpComponent", () => {
     component.otpLength.set(8);
     component.hashAlgorithm.set("sha256");
 
-    const basic = { realm: "r", username: "u" } as any;
+    const basic: TokenEnrollmentData = { type: "hotp", realm: "r", user: "u" };
     const args = component.enrollmentArgsGetter(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
@@ -243,7 +244,7 @@ describe("EnrollHotpComponent", () => {
     component.otpKey.set("  ABCDEFGHIJKLMNOP  ");
     fixture.detectChanges();
 
-    const basic = { foo: "bar" } as any;
+    const basic: TokenEnrollmentData = { type: "hotp", foo: "bar" };
     const args = component.enrollmentArgsGetter(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(

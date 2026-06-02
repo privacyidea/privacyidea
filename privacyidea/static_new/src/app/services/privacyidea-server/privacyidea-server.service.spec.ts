@@ -27,7 +27,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { lastValueFrom, of } from "rxjs";
-import { PrivacyideaServerService } from "./privacyidea-server.service";
+import { PrivacyideaServer, PrivacyideaServerService } from "./privacyidea-server.service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
@@ -61,7 +61,13 @@ describe("PrivacyideaServerService", () => {
   });
 
   it("should post privacyIDEA server", async () => {
-    const server = { identifier: "test", url: "http://test", tls: true } as any;
+    const server: PrivacyideaServer = {
+      identifier: "test",
+      id: "test",
+      name: "test",
+      url: "http://test",
+      tls: true
+    };
     const promise = service.postPrivacyideaServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
@@ -73,7 +79,13 @@ describe("PrivacyideaServerService", () => {
   });
 
   it("should show error notification when posting privacyIDEA server fails", async () => {
-    const server = { identifier: "test", url: "http://test", tls: true } as any;
+    const server: PrivacyideaServer = {
+      identifier: "test",
+      id: "test",
+      name: "test",
+      url: "http://test",
+      tls: true
+    };
     const promise = service.postPrivacyideaServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);

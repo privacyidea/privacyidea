@@ -16,41 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
-import { computed, signal } from "@angular/core";
+import { computed } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { SmsGateway, SmsGatewayServiceInterface, SmsProviders } from "@services/sms-gateway/sms-gateway.service";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
 export class MockSmsGatewayService implements SmsGatewayServiceInterface {
-  smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined> = {
-    value: signal(undefined),
-    status: signal(0),
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<SmsGateway[]> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: jest.fn()
-  } as any;
+  smsGatewayResource = new MockHttpResourceRef<PiResponse<SmsGateway[]> | undefined>(
+    MockPiResponse.fromValue<SmsGateway[]>([])
+  );
 
-  smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined> = {
-    value: signal(undefined),
-    status: signal(0),
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<SmsProviders> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: jest.fn()
-  } as any;
+  smsProvidersResource = new MockHttpResourceRef<PiResponse<SmsProviders> | undefined>(
+    MockPiResponse.fromValue<SmsProviders>({})
+  );
 
   smsGateways = computed<SmsGateway[]>(() => []);
   postSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());

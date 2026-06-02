@@ -140,7 +140,9 @@ describe("EnrollPasskeyComponent", () => {
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(true));
     dialogService.openDialog.mockReturnValue(dialogRefMock);
-    tokenService.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
+    tokenService.enrollToken
+      .mockReturnValueOnce(lastValueFrom(of(initResp)))
+      .mockReturnValueOnce(of(finalResp));
     const initResponse = await tokenService.enrollToken(args);
     const res = await component.onEnrollmentResponse(initResponse, args!.data);
 

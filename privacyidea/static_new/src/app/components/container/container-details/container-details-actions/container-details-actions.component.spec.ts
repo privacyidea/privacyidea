@@ -20,9 +20,12 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { NavigationEnd, Router } from "@angular/router";
-import { PiResponse } from "@app/app.component";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService } from "@services/container/container.service";
+import {
+  ContainerRegisterData,
+  ContainerService,
+  ContainerUnregisterData
+} from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -33,6 +36,7 @@ import {
   MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject } from "rxjs";
 import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
 
@@ -80,9 +84,9 @@ describe("ContainerDetailsActionsComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsActionsComponent);
     component = fixture.componentInstance;
-    mockContainerService = TestBed.inject(ContainerService) as any;
+    mockContainerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    mockNotificationService = TestBed.inject(NotificationService) as any;
+    mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     fixture.componentRef.setInput("containerSerial", "SMPH-1");
     fixture.componentRef.setInput("containerType", "smartphone");
@@ -120,7 +124,7 @@ describe("ContainerDetailsActionsComponent", () => {
   });
 
   it("should call registerContainer, open finalize dialog", () => {
-    const registerResponse = { result: { value: {} } } as PiResponse<any>;
+    const registerResponse = MockPiResponse.fromValue<ContainerRegisterData>({} as ContainerRegisterData);
     mockContainerService.registerContainer = jest.fn().mockReturnValue(of(registerResponse));
     jest.spyOn(component, "openRegisterFinalizeDialog");
     jest.spyOn(mockContainerService, "startPolling");
@@ -131,7 +135,7 @@ describe("ContainerDetailsActionsComponent", () => {
   });
 
   it("should call unregisterContainer and show notification", () => {
-    const unregisterResponse = { result: { value: { success: true } } } as PiResponse<any>;
+    const unregisterResponse = MockPiResponse.fromValue<ContainerUnregisterData>({ success: true });
     mockContainerService.unregister.mockReturnValue(of(unregisterResponse));
     jest.spyOn(mockNotificationService, "success");
     jest.spyOn(mockContainerService.containerDetailsResource, "reload");

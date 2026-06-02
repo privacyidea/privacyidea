@@ -69,7 +69,7 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   it("should initialize formData from systemConfig", () => {
-    expect(component.formData()["splitAtSign"]).toBe(true);
+    expect(component.formData()["splitAtSign"]).toBe("True");
     expect(component.formData()["someOtherConfig"]).toBe("test_value");
   });
 

@@ -25,7 +25,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockPiResponse } from "@testing/mock-services";
-import { SmsGatewayService } from "./sms-gateway.service";
+import { SmsGatewayPayload, SmsGatewayService } from "./sms-gateway.service";
 
 describe("SmsGatewayService", () => {
   let service: SmsGatewayService;
@@ -68,7 +68,7 @@ describe("SmsGatewayService", () => {
   });
 
   it("should post SMS gateway", async () => {
-    const gateway = { name: "test", providermodule: "mod" } as any;
+    const gateway: SmsGatewayPayload = { name: "test", module: "mod" };
     const promise = service.postSmsGateway(gateway);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway`);
@@ -80,7 +80,7 @@ describe("SmsGatewayService", () => {
   });
 
   it("should show error notification when posting SMS gateway fails", async () => {
-    const gateway = { name: "test", providermodule: "mod" } as any;
+    const gateway: SmsGatewayPayload = { name: "test", module: "mod" };
     const promise = service.postSmsGateway(gateway);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway`);

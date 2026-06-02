@@ -176,9 +176,9 @@ export class EnrollPasskeyComponent implements OnInit {
       this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       return null;
     }
-    const excludedCredentials = passkeyRegOptions.excludeCredentials.map(
+    const excludedCredentials: PublicKeyCredentialDescriptor[] = passkeyRegOptions.excludeCredentials.map(
       (cred: { id: string; type: PublicKeyCredentialType }) => ({
-        id: this.base64Service.base64URLToBytes(cred.id),
+        id: this.base64Service.base64URLToBytes(cred.id) as BufferSource,
         type: cred.type
       })
     );

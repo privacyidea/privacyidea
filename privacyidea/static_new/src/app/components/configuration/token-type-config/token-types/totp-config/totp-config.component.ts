@@ -38,12 +38,12 @@ export class TotpConfigComponent {
   protected readonly TOTP_TIME_SHIFT = TOTP_TIME_SHIFT;
   protected readonly TOTP_HASHLIB = TOTP_HASHLIB;
 
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string | number>>();
   totpSteps = input.required<string[]>();
   hashLibs = input.required<string[]>();
-  formDataChange = output<Record<string, any>>();
+  formDataChange = output<Record<string, string | number>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string | number): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

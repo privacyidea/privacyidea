@@ -29,7 +29,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import { EventService } from "./event.service";
+import { EventHandler, EventService } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -162,15 +162,15 @@ describe("EventService", () => {
   });
 
   describe("deleteWithConfirmDialog", () => {
-    let event: any;
+    let event: EventHandler;
 
     beforeEach(() => {
-      event = { id: 1, name: "Test Event" } as any;
+      event = { id: 1, name: "Test Event" } as unknown as EventHandler;
     });
 
     it("should open confirmation dialog and call delete on success", async () => {
-      const response = { result: { value: event.id } };
-      const deleteSpy = jest.spyOn(service, "deleteEvent").mockReturnValue(of(response as any));
+      const response = MockPiResponse.fromValue<number>(event.id as number);
+      const deleteSpy = jest.spyOn(service, "deleteEvent").mockReturnValue(of(response));
       const deletePromise = service.deleteWithConfirmDialog(event);
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalled();

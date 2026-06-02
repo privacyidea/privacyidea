@@ -20,7 +20,7 @@
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { PolicyService } from "@services/policies/policies.service";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { AddedActionsListComponent } from "./added-actions-list.component";
 
@@ -30,10 +30,10 @@ import { AddedActionsListComponent } from "./added-actions-list.component";
   template: "<div></div>"
 })
 class MockPolicyActionItemEditComponent {
-  action = input.required<{ name: string; value: any }>();
-  actionDetail = input.required<any>();
+  action = input.required<{ name: string; value: string | number }>();
+  actionDetail = input.required<PolicyActionDetail | null>();
   removeAction = output<void>();
-  updateAction = output<any>();
+  updateAction = output<string | number | undefined>();
 }
 
 describe("AddedActionsListComponent", () => {

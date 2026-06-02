@@ -222,8 +222,8 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
 
     const externalDataSource = this.containerTokenData();
     externalDataSource.paginator = this.paginator;
-    (externalDataSource as any)._sort = this.sort;
-    (dataSource as any)._sort = this.sort;
+    (externalDataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
+    (dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
 
     dataSource.filterPredicate = (data: ContainerDetailTokenData, filter: string) => {
       const row = data.token;

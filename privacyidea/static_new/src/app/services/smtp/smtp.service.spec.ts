@@ -26,7 +26,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockContentService, MockPiResponse } from "@testing/mock-services";
-import { SmtpService } from "./smtp.service";
+import { SmtpServer, SmtpService } from "./smtp.service";
 
 describe("SmtpService", () => {
   let service: SmtpService;
@@ -69,20 +69,32 @@ describe("SmtpService", () => {
     expect(service).toBeTruthy();
   });
 
+  const buildSmtpServer = (): SmtpServer => ({
+    identifier: "test",
+    server: "smtp.test.com",
+    port: 25,
+    timeout: 120,
+    sender: "",
+    tls: true,
+    enqueue_job: false,
+    smime: false,
+    dont_send_on_error: true
+  });
+
   it("should post SMTP server", async () => {
-    const server = { identifier: "test", server: "smtp.test.com" } as any;
+    const server = buildSmtpServer();
     const promise = service.postSmtpServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
     expect(req.request.method).toBe("POST");
-    req.flush({ result: { status: true } });
+    req.flush(MockPiResponse.fromValue(true));
 
     await promise;
     expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMTP server.");
   });
 
   it("should show error notification when posting SMTP server fails", async () => {
-    const server = { identifier: "test", server: "smtp.test.com" } as any;
+    const server = buildSmtpServer();
     const promise = service.postSmtpServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);

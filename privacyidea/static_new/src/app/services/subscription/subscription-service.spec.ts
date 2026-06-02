@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { provideHttpClient } from "@angular/common/http";
+import { HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "@env/environment";
@@ -29,12 +29,12 @@ import { ContentService } from "@services/content/content.service";
 describe("SubscriptionService", () => {
   let service: SubscriptionService;
   let httpMock: HttpTestingController;
-  let authMock: { getHeaders: jest.Mock };
-  let notifyMock: { warning: jest.Mock; error: jest.Mock };
+  let authMock: Partial<AuthService>;
+  let notifyMock: Partial<NotificationService>;
 
   beforeEach(() => {
-    authMock = { getHeaders: jest.fn(() => ({}) as any) } as any;
-    notifyMock = { success: jest.fn(), error: jest.fn(), warning: jest.fn() } as any;
+    authMock = { getHeaders: jest.fn(() => new HttpHeaders()) };
+    notifyMock = { success: jest.fn(), error: jest.fn(), warning: jest.fn() };
 
     TestBed.configureTestingModule({
       providers: [

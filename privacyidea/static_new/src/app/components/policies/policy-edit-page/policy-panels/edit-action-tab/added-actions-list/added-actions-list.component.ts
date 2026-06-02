@@ -34,8 +34,8 @@ import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action
   styleUrl: "./added-actions-list.component.scss"
 })
 export class AddedActionsListComponent {
-  readonly actions = input.required<{ name: string; value: any }[]>();
-  readonly actionsChange = output<{ name: string; value: any }[]>();
+  readonly actions = input.required<{ name: string; value: string | boolean }[]>();
+  readonly actionsChange = output<{ name: string; value: string | boolean }[]>();
   readonly isEditMode = input.required<boolean>();
   readonly scope = input<string | undefined>(undefined);
 
@@ -62,9 +62,10 @@ export class AddedActionsListComponent {
     return this.policyService.getDetailsOfAction(actionName, this.scope());
   }
 
-  updateActionInSelectedPolicy(actionName: string, newValue: string | number) {
+  updateActionInSelectedPolicy(actionName: string, newValue: string | number | undefined) {
+    const normalizedValue: string = typeof newValue === "number" ? String(newValue) : (newValue ?? "");
     const updatedActions = this.actions().map((action) =>
-      action.name === actionName ? { name: action.name, value: newValue } : action
+      action.name === actionName ? { name: action.name, value: normalizedValue } : action
     );
     this.actionsChange.emit(updatedActions);
   }

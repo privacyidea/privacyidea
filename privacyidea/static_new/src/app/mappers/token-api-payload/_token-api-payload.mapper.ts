@@ -29,13 +29,49 @@ export interface EnrollmentResponse<D extends EnrollmentResponseDetail = Enrollm
   [key: string]: unknown;
 }
 
+/**
+ * JSON-serialized form of a WebAuthn `PublicKeyCredentialCreationOptions`
+ * as produced by py_webauthn's `options_to_json` (see
+ * `privacyidea/lib/tokens/passkeytoken.py` `_enroll_passkey`).
+ * Binary fields (challenge, user.id, excludeCredentials[].id) are encoded
+ * as base64url strings; the client decodes them before calling
+ * `navigator.credentials.create`.
+ */
+export interface PasskeyRegistrationOptions {
+  rp: PublicKeyCredentialRpEntity;
+  user: {
+    id: string;
+    name: string;
+    displayName: string;
+  };
+  challenge: string;
+  pubKeyCredParams: PublicKeyCredentialParameters[];
+  timeout?: number;
+  excludeCredentials: { id: string; type: PublicKeyCredentialType; transports?: AuthenticatorTransport[] }[];
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  attestation?: AttestationConveyancePreference;
+  extensions?: AuthenticationExtensionsClientInputs;
+}
+
+/**
+ * Legacy FIDO U2F register request payload returned by the backend during
+ * the first enrollment step. The new UI does not parse it; the field is only
+ * present so the HTML template can detect its existence.
+ */
+export interface U2fRegisterRequest {
+  appId: string;
+  version: string;
+  challenge: string;
+  [key: string]: unknown;
+}
+
 export interface EnrollmentResponseDetail {
   type: string;
   serial: string;
   rollout_state?: string;
   threadid?: number;
-  passkey_registration?: any;
-  u2fRegisterRequest?: any;
+  passkey_registration?: PasskeyRegistrationOptions;
+  u2fRegisterRequest?: U2fRegisterRequest;
   pushurl?: EnrollmentUrl;
   googleurl?: EnrollmentUrl;
   otpkey?: EnrollmentUrl;
