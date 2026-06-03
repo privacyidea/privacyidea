@@ -141,7 +141,7 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    (this.dataSource as any)._sort = this.sort;
+    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
     this.dataSource.filterPredicate = (row: TokenDetails, filter: string) => {
       const haystack = [
         row.serial,

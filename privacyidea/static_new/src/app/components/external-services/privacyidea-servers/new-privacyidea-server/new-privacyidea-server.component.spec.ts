@@ -167,7 +167,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   describe("onCancel dialog handling", () => {
-    let mockDialogRef: any;
+    let mockDialogRef: { afterClosed: jest.Mock };
 
     beforeEach(() => {
       mockDialogRef = { afterClosed: jest.fn() };

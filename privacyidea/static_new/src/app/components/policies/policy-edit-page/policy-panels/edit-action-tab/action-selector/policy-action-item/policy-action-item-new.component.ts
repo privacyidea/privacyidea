@@ -106,7 +106,7 @@ export class PolicyActionItemComponent {
   inputElementRef = viewChild<ElementRef>("inputElement");
   selectElementRef = viewChild<MatSelect>("selectElement");
   buttonElementRef = viewChild<ElementRef>("buttonElement");
-  selectorComponent = viewChild<SelectorButtonsComponent<any>>("selectorComponent");
+  selectorComponent = viewChild<SelectorButtonsComponent<string | number>>("selectorComponent");
 
   focusFirstInput() {
     setTimeout(() => {

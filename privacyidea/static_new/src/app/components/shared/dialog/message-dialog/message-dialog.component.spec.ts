@@ -110,7 +110,7 @@ describe("MessageDialogComponent", () => {
   });
 
   it("should close the dialog", () => {
-    (component as any).close();
+    (component as unknown as { close: () => void }).close();
     expect(dialogRef.close).toHaveBeenCalled();
   });
 

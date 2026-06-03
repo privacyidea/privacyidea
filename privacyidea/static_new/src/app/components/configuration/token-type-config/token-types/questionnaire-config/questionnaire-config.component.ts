@@ -40,7 +40,7 @@ export class QuestionnaireConfigComponent {
   questionKeys = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  formDataChange = output<Record<string, any>>();
+  formDataChange = output<Record<string, string>>();
   addQuestionRequest = output<string>();
   deleteRequest = output<string>();
 

@@ -23,7 +23,7 @@ import { Subject } from "rxjs";
 
 type PublicPart<T> = { [K in keyof T]: T[K] };
 
-export class MockMatDialogRef<T, R = any> implements PublicPart<MatDialogRef<T, R>> {
+export class MockMatDialogRef<T, R = unknown> implements PublicPart<MatDialogRef<T, R>> {
   // --- Properties ---
   _containerInstance: MatDialogContainer = {} as MatDialogContainer;
   componentInstance: T = {} as T;

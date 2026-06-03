@@ -16,31 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
-import { computed, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
   PrivacyideaServer,
   PrivacyideaServers,
   PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
+import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockPrivacyideaServerService implements PrivacyideaServerServiceInterface {
-  remoteServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined> = {
-    value: signal(undefined),
-    status: signal(0),
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<PrivacyideaServers> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: jest.fn()
-  } as any;
-  remoteServerOptions = computed<PrivacyideaServer[]>(() => []);
+  remoteServerResource = new MockHttpResourceRef<PiResponse<PrivacyideaServers> | undefined>(undefined);
+  remoteServerOptions = signal<PrivacyideaServer[]>([]);
   postPrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
   deletePrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testPrivacyideaServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));

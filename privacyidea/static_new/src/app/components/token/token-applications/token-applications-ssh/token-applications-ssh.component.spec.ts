@@ -62,7 +62,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
 
     fixture = TestBed.createComponent(TokenApplicationsSshComponent);
     component = fixture.componentInstance;
-    machineServiceMock = TestBed.inject(MachineService) as any;
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     fixture.detectChanges();
   });
 

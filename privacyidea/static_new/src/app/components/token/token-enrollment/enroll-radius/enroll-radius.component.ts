@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Input, Output, EventEmitter, Component, computed, effect, inject, input, OnInit, signal } from "@angular/core";
+import { Output, EventEmitter, Component, computed, effect, inject, input, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";

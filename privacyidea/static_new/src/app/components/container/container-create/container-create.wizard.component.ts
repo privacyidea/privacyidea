@@ -94,7 +94,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.containerSerial.set(serial);
     this.openRegistrationDialog({
       result: { value: { container_serial: serial } }
-    } as any);
+    } as unknown as PiResponse<ContainerRegisterData>);
   }
 
   protected override openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {

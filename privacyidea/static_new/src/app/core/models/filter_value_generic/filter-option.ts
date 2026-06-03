@@ -16,7 +16,7 @@ import { FilterValueGeneric } from "./filter-value-generic";
  */
 
 export type FilterActionType = "add" | "remove" | "change" | "none";
-export class FilterOption<T = any> {
+export class FilterOption<T = unknown> {
   readonly key: string;
   readonly value: string | null;
   readonly label: string;

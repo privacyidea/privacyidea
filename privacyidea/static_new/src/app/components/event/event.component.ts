@@ -174,9 +174,9 @@ export class EventComponent {
     return false;
   }
 
-  formatConditions(conditions: any): string {
+  formatConditions(conditions: unknown): string {
     if (!conditions || typeof conditions !== "object") return "";
-    return Object.entries(conditions)
+    return Object.entries(conditions as Record<string, unknown>)
       .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
   }

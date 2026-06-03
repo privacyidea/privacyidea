@@ -133,7 +133,10 @@ describe("appConfig", () => {
   });
 
   it("contains APP_BASE_HREF set to /app/v2/", () => {
-    const p = appConfig.providers.find((x: any) => x.provide === APP_BASE_HREF);
+    const p = appConfig.providers.find(
+      (x) =>
+        typeof x === "object" && x !== null && "provide" in x && (x as { provide: unknown }).provide === APP_BASE_HREF
+    ) as { provide: unknown; useValue?: string } | undefined;
     if (p && "useValue" in p) {
       expect(p?.useValue).toBe("/app/v2/");
     }

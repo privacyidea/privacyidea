@@ -174,7 +174,7 @@ describe("NavigationSelfServiceComponent", () => {
   });
 
   it("exposes ROUTE_PATHS and the user signal from UserService", () => {
-    expect((component as any).ROUTE_PATHS).toBe(ROUTE_PATHS);
+    expect((component as unknown as { ROUTE_PATHS: typeof ROUTE_PATHS }).ROUTE_PATHS).toBe(ROUTE_PATHS);
     expect(component.userData).toBe(userServiceMock.user);
   });
 

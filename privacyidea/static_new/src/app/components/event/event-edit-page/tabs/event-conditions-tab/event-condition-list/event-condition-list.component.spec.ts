@@ -24,7 +24,10 @@ import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventConditionListComponent } from "./event-condition-list.component";
 
-type ConditionEvent = { conditionName: string; conditionValue: string | string[] };
+interface ConditionEvent {
+  conditionName: string;
+  conditionValue: string | string[];
+}
 
 describe("EventConditionListComponent", () => {
   let component: EventConditionListComponent;

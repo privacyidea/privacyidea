@@ -22,6 +22,7 @@ import { MatOptionModule } from "@angular/material/core";
 import { MatDialogModule } from "@angular/material/dialog";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { TokenDetails } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -38,7 +39,7 @@ import { Observable } from "rxjs";
 
 export interface SshMachineAssignDialogData {
   tokenSerial: string;
-  tokenDetails: Record<string, any>;
+  tokenDetails: TokenDetails;
   tokenType: string;
 }
 

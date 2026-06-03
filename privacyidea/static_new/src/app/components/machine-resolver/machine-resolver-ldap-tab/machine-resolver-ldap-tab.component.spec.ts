@@ -69,7 +69,7 @@ describe("MachineResolverLdapTabComponent", () => {
     const invalidData5: LdapMachineResolverData = { ...validData, BINDPW: " " };
 
     expect(component.isValid(validData)).toBeTruthy();
-    expect(component.isValid(invalidData1 as any)).toBeFalsy();
+    expect(component.isValid(invalidData1 as unknown as LdapMachineResolverData)).toBeFalsy();
     expect(component.isValid(invalidData2)).toBeFalsy();
     expect(component.isValid(invalidData3)).toBeFalsy();
     expect(component.isValid(invalidData4)).toBeFalsy();

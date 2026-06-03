@@ -30,7 +30,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { forkJoin, Observable, switchMap } from "rxjs";
 
-export interface ContainerInfoDetail<T = any> {
+export interface ContainerInfoDetail<T = unknown> {
   value: T;
   keyMap: { label: string; key: string };
   isEditing: WritableSignal<boolean>;
@@ -81,7 +81,7 @@ export class ContainerDetailsInfoComponent {
     this.newInfo.set({ key: "", value: "" });
   }
 
-  saveInfo(element: ContainerInfoDetail): void {
+  saveInfo(element: ContainerInfoDetail<Record<string, string>>): void {
     if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
       element.value[this.newInfo().key] = this.newInfo().value;
     }

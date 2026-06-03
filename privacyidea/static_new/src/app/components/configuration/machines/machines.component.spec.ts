@@ -19,38 +19,36 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { MachineService } from "@services/machine/machine.service";
 import { MachinesComponent } from "./machines.component";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockTableUtilsService } from "@testing/mock-services";
+import { MockMachineService, MockTableUtilsService } from "@testing/mock-services";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
   let fixture: ComponentFixture<MachinesComponent>;
-  let machineServiceMock: any;
+  let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {
-    machineServiceMock = {
-      machines: signal([
-        { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" },
-        { id: 2, hostname: ["host2"], ip: "2.2.2.2", resolver_name: "res2" }
-      ])
-    };
-
     await TestBed.configureTestingModule({
       imports: [MachinesComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: MachineService, useValue: machineServiceMock },
+        { provide: MachineService, useClass: MockMachineService },
         { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
+
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
+    machineServiceMock.machines.set([
+      { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" },
+      { id: 2, hostname: ["host2"], ip: "2.2.2.2", resolver_name: "res2" }
+    ]);
 
     fixture = TestBed.createComponent(MachinesComponent);
     component = fixture.componentInstance;

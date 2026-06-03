@@ -56,7 +56,7 @@ describe("CaConnectorService", () => {
     service = TestBed.inject(CaConnectorService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
-    contentService = TestBed.inject(ContentService) as any as MockContentService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     contentService.onExternalCaConnectors = signal(true);
   });
 

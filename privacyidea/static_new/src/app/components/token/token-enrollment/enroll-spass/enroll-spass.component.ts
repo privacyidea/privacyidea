@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { input, Input, Output, EventEmitter, Component, inject, OnInit } from "@angular/core";
+import { input, Output, EventEmitter, Component, inject, OnInit } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";

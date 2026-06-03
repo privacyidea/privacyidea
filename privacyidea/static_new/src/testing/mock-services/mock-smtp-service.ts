@@ -16,27 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
-import { computed, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { SmtpServer, SmtpServers } from "@services/smtp/smtp.service";
+import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockSmtpService {
-  smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined> = {
-    value: signal(undefined),
-    status: signal(0),
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<SmtpServers> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: jest.fn()
-  } as any;
-  smtpServers = computed<SmtpServer[]>(() => []);
+  smtpServerResource = new MockHttpResourceRef<PiResponse<SmtpServers> | undefined>(undefined);
+  smtpServers = signal<SmtpServer[]>([]);
   postSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testSmtpServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
   deleteSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());

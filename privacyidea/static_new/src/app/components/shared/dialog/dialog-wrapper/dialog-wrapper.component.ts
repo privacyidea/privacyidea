@@ -33,7 +33,7 @@ import { assert } from "@utils/assert";
   imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon, A11yModule],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
-export class DialogWrapperComponent<R = any> implements OnInit {
+export class DialogWrapperComponent<R = unknown> implements OnInit {
   private readonly dialogRef = inject(MatDialogRef);
 
   title = input.required<string>();

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed } from "@angular/core";
+import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { SmsGateway, SmsGatewayServiceInterface, SmsProviders } from "@services/sms-gateway/sms-gateway.service";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
@@ -30,7 +30,7 @@ export class MockSmsGatewayService implements SmsGatewayServiceInterface {
     MockPiResponse.fromValue<SmsProviders>({})
   );
 
-  smsGateways = computed<SmsGateway[]>(() => []);
+  smsGateways = signal<SmsGateway[]>([]);
   postSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
   deleteSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
 }

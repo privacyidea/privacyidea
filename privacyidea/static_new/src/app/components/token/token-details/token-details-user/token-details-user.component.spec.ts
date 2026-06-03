@@ -22,7 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
-import { Tokens, TokenService } from "@services/token/token.service";
+import { Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import {
   MockContentService,
@@ -38,7 +38,7 @@ import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
 import { ContentService } from "@services/content/content.service";
 
-function makeTokenDetailResponse(tokentype: any): MockPiResponse<Tokens> {
+function makeTokenDetailResponse(tokentype: TokenTypeKey): MockPiResponse<Tokens> {
   return {
     id: 0,
     jsonrpc: "2.0",

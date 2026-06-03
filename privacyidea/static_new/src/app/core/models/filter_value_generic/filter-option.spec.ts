@@ -81,21 +81,21 @@ describe("FilterOption", () => {
   describe("Action Logic (getActionType)", () => {
     it("should use default logic: 'add' if key is missing", () => {
       (mockFilterValue.hasKey as jest.Mock).mockReturnValue(false);
-      const option = new FilterOption({ key: "testKey", label: "L", matches: () => true });
+      const option = new FilterOption<ComplexMock>({ key: "testKey", label: "L", matches: () => true });
 
       expect(option.getActionType!(mockFilterValue)).toBe("add");
     });
 
     it("should use default logic: 'remove' if key is present", () => {
       (mockFilterValue.hasKey as jest.Mock).mockReturnValue(true);
-      const option = new FilterOption({ key: "testKey", label: "L", matches: () => true });
+      const option = new FilterOption<ComplexMock>({ key: "testKey", label: "L", matches: () => true });
 
       expect(option.getActionType!(mockFilterValue)).toBe("remove");
     });
 
     it("should allow overriding getActionType via constructor", () => {
       const customAction: FilterActionType = "change";
-      const option = new FilterOption({
+      const option = new FilterOption<ComplexMock>({
         key: "k",
         label: "l",
         matches: () => true,
@@ -106,7 +106,7 @@ describe("FilterOption", () => {
     });
 
     it("should preserve custom getActionType in withValue() clones", () => {
-      const option = new FilterOption({
+      const option = new FilterOption<ComplexMock>({
         key: "k",
         label: "l",
         matches: () => true,
@@ -136,7 +136,7 @@ describe("FilterOption", () => {
   describe("Edge Case Stress Tests", () => {
     it("should verify optional toggle execution safety", () => {
       const toggleSpy = jest.fn();
-      const option = new FilterOption({
+      const option = new FilterOption<ComplexMock>({
         key: "k",
         label: "l",
         matches: () => true,

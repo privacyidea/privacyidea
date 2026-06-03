@@ -32,7 +32,7 @@ import { ContainerCreatedDialogWizardComponent } from "./container-created-dialo
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
   let component: ContainerCreatedDialogComponent;
-  let afterClosed$: Subject<any>;
+  let afterClosed$: Subject<void>;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
@@ -106,7 +106,7 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogWizardComponent>;
   let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
-  let afterClosed$: Subject<any>;
+  let afterClosed$: Subject<void>;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };

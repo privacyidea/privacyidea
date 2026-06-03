@@ -60,7 +60,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsOfflineComponent);
-    machineServiceMock = TestBed.inject(MachineService) as any;
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
