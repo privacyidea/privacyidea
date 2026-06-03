@@ -48,48 +48,48 @@
   </div>
   <mat-accordion multi="true">
     <app-hotp-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [hashLibs]="hashLibs()"></app-hotp-config>
     <app-totp-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [hashLibs]="hashLibs()"
       [totpSteps]="totpSteps()"></app-totp-config>
     <app-u2f-config [formData]="formData()"></app-u2f-config>
     <app-webauthn-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"></app-webauthn-config>
     <app-radius-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [radiusServers]="systemService.radiusServers()"
       [expanded]="expandedPanel === 'radius'"></app-radius-config>
     <app-remote-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"></app-remote-config>
     <app-sms-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [smsGateways]="smsGatewayNames()"
       [expanded]="expandedPanel === 'sms'"></app-sms-config>
     <app-tiqr-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"></app-tiqr-config>
     <app-email-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [smtpServers]="smtpServerIdentifiers()"
       [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       (addQuestionRequest)="addQuestion($event)"
       (deleteRequest)="deleteQuestion($event)"
       [formData]="formData()"
       [questionKeys]="questionKeys"
       [expanded]="expandedPanel === 'questionnaire'"></app-questionnaire-config>
     <app-yubico-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [expanded]="expandedPanel === 'yubico'"></app-yubico-config>
     <app-yubikey-config
@@ -98,7 +98,7 @@
       [formData]="formData()"
       [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>
     <app-daypassword-config
-      (formDataChange)="formData.set($event)"
+      (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [hashLibs]="hashLibs()"></app-daypassword-config>
   </mat-accordion>

@@ -48,7 +48,7 @@ import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@serv
   templateUrl: "./policy-action-item-edit.component.html",
   styleUrl: "./policy-action-item-edit.component.scss"
 })
-export class PolicyActionItemEditComponent<T extends string | number = string | number> {
+export class PolicyActionItemEditComponent<T extends string | number | boolean = string | number | boolean> {
   readonly action = input.required<{ name: string; value: T }>();
   readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
   readonly removeAction = output<void>();

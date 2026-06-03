@@ -137,12 +137,16 @@ export class ActionSelectorComponent {
     this.selectedActionGroup.set(group ?? "");
   }
 
-  addPolicyAction(action: { name: string; value: string | boolean }, itemScope?: string | null) {
+  addPolicyAction(action: { name: string; value: string | number | boolean | undefined }, itemScope?: string | null) {
+    const normalizedAction: { name: string; value: string | boolean } = {
+      name: action.name,
+      value: typeof action.value === "number" ? String(action.value) : (action.value ?? "")
+    };
     if (this.policy().scope) {
-      this.actionAdd.emit({ action });
+      this.actionAdd.emit({ action: normalizedAction });
     } else {
       const scope = itemScope || this.policyService.getScopeOfAction(action.name);
-      this.actionAdd.emit({ action, newScope: scope });
+      this.actionAdd.emit({ action: normalizedAction, newScope: scope });
     }
     this.focusNextActionItem(action.name, itemScope);
   }

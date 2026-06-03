@@ -56,10 +56,10 @@
       <app-tiqr-enroll-url [url]="enrolledData()?.['tiqrenroll']?.value ?? ''" />
     }
     @if (tokenType() === "registration") {
-      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode']" />
+      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode'] ?? ''" />
     }
     @if (enrolledData()?.["otps"]) {
-      <app-otp-values [otpValues]="enrolledData()?.['otps']" />
+      <app-otp-values [otpValues]="enrolledData()?.['otps'] ?? []" />
     }
   </div>
 </div>

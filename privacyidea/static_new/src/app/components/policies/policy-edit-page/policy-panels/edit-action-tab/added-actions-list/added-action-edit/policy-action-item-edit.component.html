@@ -29,7 +29,7 @@
   <span class="detail-label">{{ action().name }}</span>
 
   <div class="detail-input">
-    @if (!isBooleanAction(action().name)) {
+    @if (!isBooleanAction()) {
       @if (actionDetail()?.value; as actionValues) {
         @if (actionDetail()?.multiple) {
           <app-multi-select-only

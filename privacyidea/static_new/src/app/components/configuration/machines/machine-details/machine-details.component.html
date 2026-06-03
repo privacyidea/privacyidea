@@ -166,7 +166,7 @@
                   <mat-form-field appearance="fill">
                     <mat-label i18n>User</mat-label>
                     <input
-                      [value]="editedOptions[token.id]['user'] ?? ''"
+                      [value]="editedOptions[token.id]['user']"
                       (input)="editedOptions[token.id]['user'] = $any($event.target).value"
                       matInput />
                   </mat-form-field>

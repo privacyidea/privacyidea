@@ -62,8 +62,8 @@ export class AddedActionsListComponent {
     return this.policyService.getDetailsOfAction(actionName, this.scope());
   }
 
-  updateActionInSelectedPolicy(actionName: string, newValue: string | number | undefined) {
-    const normalizedValue: string = typeof newValue === "number" ? String(newValue) : (newValue ?? "");
+  updateActionInSelectedPolicy(actionName: string, newValue: string | number | boolean | undefined) {
+    const normalizedValue: string | boolean = typeof newValue === "number" ? String(newValue) : (newValue ?? "");
     const updatedActions = this.actions().map((action) =>
       action.name === actionName ? { name: action.name, value: normalizedValue } : action
     );

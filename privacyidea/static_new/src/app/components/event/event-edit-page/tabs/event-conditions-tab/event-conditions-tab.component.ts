@@ -98,17 +98,18 @@ export class EventConditionsTabComponent {
     }
   });
 
-  onConditionValueToBeAddedChange(conditionName: string, value: string) {
-    this.conditionsToBeAdded[conditionName] = value;
+  onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
+    this.conditionsToBeAdded[conditionName] = Array.isArray(value) ? value.join(",") : value;
   }
 
-  onConditionValueChange(conditionName: string, value: string) {
+  onConditionValueChange(conditionName: string, value: string | string[]) {
+    const stringValue = Array.isArray(value) ? value.join(",") : value;
     this.selectedConditions.set({
       ...this.selectedConditions(),
-      [conditionName]: value
+      [conditionName]: stringValue
     });
     this.newConditions.emit(this.selectedConditions());
-    if (value === "") {
+    if (stringValue === "") {
       // notify selected condition list to focus the new empty input
       this.addedCondition.set(conditionName);
     }

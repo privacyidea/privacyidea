@@ -39,6 +39,7 @@ export interface ContentServiceInterface {
   onPolicies: Signal<boolean>;
   onTokenDetails: Signal<boolean>;
   onUserDetails: Signal<boolean>;
+  onUserDetailsSelfService: Signal<boolean>;
   onUserRealms: Signal<boolean>;
   onTokensEnrollment: Signal<boolean>;
   onTokenEnrollmentLikely: Signal<boolean>;

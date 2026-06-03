@@ -27,7 +27,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { lastValueFrom } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
-export interface PolicyActionDetail<T extends string | number = string | number> {
+export interface PolicyActionDetail<T extends string | number | boolean = string | number | boolean> {
   desc: string;
   type: ActionType;
   multiple?: boolean;
@@ -178,7 +178,7 @@ export interface PolicyServiceInterface {
   isScopeChangeable(policy: PolicyDetail): boolean;
   getActionNamesOf(scope?: string, group?: string): string[];
   getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
-  actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
+  actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean;
   saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean>;
   policyHasConditions(policy: PolicyDetail): boolean;
   policyHasAdminConditions(policy: PolicyDetail): boolean;
@@ -493,10 +493,11 @@ export class PolicyService implements PolicyServiceInterface {
     return result;
   }
 
-  actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean {
+  actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
     if (!action) return false;
     const actionType = action.type;
     if (!actionType) return false;
+    if (actionType === "bool" && typeof value === "boolean") return true;
     if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
     if (typeof value !== "string") return false;
 

@@ -120,6 +120,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     source: () => this.systemService.systemConfig(),
     computation: (config) => ({ ...config })
   });
+
+  onFormDataChange(data: Record<string, unknown>): void {
+    this.formData.set(data as Record<string, string>);
+  }
+
   nextQuestionIndex = linkedSignal<Record<string, string>, number>({
     source: () => this.systemService.systemConfig(),
     computation: (config) => {
