@@ -50,6 +50,7 @@ import pyrad
 from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
@@ -528,20 +529,20 @@ def auth_otppin(wrapped_function, *args, **kwds):
     if g:
         token = args[0]
         pin = args[1]
-        user_object = kwds.get("user")
-        if not user_object:
+        user = kwds.get("user")
+        if not user:
             # No user in the parameters, so we need to determine the owner of the token
-            user_object = token.user
+            user = token.user
             realms = token.get_realms()
-            if not user_object and len(realms):
+            if not user and len(realms):
                 # If the token has no owner, we take a realm.
-                user_object = User("", realm=realms[0])
-        if not user_object:
+                user = User("", realm=realms[0])
+        if not user:
             # If we still have no user and no tokenrealm, we create an empty user object.
-            user_object = User("", realm="")
+            user = User("", realm="")
         # Get the policy for OTPPIN
         otppin_dict = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.OTPPIN,
-                                 user_object=user_object).action_values(unique=True)
+                                 user_object=user).action_values(unique=True)
         if otppin_dict:
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
                 if pin == "":
@@ -551,8 +552,11 @@ def auth_otppin(wrapped_function, *args, **kwds):
                     return False
 
             if list(otppin_dict)[0] == ACTIONVALUE.USERSTORE:
-                rv = user_object.check_password(pin)
-                return rv is not None
+                authenticated_user = user.check_password(pin)
+
+                if authenticated_user is None and token:
+                    token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
+                return authenticated_user is not None
 
     # Call and return the original check_pin function
     return wrapped_function(*args, **kwds)

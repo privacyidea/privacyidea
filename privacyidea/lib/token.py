@@ -82,6 +82,7 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF,
@@ -2368,6 +2369,8 @@ def check_user_pass(user, passw, options=None):
         # The user has no tokens assigned
         res = False
         reply_dict["message"] = _("The user has no tokens assigned")
+        reply_dict[AUTH_EVENT_TYPE_KEY] = (
+            AuthEventType.USER_UNKNOWN if not user or user.is_empty() else AuthEventType.NO_TOKEN)
     else:
         token_object = token_objects[0]
         res, reply_dict = check_token_list(token_objects, passw,
@@ -2514,6 +2517,9 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     invalid_token_list = []
     valid_token_list = []
     messages = []
+    further_challenge = False
+    answered_token = None
+    answered_stale_challenge = False
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2551,6 +2557,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
+                answered_stale_challenge = True
         elif token_object.is_challenge_request(passw, user=user, options=options):
             # This is a challenge request
             challenge_request_token_list.append(token_object)
@@ -2671,6 +2678,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 else:
                     # Challenge matches, token is active and token is fit for challenge
                     res = True
+                    answered_token = token_object
                     if increase_auth_counters:
                         token_object.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
@@ -2773,6 +2781,31 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     else:
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")
+
+    # Classify the request outcome for the authentication log.
+    if res:
+        if valid_token_list:
+            event_type = AuthEventType.LOGIN_SUCCESS
+        else:
+            # The answering token may override the event
+            override = answered_token.auth_details.get(AUTH_EVENT_TYPE_KEY) if answered_token else None
+            event_type = override or AuthEventType.CHALLENGE_ANSWERED_OK
+    elif challenge_request_token_list:
+        event_type = AuthEventType.CHALLENGE_TRIGGERED
+    elif challenge_response_token_list:
+        event_type = AuthEventType.CHALLENGE_TRIGGERED if further_challenge else AuthEventType.CHALLENGE_ANSWERED_FAIL
+    elif pin_matching_token_list:
+        event_type = AuthEventType.MFA_FAIL
+    elif answered_stale_challenge:
+        event_type = AuthEventType.CHALLENGE_ANSWERED_FAIL
+    elif invalid_token_list:
+        # A token may classify its own failure (auth_otppin marks a wrong userstore password as PASSWORD_FAIL);
+        # otherwise the PIN did not match.
+        overrides = [token_object.auth_details.get(AUTH_EVENT_TYPE_KEY) for token_object in invalid_token_list]
+        event_type = AuthEventType.PASSWORD_FAIL if AuthEventType.PASSWORD_FAIL in overrides else AuthEventType.PIN_FAIL
+    else:
+        event_type = AuthEventType.NO_TOKEN
+    reply_dict[AUTH_EVENT_TYPE_KEY] = event_type
 
     return res, reply_dict
 

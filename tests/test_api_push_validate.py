@@ -12,6 +12,11 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from testfixtures import LogCapture
 
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.models import db
+from privacyidea.models.authentication_log import AuthenticationLog
+from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
@@ -889,6 +894,12 @@ class PushAPITestCase(MyApiTestCase):
             self.assertIn("message", detail)
             self.assertEqual(expected_message, detail["message"])
 
+        # The smartphone confirming code-to-phone re-triggers (to display the code) -> the
+        # latest /ttype/push row is CHALLENGE_TRIGGERED, carrying the serial but no user.
+        confirm_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.event_id)
+        self.assertEqual(AuthEventType.CHALLENGE_TRIGGERED, confirm_log.event_type)
+        self.assertIsNone(confirm_log.uid)
+
         # Verify challenge data was updated
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
         challenge_data = challenge.get_data()
@@ -907,6 +918,9 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"), res.json)
             self.assertEqual(AUTH_RESPONSE.ACCEPT,
                              res.json.get("result").get("authentication"), res.json)
+
+        success_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.event_id)
+        self.assertEqual(AuthEventType.CHALLENGE_ANSWERED_OK, success_log.event_type)
 
         # Verify backwards-compat fallback: with the push-specific policy removed,
         # the generic challenge_text policy is honored on the next challenge.
@@ -1231,6 +1245,102 @@ class PushAPITestCase(MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
+
+    def test_18c_authentication_log_push_states(self):
+        """
+        Full authentication-log coverage for the push flow. The PIN step at
+        /validate/check logs CHALLENGE_TRIGGERED; /ttype/push (the only point
+        reached for every smartphone response) logs the answer
+        (CHALLENGE_ANSWERED_OK / CHALLENGE_DECLINED / CHALLENGE_ANSWERED_FAIL);
+        the finalizing /validate/check collects the answered challenge.
+
+        Entries written at /ttype/push carry no transaction_id (the smartphone
+        request does not send one), so the log is cleared per scenario and the
+        whole ordered event list is asserted. The smartphone response also
+        carries no user, hence those rows record only the serial.
+        """
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "push", "pin": "push_pin",
+                                                 "user": "selfservice", "realm": self.realm1,
+                                                 "serial": self.serial_push, "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            result = self.app.full_dispatch_request()
+            enrollment_credential = result.json.get("detail").get("enrollment_credential")
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        def clear_log():
+            db.session.query(AuthenticationLog).delete()
+            db.session.commit()
+
+        def trigger_and_poll():
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                result = self.app.full_dispatch_request()
+                tid = result.json["detail"]["transaction_id"]
+            timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+            poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode("utf8"),
+                                                        padding.PKCS1v15(), hashes.SHA256())
+            with self.app.test_request_context('/ttype/push', method='GET',
+                                               query_string={"serial": self.serial_push,
+                                                             "timestamp": timestamp,
+                                                             "signature": b32encode(poll_sig)}):
+                result = self.app.full_dispatch_request()
+                return tid, result.json["result"]["value"][0]["nonce"]
+
+        def sign_and_post(sign_data, extra_data=None):
+            signature = self.smartphone_private_key.sign(sign_data.encode("utf8"),
+                                                   padding.PKCS1v15(), hashes.SHA256())
+            data = {"serial": self.serial_push, "signature": b32encode(signature)}
+            data.update(extra_data or {})
+            with self.app.test_request_context('/ttype/push', method='POST', data=data):
+                return self.app.full_dispatch_request()
+
+        def finalize(transaction_id):
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "",
+                                                     "transaction_id": transaction_id}):
+                return self.app.full_dispatch_request()
+
+        # Accept: PIN step triggers, the phone confirms, the client collects the result.
+        clear_log()
+        transaction_id, nonce = trigger_and_poll()
+        sign_and_post(f"{nonce}|{self.serial_push}")
+        finalize(transaction_id)
+        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                  AuthEventType.CHALLENGE_ANSWERED_OK,
+                                                  AuthEventType.CHALLENGE_ANSWERED_OK])
+        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
+                                        user=user, serial=self.serial_push)
+
+        # Decline: the phone declines -> CHALLENGE_DECLINED at /ttype/push.
+        clear_log()
+        transaction_id, nonce = trigger_and_poll()
+        sign_and_post(f"{nonce}|{self.serial_push}|decline", extra_data={"decline": "1"})
+        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                  AuthEventType.CHALLENGE_DECLINED])
+        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_DECLINED], serial=self.serial_push)
+
+        # Bad signature: verification fails -> CHALLENGE_ANSWERED_FAIL at /ttype/push.
+        clear_log()
+        _, _ = trigger_and_poll()
+        sign_and_post(f"wrong|{self.serial_push}")
+        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                  AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], serial=self.serial_push)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
 
     def test_19_push_code_to_phone_with_require_presence(self):
         """

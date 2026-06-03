@@ -68,11 +68,12 @@ from functools import wraps
 from datetime import (datetime, timezone)
 
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from privacyidea.lib.error import AuthError, Error
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
@@ -89,7 +90,7 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params,
-                                       verify_auth_token, get_optional, get_required)
+                                       verify_auth_token, get_optional, get_required, log_authentication)
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
@@ -281,6 +282,7 @@ def get_auth_token():
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
     details = {}
+    auth_event_type = None
     # Passkey login
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_enabled = get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True)
@@ -292,6 +294,7 @@ def get_auth_token():
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
+            log_authentication(AuthEventType.NO_TOKEN, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.is_active():
@@ -301,12 +304,15 @@ def get_auth_token():
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
+            log_authentication(AuthEventType.NO_TOKEN, user=token.user, transaction_id=transaction_id)
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
+            log_authentication(AuthEventType.USER_UNKNOWN, transaction_id=transaction_id, login=username)
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
+            log_authentication(AuthEventType.NO_TOKEN, user=token.user, transaction_id=transaction_id)
             raise AuthError(
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
@@ -319,23 +325,35 @@ def get_auth_token():
 
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
-        passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        try:
+            passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        except (ResourceNotFoundError, AuthError):
+            # The challenge could not be verified (e.g. answered for the wrong serial or expired).
+            # It propagates as a failure response, so log the failed attempt here.
+            log_authentication(AuthEventType.MFA_FAIL, user=token.user, transaction_id=transaction_id)
+            raise
         if passkey_login_result.success > 0:
             user = token.user
             login_name = user.login
             realm = user.realm
             username = user.login
             passkey_login_success = True
+            auth_event_type = AuthEventType.LOGIN_SUCCESS
         else:
+            log_authentication(AuthEventType.MFA_FAIL, user=token.user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
         # The realm parameter has precedence! Check if it exists
         if realm_param and not realm_is_defined(realm_param):
+            log_authentication(AuthEventType.USER_UNKNOWN, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"), login=username)
             raise AuthError(_("Authentication failure. Unknown realm:") + f" {realm_param}.",
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
         if username is None:
+            log_authentication(AuthEventType.USER_UNKNOWN, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Missing Username"), id=Error.AUTHENTICATE_MISSING_USERNAME)
 
         if not user or not user.realm:
@@ -403,6 +421,7 @@ def get_auth_token():
                 if user.realm in superuser_realms:
                     role = ROLE.ADMIN
                     admin_auth = True
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if admin_auth or user_auth else AuthEventType.USER_UNKNOWN
 
     elif verify_db_admin(username, password):
         role = ROLE.ADMIN
@@ -411,6 +430,7 @@ def get_auth_token():
         # This admin is not in the default realm!
         realm = ""
         user = User()
+        auth_event_type = AuthEventType.LOGIN_SUCCESS
         g.audit_object.log({"success": True,
                             "user": "",
                             "realm": "",
@@ -420,6 +440,7 @@ def get_auth_token():
     else:
         # The user could not be identified against the admin database, so we do the rest of the check
         if password is None:
+            auth_event_type = AuthEventType.PASSWORD_FAIL
             g.audit_object.add_to_log({"info": 'Missing parameter "password"'}, add_with_comma=True)
         else:
             local_admin_exist = g.get("resolved_user", {}).get("is_local_admin", False)
@@ -449,10 +470,14 @@ def get_auth_token():
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)
             details = details or {}
+            # Classification stashed by the lib layer: captured for the authentication log and
+            # popped so it is never returned to the client.
+            auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])
+                auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
             else:
                 serials = details.get('serial')
                 token_types = details.get('type')
@@ -475,7 +500,16 @@ def get_auth_token():
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
+                log_authentication(auth_event_type, user=user, serial=details.get("serial"),
+                                   transaction_id=details.get("transaction_id"))
                 return send_result(False, rid=2, details=details)
+
+    # Authentication log
+    if auth_event_type is None:
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if (admin_auth or user_auth) else AuthEventType.PASSWORD_FAIL
+    log_authentication(auth_event_type, user=user, serial=details.get("serial"),
+                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
+                       login=username if auth_event_type == AuthEventType.USER_UNKNOWN else None)
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,

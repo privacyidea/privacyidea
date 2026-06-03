@@ -17,65 +17,41 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from datetime import datetime
 
-from sqlalchemy import update, delete, select
+from sqlalchemy import delete, select
 
 from privacyidea.models import AuthenticationLog, db
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 
 
-def create_authentication_log(event_type: str,
-                              resolver: str | None = None,
-                              uid: str | None = None,
-                              realm: str | None = None,
-                              source_ip: str | None = None,
-                              client_label: str | None = None,
-                              serial: str | None = None,
-                              transaction_id: str | None = None,
-                              other_info: dict | None = None) -> int:
+def log_authentication_event(event_type: AuthEventType,
+                             transaction_id: str | None = None,
+                             resolver: str | None = None,
+                             uid: str | None = None,
+                             realm: str | None = None,
+                             source_ip: str | None = None,
+                             client_label: str | None = None,
+                             serial: str | None = None,
+                             other_info: dict | None = None) -> int:
     """
     Create a new authentication log entry and return its event_id.
     """
-    entry = AuthenticationLog(resolver=resolver, uid=uid, realm=realm, event_type=event_type,
-                              source_ip=source_ip, client_label=client_label,
-                              serial=serial, transaction_id=transaction_id,
-                              other_info=other_info)
+    entry = AuthenticationLog(
+        event_type=event_type,
+        transaction_id=transaction_id,
+        resolver=resolver,
+        uid=uid,
+        realm=realm,
+        source_ip=source_ip,
+        client_label=client_label,
+        serial=serial,
+        other_info=other_info
+    )
     db.session.add(entry)
     db.session.commit()
     return entry.event_id
 
 
-def update_authentication_log(event_id: int,
-                               resolver: str | None = None,
-                               uid: str | None = None,
-                               realm: str | None = None,
-                               event_type: str | None = None,
-                               source_ip: str | None = None,
-                               client_label: str | None = None,
-                               serial: str | None = None,
-                               transaction_id: str | None = None,
-                               other_info: dict | None = None) -> None:
-    """
-    Update fields of an existing authentication log entry by event_id.
-    Only provided (non-None) fields are updated.
-    """
-    values = {k: v for k, v in {
-        "resolver": resolver,
-        "uid": uid,
-        "realm": realm,
-        "event_type": event_type,
-        "source_ip": source_ip,
-        "client_label": client_label,
-        "serial": serial,
-        "transaction_id": transaction_id,
-        "other_info": other_info,
-    }.items() if v is not None}
-    if not values:
-        return
-    stmt = update(AuthenticationLog).where(AuthenticationLog.event_id == event_id).values(**values)
-    db.session.execute(stmt)
-    db.session.commit()
-
-
-def delete_authentication_log(event_id: int) -> None:
+def delete_authentication_log_event(event_id: int) -> None:
     """
     Delete a single authentication log entry by event_id.
     """
@@ -84,7 +60,7 @@ def delete_authentication_log(event_id: int) -> None:
     db.session.commit()
 
 
-def get_authentication_log(event_id: int) -> AuthenticationLog | None:
+def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     """
     Return a single AuthenticationLog entry by event_id, or None if not found.
     """

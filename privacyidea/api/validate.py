@@ -125,7 +125,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
@@ -140,7 +140,8 @@ from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import get_required, map_error_to_code, send_error, send_result
+from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
+from ..lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -517,6 +518,7 @@ def check():
         "response_params": {},
         "serial_list": [],
         "is_container_challenge": False,
+        AUTH_EVENT_TYPE_KEY: None,
         "options": request.all_data.copy()
     }
     # Add standard context to options and the user object again, because options is passed down to every function
@@ -584,6 +586,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         if not token:
             log.debug(f"No token found for transaction id {transaction_id}.")
             context["details"]["message"] = "No token found for the given credential ID or transaction ID!"
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
             return  # Result remains False
 
     # Policy Checks
@@ -593,6 +596,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
 
     if not token.user:
         context["details"]["message"] = "No user found for the token with the given credential ID!"
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
         return  # Result remains False
 
     # Update User in Context
@@ -645,9 +649,17 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
             return
 
-        fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        try:
+            fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        except (ResourceNotFoundError, AuthError):
+            # The challenge could not be verified (e.g. answered for the wrong serial or expired).
+            # It propagates as a failure response, bypassing the finalize hook, so log it here.
+            log_authentication(AuthEventType.MFA_FAIL, user=token.user, serial=token.get_serial(),
+                               transaction_id=transaction_id)
+            raise
         context["result"] = fido_verification_result.success > 0
 
     # Success Handling
@@ -660,6 +672,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         context["serial_list"].append(token.get_serial())
     else:
         context["details"]["message"] = _("Authentication failed.")
+
+    context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if context["result"] else AuthEventType.MFA_FAIL
 
 
 def _handle_serial_auth(context: dict, serial: str):
@@ -692,8 +706,10 @@ def _handle_serial_auth(context: dict, serial: str):
     # Perform Check
     if not otp_only:
         success, details = check_serial_pass(serial, password, options=context["options"])
+        context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
     else:
         success, details = check_otp(serial, password)
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.OTP_FAIL
 
     context["result"] = success
     context["details"] = details
@@ -719,8 +735,22 @@ def _handle_standard_auth(context: dict):
         token_type = get_optional(request.all_data, "type")
         context["options"]["token_type"] = token_type
 
-        success, details = check_user_pass(context["user"], get_optional(request.all_data, "pass"),
-                                           options=context["options"])
+        try:
+            success, details = check_user_pass(context["user"], get_optional(request.all_data, "pass"),
+                                               options=context["options"])
+        except (UserError, AuthError):
+            # An unknown user is rejected by the auth_user_does_not_exist policy decorator
+            # before check_user_pass can classify it, and the error bypasses the finalize
+            # hook, so log the unknown-user attempt here.
+            if not context["user"] or not context["user"].exist():
+                log_authentication(AuthEventType.USER_UNKNOWN, user=context["user"],
+                                   login=context["user"].login if context["user"] else None)
+            raise
+
+        # A policy decorator (passthru, passonnouser, authcache, accept-no-token) can
+        # accept the login without the token layer classifying it -> LOGIN_SUCCESS.
+        if success and details.get(AUTH_EVENT_TYPE_KEY) is None:
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
 
         # SAML Check Special Case
         if request.path.endswith("samlcheck"):
@@ -747,6 +777,9 @@ def _handle_standard_auth(context: dict):
         context["result"] = success
 
     context["details"] = details
+
+    event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
+    context[AUTH_EVENT_TYPE_KEY] = event_type
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -806,6 +839,15 @@ def _finalize_auth_response(context):
         "serial": serials_str,
         "token_type": details.get("type")
     })
+
+    # Authentication Log
+    log_authentication(
+        context[AUTH_EVENT_TYPE_KEY],
+        user=user,
+        serial=serials_str if serials_str else None,
+        transaction_id=(request.all_data.get("transaction_id") or request.all_data.get("state")
+                        or details.get("transaction_id")),
+    )
 
     return ret
 
@@ -957,17 +999,24 @@ def trigger_challenge():
         for token in challenge_response_token:
             token.inc_failcount()
     create_challenges_from_tokens(challenge_response_token, details, options)
-    result_obj = len(details.get("multi_challenge"))
+    triggered_challenges = len(details.get("multi_challenge"))
+
+    log_authentication(
+        AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN,
+        user=user,
+        serial=details.get("serial"),
+        transaction_id=details.get("transaction_id"),
+    )
 
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
-    r = send_result(result_obj, rid=2, details=details)
+    r = send_result(triggered_challenges, rid=2, details=details)
     g.audit_object.log({
         "user": user.login,
         "resolver": user.resolver,
         "realm": user.realm,
-        "success": result_obj > 0,
+        "success": triggered_challenges > 0,
         "authentication": r.json.get("result").get("authentication"),
-        "info": log_used_user(user, f"triggered {result_obj!s} challenges"),
+        "info": log_used_user(user, f"triggered {triggered_challenges!s} challenges"),
         "serial": ",".join(challenge_serials),
     })
 
@@ -1123,6 +1172,8 @@ def initialize():
                 token_type=token_type
             )
         )
+
+    log_authentication(AuthEventType.CHALLENGE_TRIGGERED, transaction_id=details.get("transaction_id"))
 
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)

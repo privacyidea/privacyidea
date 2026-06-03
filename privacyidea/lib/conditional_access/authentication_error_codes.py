@@ -15,15 +15,31 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+from enum import Enum
 
-PASSWORD_FAIL = "PASSWORD_FAIL"
-PIN_FAIL = "PIN_FAIL"
-OTP_FAIL = "OTP_FAIL"
-MFA_FAIL = "MFA_FAIL"
-USER_UNKNOWN = "USER_UNKNOWN"
-NO_TOKEN = "NO_TOKEN"
-LOGIN_SUCCESS = "LOGIN_SUCCESS"
-CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
-CHALLENGE_ANSWERED_OK = "CHALLENGE_ANSWERED_OK"
-CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
-CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+# Key under which the classified AuthEventType is carried from lib to api layer
+AUTH_EVENT_TYPE_KEY = "authentication_event_type"
+
+
+class AuthEventType(str, Enum):
+    """
+    Event types written to the authentication log.
+
+    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10. The ``__str__`` override
+    normalizes ``str()``/f-string output to the value across all supported versions (3.10-3.14); without it the
+    output would differ between versions.
+    """
+    PASSWORD_FAIL = "PASSWORD_FAIL"
+    PIN_FAIL = "PIN_FAIL"
+    OTP_FAIL = "OTP_FAIL"
+    MFA_FAIL = "MFA_FAIL"
+    USER_UNKNOWN = "USER_UNKNOWN"
+    NO_TOKEN = "NO_TOKEN"
+    LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
+    CHALLENGE_ANSWERED_OK = "CHALLENGE_ANSWERED_OK"
+    CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
+    CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+
+    def __str__(self) -> str:
+        return self.value
