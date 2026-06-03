@@ -37,8 +37,6 @@ export class MockSystemService implements SystemServiceInterface {
       IncFailCountOnFalsePin: false,
       no_auth_counter: true,
       PrependPin: false,
-      ReturnSamlAttributes: true,
-      ReturnSamlAttributesOnFail: false,
       AutoResync: true,
       UiLoginDisplayHelpButton: false,
       UiLoginDisplayRealmBox: true,
