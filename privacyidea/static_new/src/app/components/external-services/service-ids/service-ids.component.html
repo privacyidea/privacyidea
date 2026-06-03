@@ -98,6 +98,8 @@
         mat-cell>
         <app-copyable [copyText]="service.servicename">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditServiceId(service)"
             (keydown.enter)="onEditServiceId(service)"
             tabindex="0"

@@ -73,6 +73,8 @@
         mat-cell>
         <app-copyable [copyText]="server.identifier">
           <a
+            role="button"
+            tabindex="0"
             (click)="openEditDialog(server)"
             (keydown.enter)="openEditDialog(server)"
             tabindex="0"

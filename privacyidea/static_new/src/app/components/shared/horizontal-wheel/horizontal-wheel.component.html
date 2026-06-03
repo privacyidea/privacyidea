@@ -23,6 +23,8 @@
     @for (value of values(); track $index) {
       <div
         class="wheel-item"
+        role="button"
+        tabindex="0"
         [class.active]="value === selectedValue()"
         #item
         tabindex="0"

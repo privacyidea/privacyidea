@@ -86,6 +86,8 @@
                 @case ("serial") {
                   <app-copyable [copyText]="element.serial">
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="contentService.navigateContainerDetails(element.serial)"
                       (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
                       attr.aria-label="{{ column.label }} Link"
@@ -97,6 +99,8 @@
                 }
                 @case ("states") {
                   <span
+                    role="button"
+                    tabindex="0"
                     (click)="handleStateClick(element)"
                     (keydown.enter)="handleStateClick(element)"
                     [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"

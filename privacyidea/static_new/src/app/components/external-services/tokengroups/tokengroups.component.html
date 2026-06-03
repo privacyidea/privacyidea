@@ -88,6 +88,8 @@
         mat-cell>
         <app-copyable [copyText]="group.groupname">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditTokengroup(group)"
             (keydown.enter)="onEditTokengroup(group)"
             tabindex="0"

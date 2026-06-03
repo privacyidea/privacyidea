@@ -62,6 +62,8 @@
             } @else {
               <app-copyable [copyText]="element.value">
                 <a
+                  role="button"
+                  tabindex="0"
                   (click)="contentService.userSelected(element.value, element['user_realm'])"
                   (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
                   (keydown.space)="

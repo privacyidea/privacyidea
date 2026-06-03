@@ -101,6 +101,8 @@
                   [attr.title]="element.name">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="onEditEventHandler(element)"
                       (keydown.enter)="onEditEventHandler(element)"
                       (keydown.space)="onEditEventHandler(element); $event.preventDefault()"

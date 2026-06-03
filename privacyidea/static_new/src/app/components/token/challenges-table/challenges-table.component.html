@@ -93,6 +93,8 @@
               @case ("serial") {
                 <app-copyable [copyText]="element.serial">
                   <a
+                    role="button"
+                    tabindex="0"
                     (click)="serialClicked(element)"
                     (keydown.enter)="serialClicked(element)"
                     (keydown.space)="$event.preventDefault(); serialClicked(element)"

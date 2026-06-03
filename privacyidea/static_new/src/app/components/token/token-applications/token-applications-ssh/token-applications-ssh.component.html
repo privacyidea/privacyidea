@@ -113,6 +113,8 @@
                 @case ("serial") {
                   <app-copyable [copyText]="element.serial">
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="contentService.tokenSelected(element.serial)"
                       (keydown.enter)="contentService.tokenSelected(element.serial)"
                       (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
@@ -125,6 +127,8 @@
                 }
                 @case ("user") {
                   <a
+                    role="button"
+                    tabindex="0"
                     (click)="contentService.userSelected(element[column.key], element['user_realm'])"
                     (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
                     (keydown.space)="

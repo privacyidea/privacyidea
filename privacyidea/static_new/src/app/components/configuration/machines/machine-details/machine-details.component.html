@@ -67,6 +67,8 @@
         >
         <app-copyable [copyText]="machine.resolver_name">
           <a
+            role="button"
+            tabindex="0"
             (click)="onMachineResolverClick(machine.resolver_name)"
             (keydown.enter)="onMachineResolverClick(machine.resolver_name)"
             tabindex="0"
@@ -106,6 +108,8 @@
             mat-cell>
             <div class="flex-row flex-nowrap ali-center">
               <a
+                role="button"
+                tabindex="0"
                 (click)="onTokenClick(token.serial)"
                 (keydown.enter)="onTokenClick(token.serial)"
                 tabindex="0"
