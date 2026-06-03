@@ -325,7 +325,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   tokenDetailDataByGroup = computed(() => {
     const data = this.tokenDetailData();
     const type = this.tokenDetails()?.tokentype;
-    const hideCounters = type === "webauthn" || type === "passkey";
+    const hideCounters = type === "webauthn" || type === "passkey" || type === "push";
     return tokenDetailGroups
       .filter((g) => !(hideCounters && g.id === "counters"))
       .map((g) => ({

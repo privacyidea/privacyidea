@@ -148,6 +148,36 @@ describe("TokenDetailsComponent", () => {
     expect(header.textContent).toContain("Mock serial");
   });
 
+  it("tokenDetailDataByGroup hides the counters group for webauthn, passkey and push", () => {
+    component.tokenDetailData.set([
+      { keyMap: { key: "maxfail", label: "Max Count", group: "counters" }, value: 10, isEditing: signal(false) },
+      { keyMap: { key: "tokentype", label: "Type", group: "identity" }, value: "hotp", isEditing: signal(false) }
+    ] as any);
+
+    for (const tokentype of ["webauthn", "passkey", "push"]) {
+      component.tokenDetails.set({ ...component.tokenDetails(), tokentype: tokentype as TokenTypeKey });
+      expect(component.tokenDetailDataByGroup().some((group) => group.id === "counters")).toBe(false);
+    }
+
+    component.tokenDetails.set({ ...component.tokenDetails(), tokentype: "hotp" });
+    expect(component.tokenDetailDataByGroup().find((group) => group.id === "counters")?.rows.length).toBe(1);
+  });
+
+  it("renders the description editor as a textarea with 7 rows", () => {
+    component.tokenDetailData.set([
+      {
+        keyMap: { key: "description", label: "Description", group: "assignment" },
+        value: "some description",
+        isEditing: signal(true)
+      }
+    ] as any);
+    fixture.detectChanges();
+
+    const textarea = fixture.nativeElement.querySelector(".description-row textarea");
+    expect(textarea).toBeTruthy();
+    expect(textarea.getAttribute("rows")).toBe("7");
+  });
+
   it("resetFailCount calls service and reloads", () => {
     const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
     reloadSpy.mockClear();

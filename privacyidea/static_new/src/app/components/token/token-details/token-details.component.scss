@@ -128,13 +128,12 @@
 }
 
 .description-row {
-  min-height: 102px;
   padding: 8px 14px;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   box-sizing: border-box;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   width: 340px;
   align-self: flex-start;
   order: 9;

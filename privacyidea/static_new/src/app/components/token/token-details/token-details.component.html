@@ -167,13 +167,13 @@
                 class="description-field"
                 subscriptSizing="dynamic">
                 <mat-label i18n>Description</mat-label>
-                <input
+                <textarea
                   [value]="desc.value"
                   (input)="desc.value = $any($event.target).value"
                   maxlength="80"
                   appAutofocus
                   matInput
-                  type="text" />
+                  rows="7"></textarea>
                 <mat-hint align="end">{{ desc.value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
                 </mat-hint>
               </mat-form-field>
