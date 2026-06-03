@@ -28,6 +28,7 @@ import {
   OnInit,
   signal,
   ViewChild,
+  viewChild,
   WritableSignal
 } from "@angular/core";
 import { form, FormField, validate, ValidationError } from "@angular/forms/signals";
@@ -52,13 +53,13 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import {
   EnrollmentResponse,
-  TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
+import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
@@ -83,20 +84,6 @@ import { VersioningService, VersioningServiceInterface } from "@services/version
 import { lastValueFrom, Observable } from "rxjs";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import { CUSTOM_TOOLTIP_OPTIONS } from "./token-enrollment.constants";
-
-export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
-  enrollmentOptions: TokenEnrollmentData
-) => {
-  data: T;
-  mapper: TokenApiPayloadMapper<T>;
-} | null;
-
-export type ReopenDialogFn = () => Promise<EnrollmentResponse | null> | Observable<EnrollmentResponse | null>;
-
-export type OnEnrollmentResponseFn = (
-  enrollmentResponse: EnrollmentResponse,
-  enrollmentData: TokenEnrollmentData
-) => Promise<EnrollmentResponse | null>;
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -205,16 +192,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   serial = signal<string | null>(null);
   @ViewChild(UserAssignmentComponent)
   userAssignmentComponent!: UserAssignmentComponent;
-  enrollmentArgsGetter?: enrollmentArgsGetterFn;
-  reopenDialog = linkedSignal<TokenType, ReopenDialogFn | undefined>({
-    source: this.tokenService.selectedTokenType,
-    computation: () => undefined
-  });
-
-  onEnrollmentResponse = linkedSignal<TokenType, OnEnrollmentResponseFn | undefined>({
-    source: this.tokenService.selectedTokenType,
-    computation: () => undefined
-  });
+  protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
   enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
@@ -259,7 +237,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
-  canReopenEnrollmentDialog = computed(() => !!this.reopenDialog() || !!this.enrolledDialogData());
+  canReopenEnrollmentDialog = computed(
+    () => !!this.enrollSwitch()?.currentStrategy()?.reopenDialog() || !!this.enrolledDialogData()
+  );
 
   protected wizard = false;
 
@@ -267,18 +247,6 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     effect(() => {
       this.containerService.selectedContainerSerial.set(this.selectedContainer());
     });
-  }
-
-  updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
-    this.enrollmentArgsGetter = event;
-  }
-
-  updateReopenDialog(event: ReopenDialogFn): void {
-    this.reopenDialog.set(event);
-  }
-
-  updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
-    this.onEnrollmentResponse.set(event);
   }
 
   ngOnInit(): void {
@@ -322,7 +290,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   async reopenEnrollmentDialog() {
-    const reopenFunction = this.reopenDialog();
+    const reopenFunction = this.enrollSwitch()?.currentStrategy()?.reopenDialog();
     if (reopenFunction) {
       const enrollPromise = this._toPromise(reopenFunction());
       if (!enrollPromise) return;
@@ -362,7 +330,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    if (!this.enrollmentArgsGetter) {
+    const strategy: EnrollTokenBase | undefined = this.enrollSwitch()?.currentStrategy();
+    if (!strategy) {
       this.notificationService.warning("Enrollment action is not available for the selected token type.");
       return false;
     }
@@ -397,7 +366,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       serial: this.serial()
     };
 
-    const enrollmentArgs: EnrollTokenArguments | null = this.enrollmentArgsGetter(basicOptions);
+    const enrollmentArgs: EnrollTokenArguments | null = strategy.buildEnrollmentArgs(basicOptions);
     if (!enrollmentArgs) return false;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
@@ -421,9 +390,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
-    const onEnrollmentResponseFn = this.onEnrollmentResponse();
-    if (onEnrollmentResponseFn && enrollmentResponse) {
-      enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
+    if (strategy.onEnrollmentResponse && enrollmentResponse) {
+      enrollmentResponse = await strategy.onEnrollmentResponse(enrollmentResponse, enrollmentArgs.data);
     }
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);

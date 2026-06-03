@@ -27,18 +27,18 @@ import {
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { PushApiPayloadMapper } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
-import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { ReopenDialogAction } from "@components/token/token-enrollment/enroll-token-base";
 import { DialogService } from "@services/dialog/dialog.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { lastValueFrom, Observable, of } from "rxjs";
+import { lastValueFrom, of } from "rxjs";
 import { EnrollPushComponent } from "./enroll-push.component";
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
   return {
     result: { status: true, value: true },
-    detail: { serial } as unknown as EnrollmentResponseDetail,
+    detail: { serial } as EnrollmentResponseDetail,
     type: "push"
   } as EnrollmentResponse;
 }
@@ -48,10 +48,10 @@ function makePollResp(rollout_state: string): PiResponse<Tokens, unknown> {
     result: {
       status: true,
       value: {
-        tokens: [{ rollout_state } as unknown as TokenDetails],
+        tokens: [{ rollout_state } as TokenDetails],
         count: 1,
         current: 1
-      } as Tokens
+      }
     }
   } as PiResponse<Tokens, unknown>;
 }
@@ -91,28 +91,21 @@ describe("EnrollPushComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("ngOnInit emits additionalFormFields and clickEnroll handler", () => {
-    const addSpy = jest.spyOn(component.additionalFormFieldsChange, "emit");
-    const clickSpy = jest.spyOn(component.enrollmentArgsGetterChange, "emit");
-
-    component.ngOnInit();
-
-    expect(addSpy).toHaveBeenCalledWith({});
-    expect(clickSpy).toHaveBeenCalled();
-    const emitted = clickSpy.mock.calls[0][0] as unknown as (
-      opts: TokenEnrollmentData
-    ) => Promise<EnrollmentResponse | null>;
-    expect(typeof emitted).toBe("function");
+  it("buildEnrollmentArgs returns a push-typed payload bound to the push mapper", () => {
+    const args = component.buildEnrollmentArgs({ realm: "r", username: "u" } as TokenEnrollmentData);
+    expect(args).not.toBeNull();
+    expect(args!.data.type).toBe("push");
+    expect(args!.mapper).toBe(TestBed.inject(PushApiPayloadMapper));
   });
 
   it("enrolls, opens dialog, polls to done, closes dialog and returns initResp", async () => {
     const initResp = makeInitResp("S-1");
     const pollResp = makePollResp("enrolled");
 
-    tokenService.enrollToken.mockReturnValue(of(initResp) as Observable<EnrollmentResponse>);
-    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as Observable<PiResponse<Tokens>>);
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp));
 
-    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     const finalResponsePromise = component.onEnrollmentResponse(initResponse as EnrollmentResponse);
@@ -137,10 +130,10 @@ describe("EnrollPushComponent", () => {
 
   it("keeps dialog open when rollout_state is clientwait", async () => {
     const pollResp = makePollResp("clientwait");
-    tokenService.enrollToken.mockReturnValue(of(makeInitResp()) as Observable<EnrollmentResponse>);
-    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as Observable<PiResponse<Tokens>>);
+    tokenService.enrollToken.mockReturnValue(of(makeInitResp()));
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp));
 
-    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
@@ -150,21 +143,21 @@ describe("EnrollPushComponent", () => {
     expect(component.pollResponse()).toEqual(pollResp);
   });
 
-  it("reopenDialogChange provides a Promise callback that re-triggers polling when dialog is not open", async () => {
+  it("strategy.reopenDialog exposes a Promise callback that re-triggers polling when dialog is not open", async () => {
     const initResp = makeInitResp("S-2");
     const pollResp = makePollResp("done");
-    tokenService.enrollToken.mockReturnValue(of(initResp) as Observable<EnrollmentResponse>);
-    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as Observable<PiResponse<Tokens>>);
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp));
 
-    let reopenFn: ReopenDialogFn;
-    component.reopenDialogChange.subscribe((fn: ReopenDialogFn) => (reopenFn = fn));
-
-    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
     fixture.detectChanges();
-    expect(typeof reopenFn!).toBe("function");
+
+    const reopenFn = component.reopenDialog() as ReopenDialogAction | undefined;
+    expect(typeof reopenFn).toBe("function");
+
     dialogService.closeAllDialogs();
     fixture.detectChanges();
     const r2 = await reopenFn!();
@@ -182,10 +175,10 @@ describe("EnrollPushComponent", () => {
   it("stopPolling is invoked when dialog afterClosed emits", async () => {
     const initResp = makeInitResp("S-3");
     const pollResp = makePollResp("done");
-    tokenService.enrollToken.mockReturnValue(of(initResp) as Observable<EnrollmentResponse>);
-    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp) as Observable<PiResponse<Tokens>>);
+    tokenService.enrollToken.mockReturnValue(of(initResp));
+    tokenService.pollTokenRolloutState.mockReturnValue(of(pollResp));
 
-    const enrollmentArgs = component.enrollmentArgsGetter({} as TokenEnrollmentData);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
 
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);

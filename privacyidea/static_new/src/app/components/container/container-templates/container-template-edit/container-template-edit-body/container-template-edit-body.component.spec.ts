@@ -18,30 +18,21 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplate } from "../../../../../services/container/container.service";
-import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body.component";
-import { TokenService, TokenTypeKey } from "@services/token/token.service";
-import { MockSystemService, MockTokenService } from "@testing/mock-services";
-import { SystemService } from "@services/system/system.service";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { SystemService } from "@services/system/system.service";
+import { TokenService } from "@services/token/token.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
+import { ContainerTemplate } from "../../../../../services/container/container.service";
+import { TemplateAddedTokenRowComponent } from "../../container-template-edit-page/template-added-token-row/template-added-token-row.component";
+import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body.component";
 
 const baseTemplate: ContainerTemplate = {
   name: "Test",
   container_type: "generic",
   default: false,
   template_options: {
-    tokens: [
-      { type: "hotp" } as unknown as TokenEnrollmentPayload,
-      { type: "totp" } as unknown as TokenEnrollmentPayload
-    ]
+    tokens: [{ type: "hotp" } as TokenEnrollmentPayload, { type: "totp" } as TokenEnrollmentPayload]
   }
-};
-
-type TestableBody = ContainerTemplateEditBodyComponent & {
-  tokens: () => TokenEnrollmentPayload[];
-  onAddToken: (type: TokenTypeKey | string) => void;
-  onDeleteToken: (index: number) => void;
-  onEditToken: (patch: Partial<TokenEnrollmentPayload>, index: number) => void;
 };
 
 describe("ContainerTemplateEditBodyComponent", () => {
@@ -73,38 +64,82 @@ describe("ContainerTemplateEditBodyComponent", () => {
   });
 
   it("onAddToken appends a new token with the given type", () => {
-    const testable = component as TestableBody;
-    const before = testable.tokens().length;
-    testable.onAddToken("hotp");
-    expect(testable.tokens().length).toBe(before + 1);
-    expect(testable.tokens()[before].type).toBe("hotp");
+    const before = component["tokens"]().length;
+    component["onAddToken"]("hotp");
+    expect(component["tokens"]().length).toBe(before + 1);
+    expect(component["tokens"]()[before].type).toBe("hotp");
     expect(component.template().template_options.tokens.length).toBe(before + 1);
     expect(component.template().template_options.tokens[before].type).toBe("hotp");
   });
 
   it("onDeleteToken removes the token at the given index", () => {
-    const testable = component as TestableBody;
-    const before = testable.tokens().length;
-    testable.onDeleteToken(0);
-    expect(testable.tokens().length).toBe(before - 1);
-    expect(testable.tokens()[0].type).toBe("totp");
+    const before = component["tokens"]().length;
+    component["onDeleteToken"](0);
+    expect(component["tokens"]().length).toBe(before - 1);
+    expect(component["tokens"]()[0].type).toBe("totp");
     expect(component.template().template_options.tokens.length).toBe(before - 1);
     expect(component.template().template_options.tokens[0].type).toBe("totp");
   });
 
-  it("onEditToken merges a patch into the token at the given index", () => {
-    const testable = component as TestableBody;
-    testable.onEditToken({ description: "Edited" }, 0);
-    expect(testable.tokens()[0].description).toBe("Edited");
-    expect(testable.tokens()[0].type).toBe("hotp");
-    expect(component.template().template_options.tokens[0].description).toBe("Edited");
-    expect(component.template().template_options.tokens[0].type).toBe("hotp");
+  it("collectTokens aggregates every row's getCurrentPayload result", () => {
+    const fakeRows = [
+      { getCurrentPayload: () => ({ type: "hotp", user: false }) },
+      { getCurrentPayload: () => ({ type: "totp", user: true }) }
+    ] as unknown as readonly TemplateAddedTokenRowComponent[];
+    Object.defineProperty(component, "tokenRows", { value: () => fakeRows });
+
+    expect(component.collectTokens()).toEqual([
+      { type: "hotp", user: false },
+      { type: "totp", user: true }
+    ]);
   });
 
-  it("onEditToken removes undefined keys from the patched token", () => {
-    const testable = component as TestableBody;
-    testable.onEditToken({ type: undefined }, 0);
-    expect("type" in testable.tokens()[0]).toBe(false);
-    expect("type" in component.template().template_options.tokens[0]).toBe(false);
+  it("collectTokens returns null when any row's strategy form is invalid and iterates every row", () => {
+    const validPayload = { type: "hotp", user: false } as unknown as TokenEnrollmentPayload;
+    const validSpy = jest.fn(() => validPayload);
+    const firstInvalidSpy = jest.fn(() => null);
+    const secondInvalidSpy = jest.fn(() => null);
+    const fakeRows = [
+      { getCurrentPayload: validSpy },
+      { getCurrentPayload: firstInvalidSpy },
+      { getCurrentPayload: secondInvalidSpy }
+    ] as unknown as readonly TemplateAddedTokenRowComponent[];
+    Object.defineProperty(component, "tokenRows", { value: () => fakeRows });
+
+    expect(component.collectTokens()).toBeNull();
+    // All rows are queried even after the first invalid one, so every offending row's strategy
+    // has its forms marked as touched.
+    expect(validSpy).toHaveBeenCalledTimes(1);
+    expect(firstInvalidSpy).toHaveBeenCalledTimes(1);
+    expect(secondInvalidSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("scrollToFirstInvalid scrolls to the first invalid row captured during collectTokens", () => {
+    const scrollSpy = jest.fn();
+    const fakeRows = [
+      { getCurrentPayload: () => ({ type: "hotp", user: false }), scrollIntoView: jest.fn() },
+      { getCurrentPayload: () => null, scrollIntoView: scrollSpy },
+      { getCurrentPayload: () => null, scrollIntoView: jest.fn() }
+    ] as unknown as readonly TemplateAddedTokenRowComponent[];
+    Object.defineProperty(component, "tokenRows", { value: () => fakeRows });
+
+    component.collectTokens();
+    component.scrollToFirstInvalid();
+
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    expect((fakeRows[2] as unknown as { scrollIntoView: jest.Mock }).scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it("scrollToFirstInvalid is a no-op when collectTokens succeeded", () => {
+    const r0 = { getCurrentPayload: () => ({ type: "hotp", user: false }), scrollIntoView: jest.fn() };
+    const r1 = { getCurrentPayload: () => ({ type: "totp", user: false }), scrollIntoView: jest.fn() };
+    Object.defineProperty(component, "tokenRows", {
+      value: () => [r0, r1] as unknown as readonly TemplateAddedTokenRowComponent[]
+    });
+
+    expect(component.collectTokens()).not.toBeNull();
+    component.scrollToFirstInvalid();
+    expect(r0.scrollIntoView).not.toHaveBeenCalled();
+    expect(r1.scrollIntoView).not.toHaveBeenCalled();
   });
 });

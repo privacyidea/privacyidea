@@ -16,15 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TotpApiPayloadMapper, TotpEnrollmentData } from "@app/mappers/token-api-payload/totp-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -44,12 +48,25 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-totp",
   standalone: true,
-  imports: [MatCheckbox, MatFormField, MatHint, MatInput, MatLabel, MatOption, MatSelect, MatError, FormField],
+  imports: [
+    MatCheckbox,
+    MatFormField,
+    MatHint,
+    MatInput,
+    MatLabel,
+    MatOption,
+    MatSelect,
+    MatError,
+    FormField
+  ],
   templateUrl: "./enroll-totp.component.html",
-  styleUrl: "./enroll-totp.component.scss"
+  styleUrl: "./enroll-totp.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollTotpComponent) }
+  ]
 })
-export class EnrollTotpComponent implements OnInit {
-  protected readonly enrollmentMapper = inject(TotpApiPayloadMapper);
+export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
+  protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -64,14 +81,7 @@ export class EnrollTotpComponent implements OnInit {
   readonly timeStepOptions = [30, 60];
 
   enrollmentData = input<TotpEnrollmentData>();
-  wizard = input(false);
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: TotpEnrollmentData;
-      mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
-    } | null
-  >();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("totp"));
@@ -113,6 +123,8 @@ export class EnrollTotpComponent implements OnInit {
   });
 
   constructor() {
+    super();
+
     // Apply policy defaults when rights load
     effect(() => {
       const hashlib = this.authService.rightsWithValues()[TOTP_HASHLIB];
@@ -161,17 +173,7 @@ export class EnrollTotpComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: TotpEnrollmentData;
-    mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<TotpEnrollmentData> | null {
     const enrollmentData: TotpEnrollmentOptions = {
       ...basicOptions,
       type: "totp",
@@ -194,5 +196,5 @@ export class EnrollTotpComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

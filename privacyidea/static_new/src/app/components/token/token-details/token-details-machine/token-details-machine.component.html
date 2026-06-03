@@ -17,75 +17,22 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @for (machine of machineData(); track machine.id) {
-  <div class="info-container responsive-pad-0-1310">
-    <span
-      class="info-title details-key-row"
-      i18n>
-      Offline Parameter
-    </span>
-    <table
-      [dataSource]="dataSourceFromMachine(machine)"
-      aria-label="Token Details Data Table"
-      class="info-table"
-      i18n-aria-label
-      mat-table>
-      <ng-container matColumnDef="value">
-        <td
-          *matCellDef="let machine"
-          class="height-52 width-241"
-          mat-cell>
-          <div class="info-value-container">
-            <mat-list>
-              @for (key of Object.keys(machine); track key) {
-                @if (key === "serial" || key === "application" || key === "type" || key === "id") {
-                } @else if (key === "options") {
-                  @if (machine[key] && Object.keys(machine[key]).length > 0) {
-                    @for (optionsKey of Object.keys(machine[key]); track optionsKey) {
-                      @if (machine[key][optionsKey]) {
-                        <mat-list-item class="height-auto info-row">
-                          <div class="info-span">
-                            <span class="info-span-title"> {{ optionsKey }}: </span>
-                            <span class="info-span-value">{{ machine[key][optionsKey] }}</span>
-                            <mat-divider class="info-divider" />
-                          </div>
-                        </mat-list-item>
-                      }
-                    }
-                  }
-                } @else if (machine[key] !== null && machine[key] !== undefined && machine[key] !== "") {
-                  <mat-list-item class="height-auto info-row">
-                    <div class="info-span">
-                      <span class="info-span-title"> {{ key }}: </span>
-                      <span class="info-span-value">{{ machine[key] }}</span>
-                      <mat-divider class="info-divider" />
-                    </div>
-                  </mat-list-item>
-                }
-              }
-            </mat-list>
-          </div>
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="delete">
-        <td
-          *matCellDef="let element"
-          class="height-52 edit-column-cell"
-          mat-cell>
-          <div class="edit-button-container">
-            <button
-              mat-icon-button
-              class="delete-info-button"
-              (click)="unassignMachine(element.id, element.type)"
-              i18n-aria-label="Delete Information">
-              <mat-icon>delete_outlined</mat-icon>
-            </button>
-          </div>
-        </td>
-      </ng-container>
-      <tr
-        *matRowDef="let row; columns: ['value', 'delete']"
-        class="height-52"
-        mat-row></tr>
-    </table>
-  </div>
+  <section class="machine-panel details-card">
+    <h4 class="details-card-title" i18n>Offline Parameter</h4>
+    <div class="machine-panel-row">
+      <dl class="machine-grid">
+        @for (entry of visibleEntries(machine); track entry[0]) {
+          <dt class="machine-key">{{ entry[0] }}</dt>
+          <dd class="machine-value">{{ entry[1] }}</dd>
+        }
+      </dl>
+      <button
+        mat-icon-button
+        class="machine-delete-button"
+        (click)="unassignMachine(machine.id, machine.type)"
+        i18n-aria-label="Delete Offline Parameter">
+        <mat-icon>delete_outlined</mat-icon>
+      </button>
+    </div>
+  </section>
 }

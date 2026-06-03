@@ -16,26 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  Component,
-  computed,
-  effect,
-  EventEmitter,
-  inject,
-  input,
-  OnInit,
-  output,
-  Output,
-  signal
-} from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper, HotpEnrollmentData } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
@@ -55,10 +45,11 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   imports: [MatCheckbox, MatSelect, MatOption, MatLabel, MatFormField, MatInput, MatHint, MatError, FormField],
   templateUrl: "./enroll-hotp.component.html",
   styleUrl: "./enroll-hotp.component.scss",
-  standalone: true
+  standalone: true,
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollHotpComponent) }]
 })
-export class EnrollHotpComponent implements OnInit {
-  protected readonly enrollmentMapper = inject(HotpApiPayloadMapper);
+export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
+  protected readonly enrollmentMapper: HotpApiPayloadMapper = inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -72,14 +63,7 @@ export class EnrollHotpComponent implements OnInit {
   ];
 
   enrollmentData = input<HotpEnrollmentData | null>();
-  wizard = input(false);
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: HotpEnrollmentData;
-      mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
-    } | null
-  >();
-  additionalFormFieldsChange = output<Record<string, unknown>>();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
   twoStep = computed(() => this.authService.check2Step("hotp"));
@@ -115,7 +99,8 @@ export class EnrollHotpComponent implements OnInit {
   });
 
   constructor() {
-    // Apply policy defaults when rights load
+    super();
+
     effect(() => {
       const hashlib = this.authService.rightsWithValues()[HOTP_HASHLIB];
       if (hashlib) this.hashAlgorithm.set(hashlib);
@@ -157,17 +142,7 @@ export class EnrollHotpComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: HotpEnrollmentData;
-    mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<HotpEnrollmentData> | null {
     const enrollmentData: HotpEnrollmentOptions = {
       ...basicOptions,
       type: "hotp",
@@ -189,5 +164,5 @@ export class EnrollHotpComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

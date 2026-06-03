@@ -1764,6 +1764,12 @@ def get_static_policy_definitions(scope=None):
                                         'users.'),
                                     'mainmenu': [MAIN_MENU.USERS],
                                     'group': GROUP.GENERAL},
+            PolicyAction.GET_USER_INTERNAL_ATTRIBUTES: {
+                'type': 'bool',
+                'desc': _('Admin is allowed to read the privacyIDEA-internal '
+                          'attributes of a user (e.g. fido2_user_id).'),
+                'mainmenu': [MAIN_MENU.USERS],
+                'group': GROUP.USER},
             PolicyAction.MACHINELIST: {'type': 'bool',
                                        'desc': _('The Admin is allowed to list '
                                                  'the machines.'),
@@ -2700,7 +2706,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("Allow the application to choose which token types should be used "
                           "for authentication. Application may set the parameter 'type' in "
-                          "the request. Works with validate/check, validate/samlcheck and "
+                          "the request. Works with validate/check and "
                           "validate/triggerchallenge.")
             },
             PolicyAction.AUTHMAXSUCCESS: {

@@ -19,7 +19,7 @@
 import { computed, Signal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
-import { EnrollmentResponseDetail } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, EnrollmentResponseDetail } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   BulkResult,
@@ -142,9 +142,7 @@ export class MockTokenService implements TokenServiceInterface {
   setRandomPin = jest.fn();
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
-  enrollToken = jest
-    .fn()
-    .mockReturnValue(of({ type: "hotp", detail: { type: "hotp", serial: "X" }, result: { status: true } }));
+  enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as unknown as EnrollmentResponse));
   verifyToken = jest.fn().mockReturnValue(
     of(
       MockPiResponse.fromValue<boolean, EnrollmentResponseDetail>(true, {

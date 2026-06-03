@@ -120,10 +120,10 @@ describe("EnrollMotpComponent", () => {
     });
   });
 
-  describe("enrollmentArgsGetter", () => {
+  describe("buildEnrollmentArgs", () => {
     it("should return null and mark touched when motpPin is invalid", () => {
       component.motpPin.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.motpPinForm().touched()).toBe(true);
     });
@@ -131,7 +131,7 @@ describe("EnrollMotpComponent", () => {
     it("should return null and mark touched when repeat pin does not match", () => {
       component.motpPin.set("abcd");
       component.repeatMotpPin.set("xyzw");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.repeatMotpPinForm().touched()).toBe(true);
     });
@@ -141,7 +141,7 @@ describe("EnrollMotpComponent", () => {
       component.repeatMotpPin.set("abcd");
       component.generateOnServer.set(false);
       component.otpKey.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.otpKeyForm().touched()).toBe(true);
     });
@@ -150,7 +150,7 @@ describe("EnrollMotpComponent", () => {
       component.motpPin.set("abcd");
       component.repeatMotpPin.set("abcd");
       component.generateOnServer.set(true);
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.type).toBe("motp");
       expect(result!.data.generateOnServer).toBe(true);
@@ -163,7 +163,7 @@ describe("EnrollMotpComponent", () => {
       component.repeatMotpPin.set("abcd");
       component.generateOnServer.set(false);
       component.otpKey.set("ABCDEF");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect((result!.data as MotpEnrollmentData).otpKey).toBe("ABCDEF");
       expect(result!.data.generateOnServer).toBe(false);

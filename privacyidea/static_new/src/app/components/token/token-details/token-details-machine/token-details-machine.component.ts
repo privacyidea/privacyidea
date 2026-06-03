@@ -16,13 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CdkTableDataSourceInput } from "@angular/cdk/table";
 import { Component, computed, inject } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
-import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
-import { MatList, MatListItem } from "@angular/material/list";
-import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import {
   MachineService,
@@ -34,19 +30,36 @@ import {
 @Component({
   selector: "app-token-details-machine",
   standalone: true,
-  imports: [MatTableModule, MatColumnDef, MatCell, MatList, MatListItem, MatIconButton, MatIcon, MatDivider, MatRow],
+  imports: [MatIconButton, MatIcon],
   templateUrl: "./token-details-machine.component.html",
   styleUrl: "./token-details-machine.component.scss"
 })
 export class TokenDetailsMachineComponent {
-  protected readonly JSON = JSON;
-  protected readonly Object = Object;
+  private static readonly hiddenKeys = new Set(["serial", "application", "type", "id"]);
+
   private machineService: MachineServiceInterface = inject(MachineService);
   private contentService: ContentServiceInterface = inject(ContentService);
 
   machineData = computed<TokenApplications>(() => this.machineService.tokenApplications() || []);
 
-  unassignMachine(mtid: number, application: "ssh" | "offline"): void {
+  visibleEntries(machine: TokenApplication): Array<[string, string]> {
+    const out: Array<[string, string]> = [];
+    for (const [key, value] of Object.entries(machine)) {
+      if (TokenDetailsMachineComponent.hiddenKeys.has(key)) continue;
+      if (key === "options" && value && typeof value === "object") {
+        for (const [optKey, optValue] of Object.entries(value as Record<string, unknown>)) {
+          if (optValue !== null && optValue !== undefined && optValue !== "") {
+            out.push([optKey, String(optValue)]);
+          }
+        }
+      } else if (value !== null && value !== undefined && value !== "") {
+        out.push([key, String(value)]);
+      }
+    }
+    return out;
+  }
+
+  unassignMachine(mtid: number, application: string): void {
     this.machineService
       .deleteAssignMachineToToken({
         serial: this.contentService.tokenSerial(),
@@ -58,9 +71,5 @@ export class TokenDetailsMachineComponent {
           this.machineService.tokenApplicationResource.reload();
         }
       });
-  }
-
-  dataSourceFromMachine(machine: TokenApplication): CdkTableDataSourceInput<TokenApplication> {
-    return new Array(machine);
   }
 }

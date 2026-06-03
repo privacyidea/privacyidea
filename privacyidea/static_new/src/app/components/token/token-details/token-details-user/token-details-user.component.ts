@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, input, model } from "@angular/core";
+import { Component, computed, inject, Input, signal, Signal, WritableSignal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -25,6 +25,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
+import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
@@ -54,6 +55,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     EditButtonsComponent,
     NgClass,
     ClearableInputComponent,
+    AutofocusDirective,
     CopyableComponent
   ],
   templateUrl: "./token-details-user.component.html",
@@ -67,11 +69,11 @@ export class TokenDetailsUserComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
-  userData = input<EditableElement[]>([]);
-  tokenSerial = input.required<string>();
-  isEditingUser = model.required<boolean>();
-  isEditingInfo = input.required<boolean>();
-  isAnyEditingOrRevoked = input.required<boolean>();
+  @Input() userData = signal<EditableElement[]>([]);
+  @Input() tokenSerial!: WritableSignal<string>;
+  @Input() isEditingUser!: WritableSignal<boolean>;
+  @Input() isEditingInfo!: WritableSignal<boolean>;
+  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   tokenType = computed(() => {
     if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
     const tokenDetail = this.tokenService.tokenDetailResource.value();

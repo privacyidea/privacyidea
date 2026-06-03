@@ -68,6 +68,9 @@ export class MockContentService implements ContentServiceInterface {
   onContainersTemplatesDetails: Signal<boolean> = computed(() =>
     this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)
   );
+  onAnyContainerTemplatesRoute = computed(
+    () => this.onContainersTemplates() || this.onContainersTemplatesCreate() || this.onContainersTemplatesDetails()
+  );
   onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
   onConfigurationSystem: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
   onConfigurationTokenTypes: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);

@@ -73,6 +73,7 @@ export interface PasskeyInitDetail {
     challenge: string;
     rpId: string;
     transaction_id: string;
+    user_verification?: UserVerificationRequirement;
   };
 }
 
@@ -90,7 +91,7 @@ export interface PasskeyCheckParams {
 export interface ValidateServiceInterface {
   testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
-  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
+  authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse>;
 
   authenticateWebAuthn(args: {
     signRequest: WebAuthnSignRequest;
@@ -136,7 +137,7 @@ export class ValidateService implements ValidateServiceInterface {
       );
   }
 
-  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse> {
+  authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
       this.notificationService.error("WebAuthn is not supported by this browser.");
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
@@ -149,7 +150,8 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       switchMap((initResponse) => {
         const data = initResponse.detail.passkey;
-        const userVerification: UserVerificationRequirement = "required";
+        const userVerification: UserVerificationRequirement =
+          (data.user_verification as UserVerificationRequirement) ?? "preferred";
         return from(
           navigator.credentials.get({
             publicKey: {
@@ -162,6 +164,7 @@ export class ValidateService implements ValidateServiceInterface {
           switchMap((credential) => {
             const pkCredential = credential as PublicKeyCredential;
             const response = pkCredential.response as AuthenticatorAssertionResponse;
+            args?.onCredentialId?.(pkCredential.id);
             const params: PasskeyCheckParams = {
               transaction_id: data.transaction_id,
               credential_id: pkCredential.id,

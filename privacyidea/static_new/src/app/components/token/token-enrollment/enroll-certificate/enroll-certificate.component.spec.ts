@@ -118,11 +118,11 @@ describe("EnrollCertComponent", () => {
     });
   });
 
-  describe("enrollmentArgsGetter", () => {
+  describe("buildEnrollmentArgs", () => {
     it("should return null and mark pem touched when uploadRequest selected but pem is empty", () => {
       component.intention.set("uploadRequest");
       component.pem.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.pemForm().touched()).toBe(true);
     });
@@ -130,7 +130,7 @@ describe("EnrollCertComponent", () => {
     it("should return null and mark caConnectorTouched when generate but caConnector empty", () => {
       component.intention.set("generate");
       component.caConnector.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.caConnectorTouched()).toBe(true);
     });
@@ -139,7 +139,7 @@ describe("EnrollCertComponent", () => {
       component.intention.set("generate");
       component.caConnector.set("conn-1");
       component.certTemplate.set("");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.certTemplateTouched()).toBe(true);
     });
@@ -148,7 +148,7 @@ describe("EnrollCertComponent", () => {
       component.intention.set("generate");
       component.caConnector.set("conn-1");
       component.certTemplate.set("t1");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.caConnector).toBe("conn-1");
       expect(result!.data.certTemplate).toBe("t1");
@@ -158,7 +158,7 @@ describe("EnrollCertComponent", () => {
     it("should include pem when intention is uploadCert", () => {
       component.intention.set("uploadCert");
       component.pem.set("-----BEGIN CERTIFICATE-----");
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.pem).toBe("-----BEGIN CERTIFICATE-----");
     });

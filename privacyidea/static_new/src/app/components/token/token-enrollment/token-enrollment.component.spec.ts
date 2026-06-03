@@ -72,6 +72,14 @@ interface TokenEnrollmentComponentInternals {
   handleVerifyEnrollment: (response: EnrollmentResponse | null) => void;
 }
 
+// Mock token enroll strategy
+function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
+  Object.defineProperty(component, "enrollSwitch", {
+    value: () => ({ currentStrategy: () => strategy }),
+    configurable: true
+  });
+}
+
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
   let component: TokenEnrollmentComponent;
@@ -242,7 +250,7 @@ describe("TokenEnrollmentComponent", () => {
       component.setPin.set("1234");
       component.repeatPin.set("1234");
 
-      component.enrollmentArgsGetter = undefined;
+      installStrategy(component, undefined);
 
       await component.enrollToken();
 
@@ -265,7 +273,7 @@ describe("TokenEnrollmentComponent", () => {
 
     it("Default values for enrollment", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
-      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
 
       component.enrollToken();
 
@@ -286,7 +294,7 @@ describe("TokenEnrollmentComponent", () => {
 
     it("Setting validity dates works", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
-      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
       component.selectedStartDate.set(new Date("2026-01-01"));
       component.selectedEndDate.set(new Date("2026-12-31"));
 
@@ -314,7 +322,7 @@ describe("TokenEnrollmentComponent", () => {
           data: { type: "totp" },
           mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate 2-step init enrollment response
         const enrollResponse = {
@@ -364,7 +372,7 @@ describe("TokenEnrollmentComponent", () => {
 
         const error = { error: { result: { error: { message: "nope" } } } };
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({});
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
         tokenService.enrollToken.mockReturnValue(Promise.reject(error));
 
         await component.enrollToken().catch(() => undefined);
@@ -381,7 +389,7 @@ describe("TokenEnrollmentComponent", () => {
             "2stepinit": true
           }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate 2-step init enrollment response
         const twoStepDetail = {
@@ -448,7 +456,7 @@ describe("TokenEnrollmentComponent", () => {
             "2stepinit": true
           }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate 2-step init enrollment response
         const twoStepDetail = {
@@ -525,7 +533,7 @@ describe("TokenEnrollmentComponent", () => {
           data: { type: "totp" },
           mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate init enrollment response
         const completeDetail = {
@@ -618,7 +626,7 @@ describe("TokenEnrollmentComponent", () => {
 
     it("reopenEnrollmentDialog: uses reopen function when provided", () => {
       const fn = jest.fn().mockReturnValue(of(null));
-      component.updateReopenDialog(fn);
+      installStrategy(component, { reopenDialog: () => fn });
       component.reopenEnrollmentDialog();
 
       expect(fn).toHaveBeenCalledTimes(1);

@@ -85,8 +85,6 @@ describe("SystemConfigComponent", () => {
     expect(component.params().IncFailCountOnFalsePin).toBe(false);
     expect(component.params().no_auth_counter).toBe(true);
     expect(component.params().PrependPin).toBe(false);
-    expect(component.params().ReturnSamlAttributes).toBe(true);
-    expect(component.params().ReturnSamlAttributesOnFail).toBe(false);
     expect(component.params().AutoResync).toBe(true);
     expect(component.params().UiLoginDisplayHelpButton).toBe(false);
     expect(component.params().UiLoginDisplayRealmBox).toBe(true);
@@ -99,8 +97,6 @@ describe("SystemConfigComponent", () => {
     expect(component.params().IncFailCountOnFalsePin).toBe(false);
     expect(component.params().no_auth_counter).toBe(true);
     expect(component.params().PrependPin).toBe(false);
-    expect(component.params().ReturnSamlAttributes).toBe(true);
-    expect(component.params().ReturnSamlAttributesOnFail).toBe(false);
     expect(component.params().AutoResync).toBe(true);
     expect(component.params().UiLoginDisplayHelpButton).toBe(false);
     expect(component.params().UiLoginDisplayRealmBox).toBe(true);

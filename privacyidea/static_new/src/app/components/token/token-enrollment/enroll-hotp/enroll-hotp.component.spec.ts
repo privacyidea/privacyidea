@@ -18,8 +18,8 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
 import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
@@ -31,7 +31,9 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
   let fixture: ComponentFixture<EnrollHotpComponent>;
+  let tokenService: MockTokenService;
   let authService: MockAuthService;
+  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -49,23 +51,16 @@ describe("EnrollHotpComponent", () => {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
 
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
-    jest.spyOn(component.additionalFormFieldsChange, "emit");
-    jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
   }
 
   it("should create", () => {
     createAndInit();
     expect(component).toBeTruthy();
-  });
-
-  it("emits the enrollmentArgsGetter on init", () => {
-    createAndInit();
-
-    expect(component.additionalFormFieldsChange.emit).toHaveBeenCalledTimes(1);
-    expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 
   it("Check default values are set correctly on init", () => {
@@ -221,8 +216,8 @@ describe("EnrollHotpComponent", () => {
     component.otpLength.set(8);
     component.hashAlgorithm.set("sha256");
 
-    const basic: TokenEnrollmentData = { type: "hotp", realm: "r", user: "u" };
-    const args = component.enrollmentArgsGetter(basic);
+    const basic = { realm: "r", username: "u" } as TokenEnrollmentData;
+    const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({
@@ -244,8 +239,8 @@ describe("EnrollHotpComponent", () => {
     component.otpKey.set("  ABCDEFGHIJKLMNOP  ");
     fixture.detectChanges();
 
-    const basic: TokenEnrollmentData = { type: "hotp", foo: "bar" };
-    const args = component.enrollmentArgsGetter(basic);
+    const basic = { foo: "bar" } as TokenEnrollmentData;
+    const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({

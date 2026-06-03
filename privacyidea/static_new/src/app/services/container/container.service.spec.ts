@@ -409,7 +409,7 @@ describe("ContainerService", () => {
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
-    containerService.eventPageSize.set(7);
+    containerService.eventPageSize.set(-1);
     expect(containerService.pageSize()).toBe(10);
   });
 

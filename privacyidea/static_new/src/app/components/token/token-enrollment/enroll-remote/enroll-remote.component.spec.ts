@@ -93,15 +93,15 @@ describe("EnrollRemoteComponent", () => {
     });
   });
 
-  describe("enrollmentArgsGetter", () => {
+  describe("buildEnrollmentArgs", () => {
     it("should return null when no remoteServer is selected", () => {
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
     });
 
     it("should return null and mark fields touched when required fields are empty", () => {
       component.remoteServer.set(mockRemoteServer);
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.remoteSerialForm().touched()).toBe(true);
       expect(component.remoteUserForm().touched()).toBe(true);
@@ -116,7 +116,7 @@ describe("EnrollRemoteComponent", () => {
       component.remoteRealm.set("realm1");
       component.checkPinLocally.set(true);
 
-      const result = component.enrollmentArgsGetter(basicOptions);
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.type).toBe("remote");
       expect(result!.data.remoteServer).toEqual(mockRemoteServer);

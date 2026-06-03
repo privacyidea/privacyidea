@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
@@ -71,11 +71,11 @@ describe("TokenDetailsInfoComponent", () => {
     const infoArr: EditableElement<Record<string, string>>[] = [makeInfoEl({ a: "1" })];
     const detailArr: EditableElement[] = [makeDetailEl("info", {})];
 
-    fixture.componentRef.setInput("infoData", infoArr as unknown as EditableElement[]);
-    fixture.componentRef.setInput("detailData", detailArr as unknown as EditableElement[]);
-    fixture.componentRef.setInput("isAnyEditingOrRevoked", false);
-    fixture.componentRef.setInput("isEditingInfo", false);
-    fixture.componentRef.setInput("isEditingUser", false);
+    component.infoData = signal(infoArr as unknown as EditableElement[]) as WritableSignal<EditableElement[]>;
+    component.detailData = signal(detailArr as unknown as EditableElement[]) as WritableSignal<EditableElement[]>;
+    component.isAnyEditingOrRevoked = signal(false);
+    component.isEditingInfo = signal(false);
+    component.isEditingUser = signal(false);
 
     fixture.detectChanges();
   });
@@ -125,6 +125,18 @@ describe("TokenDetailsInfoComponent", () => {
     expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" });
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
     expect(component.isEditingInfo()).toBe(false);
+  });
+
+  it("template cast helpers pass values through and hide timestamp keys", () => {
+    expect(component.asInfoMap(undefined)).toEqual({});
+    expect(component.asInfoMap({ a: "1" })).toEqual({ a: "1" });
+
+    const el = makeInfoEl({ a: "1" });
+    expect(component.asInfoElement(el as unknown as EditableElement)).toBe(el);
+
+    expect(component.visibleInfoKeys({ a: "1", creation_date: "x", assignment_date: "y", last_auth: "z" })).toEqual([
+      "a"
+    ]);
   });
 
   it("deleteInfo calls service, marks info section as editing, and reloads", () => {
