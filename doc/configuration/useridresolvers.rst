@@ -226,17 +226,18 @@ privacyIDEA. privacyIDEA knows the following attributes:
  * ``accountExpires``.
 
 The above attributes are used for privacyIDEA's normal functionality and are
-listed in the :ref:`user_details`. However, with a SAML authentication request,
-the user attributes can be returned. (see :ref:`return_saml_attributes`). To return
-arbitrary attributes from the LDAP You can add additional keys to the
-attribute mapping with a key, you make up and the LDAP attribute like::
+listed in the :ref:`user_details`. To return additional attributes alongside
+the authentication response, enable the :ref:`policy_add_user_in_response`
+policy on :http:post:`/validate/check`. To return arbitrary attributes from
+LDAP, you can add additional keys to the attribute mapping with a key you
+make up and the LDAP attribute, like::
 
    "homedir": "homeDirectory",
    "studentID": "objectGUID"
 
 ``"homeDirectory"`` and ``"objectGUID"`` being the attributes in the LDAP directory
-and ``"homedir"`` and ``"studentID"`` the keys returned in a SAML authentication
-request.
+and ``"homedir"`` and ``"studentID"`` the keys returned under ``detail.user``
+in the authentication response.
 
 Multivalue Attributes
 """""""""""""""""""""
@@ -250,9 +251,9 @@ would return the emails and the group memberships of the user from the LDAP serv
 .. note:: If the ``MULTIVALUEATTRIBUTES`` is left blank the default setting is "mobile". I.e. the
    mobile number will be returned as a list.
 
-The ``MULTIVALUEATTRIBUTES`` can be well used with the ``samlcheck`` endpoint (see :ref:`rest_validate`)
-or with the policy
-:ref:`policy_add_user_in_response`.
+The ``MULTIVALUEATTRIBUTES`` can be well used with the policy
+:ref:`policy_add_user_in_response` to return the values in the
+authentication response (see :ref:`rest_validate`).
 
 UID Type
 """"""""
