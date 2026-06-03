@@ -10,6 +10,10 @@ import sqlalchemy as sa
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+# Same type the model uses: BigInteger everywhere, but INTEGER on SQLite so the
+# primary key becomes "INTEGER PRIMARY KEY" and SQLite auto-assigns it via rowid.
+from privacyidea.models.utils import BigIntegerType
+
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
 down_revision = '7d4e9b2c1a3f'
@@ -31,11 +35,11 @@ def upgrade():
             # Postgres needs the column default wired to the sequence so raw
             # INSERTs (e.g. our data-migration block below) get an id.
             event_id_col = sa.Column(
-                'event_id', sa.BigInteger(), nullable=False,
+                'event_id', BigIntegerType, nullable=False,
                 server_default=sa.text("nextval('authentication_log_seq')"),
             )
         else:
-            event_id_col = sa.Column('event_id', sa.BigInteger(), nullable=False, autoincrement=True)
+            event_id_col = sa.Column('event_id', BigIntegerType, nullable=False, autoincrement=True)
 
         op.create_table(
             'authentication_log',

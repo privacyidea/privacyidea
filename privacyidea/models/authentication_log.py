@@ -27,9 +27,9 @@ from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType
 
 class AuthenticationLog(MethodsMixin, db.Model):
     """
-    Stores authentication events per user identity. An entry may be updated
-    during the lifetime of a single authentication request; the timestamp
-    therefore reflects the time of the final write.
+    Append-only log of authentication events: every authenticated HTTP request produces exactly one row.
+    Several rows may share a ``transaction_id`` to correlate the multiple requests of one logical authentication
+    attempt (e.g. a challenge trigger and its later response) at query time.
     """
     __tablename__ = "authentication_log"
     __table_args__ = (
@@ -42,7 +42,7 @@ class AuthenticationLog(MethodsMixin, db.Model):
     uid: Mapped[str | None] = mapped_column(Unicode(1024))
     realm: Mapped[str | None] = mapped_column(Unicode(1024))
     event_type: Mapped[str] = mapped_column(Unicode(1024), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(Unicode(1024))
     client_label: Mapped[str | None] = mapped_column(Unicode(1024))
     serial: Mapped[str | None] = mapped_column(Unicode(1024))
