@@ -679,6 +679,16 @@ def _handle_serial_auth(context: dict, serial: str):
         except ResourceNotFoundError:
             raise ParameterError(_("Given serial does not belong to given user!"))
 
+    # Resolve the token owner so the auth log, audit log and per-user policies see the
+    # authenticating user even when the request only carries a serial.
+    if not user or not user.exist():
+        token = get_one_token(serial=serial, silent_fail=True)
+        if token and token.user:
+            user = token.user
+            request.User = user
+            context["user"] = user
+            context["options"]["user"] = user
+
     # Perform Check
     if not otp_only:
         success, details = check_serial_pass(serial, password, options=context["options"])
