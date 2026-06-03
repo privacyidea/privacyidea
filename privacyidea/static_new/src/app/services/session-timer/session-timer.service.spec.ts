@@ -21,7 +21,7 @@ import { TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { MockNotificationService } from "@testing/mock-services";
+import { MockNotificationService, MockRouter } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { SessionTimerService } from "./session-timer.service";
 
@@ -37,7 +37,7 @@ interface SessionTimerInternals {
 describe("SessionTimerService", () => {
   let service: SessionTimerService;
   let internals: SessionTimerInternals;
-  let router: { navigate: jest.Mock };
+  let router: MockRouter;
   let authService: MockAuthService;
   let notify: MockNotificationService;
 
@@ -45,17 +45,16 @@ describe("SessionTimerService", () => {
     jest.useFakeTimers();
     jest.setSystemTime(Date.parse("2025-01-01T00:00:00.000Z"));
 
-    router = { navigate: jest.fn() };
-
     TestBed.configureTestingModule({
       providers: [
-        SessionTimerService,
-        { provide: Router, useValue: router },
+        { provide: Router, useClass: MockRouter },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        SessionTimerService
       ]
     });
 
+    router = TestBed.inject(Router) as unknown as MockRouter;
     notify = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     service = TestBed.inject(SessionTimerService);
     internals = service as unknown as SessionTimerInternals;
@@ -137,7 +136,7 @@ describe("SessionTimerService", () => {
 
   it("startTimer schedules timeout and triggers logout on expiry", () => {
     authService.logoutTimeS.set(2);
-    const clearIntervalSpy = jest.spyOn(global, "clearInterval");
+    const clearIntervalSpy = jest.spyOn(globalThis, "clearInterval");
 
     service.startRefreshingRemainingTime();
     service.startTimer();

@@ -148,7 +148,8 @@ describe("EnrollWebauthnComponent", () => {
   });
 
   it("should notify when WebAuthn API is unavailable", async () => {
-    (navigator as Navigator & { credentials: CredentialsContainer | undefined }).credentials = undefined;
+    (navigator as Navigator & { credentials: CredentialsContainer | undefined }).credentials =
+      undefined as unknown as CredentialsContainer;
     await detectChangesStable();
     const enrollemntData = component.enrollmentArgsGetter(BASIC);
     expect(enrollemntData).toBeNull();

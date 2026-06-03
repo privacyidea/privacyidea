@@ -21,7 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { NavigationEnd, Router } from "@angular/router";
+import { Router } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailToken, ContainerService } from "@services/container/container.service";
@@ -38,6 +38,7 @@ import {
   MockDialogService,
   MockLocalService,
   MockNotificationService,
+  MockRouter,
   MockTableUtilsService,
   MockTokenService
 } from "@testing/mock-services";
@@ -46,22 +47,12 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Subject, of } from "rxjs";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
 
-const routerEvents$ = new Subject<NavigationEnd>();
-routerEvents$.next(new NavigationEnd(1, "/", "/"));
-const routerMock = {
-  navigate: jest.fn().mockResolvedValue(true),
-  url: "/",
-  events: routerEvents$
-} as unknown as jest.Mocked<Router>;
-
 describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
   let component: ContainerDetailsTokenTableComponent;
 
   let containerServiceMock: MockContainerService;
   let tokenServiceMock: MockTokenService;
-  const tableUtilsMock = new MockTableUtilsService();
-  const notificationServiceMock = new MockNotificationService();
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
 
@@ -75,14 +66,13 @@ describe("ContainerDetailsTokenTableComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: TokenService, useClass: MockTokenService },
-        { provide: TableUtilsService, useValue: tableUtilsMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
-        { provide: Router, useValue: routerMock },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: Router, useClass: MockRouter },
         { provide: UserService, useClass: class {} },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
-        MockLocalService,
-        MockNotificationService
+        MockLocalService
       ]
     }).compileComponents();
 

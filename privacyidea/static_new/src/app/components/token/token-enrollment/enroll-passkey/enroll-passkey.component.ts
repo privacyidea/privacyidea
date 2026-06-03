@@ -220,7 +220,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const attestationResponse = publicKeyCred.response as AuthenticatorAttestationResponse;
     const passkeyFinalizeData: PasskeyFinalizeData = {
       ...enrollmentInitData,
-      transaction_id: detail["transaction_id"]!,
+      transaction_id: detail["transaction_id"] as string,
       serial: detail.serial,
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),

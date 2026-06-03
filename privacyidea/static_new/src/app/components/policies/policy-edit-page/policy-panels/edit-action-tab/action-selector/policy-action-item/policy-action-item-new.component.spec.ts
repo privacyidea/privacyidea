@@ -23,12 +23,13 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
+import { MockPolicyService } from "@testing/mock-services";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
 
 describe("PolicyActionItemComponent", () => {
   let component: PolicyActionItemComponent;
   let fixture: ComponentFixture<PolicyActionItemComponent>;
-  let policyServiceMock: jest.Mocked<PolicyService>;
+  let policyServiceMock: MockPolicyService;
 
   const mockActionDetail: PolicyActionDetail = {
     type: "str",
@@ -44,13 +45,9 @@ describe("PolicyActionItemComponent", () => {
   };
 
   beforeEach(async () => {
-    policyServiceMock = {
-      actionValueIsValid: jest.fn().mockReturnValue(true)
-    } as unknown as jest.Mocked<PolicyService>;
-
     await TestBed.configureTestingModule({
       imports: [PolicyActionItemComponent, MatSelectModule],
-      providers: [{ provide: PolicyService, useValue: policyServiceMock }]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(PolicyActionItemComponent, {
         set: {
@@ -58,6 +55,8 @@ describe("PolicyActionItemComponent", () => {
         }
       })
       .compileComponents();
+
+    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
 
     fixture = TestBed.createComponent(PolicyActionItemComponent);
     component = fixture.componentInstance;

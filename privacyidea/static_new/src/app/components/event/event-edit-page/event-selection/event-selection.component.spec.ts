@@ -147,14 +147,14 @@ describe("EventsSelectionComponent", () => {
   });
 
   it("should update searchTerm and lastSearchTerm on input changes", () => {
-    const event = { target: { value: "foobar" } };
+    const event = { target: { value: "foobar" } } as unknown as Event;
     component.onSearchInputChanges(event);
     expect(component.lastSearchTerm).toBe("foobar");
     expect(component.searchTerm()).toBe("foobar");
   });
 
   it("should handle empty string in onSearchInputChanges", () => {
-    const event = { target: { value: "" } };
+    const event = { target: { value: "" } } as unknown as Event;
     component.onSearchInputChanges(event);
     expect(component.lastSearchTerm).toBe("");
     expect(component.searchTerm()).toBe("");

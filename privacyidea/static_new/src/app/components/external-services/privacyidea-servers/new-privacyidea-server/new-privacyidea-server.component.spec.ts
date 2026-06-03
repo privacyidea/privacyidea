@@ -83,7 +83,9 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should initialize form for edit mode", () => {
-    privacyideaServerServiceMock.remoteServerOptions = signal([{ identifier: "test", url: "http://test", tls: true }]);
+    privacyideaServerServiceMock.remoteServerOptions = signal([
+      { identifier: "test", id: "test", name: "test", url: "http://test", tls: true }
+    ]);
 
     paramMapSubject.next(convertToParamMap({ identifier: "test" }));
 
@@ -154,13 +156,13 @@ describe("NewPrivacyideaServerComponent", () => {
 
   it("test should set isTesting flag while waiting and reset on completion", async () => {
     component.privacyideaModel.update((m) => ({ ...m, identifier: "t", url: "http://t" }));
-    let resolveFn: () => void;
+    let resolveFn: (value: boolean) => void;
     privacyideaServerServiceMock.testPrivacyideaServer = jest.fn(
-      () => new Promise<void>((resolve) => (resolveFn = resolve))
+      () => new Promise<boolean>((resolve) => (resolveFn = resolve))
     );
     component.test();
     expect(component.isTesting()).toBe(true);
-    resolveFn!();
+    resolveFn!(true);
     await Promise.resolve();
     await Promise.resolve();
     expect(component.isTesting()).toBe(false);

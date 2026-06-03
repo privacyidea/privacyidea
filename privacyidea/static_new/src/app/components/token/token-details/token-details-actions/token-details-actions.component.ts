@@ -169,7 +169,7 @@ export class TokenDetailsActionsComponent {
     const data: SshMachineAssignDialogData = {
       tokenSerial: this.tokenSerial(),
       tokenType: this.tokenType(),
-      tokenDetails: this.tokenService.getTokenDetails(this.tokenSerial())
+      tokenDetails: this.token() as TokenDetails
     };
     this.dialogService
       .openDialog({ component: TokenSshMachineAssignDialogComponent, data: data })

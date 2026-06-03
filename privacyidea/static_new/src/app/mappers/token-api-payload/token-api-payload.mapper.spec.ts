@@ -667,7 +667,7 @@ describe("PaperApiPayloadMapper", () => {
   });
 
   it("fromApiPayload maps back", () => {
-    const result = mapper.fromApiPayload({ otplen: 7, otpcount: 20 });
+    const result = mapper.fromApiPayload({ type: "paper", otplen: 7, otpcount: 20 });
     expect(result.otpLength).toBe(7);
     expect(result.otpCount).toBe(20);
   });
@@ -1144,7 +1144,7 @@ describe("TanApiPayloadMapper", () => {
   });
 
   it("fromApiPayload maps back", () => {
-    const r = mapper.fromApiPayload({ tancount: 5, tanlength: 6 });
+    const r = mapper.fromApiPayload({ type: "tan", tancount: 5, tanlength: 6 });
     expect(r.tanCount).toBe(5);
     expect(r.tanLength).toBe(6);
   });

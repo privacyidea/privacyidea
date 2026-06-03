@@ -123,7 +123,13 @@ describe("PrivacyideaServerService", () => {
   });
 
   it("should test privacyIDEA server", async () => {
-    const params = { url: "http://test" };
+    const params: PrivacyideaServer = {
+      identifier: "test",
+      id: "test",
+      name: "test",
+      url: "http://test",
+      tls: false
+    };
     const promise = service.testPrivacyideaServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
@@ -136,7 +142,13 @@ describe("PrivacyideaServerService", () => {
   });
 
   it("should show error notification when privacyIDEA test returns false", async () => {
-    const params = { url: "http://test" };
+    const params: PrivacyideaServer = {
+      identifier: "test",
+      id: "test",
+      name: "test",
+      url: "http://test",
+      tls: false
+    };
     const promise = service.testPrivacyideaServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
@@ -148,7 +160,13 @@ describe("PrivacyideaServerService", () => {
   });
 
   it("should show error notification when privacyIDEA test request fails", async () => {
-    const params = { url: "http://test" };
+    const params: PrivacyideaServer = {
+      identifier: "test",
+      id: "test",
+      name: "test",
+      url: "http://test",
+      tls: false
+    };
     const promise = service.testPrivacyideaServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);

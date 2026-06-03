@@ -21,7 +21,7 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatInput } from "@angular/material/input";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/select";
-import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
@@ -45,7 +45,7 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
   templateUrl: "./token-verify-enrollment.component.html",
   styleUrl: "./token-verify-enrollment.component.scss"
 })
-export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
+export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData, EnrollmentResponse> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
@@ -85,7 +85,7 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Toke
     this.tokenService.verifyToken(verifyData).subscribe({
       next: (response) => {
         if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {
-          this.dialogRef.close(response);
+          this.dialogRef.close(response as unknown as EnrollmentResponse);
         }
       }
     });

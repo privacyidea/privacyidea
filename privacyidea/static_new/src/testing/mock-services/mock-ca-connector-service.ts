@@ -19,6 +19,7 @@
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
+  CaConnector,
   CaConnectors,
   CaConnectorServiceInterface,
   CaSpecificOptions
@@ -32,13 +33,8 @@ export class MockCaConnectorService implements CaConnectorServiceInterface {
 
   caConnectors = signal<CaConnectors>([]);
 
-  postCaConnector = jest.fn(async (): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  deleteCaConnector = jest.fn(async (): Promise<void> => {
-    return Promise.resolve();
-  });
+  postCaConnector = jest.fn<Promise<void>, [CaConnector]>(() => Promise.resolve());
+  deleteCaConnector = jest.fn<Promise<void>, [string]>(() => Promise.resolve());
 
   getCaSpecificOptions = jest.fn(async (): Promise<CaSpecificOptions | undefined> => {
     return Promise.resolve({});

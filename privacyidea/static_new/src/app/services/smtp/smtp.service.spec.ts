@@ -25,7 +25,8 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { SmtpServer, SmtpService } from "./smtp.service";
 
 describe("SmtpService", () => {
@@ -35,23 +36,13 @@ describe("SmtpService", () => {
   let contentService: MockContentService;
 
   beforeEach(() => {
-    const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({})
-    };
-    const notificationServiceMock = {
-      success: jest.fn(),
-      error: jest.fn(),
-      warning: jest.fn(),
-      handleResourceError: jest.fn()
-    };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         SmtpService,
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
@@ -132,7 +123,7 @@ describe("SmtpService", () => {
   });
 
   it("should test SMTP server", async () => {
-    const params = { sender: "test@test.com" };
+    const params = { ...buildSmtpServer(), sender: "test@test.com", recipient: "to@test.com" };
     const promise = service.testSmtpServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/send_test_email`);
@@ -145,7 +136,7 @@ describe("SmtpService", () => {
   });
 
   it("should show error notification when SMTP test request fails", async () => {
-    const params = { sender: "test@test.com" };
+    const params = { ...buildSmtpServer(), sender: "test@test.com", recipient: "to@test.com" };
     const promise = service.testSmtpServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/send_test_email`);

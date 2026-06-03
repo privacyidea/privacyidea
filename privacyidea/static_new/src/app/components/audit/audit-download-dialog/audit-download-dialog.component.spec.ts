@@ -46,9 +46,9 @@ describe("AuditDownloadDialogComponent", () => {
   });
 
   it("should close the dialog when the Cancel button is clicked", () => {
-    const buttons = fixture.nativeElement.querySelectorAll("button");
-    const cancelButton = Array.from(buttons).find((b: HTMLButtonElement) =>
-      b.textContent.includes("Cancel")
+    const buttons = fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLButtonElement>;
+    const cancelButton = Array.from(buttons).find((b) =>
+      b.textContent?.includes("Cancel")
     ) as HTMLButtonElement;
     expect(cancelButton).toBeTruthy();
     cancelButton.click();
@@ -57,9 +57,9 @@ describe("AuditDownloadDialogComponent", () => {
   });
 
   it("should close the dialog with true when the Start Download button is clicked", () => {
-    const buttons = fixture.nativeElement.querySelectorAll("button");
-    const downloadButton = Array.from(buttons).find((b: HTMLButtonElement) =>
-      b.textContent.includes("Proceed")
+    const buttons = fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLButtonElement>;
+    const downloadButton = Array.from(buttons).find((b) =>
+      b.textContent?.includes("Proceed")
     ) as HTMLButtonElement;
     expect(downloadButton).toBeTruthy();
     downloadButton.click();

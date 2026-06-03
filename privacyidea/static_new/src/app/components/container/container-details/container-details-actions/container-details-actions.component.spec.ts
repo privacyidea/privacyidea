@@ -19,7 +19,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { NavigationEnd, Router } from "@angular/router";
+import { Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ContainerRegisterData,
@@ -33,21 +33,13 @@ import {
   MockContainerService,
   MockContentService,
   MockLocalService,
-  MockNotificationService
+  MockNotificationService,
+  MockRouter
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { of, Subject } from "rxjs";
+import { of } from "rxjs";
 import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
-
-const routerEvents$ = new Subject<NavigationEnd>();
-routerEvents$.next(new NavigationEnd(1, "/", "/"));
-const routerMock = {
-  navigate: jest.fn().mockResolvedValue(true),
-  navigateByUrl: jest.fn().mockResolvedValue(true),
-  url: "/",
-  events: routerEvents$
-} as unknown as jest.Mocked<Router>;
 
 describe("ContainerDetailsActionsComponent", () => {
   let component: ContainerDetailsActionsComponent;
@@ -76,9 +68,8 @@ describe("ContainerDetailsActionsComponent", () => {
         { provide: MatDialog, useValue: { open: dialogOpen, closeAll: dialogCloseAll } },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: Router, useValue: routerMock },
-        MockLocalService,
-        MockNotificationService
+        { provide: Router, useClass: MockRouter },
+        MockLocalService
       ]
     }).compileComponents();
 

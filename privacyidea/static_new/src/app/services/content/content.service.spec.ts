@@ -42,7 +42,7 @@ describe("ContentService", () => {
     events$ = new Subject<NavigationEnd>();
     mockRouter = {
       url: "/start",
-      events: events$.asObservable(),
+      events: events$,
       navigateByUrl: jest.fn(async (url: string) => {
         emitNav(url);
         return true;

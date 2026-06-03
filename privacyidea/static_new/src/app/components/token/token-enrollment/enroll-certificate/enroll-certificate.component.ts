@@ -89,7 +89,7 @@ export class EnrollCertificateComponent implements OnInit {
       (this.systemService.caConnectorResource?.hasValue()
         ? this.systemService.caConnectorResource
             ?.value()
-            ?.result?.value.map((config: CaConnector) => config.connectorname)
+            ?.result?.value?.map((config: CaConnector) => config.connectorname)
         : []) || []
   );
 

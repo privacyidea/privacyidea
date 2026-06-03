@@ -33,7 +33,7 @@ export class MockDialogService implements DialogServiceInterface {
   });
 
   openDialog = jest.fn().mockImplementation(() => {
-    this.lastDialogRef = new MockMatDialogRef();
+    this.lastDialogRef = new MockMatDialogRef() as unknown as MatDialogRef<AbstractDialogComponent>;
     return this.lastDialogRef;
   });
 

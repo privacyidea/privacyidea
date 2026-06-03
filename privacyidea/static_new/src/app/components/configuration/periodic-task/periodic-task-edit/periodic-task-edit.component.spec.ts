@@ -40,16 +40,13 @@ describe("PeriodicTaskEditComponent", () => {
   let router: Router;
 
   const createComponent = async (paramMap: Record<string, string>, tasks: PeriodicTask[] = []) => {
-    const periodicTaskMock = new MockPeriodicTaskService();
-    if (tasks.length > 0) periodicTaskMock.setPeriodicTasks(tasks);
-
     await TestBed.configureTestingModule({
       imports: [PeriodicTaskEditComponent],
       providers: [
         provideHttpClient(),
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap(paramMap)) } },
-        { provide: PeriodicTaskService, useValue: periodicTaskMock },
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
@@ -58,6 +55,7 @@ describe("PeriodicTaskEditComponent", () => {
     }).compileComponents();
 
     periodicTaskService = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
+    if (tasks.length > 0) periodicTaskService.setPeriodicTasks(tasks);
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     router = TestBed.inject(Router);

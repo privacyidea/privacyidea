@@ -60,8 +60,28 @@ describe("SmtpServersComponent", () => {
 
     smtpServiceMock = TestBed.inject(SmtpService) as unknown as MockSmtpService;
     smtpServiceMock.smtpServers.set([
-      { identifier: "server1", server: "smtp1.com", sender: "s1@test.com", tls: true, enqueue_job: false },
-      { identifier: "server2", server: "smtp2.com", sender: "s2@test.com", tls: false, enqueue_job: true }
+      {
+        identifier: "server1",
+        server: "smtp1.com",
+        sender: "s1@test.com",
+        tls: true,
+        enqueue_job: false,
+        port: 25,
+        timeout: 10,
+        smime: false,
+        dont_send_on_error: false
+      },
+      {
+        identifier: "server2",
+        server: "smtp2.com",
+        sender: "s2@test.com",
+        tls: false,
+        enqueue_job: true,
+        port: 25,
+        timeout: 10,
+        smime: false,
+        dont_send_on_error: false
+      }
     ]);
 
     fixture = TestBed.createComponent(SmtpServersComponent);

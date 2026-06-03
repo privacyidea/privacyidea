@@ -26,22 +26,6 @@ interface Base64PrivateAccess {
   uint6ToB64(nUint6: number): number;
 }
 
-interface GlobalBase64Polyfill {
-  atob?: (data: string) => string;
-  btoa?: (data: string) => string;
-}
-
-beforeAll(() => {
-  const g = globalThis as unknown as GlobalBase64Polyfill;
-
-  if (typeof g.atob === "undefined") {
-    g.atob = (data: string) => Buffer.from(data, "base64").toString("binary");
-  }
-  if (typeof g.btoa === "undefined") {
-    g.btoa = (data: string) => Buffer.from(data, "binary").toString("base64");
-  }
-});
-
 describe("Base64Service", () => {
   let service: Base64Service;
 

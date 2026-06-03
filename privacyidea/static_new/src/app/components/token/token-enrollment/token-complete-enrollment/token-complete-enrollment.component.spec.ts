@@ -20,7 +20,7 @@
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { EnrollmentResponse } from "@mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";

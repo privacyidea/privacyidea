@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
@@ -27,27 +26,28 @@ import { SubscriptionExpiryService } from "./subscription-expiry.service";
 import { Subscription, SubscriptionService } from "./subscription.service";
 
 function makeSubs(value: Record<string, Partial<Subscription>>) {
-  return MockPiResponse.fromValue<Record<string, Partial<Subscription>>>(value);
+  return MockPiResponse.fromValue<Record<string, Subscription>>(value as Record<string, Subscription>);
 }
 
 describe("SubscriptionExpiryService", () => {
   let dialogMock: { open: jest.Mock };
-  let authMock: Pick<MockAuthService, "isAuthenticated">;
+  let authMock: MockAuthService;
   let subsMock: MockSubscriptionService;
 
   beforeEach(() => {
     dialogMock = { open: jest.fn() };
-    authMock = { isAuthenticated: signal(false) };
-    subsMock = new MockSubscriptionService();
 
     TestBed.configureTestingModule({
       providers: [
         SubscriptionExpiryService,
         { provide: MatDialog, useValue: dialogMock },
-        { provide: AuthService, useValue: authMock },
-        { provide: SubscriptionService, useValue: subsMock }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: SubscriptionService, useClass: MockSubscriptionService }
       ]
     });
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    subsMock = TestBed.inject(SubscriptionService) as unknown as MockSubscriptionService;
+    authMock.isAuthenticated.set(false);
   });
 
   it("opens dialog with expiring subscriptions when authenticated", () => {

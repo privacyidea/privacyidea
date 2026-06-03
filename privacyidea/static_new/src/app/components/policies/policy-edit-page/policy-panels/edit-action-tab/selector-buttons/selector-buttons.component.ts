@@ -55,12 +55,12 @@ export class SelectorButtonsComponent<T> {
     if (this.selectedValue() === value) {
       if (this.allowDeselect()) {
         this.selectedValue.set(undefined);
-        this.select.emit(undefined);
+        this.selected.emit(undefined);
       }
       return;
     }
     this.selectedValue.set(value);
-    this.select.emit(value);
+    this.selected.emit(value);
   }
 
   public focusFirst(): void {

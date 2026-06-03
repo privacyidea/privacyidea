@@ -189,7 +189,7 @@ describe("NewCaConnectorComponent", () => {
         })
       })
     );
-    expect(caConnectorServiceMock.postCaConnector.mock.calls[0][0]?.data.cacert).toBeUndefined();
+    expect(caConnectorServiceMock.postCaConnector.mock.calls[0][0]?.data["cacert"]).toBeUndefined();
   });
 
   it("hasChanges should reflect form dirty state", () => {

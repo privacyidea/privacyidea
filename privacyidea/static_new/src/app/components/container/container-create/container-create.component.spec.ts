@@ -52,6 +52,7 @@ import {
   MockLocalService,
   MockNotificationService,
   MockRealmService,
+  MockRouter,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
@@ -83,7 +84,7 @@ class MockIntersectionObserver {
   ) {}
 }
 
-Object.defineProperty(global, "IntersectionObserver", {
+Object.defineProperty(globalThis, "IntersectionObserver", {
   writable: true,
   configurable: true,
   value: MockIntersectionObserver
@@ -105,7 +106,7 @@ class IOStub {
 }
 
 const lastIOInstances: IOStub[] = [];
-Object.defineProperty(global, "IntersectionObserver", {
+Object.defineProperty(globalThis, "IntersectionObserver", {
   configurable: true,
   writable: true,
   value: class extends IOStub {
@@ -120,12 +121,6 @@ const dialogOpen = jest.fn(() => ({ afterClosed: () => of(null) }));
 const dialogCloseAll = jest.fn();
 const matDialogMock = { open: dialogOpen, closeAll: dialogCloseAll };
 
-const snack = jest.fn();
-const notificationMock = { success: jest.fn(), error: snack, warning: jest.fn(), handleResourceError: jest.fn() };
-
-const navigateByUrl = jest.fn().mockResolvedValue(true);
-const routerMock = { navigateByUrl } as unknown as Router;
-
 describe("ContainerCreateComponent", () => {
   let fixture: ComponentFixture<ContainerCreateComponent>;
   let component: ContainerCreateComponent;
@@ -133,6 +128,8 @@ describe("ContainerCreateComponent", () => {
   let containerServiceMock: MockContainerService;
   let userService: MockUserService;
   let authService: MockAuthService;
+  let notificationService: MockNotificationService;
+  let routerMock: MockRouter;
   let httpClientMock: { get: jest.Mock };
   let dialogServiceMock: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
@@ -150,8 +147,8 @@ describe("ContainerCreateComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: MatDialog, useValue: matDialogMock },
-        { provide: NotificationService, useValue: notificationMock },
-        { provide: Router, useValue: routerMock },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: Router, useClass: MockRouter },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ContentService, useClass: MockContentService },
@@ -163,8 +160,7 @@ describe("ContainerCreateComponent", () => {
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
-        MockLocalService,
-        MockNotificationService
+        MockLocalService
       ]
     }).compileComponents();
 
@@ -175,6 +171,9 @@ describe("ContainerCreateComponent", () => {
     userService = TestBed.inject(UserService) as unknown as MockUserService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     authService.actionAllowed.mockReturnValue(true);
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    routerMock = TestBed.inject(Router) as unknown as MockRouter;
+    (routerMock.navigateByUrl as jest.Mock).mockResolvedValue(true);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
@@ -220,7 +219,7 @@ describe("ContainerCreateComponent", () => {
       })
     );
     expect(regSpy).not.toHaveBeenCalled();
-    expect(navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/containers/details/C-001"));
+    expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/containers/details/C-001"));
     expect(containerServiceMock.containerSerial()).toBe("C-001");
   });
 
@@ -232,8 +231,8 @@ describe("ContainerCreateComponent", () => {
 
     component.createContainer();
 
-    expect(snack).toHaveBeenCalledWith("Container creation failed. No container serial returned.");
-    expect(navigateByUrl).not.toHaveBeenCalled();
+    expect(notificationService.error).toHaveBeenCalledWith("Container creation failed. No container serial returned.");
+    expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it("QR path (smartphone): calls registerContainer", async () => {

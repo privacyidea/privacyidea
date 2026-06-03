@@ -60,8 +60,8 @@ describe("SmsGatewaysComponent", () => {
 
     smsGatewayServiceMock = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
     smsGatewayServiceMock.smsGateways.set([
-      { name: "gw1", providermodule: "mod1" },
-      { name: "gw2", providermodule: "mod2" }
+      { name: "gw1", providermodule: "mod1", options: {}, headers: {} },
+      { name: "gw2", providermodule: "mod2", options: {}, headers: {} }
     ]);
 
     fixture = TestBed.createComponent(SmsGatewaysComponent);

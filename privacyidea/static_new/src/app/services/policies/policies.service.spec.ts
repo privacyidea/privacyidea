@@ -342,7 +342,7 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Give patch request time to be sent after successful POST
-        await new Promise((resolve) => process.nextTick(resolve));
+        await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 
         // Handle PATCH request for rename
         const patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
@@ -397,7 +397,7 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Wait for microtasks to complete
-        await new Promise((resolve) => process.nextTick(resolve));
+        await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 
         // Handle failed PATCH request
         const patchReq = httpTestingController.expectOne(

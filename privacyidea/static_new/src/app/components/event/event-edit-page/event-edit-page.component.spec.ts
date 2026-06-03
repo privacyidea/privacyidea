@@ -29,7 +29,7 @@ import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject } from "rxjs";
 import { EventEditPageComponent } from "./event-edit-page.component";
 
-global.IntersectionObserver = class IntersectionObserver {
+globalThis.IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
   observe = jest.fn();
   unobserve = jest.fn();

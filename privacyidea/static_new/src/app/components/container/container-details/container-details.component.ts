@@ -460,7 +460,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveDescription() {
     const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
-    this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
+    this.containerService.setContainerDescription(this.containerSerial(), typeof description === "string" ? description : "").subscribe({
       next: () => {
         this.containerDetailResource.reload();
       }

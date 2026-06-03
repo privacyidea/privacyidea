@@ -16,39 +16,37 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpHeaders, provideHttpClient } from "@angular/common/http";
+import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SubscriptionService } from "./subscription.service";
-import { MockContentService } from "@testing/mock-services";
+import { MockContentService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContentService } from "@services/content/content.service";
 
 describe("SubscriptionService", () => {
   let service: SubscriptionService;
   let httpMock: HttpTestingController;
-  let authMock: Partial<AuthService>;
-  let notifyMock: Partial<NotificationService>;
+  let notifyMock: MockNotificationService;
 
   beforeEach(() => {
-    authMock = { getHeaders: jest.fn(() => new HttpHeaders()) };
-    notifyMock = { success: jest.fn(), error: jest.fn(), warning: jest.fn() };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         SubscriptionService,
-        { provide: AuthService, useValue: authMock },
-        { provide: NotificationService, useValue: notifyMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
 
     service = TestBed.inject(SubscriptionService);
     httpMock = TestBed.inject(HttpTestingController);
+    notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
   });
 
   it("reload() should not throw", () => {

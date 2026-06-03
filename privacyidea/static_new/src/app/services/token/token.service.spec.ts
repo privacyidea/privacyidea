@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, provideHttpClient } from "@angular/common/http";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { lastValueFrom, Observable, of, throwError } from "rxjs";
 
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
@@ -488,7 +488,7 @@ describe("TokenService", () => {
     ])("%s() notifies on error", async (_label, call, expected) => {
       postSpy.mockReturnValue(throwError(() => makeErr("boom")));
 
-      await expect(lastValueFrom(call())).rejects.toMatchObject({
+      await expect(lastValueFrom(call() as Observable<unknown>)).rejects.toMatchObject({
         error: { result: { error: { message: "boom" } } }
       });
 

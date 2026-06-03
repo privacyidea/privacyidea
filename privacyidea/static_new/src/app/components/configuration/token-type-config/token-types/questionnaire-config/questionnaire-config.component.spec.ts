@@ -45,8 +45,8 @@ describe("QuestionnaireConfigComponent", () => {
 
   it("should emit formDataChange when updateFormData is called", () => {
     jest.spyOn(component.formDataChange, "emit");
-    const newValue = 10;
-    component.updateFormData(QUESTION_NUMBER_OF_ANSWERS, newValue); // FIX: in html it can only be string, but we test it with number. Invastigate the type of value in updateFormData and adjust.
+    const newValue = "10";
+    component.updateFormData(QUESTION_NUMBER_OF_ANSWERS, newValue);
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [QUESTION_NUMBER_OF_ANSWERS]: newValue });
   });
 

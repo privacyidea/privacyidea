@@ -132,6 +132,45 @@ export interface AuthDetail {
 
 export type TwoStepValue = "disabled" | "allow" | "force";
 
+/**
+ * Parameters for password-based authentication. Covers standard login, remote
+ * login (password omitted), and challenge response (transaction_id set).
+ */
+export interface PasswordLoginParams {
+  username: string;
+  password?: string;
+  realm?: string;
+  transaction_id?: string;
+}
+
+/**
+ * Parameters for WebAuthn second-factor authentication. Mirrors
+ * `PasskeyCheckParams` plus `username` and a nullable `userHandle`.
+ */
+export interface WebAuthnLoginParams {
+  transaction_id: string;
+  username: string;
+  credential_id: string;
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string | null;
+}
+
+/**
+ * Union of all parameter shapes accepted by `authenticate()`.
+ * Imported `PasskeyCheckParams` from `validate.service` would create a
+ * cycle, so callers pass the structurally compatible shape directly.
+ */
+export type AuthenticateParams = PasswordLoginParams | WebAuthnLoginParams | {
+  transaction_id: string;
+  credential_id: string;
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string;
+};
+
 export interface AuthServiceInterface {
   // Properties
   readonly authUrl: string;
@@ -193,7 +232,7 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
-  authenticate(params: Record<string, string>): Observable<AuthResponse>;
+  authenticate(params: AuthenticateParams): Observable<AuthResponse>;
   acceptAuthentication(): void;
   logout(): void;
   actionAllowed(action: PolicyAction): boolean;
@@ -305,7 +344,7 @@ export class AuthService implements AuthServiceInterface {
     });
   }
 
-  authenticate(params: Record<string, string>): Observable<AuthResponse> {
+  authenticate(params: AuthenticateParams): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({

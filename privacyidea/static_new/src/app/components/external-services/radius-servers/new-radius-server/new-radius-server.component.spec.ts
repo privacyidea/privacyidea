@@ -28,7 +28,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
-import { MockDialogService } from "@testing/mock-services";
+import { MockDialogService, MockRouter } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockRadiusService } from "@testing/mock-services/mock-radius-service";
@@ -42,19 +42,18 @@ describe("NewRadiusServerComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
   let authService: MockAuthService;
-  let routerMock: { navigateByUrl: jest.Mock };
+  let routerMock: MockRouter;
   let paramMapSubject: BehaviorSubject<ParamMap>;
 
   beforeEach(async () => {
     paramMapSubject = new BehaviorSubject(convertToParamMap({}));
-    routerMock = { navigateByUrl: jest.fn().mockResolvedValue(true) };
 
     await TestBed.configureTestingModule({
       imports: [NewRadiusServerComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: Router, useValue: routerMock },
+        { provide: Router, useClass: MockRouter },
         { provide: RadiusServerService, useClass: MockRadiusService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: DialogService, useClass: MockDialogService },
@@ -67,6 +66,8 @@ describe("NewRadiusServerComponent", () => {
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    routerMock = TestBed.inject(Router) as unknown as MockRouter;
+    (routerMock.navigateByUrl as jest.Mock).mockResolvedValue(true);
 
     fixture = TestBed.createComponent(NewRadiusServerComponent);
     component = fixture.componentInstance;
@@ -160,7 +161,7 @@ describe("NewRadiusServerComponent", () => {
         mockSaveExitDialogRef as unknown as MatDialogRef<SaveAndExitDialogComponent>
       );
       authService.actionAllowed = jest.fn().mockReturnValue(true);
-      routerMock.navigateByUrl.mockClear();
+      (routerMock.navigateByUrl as jest.Mock).mockClear();
     });
 
     it("should navigate back directly when there are no changes", () => {

@@ -35,6 +35,7 @@ import {
   MockDialogService,
   MockNotificationService,
   MockPiResponse,
+  MockRouter,
   MockTokenService
 } from "@testing/mock-services";
 import { of, Subject, Subscription } from "rxjs";
@@ -52,10 +53,6 @@ const makeSerialResp = (serial?: string) => MockPiResponse.fromValue<SerialPaylo
 
 let confirmClosed$: Subject<boolean | GetSerialResultDialogReturn>;
 let lastResultDialogData: GetSerialResultDialogData | undefined;
-
-const routerMock = {
-  navigateByUrl: jest.fn().mockResolvedValue(true)
-} as unknown as jest.Mocked<Router>;
 
 describe("TokenGetSerialComponent", () => {
   let fixture: ComponentFixture<TokenFindSerialComponent>;
@@ -77,7 +74,7 @@ describe("TokenGetSerialComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
-        { provide: Router, useValue: routerMock }
+        { provide: Router, useClass: MockRouter }
       ]
     }).compileComponents();
 

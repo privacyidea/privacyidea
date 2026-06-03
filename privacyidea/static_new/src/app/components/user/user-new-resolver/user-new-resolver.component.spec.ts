@@ -40,7 +40,7 @@ interface MockResolverResourceShape {
   hasValue: jest.Mock<boolean>;
 }
 
-global.IntersectionObserver = class IntersectionObserver {
+(globalThis as { IntersectionObserver: typeof IntersectionObserver }).IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
   observe = jest.fn();
   unobserve = jest.fn();
@@ -264,10 +264,10 @@ describe("UserNewResolverComponent", () => {
 
     component.resolverType.set("sqlresolver");
 
-    const errorResponse = new MockPiResponse<number, { description: string }>({
+    const errorResponse = new MockPiResponse<boolean, { description: string }>({
       result: {
         status: true,
-        value: -1
+        value: false
       },
       detail: {
         description: "Connection test failed."
@@ -458,7 +458,9 @@ describe("UserNewResolverComponent", () => {
       .mockReturnValue(true);
     await detectChangesStable();
 
-    resolverService.postResolverTest.mockReturnValue(of(new MockPiResponse({ result: { status: true, value: 1 } })));
+    resolverService.postResolverTest.mockReturnValue(
+      of(new MockPiResponse<boolean, { description: string }>({ result: { status: true, value: true } }))
+    );
     component.onTest();
 
     expect(resolverService.postResolverTest).toHaveBeenCalledWith(

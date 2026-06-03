@@ -100,7 +100,7 @@ describe("EnrollDaypasswordComponent", () => {
   it("Default values from system config are used", () => {
     const mockConfig = {
       [TOTP_HASHLIB]: "sha256",
-      [TOTP_TIME_STEP]: 60,
+      [TOTP_TIME_STEP]: "60",
       [DAYPASSWORD_HASHLIB]: "sha512",
       [DAYPASSWORD_TIME_STEP]: "12h"
     };

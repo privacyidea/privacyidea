@@ -41,7 +41,7 @@ import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.compon
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
-import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -173,16 +173,16 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     const isChallengeResponse = this.showOtpField();
     const password = isChallengeResponse ? this.otp() : this.password();
 
-    const params: Record<string, string> = { username, password };
+    const params: PasswordLoginParams = { username, password };
     if (this.realm()) {
-      params["realm"] = this.realm();
+      params.realm = this.realm();
     }
 
     if (isChallengeResponse) {
       this.stopPushPolling();
       this.authMessage.set([]);
       this.errorMessage.set("");
-      params["transaction_id"] = this.transactionId;
+      params.transaction_id = this.transactionId;
     } else {
       this.resetChallengeState();
     }

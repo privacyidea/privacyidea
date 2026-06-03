@@ -25,16 +25,19 @@ import { AppComponent } from "@app/app.component";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { VersioningService } from "@services/version/version.service";
-import { MockLocalService, MockNotificationService, MockVersioningService } from "@testing/mock-services";
+import { MockLocalService, MockNotificationService, MockRouter, MockVersioningService } from "@testing/mock-services";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
 const b64url = (obj: object) =>
-  Buffer.from(JSON.stringify(obj)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
 const ensureAtob = () => {
-  const g = global as unknown as { atob?: (s: string) => string };
+  const g = globalThis as { atob?: (s: string) => string };
   if (!g.atob) {
-    g.atob = (s: string) => Buffer.from(s, "base64").toString("binary");
+    g.atob = (s: string) => {
+      const bin = Array.from(s, (c) => c.charCodeAt(0));
+      return String.fromCharCode(...bin);
+    };
   }
 };
 
@@ -42,14 +45,12 @@ describe("AuthService", () => {
   let authService: AuthService;
   let httpMock: HttpTestingController;
   let mockLocal: MockLocalService;
-  let routerMock: { url: string; navigate: jest.Mock };
+  let routerMock: MockRouter;
   let notifications: MockNotificationService;
 
   beforeEach(() => {
-    routerMock = {
-      url: "/",
-      navigate: jest.fn().mockResolvedValue(true)
-    };
+    routerMock = new MockRouter();
+    routerMock.navigate.mockResolvedValue(true);
 
     TestBed.configureTestingModule({
       imports: [AppComponent],
@@ -59,8 +60,7 @@ describe("AuthService", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: Router, useValue: routerMock },
-        MockNotificationService,
-        { provide: NotificationService, useExisting: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     }).compileComponents();
 
@@ -269,7 +269,7 @@ describe("AuthService", () => {
     expect(authService.jwtData()).toBeNull();
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
-    await (routerMock.navigate as jest.Mock).mock.results[0].value;
+    await routerMock.navigate.mock.results[0].value;
     expect(notifications.success).toHaveBeenCalledWith("Logout successful.");
     expect(notifications.success).toHaveBeenCalledTimes(1);
   });
@@ -338,7 +338,7 @@ describe("AuthService", () => {
     };
     const jwt = ["hdr", b64url(payload), "sig"].join(".");
 
-    const sub = authService.authenticate({ user: "alice", pass: "x" }).subscribe();
+    const sub = authService.authenticate({ username: "alice", password: "x" }).subscribe();
 
     const req = httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/auth"));
     const body: AuthResponse = {
@@ -402,7 +402,7 @@ describe("AuthService", () => {
   });
 
   it("authenticate(): propagates error via catchError", (done) => {
-    const sub = authService.authenticate({}).subscribe({
+    const sub = authService.authenticate({ username: "" }).subscribe({
       next: () => fail("expected error"),
       error: (e) => {
         expect(e.status).toBe(401);

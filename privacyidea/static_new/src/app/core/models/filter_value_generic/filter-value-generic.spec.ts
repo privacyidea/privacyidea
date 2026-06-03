@@ -41,7 +41,10 @@ describe("FilterValueGeneric", () => {
         if (!val) return true;
         if (key === "active") return item.active.toString() === val;
         if (key === "priority") return item.priority.toString() === val;
-        return (item as Record<string, unknown>)[key]?.toString().toLowerCase().includes(val.toLowerCase());
+        return (
+          (item as unknown as Record<string, unknown>)[key]?.toString().toLowerCase().includes(val.toLowerCase()) ??
+          false
+        );
       }
     });
   };

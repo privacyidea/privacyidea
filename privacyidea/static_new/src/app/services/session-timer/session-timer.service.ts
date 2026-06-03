@@ -65,8 +65,8 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     return Math.max(0, jwtLogoutTime);
   });
 
-  private timer: NodeJS.Timeout | undefined;
-  private intervalId: NodeJS.Timeout | undefined;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private intervalId: ReturnType<typeof setInterval> | undefined;
   private startTime = signal(Date.now());
   private loginTime = signal(Date.now());
   private currentTime = signal(Date.now());

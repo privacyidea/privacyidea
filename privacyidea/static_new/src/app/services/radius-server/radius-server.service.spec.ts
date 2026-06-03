@@ -110,7 +110,14 @@ describe("RadiusServerService", () => {
   });
 
   it("should test RADIUS server", async () => {
-    const params = { server: "1.2.3.4", secret: "secret" };
+    const params: RadiusServer = {
+      identifier: "test",
+      server: "1.2.3.4",
+      port: 1812,
+      timeout: 5,
+      retries: 3,
+      secret: "secret"
+    };
     const promise = service.testRadiusServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
@@ -123,7 +130,14 @@ describe("RadiusServerService", () => {
   });
 
   it("should show error notification when RADIUS test returns false", async () => {
-    const params = { server: "1.2.3.4", secret: "secret" };
+    const params: RadiusServer = {
+      identifier: "test",
+      server: "1.2.3.4",
+      port: 1812,
+      timeout: 5,
+      retries: 3,
+      secret: "secret"
+    };
     const promise = service.testRadiusServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
@@ -135,7 +149,14 @@ describe("RadiusServerService", () => {
   });
 
   it("should show error notification when RADIUS test request fails", async () => {
-    const params = { server: "1.2.3.4", secret: "secret" };
+    const params: RadiusServer = {
+      identifier: "test",
+      server: "1.2.3.4",
+      port: 1812,
+      timeout: 5,
+      retries: 3,
+      secret: "secret"
+    };
     const promise = service.testRadiusServer(params);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);

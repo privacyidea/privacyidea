@@ -58,7 +58,7 @@ describe("TokenImportComponent", () => {
       disconnect = jest.fn();
     }
 
-    (global as unknown as { IntersectionObserver: typeof IO }).IntersectionObserver = IO;
+    (globalThis as unknown as { IntersectionObserver: typeof IO }).IntersectionObserver = IO;
   });
 
   beforeEach(async () => {

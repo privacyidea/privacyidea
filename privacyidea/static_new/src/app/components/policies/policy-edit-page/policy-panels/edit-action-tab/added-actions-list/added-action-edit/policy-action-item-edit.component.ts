@@ -85,7 +85,7 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
       this.updateAction.emit(value as T);
     }
   }
-  isNumber(value: T): boolean {
+  isNumber(value: T | null): boolean {
     return value !== null && value !== "" && !isNaN(Number(value));
   }
 }

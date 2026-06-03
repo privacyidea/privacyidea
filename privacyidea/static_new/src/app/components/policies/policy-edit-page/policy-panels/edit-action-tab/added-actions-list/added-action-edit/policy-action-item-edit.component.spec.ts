@@ -70,7 +70,7 @@ describe("PolicyActionItemEditComponent", () => {
   it("should identify boolean actions correctly", () => {
     fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "" });
     fixture.detectChanges();
-    expect(component.isBooleanAction("test_action")).toBe(true);
+    expect(component.isBooleanAction()).toBe(true);
   });
 
   it("should emit onUpdateAction when updateAction is called", () => {

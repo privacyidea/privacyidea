@@ -124,7 +124,7 @@ describe("SystemConfigComponent", () => {
   it("should handle save system config error", () => {
     jest
       .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+      .mockReturnValueOnce(of(new MockPiResponse<Record<string, "insert" | "update">>({ result: { status: false } })));
     const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.saveSystemConfig();
@@ -145,7 +145,9 @@ describe("SystemConfigComponent", () => {
   it("should handle delete user cache error", () => {
     jest
       .spyOn(systemService, "deleteUserCache")
-      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+      .mockReturnValueOnce(
+        of(new MockPiResponse<{ status: boolean; deleted: number }>({ result: { status: false } }))
+      );
     const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.deleteUserCache();
@@ -192,7 +194,7 @@ describe("SystemConfigComponent", () => {
   it("_saveAndReturn should resolve false when save returns status false", async () => {
     jest
       .spyOn(systemService, "saveSystemConfig")
-      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+      .mockReturnValueOnce(of(new MockPiResponse<Record<string, "insert" | "update">>({ result: { status: false } })));
     const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
     const result = await saveFn();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save system configuration.");

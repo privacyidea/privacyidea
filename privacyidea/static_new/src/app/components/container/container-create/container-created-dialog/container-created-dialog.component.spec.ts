@@ -26,6 +26,7 @@ import { firstValueFrom, Subject } from "rxjs";
 
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { MockContainerService, MockContentService } from "@testing/mock-services";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 
@@ -33,12 +34,8 @@ describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
   let component: ContainerCreatedDialogComponent;
   let afterClosed$: Subject<void>;
-
-  const stopPolling = jest.fn();
-  const containerServiceMock = { stopPolling };
-
-  const navigateContainerDetails = jest.fn();
-  const contentServiceMock = { navigateContainerDetails };
+  let containerServiceMock: MockContainerService;
+  let contentServiceMock: MockContentService;
 
   const dialogClose = jest.fn();
   const dialogAfterClosed = jest.fn(() => afterClosed$.asObservable());
@@ -61,11 +58,14 @@ describe("ContainerCreatedDialogComponent", () => {
         provideHttpClient(),
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: matDialogData },
-        { provide: ContainerService, useValue: containerServiceMock },
-        { provide: ContentService, useValue: contentServiceMock },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: ContentService, useClass: MockContentService },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } }
       ]
     }).compileComponents();
+
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
 
     fixture = TestBed.createComponent(ContainerCreatedDialogComponent);
     component = fixture.componentInstance;
@@ -78,9 +78,9 @@ describe("ContainerCreatedDialogComponent", () => {
 
   it("calls containerService.stopPolling() when dialog closes", () => {
     expect(dialogAfterClosed).toHaveBeenCalled();
-    expect(stopPolling).not.toHaveBeenCalled();
+    expect(containerServiceMock.stopPolling).not.toHaveBeenCalled();
     afterClosed$.next(undefined);
-    expect(stopPolling).toHaveBeenCalledTimes(1);
+    expect(containerServiceMock.stopPolling).toHaveBeenCalledTimes(1);
   });
 
   it("displays the container serial number in the dialog content", () => {
@@ -91,7 +91,7 @@ describe("ContainerCreatedDialogComponent", () => {
   it("containerSelected closes dialog and forwards selection", () => {
     component.navigateContainerDetails("C-777");
     expect(dialogClose).toHaveBeenCalled();
-    expect(navigateContainerDetails).toHaveBeenCalledWith("C-777");
+    expect(contentServiceMock.navigateContainerDetails).toHaveBeenCalledWith("C-777");
   });
 
   it("regenerateQRCode calls registerContainer with current serial and regenerate flag", () => {
@@ -107,12 +107,7 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
   let afterClosed$: Subject<void>;
-
-  const stopPolling = jest.fn();
-  const containerServiceMock = { stopPolling };
-
-  const navigateContainerDetails = jest.fn();
-  const contentServiceMock = { navigateContainerDetails };
+  let containerServiceMock: MockContainerService;
 
   const dialogClose = jest.fn();
   const dialogAfterClosed = jest.fn(() => afterClosed$.asObservable());
@@ -146,11 +141,13 @@ describe("ContainerCreatedDialogWizardComponent", () => {
         provideHttpClientTesting(),
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MAT_DIALOG_DATA, useValue: matDialogData },
-        { provide: ContainerService, useValue: containerServiceMock },
-        { provide: ContentService, useValue: contentServiceMock },
+        { provide: ContainerService, useClass: MockContainerService },
+        { provide: ContentService, useClass: MockContentService },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } }
       ]
     }).compileComponents();
+
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
 
     fixture = TestBed.createComponent(ContainerCreatedDialogWizardComponent);
     component = fixture.componentInstance;
@@ -171,9 +168,9 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   it("subscribes to dialog close and calls stopPolling", () => {
     flushInitialWizardRequests();
     expect(dialogAfterClosed).toHaveBeenCalled();
-    expect(stopPolling).not.toHaveBeenCalled();
+    expect(containerServiceMock.stopPolling).not.toHaveBeenCalled();
     afterClosed$.next(undefined);
-    expect(stopPolling).toHaveBeenCalledTimes(1);
+    expect(containerServiceMock.stopPolling).toHaveBeenCalledTimes(1);
   });
 
   it("exposes postTopHtml$ and postBottomHtml$; new subscriptions issue new GETs", async () => {

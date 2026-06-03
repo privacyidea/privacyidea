@@ -29,7 +29,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import { EventHandler, EventService } from "./event.service";
+import { EventHandler, EventHandlerSaveParams, EventService } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -72,7 +72,16 @@ describe("EventService", () => {
   });
 
   it("should save an event handler", () => {
-    const event = { name: "test", handlermodule: "mod" };
+    const event: EventHandlerSaveParams = {
+      name: "test",
+      handlermodule: "mod",
+      active: true,
+      ordering: 0,
+      position: "post",
+      event: [],
+      action: "",
+      conditions: {}
+    };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeTruthy();
       expect(response?.result).toBeDefined();
@@ -83,7 +92,16 @@ describe("EventService", () => {
   });
 
   it("should handle error when saving an event handler", () => {
-    const event = { name: "fail", handlermodule: "mod" };
+    const event: EventHandlerSaveParams = {
+      name: "fail",
+      handlermodule: "mod",
+      active: true,
+      ordering: 0,
+      position: "post",
+      event: [],
+      action: "",
+      conditions: {}
+    };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeUndefined();
       expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to save event handler."));

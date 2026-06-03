@@ -62,7 +62,7 @@ describe("HorizontalWheelComponent", () => {
   });
 
   it("should handle mouse move when dragging", () => {
-    const componentWithPrivates = component as unknown as HorizontalWheelComponent & {
+    const componentWithPrivates = component as unknown as {
       containerElement: HTMLElement | null;
     };
     const fakeContainer: Partial<HTMLElement> = { scrollLeft: 50, offsetWidth: 200, style: {} as CSSStyleDeclaration };
