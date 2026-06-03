@@ -1,11 +1,244 @@
 @use "styles";
 @use "table";
 
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
 .details-container {
   @include styles.main-component-style;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  --fill-height: calc(var(--max-height) + 2 * var(--global-padding));
+  height: var(--fill-height);
+  max-height: var(--fill-height);
+
+  .scroll-to-top-fab {
+    align-self: flex-end;
+  }
 
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
+
+  .details-table,
+  .user-details-table,
+  .info-table {
+    width: 100%;
+
+    td:nth-child(even),
+    th:nth-child(even) {
+      background: transparent;
+    }
+
+    tr.mat-mdc-row:nth-child(odd) td {
+      background: var(--mat-sys-surface-variant);
+    }
+  }
+
+  .details-table {
+    table-layout: fixed;
+
+    td:nth-child(1) {
+      width: 35%;
+    }
+    td:nth-child(2) {
+      width: 65%;
+    }
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .status-toggle {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+
+    &:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+  }
+
+}
+
+.details-header h3 {
+  font-size: 22px;
+}
+
+.sticky-sentinel {
+  height: 0;
+}
+
+::ng-deep .sticky-header.is-sticky {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18) !important;
+}
+
+.header-status-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+
+  ::ng-deep .overflow-more-btn {
+    border: 1px solid var(--mat-sys-primary) !important;
+    background: var(--mat-sys-surface-container-lowest) !important;
+    color: var(--mat-sys-primary) !important;
+    box-sizing: border-box !important;
+    height: var(--mdc-outlined-button-container-height, 40px) !important;
+    border-radius: var(--border-radius) !important;
+    width: 180px;
+    min-width: 180px;
+
+    &:hover {
+      background: var(--sky-bg) !important;
+      color: var(--mat-sys-primary) !important;
+    }
+  }
+}
+
+.description-row {
+  padding: 8px 14px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  width: 340px;
+  align-self: flex-start;
+  order: 9;
+
+  .value-edit {
+    min-width: 80px;
+    justify-content: flex-end;
+  }
+
+  app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover app-edit-buttons,
+  &.is-editing app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .description-label {
+    font-weight: 600;
+    margin-right: 8px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  .description-text {
+    overflow-wrap: anywhere;
+  }
+
+  .description-field {
+    width: 100%;
+    max-width: 700px;
+  }
+}
+
+.details-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.details-card--identity { order: 1; }
+.details-card-user { order: 2; }
+.details-card--assignment { order: 3; }
+.details-card--counters { order: 4; }
+.details-card-machine { order: 5; display: contents; }
+.details-card-actions { display: contents; }
+
+.details-card--group,
+.details-card-user {
+  display: block;
+  min-width: 0;
+  align-self: flex-start;
+  box-sizing: border-box;
+  max-width: 585px;
+}
+
+.details-card--group {
+  app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover app-edit-buttons,
+  ::ng-deep td.padding-0 app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.action-button-warn-secondary {
+  background: var(--mat-sys-surface-container-lowest) !important;
+  color: #c46314 !important;
+  border-color: #c46314 !important;
+
+  .mat-icon {
+    color: #c46314 !important;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(237, 137, 54, 0.12) !important;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.details-info-area {
+  order: 10;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.container-serial-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 101px;
 }

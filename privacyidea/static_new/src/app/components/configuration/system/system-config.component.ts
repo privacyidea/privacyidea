@@ -78,8 +78,6 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
           "IncFailCountOnFalsePin",
           "no_auth_counter",
           "PrependPin",
-          "ReturnSamlAttributes",
-          "ReturnSamlAttributesOnFail",
           "AutoResync",
           "UiLoginDisplayHelpButton",
           "UiLoginDisplayRealmBox"

@@ -16,15 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, forwardRef, inject, input, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { MotpApiPayloadMapper, MotpEnrollmentData } from "@app/mappers/token-api-payload/motp-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
 export interface MotpEnrollmentOptions extends TokenEnrollmentData {
@@ -39,22 +43,17 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
   templateUrl: "./enroll-motp.component.html",
-  styleUrl: "./enroll-motp.component.scss"
+  styleUrl: "./enroll-motp.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollMotpComponent) }
+  ]
 })
-export class EnrollMotpComponent implements OnInit {
+export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: MotpApiPayloadMapper = inject(MotpApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: MotpEnrollmentData;
-      mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
-    } | null
-  >();
-
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
   generateOnServer = signal<boolean>(true);
@@ -78,17 +77,7 @@ export class EnrollMotpComponent implements OnInit {
     disabled(f, () => this.disabled());
   });
 
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: MotpEnrollmentData;
-    mapper: TokenApiPayloadMapper<MotpEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<MotpEnrollmentData> | null {
     if (!this.motpPinForm().valid()) {
       this.motpPinForm().markAsTouched();
       return null;
@@ -115,5 +104,5 @@ export class EnrollMotpComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }
