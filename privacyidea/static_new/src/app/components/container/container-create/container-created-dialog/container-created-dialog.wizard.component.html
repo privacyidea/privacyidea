@@ -32,7 +32,7 @@
     </div>
     <span i18n
       >The container was successfully created with serial number
-      <a (click)="navigateContainerDetails(data()!.containerSerial())"> {{ data()?.containerSerial() }} </a>.</span
+      <a role="button" tabindex="0" (click)="navigateContainerDetails(data()!.containerSerial())" (keydown.enter)="navigateContainerDetails(data()!.containerSerial())"> {{ data()?.containerSerial() }} </a>.</span
     >
   }
 

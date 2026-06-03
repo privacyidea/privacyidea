@@ -105,7 +105,10 @@
               @case ("serial") {
                 <app-copyable [copyText]="element.serial">
                   <a
+                    role="button"
+                    tabindex="0"
                     (click)="contentService.tokenSelected(element.serial)"
+                    (keydown.enter)="contentService.tokenSelected(element.serial)"
                     attr.aria-label="{{ column.label }} Link">
                     {{ element[column.key] }}
                   </a>

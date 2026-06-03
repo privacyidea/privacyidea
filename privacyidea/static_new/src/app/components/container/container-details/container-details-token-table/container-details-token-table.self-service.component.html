@@ -89,7 +89,10 @@
                       @if (element.username === authService.username()) {
                         <a
                           attr.aria-label="{{ column.label }} Link"
-                          (click)="contentService.tokenSelected(element.serial)">
+                          role="button"
+                          tabindex="0"
+                          (click)="contentService.tokenSelected(element.serial)"
+                          (keydown.enter)="contentService.tokenSelected(element.serial)">
                           {{ element[column.key] }}
                         </a>
                       } @else {
@@ -99,7 +102,10 @@
                   }
                   @case ("active") {
                     <span
+                      role="button"
+                      tabindex="0"
                       (click)="toggleActive(element)"
+                      (keydown.enter)="toggleActive(element)"
                       [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                       {{ tableUtilsService.getDisplayText(column.key, element) }}

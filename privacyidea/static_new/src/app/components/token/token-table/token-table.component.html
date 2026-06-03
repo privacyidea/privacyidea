@@ -154,7 +154,10 @@
                 @case ("serial") {
                   <app-copyable [copyText]="tokenDetails.serial">
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
                       attr.aria-label="{{ column.label }} Link"
                       class="flex ali-center">
                       {{ tokenDetails[column.key] }}
@@ -164,7 +167,10 @@
                 @case ("active") {
                   @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                     <span
+                      role="button"
+                      tabindex="0"
                       (click)="toggleActive(tokenDetails)"
+                      (keydown.enter)="toggleActive(tokenDetails)"
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
@@ -173,7 +179,10 @@
                 @case ("failcount") {
                   @if (authService.actionAllowed("reset")) {
                     <span
+                      role="button"
+                      tabindex="0"
                       (click)="resetFailCount(tokenDetails)"
+                      (keydown.enter)="resetFailCount(tokenDetails)"
                       [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
@@ -193,7 +202,10 @@
                 @case ("container_serial") {
                   <app-copyable [copyText]="tokenDetails.container_serial">
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                      (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       attr.aria-label="{{ column.label }} Link">
                       {{ tokenDetails[column.key] }}
                     </a>
@@ -202,7 +214,10 @@
                 @case ("username") {
                   <app-copyable [copyText]="tokenDetails[column.key]">
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
+                      (keydown.enter)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
                       attr.aria-label="{{ column.label }} Link">
                       {{ tokenDetails[column.key] }}
                     </a>

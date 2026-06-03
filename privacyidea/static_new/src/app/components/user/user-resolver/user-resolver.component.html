@@ -62,8 +62,10 @@
           mat-cell>
           <div class="name-actions-container">
             <a
+              role="button"
+              tabindex="0"
               (click)="onEditResolver(element)"
-              tabindex="0">
+              (keydown.enter)="onEditResolver(element)">
               {{ element.resolvername }}
             </a>
             <div class="actions-buttons">

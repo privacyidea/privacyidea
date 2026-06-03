@@ -48,8 +48,11 @@
     @for (condition of additionalConditions(); track $index) {
       <div
         class="additional-condition-row"
+        role="button"
+        tabindex="0"
         [class.selected]="editIndex() === $index"
-        (click)="editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)">
+        (click)="editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)"
+        (keydown.enter)="editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)">
         <div class="center">
           <mat-slide-toggle
             #slideToggle

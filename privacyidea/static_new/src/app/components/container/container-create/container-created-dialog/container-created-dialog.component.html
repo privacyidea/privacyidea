@@ -24,7 +24,7 @@
 <mat-dialog-content>
   <span i18n
     >The container was successfully created with serial number
-    <a (click)="navigateContainerDetails(data()!.containerSerial())"> {{ data()?.containerSerial() }} </a>.</span
+    <a role="button" tabindex="0" (click)="navigateContainerDetails(data()!.containerSerial())" (keydown.enter)="navigateContainerDetails(data()!.containerSerial())"> {{ data()?.containerSerial() }} </a>.</span
   >
   <div class="flex-row gap-16">
     @if (data()?.response?.result?.value?.container_url?.img) {

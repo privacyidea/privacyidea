@@ -28,8 +28,11 @@
         The Serial number for the OTP value {{ data.otpValue }} is
         <a
           class="link"
+          role="button"
+          tabindex="0"
           attr.aria-label="{{ data.foundSerial }} Link"
-          (click)="onClickSerial()">
+          (click)="onClickSerial()"
+          (keydown.enter)="onClickSerial()">
           {{ data.foundSerial }}.</a>
       </span>
     </div>

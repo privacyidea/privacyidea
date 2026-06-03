@@ -100,9 +100,11 @@
                   [attr.title]="element.name">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="onEditEventHandler(element)"
-                      [innerHTML]="element.name | highlight:filterString()"
-                      tabindex="0"></a>
+                      (keydown.enter)="onEditEventHandler(element)"
+                      [innerHTML]="element.name | highlight:filterString()"></a>
                   } @else {
                     <span [innerHTML]="element.name | highlight:filterString()"></span>
                   }

@@ -32,7 +32,7 @@
     </div>
     <span
       i18n>The container
-    <a (click)="containerSelected(data.containerSerial)"> {{ data.containerSerial }} </a> was successfully
+    <a role="button" tabindex="0" (click)="containerSelected(data.containerSerial)" (keydown.enter)="containerSelected(data.containerSerial)"> {{ data.containerSerial }} </a> was successfully
          registered.</span>
   }
 </mat-dialog-content>

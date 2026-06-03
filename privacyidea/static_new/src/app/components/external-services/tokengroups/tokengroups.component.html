@@ -87,7 +87,10 @@
         mat-cell>
         <app-copyable [copyText]="group.groupname">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditTokengroup(group)"
+            (keydown.enter)="onEditTokengroup(group)"
             class="flex ali-center">
             {{ group.groupname }}
           </a>

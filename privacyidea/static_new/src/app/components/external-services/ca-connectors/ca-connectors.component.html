@@ -73,7 +73,10 @@
         mat-cell>
         <app-copyable [copyText]="connector.connectorname">
           <a
+            role="button"
+            tabindex="0"
             (click)="openEditDialog(connector)"
+            (keydown.enter)="openEditDialog(connector)"
             class="flex ali-center">
             {{ connector.connectorname }}
           </a>

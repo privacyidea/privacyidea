@@ -93,7 +93,10 @@
               @case ("serial") {
                 <app-copyable [copyText]="element.serial">
                   <a
+                    role="button"
+                    tabindex="0"
                     (click)="serialClicked(element)"
+                    (keydown.enter)="serialClicked(element)"
                     class="flex ali-center">
                     {{ element.serial }}
                   </a>

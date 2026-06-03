@@ -52,7 +52,7 @@
       </mat-card>
       <p i18n>
         The serial of the new token is
-        <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
+        <a role="button" tabindex="0" (click)="tokenSelected(lostTokenData?.serial)" (keydown.enter)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
         <br />
         The password that needs to be combined with the OTP PIN:
       </p>

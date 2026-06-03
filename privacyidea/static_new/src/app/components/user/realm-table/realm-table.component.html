@@ -171,10 +171,12 @@
                               @for (res of group.resolvers; track res.name + res.type + res.priority) {
                                 <li class="resolver-item">
                                   <a
+                                    role="button"
+                                    tabindex="0"
                                     (click)="onClickResolver(res.name); $event.preventDefault()"
+                                    (keydown.enter)="onClickResolver(res.name)"
                                     attr.aria-label="{{ column.label }} Link"
-                                    class="resolver-name"
-                                    role="button">
+                                    class="resolver-name">
                                     {{ res.name }}
                                   </a>
                                   @if (res.priority !== null && res.priority !== undefined) {

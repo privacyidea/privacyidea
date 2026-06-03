@@ -97,7 +97,10 @@
         mat-cell>
         <app-copyable [copyText]="service.servicename">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditServiceId(service)"
+            (keydown.enter)="onEditServiceId(service)"
             class="flex ali-center">
             {{ service.servicename }}
           </a>

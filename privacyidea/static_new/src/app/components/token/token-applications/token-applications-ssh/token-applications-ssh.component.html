@@ -113,7 +113,10 @@
                 @case ("serial") {
                   <app-copyable [copyText]="element.serial">
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="contentService.tokenSelected(element.serial)"
+                      (keydown.enter)="contentService.tokenSelected(element.serial)"
                       attr.aria-label="{{ column.label }} Link">
                       {{ element[column.key] }}
                     </a>
@@ -121,7 +124,10 @@
                 }
                 @case ("user") {
                   <a
+                    role="button"
+                    tabindex="0"
                     (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                    (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
                     attr.aria-label="{{ column.label }} Link">
                     {{ element[column.key] }}
                   </a>

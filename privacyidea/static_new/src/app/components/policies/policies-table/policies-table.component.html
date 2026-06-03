@@ -108,7 +108,10 @@
                   <div class="name-wrapper">
                     @if (authService.actionAllowed("policywrite")) {
                       <a
+                        role="button"
+                        tabindex="0"
                         (click)="$event.stopPropagation(); editPolicy(policy)"
+                        (keydown.enter)="$event.stopPropagation(); editPolicy(policy)"
                         class="flex ali-center bold">
                         {{ policy.name }}
                       </a>

@@ -21,12 +21,12 @@
   <div class="margin-bottom-16">
     <span i18n>
       The token was successfully enrolled with serial number
-      <a (click)="tokenSelected()"> {{ serial() }} </a>.
+      <a role="button" tabindex="0" (click)="tokenSelected()" (keydown.enter)="tokenSelected()"> {{ serial() }} </a>.
     </span>
     @if (containerSerial()) {
       <div i18n>
         It has been enrolled in the container
-        <a (click)="natigateContainerDetails()">
+        <a role="button" tabindex="0" (click)="natigateContainerDetails()" (keydown.enter)="natigateContainerDetails()">
           {{ containerSerial() }}
         </a>
         .
@@ -82,7 +82,7 @@
   <div class="margin-bottom-16">
     <span i18n>
       The token with serial number
-      <a (click)="tokenSelected()"> {{ serial() }} </a>
+      <a role="button" tabindex="0" (click)="tokenSelected()" (keydown.enter)="tokenSelected()"> {{ serial() }} </a>
       was successfully rolled over.
     </span>
   </div>
