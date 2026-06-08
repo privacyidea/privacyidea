@@ -157,10 +157,10 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       publicKeyCred = (await navigator.credentials.create({
         publicKey: publicKeyOptions
       })) as PublicKeyCredential | null;
-    } catch (browserOrCredentialError: any) {
-      this.notificationService.error(
-        `WebAuthn credential creation failed: ${browserOrCredentialError.message || "Unknown error"}`
-      );
+    } catch (browserOrCredentialError) {
+      const message =
+        browserOrCredentialError instanceof Error ? browserOrCredentialError.message : String(browserOrCredentialError);
+      this.notificationService.error(`WebAuthn credential creation failed: ${message || "Unknown error"}`);
       publicKeyCred = null;
     } finally {
       this.closeStepOneDialog();
@@ -250,8 +250,9 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
       );
       response.detail.serial = detail.serial;
       return { ...response };
-    } catch (error: any) {
-      const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const errMsg = `WebAuthn finalization failed: ${message || error}`;
       this.notificationService.error(errMsg);
       return null;
     }

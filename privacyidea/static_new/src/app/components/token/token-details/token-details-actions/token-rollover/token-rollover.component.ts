@@ -56,9 +56,9 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly userService: UserServiceInterface = inject(UserService);
 
-  token: WritableSignal<any> = signal(null);
+  token: WritableSignal<TokenEnrollmentData | null> = signal(null);
   title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
-  serial = signal(null);
+  serial = signal<string | null | undefined>(null);
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
   dialogActions = signal<DialogAction<boolean>[]>([
@@ -82,8 +82,8 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       return;
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
-    this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
-    this.serial.set(this.token().serial);
+    this.tokenService.selectedTokenType.set({ key: this.token()!.type, name: "", text: "", info: "" });
+    this.serial.set(this.token()!.serial);
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
@@ -217,7 +217,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
       data: this.enrolledDialogData()
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    dialogRef.afterClosed().subscribe(() => {
       this.tokenService.tokenDetailResource.reload();
     });
   }

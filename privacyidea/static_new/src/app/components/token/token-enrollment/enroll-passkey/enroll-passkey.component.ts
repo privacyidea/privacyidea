@@ -128,6 +128,9 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
         data: { enrollmentResponse }
       });
       const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
+      if (publicKeyCred === null) {
+        return null;
+      }
       const resposeLastStep = await this.finalizeEnrollment({
         enrollmentInitData,
         enrollmentResponse,
@@ -147,7 +150,7 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     this.currentStepOneRef?.close();
   }
 
-  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<any | null> {
+  private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<PublicKeyCredential | null> {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
@@ -183,16 +186,17 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       .finally(() => {
         this.closeStepOneDialog();
       });
-    return publicKeyCred;
+    return publicKeyCred as PublicKeyCredential | null;
   }
 
   private async finalizeEnrollment(args: {
     enrollmentInitData: PasskeyEnrollmentData;
     enrollmentResponse: EnrollmentResponse;
-    publicKeyCred: any;
+    publicKeyCred: PublicKeyCredential;
   }): Promise<EnrollmentResponse> {
     const { enrollmentInitData, enrollmentResponse, publicKeyCred } = args;
     const detail = enrollmentResponse.detail;
+    const attestationResponse = publicKeyCred.response as AuthenticatorAttestationResponse;
     const passkeyFinalizeData: PasskeyFinalizeData = {
       ...enrollmentInitData,
       transaction_id: detail["transaction_id"] as string,
@@ -200,8 +204,8 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
       credential_id: publicKeyCred.id,
       rawId: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.rawId)),
       authenticatorAttachment: publicKeyCred.authenticatorAttachment,
-      attestationObject: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.attestationObject)),
-      clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(publicKeyCred.response.clientDataJSON))
+      attestationObject: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.attestationObject)),
+      clientDataJSON: this.base64Service.bytesToBase64(new Uint8Array(attestationResponse.clientDataJSON))
     };
 
     const extResults = publicKeyCred.getClientExtensionResults();
@@ -216,13 +220,13 @@ export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentDat
     )
       .catch(async (errorStep3) => {
         this.notificationService.error("Error during final Passkey registration step. Attempting to clean up token.");
-        (await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
+        await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
           this.notificationService.error(
             `Failed to delete token ${detail.serial} after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
-        }),
-          this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`));
+        });
+        this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`);
         throw Error(errorStep3);
       })
       .then((finalResponse) => {
