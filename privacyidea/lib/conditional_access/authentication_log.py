@@ -16,14 +16,26 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import delete, select
 
 from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.sqlutils import delete_matching_rows
 
 log = logging.getLogger(__name__)
+
+
+def _naive_utc(value: datetime) -> datetime:
+    """
+    Normalize a datetime to naive UTC, matching how the ``timestamp`` column is stored. A timezone-aware value is
+    converted to UTC and stripped of its tzinfo; a naive value is assumed to already be in UTC and returned unchanged.
+    This lets callers pass either form without risking a naive-vs-aware comparison against the column.
+    """
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
 
 
 def _truncate(column: str, value) -> str | None:
@@ -129,18 +141,20 @@ def get_authentication_logs(resolver: str | None = None,
     if transaction_id is not None:
         stmt = stmt.where(AuthenticationLog.transaction_id == transaction_id)
     if start_timestamp is not None:
-        stmt = stmt.where(AuthenticationLog.timestamp >= start_timestamp)
+        stmt = stmt.where(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
     if end_timestamp is not None:
-        stmt = stmt.where(AuthenticationLog.timestamp <= end_timestamp)
+        stmt = stmt.where(AuthenticationLog.timestamp <= _naive_utc(end_timestamp))
     return db.session.scalars(stmt).all()
 
 
-def cleanup_authentication_log(older_than: datetime) -> int:
+def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:
     """
-    Delete all authentication log entries with a timestamp strictly older than
-    the given datetime. Returns the number of deleted rows.
+    Delete all authentication log entries with a timestamp strictly older than the given datetime.
+
+    :param older_than: delete entries whose timestamp is older than this (naive or timezone-aware; aware values are
+        converted to UTC)
+    :param chunk_size: if given, delete in chunks of this size to avoid long locks / deadlocks on large tables
+    :return: the number of deleted rows
     """
-    stmt = delete(AuthenticationLog).where(AuthenticationLog.timestamp < older_than)
-    result = db.session.execute(stmt)
-    db.session.commit()
-    return result.rowcount
+    criterion = AuthenticationLog.timestamp < _naive_utc(older_than)
+    return delete_matching_rows(db.session, AuthenticationLog.__table__, criterion, chunk_size)

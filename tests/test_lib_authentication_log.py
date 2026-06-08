@@ -238,6 +238,16 @@ class AuthenticationLogTestCase(MyTestCase):
 
         self.assertEqual(0, deleted)
 
+    def test_cleanup_accepts_timezone_aware_cutoff(self):
+        # The timestamp column is naive UTC; a timezone-aware cutoff must be normalized to UTC, not rejected or
+        # mis-compared. An entry now (naive UTC) must survive a cutoff of "one hour ago" expressed in a +02:00 zone.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+        tz = timezone(timedelta(hours=2))
+        cutoff_aware = datetime.now(tz) - timedelta(hours=1)
+        self.assertEqual(0, cleanup_authentication_log(older_than=cutoff_aware))
+        # And a far-future aware cutoff deletes the entry.
+        self.assertEqual(1, cleanup_authentication_log(older_than=datetime.now(tz) + timedelta(days=1)))
+
     def test_values_are_truncated_to_column_length(self):
         from privacyidea.models import authentication_log_column_length
 
