@@ -193,7 +193,7 @@ export class UserTableComponent {
     this.userService.detailsUsername.set(user.username);
   }
 
-  onClickResolver(resolverName: unknown): void {
+  onClickResolver(resolverName: string): void {
     const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
     if (resolver) {
       this.dialog.open(UserNewResolverComponent, {

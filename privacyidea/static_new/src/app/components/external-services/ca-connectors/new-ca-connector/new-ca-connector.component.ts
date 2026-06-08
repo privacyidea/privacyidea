@@ -34,6 +34,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import {
   CaConnector,
+  CaConnectorConfigValue,
   CaConnectorService,
   CaConnectorServiceInterface,
   CaSpecificOptionsParams
@@ -186,7 +187,7 @@ export class NewCaConnectorComponent implements OnDestroy {
 
   private loadData(connector: CaConnector | null): void {
     const connectorData = connector?.data || {};
-    const asString = (v: unknown): string => (v === undefined || v === null || v === "" ? "" : String(v));
+    const asString = (v: CaConnectorConfigValue): string => (v === undefined || v === null || v === "" ? "" : String(v));
     this.caConnectorModel.set({
       connectorname: connector?.connectorname || "",
       type: connector?.type || "local",

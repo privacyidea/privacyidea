@@ -47,7 +47,7 @@ export class TokenDetailsMachineComponent {
     for (const [key, value] of Object.entries(machine)) {
       if (TokenDetailsMachineComponent.hiddenKeys.has(key)) continue;
       if (key === "options" && value && typeof value === "object") {
-        for (const [optKey, optValue] of Object.entries(value as Record<string, unknown>)) {
+        for (const [optKey, optValue] of Object.entries(value as Record<string, string>)) {
           if (optValue !== null && optValue !== undefined && optValue !== "") {
             out.push([optKey, String(optValue)]);
           }
