@@ -139,7 +139,9 @@ from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
 from ..lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from ..lib.conditional_access.engine import is_user_locked, evaluate_lockout_policies
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
+from ..models import db
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
@@ -468,6 +470,16 @@ def check():
 
 
     """
+    # Conditional-access pre-check (step 1): runs before any token logic and
+    # before the existing failcounter / max_auth checks. A currently-locked user
+    # is rejected immediately with a generic failure response that leaks no
+    # reason (the real reason is recorded only in the audit log).
+    if is_user_locked(request.User):
+        log.info(f"Rejecting authentication for locked user {request.User!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: account is temporarily locked"})
+        return send_result(False, rid=2, details={})
+
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
         return _handle_enrollment_cancellation(request.all_data)
@@ -501,8 +513,11 @@ def check():
             _handle_standard_auth(context)
         response = _finalize_auth_response(context)
     finally:
-        # Write the single authentication-log row for this request
+        # Write the single authentication-log row for this request, then let the
+        # conditional-access engine react to the classified outcome. Both run in
+        # the finally so they cover early returns and handler errors alike.
         _log_authentication_event(context)
+        _evaluate_lockout_policies(context)
     return response
 
 
@@ -800,6 +815,30 @@ def _log_authentication_event(context):
                         or context["details"].get("transaction_id")),
         login=context.get("login"),
     )
+
+
+def _evaluate_lockout_policies(context):
+    """
+    Run the conditional-access policy engine (step 5) for this request's
+    classified outcome.
+
+    Called from check()'s finally, after the authentication-log row is written,
+    so a failure count over the log includes the just-written event. This only
+    produces side effects that the NEXT inbound request consults (it writes
+    lockout state); it must never alter or break the response that already
+    completed, so every error is swallowed. It deliberately returns nothing — a
+    ``return`` inside the finally would mask an in-flight exception.
+    """
+    try:
+        evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+        # A prior handler error may have left the session in an aborted state;
+        # clear it so request teardown can proceed cleanly.
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])

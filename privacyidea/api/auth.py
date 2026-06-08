@@ -74,6 +74,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.engine import is_user_locked, evaluate_lockout_policies
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
@@ -278,6 +279,15 @@ def get_auth_token():
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
     g.audit_object.log({"user": user.login, "realm": user.realm})
+    # Conditional-access pre-check: a currently-locked user is rejected before any
+    # credential check, with the generic wrong-credentials failure so the lock is not
+    # leaked. An unresolved user / local DB admin has no (resolver, uid, realm) identity
+    # tuple and is therefore never considered locked.
+    if is_user_locked(user):
+        log.info(f"Rejecting /auth login for locked user {user!r}.")
+        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
+        raise AuthError(_("Authentication failure. Wrong credentials"),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
@@ -510,6 +520,14 @@ def get_auth_token():
     log_authentication(auth_event_type, user=user, serial=details.get("serial"),
                        transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
                        login=username if auth_event_type == AuthEventType.USER_UNKNOWN else None)
+
+    # Feed the classified outcome to the lockout engine (after the log row is written so the
+    # count includes it). Side effects only — it writes lockout state for the next request and
+    # must never break this login response.
+    try:
+        evaluate_lockout_policies(user, auth_event_type, source_ip=g.client_ip)
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,

@@ -1,0 +1,212 @@
+# (c) NetKnights GmbH 2026,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""
+End-to-end tests for the conditional-access lockout engine at the
+``/validate/check`` view: the pre-check that rejects an already-locked user
+before any token logic runs, and the full loop where repeated failures trip a
+policy stage and lock the user.
+"""
+from datetime import timedelta
+
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked
+from privacyidea.lib.token import init_token, remove_token, get_tokens
+from privacyidea.lib.user import User
+from privacyidea.models import db
+from privacyidea.models.authentication_log import AuthenticationLog
+from privacyidea.models.lockout_policy import (
+    LockoutPolicy,
+    LockoutPolicyStage,
+    LockoutStageAction,
+    UserLockoutState,
+)
+from privacyidea.models.utils import utc_now
+from .base import MyApiTestCase
+
+
+class ConditionalAccessValidateTestCase(MyApiTestCase):
+
+    serial = "CA_HOTP"
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+        self.user = User("cornelius", self.realm1)
+        self._clear()
+
+    def tearDown(self):
+        if get_tokens(serial=self.serial):
+            remove_token(self.serial)
+        self._clear()
+        super().tearDown()
+
+    @staticmethod
+    def _clear():
+        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+                      LockoutPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+
+    def _check(self, data):
+        with self.app.test_request_context('/validate/check', method='POST', data=data):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            return response.json
+
+    def _lock_user(self, lock_expires_at):
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, is_locked=True,
+                                        lock_expires_at=lock_expires_at))
+        db.session.commit()
+
+    def _make_lock_policy(self, *, counter_type, threshold, duration, window=3600):
+        policy = LockoutPolicy(name="ca_lock", counter_type_to_track=str(counter_type),
+                               time_window_seconds=window, enabled=True, priority=1)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id,
+                                          action_type=str(LockoutAction.LOCK_USER),
+                                          action_value=duration))
+        db.session.commit()
+
+    def _failcount(self):
+        return get_tokens(serial=self.serial)[0].token.failcount
+
+    # --- pre-check ------------------------------------------------------------
+
+    def test_locked_user_rejected_without_token_logic(self):
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self.assertEqual(0, self._failcount())
+
+        # Even valid credentials must be rejected while the user is locked.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["status"], body)
+        self.assertFalse(body["result"]["value"], body)
+        # Generic response: no detail leaks the reason.
+        self.assertFalse(body.get("detail"), body)
+        # No token logic ran: the fail counter did not move and no valid OTP was consumed.
+        self.assertEqual(0, self._failcount())
+        # The pre-check rejects before classification, so it writes no authentication-log row.
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_expired_lock_does_not_reject(self):
+        self._lock_user(utc_now() - timedelta(seconds=10))
+        # An expired lock is not a lock: a valid authentication still succeeds.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+
+    # --- full loop ------------------------------------------------------------
+
+    def test_user_locked_after_threshold_failures(self):
+        # 3 wrong OTPs (correct PIN) within the window -> MFA_FAIL -> 10-minute lock.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+
+        for _ in range(3):
+            body = self._check({"user": "cornelius", "pass": "pin000000"})
+            self.assertFalse(body["result"]["value"], body)
+
+        # The three MFA_FAIL events tripped the stage and locked the user.
+        self.assertEqual(3, len(get_authentication_logs()))
+        self.assertEqual([AuthEventType.MFA_FAIL] * 3,
+                         [entry.event_type for entry in get_authentication_logs()])
+        self.assertTrue(is_user_locked(self.user))
+
+        # The next request is rejected by the pre-check: no further token logic, no new log row.
+        logs_before = len(get_authentication_logs())
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(logs_before, len(get_authentication_logs()))
+
+    def test_below_threshold_does_not_lock(self):
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+        for _ in range(2):
+            self._check({"user": "cornelius", "pass": "pin000000"})
+        self.assertFalse(is_user_locked(self.user))
+        # A subsequent valid authentication still succeeds.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+
+
+class ConditionalAccessAuthTestCase(MyApiTestCase):
+    """The WebUI JWT login (/auth) is gated by the same lockout engine."""
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        self._clear()
+
+    def tearDown(self):
+        self._clear()
+        super().tearDown()
+
+    @staticmethod
+    def _clear():
+        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+                      LockoutPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+
+    def _auth(self, username, password):
+        with self.app.test_request_context('/auth', method='POST',
+                                           data={"username": username, "password": password}):
+            return self.app.full_dispatch_request()
+
+    def _make_password_policy(self, *, threshold, duration=600, window=3600):
+        policy = LockoutPolicy(name="ca_pw", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+                               time_window_seconds=window, enabled=True, priority=1)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id,
+                                          action_type=str(LockoutAction.LOCK_USER),
+                                          action_value=duration))
+        db.session.commit()
+
+    def test_locked_user_rejected_at_auth(self):
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, is_locked=True,
+                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        # Correct userstore password, but the user is locked -> generic 401, no reason leak.
+        res = self._auth("cornelius", "test")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        # Rejected before classification -> no authentication-log row.
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_user_locked_after_password_failures(self):
+        self._make_password_policy(threshold=3)
+        for _ in range(3):
+            res = self._auth("cornelius", "wrongpass")
+            self.assertEqual(401, res.status_code, res)
+        self.assertTrue(is_user_locked(self.user))
+
+        # The correct password is now also rejected, proving the lock (not a credential check).
+        logs_before = len(get_authentication_logs())
+        res = self._auth("cornelius", "test")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(logs_before, len(get_authentication_logs()))
