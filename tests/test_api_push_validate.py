@@ -1322,6 +1322,11 @@ class PushAPITestCase(MyApiTestCase):
                                                   AuthEventType.CHALLENGE_ANSWERED_OK])
         assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=user, serial=self.serial_push)
+        # CHALLENGE_ANSWERED_OK occurs twice, so assert each occurrence by position:
+        # .all[1] is the smartphone confirm at /ttype/push (serial only, no user),
+        # .all[2] is the client collecting the result at /validate/check (carries the user).
+        assert_authentication_log_entry(auth_entries.all[1], serial=self.serial_push)
+        assert_authentication_log_entry(auth_entries.all[2], user=user, serial=self.serial_push)
 
         # Decline: the phone declines -> CHALLENGE_DECLINED at /ttype/push.
         clear_log()

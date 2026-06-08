@@ -36,6 +36,8 @@ class AuthenticationLogTestCase(MyTestCase):
         db.session.query(AuthenticationLog).delete()
         db.session.commit()
 
+        super().tearDown()
+
     def test_create_required_fields_only(self):
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1")
         self.assertIsNotNone(event_id)

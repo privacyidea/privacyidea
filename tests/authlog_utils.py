@@ -20,30 +20,55 @@ Assertion helpers for the conditional-access authentication log, shared across
 test modules. Registered for pytest assert-rewriting in tests/conftest.py so the
 plain ``assert`` statements still produce rich failure diffs.
 """
+from collections import Counter
+
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+
+
+class AuthLogEntries(dict):
+    """
+    The result of :func:`assert_authentication_log`.
+
+    Behaves as a ``{event_type: entry}`` mapping for the common case of looking up a uniquely occurring event by
+    name, e.g. ``entries[AuthEventType.LOGIN_SUCCESS]``. The full ordered list of entries is available as ``.all``
+    for flows where the same event type occurs more than once. Indexing a duplicated event type by name raises
+    (instead of silently returning one of the occurrences), so a specific occurrence must be asserted via
+    ``.all[i]``.
+    """
+    def __init__(self, entries):
+        self.all = list(entries)
+        self._counts = Counter(entry.event_type for entry in self.all)
+        super().__init__((entry.event_type, entry) for entry in self.all)
+
+    def __getitem__(self, event_type):
+        if self._counts[event_type] > 1:
+            raise AssertionError(
+                f"{event_type!s} occurs {self._counts[event_type]} times in the authentication log; assert a "
+                f"specific occurrence via .all[i] rather than indexing by event type")
+        return super().__getitem__(event_type)
 
 
 def assert_authentication_log(event_types, transaction_id=None):
     """
-    Assert that the authentication log holds exactly the given ordered list of event
-    types and return the entries keyed by event type, so the caller can pick a specific
-    entry by name (rather than by position) and check its attributes via
-    :func:`assert_authentication_log_entry`, e.g. ``entries[AuthEventType.LOGIN_SUCCESS]``.
+    Assert that the authentication log holds exactly the given ordered list of event types, and return the entries.
+
+    The returned :class:`AuthLogEntries` maps event type -> entry for looking up a uniquely occurring event by name
+    (``entries[AuthEventType.LOGIN_SUCCESS]``) and exposes the full ordered list as ``.all``. When the same event
+    type occurs more than once, assert a specific occurrence via ``.all[i]`` — indexing a duplicated type by name
+    raises rather than silently returning one of them.
 
     :param event_types: the expected AuthEventType values, ordered by creation
     :param transaction_id: if given, only entries of that transaction are checked
         (correlates a triggered challenge with its answer); otherwise all entries are
         checked (clear the log before the request for an exact match)
-    :return: a dict mapping event type to its entry (the event types asserted for a
-        single request are distinct, so this mapping is unambiguous)
+    :return: an :class:`AuthLogEntries` (a dict of event type -> entry, plus the ordered ``.all`` list)
     """
     if transaction_id is not None:
         entries = get_authentication_logs(transaction_id=transaction_id)
     else:
         entries = get_authentication_logs()
-    entries = sorted(entries, key=lambda entry: entry.id)
     assert [entry.event_type for entry in entries] == event_types
-    return {entry.event_type: entry for entry in entries}
+    return AuthLogEntries(entries)
 
 
 def assert_authentication_log_entry(entry, user=None, serial=None, client_label=None, other_info=None):
