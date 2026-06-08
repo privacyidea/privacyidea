@@ -62,7 +62,7 @@ def get_resolvers():
     :status 200: dict of resolver definitions in ``result.value``.
     """
     typ = get_optional(request.all_data, "type")
-    res = get_resolver_list(filter_resolver_type=typ)
+    res = get_resolver_list(filter_resolver_type=typ, censor=True)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -129,7 +129,7 @@ def get_resolver(resolver=None):
     :param resolver: path component, the name of the resolver.
     :status 200: dict containing the resolver's configuration in ``result.value``.
     """
-    res = get_resolver_list(filter_resolver_name=resolver)
+    res = get_resolver_list(filter_resolver_name=resolver, censor=True)
 
     g.audit_object.log({"success": True,
                         "info": resolver})

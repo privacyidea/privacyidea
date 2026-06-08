@@ -117,7 +117,7 @@ class SMTPServerTestCase(MyApiTestCase):
         assert server1["server"] == "1.2.3.4"
         assert server1["sender"] == "privacyidea@local"
         assert server1["username"] == "cornelius"
-        assert server1["password"] == "secret"
+        assert server1["password"] == "__CENSORED__"
 
     def test_delete_server(self):
         """After deleting a server, the list is empty."""
