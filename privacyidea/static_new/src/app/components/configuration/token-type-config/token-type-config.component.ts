@@ -121,8 +121,12 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     computation: (config) => ({ ...config })
   });
 
-  onFormDataChange(data: Record<string, unknown>): void {
-    this.formData.set(data as Record<string, string>);
+  onFormDataChange(data: Record<string, string | number | boolean>): void {
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      normalized[key] = typeof value === "boolean" ? (value ? "True" : "False") : String(value);
+    }
+    this.formData.set(normalized);
   }
 
   nextQuestionIndex = linkedSignal<Record<string, string>, number>({

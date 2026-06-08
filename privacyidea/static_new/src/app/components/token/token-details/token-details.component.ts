@@ -114,10 +114,10 @@ export const tokenDetailGroups: { id: TokenDetailGroup; label: string }[] = [
   { id: "assignment", label: "Assignments" }
 ];
 
-function formatTokenTimestamp(value: unknown): string | undefined {
-  if (value === undefined || value === null || value === "") return undefined;
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return String(value);
+function formatTokenTimestamp(value: string | undefined): string | undefined {
+  if (value === undefined || value === "") return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
@@ -264,10 +264,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       return tokenDetailsKeyMap
         .map((detail) => {
           const fromInfo = (TIMESTAMP_INFO_KEYS as readonly string[]).includes(detail.key);
-          const raw = fromInfo
-            ? details.info?.[detail.key]
+          const value = fromInfo
+            ? formatTokenTimestamp(details.info?.[detail.key])
             : details[detail.key as keyof TokenDetails];
-          const value = fromInfo ? formatTokenTimestamp(raw) : raw;
           return {
             keyMap: detail,
             value,
@@ -309,10 +308,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       return userDetailsKeyMap
         .map((detail) => {
           const fromInfo = (USER_TIMESTAMP_INFO_KEYS as readonly string[]).includes(detail.key);
-          const raw = fromInfo
-            ? details.info?.[detail.key]
+          const value = fromInfo
+            ? formatTokenTimestamp(details.info?.[detail.key])
             : details[detail.key as keyof TokenDetails];
-          const value = fromInfo ? formatTokenTimestamp(raw) : raw;
           return {
             keyMap: detail,
             value,
