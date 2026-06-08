@@ -117,7 +117,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
-    let enrollPromise = this._toPromise(enrollResponse);
+    const enrollPromise = this._toPromise(enrollResponse);
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
