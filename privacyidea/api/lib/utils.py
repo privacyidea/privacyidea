@@ -231,6 +231,7 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
     identity, stored in ``other_info``.
     """
     if not event_type:
+        log.debug("Not logging authentication event, because no event type is given.")
         return
     client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
     # TODO: replace by user function (after related PR is merged)

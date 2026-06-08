@@ -121,7 +121,7 @@ def get_authentication_logs(resolver: str | None = None,
                             start_timestamp: datetime | None = None,
                             end_timestamp: datetime | None = None) -> list[AuthenticationLog]:
     """
-    Return authentication log entries matching all provided filter criteria.
+    Return authentication log entries matching all provided filter criteria, ordered by id (i.e. chronologically).
     All parameters are optional; omitting a parameter means no filtering on that field.
     timestamp filters are inclusive on both ends.
     """
@@ -144,6 +144,7 @@ def get_authentication_logs(resolver: str | None = None,
         stmt = stmt.where(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
     if end_timestamp is not None:
         stmt = stmt.where(AuthenticationLog.timestamp <= _naive_utc(end_timestamp))
+    stmt = stmt.order_by(AuthenticationLog.id)
     return db.session.scalars(stmt).all()
 
 
