@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
-# SPDX-FileCopyrightText: (C) 2026 Henrik Falk <henrik.falk@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
@@ -16,10 +15,12 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
     JSON,
+    DateTime,
     Sequence,
     Unicode,
     Integer,
@@ -30,7 +31,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin
+from privacyidea.models.utils import MethodsMixin, utc_now
 
 log = logging.getLogger(__name__)
 
@@ -112,3 +113,35 @@ class LockoutStageAction(MethodsMixin, db.Model):
     action_value: Mapped[Any | None] = mapped_column(JSON, nullable=True)
 
     stage: Mapped["LockoutPolicyStage"] = relationship("LockoutPolicyStage", back_populates="actions")
+
+
+class UserLockoutState(MethodsMixin, db.Model):
+    """
+    The current lockout status of a single user, keyed by the same
+    ``(resolver, uid, realm)`` tuple used in :class:`AuthenticationLog`.
+
+    There is deliberately **no failure counter** stored here: failure counts
+    are derived on demand by querying ``authentication_log`` over a policy's
+    time window. That keeps the data flexible (per-policy windows, easy reset,
+    automatic decay) and avoids stale counters on user objects.
+
+    ``lock_expires_at`` is the load-bearing field: a row whose
+    ``lock_expires_at`` lies in the future means the user is currently locked
+    (timestamps are naive UTC, see :func:`~privacyidea.models.utils.utc_now`).
+    ``last_stage_triggered`` records which stage produced the current state,
+    both for auditing and so a stage's actions are not fired twice (de-dup).
+    """
+    __tablename__ = 'user_lockout_state'
+    resolver: Mapped[str] = mapped_column(Unicode(120), primary_key=True)
+    uid: Mapped[str] = mapped_column(Unicode(320), primary_key=True)
+    realm: Mapped[str] = mapped_column(Unicode(255), primary_key=True)
+    is_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # SET NULL on delete: keep the lockout state row if its stage is removed.
+    last_stage_triggered: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey('lockout_policy_stages.id', ondelete='SET NULL'),
+        nullable=True, index=True)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+    last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")

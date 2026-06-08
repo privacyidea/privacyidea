@@ -36,7 +36,7 @@
 
 from .db import db
 from .audit import Audit, audit_column_length
-from .authentication_log import AuthenticationLog
+from .authentication_log import AuthenticationLog, authentication_log_column_length
 from .cache import AuthCache, UserCache
 from .caconnector import CAConnector, CAConnectorConfig
 from .challenge import Challenge, cleanup_challenges
@@ -46,7 +46,8 @@ from .customuserattribute import CustomUserAttribute
 from .internaluserattribute import InternalUserAttribute
 from .event import EventHandler, EventHandlerOption, EventHandlerCondition
 from .eventcounter import EventCounter
-from .lockout_policy import LockoutPolicy, LockoutPolicyStage, LockoutStageAction
+from .lockout_policy import (LockoutPolicy, LockoutPolicyStage,
+                            LockoutStageAction, UserLockoutState)
 from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
                       MachineTokenOptions, get_machineresolver_id,
                       get_machinetoken_ids)
@@ -69,12 +70,13 @@ from .tokengroup import Tokengroup, TokenTokengroup
 
 # We don't use "import *" but to avoid the unused import warning we define this
 __all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog",
-           "AuthCache", "UserCache",
+           "authentication_log_column_length", "AuthCache", "UserCache",
            "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
            "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
            "LockoutPolicy", "LockoutPolicyStage", "LockoutStageAction",
+           "UserLockoutState",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",
            "MonitoringStats",
