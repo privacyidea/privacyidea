@@ -35,6 +35,9 @@ if _worker:
 
 import pytest
 
+# Enable rich assert diffs for the plain asserts in the auth-log helper module.
+pytest.register_assert_rewrite("tests.authlog_utils")
+
 from privacyidea.lib.caconnector import save_caconnector
 
 CAKEY = "cakey.pem"

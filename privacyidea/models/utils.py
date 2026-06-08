@@ -17,9 +17,18 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime, timezone
+
+from sqlalchemy.dialects import sqlite
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement
+from sqlalchemy.sql.sqltypes import BigInteger
+
 from privacyidea.models import db
+
+# Use a variant type for sqlite since it does not allow auto-increment with BigInteger type.
+# (See https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#allowing-autoincrement-behavior-sqlalchemy-types-other-than-integer-integer)
+BigIntegerType = BigInteger()
+BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), "sqlite")
 
 
 def utc_now() -> datetime:

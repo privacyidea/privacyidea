@@ -50,6 +50,7 @@ from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.decorators import check_token_locked
@@ -93,6 +94,8 @@ POLL_INTERVAL = 1.0
 POLL_TIME_WINDOW = 1
 UPDATE_FB_TOKEN_WINDOW = 5
 POLL_ONLY = "poll only"
+# Key carrying the classified push response from the token class to the api layer
+PUSH_AUTH_EVENT = "push_auth_event"
 AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
@@ -731,6 +734,7 @@ class PushTokenClass(TokenClass):
         challenges = get_challenges(serial=serial)
         result = False
         details = {}
+        signature_verified = False
 
         if challenges:
             # There are valid challenges, so we check this signature
@@ -748,6 +752,7 @@ class PushTokenClass(TokenClass):
                                       hashes.SHA256())
                     log.debug(f"Found matching challenge {challenge}.")
                     result = True
+                    signature_verified = True
                     if decline:
                         challenge.set_session(ChallengeSession.DECLINED)
                     else:
@@ -799,6 +804,17 @@ class PushTokenClass(TokenClass):
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
+
+        # Classify the smartphone's response for the authentication log.
+        details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+        if signature_verified:
+            if decline:
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_DECLINED
+            elif "display_code" in details:
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_TRIGGERED
+            elif result:
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_OK
+
         return result, details
 
     @classmethod
@@ -1083,6 +1099,8 @@ class PushTokenClass(TokenClass):
         else:
             raise PrivacyIDEAError(f'Method {request.method} not allowed in \'api_endpoint\' for push token.')
 
+        # Hand the classified auth response to the api layer for logging
+        setattr(g, PUSH_AUTH_EVENT, details.pop(PUSH_AUTH_EVENT, None))
         return "json", prepare_result(result, details=details)
 
     @log_with(log, hide_args=[1])
