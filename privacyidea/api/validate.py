@@ -529,15 +529,18 @@ def check():
     credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
     serial = get_optional(request.all_data, "serial")
 
-    if credential_id:
-        _handle_fido2_auth(context, credential_id)
-    elif serial:
-        _handle_serial_auth(context, serial)
-    else:
-        _handle_standard_auth(context)
-
-    # Finalize and Return
-    return _finalize_auth_response(context)
+    try:
+        if credential_id:
+            _handle_fido2_auth(context, credential_id)
+        elif serial:
+            _handle_serial_auth(context, serial)
+        else:
+            _handle_standard_auth(context)
+        response = _finalize_auth_response(context)
+    finally:
+        # Write the single authentication-log row for this request
+        _log_authentication_event(context)
+    return response
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:
@@ -655,10 +658,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         try:
             fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
         except (ResourceNotFoundError, AuthError):
-            # The challenge could not be verified (e.g. answered for the wrong serial or expired).
-            # It propagates as a failure response, bypassing the finalize hook, so log it here.
-            log_authentication(AuthEventType.MFA_FAIL, user=token.user, serial=token.get_serial(),
-                               transaction_id=transaction_id)
+            # The challenge could not be verified (e.g. answered for the wrong serial or expired) and propagates as a
+            # failure. Record the outcome on the context; check() logs it once in its finally.
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            context["serial_list"].append(token.get_serial())
             raise
         context["result"] = fido_verification_result.success > 0
 
@@ -739,12 +742,11 @@ def _handle_standard_auth(context: dict):
             success, details = check_user_pass(context["user"], get_optional(request.all_data, "pass"),
                                                options=context["options"])
         except (UserError, AuthError):
-            # An unknown user is rejected by the auth_user_does_not_exist policy decorator
-            # before check_user_pass can classify it, and the error bypasses the finalize
-            # hook, so log the unknown-user attempt here.
+            # An unknown user is rejected by the auth_user_does_not_exist policy decorator before check_user_pass can
+            # classify it. Record the outcome on the context; check() logs it once in its finally.
             if not context["user"] or not context["user"].exist():
-                log_authentication(AuthEventType.USER_UNKNOWN, user=context["user"],
-                                   login=context["user"].login if context["user"] else None)
+                context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
+                context["login"] = context["user"].login if context["user"] else None
             raise
 
         # A policy decorator (passthru, passonnouser, authcache, accept-no-token) can
@@ -840,16 +842,25 @@ def _finalize_auth_response(context):
         "token_type": details.get("type")
     })
 
-    # Authentication Log
+    return ret
+
+
+def _log_authentication_event(context):
+    """
+    Write the single authentication-log row for this /validate/check request.
+
+    Called from check()'s finally, so it runs exactly once whether the request succeeded or a handler raised. The
+    classified outcome is read from the explicit *context* dict (no framework global), and log_authentication is a
+    no-op if nothing classified the request.
+    """
     log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
-        user=user,
-        serial=serials_str if serials_str else None,
+        user=context["user"],
+        serial=",".join(context["serial_list"]) or None,
         transaction_id=(request.all_data.get("transaction_id") or request.all_data.get("state")
-                        or details.get("transaction_id")),
+                        or context["details"].get("transaction_id")),
+        login=context.get("login"),
     )
-
-    return ret
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
