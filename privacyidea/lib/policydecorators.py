@@ -545,6 +545,11 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                  user_object=user).action_values(unique=True)
         if otppin_dict:
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
+                # With otppin=none there is no first factor, so any failure of this token is an OTP failure, not an
+                # MFA/PIN failure. Record it so the authentication-log classification does not inflate a wrong OTP to
+                # the high-signal MFA_FAIL.
+                if token:
+                    token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.OTP_FAIL
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
                     return True

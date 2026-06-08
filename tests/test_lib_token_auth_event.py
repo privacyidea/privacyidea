@@ -109,6 +109,19 @@ class AuthEventClassificationTestCase(MyTestCase):
         finally:
             delete_policy("authevt_cr")
 
+    def test_08_otp_fail_otppin_none(self):
+        from privacyidea.lib.policy import PolicyClass
+        set_policy("authevt_otppin_none", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        fake_g = FakeFlaskG()
+        fake_g.policy_object = PolicyClass()
+        fake_g.audit_object = FakeAudit()
+        fake_g.client_ip = "10.0.0.1"
+        # OTPPIN=none: there is no first factor, so a wrong OTP is OTP_FAIL, not the high-signal MFA_FAIL.
+        tokens = get_tokens(user=self.user)
+        _res, reply = check_token_list(tokens, "000000", user=self.user, options={"g": fake_g})
+        self.assertEqual(AuthEventType.OTP_FAIL, reply.get(AUTH_EVENT_TYPE_KEY))
+        delete_policy("authevt_otppin_none")
+
 
 class RequestEventPrecedenceTestCase(MyTestCase):
     """Unit tests for the per-request precedence and reduce_request_events."""
