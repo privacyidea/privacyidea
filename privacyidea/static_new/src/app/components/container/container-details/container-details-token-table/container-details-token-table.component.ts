@@ -216,6 +216,10 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
     return tokens.some((token) => token.username !== "");
   });
 
+  containerHasSingleUser = computed<boolean>(
+    () => this.containerService.containerDetails().containers.at(0)?.users.length === 1
+  );
+
   ngAfterViewInit(): void {
     const dataSource = this.dataSource();
     dataSource.paginator = this.paginator;
