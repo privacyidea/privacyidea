@@ -248,6 +248,16 @@ class AuthenticationLogTestCase(MyTestCase):
         # And a far-future aware cutoff deletes the entry.
         self.assertEqual(1, cleanup_authentication_log(older_than=datetime.now(tz) + timedelta(days=1)))
 
+    def test_aware_timestamp_is_utc(self):
+        # The column is stored naive (UTC); aware_timestamp re-attaches the UTC tzinfo on read.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                            realm="r1")
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertIsNone(entry.timestamp.tzinfo)
+        self.assertEqual(timezone.utc, entry.aware_timestamp.tzinfo)
+        self.assertEqual(entry.timestamp, entry.aware_timestamp.replace(tzinfo=None))
+
     def test_values_are_truncated_to_column_length(self):
         from privacyidea.models import authentication_log_column_length
 

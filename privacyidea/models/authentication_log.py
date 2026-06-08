@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import BigInteger, Unicode, DateTime, JSON, Index, Sequence
 from sqlalchemy.orm import mapped_column, Mapped
@@ -63,3 +63,14 @@ class AuthenticationLog(MethodsMixin, db.Model):
     serial: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["transaction_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
+
+    @property
+    def aware_timestamp(self) -> datetime:
+        """
+        Return :attr:`timestamp` as a timezone-aware UTC datetime.
+
+        The column itself is stored as a naive datetime because timezone-aware DateTime columns are not portable
+        across all supported databases (they are ignored or handled differently per backend). We therefore store
+        UTC and re-attach the timezone on read.
+        """
+        return self.timestamp.replace(tzinfo=timezone.utc)
