@@ -16,7 +16,9 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           REQUEST_EVENT_PRECEDENCE,
+                                                                           reduce_request_events)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy)
 from privacyidea.lib.token import (get_tokens, init_token,
@@ -106,3 +108,41 @@ class AuthEventClassificationTestCase(MyTestCase):
             self.assertEqual(AuthEventType.CHALLENGE_ANSWERED_OK, reply.get(AUTH_EVENT_TYPE_KEY))
         finally:
             delete_policy("authevt_cr")
+
+
+class RequestEventPrecedenceTestCase(MyTestCase):
+    """Unit tests for the per-request precedence and reduce_request_events."""
+
+    def test_01_precedence_covers_every_event_type(self):
+        # Every AuthEventType must have a precedence rank
+        self.assertSetEqual(set(AuthEventType), set(REQUEST_EVENT_PRECEDENCE),
+                            "Add missing AuthEventType REQUEST_EVENT_PRECEDENCE list or remove unexisting ones from it.")
+        # No event is listed twice (which would make its rank ambiguous).
+        self.assertEqual(len(REQUEST_EVENT_PRECEDENCE), len(set(REQUEST_EVENT_PRECEDENCE)),
+                         "Remove duplicated entries from the REQUEST_EVENT_PRECEDENCE list.")
+
+    def test_02_reduce_returns_highest_precedence_event(self):
+        # A success outranks a failure regardless of order.
+        self.assertEqual(AuthEventType.LOGIN_SUCCESS,
+                         reduce_request_events([AuthEventType.PIN_FAIL, AuthEventType.LOGIN_SUCCESS,
+                                                AuthEventType.NO_TOKEN]))
+        # A triggered challenge outranks any failure.
+        self.assertEqual(AuthEventType.CHALLENGE_TRIGGERED,
+                         reduce_request_events([AuthEventType.MFA_FAIL, AuthEventType.CHALLENGE_TRIGGERED]))
+        # MFA_FAIL is the highest-signal failure.
+        self.assertEqual(AuthEventType.MFA_FAIL,
+                         reduce_request_events([AuthEventType.PIN_FAIL, AuthEventType.MFA_FAIL,
+                                                AuthEventType.PIN_FAIL]))
+        # A wrong user store password is preferred over a generic PIN failure.
+        self.assertEqual(AuthEventType.PASSWORD_FAIL,
+                         reduce_request_events([AuthEventType.PIN_FAIL, AuthEventType.PASSWORD_FAIL]))
+
+    def test_03_reduce_empty_returns_none(self):
+        self.assertIsNone(reduce_request_events([]))
+
+    def test_04_reduce_ignores_unknown_events(self):
+        # An event without a defined precedence is ignored, and the highest known event still wins.
+        self.assertEqual(AuthEventType.MFA_FAIL,
+                         reduce_request_events(["NOT_A_REAL_EVENT", AuthEventType.PIN_FAIL, AuthEventType.MFA_FAIL]))
+        # Only unknown events -> nothing classifiable.
+        self.assertIsNone(reduce_request_events(["NOT_A_REAL_EVENT"]))

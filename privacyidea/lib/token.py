@@ -82,7 +82,8 @@ from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           reduce_request_events)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF,
@@ -2475,6 +2476,17 @@ def weigh_token_type(token_obj):
         return ord(token_obj.type[0])
 
 
+def _token_event(token: TokenClass, default_event: AuthEventType) -> AuthEventType:
+    """
+    Return the outcome a token classified for itself, if any, else *default_event*.
+
+    A policy decorator (e.g. ``auth_otppin`` marking a wrong userstore password as PASSWORD_FAIL) records its more
+    specific reason in ``token.auth_details[AUTH_EVENT_TYPE_KEY]``; this lets such a token override the default reason
+    the orchestrator derived from the (pin_match, otp_count) tuple.
+    """
+    return token.auth_details.get(AUTH_EVENT_TYPE_KEY) or default_event
+
+
 @log_with(log, hide_args=[1])
 @libpolicy(reset_all_user_tokens)
 @libpolicy(generic_challenge_response_reset_pin)
@@ -2517,9 +2529,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     invalid_token_list = []
     valid_token_list = []
     messages = []
-    further_challenge = False
-    answered_token = None
-    answered_stale_challenge = False
+    # Per-token outcomes for the authentication log
+    request_events: list[AuthEventType] = []
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2557,7 +2568,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 # This is a transaction_id, that either never existed or has expired or is not for this token.
                 # We add this to the invalid_token_list
                 invalid_token_list.append(token_object)
-                answered_stale_challenge = True
+                request_events.append(AuthEventType.CHALLENGE_ANSWERED_FAIL)
         elif token_object.is_challenge_request(passw, user=user, options=options):
             # This is a challenge request
             challenge_request_token_list.append(token_object)
@@ -2581,13 +2592,16 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     # This is a successful authentication
                     valid_token_list.append(token_object)
                 elif pin_match:
-                    # The PIN of the token matches
+                    # The PIN (first factor) of the token matches, but the OTP did not
                     pin_matching_token_list.append(token_object)
+                    request_events.append(_token_event(token_object, AuthEventType.MFA_FAIL))
                 else:
-                    # Nothing matches at all
+                    # Nothing matches at all: a wrong first factor (PIN_FAIL or PASSWORD_FAIL with otppin=userstore)
                     invalid_token_list.append(token_object)
+                    request_events.append(_token_event(token_object, AuthEventType.PIN_FAIL))
             else:
                 invalid_token_list.append(token_object)
+                request_events.append(AuthEventType.PIN_FAIL)
                 log.info(f"Skipping authentication try for token {token_object.get_serial()}"
                          f" because policy force_challenge_response is set.")
 
@@ -2635,6 +2649,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
                 # The token is active and the auth counters are ok.
                 res = True
+                request_events.append(AuthEventType.LOGIN_SUCCESS)
                 if not reply_dict.get("type"):
                     reply_dict["type"] = token_obj.token.tokentype
                 if reply_dict["type"] != token_obj.token.tokentype:
@@ -2678,7 +2693,6 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 else:
                     # Challenge matches, token is active and token is fit for challenge
                     res = True
-                    answered_token = token_object
                     if increase_auth_counters:
                         token_object.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
@@ -2698,11 +2712,13 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         create_challenges_from_tokens([token_object], reply_dict, options)
                         further_challenge = True
                         res = False
+                        request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
                     else:
                         # This was the last successful challenge, so
                         # reset the fail counter of the challenge response token
                         token_object.reset()
                         token_object.post_success()
+                        request_events.append(_token_event(token_object, AuthEventType.CHALLENGE_ANSWERED_OK))
 
                     # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
@@ -2718,6 +2734,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
             for token_obj in challenge_response_token_list:
                 if not token_obj.is_outofband():
                     token_obj.inc_failcount()
+                request_events.append(AuthEventType.CHALLENGE_ANSWERED_FAIL)
             if not matching_challenge:
                 if len(challenge_response_token_list) == 1:
                     reply_dict["serial"] = challenge_response_token_list[0].token.serial
@@ -2738,6 +2755,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                 if is_true(options.get("increase_failcounter_on_challenge")):
                     token_obj.inc_failcount()
             create_challenges_from_tokens(active_challenge_token, reply_dict, options)
+            request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.
@@ -2782,30 +2800,9 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         # There is no suitable token for authentication
         reply_dict["message"] = _("No suitable token found for authentication.")
 
-    # Classify the request outcome for the authentication log.
-    if res:
-        if valid_token_list:
-            event_type = AuthEventType.LOGIN_SUCCESS
-        else:
-            # The answering token may override the event
-            override = answered_token.auth_details.get(AUTH_EVENT_TYPE_KEY) if answered_token else None
-            event_type = override or AuthEventType.CHALLENGE_ANSWERED_OK
-    elif challenge_request_token_list:
-        event_type = AuthEventType.CHALLENGE_TRIGGERED
-    elif challenge_response_token_list:
-        event_type = AuthEventType.CHALLENGE_TRIGGERED if further_challenge else AuthEventType.CHALLENGE_ANSWERED_FAIL
-    elif pin_matching_token_list:
-        event_type = AuthEventType.MFA_FAIL
-    elif answered_stale_challenge:
-        event_type = AuthEventType.CHALLENGE_ANSWERED_FAIL
-    elif invalid_token_list:
-        # A token may classify its own failure (auth_otppin marks a wrong userstore password as PASSWORD_FAIL);
-        # otherwise the PIN did not match.
-        overrides = [token_object.auth_details.get(AUTH_EVENT_TYPE_KEY) for token_object in invalid_token_list]
-        event_type = AuthEventType.PASSWORD_FAIL if AuthEventType.PASSWORD_FAIL in overrides else AuthEventType.PIN_FAIL
-    else:
-        event_type = AuthEventType.NO_TOKEN
-    reply_dict[AUTH_EVENT_TYPE_KEY] = event_type
+    # Classify the request outcome for the authentication log by reducing the per-token events collected during the
+    # walk to the single highest-precedence one.
+    reply_dict[AUTH_EVENT_TYPE_KEY] = reduce_request_events(request_events) or AuthEventType.NO_TOKEN
 
     return res, reply_dict
 

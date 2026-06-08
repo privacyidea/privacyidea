@@ -15,7 +15,10 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import logging
 from enum import Enum
+
+log = logging.getLogger(__name__)
 
 # Key under which the classified AuthEventType is carried from lib to api layer
 AUTH_EVENT_TYPE_KEY = "authentication_event_type"
@@ -43,3 +46,48 @@ class AuthEventType(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+# Request-level precedence, highest signal first.
+REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
+    AuthEventType.LOGIN_SUCCESS,
+    AuthEventType.CHALLENGE_ANSWERED_OK,
+    AuthEventType.CHALLENGE_TRIGGERED,
+    AuthEventType.CHALLENGE_ANSWERED_FAIL,
+    AuthEventType.CHALLENGE_DECLINED,
+    AuthEventType.MFA_FAIL,
+    AuthEventType.OTP_FAIL,
+    AuthEventType.PASSWORD_FAIL,
+    AuthEventType.PIN_FAIL,
+    AuthEventType.NO_TOKEN,
+    AuthEventType.USER_UNKNOWN,
+]
+
+# Precedence rank of each event.
+_EVENT_RANK: dict[AuthEventType, int] = {event: rank for rank, event in enumerate(REQUEST_EVENT_PRECEDENCE)}
+
+
+def reduce_request_events(events: list[AuthEventType]) -> AuthEventType | None:
+    """
+    Reduce the per-token outcomes of one authentication request to the single event that classifies the whole request,
+    by the fixed :data:`REQUEST_EVENT_PRECEDENCE`.
+
+    Events without a defined precedence (e.g. a new :class:`AuthEventType` member that was not added to
+    :data:`REQUEST_EVENT_PRECEDENCE`) are logged and ignored, so an oversight degrades the classification rather than
+    breaking the authentication.
+
+    :param events: an iterable of :class:`AuthEventType` members
+    :return: the highest-precedence known event, or ``None`` if *events* holds no known event
+    """
+    winner = None
+    winner_rank: int | None = None
+    for event in events:
+        rank = _EVENT_RANK.get(event)
+        if rank is None:
+            log.debug(
+                f"Ignoring authentication event {event!r} without a defined precedence in REQUEST_EVENT_PRECEDENCE.")
+            continue
+        if winner_rank is None or rank < winner_rank:
+            winner = event
+            winner_rank = rank
+    return winner
