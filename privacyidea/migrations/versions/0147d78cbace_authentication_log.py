@@ -41,18 +41,21 @@ def upgrade():
         else:
             event_id_col = sa.Column('event_id', BigIntegerType, nullable=False, autoincrement=True)
 
+        # The column lengths must match privacyidea.models.authentication_log.authentication_log_column_length and are
+        # kept small enough that the composite index below stays below the 3072-byte InnoDB key limit of MySQL/MariaDB
+        # with utf8mb4: (120+320+255+40)*4 + 8 (timestamp) = 2948 bytes.
         op.create_table(
             'authentication_log',
             event_id_col,
-            sa.Column('resolver', sa.Unicode(length=1024), nullable=True),
-            sa.Column('uid', sa.Unicode(length=1024), nullable=True),
-            sa.Column('realm', sa.Unicode(length=1024), nullable=True),
-            sa.Column('event_type', sa.Unicode(length=1024), nullable=False),
+            sa.Column('resolver', sa.Unicode(length=120), nullable=True),
+            sa.Column('uid', sa.Unicode(length=320), nullable=True),
+            sa.Column('realm', sa.Unicode(length=255), nullable=True),
+            sa.Column('event_type', sa.Unicode(length=40), nullable=False),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
-            sa.Column('source_ip', sa.Unicode(length=1024), nullable=True),
-            sa.Column('client_label', sa.Unicode(length=1024), nullable=True),
-            sa.Column('serial', sa.Unicode(length=1024), nullable=True),
-            sa.Column('transaction_id', sa.Unicode(length=1024), nullable=True),
+            sa.Column('source_ip', sa.Unicode(length=50), nullable=True),
+            sa.Column('client_label', sa.Unicode(length=255), nullable=True),
+            sa.Column('serial', sa.Unicode(length=40), nullable=True),
+            sa.Column('transaction_id', sa.Unicode(length=64), nullable=True),
             sa.Column('other_info', sa.JSON(), nullable=True),
             sa.PrimaryKeyConstraint('event_id'),
         )

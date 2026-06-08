@@ -237,3 +237,14 @@ class AuthenticationLogTestCase(MyTestCase):
         deleted = cleanup_authentication_log(older_than=future_cutoff)
 
         self.assertEqual(0, deleted)
+
+    def test_values_are_truncated_to_column_length(self):
+        from privacyidea.models import authentication_log_column_length
+
+        # An over-long client_label (e.g. a pathological User-Agent) is truncated instead of overflowing the column.
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                            realm="r1", client_label="A" * 1000, serial="S" * 1000)
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        self.assertEqual("A" * authentication_log_column_length["client_label"], entry.client_label)
+        self.assertEqual("S" * authentication_log_column_length["serial"], entry.serial)

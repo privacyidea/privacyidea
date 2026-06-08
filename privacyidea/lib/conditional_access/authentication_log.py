@@ -15,12 +15,35 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import logging
 from datetime import datetime
 
 from sqlalchemy import delete, select
 
-from privacyidea.models import AuthenticationLog, db
+from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+
+log = logging.getLogger(__name__)
+
+
+def _truncate(column: str, value) -> str | None:
+    """
+    Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
+    pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert.
+
+    :param column: the column name, a key of
+        :data:`~privacyidea.models.authentication_log.authentication_log_column_length`
+    :param value: the value to store, or None
+    :return: the truncated string, or None if *value* is None
+    """
+    if value is None:
+        return None
+    value = str(value)
+    max_length = authentication_log_column_length[column]
+    if len(value) > max_length:
+        log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
+        value = value[:max_length]
+    return value
 
 
 def log_authentication_event(event_type: AuthEventType,
@@ -31,24 +54,33 @@ def log_authentication_event(event_type: AuthEventType,
                              source_ip: str | None = None,
                              client_label: str | None = None,
                              serial: str | None = None,
-                             other_info: dict | None = None) -> int:
+                             other_info: dict | None = None) -> int | None:
     """
     Create a new authentication log entry and return its event_id.
+
+    Writing the authentication log must never break the authentication itself, so any failure here is logged and
+    swallowed: the entry is not written, the session is rolled back so the rest of the request can still commit, and
+    ``None`` is returned instead of an event_id.
     """
-    entry = AuthenticationLog(
-        event_type=event_type,
-        transaction_id=transaction_id,
-        resolver=resolver,
-        uid=uid,
-        realm=realm,
-        source_ip=source_ip,
-        client_label=client_label,
-        serial=serial,
-        other_info=other_info
-    )
-    db.session.add(entry)
-    db.session.commit()
-    return entry.event_id
+    try:
+        entry = AuthenticationLog(
+            event_type=_truncate("event_type", event_type),
+            transaction_id=_truncate("transaction_id", transaction_id),
+            resolver=_truncate("resolver", resolver),
+            uid=_truncate("uid", uid),
+            realm=_truncate("realm", realm),
+            source_ip=_truncate("source_ip", source_ip),
+            client_label=_truncate("client_label", client_label),
+            serial=_truncate("serial", serial),
+            other_info=other_info
+        )
+        db.session.add(entry)
+        db.session.commit()
+        return entry.event_id
+    except Exception as ex:
+        log.warning(f"Failed to write the authentication log entry: {ex!r}")
+        db.session.rollback()
+        return None
 
 
 def delete_authentication_log_event(event_id: int) -> None:
