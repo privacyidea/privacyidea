@@ -229,6 +229,10 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
     user; an unresolvable user (e.g. USER_UNKNOWN) is logged with all three None.
     ``login`` records the claimed username for forensics when there is no resolved
     identity, stored in ``other_info``.
+
+    Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
+    serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
+    records that token's user, keeping the log symmetric.
     """
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
@@ -236,6 +240,17 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
     client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
+    if not resolved and serial and "," not in serial:
+        # The request carried a single serial but no (resolved) user. Resolve the token owner so the user is logged
+        # alongside the serial. A failure here must not break the logging, so it is swallowed.
+        try:
+            from privacyidea.lib.token import get_one_token
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token is not None and token.user and token.user.resolver:
+                user = token.user
+                resolved = True
+        except Exception as ex:
+            log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
     log_authentication_event(
         event_type=event_type,
         transaction_id=transaction_id,
