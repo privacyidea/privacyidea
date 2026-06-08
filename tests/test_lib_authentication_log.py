@@ -186,12 +186,12 @@ class AuthenticationLogTestCase(MyTestCase):
         # only the past entry
         results = get_authentication_logs(end_timestamp=now)
         self.assertEqual(1, len(results))
-        self.assertEqual(id1, results[0].event_id)
+        self.assertEqual(id1, results[0].id)
 
         # only the future entry
         results = get_authentication_logs(start_timestamp=now)
         self.assertEqual(1, len(results))
-        self.assertEqual(id2, results[0].event_id)
+        self.assertEqual(id2, results[0].id)
 
         # both entries
         results = get_authentication_logs(start_timestamp=past, end_timestamp=future)

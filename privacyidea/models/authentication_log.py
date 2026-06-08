@@ -51,8 +51,8 @@ class AuthenticationLog(MethodsMixin, db.Model):
         Index("ix_authlog_user_event_time", "resolver", "uid", "realm", "event_type", "timestamp"),
         Index("ix_authlog_ip_event_time", "source_ip", "event_type", "timestamp"),
     )
-    event_id: Mapped[int] = mapped_column(BigIntegerType, Sequence("authentication_log_seq", data_type=BigInteger),
-                                          primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntegerType, Sequence("authentication_log_seq", data_type=BigInteger),
+                                    primary_key=True)
     resolver: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["resolver"]))
     uid: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["uid"]))
     realm: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["realm"]))

@@ -41,7 +41,7 @@ def assert_authentication_log(event_types, transaction_id=None):
         entries = get_authentication_logs(transaction_id=transaction_id)
     else:
         entries = get_authentication_logs()
-    entries = sorted(entries, key=lambda entry: entry.event_id)
+    entries = sorted(entries, key=lambda entry: entry.id)
     assert [entry.event_type for entry in entries] == event_types
     return {entry.event_type: entry for entry in entries}
 

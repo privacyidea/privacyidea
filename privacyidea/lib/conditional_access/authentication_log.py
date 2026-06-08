@@ -56,11 +56,11 @@ def log_authentication_event(event_type: AuthEventType,
                              serial: str | None = None,
                              other_info: dict | None = None) -> int | None:
     """
-    Create a new authentication log entry and return its event_id.
+    Create a new authentication log entry and return its id.
 
     Writing the authentication log must never break the authentication itself, so any failure here is logged and
     swallowed: the entry is not written, the session is rolled back so the rest of the request can still commit, and
-    ``None`` is returned instead of an event_id.
+    ``None`` is returned instead of an id.
     """
     try:
         entry = AuthenticationLog(
@@ -76,7 +76,7 @@ def log_authentication_event(event_type: AuthEventType,
         )
         db.session.add(entry)
         db.session.commit()
-        return entry.event_id
+        return entry.id
     except Exception as ex:
         log.warning(f"Failed to write the authentication log entry: {ex!r}")
         db.session.rollback()
@@ -85,9 +85,9 @@ def log_authentication_event(event_type: AuthEventType,
 
 def delete_authentication_log_event(event_id: int) -> None:
     """
-    Delete a single authentication log entry by event_id.
+    Delete a single authentication log entry by id.
     """
-    stmt = delete(AuthenticationLog).where(AuthenticationLog.event_id == event_id)
+    stmt = delete(AuthenticationLog).where(AuthenticationLog.id == event_id)
     db.session.execute(stmt)
     db.session.commit()
 

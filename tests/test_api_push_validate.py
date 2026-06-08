@@ -896,7 +896,7 @@ class PushAPITestCase(MyApiTestCase):
 
         # The smartphone confirming code-to-phone re-triggers (to display the code) -> the
         # latest /ttype/push row is CHALLENGE_TRIGGERED, carrying the serial but no user.
-        confirm_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.event_id)
+        confirm_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.id)
         self.assertEqual(AuthEventType.CHALLENGE_TRIGGERED, confirm_log.event_type)
         self.assertIsNone(confirm_log.uid)
 
@@ -919,7 +919,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.ACCEPT,
                              res.json.get("result").get("authentication"), res.json)
 
-        success_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.event_id)
+        success_log = max(get_authentication_logs(serial=self.serial_push), key=lambda row: row.id)
         self.assertEqual(AuthEventType.CHALLENGE_ANSWERED_OK, success_log.event_type)
 
         # Verify backwards-compat fallback: with the push-specific policy removed,
