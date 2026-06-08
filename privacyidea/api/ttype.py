@@ -41,13 +41,15 @@ from flask import (Blueprint,
                    request)
 from flask import g, jsonify, current_app
 
-from privacyidea.api.lib.utils import get_all_params, get_optional, map_error_to_code, send_error
+from privacyidea.api.lib.utils import (get_all_params, get_optional, map_error_to_code, send_error,
+                                       log_authentication)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import EventConfiguration, event
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
+from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
@@ -155,6 +157,12 @@ def token(ttype=None):
                         "realm": user.realm,
                         "serial": serial,
                         "token_type": ttype})
+
+    # Log push authentication
+    push_auth_event = getattr(g, PUSH_AUTH_EVENT, None)
+    if push_auth_event:
+        log_authentication(push_auth_event, user=user, serial=serial)
+
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:

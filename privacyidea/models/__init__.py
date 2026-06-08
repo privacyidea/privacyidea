@@ -69,8 +69,8 @@ from .tokencontainer import (TokenContainer, TokenContainerInfo,
 from .tokengroup import Tokengroup, TokenTokengroup
 
 # We don't use "import *" but to avoid the unused import warning we define this
-__all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog",
-           "authentication_log_column_length", "AuthCache", "UserCache",
+__all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentication_log_column_length",
+           "AuthCache", "UserCache",
            "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
            "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
