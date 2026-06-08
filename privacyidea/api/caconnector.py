@@ -38,6 +38,7 @@ from privacyidea.lib.caconnector import (save_caconnector,
                                          get_caconnector_list)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
+from ..lib.resolver import CENSORED
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +64,8 @@ def get_caconnector_api(name=None):
     """
     g.audit_object.log({"detail": f"{name!s}"})
     res = get_caconnector_list(filter_caconnector_name=name,
-                               return_config=True)  # the endpoint is only accessed by admins
+                               return_config=True,
+                               censor=True)
     g.audit_object.log({"success": True})
     return send_result(res)
 

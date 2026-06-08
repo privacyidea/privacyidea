@@ -206,7 +206,7 @@ def get_radiusservers(identifier: str = None, server: str = None) -> list[RADIUS
     return result
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 def list_radiusservers(identifier=None, server=None):
     res = {}
     server_list = get_radiusservers(identifier=identifier, server=server)

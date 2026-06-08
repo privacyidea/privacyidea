@@ -294,7 +294,7 @@ def get_smtpservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 def list_smtpservers(identifier=None, server=None):
     """
     This returns a list of all smtpservers matching the criterion.
@@ -326,7 +326,7 @@ def list_smtpservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, hide_kwargs=["password", "private_key_password"])
 def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",
                    sender: str = "", description: str = "", tls: bool = False, timeout: int = TIMEOUT,
                    enqueue_job: bool = False, smime: bool = False, dont_send_on_error: bool = False,

@@ -194,7 +194,7 @@ class IdResolver (UserIdResolver):
         """
         log.info(f"checking password for user uid {uid!s}")
         cryptedpasswd = self.pass_dict.get(uid)
-        log.debug(f"We found the encrypted pass {cryptedpasswd!s} for uid {uid!s}")
+        log.debug(f"We found an encrypted pass for uid {uid!s}: {bool(cryptedpasswd)}")
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
                 err = "Sorry, currently no support for shadow passwords"

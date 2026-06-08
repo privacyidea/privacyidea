@@ -38,6 +38,7 @@ from .config import (get_caconnector_types,
                      get_caconnector_class_dict)
 from .crypto import encryptPassword, decryptPassword
 from .log import log_with
+from .resolver import CENSORED
 from privacyidea.lib.params import get_required
 from ..models import (CAConnector,
                       CAConnectorConfig, db, save_config_timestamp)
@@ -132,7 +133,8 @@ def save_caconnector(params: dict) -> int:
 
 def get_caconnector_list(filter_caconnector_type=None,
                          filter_caconnector_name=None,
-                         return_config=True):
+                         return_config=True,
+                         censor=False):
     """
     Gets the list of configured CA Connectors from the database
 
@@ -141,6 +143,9 @@ def get_caconnector_list(filter_caconnector_type=None,
     :type filter_caconnector_type: string
     :param return_config: Whether the configuration should be returned. If False
         only the list of the CAconncetor names is returned
+    :param censor: If True, password-type config values are replaced with
+        CENSORED instead of being returned in clear text.
+    :type censor: bool
     :rtype: list of the connectors and their configuration
 
     """
@@ -169,6 +174,30 @@ def get_caconnector_list(filter_caconnector_type=None,
                     reduced_connector[key] = conn.get(key)
             reduced_connectors.append(reduced_connector)
         return reduced_connectors
+
+    if censor:
+        # Censor password-type config values by looking up types from the DB
+        from sqlalchemy import select as sa_select
+        censored_connectors = []
+        for conn in Connectors:
+            conn_copy = dict(conn)
+            connector_name = conn.get("connectorname")
+            # Look up which config keys are password-type
+            ca_db = db.session.scalars(
+                sa_select(CAConnector).filter_by(name=connector_name)
+            ).first()
+            password_keys = set()
+            if ca_db:
+                for conf in ca_db.caconfig:
+                    if conf.Type == "password":
+                        password_keys.add(conf.Key)
+            if password_keys and conn_copy.get("data"):
+                conn_copy["data"] = dict(conn_copy["data"])
+                for key in password_keys:
+                    if key in conn_copy["data"]:
+                        conn_copy["data"][key] = CENSORED
+            censored_connectors.append(conn_copy)
+        return censored_connectors
 
     return Connectors
 

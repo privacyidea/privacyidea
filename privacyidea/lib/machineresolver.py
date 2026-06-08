@@ -38,6 +38,7 @@ from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetc
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .crypto import encryptPassword, decryptPassword
 from .log import log_with
+from .resolver import CENSORED
 from privacyidea.lib.params import get_required
 from ..models import (MachineResolver,
                       MachineResolverConfig, db)
@@ -134,7 +135,8 @@ def save_resolver(params):
 @log_with(log)
 # @cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
-                      filter_resolver_name=None):
+                      filter_resolver_name=None,
+                      censor=False):
     """
     Gets the list of configured machine resolvers from the database
 
@@ -142,6 +144,9 @@ def get_resolver_list(filter_resolver_type=None,
     :type filter_resolver_type: string
     :param filter_resolver_name: Only the resolver with the given name is returned
     :type filter_resolver_name: string
+    :param censor: If True, password-type config values are replaced with
+        CENSORED instead of being decrypted.
+    :type censor: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
     ret = {}
@@ -160,7 +165,10 @@ def get_resolver_list(filter_resolver_type=None,
         for conf in reso.rconfig:
             value = conf.Value
             if conf.Type == "password":
-                value = decryptPassword(value)
+                if censor:
+                    value = CENSORED
+                else:
+                    value = decryptPassword(value)
             data[conf.Key] = value
         r["data"] = data
         ret[reso.name] = r

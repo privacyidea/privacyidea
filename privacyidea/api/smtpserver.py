@@ -43,6 +43,7 @@ from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
+from ..lib.resolver import CENSORED
 from ..lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -134,6 +135,11 @@ def list_smtpservers_api():
     :status 200: dict of definitions in ``result.value``.
     """
     res = list_smtpservers()
+    # Do not expose passwords in the API response
+    for identifier, data in res.items():
+        data["password"] = CENSORED
+        if data.get("private_key_password"):
+            data["private_key_password"] = CENSORED
     g.audit_object.log({'success': True})
     return send_result(res)
 
