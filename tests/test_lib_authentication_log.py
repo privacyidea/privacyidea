@@ -263,10 +263,17 @@ class AuthenticationLogTestCase(MyTestCase):
     def test_values_are_truncated_to_column_length(self):
         from privacyidea.models import authentication_log_column_length
 
-        # An over-long client_label (e.g. a pathological User-Agent) is truncated instead of overflowing the column.
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
-                                            realm="r1", client_label="A" * 1000, serial="S" * 1000)
+        # A value longer than its column is truncated instead of overflowing the column on insert. Cover a
+        # size-constrained indexed column (resolver) and the generously-sized free columns (client_label, serial,
+        # which hold a raw User-Agent and a comma-joined serial list).
+        def over(column):
+            return "X" * (authentication_log_column_length[column] + 50)
+
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=over("resolver"),
+                                            uid="u1", realm="r1", client_label=over("client_label"),
+                                            serial=over("serial"))
         entry = get_authentication_log_event(event_id)
         assert entry is not None
-        self.assertEqual("A" * authentication_log_column_length["client_label"], entry.client_label)
-        self.assertEqual("S" * authentication_log_column_length["serial"], entry.serial)
+        self.assertEqual(authentication_log_column_length["resolver"], len(entry.resolver))
+        self.assertEqual(authentication_log_column_length["client_label"], len(entry.client_label))
+        self.assertEqual(authentication_log_column_length["serial"], len(entry.serial))

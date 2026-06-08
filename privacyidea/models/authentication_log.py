@@ -25,18 +25,20 @@ from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, BigIntegerType
 
 # Maximum length of the string columns. The lib layer truncates values to these lengths before insert (see
-# privacyidea.lib.conditional_access.authentication_log._truncate), so a pathological User-Agent or login name can
-# never overflow a column. The lengths are also chosen so the composite index ix_authlog_user_event_time stays below
-# the 3072-byte InnoDB key limit of MySQL/MariaDB with utf8mb4: (120+320+255+40)*4 + 8 (timestamp) = 2948 bytes.
+# privacyidea.lib.conditional_access.authentication_log._truncate), so a value can never overflow a column.
+#
+# The columns that take part in the composite index ix_authlog_user_event_time (resolver, uid, realm, event_type)
+# must stay below the 3072-byte InnoDB key limit of MySQL/MariaDB with utf8mb4: (120+320+255+40)*4 + 8 (timestamp)
+# = 2948 bytes.
 authentication_log_column_length = {
     "resolver": 120,
     "uid": 320,
     "realm": 255,
     "event_type": 40,
     "source_ip": 50,
-    "client_label": 255,
-    "serial": 40,
-    "transaction_id": 64,
+    "client_label": 1024,
+    "serial": 1024,
+    "transaction_id": 1024,
 }
 
 
