@@ -38,6 +38,40 @@ class FakeAudit(Audit):
         self.audit_data = {}
 
 
+class PristineSqliteFixtures:
+    """
+    Test-class mixin that keeps sqlite fixture files pristine.
+
+    SQL-resolver tests create/update/delete users in their backing sqlite
+    file, which would otherwise leave the committed fixture dirty in the
+    working tree. List the files to protect in ``pristine_fixtures``; they are
+    snapshotted in setUpClass and restored in tearDownClass, making the test
+    run byte-neutral for those files.
+
+    Place this mixin *first* in the base-class list so its setUpClass /
+    tearDownClass run and chain to the TestCase via super(), e.g.::
+
+        class FooTestCase(PristineSqliteFixtures, MyApiTestCase):
+            pristine_fixtures = ["tests/testdata/testuser-api.sqlite"]
+    """
+    pristine_fixtures: list = []
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._pristine_fixture_backups = {}
+        for path in cls.pristine_fixtures:
+            with open(path, "rb") as fixture_file:
+                cls._pristine_fixture_backups[path] = fixture_file.read()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        for path, data in getattr(cls, "_pristine_fixture_backups", {}).items():
+            with open(path, "wb") as fixture_file:
+                fixture_file.write(data)
+
+
 class MyTestCase(unittest.TestCase):
     app = None
     app_context = None

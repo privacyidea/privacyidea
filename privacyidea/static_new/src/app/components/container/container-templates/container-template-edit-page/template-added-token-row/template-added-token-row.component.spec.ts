@@ -17,19 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 
 @Component({
-  selector: "app-enroll-hotp",
+  selector: "app-enroll-token-type-switch",
   standalone: true,
   template: ""
 })
-class MockEnrollHotpComponent {
-  @Output() additionalFormFieldsChange = new EventEmitter<any>();
+class StubEnrollTokenTypeSwitchComponent {
+  @Input() tokenTypeKey!: string;
+  @Input() enrollmentData: TokenEnrollmentData | null = null;
 }
 
 describe("TemplateAddedTokenRowComponent", () => {
@@ -41,8 +43,8 @@ describe("TemplateAddedTokenRowComponent", () => {
       imports: [TemplateAddedTokenRowComponent]
     })
       .overrideComponent(TemplateAddedTokenRowComponent, {
-        remove: { imports: [EnrollHotpComponent] },
-        add: { imports: [MockEnrollHotpComponent] }
+        remove: { imports: [EnrollTokenTypeSwitchComponent] },
+        add: { imports: [StubEnrollTokenTypeSwitchComponent] }
       })
       .compileComponents();
 
@@ -60,19 +62,25 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(component).toBeTruthy();
     });
 
-    it("should render the correct child component based on token type", () => {
+    it("should render the token type switch with the payload type", () => {
       fixture.detectChanges();
 
-      const hotpChild = fixture.debugElement.query(By.css("app-enroll-hotp"));
-      expect(hotpChild).toBeTruthy();
+      const switchElement = fixture.debugElement.query(By.css("app-enroll-token-type-switch"));
+      expect(switchElement).toBeTruthy();
+      expect(switchElement.componentInstance.tokenTypeKey).toBe("hotp");
     });
 
-    it("should disable expansion panel if child has no form fields", () => {
+    it("should keep the expansion panel enabled regardless of token type", () => {
       fixture.detectChanges();
 
-      expect(component.childHadNoForm()).toBe(true);
       const panel = fixture.debugElement.query(By.css("mat-expansion-panel"));
-      expect(panel.componentInstance.disabled).toBe(true);
+      expect(panel.componentInstance.disabled).toBe(false);
+    });
+
+    it("should expose the token type description", () => {
+      fixture.detectChanges();
+
+      expect(component.tokenTypeDescription()).toContain("HOTP");
     });
 
     it("should emit onRemoveToken when delete button is clicked", () => {
@@ -86,43 +94,58 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(spy).toHaveBeenCalledWith(5);
     });
 
-    it("emits onEditToken when the enrollmentArgsGetter is registered and returns args", () => {
-      const spy = jest.spyOn(component.onEditToken, "emit");
+    it("toggleUserAssign updates the userAssign signal without side effects", () => {
       fixture.detectChanges();
+      expect(component.userAssign()).toBe(false);
 
-      component.updateEnrollmentArgsGetter((data) => ({
-        data: { ...data, testKey: "updatedValue" } as any,
-        mapper: { toApiPayload: (d: any) => d } as any
-      }));
+      component.toggleUserAssign(true);
+      expect(component.userAssign()).toBe(true);
+    });
 
-      expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          testKey: "updatedValue"
-        })
-      );
+    it("getCurrentPayload falls back to the input payload (with user flag) when no strategy is available", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
+      fixture.detectChanges();
+      component.toggleUserAssign(true);
+
+      expect(component.getCurrentPayload()).toEqual({ type: "hotp", description: "x", user: true });
+    });
+
+    it("getCurrentPayload returns the strategy's mapped payload when valid", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
+      fixture.detectChanges();
+      component.toggleUserAssign(true);
+
+      const buildEnrollmentArgs = jest.fn().mockReturnValue({
+        data: { type: "hotp", customField: "v" },
+        mapper: { toApiPayload: (d: Record<string, unknown>) => ({ ...d, mapped: true }) }
+      });
+      Object.defineProperty(component, "enrollSwitch", {
+        value: () => ({ currentStrategy: () => ({ buildEnrollmentArgs }) }),
+        configurable: true
+      });
+
+      expect(component.getCurrentPayload()).toEqual({
+        type: "hotp",
+        customField: "v",
+        mapped: true,
+        user: true
+      });
+      expect(buildEnrollmentArgs).toHaveBeenCalledWith(expect.objectContaining({ type: "hotp" }));
+    });
+
+    it("getCurrentPayload returns null when the strategy's form is invalid", () => {
+      fixture.detectChanges();
+      const buildEnrollmentArgs = jest.fn().mockReturnValue(null);
+      Object.defineProperty(component, "enrollSwitch", {
+        value: () => ({ currentStrategy: () => ({ buildEnrollmentArgs }) }),
+        configurable: true
+      });
+
+      expect(component.getCurrentPayload()).toBeNull();
     });
   });
 
   describe("Lifecycle & UI Logic", () => {
-    it("should update childHadNoForm to false when fields are added", () => {
-      fixture.detectChanges();
-
-      expect(component.childHadNoForm()).toBe(true);
-
-      component.updateAdditionalFormFields({ pin: {} });
-      fixture.detectChanges();
-
-      expect(component.childHadNoForm()).toBe(false);
-    });
-
-    it("should set childHadForm back to false when no fields are passed", () => {
-      component.updateAdditionalFormFields({ key: {} });
-      expect(component.childHadForm()).toBe(true);
-
-      component.updateAdditionalFormFields({});
-      expect(component.childHadForm()).toBe(false);
-    });
-
     it("should stop propagation on delete button click", () => {
       fixture.detectChanges();
 
@@ -142,6 +165,21 @@ describe("TemplateAddedTokenRowComponent", () => {
 
       component.removeToken();
       expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("scrollIntoView opens the expansion panel and scrolls", () => {
+      fixture.detectChanges();
+      const hostElement = fixture.debugElement.nativeElement as HTMLElement;
+      const scrollSpy = jest.fn();
+      hostElement.scrollIntoView = scrollSpy;
+
+      const panel = fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance;
+      const openSpy = jest.spyOn(panel, "open");
+
+      component.scrollIntoView();
+
+      expect(openSpy).toHaveBeenCalled();
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
     });
   });
 });

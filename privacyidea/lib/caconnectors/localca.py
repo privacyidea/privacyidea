@@ -27,7 +27,7 @@ This module is tested in tests/test_lib_caconnector.py
 """
 from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
-from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
+from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
 from subprocess import Popen, PIPE  # nosec B404
@@ -184,7 +184,7 @@ authorityKeyIdentifier=keyid:always,issuer:always
 [ crl_dp_policy ]
 """
 
-AvailableCAConnectors.append("privacyidea.lib.caconnectors.localca.LocalCAConnector")
+
 
 
 def _get_crl_next_update(filename: str) -> datetime.datetime:

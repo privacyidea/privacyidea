@@ -16,18 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   EmailApiPayloadMapper,
   EmailEnrollmentData
 } from "@app/mappers/token-api-payload/email-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -43,9 +44,10 @@ export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatCheckbox, MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-email.component.html",
-  styleUrl: "./enroll-email.component.scss"
+  styleUrl: "./enroll-email.component.scss",
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollEmailComponent) }]
 })
-export class EnrollEmailComponent implements OnInit {
+export class EnrollEmailComponent extends EnrollTokenBase<EmailEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(EmailApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -54,15 +56,6 @@ export class EnrollEmailComponent implements OnInit {
   private router = inject(Router);
 
   enrollmentData = input<EmailEnrollmentData>();
-
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: EmailEnrollmentData;
-      mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
-    } | null
-  >();
-
   disabled = input<boolean>(false);
 
   readEmailDynamically = signal<boolean>(false);
@@ -89,16 +82,9 @@ export class EnrollEmailComponent implements OnInit {
       this.emailAddress.set(this.enrollmentData()?.emailAddress ?? "");
       this.readEmailDynamically.set(this.enrollmentData()?.readEmailDynamically ?? false);
     }
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: EmailEnrollmentData;
-    mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<EmailEnrollmentData> | null {
     if (!this.readEmailDynamically() && !this.emailAddressForm().valid()) {
       this.emailAddressForm().markAsTouched();
       return null;
@@ -115,7 +101,7 @@ export class EnrollEmailComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
   goToEmailConfig() {
     this.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { queryParams: { expanded: "email" } });

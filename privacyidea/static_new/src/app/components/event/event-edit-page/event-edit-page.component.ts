@@ -18,18 +18,14 @@
  **/
 
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild
+  signal
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -47,6 +43,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventService } from "@services/event/event.service";
@@ -80,6 +77,7 @@ export type eventTab = "events" | "action" | "conditions";
     MatTabGroup,
     MatTab,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     MatButton,
     MatSlideToggle,
     MatTooltip,
@@ -92,20 +90,13 @@ export type eventTab = "events" | "action" | "conditions";
   styleUrl: "./event-edit-page.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventEditPageComponent implements AfterViewInit, OnDestroy {
+export class EventEditPageComponent implements OnDestroy {
   protected readonly eventService = inject(EventService);
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
-
-  private observer!: IntersectionObserver;
-
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
 
   availableTabs: eventTab[] = ["action", "conditions"];
 
@@ -166,32 +157,8 @@ export class EventEditPageComponent implements AfterViewInit, OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave());
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (shouldFloat) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.observer?.disconnect();
   }
 
   cancelEdit(): void {

@@ -25,8 +25,14 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { MockContentService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockDialogService,
+  MockNotificationService,
+  MockPendingChangesService
+} from "@testing/mock-services";
 import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { of } from "rxjs";
 import { ContainerTemplateEditPageComponent } from "./container-template-edit-page.component";
@@ -48,6 +54,7 @@ describe("ContainerTemplateEditPageComponent", () => {
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({})) } }
       ]
@@ -263,6 +270,63 @@ describe("ContainerTemplateEditPageComponent", () => {
     component.template.update((t) => ({ ...t, name: "UniqueValid" }));
     const save = component.actions().find((a) => a.value === "save")!;
     expect(save.disabled).toBe(false);
+  });
+
+  describe("onSave", () => {
+    it("returns true when onAction('save') resolves", async () => {
+      jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+      jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(true);
+      component.template.update((t) => ({ ...t, name: "ValidName" }));
+
+      await expect(component.onSave()).resolves.toBe(true);
+    });
+
+    it("returns false when onAction('save') throws", async () => {
+      jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+      jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockRejectedValue(new Error("boom"));
+      component.template.update((t) => ({ ...t, name: "ValidName" }));
+
+      await expect(component.onSave()).resolves.toBe(false);
+    });
+  });
+
+  it("save aborts and notifies when the edit component reports invalid token configurations", async () => {
+    jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+    const postSpy = jest.spyOn(containerTemplateServiceMock, "postTemplateEdits");
+    const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
+
+    // Pretend the edit component is mounted and one of its rows is invalid.
+    const scrollSpy = jest.fn();
+    Object.defineProperty(component, "editComponent", {
+      value: () => ({ collectTokens: () => null, scrollToFirstInvalid: scrollSpy }),
+      configurable: true
+    });
+
+    component.template.update((t) => ({ ...t, name: "ValidName" }));
+    await component.onAction("save");
+
+    expect(notificationService.warning).toHaveBeenCalledWith("There are invalid token configurations.");
+    expect(scrollSpy).toHaveBeenCalled();
+    expect(postSpy).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it("navigates back when onCancel dialog returns 'discard'", () => {
+    component.template.update((t) => ({ ...t, name: "Changed" }));
+    expect(component.isDirty()).toBe(true);
+
+    const dialogService = TestBed.inject(DialogService);
+    const openDialogSpy = jest.spyOn(dialogService, "openDialog");
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
+    const clearSpy = jest.spyOn(TestBed.inject(PendingChangesService), "clearAllRegistrations");
+
+    component.onCancel();
+    const dialogRef = openDialogSpy.mock.results[0].value;
+    dialogRef.close("discard");
+
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES);
+    expect(clearSpy).toHaveBeenCalled();
   });
 
   it("should not call deleteTemplate when save fails even if template was renamed", async () => {

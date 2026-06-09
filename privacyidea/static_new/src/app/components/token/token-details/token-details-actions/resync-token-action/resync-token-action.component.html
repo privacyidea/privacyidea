@@ -16,16 +16,17 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
+<ng-content select="[panelTitle]"></ng-content>
 <div class="actions-pin-input">
-  <mat-form-field class="input-width-s">
-    <mat-label>OTP</mat-label>
+  <mat-form-field class="input-width-m" subscriptSizing="dynamic">
+    <mat-label i18n>Current OTP</mat-label>
     <input
       [value]="fristOTPValue()"
       (input)="fristOTPValue.set($any($event.target).value)"
       matInput />
   </mat-form-field>
-  <mat-form-field class="input-width-s">
-    <mat-label i18n>Repeat OTP</mat-label>
+  <mat-form-field class="input-width-m" subscriptSizing="dynamic">
+    <mat-label i18n>Next OTP</mat-label>
     <input
       [value]="secondOTPValue()"
       (input)="secondOTPValue.set($any($event.target).value)"
@@ -35,7 +36,7 @@
 <div class="actions-pin-input-button">
   <button
     (click)="resyncOTPToken()"
-    class="action-button-secondary button-width-m"
+    class="action-button-secondary button-width-l"
     i18n
     mat-stroked-button>
     <mat-icon>sync</mat-icon>

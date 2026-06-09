@@ -25,12 +25,8 @@
   </h3>
 
   <div
-    #stickySentinel
-    class="sticky-sentinel"></div>
-
-  <div
-    #stickyHeader
-    class="sticky-header">
+    class="sticky-header"
+    [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
       <button
         (click)="onCancel()"

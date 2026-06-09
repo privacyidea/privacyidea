@@ -33,12 +33,8 @@
     </h3>
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
         <mat-slide-toggle
           (change)="updateEventHandler('active', $event.checked)"
@@ -87,10 +83,10 @@
                 required
                 type="text" />
             </app-clearable-input>
-            @if (showNameError() && editEvent().name === '') {
+            @if (showNameError() && editEvent().name === "") {
               <mat-error i18n>Name is <strong>required</strong>.</mat-error>
             }
-            @if (showNameError() && editEvent().name !== '') {
+            @if (showNameError() && editEvent().name !== "") {
               <mat-error i18n
                 >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
                 hyphens are allowed.</mat-error

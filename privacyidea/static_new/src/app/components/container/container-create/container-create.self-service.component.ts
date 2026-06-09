@@ -27,6 +27,7 @@ import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { assert } from "@utils/assert";
 import { ContainerCreateComponent } from "./container-create.component";
@@ -42,6 +43,7 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatIconButton,
     MatTooltip,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     NgClass,
     ContainerCreateFormComponent
   ],

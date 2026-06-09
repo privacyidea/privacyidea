@@ -16,17 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, effect, forwardRef, inject, input, signal } from "@angular/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   IndexedSecretApiPayloadMapper,
   IndexedSecretEnrollmentData
 } from "@app/mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 
 export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   type: "indexedsecret";
@@ -38,21 +39,15 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-indexedsecret.component.html",
-  styleUrl: "./enroll-indexedsecret.component.scss"
+  styleUrl: "./enroll-indexedsecret.component.scss",
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollIndexedsecretComponent) }]
 })
-export class EnrollIndexedsecretComponent implements OnInit {
+export class EnrollIndexedsecretComponent extends EnrollTokenBase<IndexedSecretEnrollmentData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: IndexedSecretApiPayloadMapper = inject(IndexedSecretApiPayloadMapper);
 
+  enrollmentData = input<IndexedSecretEnrollmentData | null>();
   disabled = input<boolean>(false);
-
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: IndexedSecretEnrollmentData;
-      mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
-    } | null
-  >();
 
   otpKey = signal<string>("");
   otpKeyForm = form(this.otpKey, (f) => {
@@ -61,17 +56,17 @@ export class EnrollIndexedsecretComponent implements OnInit {
     disabled(f, () => this.disabled());
   });
 
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+  constructor() {
+    super();
+
+    // Apply initial enrollment data
+    effect(() => {
+      if (!this.enrollmentData()) return;
+      if (this.enrollmentData()?.otpKey) this.otpKey.set(this.enrollmentData()!.otpKey ?? "");
+    });
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: IndexedSecretEnrollmentData;
-    mapper: TokenApiPayloadMapper<IndexedSecretEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<IndexedSecretEnrollmentData> | null {
     if (!this.otpKeyForm().valid()) {
       this.otpKeyForm().markAsTouched();
       return null;
@@ -85,5 +80,5 @@ export class EnrollIndexedsecretComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

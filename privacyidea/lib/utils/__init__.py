@@ -1195,9 +1195,6 @@ def prepare_result(obj, rid=1, details=None, **kwargs):
         res["detail"] = details
 
     if rid > 1:
-        if isinstance(obj, dict):
-            # TODO: Remove when /validate/samlcheck is removed
-            obj = obj.get("auth")
         if obj and obj != AUTH_RESPONSE.CHALLENGE and not details.get("multi_challenge"):
             r_authentication = AUTH_RESPONSE.ACCEPT
         elif obj and obj == AUTH_RESPONSE.CHALLENGE:

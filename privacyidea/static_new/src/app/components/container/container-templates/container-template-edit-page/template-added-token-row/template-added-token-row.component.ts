@@ -17,113 +17,70 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatExpansionModule } from "@angular/material/expansion";
-import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData, TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
-import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
-import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "@components/token/token-enrollment/enroll-email/enroll-email.component";
-import { EnrollFoureyesComponent } from "@components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component";
-import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "@components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollPaperComponent } from "@components/token/token-enrollment/enroll-paper/enroll-paper.component";
-import { EnrollPushComponent } from "@components/token/token-enrollment/enroll-push/enroll-push.component";
-import { EnrollRegistrationComponent } from "@components/token/token-enrollment/enroll-registration/enroll-registration.component";
-import { EnrollRemoteComponent } from "@components/token/token-enrollment/enroll-remote/enroll-remote.component";
-import { EnrollSmsComponent } from "@components/token/token-enrollment/enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "@components/token/token-enrollment/enroll-spass/enroll-spass.component";
-import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
-import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { tokenTypes } from "@utils/token.utils";
 
 @Component({
   selector: "app-template-added-token-row",
   standalone: true,
-  imports: [
-    MatIconModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    EnrollHotpComponent,
-    EnrollTotpComponent,
-    EnrollSpassComponent,
-    EnrollRemoteComponent,
-    EnrollSmsComponent,
-    EnrollFoureyesComponent,
-    EnrollApplspecComponent,
-    EnrollDaypasswordComponent,
-    EnrollEmailComponent,
-    EnrollIndexedsecretComponent,
-    EnrollPaperComponent,
-    EnrollPushComponent,
-    EnrollRegistrationComponent,
-    EnrollTanComponent,
-    EnrollTiqrComponent
-  ],
+  imports: [MatIconModule, MatButtonModule, MatCheckboxModule, MatExpansionModule, EnrollTokenTypeSwitchComponent],
   templateUrl: "./template-added-token-row.component.html",
   styleUrls: ["./template-added-token-row.component.scss"]
 })
 export class TemplateAddedTokenRowComponent {
-  // Inputs & Outputs
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
-
   readonly index = input.required<number>();
-  readonly onEditToken = output<Partial<TokenEnrollmentPayload>>();
   readonly onRemoveToken = output<number>();
 
-  // State Signals
+  protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
+  private readonly expansionPanel = viewChild(MatExpansionPanel);
+  private readonly elementRef = inject(ElementRef);
+
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
 
-  readonly childHadForm = signal<boolean>(false);
-  readonly childHadNoForm = computed(() => !this.childHadForm());
+  readonly tokenTypeDescription = computed(() => {
+    const type = this.tokenEnrollmentPayload().type;
+    return tokenTypes.find((t) => t.key === type)?.text ?? "";
+  });
 
-  readonly enrollmentArgsGetterSignal = signal<enrollmentArgsGetterFn | null>(null);
-
-  readonly tokenEnrollmentData = linkedSignal<any, Partial<TokenEnrollmentData> | null>({
-    source: () => ({
-      payload: this.tokenEnrollmentPayload(),
-      enrollmentArgsGetter: this.enrollmentArgsGetterSignal()
-    }),
-    computation: (source) => {
-      const mapper = getTokenApiPayloadMapper(source.payload?.type);
+  readonly tokenEnrollmentData = linkedSignal<TokenEnrollmentPayload, Partial<TokenEnrollmentData> | null>({
+    source: this.tokenEnrollmentPayload,
+    computation: (payload) => {
+      const mapper = getTokenApiPayloadMapper(payload?.type);
       if (!mapper) return null;
-      const enrollmentData = mapper.fromApiPayload(source.payload);
-      return enrollmentData;
+      return mapper.fromApiPayload(payload);
     }
   });
 
-  updateEnrollmentArgsGetter(
-    enrollmentArgsGetter: (
-      basicOptions: TokenEnrollmentData
-    ) => { data: TokenEnrollmentData; mapper: TokenApiPayloadMapper<TokenEnrollmentData> } | null
-  ) {
-    this.enrollmentArgsGetterSignal.set(enrollmentArgsGetter);
-    this.updateToken(this.tokenEnrollmentData() ?? {});
+  // Pulled by the parent at save time.
+  getCurrentPayload(): TokenEnrollmentPayload | null {
+    const payload = this.tokenEnrollmentPayload();
+    const strategy = this.enrollSwitch()?.currentStrategy();
+    const data = this.tokenEnrollmentData();
+
+    if (!strategy || !data) {
+      return { ...payload, user: this.userAssign() };
+    }
+    const args = strategy.buildEnrollmentArgs({ type: payload.type, ...data });
+    if (!args) return null;
+    return { ...args.mapper.toApiPayload(args.data), user: this.userAssign() };
   }
 
-  // Token Management Methods
-  updateAdditionalFormFields(fields: Record<string, any>) {
-    this.childHadForm.set(Object.keys(fields).length > 0);
+  // Called by the parent body when a save attempt fails:
+  scrollIntoView(): void {
+    this.expansionPanel()?.open();
+    this.elementRef.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   toggleUserAssign(checked: boolean) {
     this.userAssign.set(checked);
-    this.onEditToken.emit({ user: checked });
   }
 
   removeToken() {
@@ -131,23 +88,4 @@ export class TemplateAddedTokenRowComponent {
       this.onRemoveToken.emit(this.index());
     }
   }
-
-  private updateToken(enrollmentData: Partial<TokenEnrollmentData>) {
-    const updatedEnrollmentData = { ...this.tokenEnrollmentData(), ...enrollmentData };
-
-    this.tokenEnrollmentData.set(updatedEnrollmentData);
-    const getter = this.enrollmentArgsGetterSignal();
-    if (!getter) {
-      return;
-    }
-    const args = getter({
-      type: this.tokenEnrollmentPayload().type,
-      ...updatedEnrollmentData
-    });
-    if (args) {
-      const mappedData = args.mapper.toApiPayload(args.data);
-      this.onEditToken.emit(mappedData);
-    }
-  }
-
 }

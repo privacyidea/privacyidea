@@ -24,7 +24,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineService } from "@services/machine/machine.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { TokenService, TokenTypeKey } from "@services/token/token.service";
+import { TokenService } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
     MockLocalService,
@@ -34,16 +34,11 @@ import {
     MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { of } from "rxjs";
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
 
 describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;
   let component: TokenDetailsActionsComponent;
-
-  let machineService: MockMachineService;
-  let notificationService: MockNotificationService;
-  let dialog: jest.Mocked<MatDialog>;
 
   const matDialogOpen = jest.fn();
   const matDialogMock = {
@@ -70,16 +65,13 @@ describe("TokenDetailsActionsComponent", () => {
       ]
     }).compileComponents();
 
-    machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
-    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
 
-    component.tokenSerial = signal("SER-1");
     component.tokenType = signal("hotp");
     component.setPinValue = signal("");
     component.repeatPinValue = signal("");
+    component.passkeyTestResult = signal(null);
 
     fixture.detectChanges();
   });
@@ -88,135 +80,10 @@ describe("TokenDetailsActionsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("isAttachedToMachine is false when no applications; true when there is at least one", () => {
-    machineService.tokenApplications.set([]);
-    expect(component.isAttachedToMachine()).toBe(false);
-
-    machineService.tokenApplications.set([{ id: 42 } as any]);
-    expect(component.isAttachedToMachine()).toBe(true);
-  });
-
-  it("testPasskey notifies on success", () => {
-    component.testPasskey();
-    expect(notificationService.success).toHaveBeenCalled();
-    const msg = (notificationService.success as jest.Mock).mock.calls[0][0] as string;
-    expect(msg).toMatch(/Test successful/i);
-  });
-
-  it("attachSshToMachineDialog opens dialog, resolves request, and reloads tokenApplicationResource", async () => {
-    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    matDialogOpen.mockReturnValue({
-      afterClosed: () => of(of({}))
-    });
-
-    component.attachSshToMachineDialog();
-
-    await Promise.resolve();
-    expect(matDialogOpen).toHaveBeenCalledTimes(1);
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("attachHotpToMachineDialog opens dialog, resolves request, and reloads (when request is provided)", async () => {
-    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    matDialogOpen.mockReturnValue({
-      afterClosed: () => of(of({}))
-    });
-
-    component.attachHotpToMachineDialog();
-
-    await Promise.resolve();
-    expect(matDialogOpen).toHaveBeenCalledTimes(1);
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("attachHotpToMachineDialog does not reload when request is null/undefined", async () => {
-    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    matDialogOpen.mockReturnValue({
-      afterClosed: () => of(null)
-    });
-
-    component.attachHotpToMachineDialog();
-
-    await Promise.resolve();
-    expect(matDialogOpen).toHaveBeenCalledTimes(1);
-    expect(reloadSpy).not.toHaveBeenCalled();
-  });
-
-  it("attachPasskeyToMachine posts assignment and reloads", () => {
-    const postSpy = jest.spyOn(machineService, "postAssignMachineToToken");
-    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.attachPasskeyToMachine();
-
-    expect(postSpy).toHaveBeenCalledWith({
-      serial: "SER-1",
-      application: "offline",
-      machineid: 0,
-      resolver: ""
-    });
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("removePasskeyFromMachine deletes assignment using first token application id and reloads", () => {
-    machineService.tokenApplications.set([{ id: 77 } as any]);
-
-    const delSpy = jest.spyOn(machineService, "deleteAssignMachineToToken");
-    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.removePasskeyFromMachine();
-
-    expect(delSpy).toHaveBeenCalledWith({
-      serial: "SER-1",
-      application: "offline",
-      mtid: "77"
-    });
-    expect(reloadSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("rolloverTokenTypes determined correctly", () => {
-    expect(component.rolloverTokenTypes()).toContain("totp");
-    expect(component.rolloverTokenTypes()).toContain("hotp");
-  });
-
-  it("tokenTypeKey is set correctly", () => {
-    component.tokenType.set("yubikey");
-    expect(component.tokenTypeKey()).toEqual("yubikey" as TokenTypeKey);
-    expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBe(-1);
-
-    component.tokenType.set("daypassword");
-    expect(component.tokenTypeKey()).toEqual("daypassword" as TokenTypeKey);
-    expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBeGreaterThan(-1);
-  });
-
-  describe("openLostTokenDialog()", () => {
-    it("passes the isLost & tokenSerial signals to the dialog", () => {
-      const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
-      reloadSpy.mockClear();
-
-      matDialogOpen.mockReturnValue({
-        afterClosed: () => of(of({}))
-      });
-
-      component.openLostTokenDialog();
-      expect(dialog.open).toHaveBeenCalledWith(
-        expect.any(Function),
-        expect.objectContaining({
-          data: {
-            isLost: component.isLost,
-            tokenSerial: component.tokenSerial
-          },
-          disableClose: false,
-          hasBackdrop: true
-        })
-      );
-    });
+  it("emits testPasskey when triggered", () => {
+    const spy = jest.fn();
+    component.testPasskey.subscribe(spy);
+    component.testPasskey.emit();
+    expect(spy).toHaveBeenCalled();
   });
 });

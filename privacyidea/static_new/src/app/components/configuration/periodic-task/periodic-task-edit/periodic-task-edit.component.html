@@ -30,12 +30,8 @@
   </h3>
 
   <div
-    #stickySentinel
-    class="sticky-sentinel"></div>
-
-  <div
-    #stickyHeader
-    class="page-controls sticky-header">
+    class="page-controls sticky-header"
+    [appStickyHeader]="scrollContainer">
     <mat-slide-toggle
       (change)="editTask.set({ ...editTask(), active: $event.checked })"
       [checked]="editTask().active"
@@ -70,10 +66,12 @@
       <div class="metadata-row">
         <span
           class="metadata-label"
-          i18n>Last definition update:</span>
+          i18n
+          >Last definition update:</span
+        >
         @if (editTask().last_update) {
           <span>
-            {{ editTask().last_update | date:'yyyy-MM-dd HH:mm' }}
+            {{ editTask().last_update | date: "yyyy-MM-dd HH:mm" }}
           </span>
         } @else {
           <span i18n>Never</span>
@@ -82,14 +80,16 @@
       <div class="metadata-row">
         <span
           class="metadata-label"
-          i18n>Last runs:</span>
+          i18n
+          >Last runs:</span
+        >
         @if (Object.keys(editTask().last_runs || {}).length > 0) {
           <ul class="no-indention margin-0">
             @for (entry of Object.entries(editTask().last_runs); track entry[0]) {
               <li>
                 {{ entry[0] }}:
                 @if (isDateValue(entry[1])) {
-                  {{ entry[1] | date:'yyyy-MM-dd HH:mm' }}
+                  {{ entry[1] | date: "yyyy-MM-dd HH:mm" }}
                 } @else {
                   {{ entry[1] }}
                 }
@@ -115,11 +115,14 @@
             matInput />
         </app-clearable-input>
         <mat-hint i18n>Unique name of the periodic task.</mat-hint>
-        @if (fieldHasError(editTaskForm.name(), 'required')) {
+        @if (fieldHasError(editTaskForm.name(), "required")) {
           <mat-error i18n>Name is <strong>required</strong>.</mat-error>
         }
-        @if (fieldHasError(editTaskForm.name(), 'pattern')) {
-          <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+        @if (fieldHasError(editTaskForm.name(), "pattern")) {
+          <mat-error i18n
+            >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
+            hyphens are allowed.</mat-error
+          >
         }
       </mat-form-field>
       <mat-form-field subscriptSizing="dynamic">
@@ -151,7 +154,7 @@
               [placeholder]="'5 10 * * *'" />
           </app-clearable-input>
           <mat-hint i18n>Use crontab notation to specify the times at which the periodic task should be run.</mat-hint>
-          @if (fieldHasError(editTaskForm.interval(), 'required')) {
+          @if (fieldHasError(editTaskForm.interval(), "required")) {
             <mat-error i18n>Interval is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
@@ -174,7 +177,9 @@
         </mat-expansion-panel>
       </div>
     </div>
-    <mat-form-field class="input-width-xl" subscriptSizing="dynamic">
+    <mat-form-field
+      class="input-width-xl"
+      subscriptSizing="dynamic">
       <mat-label i18n>Nodes</mat-label>
       <mat-select
         (selectionChange)="onNodeSelectionChange($event.value)"
@@ -190,7 +195,9 @@
       <mat-hint i18n>Select the nodes on which the periodic task should be executed.</mat-hint>
       <mat-error i18n>At least one node is <strong>required</strong>.</mat-error>
     </mat-form-field>
-    <mat-form-field class="input-width-xl" subscriptSizing="dynamic">
+    <mat-form-field
+      class="input-width-xl"
+      subscriptSizing="dynamic">
       <mat-label i18n>Ordering</mat-label>
       <input
         matInput

@@ -17,19 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  DestroyRef,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild
-} from "@angular/core";
+import { Component, computed, DestroyRef, effect, inject, OnDestroy, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { MatButtonModule } from "@angular/material/button";
@@ -37,6 +25,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -47,11 +36,17 @@ import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-t
 @Component({
   selector: "app-policy-edit-page",
   standalone: true,
-  imports: [PolicyPanelEditComponent, PolicyTemplatePickerComponent, MatButtonModule, MatIconModule],
+  imports: [
+    PolicyPanelEditComponent,
+    PolicyTemplatePickerComponent,
+    MatButtonModule,
+    MatIconModule,
+    StickyHeaderDirective
+  ],
   templateUrl: "./policy-edit-page.component.html",
   styleUrl: "./policy-edit-page.component.scss"
 })
-export class PolicyEditPageComponent implements AfterViewInit, OnDestroy {
+export class PolicyEditPageComponent implements OnDestroy {
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly router = inject(Router);
@@ -59,13 +54,6 @@ export class PolicyEditPageComponent implements AfterViewInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly renderer = inject(Renderer2);
-
-  private _observer!: IntersectionObserver;
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   readonly mode = signal<"create" | "edit">("create");
   readonly policy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
@@ -109,28 +97,8 @@ export class PolicyEditPageComponent implements AfterViewInit, OnDestroy {
     this.pendingChangesService.registerSave(() => this.onSave());
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   addPolicyEdit(edits: Partial<PolicyDetail>): void {

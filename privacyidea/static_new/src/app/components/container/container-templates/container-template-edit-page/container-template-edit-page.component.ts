@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, inject, linkedSignal, signal } from "@angular/core";
+import { Component, computed, DestroyRef, inject, linkedSignal, signal, viewChild } from "@angular/core";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
@@ -32,6 +32,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateEditComponent } from "@components/container/container-templates/container-template-edit/container-template-edit.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogAction } from "@models/dialog";
 import {
@@ -41,6 +42,7 @@ import {
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import {
   PendingChangesService,
   PendingChangesServiceInterface
@@ -62,7 +64,8 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatFormFieldModule,
     MatListModule,
     MatCheckboxModule,
-    ContainerTemplateEditComponent
+    ContainerTemplateEditComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./container-template-edit-page.component.html",
   styleUrl: "./container-template-edit-page.component.scss"
@@ -72,12 +75,15 @@ export class ContainerTemplateEditPageComponent {
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
   readonly router = inject(Router);
   readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   initTemplate = signal<ContainerTemplate | null>(null);
+
+  private readonly editComponent = viewChild(ContainerTemplateEditComponent);
 
   // --- State Signals ---
   readonly template = linkedSignal<any, ContainerTemplate>({
@@ -167,10 +173,20 @@ export class ContainerTemplateEditPageComponent {
 
   // --- Private Helper Methods ---
   private async _saveTemplate(): Promise<boolean> {
-    if (this.canSaveTemplate()) {
-      return this.containerTemplateService.postTemplateEdits(this.template());
+    if (!this.canSaveTemplate()) return false;
+    // Pull the latest token payloads from each enrollment row before posting.
+    const editComponent = this.editComponent();
+    const tokens = editComponent?.collectTokens();
+    if (tokens === null || tokens === undefined) {
+      this.notificationService.warning($localize`There are invalid token configurations.`);
+      editComponent?.scrollToFirstInvalid();
+      return false;
     }
-    return false;
+    this.template.update((t) => ({
+      ...t,
+      template_options: { ...t.template_options, tokens }
+    }));
+    return this.containerTemplateService.postTemplateEdits(this.template());
   }
 
   onCancel(): void {

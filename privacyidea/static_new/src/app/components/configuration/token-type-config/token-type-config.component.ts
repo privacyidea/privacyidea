@@ -23,12 +23,10 @@ import {
   Component,
   computed,
   DestroyRef,
-  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
-  Renderer2,
   signal,
   ViewChild
 } from "@angular/core";
@@ -55,6 +53,7 @@ import {
   ApiKeyData,
   YubikeyConfigComponent
 } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -84,7 +83,8 @@ import { forkJoin, lastValueFrom } from "rxjs";
     QuestionnaireConfigComponent,
     YubicoConfigComponent,
     YubikeyConfigComponent,
-    DaypasswordConfigComponent
+    DaypasswordConfigComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
@@ -98,14 +98,10 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
-  private readonly renderer = inject(Renderer2);
   private destroyRef = inject(DestroyRef);
   queryParams = toSignal(this.route.queryParams);
   expandEmail = computed(() => this.queryParams()?.["expanded"] === "email");
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef;
   @ViewChild(MatAccordion) accordion!: MatAccordion;
 
   allPanelsOpen = signal(false);
@@ -119,8 +115,6 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
       this.allPanelsOpen.set(true);
     }
   }
-
-  private observer!: IntersectionObserver;
 
   formData = linkedSignal<any, Record<string, any>>({
     source: () => this.systemService.systemConfig(),
@@ -210,29 +204,6 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         panel.scrollIntoView({ behavior: "smooth" });
       }
     }
-
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
   addQuestion(text: string) {
@@ -353,9 +324,6 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   ngOnDestroy() {
     this.pendingChangesService.clearAllRegistrations();
-    if (this.observer) {
-      this.observer.disconnect();
-    }
   }
 
   onCheckboxChange(key: string, event: any) {

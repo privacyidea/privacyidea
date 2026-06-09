@@ -57,7 +57,7 @@ export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 export interface ValidateServiceInterface {
   testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
-  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse>;
+  authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse>;
 
   authenticateWebAuthn(args: {
     signRequest: any;
@@ -103,7 +103,7 @@ export class ValidateService implements ValidateServiceInterface {
       );
   }
 
-  authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse> {
+  authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
       this.notificationService.error("WebAuthn is not supported by this browser.");
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
@@ -116,7 +116,8 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       switchMap((initResponse: any) => {
         const data = initResponse.detail.passkey;
-        let userVerification: UserVerificationRequirement = "required";
+        const userVerification: UserVerificationRequirement =
+          (data.user_verification as UserVerificationRequirement) ?? "preferred";
         return from(
           navigator.credentials.get({
             publicKey: {
@@ -127,6 +128,7 @@ export class ValidateService implements ValidateServiceInterface {
           })
         ).pipe(
           switchMap((credential: any) => {
+            args?.onCredentialId?.(credential.id);
             const params = {
               transaction_id: data.transaction_id,
               credential_id: credential.id,
