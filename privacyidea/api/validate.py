@@ -233,12 +233,13 @@ def offlinerefill():
     and the OTP material under
     ``response.auth_items.offline``. Failures may be masked into a
     generic error by the
-    ``hide_specific_error_message_for_offline_refill`` user-scope
+    ``hide_specific_error_message_for_offline_refill`` token-scope
     policy.
 
     :jsonparam serial: token serial number (required).
     :jsonparam refilltoken: the refill authorization token issued on
-        the previous refill or at offline attachment time (required).
+        the previous refill (or, for HOTP tokens, by the first online
+        ``/validate/check`` that returned the offline bag) (required).
     :jsonparam pass: the last PIN+OTP the user entered (required;
         empty string for WebAuthn / Passkey).
     :status 200: refill payload in the response body, with the new

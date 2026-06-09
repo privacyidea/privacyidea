@@ -246,6 +246,82 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("hotp_chalresp")
         delete_policy("enroll")
 
+    def test_01b_pin_change_repeat_mismatch_rejects(self):
+        """
+        During the PIN-change-via-validate flow, entering a different PIN
+        at the confirmation step is rejected with "PINs do not match" and
+        the token's PIN is left unchanged.
+        """
+        set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        set_policy("enroll", scope=SCOPE.ADMIN,
+                   action=["enrollHOTP", PolicyAction.ENROLLPIN])
+
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"user": "cornelius", "pin": "test",
+                                                 "serial": self.serial, "otpkey": self.otpkey},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json['result'].get("value"))
+
+        # PIN-only -> OTP challenge.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            transaction_id = res.json['detail'].get("transaction_id")
+
+        # Answer OTP -> "Please enter a new PIN".
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertEqual("Please enter a new PIN",
+                             res.json['detail'].get("message"))
+            transaction_id = res.json['detail'].get("transaction_id")
+
+        # Submit first candidate PIN -> "Please enter the new PIN again".
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "newpin",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertEqual("Please enter the new PIN again",
+                             res.json['detail'].get("message"))
+            transaction_id = res.json['detail'].get("transaction_id")
+
+        # Submit a DIFFERENT second PIN -> mismatch rejection.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "differentpin",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json['result'].get("value"), res.json)
+            self.assertEqual("PINs do not match",
+                             res.json['detail'].get("message"), res.json)
+
+        # The new PIN was NOT applied: the token still has the original PIN.
+        # Auth with "newpin" must NOT succeed.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": f"newpin{self.valid_otp_values[2]}"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json['result'].get("value"), res.json)
+
+        remove_token(self.serial)
+        delete_policy("first_use")
+        delete_policy("via_validate")
+        delete_policy("hotp_chalresp")
+        delete_policy("enroll")
+
     def test_02_challenge_text_header(self):
         # Test PIN change after authentication with a single shot authentication
         # Create policy change pin on first use
