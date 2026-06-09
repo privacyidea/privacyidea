@@ -269,6 +269,53 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
                                         user=User("cornelius", self.realm1), serial=self.serial)
 
 
+class MultiTokenAuthLogTestCase(AuthLogTestCase):
+    """Authentication-log coverage for a user that owns more than one token."""
+
+    second_serial = "AUTHLOG_HOTP2"
+
+    def tearDown(self):
+        if get_tokens(serial=self.second_serial):
+            remove_token(self.second_serial)
+        super().tearDown()
+
+    def _check(self, data, headers=None):
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers or {}):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            return response.json
+
+    def _add_second_token(self, pin):
+        # A second HOTP token for the same user, sharing the first token's OTP key.
+        init_token({"serial": self.second_serial, "type": "hotp", "otpkey": self.otpkey, "pin": pin},
+                   user=User("cornelius", self.realm1))
+
+    def test_multiple_tokens_success_logs_only_matching_serial(self):
+        # The second token has a distinct PIN, so "pin2<otp>" matches only it. The log must record that single
+        # serial, not every token the user owns.
+        self._add_second_token(pin="pin2")
+        body = self._check({"user": "cornelius", "pass": "pin2755224"})
+        self.assertTrue(body["result"]["value"], body)
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                        user=User("cornelius", self.realm1), serial=self.second_serial)
+
+    def test_multiple_tokens_challenge_triggered_logs_all_serials(self):
+        # Both tokens are challenge-response and share the PIN, so one request with just the PIN triggers a
+        # challenge on both. The single CHALLENGE_TRIGGERED row records both serials, comma-joined.
+        self._add_second_token(pin="pin")
+        self._enable_challenge_response()
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin"})
+            self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
+        finally:
+            delete_policy("authlog_cr")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        entry = entries[AuthEventType.CHALLENGE_TRIGGERED]
+        assert_authentication_log_entry(entry, user=User("cornelius", self.realm1), serial=entry.serial)
+        self.assertEqual({self.serial, self.second_serial}, set(entry.serial.split(",")))
+
+
 class AuthEndpointAuthLogTestCase(AuthLogTestCase):
     """Authentication-log coverage for the /auth WebUI login endpoint."""
 
