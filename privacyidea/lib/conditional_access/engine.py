@@ -99,10 +99,11 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
     return db.session.scalar(stmt) or 0
 
 
-def is_user_locked(user: "User", now: datetime | None = None) -> bool:
+def get_user_lockout(user: "User", now: datetime | None = None) -> dict | None:
     """
-    Return whether *user* is currently locked. This is a **pure read** intended
-    for the authentication pre-check hot path: it never writes, so a stale
+    Return information about *user*'s **current** lock, or ``None`` if the user
+    is not currently locked. This is a **pure read** intended for the
+    authentication pre-check hot path: it never writes, so a stale
     ``is_locked=True`` row whose ``lock_expires_at`` lies in the past simply
     reads as *not locked* (it is overwritten by the next lock or by a cleanup
     job).
@@ -111,18 +112,37 @@ def is_user_locked(user: "User", now: datetime | None = None) -> bool:
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: ``True`` if the user is currently locked
+    :return: ``None`` if not locked, else a dict with keys ``permanent`` (bool),
+        ``expires_at`` (naive-UTC :class:`datetime` or ``None`` if permanent) and
+        ``seconds_remaining`` (whole seconds until a timed lock expires, ``>= 0``,
+        or ``None`` if permanent)
     """
     if not _resolved(user):
-        return False
+        return None
     state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
     if not state or not state.is_locked:
-        return False
+        return None
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
-        return True
+        return {"permanent": True, "expires_at": None, "seconds_remaining": None}
     now = _naive_utc(now) if now is not None else utc_now()
-    return state.lock_expires_at > now
+    if state.lock_expires_at <= now:
+        return None
+    remaining = int((state.lock_expires_at - now).total_seconds())
+    return {"permanent": False, "expires_at": state.lock_expires_at, "seconds_remaining": remaining}
+
+
+def is_user_locked(user: "User", now: datetime | None = None) -> bool:
+    """
+    Return whether *user* is currently locked. Thin boolean wrapper over
+    :func:`get_user_lockout` for the authentication pre-check hot path; see that
+    function for the expiry and permanent-lock semantics.
+
+    :param user: the user to check; an unresolved user is never locked
+    :param now: the reference time; defaults to :func:`utc_now`
+    :return: ``True`` if the user is currently locked
+    """
+    return get_user_lockout(user, now=now) is not None
 
 
 def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = None,

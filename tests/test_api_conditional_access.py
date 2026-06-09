@@ -191,12 +191,31 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                                         realm=self.user.realm, is_locked=True,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
-        # Correct userstore password, but the user is locked -> generic 401, no reason leak.
+        # Correct userstore password, but the user is locked -> 401 that now states the lockout.
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        # The message tells the user about the (timed) lockout instead of "Wrong credentials".
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("locked", message.lower(), message)
+        self.assertIn("minute", message.lower(), message)
+        self.assertNotIn("Wrong credentials", message, message)
         # Rejected before classification -> no authentication-log row.
         self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_permanently_locked_user_message_at_auth(self):
+        # A permanent lock (no expiry) points the user at the administrator.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, is_locked=True,
+                                        lock_expires_at=None))
+        db.session.commit()
+        res = self._auth("cornelius", "test")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("locked", message.lower(), message)
+        self.assertIn("administrator", message.lower(), message)
+        self.assertNotIn("minute", message.lower(), message)
 
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)

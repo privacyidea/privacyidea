@@ -74,7 +74,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.engine import is_user_locked, evaluate_lockout_policies
+from privacyidea.lib.conditional_access.engine import get_user_lockout, evaluate_lockout_policies
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
@@ -167,6 +167,21 @@ def before_request():
         token = get_fido2_token_by_credential_id(credential_id)
         if token:
             request.User = token.user
+
+
+def _lockout_error_message(lockout: dict) -> str:
+    """
+    Build the user-facing message for a login rejected by the conditional-access
+    lockout. *lockout* is the dict returned by
+    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
+    permanent lock points the user at the administrator, a timed lock states the
+    approximate remaining time (rounded up to whole minutes, at least one).
+    """
+    if lockout["permanent"]:
+        return _("Your account has been permanently locked. Please contact your administrator.")
+    minutes = max(1, -(-lockout["seconds_remaining"] // 60))
+    return _("Your account is temporarily locked due to too many failed login attempts. "
+             "Please try again in about {minutes} minute(s).").format(minutes=minutes)
 
 
 @jwtauth.route('', methods=['POST'])
@@ -280,13 +295,16 @@ def get_auth_token():
     user = request.User or User()
     g.audit_object.log({"user": user.login, "realm": user.realm})
     # Conditional-access pre-check: a currently-locked user is rejected before any
-    # credential check, with the generic wrong-credentials failure so the lock is not
-    # leaked. An unresolved user / local DB admin has no (resolver, uid, realm) identity
-    # tuple and is therefore never considered locked.
-    if is_user_locked(user):
+    # credential check. The rejection now states the lockout (how long it lasts, or
+    # that it is permanent) so the user understands why login fails; an admin who
+    # prefers not to reveal it can enable the hide_specific_error_message policy,
+    # which the AuthError handler applies to this message. An unresolved user / local
+    # DB admin has no (resolver, uid, realm) identity tuple and is therefore never locked.
+    lockout = get_user_lockout(user)
+    if lockout:
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
-        raise AuthError(_("Authentication failure. Wrong credentials"),
+        raise AuthError(_lockout_error_message(lockout),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
