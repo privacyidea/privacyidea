@@ -41,7 +41,7 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token, unassign_token)
-from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
+from privacyidea.lib.tokenclass import (ChallengeSession, ClientMode, FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
                                         AUTH_DATE_FORMAT)
 from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
@@ -500,6 +500,52 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(self.serial_sms)
 
+    @smtpmock.activate
+    def test_06b_email_retry_after_wrong_otp_under_same_tid(self):
+        """
+        A wrong OTP under a valid email C/R transaction_id bumps the
+        challenge's received_count but leaves the transaction alive,
+        so a subsequent correct OTP on the same tid still ACCEPTs.
+        """
+        smtpmock.setdata(response={"bla@example.com": (200, 'OK')})
+        remove_token(user=User("cornelius", self.realm1))
+        init_token(user=User("cornelius", self.realm1),
+                   param={"serial": self.serial_email, "type": "email",
+                          "email": "bla@example.com", "otpkey": self.otpkey})
+        set_pin(self.serial_email, "pin")
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            transaction_id = res.json["detail"]["transaction_id"]
+
+        # Wrong OTP keeps the tid alive but bumps received_count.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": "000000"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+
+        chal_rows = Challenge.query.filter_by(serial=self.serial_email,
+                                              transaction_id=transaction_id).all()
+        self.assertEqual(1, len(chal_rows), "tid must still exist after a wrong OTP")
+        self.assertEqual(1, chal_rows[0].received_count)
+        self.assertFalse(chal_rows[0].otp_valid)
+
+        # Correct OTP on the SAME tid must still ACCEPT.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "transaction_id": transaction_id,
+                                                 "pass": OTPs[1]}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json["result"]["value"], res.json)
+
+        remove_token(self.serial_email)
+
     @responses.activate
     def test_07_disabled_sms_token_will_not_trigger_challenge(self):
         # Configure the SMS Gateway
@@ -686,6 +732,87 @@ class AChallengeResponse(MyApiTestCase):
         remove_token("tok1")
         remove_token("tok2")
 
+    def test_10b_hotp_expired_transaction_id(self):
+        """
+        Answering a HOTP C/R challenge after its expiration timestamp
+        has passed is rejected: Challenge.is_valid() returns False so
+        the correct OTP under the (now expired) transaction_id never
+        reaches check_otp.
+        """
+        set_policy(name="pol_hotp_exp", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        init_token({"serial": "hotpexp", "type": "hotp",
+                    "otpkey": self.otpkey, "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual("CHALLENGE", res.json["result"]["authentication"])
+            transaction_id = res.json["detail"]["transaction_id"]
+
+        # Expire the challenge: set expiration into the past.
+        Challenge.query.filter_by(serial="hotpexp", transaction_id=transaction_id).update(
+            {"expiration": datetime.datetime.now(tz=timezone.utc) - datetime.timedelta(minutes=5)})
+        db.session.commit()
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": self.valid_otp_values[0],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+
+        remove_token("hotpexp")
+        delete_policy("pol_hotp_exp")
+
+    def test_10c_hotp_transaction_id_consumed_on_success(self):
+        """
+        A HOTP C/R transaction_id is single-use: a successful answer
+        deletes the Challenge row, and replaying the same tid with the
+        next valid OTP must REJECT.
+        """
+        set_policy(name="pol_hotp_replay", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        init_token({"serial": "hotpreplay", "type": "hotp",
+                    "otpkey": self.otpkey, "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual("CHALLENGE", res.json["result"]["authentication"])
+            transaction_id = res.json["detail"]["transaction_id"]
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": self.valid_otp_values[0],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual("ACCEPT", res.json["result"]["authentication"])
+
+        # The challenge row must be gone after success.
+        remaining = Challenge.query.filter_by(serial="hotpreplay",
+                                              transaction_id=transaction_id).count()
+        self.assertEqual(0, remaining)
+
+        # Replay the same tid with the next valid OTP — must REJECT, since the
+        # transaction is consumed.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": self.valid_otp_values[1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+
+        remove_token("hotpreplay")
+        delete_policy("pol_hotp_replay")
+
     @radiusmock.activate
     def test_11_validate_radiustoken(self):
         # A RADIUS token with RADIUS challenge response
@@ -780,6 +907,40 @@ class AChallengeResponse(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.ACCEPT, data.get("result").get("authentication"))
         remove_token("rad1")
         delete_policy("radius_chal_resp")
+
+    @radiusmock.activate
+    def test_11b_radius_timeout_returns_reject(self):
+        """
+        A timeout from the upstream RADIUS server during a RADIUS-token
+        C/R request is mapped to AccessReject: the user sees a normal
+        REJECT with no transaction_id.
+        """
+        user_obj = User("cornelius", self.realm1)
+        remove_token(user=user_obj)
+
+        set_policy(name="radius_chal_resp_to", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=radius")
+        r = add_radius(identifier="myserver_to", server="1.2.3.4",
+                       secret="testing123", dictionary=DICT_FILE)
+        self.assertTrue(r > 0)
+        init_token({"type": "radius", "serial": "rad_to",
+                    "radius.identifier": "myserver_to",
+                    "radius.local_checkpin": False,
+                    "radius.user": "cornelius"},
+                   user=user_obj)
+
+        radiusmock.setdata(timeout=True, response=radiusmock.AccessChallenge)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "anything"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+            self.assertNotIn("transaction_id", res.json.get("detail", {}) or {}, res.json)
+
+        remove_token("rad_to")
+        delete_policy("radius_chal_resp_to")
 
     def test_12_polltransaction(self):
         # Assign token to user:
@@ -931,6 +1092,41 @@ class AChallengeResponse(MyApiTestCase):
             self.assertTrue(res.json["result"]["status"])
             self.assertFalse(res.json["result"]["value"])
 
+    def test_12b_polltransaction_declined(self):
+        """
+        polltransaction returns detail.challenge_status="declined" when
+        no answered challenge exists for the transaction but at least
+        one matching challenge has session=ChallengeSession.DECLINED.
+        The audit row records status: declined and success=False.
+        """
+        init_token({"serial": "tokdecl", "type": "hotp", "otpkey": self.otpkey},
+                   user=User("cornelius", self.realm1))
+
+        declined_transaction_id = "9876543210"
+        chal = Challenge(serial="tokdecl",
+                         transaction_id=declined_transaction_id,
+                         challenge="",
+                         session=ChallengeSession.DECLINED)
+        chal.save()
+
+        try:
+            with self.app.test_request_context("/validate/polltransaction", method="GET",
+                                               query_string={"transaction_id": declined_transaction_id}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code)
+                self.assertTrue(res.json["result"]["status"])
+                self.assertFalse(res.json["result"]["value"])
+                self.assertEqual("declined", res.json["detail"]["challenge_status"], res.json)
+
+            entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
+            self.assertEqual(f"transaction_id: {declined_transaction_id}", entry["action_detail"])
+            self.assertEqual("status: declined", entry["info"])
+            self.assertEqual("tokdecl", entry["serial"])
+            self.assertFalse(entry["success"])
+            self.assertEqual("cornelius", entry["user"])
+        finally:
+            remove_token("tokdecl")
+
     def test_13_chal_resp_indexed_secret(self):
         my_secret = "HelloMyFriend"
         init_token({"otpkey": my_secret,
@@ -1029,6 +1225,69 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(serial)
 
+    def test_14b_indexedsecret_wrong_intermediate_then_retry(self):
+        """
+        A wrong character at any indexed-secret multichallenge step
+        rejects with "Response did not match the challenge.", increments
+        the token failcounter, but keeps the transaction_id alive — the
+        user can resubmit the correct character on the same tid and the
+        multichallenge proceeds to the next step (and eventually ACCEPTs).
+        """
+        index_secret = "abcdefghijklmn"
+        serial = "indx_retry"
+        tok = init_token({"type": "indexedsecret", "otpkey": index_secret,
+                          "pin": "index", "serial": serial},
+                         user=User("cornelius", self.realm1))
+        tok.add_tokeninfo("multichallenge", 1)
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "index"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            position = detail["attributes"]["random_positions"][0]
+
+        # Wrong character: REJECT, failcount += 1, challenge row still alive.
+        wrong_char = "Z" if index_secret[position - 1] != "Z" else "Y"
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": wrong_char,
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"].get("value"), res.json)
+            self.assertEqual("Response did not match the challenge.",
+                             res.json["detail"].get("message"), res.json)
+
+        self.assertEqual(1, get_one_token(serial=serial).token.failcount)
+        self.assertEqual(1,
+                         Challenge.query.filter_by(serial=serial,
+                                                   transaction_id=transaction_id).count(),
+                         "tid must still exist after a wrong intermediate answer")
+
+        # Correct character on the SAME tid: progresses to the next step.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": index_secret[position - 1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertFalse(res.json["result"].get("value"))
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            position = detail["attributes"]["random_positions"][0]
+
+        # Final correct character → ACCEPT.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": index_secret[position - 1],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json["result"].get("value"), res.json)
+
+        remove_token(serial)
+
     def test_15_questionnaire_multichallenge(self):
         questionnaire = {"Question1": "Answer1",
                          "Question2": "Answer2",
@@ -1087,6 +1346,76 @@ class AChallengeResponse(MyApiTestCase):
         self.assertEqual(len(set(found_questions)), 5)
         remove_token(serial)
         delete_policy("questpol")
+
+    def test_15b_questionnaire_wrong_intermediate_then_retry(self):
+        """
+        A wrong answer at any questionnaire multichallenge step rejects
+        with "Response did not match the challenge.", increments the
+        token failcounter, but keeps the transaction_id alive — the
+        user can resubmit the correct answer on the same tid and the
+        multichallenge proceeds (and eventually ACCEPTs).
+        """
+        questionnaire = {"Question1": "Answer1",
+                         "Question2": "Answer2",
+                         "Question3": "Answer3",
+                         "Q4": "A4",
+                         "Q5": "A5"}
+        serial = "quest_retry"
+        init_token({"type": "question", "questions": questionnaire,
+                    "pin": "quest", "serial": serial},
+                   user=User("cornelius", self.realm1))
+        # Ask two questions to keep the test short.
+        set_policy(name="questpol_retry", scope=SCOPE.AUTH,
+                   action="question_number=2")
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "quest"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            question = detail["message"]
+
+        # Wrong answer: REJECT, failcount += 1, challenge row still alive.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": "definitely-wrong",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"].get("value"), res.json)
+            self.assertEqual("Response did not match the challenge.",
+                             res.json["detail"].get("message"), res.json)
+
+        self.assertEqual(1, get_one_token(serial=serial).token.failcount)
+        self.assertEqual(1,
+                         Challenge.query.filter_by(serial=serial,
+                                                   transaction_id=transaction_id).count(),
+                         "tid must still exist after a wrong intermediate answer")
+
+        # Correct answer on the SAME tid: progresses to the next question.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": questionnaire[question],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertFalse(res.json["result"].get("value"))
+            detail = res.json["detail"]
+            transaction_id = detail["transaction_id"]
+            question = detail["message"]
+
+        # Final correct answer → ACCEPT.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius",
+                                                 "pass": questionnaire[question],
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json["result"].get("value"), res.json)
+
+        remove_token(serial)
+        delete_policy("questpol_retry")
 
     def test_16_4eyes_multichallenge_with_pin(self):
         # We require 1 token in realm1 and 2 tokens in realm2
@@ -1251,6 +1580,34 @@ class AChallengeResponse(MyApiTestCase):
         remove_token("admintok2")
         remove_token("admintok3")
 
+    def test_17b_4eyes_wrong_pin_no_challenge(self):
+        """
+        Sending a wrong PIN to a 4eyes C/R token does not open a
+        challenge: no transaction_id is returned, the response is
+        REJECT, and no Challenge row is created for the 4eyes serial.
+        """
+        required_tokens = {"realm1": {"selected": True, "count": 1},
+                           "realm3": {"selected": True, "count": 2}}
+        serial = "4eyes_wpin"
+        self.setUp_user_realm3()
+        init_token({"type": "4eyes", "4eyes": required_tokens,
+                    "pin": "correctpin", "serial": serial},
+                   user=User("root", self.realm3))
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "root", "realm": self.realm3,
+                                                 "pass": "wrongpin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertNotIn("transaction_id", res.json.get("detail", {}) or {}, res.json)
+
+        chal_count = Challenge.query.filter_by(serial=serial).count()
+        self.assertEqual(0, chal_count,
+                         "Wrong-PIN attempt must not create a Challenge row")
+
+        remove_token(serial)
+
     @smtpmock.activate
     def test_18_email_triggerchallenge_no_pin(self):
         # Test that the HOTP value from an email token without a PIN
@@ -1369,3 +1726,40 @@ class AChallengeResponse(MyApiTestCase):
         remove_token(self.serial_sms)
         remove_token("hotp_serial")
         delete_policy("increase_failcounter_on_challenge")
+
+    def test_19b_increase_failcounter_no_extra_inc_on_wrong_pin(self):
+        """
+        The increase_failcounter_on_challenge policy only fires when a
+        challenge is actually created. A wrong PIN must therefore not
+        bump the failcounter via this policy — the delta from a
+        wrong-PIN attempt must be identical with or without the policy
+        active (any wrong-PIN inc comes from the orthogonal
+        IncFailCountOnFalsePin SYSCONF path).
+        """
+        init_token({"type": "email", "serial": self.serial_email,
+                    "email": "hans@dampf.com", "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+
+        def wrong_pin_once():
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "cornelius", "pass": "wrongpin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                self.assertFalse(res.json["result"]["value"], res.json)
+
+        wrong_pin_once()
+        baseline = get_one_token(serial=self.serial_email).token.failcount
+
+        set_policy(name="inc_fc_nopin", scope=SCOPE.AUTH,
+                   action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        wrong_pin_once()
+        with_policy = get_one_token(serial=self.serial_email).token.failcount
+
+        # The delta from one wrong-PIN attempt with the policy must equal
+        # the delta from the same attempt without the policy — i.e. the
+        # policy contributed nothing.
+        self.assertEqual(2 * baseline, with_policy,
+                         f"policy must not inc on wrong PIN (baseline={baseline}, with_policy={with_policy})")
+
+        remove_token(self.serial_email)
+        delete_policy("inc_fc_nopin")
