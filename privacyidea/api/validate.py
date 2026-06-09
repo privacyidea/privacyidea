@@ -831,15 +831,11 @@ def _evaluate_lockout_policies(context):
     ``return`` inside the finally would mask an in-flight exception.
     """
     try:
-        evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
+        with db.session.begin_nested():
+            evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
+        db.session.commit()
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-        # A prior handler error may have left the session in an aborted state;
-        # clear it so request teardown can proceed cleanly.
-        try:
-            db.session.rollback()
-        except Exception:
-            pass
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
