@@ -106,8 +106,7 @@
                       (click)="onEditEventHandler(element)"
                       (keydown.enter)="onEditEventHandler(element)"
                       (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
-                      [innerHTML]="element.name | highlight: filterString()"
-                      tabindex="0"></a>
+                      [innerHTML]="element.name | highlight: filterString()"></a>
                   } @else {
                     <span [innerHTML]="element.name | highlight: filterString()"></span>
                   }

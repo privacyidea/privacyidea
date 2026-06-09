@@ -83,8 +83,6 @@
                     @case ("serial") {
                       <app-copyable [copyText]="element.serial">
                         <a
-                          role="button"
-                          tabindex="0"
                           (click)="contentService.tokenSelected(element.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.serial)"
                           attr.aria-label="{{ column.label }} Link"
@@ -97,8 +95,6 @@
                     @case ("active") {
                       @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                         <span
-                          role="button"
-                          tabindex="0"
                           (click)="toggleActive(element)"
                           (keydown.enter)="toggleActive(element)"
                           [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
@@ -116,8 +112,6 @@
                     @case ("failcount") {
                       @if (authService.actionAllowed("reset")) {
                         <span
-                          role="button"
-                          tabindex="0"
                           (click)="resetFailCount(element)"
                           (keydown.enter)="resetFailCount(element)"
                           [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
@@ -135,8 +129,6 @@
                       @if (authService.actionAllowed("container_list")) {
                         <app-copyable [copyText]="element[column.key]">
                           <a
-                            role="button"
-                            tabindex="0"
                             (click)="contentService.navigateContainerDetails(element[column.key])"
                             (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
                             attr.aria-label="{{ column.label }} Link"

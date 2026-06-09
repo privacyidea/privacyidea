@@ -102,8 +102,6 @@
                   }
                   @case ("active") {
                     <span
-                      role="button"
-                      tabindex="0"
                       (click)="toggleActive(element)"
                       (keydown.enter)="toggleActive(element)"
                       [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"

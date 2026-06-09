@@ -168,8 +168,6 @@
               @case ("user") {
                 <app-copyable [copyText]="element[column.key]">
                   <a
-                    role="button"
-                    tabindex="0"
                     (click)="contentService.userSelected(element[column.key], element['user_realm'])"
                     (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
                     (keydown.space)="

@@ -154,8 +154,6 @@
                 @case ("serial") {
                   <app-copyable [copyText]="tokenDetails.serial">
                     <a
-                      role="button"
-                      tabindex="0"
                       (click)="contentService.tokenSelected(tokenDetails.serial)"
                       (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
                       (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
@@ -170,8 +168,6 @@
                 @case ("active") {
                   @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                     <span
-                      role="button"
-                      tabindex="0"
                       (click)="toggleActive(tokenDetails)"
                       (keydown.enter)="toggleActive(tokenDetails)"
                       (keydown.space)="$event.preventDefault(); toggleActive(tokenDetails)"
@@ -185,8 +181,6 @@
                 @case ("failcount") {
                   @if (authService.actionAllowed("reset")) {
                     <span
-                      role="button"
-                      tabindex="0"
                       (click)="resetFailCount(tokenDetails)"
                       (keydown.enter)="resetFailCount(tokenDetails)"
                       (keydown.space)="$event.preventDefault(); resetFailCount(tokenDetails)"
@@ -211,8 +205,6 @@
                 @case ("container_serial") {
                   <app-copyable [copyText]="tokenDetails.container_serial">
                     <a
-                      role="button"
-                      tabindex="0"
                       (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
                       (keydown.space)="
@@ -228,8 +220,6 @@
                 @case ("username") {
                   <app-copyable [copyText]="tokenDetails[column.key]">
                     <a
-                      role="button"
-                      tabindex="0"
                       (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
                       (keydown.enter)="
                         contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])

@@ -27,7 +27,6 @@
         tabindex="0"
         [class.active]="value === selectedValue()"
         #item
-        tabindex="0"
         (click)="onItemClick($event, $index)"
         (keydown.enter)="selectItem($index)">
         {{ value }}

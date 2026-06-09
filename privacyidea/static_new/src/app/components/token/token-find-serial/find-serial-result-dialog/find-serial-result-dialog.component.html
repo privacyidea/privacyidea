@@ -33,9 +33,7 @@
           attr.aria-label="{{ data.foundSerial }} Link"
           (click)="onClickSerial()"
           (keydown.enter)="onClickSerial()"
-          (keydown.space)="$event.preventDefault(); onClickSerial()"
-          role="button"
-          tabindex="0">
+          (keydown.space)="$event.preventDefault(); onClickSerial()">
           {{ data.foundSerial }}.</a
         >
       </span>
