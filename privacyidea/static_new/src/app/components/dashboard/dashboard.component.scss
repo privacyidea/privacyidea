@@ -1,0 +1,128 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  box-sizing: border-box;
+  height: var(--max-height);
+  width: 100%;
+  padding: var(--global-padding);
+}
+
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--global-gap);
+}
+
+.dashboard-field-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.dashboard-field {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+
+  &.editing {
+    background-image: radial-gradient(circle, var(--mat-sys-outline-variant) 1.5px, transparent 1.6px);
+    background-repeat: repeat;
+  }
+}
+
+.drop-target {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed var(--mat-sys-primary);
+  border-radius: var(--border-radius);
+  background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+  pointer-events: none;
+
+  &.invalid {
+    border-color: var(--mat-sys-error);
+    background: color-mix(in srgb, var(--mat-sys-error) 8%, transparent);
+  }
+}
+
+.widget-cell {
+  position: absolute;
+  box-sizing: border-box;
+
+  &.cdk-drag-dragging {
+    z-index: 2;
+  }
+
+  &.resizing-invalid {
+    z-index: 5;
+    outline: 2px solid var(--mat-sys-error);
+    outline-offset: -2px;
+    border-radius: var(--border-radius);
+  }
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 3;
+  touch-action: none;
+}
+
+.handle-e {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.handle-s {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.handle-se {
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  z-index: 4;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    transparent 0 50%,
+    var(--mat-sys-outline) 50% 60%,
+    transparent 60% 70%,
+    var(--mat-sys-outline) 70% 80%,
+    transparent 80%
+  );
+}

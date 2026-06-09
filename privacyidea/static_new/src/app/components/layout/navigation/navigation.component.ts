@@ -99,6 +99,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private resizeObserver: ResizeObserver | null = null;
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
+    { icon: "dashboard", label: $localize`Dashboard`, route: ROUTE_PATHS.DASHBOARD, section: "dashboard" },
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
     { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.CONTAINERS, section: "container" },
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
@@ -133,6 +134,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
+    if (url.startsWith(ROUTE_PATHS.DASHBOARD)) return "dashboard";
     if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";

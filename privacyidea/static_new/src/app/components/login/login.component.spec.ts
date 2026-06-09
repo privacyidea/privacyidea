@@ -163,7 +163,7 @@ describe("LoginComponent", () => {
         username: "test-user",
         password: "test-pass"
       });
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
     });
 
     it("should call authService.authenticate with username/password/realm", () => {
@@ -175,7 +175,7 @@ describe("LoginComponent", () => {
         password: "test-pass",
         realm: "test-realm"
       });
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
     });
 
     it("should call authService.authenticate not with empty realm", () => {
@@ -186,7 +186,7 @@ describe("LoginComponent", () => {
         username: "test-user",
         password: "test-pass"
       });
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
     });
 
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
@@ -373,7 +373,7 @@ describe("LoginComponent", () => {
 
       expect(validateService.authenticatePasskey).toHaveBeenCalled();
       expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "passkey-token");
-      expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
+      expect(router.navigateByUrl).toHaveBeenCalledWith("/dashboard");
     });
 
     it("should handle failure", () => {

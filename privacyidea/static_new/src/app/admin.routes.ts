@@ -20,6 +20,7 @@
 import { Routes } from "@angular/router";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuditComponent } from "@components/audit/audit.component";
+import { DashboardComponent } from "@components/dashboard/dashboard.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
 import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
@@ -67,6 +68,8 @@ import { UserResolversComponent } from "@components/user/user-resolver/user-reso
 import { UserTableComponent } from "@components/user/user-table/user-table.component";
 
 export const routes: Routes = [
+  { path: "", redirectTo: "dashboard", pathMatch: "full" },
+  { path: "dashboard", component: DashboardComponent },
   {
     path: "tokens",
     children: [

@@ -1,0 +1,102 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="dashboard-page">
+  <div class="dashboard-toolbar">
+    <button
+      mat-flat-button
+      (click)="toggleEdit()">
+      <mat-icon>{{ layoutService.editMode() ? "check" : "edit" }}</mat-icon>
+      @if (layoutService.editMode()) {
+        <span i18n>Done</span>
+      } @else {
+        <span i18n>Edit dashboard</span>
+      }
+    </button>
+
+    @if (layoutService.editMode()) {
+      <button
+        mat-stroked-button
+        (click)="reset()">
+        <mat-icon>restart_alt</mat-icon>
+        <span i18n>Reset</span>
+      </button>
+
+      <app-widget-palette />
+    }
+  </div>
+
+  <div
+    class="dashboard-field-scroll"
+    #fieldScroll
+    (scroll)="onFieldScroll()">
+    <div
+      class="dashboard-field"
+      #field
+      [class.editing]="layoutService.editMode()"
+      [style.background-size]="anchorBackgroundSize()"
+      [style.height.px]="fieldHeight()">
+      @if (dragTarget(); as target) {
+        <div
+          class="drop-target"
+          [class.invalid]="!target.valid"
+          [style.left]="leftCss(target.x)"
+          [style.top.px]="topPx(target.y)"
+          [style.width]="widthCss(target.cols)"
+          [style.height.px]="heightPx(target.rows)"></div>
+      }
+
+      @for (widget of widgets(); track widget.id) {
+        <div
+          class="widget-cell"
+          cdkDrag
+          cdkDragBoundary=".dashboard-field"
+          [cdkDragDisabled]="!layoutService.editMode()"
+          [class.resizing-invalid]="isResizingInvalid(widget)"
+          [style.left]="leftCss(widget.x)"
+          [style.top.px]="topPx(widget.y)"
+          [style.width]="widthCss(effectiveCols(widget))"
+          [style.height.px]="heightPx(effectiveRows(widget))"
+          (cdkDragStarted)="onDragStarted(widget, $event)"
+          (cdkDragMoved)="onDragMoved(widget, $event)"
+          (cdkDragEnded)="onDragEnded(widget, $event)">
+          <app-widget-frame [instance]="widget" />
+
+          @if (layoutService.editMode()) {
+            <span
+              class="resize-handle handle-e"
+              (pointerdown)="onResizeStart(widget, 'e', $event)"
+              (pointermove)="onResizeMove($event)"
+              (pointerup)="onResizeEnd()"></span>
+            <span
+              class="resize-handle handle-s"
+              (pointerdown)="onResizeStart(widget, 's', $event)"
+              (pointermove)="onResizeMove($event)"
+              (pointerup)="onResizeEnd()"></span>
+            <span
+              class="resize-handle handle-se"
+              (pointerdown)="onResizeStart(widget, 'se', $event)"
+              (pointermove)="onResizeMove($event)"
+              (pointerup)="onResizeEnd()"></span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>
