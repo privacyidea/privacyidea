@@ -1,2 +1,36 @@
 @use "styles";
 @use "table";
+
+:host {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+}
+
+.set-pin-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+  width: fit-content;
+}
+
+.set-pin-fields {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.set-pin-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}

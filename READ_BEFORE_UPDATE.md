@@ -1,6 +1,21 @@
 # Update Notes
 ## Update from 3.13 to 3.14
 
+* The `/validate/samlcheck` endpoint has been removed (deprecated in 3.11). The
+  `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration
+  options are removed along with it; the corresponding WebUI controls are gone
+  and stored values become inert. Switch any clients to `/validate/check` with
+  the authorization policies `add_user_in_response` and/or
+  `add_resolver_in_response`; user attributes are then returned under
+  `detail.user` (and resolver/realm under `detail.user-resolver` /
+  `detail.user-realm`) instead of inside `result.value.attributes`.
+
+  **No direct replacement for `ReturnSamlAttributesOnFail`**: the
+  `add_user_in_response` policy only fires when authentication succeeds, so
+  applications that relied on receiving user attributes on a failed
+  authentication need to be reworked (e.g. look the user up via the user API
+  on the relying-party side).
+
 * A new admin policy action `get_user_internal_attributes` controls who may read the
   privacyIDEA-internal user attributes (e.g. `fido2_user_id`, `last_used_token`) via the
   new `GET /user/internal_attribute` endpoint and the *Internal attributes* panel in the

@@ -16,7 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, input, viewChild } from "@angular/core";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
 import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
 import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
@@ -43,11 +45,6 @@ import { EnrollVascoComponent } from "@components/token/token-enrollment/enroll-
 import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
 import { EnrollYubicoComponent } from "@components/token/token-enrollment/enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "@components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component";
-import type {
-  enrollmentArgsGetterFn,
-  OnEnrollmentResponseFn,
-  ReopenDialogFn
-} from "@components/token/token-enrollment/token-enrollment.component";
 
 @Component({
   selector: "app-enroll-token-type-switch",
@@ -83,11 +80,11 @@ import type {
   templateUrl: "./enroll-token-type-switch.component.html"
 })
 export class EnrollTokenTypeSwitchComponent {
-  @Input({ required: true }) tokenTypeKey!: string;
-  @Input() wizard = false;
+  readonly tokenTypeKey = input.required<string>();
+  readonly wizard = input(false);
+  readonly enrollmentData = input<TokenEnrollmentData | null>(null);
 
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<enrollmentArgsGetterFn>();
-  @Output() onEnrollmentResponseChange = new EventEmitter<OnEnrollmentResponseFn>();
-  @Output() reopenDialogChange = new EventEmitter<ReopenDialogFn>();
+  // The active child enrollment component, resolved via DI. Children register themselves as `EnrollTokenBase` via
+  // `providers: [{ provide, useExisting }]`.
+  readonly currentStrategy = viewChild(EnrollTokenBase);
 }

@@ -270,7 +270,7 @@ class LocalConfigClass:
             is given a string/bool is returned.
         """
         default_true_keys = [SYSCONF.PREPENDPIN, SYSCONF.SPLITATSIGN,
-                             SYSCONF.INCFAILCOUNTER, SYSCONF.RETURNSAML]
+                             SYSCONF.INCFAILCOUNTER]
 
         r_config = {}
 
@@ -314,8 +314,6 @@ class SYSCONF:
     PREPENDPIN = "PrependPin"
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
-    RETURNSAML = "ReturnSamlAttributes"
-    RETURNSAMLONFAIL = "ReturnSamlAttributesOnFail"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
@@ -1052,18 +1050,6 @@ def set_prepend_pin(prepend=True):
     :return: None
     """
     set_privacyidea_config("PrependPin", prepend)
-
-
-def return_saml_attributes():
-    r = get_from_config(key=SYSCONF.RETURNSAML, default=False,
-                        return_bool=True)
-    return r
-
-
-def return_saml_attributes_on_fail():
-    r = get_from_config(key=SYSCONF.RETURNSAMLONFAIL, default=False,
-                        return_bool=True)
-    return r
 
 
 def get_privacyidea_node(default=DefaultConfigValues.NODE_NAME) -> str:

@@ -53,10 +53,7 @@
     </div>
     <app-enroll-token-type-switch
       [tokenTypeKey]="authService.defaultTokentype() || 'hotp'"
-      [wizard]="wizard"
-      (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-      (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
-      (reopenDialogChange)="updateReopenDialog($event)" />
+      [wizard]="wizard" />
     @if (descriptionRequired()) {
       <mat-form-field class="input-width-l description-form">
         <mat-label>Description</mat-label>
