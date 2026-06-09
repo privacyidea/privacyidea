@@ -70,29 +70,30 @@ def log_authentication_event(event_type: AuthEventType,
     """
     Create a new authentication log entry and return its id.
 
-    Writing the authentication log must never break the authentication itself, so any failure here is logged and
-    swallowed: the entry is not written, the session is rolled back so the rest of the request can still commit, and
-    ``None`` is returned instead of an id.
+    Writing the authentication log must never break the authentication itself, so a failure to write the entry is
+    logged and swallowed: the insert runs inside a SAVEPOINT, so a failure rolls back only the entry while leaving any
+    other pending writes of the request untouched, and ``None`` is returned instead of an id.
     """
+    entry = AuthenticationLog(
+        event_type=_truncate("event_type", event_type),
+        transaction_id=_truncate("transaction_id", transaction_id),
+        resolver=_truncate("resolver", resolver),
+        uid=_truncate("uid", uid),
+        realm=_truncate("realm", realm),
+        source_ip=_truncate("source_ip", source_ip),
+        client_label=_truncate("client_label", client_label),
+        serial=_truncate("serial", serial),
+        other_info=other_info
+    )
+    entry_id = None
     try:
-        entry = AuthenticationLog(
-            event_type=_truncate("event_type", event_type),
-            transaction_id=_truncate("transaction_id", transaction_id),
-            resolver=_truncate("resolver", resolver),
-            uid=_truncate("uid", uid),
-            realm=_truncate("realm", realm),
-            source_ip=_truncate("source_ip", source_ip),
-            client_label=_truncate("client_label", client_label),
-            serial=_truncate("serial", serial),
-            other_info=other_info
-        )
-        db.session.add(entry)
+        with db.session.begin_nested():
+            db.session.add(entry)
+        entry_id = entry.id
         db.session.commit()
-        return entry.id
     except Exception as ex:
         log.warning(f"Failed to write the authentication log entry: {ex!r}")
-        db.session.rollback()
-        return None
+    return entry_id
 
 
 def delete_authentication_log_event(event_id: int) -> None:

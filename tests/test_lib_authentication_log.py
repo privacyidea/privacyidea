@@ -260,6 +260,35 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(timezone.utc, entry.aware_timestamp.tzinfo)
         self.assertEqual(entry.timestamp, entry.aware_timestamp.replace(tzinfo=None))
 
+    def test_failed_write_is_swallowed_and_not_persisted(self):
+        # event_type is NOT NULL, so passing None makes the insert fail at flush. The failure must be swallowed
+        # (return None, no exception) and no row must be written.
+        from privacyidea.models import db
+
+        event_id = log_authentication_event(event_type=None, resolver="res1", uid="u1", realm="r1")
+        db.session.commit()
+
+        self.assertIsNone(event_id)
+        self.assertEqual([], get_authentication_logs())
+
+    def test_failed_write_preserves_prior_pending_write(self):
+        # The insert runs inside a SAVEPOINT, so a failing entry must roll back only itself and leave an earlier,
+        # still-uncommitted write of the same session intact.
+        from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
+
+        # A prior write that is pending but not yet committed.
+        db.session.add(AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="prior"))
+
+        # A failing auth-log write (event_type is NOT NULL).
+        event_id = log_authentication_event(event_type=None, resolver="failing", uid="u1", realm="r1")
+        self.assertIsNone(event_id)
+
+        # The prior pending write survived the savepoint rollback and was committed; the failing one was not written.
+        results = get_authentication_logs()
+        self.assertEqual(1, len(results))
+        self.assertEqual("prior", results[0].resolver)
+
     def test_values_are_truncated_to_column_length(self):
         from privacyidea.models import authentication_log_column_length
 
