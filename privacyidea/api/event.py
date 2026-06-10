@@ -31,9 +31,11 @@ delete are gated by :ref:`policy_eventhandling_write`.
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import getParam, send_result, get_required
+from .lib.utils import send_result, get_required
 from ..lib.log import log_with
 from ..lib.event import set_event, delete_event, enable_event
+from ..lib.error import ParameterError
+from privacyidea.lib import _
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -205,12 +207,19 @@ def set_eventhandling():
     if eid:
         eid = int(eid)
     handlermodule = get_required(param, "handlermodule")
+    if get_handler_object(handlermodule) is None:
+        raise ParameterError(_("Unknown handler module: {0!s}").format(handlermodule))
     action = get_required(param, "action")
     ordering = param.get("ordering", 0)
     position = param.get("position", "post")
     conditions = param.get("conditions", {})
-    if type(conditions) is not dict:
-        conditions = json.loads(conditions)
+    if not isinstance(conditions, dict):
+        try:
+            conditions = json.loads(conditions)
+        except (ValueError, TypeError):
+            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
+        if not isinstance(conditions, dict):
+            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
     options = {}
     for k, v in param.items():
         if k.startswith("option."):

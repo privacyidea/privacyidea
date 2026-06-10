@@ -356,7 +356,7 @@ class EmailTokenClass(HotpTokenClass):
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
 
         if ret < 0 and is_true(get_from_config("email.concurrent_challenges")):
-            if safe_compare(options.get("data"), anOtpVal):
+            if options.get("data") is not None and safe_compare(options.get("data"), anOtpVal):
                 # We authenticate from the saved challenge
                 ret = 1
         if ret >= 0 and self._get_auto_email(options):
