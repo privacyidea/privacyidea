@@ -283,6 +283,7 @@ def get_auth_token():
     realm_param = get_optional(request.all_data, "realm")
     details = {}
     auth_event_type = None
+    serials = None
     # Passkey login
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_enabled = get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True)
@@ -339,6 +340,8 @@ def get_auth_token():
             username = user.login
             passkey_login_success = True
             auth_event_type = AuthEventType.LOGIN_SUCCESS
+            # Record the passkey serial for the authentication log
+            serials = token.get_serial()
         else:
             log_authentication(AuthEventType.MFA_FAIL, user=token.user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
@@ -500,14 +503,14 @@ def get_auth_token():
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
-                log_authentication(auth_event_type, user=user, serial=details.get("serial"),
+                log_authentication(auth_event_type, user=user, serial=serials,
                                    transaction_id=details.get("transaction_id"))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
     if auth_event_type is None:
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (admin_auth or user_auth) else AuthEventType.PASSWORD_FAIL
-    log_authentication(auth_event_type, user=user, serial=details.get("serial"),
+    log_authentication(auth_event_type, user=user, serial=serials or details.get("serial"),
                        transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
                        login=username if auth_event_type == AuthEventType.USER_UNKNOWN else None)
 

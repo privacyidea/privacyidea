@@ -115,7 +115,8 @@ class PushChallengeTags(MyApiTestCase):
         # The PIN step created the push challenge -> CHALLENGE_TRIGGERED for the user and token
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User(self.user, self.realm1), serial=serial)
+                                        user=User(self.user, self.realm1), serials={serial},
+                                        transaction_id=transaction_id)
 
         # We do poll only, so we need to poll
         ts = datetime.datetime.utcnow().isoformat()

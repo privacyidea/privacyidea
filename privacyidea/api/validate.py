@@ -952,14 +952,17 @@ def trigger_challenge():
     create_challenges_from_tokens(challenge_response_token, details, options)
     triggered_challenges = len(details.get("multi_challenge"))
 
+    # Record every challenged serial, not just details["serial"] (which create_challenges_from_tokens leaves as the
+    # last challenge it created).
+    challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
+
     log_authentication(
         AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN,
         user=user,
-        serial=details.get("serial"),
+        serial=",".join(challenge_serials) or None,
         transaction_id=details.get("transaction_id"),
     )
 
-    challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
     r = send_result(triggered_challenges, rid=2, details=details)
     g.audit_object.log({
         "user": user.login,
