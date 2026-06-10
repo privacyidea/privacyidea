@@ -19,7 +19,7 @@
 import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { WidgetDefinition } from "@models/dashboard";
+import { WidgetComponentType } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
 
@@ -34,7 +34,7 @@ export class WidgetPaletteComponent {
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
   private readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
 
-  protected readonly definitions: WidgetDefinition[] = this.registry.definitions;
+  protected readonly widgetTypes: WidgetComponentType[] = this.registry.widgetTypes;
 
   protected add(type: string): void {
     this.layoutService.addWidget(type);

@@ -16,20 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
-import { DashboardWidget, WidgetSize } from "@models/dashboard";
+:host {
+  flex-direction: column;
+}
 
-@Component({
-  selector: "app-stat-widget",
-  standalone: true,
-  templateUrl: "./stat-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./stat-widget.component.scss"]
-})
-export class StatWidgetComponent extends DashboardWidget {
-  static override readonly type = "stat";
-  static override readonly title = $localize`Statistic`;
-  static override readonly icon = "insights";
-  static override readonly defaultSize: WidgetSize = { cols: 4, rows: 4 };
-  static override readonly minSize: WidgetSize = { cols: 3, rows: 3 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.stat-caption {
+  opacity: 0.7;
 }

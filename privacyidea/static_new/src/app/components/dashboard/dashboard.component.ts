@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDrag, CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
-import { Component, computed, ElementRef, inject, signal, viewChild } from "@angular/core";
+import { afterRenderEffect, Component, computed, ElementRef, inject, signal, viewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { WidgetFrameComponent } from "@components/dashboard/widget-frame/widget-frame.component";
 import { WidgetPaletteComponent } from "@components/dashboard/widget-palette/widget-palette.component";
-import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
 
@@ -42,13 +42,26 @@ interface ResizeState {
   startY: number;
   startCols: number;
   startRows: number;
-  minCols: number;
-  minRows: number;
-  maxCols: number;
   rect: FieldRect;
   pitchX: number;
   pitchY: number;
 }
+
+interface ResizePreview {
+  id: string;
+  cols: number;
+  rows: number;
+  valid: boolean;
+}
+
+interface DragState {
+  id: string;
+  widget: WidgetInstance;
+  element: HTMLElement;
+  startScrollTop: number;
+}
+
+type DragTarget = FieldRect & { valid: boolean };
 
 @Component({
   selector: "app-dashboard",
@@ -63,7 +76,7 @@ export class DashboardComponent {
   protected readonly widgets = this.layoutService.widgets;
 
   private resizeState: ResizeState | null = null;
-  protected readonly resizePreview = signal<{ id: string; cols: number; rows: number; valid: boolean } | null>(null);
+  protected readonly resizePreview = signal<ResizePreview | null>(null);
 
   protected readonly columns = DASHBOARD_COLUMNS;
   protected readonly rowHeight = 40;
@@ -71,13 +84,31 @@ export class DashboardComponent {
 
   private readonly field = viewChild.required<ElementRef<HTMLElement>>("field");
   private readonly fieldScroll = viewChild.required<ElementRef<HTMLElement>>("fieldScroll");
-  private dragState: { id: string; widget: WidgetInstance; element: HTMLElement; startScrollTop: number } | null = null;
+  private dragState: DragState | null = null;
 
-  protected readonly dragTarget = signal<(FieldRect & { valid: boolean }) | null>(null);
+  protected readonly dragTarget = signal<DragTarget | null>(null);
+
+  protected readonly atBottom = signal(true);
+
+  private readonly viewportBottom = signal(0);
+
+  private readonly trailingRows = 4;
+
+  constructor() {
+    afterRenderEffect(() => {
+      this.fieldHeight();
+      this.widgets();
+      this.updateScrollMetrics();
+    });
+  }
 
   protected readonly rowCount = computed(() => {
     const maxBottom = this.widgets().reduce((bottom, widget) => Math.max(bottom, widget.y + widget.rows), 0);
-    return maxBottom + 4;
+    if (!this.layoutService.editMode()) {
+      return maxBottom;
+    }
+    const visibleRows = Math.ceil(this.viewportBottom() / (this.rowHeight + this.gap));
+    return Math.max(maxBottom + this.trailingRows, visibleRows + this.trailingRows);
   });
 
   protected readonly fieldHeight = computed(() => this.heightPx(this.rowCount()));
@@ -112,6 +143,7 @@ export class DashboardComponent {
   }
 
   protected onFieldScroll(): void {
+    this.updateScrollMetrics();
     const state = this.dragState;
     if (!state) {
       return;
@@ -120,6 +152,13 @@ export class DashboardComponent {
     state.element.style.translate = `0 ${delta}px`;
     const target = this.targetRect(state.widget, state.element);
     this.dragTarget.set({ ...target, valid: !this.collides(target, state.id) });
+  }
+
+  private updateScrollMetrics(): void {
+    const el = this.fieldScroll().nativeElement;
+    this.viewportBottom.set(el.scrollTop + el.clientHeight);
+    this.atBottom.set(el.scrollHeight - el.scrollTop - el.clientHeight <= 1);
+    this.layoutService.insertRow.set(Math.round(el.scrollTop / (this.rowHeight + this.gap)));
   }
 
   protected onDragMoved(widget: WidgetInstance, event: CdkDragMove): void {
@@ -156,7 +195,6 @@ export class DashboardComponent {
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
 
     const fieldRect = this.field().nativeElement.getBoundingClientRect();
-    const definition = this.registry.get(widget.type);
     this.resizeState = {
       id: widget.id,
       dir,
@@ -164,9 +202,6 @@ export class DashboardComponent {
       startY: event.clientY,
       startCols: widget.cols,
       startRows: widget.rows,
-      minCols: definition?.minSize?.cols ?? 1,
-      minRows: definition?.minSize?.rows ?? 1,
-      maxCols: Math.min(definition?.maxSize?.cols ?? this.columns, this.columns - widget.x),
       rect: { x: widget.x, y: widget.y, cols: widget.cols, rows: widget.rows },
       pitchX: (fieldRect.width + this.gap) / this.columns,
       pitchY: this.rowHeight + this.gap
@@ -178,18 +213,38 @@ export class DashboardComponent {
     if (!state) {
       return;
     }
+    const widget = this.widgets().find((candidate) => candidate.id === state.id);
+    if (!widget) {
+      return;
+    }
+    const { min, max } = this.constraintsFor(widget);
     let cols = state.startCols;
     let rows = state.startRows;
     if (state.dir !== "s") {
       const deltaCols = Math.round((event.clientX - state.startX) / state.pitchX);
-      cols = Math.min(Math.max(state.startCols + deltaCols, state.minCols), state.maxCols);
+      cols = Math.min(Math.max(state.startCols + deltaCols, min.cols), max.cols);
     }
     if (state.dir !== "e") {
       const deltaRows = Math.round((event.clientY - state.startY) / state.pitchY);
-      rows = Math.max(state.startRows + deltaRows, state.minRows);
+      rows = Math.min(Math.max(state.startRows + deltaRows, min.rows), max.rows);
     }
     const target: FieldRect = { x: state.rect.x, y: state.rect.y, cols, rows };
     this.resizePreview.set({ id: state.id, cols, rows, valid: !this.collides(target, state.id) });
+  }
+
+  private constraintsFor(widget: WidgetInstance): { min: WidgetSize; max: WidgetSize } {
+    const widgetType = this.registry.get(widget.type);
+    const floor = DashboardWidget.minSize;
+    return {
+      min: {
+        cols: Math.max(widgetType?.minSize.cols ?? 0, floor.cols),
+        rows: Math.max(widgetType?.minSize.rows ?? 0, floor.rows)
+      },
+      max: {
+        cols: Math.min(widgetType?.maxSize.cols ?? this.columns, this.columns - widget.x),
+        rows: widgetType?.maxSize.rows ?? Infinity
+      }
+    };
   }
 
   protected onResizeEnd(): void {
@@ -203,12 +258,16 @@ export class DashboardComponent {
 
   protected effectiveCols(widget: WidgetInstance): number {
     const preview = this.resizePreview();
-    return preview?.id === widget.id ? preview.cols : widget.cols;
+    const cols = preview?.id === widget.id ? preview.cols : widget.cols;
+    const { min, max } = this.constraintsFor(widget);
+    return Math.min(Math.max(cols, min.cols), max.cols);
   }
 
   protected effectiveRows(widget: WidgetInstance): number {
     const preview = this.resizePreview();
-    return preview?.id === widget.id ? preview.rows : widget.rows;
+    const rows = preview?.id === widget.id ? preview.rows : widget.rows;
+    const { min, max } = this.constraintsFor(widget);
+    return Math.min(Math.max(rows, min.rows), max.rows);
   }
 
   protected isResizingInvalid(widget: WidgetInstance): boolean {

@@ -48,6 +48,10 @@ global.MutationObserver = jest.fn().mockImplementation(() => ({
   takeRecords: jest.fn(() => [])
 }));
 
+if (typeof globalThis.structuredClone !== "function") {
+  globalThis.structuredClone = (<T>(value: T): T => JSON.parse(JSON.stringify(value))) as typeof structuredClone;
+}
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   configurable: true,

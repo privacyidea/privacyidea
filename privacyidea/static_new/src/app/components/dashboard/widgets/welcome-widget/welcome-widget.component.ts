@@ -16,33 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { DashboardWidget, WidgetInstance } from "@models/dashboard";
+import { Component } from "@angular/core";
+import { DashboardWidget, WidgetSize } from "@models/dashboard";
 
 @Component({
   selector: "app-welcome-widget",
   standalone: true,
-  template: `<p
-    class="welcome-text"
-    i18n>
-    Welcome to your privacyIDEA dashboard.
-  </p>`,
-  styles: [
-    `
-      :host {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-      }
-
-      .welcome-text {
-        margin: 0;
-        text-align: center;
-      }
-    `
-  ]
+  templateUrl: "./welcome-widget.component.html",
+  styleUrls: ["../dashboard-widget.scss", "./welcome-widget.component.scss"]
 })
-export class WelcomeWidgetComponent implements DashboardWidget {
-  readonly instance = input<WidgetInstance>();
+export class WelcomeWidgetComponent extends DashboardWidget {
+  static override readonly type = "welcome";
+  static override readonly title = $localize`Welcome`;
+  static override readonly icon = "waving_hand";
+  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 4 };
+  static override readonly minSize: WidgetSize = { cols: 5, rows: 3 };
+  static override readonly maxSize: WidgetSize = { cols: 12, rows: 6 };
 }

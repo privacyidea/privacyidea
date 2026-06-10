@@ -19,44 +19,25 @@
 import { Injectable } from "@angular/core";
 import { StatWidgetComponent } from "@components/dashboard/widgets/stat-widget/stat-widget.component";
 import { WelcomeWidgetComponent } from "@components/dashboard/widgets/welcome-widget/welcome-widget.component";
-import { WidgetDefinition } from "@models/dashboard";
+import { WidgetComponentType } from "@models/dashboard";
 
 export interface WidgetRegistryServiceInterface {
-  readonly definitions: WidgetDefinition[];
+  readonly widgetTypes: WidgetComponentType[];
 
-  get(type: string): WidgetDefinition | undefined;
+  get(type: string): WidgetComponentType | undefined;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class WidgetRegistryService implements WidgetRegistryServiceInterface {
-  private readonly registry = new Map<string, WidgetDefinition>();
+  public readonly widgetTypes: WidgetComponentType[] = [WelcomeWidgetComponent, StatWidgetComponent];
 
-  public readonly definitions: WidgetDefinition[] = [
-    {
-      type: "welcome",
-      title: $localize`Welcome`,
-      icon: "waving_hand",
-      component: WelcomeWidgetComponent,
-      defaultSize: { cols: 8, rows: 4 },
-      minSize: { cols: 4, rows: 2 }
-    },
-    {
-      type: "stat",
-      title: $localize`Statistic`,
-      icon: "insights",
-      component: StatWidgetComponent,
-      defaultSize: { cols: 4, rows: 4 },
-      minSize: { cols: 2, rows: 2 }
-    }
-  ];
+  private readonly byType = new Map<string, WidgetComponentType>(
+    this.widgetTypes.map((widget) => [widget.type, widget])
+  );
 
-  constructor() {
-    this.definitions.forEach((definition) => this.registry.set(definition.type, definition));
-  }
-
-  public get(type: string): WidgetDefinition | undefined {
-    return this.registry.get(type);
+  public get(type: string): WidgetComponentType | undefined {
+    return this.byType.get(type);
   }
 }

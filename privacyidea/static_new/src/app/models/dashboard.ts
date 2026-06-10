@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { InputSignal, Type } from "@angular/core";
+import { Directive, input, Type } from "@angular/core";
 
 export const DASHBOARD_COLUMNS = 24;
 
@@ -25,32 +25,23 @@ export interface WidgetSize {
   rows: number;
 }
 
-export interface WidgetInstance {
+export interface WidgetInstance extends WidgetSize {
   id: string;
   type: string;
   x: number;
   y: number;
-  cols: number;
-  rows: number;
-  config?: Record<string, unknown>;
 }
 
-export interface DashboardLayout {
-  id: string;
-  widgets: WidgetInstance[];
+@Directive()
+export abstract class DashboardWidget {
+  readonly instance = input<WidgetInstance>();
+
+  static readonly type: string = "";
+  static readonly title: string = "";
+  static readonly icon: string = "";
+  static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };
+  static readonly minSize: WidgetSize = { cols: 3, rows: 3 };
+  static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
 }
 
-export interface WidgetDefinition {
-  type: string;
-  title: string;
-  icon: string;
-  component: Type<unknown>;
-  defaultSize: WidgetSize;
-  minSize?: WidgetSize;
-  maxSize?: WidgetSize;
-  requiredRole?: string;
-}
-
-export interface DashboardWidget {
-  readonly instance: InputSignal<WidgetInstance | undefined>;
-}
+export type WidgetComponentType = typeof DashboardWidget & Type<DashboardWidget>;

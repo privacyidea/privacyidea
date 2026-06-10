@@ -17,18 +17,9 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="widget-palette">
-  <span
-    class="palette-label"
-    i18n
-    >Add widget:</span
-  >
-  @for (widget of widgetTypes; track widget.type) {
-    <button
-      mat-stroked-button
-      (click)="add(widget.type)">
-      <mat-icon>{{ widget.icon }}</mat-icon>
-      {{ widget.title }}
-    </button>
-  }
+<div class="stat-value">—</div>
+<div
+  class="stat-caption"
+  i18n>
+  Statistic
 </div>

@@ -17,25 +17,25 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { DashboardLayout } from "@models/dashboard";
+import { WidgetInstance } from "@models/dashboard";
 
 export interface DashboardPersistenceServiceInterface {
-  load(): DashboardLayout | null;
+  load(): WidgetInstance[] | null;
 
-  save(layout: DashboardLayout): void;
+  save(widgets: WidgetInstance[]): void;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class DashboardPersistenceService implements DashboardPersistenceServiceInterface {
-  private store: DashboardLayout | null = null;
+  private store: WidgetInstance[] | null = null;
 
-  public load(): DashboardLayout | null {
+  public load(): WidgetInstance[] | null {
     return this.store ? structuredClone(this.store) : null;
   }
 
-  public save(layout: DashboardLayout): void {
-    this.store = structuredClone(layout);
+  public save(widgets: WidgetInstance[]): void {
+    this.store = structuredClone(widgets);
   }
 }

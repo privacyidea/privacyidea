@@ -38,8 +38,8 @@ export class WidgetFrameComponent {
 
   readonly instance = input.required<WidgetInstance>();
 
-  protected readonly definition = computed(() => this.registry.get(this.instance().type));
-  protected readonly component = computed(() => this.definition()?.component ?? null);
+  protected readonly widgetType = computed(() => this.registry.get(this.instance().type));
+  protected readonly component = computed(() => this.widgetType() ?? null);
   protected readonly outletInputs = computed(() => ({ instance: this.instance() }));
 
   protected remove(): void {

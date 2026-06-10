@@ -39,12 +39,38 @@
   gap: var(--global-gap);
 }
 
+.dashboard-scroll-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .dashboard-field-scroll {
   flex: 1;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
+  padding: var(--half-global-padding);
+}
+
+.dashboard-bottom-fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  height: 32px;
+  pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--mat-sys-shadow) 22%, transparent), transparent);
+  opacity: 1;
+  transition: opacity 150ms ease;
+
+  &--hidden {
+    opacity: 0;
+  }
 }
 
 .dashboard-field {

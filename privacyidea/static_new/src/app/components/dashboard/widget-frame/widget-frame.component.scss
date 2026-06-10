@@ -35,7 +35,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--half-global-gap);
-  padding: var(--half-global-padding) var(--global-padding);
+  min-height: 38px;
+  padding: var(--quarter-global-padding) var(--global-padding);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
 
   &.draggable {
@@ -45,6 +46,7 @@
 
 .widget-title {
   font-weight: 500;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -52,6 +54,20 @@
 
 .widget-remove {
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  --mdc-icon-button-state-layer-size: 28px;
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
 }
 
 .widget-body {

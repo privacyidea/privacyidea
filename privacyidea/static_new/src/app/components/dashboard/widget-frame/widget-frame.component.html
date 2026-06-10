@@ -23,7 +23,7 @@
     cdkDragHandle
     [cdkDragHandleDisabled]="!layoutService.editMode()"
     [class.draggable]="layoutService.editMode()">
-    <span class="widget-title">{{ definition()?.title }}</span>
+    <span class="widget-title">{{ widgetType()?.title }}</span>
 
     @if (layoutService.editMode()) {
       <button
