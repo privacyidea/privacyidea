@@ -540,15 +540,30 @@ def get_auth_token():
                        login=username if auth_event_type == AuthEventType.USER_UNKNOWN else None)
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the
-    # count includes it). Side effects only — it writes lockout state for the next request and
-    # must never break this login response.
+    # count includes it). It writes lockout state for the next request and returns any
+    # user-facing notices produced by executed actions (e.g. "an email was sent"), which we
+    # surface on the rejection below just like the lockout message. It must never break this
+    # login response.
+    lockout_notices = []
     try:
-        evaluate_lockout_policies(user, auth_event_type, source_ip=g.client_ip)
+        lockout_notices = evaluate_lockout_policies(user, auth_event_type, source_ip=g.client_ip) or []
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
 
     if not admin_auth and not user_auth:
-        raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+        # If this very request tripped a stage that locked the user, lead with the lockout
+        # message (how long it lasts) instead of the generic "Wrong credentials" — the
+        # account is locked now, so that is the more useful thing to tell the user.
+        lockout = get_user_lockout(user)
+        message = _lockout_error_message(lockout) if lockout else _("Authentication failure. Wrong credentials")
+        if lockout_notices:
+            # Append the notice(s) to the message (not an extra detail key) so the existing
+            # hide_specific_error_message policy still masks them, and the login screen shows
+            # them in error.message exactly as it shows a lockout rejection. The result reads
+            # e.g. "Your account is temporarily locked ... in about 10 minute(s). Your
+            # administrator has been notified by email."
+            message = message.rstrip(".") + ". " + " ".join(lockout_notices)
+        raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details or {})
     else:
         g.audit_object.log({"success": True})

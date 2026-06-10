@@ -22,6 +22,7 @@ pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
 from datetime import timedelta
+from email import message_from_string
 
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.engine import (
@@ -30,9 +31,12 @@ from privacyidea.lib.conditional_access.engine import (
     evaluate_lockout_policies,
     is_user_locked,
     _lock_duration_seconds,
+    _safe_format,
+    _resolve_admin_recipients,
 )
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
-from privacyidea.models import db
+from privacyidea.models import Admin, db
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     LockoutPolicy,
@@ -41,6 +45,7 @@ from privacyidea.models.lockout_policy import (
     UserLockoutState,
 )
 from privacyidea.models.utils import utc_now
+from . import smtpmock
 from .base import MyTestCase
 
 
@@ -300,3 +305,166 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertEqual(120, _lock_duration_seconds({"duration": 120}))
         for invalid in (None, 0, -5, True, False, "abc", {}, {"foo": 1}):
             self.assertIsNone(_lock_duration_seconds(invalid), invalid)
+
+    # --- EMAIL_ADMIN / EMAIL_USER actions -------------------------------------
+
+    @smtpmock.activate
+    def test_email_user_action_sends_to_user(self):
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(
+                name="mailuser", counter_type=AuthEventType.MFA_FAIL,
+                stages=((3, 1, LockoutAction.EMAIL_USER,
+                         {"smtp_identifier": "lockoutmail",
+                          "subject": "Locked: {user}",
+                          "body": "{user}@{realm} locked after {count} failures."}),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, source_ip="10.0.0.9")
+
+            user_email = self.user.info.get("email")
+            self.assertTrue(user_email, "test user must resolve to an email address")
+            self.assertEqual([user_email], smtpmock.get_sent_recipient())
+            parsed = message_from_string(smtpmock.get_sent_message())
+            # {tags} are substituted in both subject and body.
+            self.assertEqual("Locked: cornelius", parsed["Subject"])
+            body = parsed.get_payload(decode=True).decode("utf-8")
+            self.assertEqual(f"cornelius@{self.user.realm} locked after 3 failures.", body)
+            # A pure notification action writes no lockout state.
+            self.assertIsNone(self._state())
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_email_admin_action_sends_to_internal_admins(self):
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        db.session.add(Admin(username="ca_adm1", email="adm1@example.com"))
+        db.session.add(Admin(username="ca_adm2", email="adm2@example.com"))
+        db.session.add(Admin(username="ca_noemail", email=None))
+        db.session.commit()
+        try:
+            self._make_policy(
+                name="mailadmin", counter_type=AuthEventType.MFA_FAIL,
+                stages=((3, 1, LockoutAction.EMAIL_ADMIN,
+                         {"smtp_identifier": "lockoutmail",
+                          "recipient_group": "internal_admins",
+                          "subject": "{user} locked",
+                          "body": "{count} failures in realm {realm}."}),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+            # Both admins with an email are notified in one message; the email-less admin is skipped.
+            recipients = set(smtpmock.get_sent_recipient())
+            self.assertTrue({"adm1@example.com", "adm2@example.com"}.issubset(recipients), recipients)
+        finally:
+            Admin.query.filter(
+                Admin.username.in_(["ca_adm1", "ca_adm2", "ca_noemail"])).delete(synchronize_session=False)
+            db.session.commit()
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_email_admin_explicit_recipient_list(self):
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(
+                name="mailadmin2", counter_type=AuthEventType.MFA_FAIL,
+                stages=((3, 1, LockoutAction.EMAIL_ADMIN,
+                         {"smtp_identifier": "lockoutmail",
+                          "recipient_group": "soc@example.com, ciso@example.com",
+                          "subject": "alert", "body": "alert"}),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+            self.assertEqual(["soc@example.com", "ciso@example.com"], smtpmock.get_sent_recipient())
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_email_action_missing_config_is_skipped(self):
+        # No subject/body in action_value -> the action is logged and skipped, never sent or raised.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(
+                name="mailbad", counter_type=AuthEventType.MFA_FAIL,
+                stages=((3, 1, LockoutAction.EMAIL_USER, {"smtp_identifier": "lockoutmail"}),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+            self.assertIsNone(smtpmock.get_sent_message())
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    def test_email_failure_does_not_break_other_actions(self):
+        # A stage that both locks the user and emails them: the email points at an
+        # unknown SMTP server, so sending raises. Per-action guarding must keep the
+        # LOCK_USER write intact.
+        _, stages = self._make_policy(
+            name="lockandmail", counter_type=AuthEventType.MFA_FAIL,
+            stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+        db.session.add(LockoutStageAction(
+            stage_id=stages[0].id, action_type=str(LockoutAction.EMAIL_USER),
+            action_value={"smtp_identifier": "does-not-exist", "subject": "x", "body": "x"}))
+        db.session.commit()
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        # Must not raise even though the mail action fails.
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        state = self._state()
+        self.assertIsNotNone(state)
+        self.assertTrue(state.is_locked)
+
+    @smtpmock.activate
+    def test_email_action_returns_login_notice(self):
+        # A sent EMAIL_* action returns a user-facing notice for the login screen.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(
+                name="mailnotice", counter_type=AuthEventType.MFA_FAIL,
+                stages=((3, 1, LockoutAction.EMAIL_ADMIN,
+                         {"smtp_identifier": "lockoutmail", "recipient_group": "soc@example.com",
+                          "subject": "s", "body": "b"}),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            notices = evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+            self.assertEqual(["Your administrator has been notified by email."], notices)
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_email_action_custom_login_notice_with_tags(self):
+        # An admin-supplied login_notice template overrides the default and is {tag}-rendered.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            self._make_policy(
+                name="mailnotice2", counter_type=AuthEventType.MFA_FAIL,
+                stages=((3, 1, LockoutAction.EMAIL_USER,
+                         {"smtp_identifier": "lockoutmail", "subject": "s", "body": "b",
+                          "login_notice": "We emailed {user} about {count} failures."}),))
+            self._seed_events(AuthEventType.MFA_FAIL, 3)
+            self.assertEqual(["We emailed cornelius about 3 failures."],
+                             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    def test_no_login_notice_for_non_email_action(self):
+        # A LOCK_USER-only stage locks the user but produces no login-screen notice.
+        self._make_policy(name="lockonly", counter_type=AuthEventType.MFA_FAIL,
+                          stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        self.assertEqual([], evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
+        self.assertTrue(self._state().is_locked)
+
+    # --- _safe_format / _resolve_admin_recipients -----------------------------
+
+    def test_safe_format_leaves_unknown_tags_and_never_raises(self):
+        self.assertEqual("hi cornelius", _safe_format("hi {user}", {"user": "cornelius"}))
+        # Unknown placeholder is left verbatim instead of raising KeyError.
+        self.assertEqual("{missing} kept", _safe_format("{missing} kept", {"user": "x"}))
+        # A malformed template is returned unchanged rather than raising.
+        self.assertEqual("oops {", _safe_format("oops {", {}))
+
+    def test_resolve_admin_recipients_explicit_and_unknown(self):
+        self.assertEqual(["a@x.com", "b@y.com"],
+                         _resolve_admin_recipients("a@x.com, b@y.com"))
+        # An unknown, non-email group resolves to no recipients.
+        self.assertEqual([], _resolve_admin_recipients("marketing"))

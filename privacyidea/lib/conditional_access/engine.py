@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
 
+from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.models import AuthenticationLog, LockoutPolicy, UserLockoutState, db
 from privacyidea.models.utils import utc_now
@@ -38,9 +39,13 @@ class LockoutAction(str, Enum):
     Action types a :class:`~privacyidea.models.lockout_policy.LockoutPolicyStage`
     can execute when its failure threshold is met.
 
-    Only :attr:`LOCK_USER` and :attr:`PERMANENT_LOCK_USER` are implemented in
-    V1; the remaining members are reserved so the action table can grow without
-    a schema change (the column stores the string value).
+    :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN` and
+    :attr:`EMAIL_USER` are implemented. :attr:`BLOCK_IP`, :attr:`ALLOW` and
+    :attr:`DENY` are reserved: BLOCK_IP needs an IP-blocklist store, and
+    ALLOW/DENY decide the *current* request and therefore need a pre-auth
+    decision step (the lockout engine runs post-response). Reserving them as
+    enum members lets the action table grow without a schema change (the column
+    stores the string value).
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
@@ -146,29 +151,35 @@ def is_user_locked(user: "User", now: datetime | None = None) -> bool:
 
 
 def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = None,
-                              now: datetime | None = None) -> None:
+                              now: datetime | None = None) -> list[str]:
     """
     Evaluate every enabled lockout policy that tracks *event_type* and execute
     the actions of the triggered stage, if any. This is step 5 of the
     authentication request workflow and runs *after* the request's
     ``authentication_log`` row has been written (so the count includes it).
 
-    Side effects only — the result of this call is consulted by the *next*
-    inbound request via the pre-check, never by the current response. Any error
-    is the caller's to swallow; this function itself only guards individual DB
-    writes (see :func:`_upsert_user_lockout_state`).
+    The persistent side effects (lock state) are consulted by the *next* inbound
+    request via the pre-check. In addition, an executed ``EMAIL_*`` action yields
+    a short user-facing notice (e.g. "Your administrator has been notified by
+    email."); those notices are returned so the caller can surface them on the
+    current response — the login screen shows them next to the rejection, exactly
+    as it shows a lockout message. Any error is the caller's to swallow; this
+    function itself only guards individual DB writes (see
+    :func:`_upsert_user_lockout_state`).
 
     :param user: the authenticating user; ignored unless fully resolved
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param source_ip: the resolved client IP (reserved for IP-scoped actions)
     :param now: the reference time; defaults to :func:`utc_now`
+    :return: the de-duplicated, order-preserving list of user-facing notices
+        produced by executed actions (empty if nothing was triggered/notified)
     """
     if not event_type:
-        return
+        return []
     if not _resolved(user):
         log.debug(f"Skipping lockout evaluation for unresolved user {user!r}.")
-        return
+        return []
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
     policies = db.session.scalars(
@@ -177,16 +188,29 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
                LockoutPolicy.counter_type_to_track == event_type)
         .order_by(LockoutPolicy.priority.desc())
     ).all()
+    notices: list[str] = []
     for policy in policies:
-        _evaluate_policy(policy, user, event_type, source_ip, now)
+        notices.extend(_evaluate_policy(policy, user, event_type, source_ip, now))
+    # De-duplicate while preserving order: several policies tracking the same
+    # user can emit the same notice in one request.
+    seen: set[str] = set()
+    unique: list[str] = []
+    for notice in notices:
+        if notice not in seen:
+            seen.add(notice)
+            unique.append(notice)
+    return unique
 
 
 def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
-                     source_ip: str | None, now: datetime) -> None:
+                     source_ip: str | None, now: datetime) -> list[str]:
     """
     Evaluate a single policy: count the user's events over the policy window,
     find the highest-priority stage whose threshold is met, de-duplicate, then
     execute the stage's actions (or, in dry-run, only log them).
+
+    :return: the user-facing notices produced by the executed actions (empty if
+        no stage triggered, in dry-run, or when de-duplicated away).
     """
     window = policy.time_window_seconds
     count = count_user_events(user.resolver, user.uid, user.realm, event_type, window, now=now)
@@ -197,7 +221,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     triggered_stage = next((stage for stage in policy.stages
                             if count >= stage.failure_threshold), None)
     if triggered_stage is None:
-        return
+        return []
 
     if policy.dry_run:
         # Dry-run never reads or writes the de-dup state, so it logs on every
@@ -205,7 +229,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {user!r}: "
                  f"{count} {event_type} event(s) in {window}s.")
-        return
+        return []
 
     state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
     if (state is not None and state.last_stage_triggered == triggered_stage.id
@@ -213,12 +237,13 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
             and state.last_updated >= now - timedelta(seconds=window)):
         log.debug(f"De-dup: stage {triggered_stage.id} already triggered within the window for "
                   f"{user!r}; skipping actions.")
-        return
+        return []
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {user!r}: "
              f"{count} {event_type} event(s) in {window}s.")
-    _execute_stage_actions(triggered_stage, user, source_ip, now)
+    tags = _base_action_tags(policy, triggered_stage, user, event_type, count, source_ip, now)
+    return _execute_stage_actions(triggered_stage, user, source_ip, now, tags)
 
 
 def _lock_duration_seconds(action_value) -> int | None:
@@ -240,12 +265,160 @@ def _lock_duration_seconds(action_value) -> int | None:
     return seconds if seconds > 0 else None
 
 
-def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: datetime) -> None:
+class _SafeFormatDict(dict):
+    """A ``str.format_map`` mapping that leaves unknown ``{placeholders}`` as-is
+    instead of raising ``KeyError``, so an admin's typo in a template never turns
+    a notification into an exception."""
+
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
+def _safe_format(template: str, tags: dict) -> str:
     """
-    Execute every action of a triggered stage. Unknown or not-yet-implemented
-    action types are logged and skipped so a misconfiguration never breaks the
-    authentication flow.
+    Substitute ``{tag}`` placeholders in *template* from *tags*. Unknown
+    placeholders are left untouched and malformed templates are returned verbatim
+    — rendering an admin-supplied string must never raise.
     """
+    try:
+        return template.format_map(_SafeFormatDict(tags))
+    except Exception:
+        return template
+
+
+def _base_action_tags(policy: LockoutPolicy, stage, user: "User", event_type: str,
+                      count: int, source_ip: str | None, now: datetime) -> dict:
+    """
+    Build the ``{tag}`` substitution context available to EMAIL_* templates. Only
+    fields already loaded on the request are included here; the resolver-backed
+    user attributes (email, givenname, surname) are added lazily in
+    :func:`_send_lockout_email`, so a non-email action never triggers a resolver
+    lookup.
+    """
+    return {
+        "user": user.login,
+        "username": user.login,
+        "realm": user.realm or "",
+        "resolver": user.resolver or "",
+        "source_ip": source_ip or "",
+        "client_ip": source_ip or "",
+        "count": count,
+        "threshold": stage.failure_threshold,
+        "event_type": event_type,
+        "stage_id": stage.id,
+        "policy": policy.name,
+        "time": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
+
+
+def _resolve_admin_recipients(recipient_group) -> list[str]:
+    """
+    Resolve the EMAIL_ADMIN ``recipient_group`` to a list of email addresses.
+
+    Supported values:
+
+    * ``None`` / ``"internal_admins"`` / ``"admins"`` / ``"all"`` — every
+      internal DB admin (the ``admin`` table) that has an email address set
+    * any value containing ``"@"`` — treated as an explicit comma-separated list
+      of email addresses
+
+    An unknown group yields an empty list (the caller logs and skips).
+    """
+    group = (str(recipient_group).strip() if recipient_group else "internal_admins")
+    if "@" in group:
+        return [addr.strip() for addr in group.split(",") if addr.strip()]
+    if group.lower() in ("internal_admins", "admins", "all"):
+        # Imported lazily: keeps the engine's hot path free of lib.auth's heavy
+        # token/container imports and avoids any import-time coupling.
+        from privacyidea.lib.auth import get_all_db_admins
+        return [admin.email for admin in get_all_db_admins() if admin.email]
+    log.warning(f"Unknown EMAIL_ADMIN recipient_group {recipient_group!r}; "
+                f"expected 'internal_admins' or a comma-separated email list.")
+    return []
+
+
+def _login_notice(action_type: "LockoutAction", cfg: dict, render_tags: dict) -> str:
+    """
+    Build the short message shown to the user on the login screen once an
+    ``EMAIL_*`` action has been sent, mirroring how a lockout rejection is
+    surfaced. An admin can override it per action with a ``login_notice``
+    template in ``action_value`` (``{tag}`` substitution applies); otherwise a
+    default keyed by the action type is used. The wording never reveals the
+    recipient address.
+    """
+    custom = cfg.get("login_notice")
+    if custom:
+        return _safe_format(str(custom), render_tags)
+    if action_type == LockoutAction.EMAIL_USER:
+        return _("A notification email has been sent to your email address.")
+    return _("Your administrator has been notified by email.")
+
+
+def _send_lockout_email(action_type: "LockoutAction", action, user: "User", tags: dict) -> str | None:
+    """
+    Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
+
+    The ``action_value`` is a JSON object carrying ``smtp_identifier`` (the SMTP
+    server configuration to use), ``subject`` and ``body`` (both rendered with
+    ``{tag}`` substitution), an optional ``mimetype`` (``plain``/``html``), an
+    optional ``login_notice`` (overrides the message surfaced on the login
+    screen) and, for EMAIL_ADMIN, an optional ``recipient_group``. EMAIL_USER
+    sends to the user's own email address. A missing field or a user without an
+    email address is logged and skipped; this runs post-response and must never
+    raise.
+
+    :return: the user-facing login-screen notice if the email was sent, else
+        ``None`` (misconfiguration, no recipient, or delivery failure).
+    """
+    cfg = action.action_value if isinstance(action.action_value, dict) else {}
+    identifier = cfg.get("smtp_identifier") or cfg.get("identifier")
+    subject, body = cfg.get("subject"), cfg.get("body")
+    if not identifier or not subject or not body:
+        log.warning(f"{action_type} action {action.id}: needs smtp_identifier, subject and body in "
+                    f"action_value; skipping.")
+        return
+
+    # Resolver-backed attributes are fetched once, only now that an email is sent.
+    info = user.info or {}
+    render_tags = {**tags, "email": info.get("email") or "",
+                   "givenname": info.get("givenname") or "", "surname": info.get("surname") or ""}
+
+    if action_type == LockoutAction.EMAIL_USER:
+        recipients = [info["email"]] if info.get("email") else []
+        if not recipients:
+            log.warning(f"EMAIL_USER action {action.id}: user {user!r} has no email address; skipping.")
+            return
+    else:  # EMAIL_ADMIN
+        recipients = _resolve_admin_recipients(cfg.get("recipient_group"))
+        if not recipients:
+            log.warning(f"EMAIL_ADMIN action {action.id}: no recipients for "
+                        f"recipient_group={cfg.get('recipient_group')!r}; skipping.")
+            return
+
+    from privacyidea.lib.smtpserver import send_email_identifier
+    sent = send_email_identifier(identifier, recipients,
+                                 _safe_format(str(subject), render_tags),
+                                 _safe_format(str(body), render_tags),
+                                 mimetype=cfg.get("mimetype", "plain"))
+    if sent:
+        log.info(f"{action_type} for {user!r} sent to {len(recipients)} recipient(s) via {identifier!r}.")
+        return _login_notice(action_type, cfg, render_tags)
+    log.warning(f"{action_type} for {user!r} could not be delivered via {identifier!r}.")
+    return None
+
+
+def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: datetime,
+                           tags: dict) -> list[str]:
+    """
+    Execute every action of a triggered stage. Each action is guarded
+    independently: an unknown type, a misconfiguration, or a failing side effect
+    (e.g. an unreachable mail server) is logged and skipped so it can never break
+    the authentication flow or prevent the stage's other actions from running.
+
+    :return: the user-facing notices produced by executed ``EMAIL_*`` actions
+        (empty if the stage has no email action or none was delivered).
+    """
+    notices: list[str] = []
     for action in stage.actions:
         try:
             action_type = LockoutAction(action.action_type)
@@ -253,19 +426,28 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
             log.warning(f"Unknown lockout action type {action.action_type!r} on stage {stage.id}; skipping.")
             continue
 
-        if action_type == LockoutAction.LOCK_USER:
-            duration = _lock_duration_seconds(action.action_value)
-            if duration is None:
-                log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
-                            f"({action.action_value!r}); skipping.")
-                continue
-            _upsert_user_lockout_state(user, is_locked=True,
-                                       lock_expires_at=now + timedelta(seconds=duration),
-                                       stage_id=stage.id)
-        elif action_type == LockoutAction.PERMANENT_LOCK_USER:
-            _upsert_user_lockout_state(user, is_locked=True, lock_expires_at=None, stage_id=stage.id)
-        else:
-            log.info(f"Lockout action {action_type} is recognized but not implemented in V1; skipping.")
+        try:
+            if action_type == LockoutAction.LOCK_USER:
+                duration = _lock_duration_seconds(action.action_value)
+                if duration is None:
+                    log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
+                                f"({action.action_value!r}); skipping.")
+                    continue
+                _upsert_user_lockout_state(user, is_locked=True,
+                                           lock_expires_at=now + timedelta(seconds=duration),
+                                           stage_id=stage.id)
+            elif action_type == LockoutAction.PERMANENT_LOCK_USER:
+                _upsert_user_lockout_state(user, is_locked=True, lock_expires_at=None, stage_id=stage.id)
+            elif action_type in (LockoutAction.EMAIL_ADMIN, LockoutAction.EMAIL_USER):
+                notice = _send_lockout_email(action_type, action, user, tags)
+                if notice:
+                    notices.append(notice)
+            else:
+                log.info(f"Lockout action {action_type} is recognized but not implemented yet; skipping.")
+        except Exception as ex:
+            log.warning(f"Lockout action {action_type} (id {action.id}) on stage {stage.id} "
+                        f"failed: {ex!r}; skipping.")
+    return notices
 
 
 def _upsert_user_lockout_state(user: "User", *, is_locked: bool,

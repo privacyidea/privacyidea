@@ -26,6 +26,7 @@ from datetime import timedelta
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.models import db
@@ -37,6 +38,7 @@ from privacyidea.models.lockout_policy import (
     UserLockoutState,
 )
 from privacyidea.models.utils import utc_now
+from . import smtpmock
 from .base import MyApiTestCase
 
 
@@ -229,3 +231,76 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(logs_before, len(get_authentication_logs()))
+
+    @smtpmock.activate
+    def test_email_notice_surfaced_in_auth_rejection(self):
+        # When an EMAIL_* action fires on the failing request, its notice is appended to the
+        # rejection message so the login screen shows it, just like a lockout message.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            policy = LockoutPolicy(name="ca_mail", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+                                   time_window_seconds=3600, enabled=True, priority=1)
+            db.session.add(policy)
+            db.session.commit()
+            stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=2, priority=1)
+            db.session.add(stage)
+            db.session.commit()
+            db.session.add(LockoutStageAction(
+                stage_id=stage.id, action_type=str(LockoutAction.EMAIL_ADMIN),
+                action_value={"smtp_identifier": "lockoutmail", "recipient_group": "soc@example.com",
+                              "subject": "alert", "body": "alert"}))
+            db.session.commit()
+
+            # 1st failure is below the threshold: plain rejection, no email, no notice.
+            res = self._auth("cornelius", "wrongpass")
+            self.assertEqual(401, res.status_code, res)
+            self.assertNotIn("notified", res.json["result"]["error"]["message"].lower())
+
+            # 2nd failure trips the stage: the email is sent and its notice rides back on the 401.
+            res = self._auth("cornelius", "wrongpass")
+            self.assertEqual(401, res.status_code, res)
+            message = res.json["result"]["error"]["message"]
+            self.assertIn("Wrong credentials", message, message)
+            self.assertIn("administrator has been notified", message.lower(), message)
+            self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
+            # An EMAIL-only stage writes no lock state, so the pre-check still lets the user in.
+            self.assertFalse(is_user_locked(self.user))
+        finally:
+            delete_smtpserver("lockoutmail")
+
+    @smtpmock.activate
+    def test_lockout_message_and_email_notice_combined(self):
+        # A stage that both locks the user (timed) and emails the admin: the rejection on the
+        # locking request leads with the lockout message and appends the email notice.
+        smtpmock.setdata(response={})
+        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
+        try:
+            policy = LockoutPolicy(name="ca_lockmail", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+                                   time_window_seconds=3600, enabled=True, priority=1)
+            db.session.add(policy)
+            db.session.commit()
+            stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=2, priority=1)
+            db.session.add(stage)
+            db.session.commit()
+            db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.LOCK_USER),
+                                              action_value=600))
+            db.session.add(LockoutStageAction(
+                stage_id=stage.id, action_type=str(LockoutAction.EMAIL_ADMIN),
+                action_value={"smtp_identifier": "lockoutmail", "recipient_group": "soc@example.com",
+                              "subject": "s", "body": "b"}))
+            db.session.commit()
+
+            self._auth("cornelius", "wrongpass")  # 1st failure: below the threshold
+            res = self._auth("cornelius", "wrongpass")  # 2nd: trips the stage -> lock + email
+            self.assertEqual(401, res.status_code, res)
+            message = res.json["result"]["error"]["message"]
+            # Reads "Your account is temporarily locked ... in about N minute(s). Your
+            # administrator has been notified by email."
+            self.assertIn("temporarily locked", message.lower(), message)
+            self.assertIn("minute", message.lower(), message)
+            self.assertIn("administrator has been notified", message.lower(), message)
+            self.assertNotIn("Wrong credentials", message, message)
+            self.assertTrue(is_user_locked(self.user))
+        finally:
+            delete_smtpserver("lockoutmail")
