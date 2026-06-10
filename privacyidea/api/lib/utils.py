@@ -48,16 +48,8 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "RS256", "RS384", "RS512",
                      "PS256", "PS384", "PS512"]
 
-# Internal token-engine state keys that must NEVER be seeded from the request.
-# Historically every request parameter was copied into the `options` dict handed to
-# the token engine, which let a caller set state the engine treats as server-internal
-# (e.g. marking a challenge as enrollment, supplying the cached OTP, or moving the
-# server clock). Ingestion is therefore deny-by-default: each key here is set only by
-# the server (a prepolicy, the stored challenge, or an intra-request cache) and is
-# stripped when building the `options` dict. `request.all_data` itself is left
-# untouched (the FIDO2/passkey path reads it directly and re-validates).
 INTERNAL_OPTION_KEYS = frozenset({
-    "session",                   # stamps a challenge as enrollment -> enroll_via_validate (no OTP)
+    "session",                   # stamps a challenge as enrollment -> enroll_via_validate
     "data",                      # email/SMS concurrent_challenges OTP cache
     "initTime",                  # overrides server time -> strips the TOTP time window
     "radius_result",             # short-circuits the real RADIUS Access-Request
