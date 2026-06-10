@@ -58,13 +58,13 @@ export interface ContainerTemplateServiceInterface {
 
 @Injectable()
 export class ContainerTemplateService implements ContainerTemplateServiceInterface {
-  // --- Constants & Data ---
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
 
+  // --- Constants & Data ---
   readonly containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
   readonly emptyContainerTemplate: ContainerTemplate = {
     container_type: "",
@@ -74,7 +74,6 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
       tokens: []
     }
   };
-  // --- Services ---
 
   // --- Resources ---
 
