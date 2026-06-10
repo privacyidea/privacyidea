@@ -85,8 +85,6 @@ export interface SystemServiceInterface {
   saveSystemConfig(config: Record<string, unknown>): Observable<PiResponse<Record<string, "insert" | "update">>>;
   deleteSystemConfig(key: string): Observable<PiResponse<boolean>>;
   deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>>;
-  // No backend route exists for this and it is currently unused, so the type is unknown.
-  loadSmtpIdentifiers(): Observable<PiResponse<Record<string, string>>>;
   getDocumentation(): Observable<string>;
 }
 
@@ -208,12 +206,6 @@ export class SystemService implements SystemServiceInterface {
 
   deleteUserCache(): Observable<PiResponse<DeleteUserCacheResult>> {
     return this.http.delete<PiResponse<DeleteUserCacheResult>>(`${this.systemBaseUrl}user-cache`, {
-      headers: this.authService.getHeaders()
-    });
-  }
-
-  loadSmtpIdentifiers(): Observable<PiResponse<Record<string, string>>> {
-    return this.http.get<PiResponse<Record<string, string>>>(`${this.systemBaseUrl}names/smtp`, {
       headers: this.authService.getHeaders()
     });
   }

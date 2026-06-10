@@ -18,6 +18,7 @@
  **/
 import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
+import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
@@ -118,7 +119,8 @@ export class AppComponent {
       console.warn("User is already logged in.");
       this.notificationService.warning("User is already logged in.");
     }
-    // const _welcomeInit = inject(WelcomeDialogService);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _welcomeInit = inject(WelcomeDialogService);
     /** Uncomment to enable subscription expiry dialog
      * const _subscriptionExpiryInit = inject(SubscriptionExpiryService); **/
   }

@@ -87,5 +87,4 @@ export class MockSystemService implements SystemServiceInterface {
   saveSystemConfig = jest.fn(() => of(MockPiResponse.fromValue<Record<string, "insert" | "update">>({})));
   deleteSystemConfig = jest.fn(() => of(MockPiResponse.fromValue(true)));
   deleteUserCache = jest.fn(() => of(MockPiResponse.fromValue({ status: true, deleted: 0 })));
-  loadSmtpIdentifiers = jest.fn(() => of(MockPiResponse.fromValue({ smtp1: "smtp1", smtp2: "smtp2" })));
 }
