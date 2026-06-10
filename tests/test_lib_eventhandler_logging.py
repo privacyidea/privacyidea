@@ -128,6 +128,9 @@ class LoggingTestCase(MyTestCase):
         g.audit_object = FakeAudit()
         g.logged_in_user = {"username": "admin", "role": "admin",
                             "realm": "super"}
+        # The {url} tag is built from the trusted PI_BASE_URL, not the request Host header.
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+        self.addCleanup(self.app.config.pop, "PI_BASE_URL", None)
         env = EnvironBuilder(method='POST', headers={}, path='/auth').get_environ()
         req = Request(env)
         req.user_agent = UserAgentMock()
@@ -155,7 +158,7 @@ class LoggingTestCase(MyTestCase):
             capture.check_present(
                 ('pi-eventlogger', 'INFO',
                  'admin=admin realm=super action=/auth serial=testserial '
-                 'url=http://localhost/ user=Cornelius surname=Kölbel '
+                 'url=https://pi.example.com user=Cornelius surname=Kölbel '
                  'givenname=Cornelius username=cornelius userrealm=sqliterealm '
                  'tokentype=spass time=05:06:08 date=2018-03-04 '
                  'client_ip=None ua_browser=browser ua_string=hello world')

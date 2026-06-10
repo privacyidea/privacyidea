@@ -1289,6 +1289,14 @@ def finalize_registration(container_serial: str, params: dict) -> dict:
     container_info = container.get_container_info_dict()
     registration_state = container.registration_state
 
+    # A finalize must never overwrite the client key of a container that already holds one.
+    # It is only legitimate for an in-progress registration (CLIENT_WAIT) or an authenticated
+    # rollover (ROLLOVER, from register/initialize?rollover=1, which proves possession of the
+    # existing key). When the container is already REGISTERED / ROLLOVER_COMPLETED, reject it.
+    if registration_state in (RegistrationState.REGISTERED, RegistrationState.ROLLOVER_COMPLETED):
+        raise ContainerError("Cannot finalize registration: the container is already registered. "
+                             "Re-register it via the rollover flow.")
+
     # Update params with registration url
     if registration_state == RegistrationState.ROLLOVER:
         server_url = container_info.get("rollover_server_url")

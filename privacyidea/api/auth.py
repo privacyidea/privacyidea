@@ -88,7 +88,7 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
-from privacyidea.api.lib.utils import (send_result, get_all_params,
+from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, getParam, get_optional, get_required)
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
@@ -444,7 +444,8 @@ def get_auth_token():
 
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
-                if value and key not in ["g", "clientip"]:
+                # Never copy internal keys
+                if value and key not in ["g", "clientip"] and key not in INTERNAL_OPTION_KEYS:
                     options[key] = value
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)

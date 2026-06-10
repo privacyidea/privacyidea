@@ -109,6 +109,8 @@ class LdapMachineResolver(BaseMachineResolver):
             hostname = escape_filter_chars(hostname)
         if ip:
             ip = escape_filter_chars(ip)
+        if any:
+            any = escape_filter_chars(any)
 
         ldap_filter = "(&" + search_filter
 
