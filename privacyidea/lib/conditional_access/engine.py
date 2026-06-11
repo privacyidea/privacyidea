@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import func, select
 
 from privacyidea.lib import _
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
 from privacyidea.models import AuthenticationLog, BlockList, LockoutPolicy, UserLockoutState, db
 from privacyidea.models.utils import utc_now
@@ -97,13 +98,23 @@ def _resolved(user: "User") -> bool:
 
 
 def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
-                      window_seconds: int, now: datetime | None = None) -> int:
+                      window_seconds: int, now: datetime | None = None,
+                      since_last_success: bool = False) -> int:
     """
     Count the ``authentication_log`` rows for one user identity and event type
     within a sliding time window ending *now*.
 
     The ``WHERE`` column order matches the composite index
     ``ix_authlog_user_event_time`` so this is an index range scan.
+
+    With *since_last_success* the count is floored at the user's most recent
+    completed login (:attr:`AuthEventType.LOGIN_SUCCESS`) inside the window:
+    failures that precede a successful login no longer count, so a successful
+    authentication clears the slate. This makes the lock fire on *consecutive*
+    failures since the last login rather than on every failure that happens to
+    fall in the raw window (a legitimate user who just logged in is not re-locked
+    by stale failures on the next single typo). The forensic log is untouched —
+    only the *counted* range is narrowed.
 
     :param resolver: resolver name of the user
     :param uid: resolver-local user id
@@ -112,10 +123,35 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
     :param window_seconds: width of the look-back window in seconds
     :param now: window end; defaults to :func:`utc_now`. An aware value is
         normalized to naive UTC to match the stored ``timestamp`` column.
+    :param since_last_success: only count events after the most recent
+        ``LOGIN_SUCCESS`` in the window (a successful login resets the counter)
     :return: the number of matching events
     """
     now = _naive_utc(now) if now is not None else utc_now()
     window_start = now - timedelta(seconds=window_seconds)
+    if since_last_success:
+        # A successful login inside the window resets the counter: count only the
+        # failures that follow it. ``> last_success`` excludes the success row
+        # itself (it is a different event_type anyway, but the strict bound also
+        # keeps a same-instant failure from being masked by the success).
+        last_success = db.session.scalar(
+            select(func.max(AuthenticationLog.timestamp))
+            .where(AuthenticationLog.resolver == resolver,
+                   AuthenticationLog.uid == uid,
+                   AuthenticationLog.realm == realm,
+                   AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
+                   AuthenticationLog.timestamp >= window_start,
+                   AuthenticationLog.timestamp <= now))
+        if last_success is not None:
+            stmt = (select(func.count())
+                    .select_from(AuthenticationLog)
+                    .where(AuthenticationLog.resolver == resolver,
+                           AuthenticationLog.uid == uid,
+                           AuthenticationLog.realm == realm,
+                           AuthenticationLog.event_type == str(event_type),
+                           AuthenticationLog.timestamp > last_success,
+                           AuthenticationLog.timestamp <= now))
+            return db.session.scalar(stmt) or 0
     stmt = (select(func.count())
             .select_from(AuthenticationLog)
             .where(AuthenticationLog.resolver == resolver,
@@ -388,7 +424,12 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         no stage triggered, in dry-run, or when de-duplicated away).
     """
     window = policy.time_window_seconds
-    count = count_user_events(user.resolver, user.uid, user.realm, event_type, window, now=now)
+    # The lock counts consecutive failures since the user's last completed login:
+    # a successful authentication clears the slate, so a legitimate user is not
+    # re-locked by stale pre-login failures on their next single typo. (The DENY
+    # decision deliberately does not reset on success — see _policy_access_decision.)
+    count = count_user_events(user.resolver, user.uid, user.realm, event_type, window,
+                              now=now, since_last_success=True)
 
     # Stages are ordered highest-priority first by the relationship; the first
     # stage whose threshold is met wins, so the most severe matching stage is
@@ -407,7 +448,16 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         return []
 
     state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-    if (state is not None and state.last_stage_triggered == triggered_stage.id
+    # De-dup: skip a stage that already fired for this user within the window.
+    # An EXPIRED lock ends the incident though: once the lock has run out, the
+    # next trigger is a new incident and must execute again - otherwise the
+    # de-dup would leave a dead zone of (window - lock_duration) after expiry in
+    # which the user could keep failing without ever being re-locked.
+    lock_expired = (state is not None and state.is_locked
+                    and state.lock_expires_at is not None
+                    and state.lock_expires_at <= now)
+    if (state is not None and not lock_expired
+            and state.last_stage_triggered == triggered_stage.id
             and state.last_updated is not None
             and state.last_updated >= now - timedelta(seconds=window)):
         log.debug(f"De-dup: stage {triggered_stage.id} already triggered within the window for "

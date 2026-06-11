@@ -139,6 +139,35 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertEqual(0, count_user_events("other", "999", self.user.realm,
                                               AuthEventType.MFA_FAIL, 3600))
 
+    def test_count_user_events_since_last_success_floors_at_login(self):
+        now = utc_now()
+        # Two failures, then a successful login, then one more failure.
+        self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=300))
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
+        self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
+        args = (self.user.resolver, self.user.uid, self.user.realm, AuthEventType.MFA_FAIL, 3600)
+        # Without the reset, all three failures are in the window.
+        self.assertEqual(3, count_user_events(*args, now=now))
+        # With the reset, only the failure after the successful login counts.
+        self.assertEqual(1, count_user_events(*args, now=now, since_last_success=True))
+
+    def test_count_user_events_since_last_success_no_login_counts_all(self):
+        now = utc_now()
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
+        # No LOGIN_SUCCESS in the window -> the floor does not apply, count is unchanged.
+        self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
+                                              AuthEventType.MFA_FAIL, 3600, now=now,
+                                              since_last_success=True))
+
+    def test_count_user_events_since_last_success_ignores_login_outside_window(self):
+        now = utc_now()
+        # The successful login is older than the window, so it must not floor the count.
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=7200))
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
+        self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
+                                              AuthEventType.MFA_FAIL, 3600, now=now,
+                                              since_last_success=True))
+
     # --- is_user_locked -------------------------------------------------------
 
     def test_is_user_locked_no_row(self):
@@ -322,6 +351,48 @@ class LockoutEngineTestCase(MyTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertLess(self._state().lock_expires_at, sentinel)
 
+    def test_successful_login_resets_lock_counter(self):
+        # A completed login clears the accumulated failures: the threshold then
+        # applies to failures *after* the login, so a single later typo does not
+        # re-lock a user who already authenticated successfully.
+        now = utc_now()
+        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=300))
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
+
+        # One failure after the successful login: 1 < 3 -> not locked, the three
+        # pre-login failures no longer count.
+        self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        self.assertIsNone(self._state())
+        self.assertFalse(is_user_locked(self.user))
+
+        # Two more post-login failures reach the threshold again (1 + 2 = 3) -> locked.
+        self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=50))
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, now=now)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_dedup_does_not_survive_lock_expiry(self):
+        # The de-dup throttles repeats within ONE incident; an expired lock ends
+        # the incident. Regression: the de-dup used to key only on (stage,
+        # last_updated within window), so once the lock ran out the user could
+        # fail freely for the rest of the window without ever being re-locked.
+        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+        # The lock runs out while the original failures are still in the window.
+        state = self._state()
+        state.lock_expires_at = utc_now() - timedelta(seconds=10)
+        db.session.commit()
+        self.assertFalse(is_user_locked(self.user))
+
+        # The next failure trips the same stage again and must re-lock the user.
+        self._seed_events(AuthEventType.MFA_FAIL, 1)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
@@ -446,6 +517,18 @@ class LockoutEngineTestCase(MyTestCase):
                           stages=((3, 1, LockoutAction.DENY, None),))
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_does_not_reset_on_success(self):
+        # Unlike the lock, the DENY decision counts every failure in the raw
+        # window: a successful login in between does NOT clear it (it self-heals
+        # only as the failures age out). Pins the "lock only" reset scope.
+        now = utc_now()
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3, timestamp=now - timedelta(seconds=300))
+        self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
+        # The three pre-login failures still trigger DENY despite the login.
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user, now=now))
 
     def test_access_decision_allow_threshold_zero_is_default_allow(self):
         # A stage with threshold 0 always matches -> default allow, no events needed.
