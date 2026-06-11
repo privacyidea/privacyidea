@@ -41,12 +41,17 @@ class LockoutAction(str, Enum):
     can execute when its failure threshold is met.
 
     :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER` and :attr:`BLOCK_IP` are post-response side effects
-    executed by :func:`evaluate_lockout_policies`. :attr:`ALLOW` and
-    :attr:`DENY` decide the *current* request and are therefore handled by the
-    pre-auth decision step (:func:`evaluate_access_decision`) instead. The
-    action table stores the string value, so the enum can grow without a
-    schema change.
+    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
+    post-response side effects executed by :func:`evaluate_lockout_policies`.
+    :attr:`ALLOW` and :attr:`DENY` decide the *current* request and are therefore
+    handled by the pre-auth decision step (:func:`evaluate_access_decision`)
+    instead. The action table stores the string value, so the enum can grow
+    without a schema change.
+
+    The ``PERMANENT_*`` variants ignore ``action_value`` and never expire (only an
+    admin reset clears them); the timed :attr:`LOCK_USER` / :attr:`BLOCK_IP` read
+    a duration from ``action_value`` and a missing/invalid one is a skipped
+    misconfiguration (never silently permanent).
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
@@ -57,6 +62,7 @@ class LockoutAction(str, Enum):
     EMAIL_ADMIN = "EMAIL_ADMIN"
     EMAIL_USER = "EMAIL_USER"
     BLOCK_IP = "BLOCK_IP"
+    PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
     ALLOW = "ALLOW"
     DENY = "DENY"
 
@@ -667,21 +673,26 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
                 notice = _send_lockout_email(action_type, action, user, tags)
                 if notice:
                     notices.append(notice)
-            elif action_type == LockoutAction.BLOCK_IP:
+            elif action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP):
                 # Failures are counted per user, so this blocks the source IP
                 # of the request that tripped a *per-user* policy. It does not
                 # detect password spraying (failures from one IP across many
-                # users); BLOCK_IP simply blocks the offending request's IP.
+                # users); it simply blocks the offending request's IP.
                 if not source_ip:
-                    log.warning(f"BLOCK_IP action {action.id} on stage {stage.id}: this request has "
-                                f"no source IP; skipping.")
+                    log.warning(f"{action_type} action {action.id} on stage {stage.id}: this request "
+                                f"has no source IP; skipping.")
                     continue
-                duration = _lock_duration_seconds(action.action_value)
-                if duration is None:
-                    log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
-                                f"({action.action_value!r}); skipping.")
-                    continue
-                _upsert_ip_block(source_ip, block_expires_at=now + timedelta(seconds=duration),
+                if action_type == LockoutAction.PERMANENT_BLOCK_IP:
+                    # Permanent block; action_value is ignored (mirrors PERMANENT_LOCK_USER).
+                    block_expires_at = None
+                else:
+                    duration = _lock_duration_seconds(action.action_value)
+                    if duration is None:
+                        log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
+                                    f"({action.action_value!r}); skipping.")
+                        continue
+                    block_expires_at = now + timedelta(seconds=duration)
+                _upsert_ip_block(source_ip, block_expires_at=block_expires_at,
                                  stage_id=stage.id, reason=tags.get("policy"))
             elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
                 # ALLOW/DENY decide the current request pre-auth (see

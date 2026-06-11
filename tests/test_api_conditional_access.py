@@ -264,6 +264,57 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
+    def test_escalation_to_permanent_block_after_lock_expiry(self):
+        # Escalation across two policies: a temp lock at threshold 2, then a
+        # PERMANENT_BLOCK_IP at the higher threshold 3. This pins the INTENTIONAL
+        # behaviour (per the chosen design): attempts made WHILE the user is
+        # temp-locked are rejected at the pre-check and never counted, so the
+        # escalation only happens once the lock expires and the user fails again.
+        # A higher policy priority does NOT pre-empt the temp lock - both policies
+        # fire when both thresholds are met.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=60)
+        policy = LockoutPolicy(name="ca_permblock", counter_type_to_track=str(AuthEventType.MFA_FAIL),
+                               time_window_seconds=3600, enabled=True, priority=99)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=3, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id,
+                                          action_type=str(LockoutAction.PERMANENT_BLOCK_IP),
+                                          action_value=None))
+        db.session.commit()
+        ip = "203.0.113.50"
+
+        # Two failures -> temp-locked, not yet IP-blocked (count 2 < 3).
+        for _ in range(2):
+            self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+        self.assertTrue(is_user_locked(self.user))
+        self.assertFalse(is_ip_blocked(ip))
+
+        # Hammering DURING the lock is rejected at the pre-check: no new log rows,
+        # the count stays frozen at 2, so it never escalates to the permanent block.
+        logs_locked = len(get_authentication_logs())
+        for _ in range(3):
+            body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+            self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(logs_locked, len(get_authentication_logs()))
+        self.assertFalse(is_ip_blocked(ip))
+
+        # Expire the lock; the next failure reaches count 3 and escalates - the IP
+        # is now permanently blocked (block_expires_at is None).
+        state = db.session.get(UserLockoutState,
+                               (self.user.resolver, self.user.uid, self.user.realm))
+        state.lock_expires_at = utc_now() - timedelta(seconds=10)
+        db.session.commit()
+        body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=ip)
+        self.assertFalse(body["result"]["value"], body)
+        block = db.session.get(BlockList, ip)
+        self.assertIsNotNone(block)
+        self.assertTrue(block.is_blocked)
+        self.assertIsNone(block.block_expires_at)
+        self.assertTrue(is_ip_blocked(ip))
+
     # --- ALLOW / DENY ---------------------------------------------------------
 
     def test_deny_policy_rejects_after_threshold(self):
@@ -583,6 +634,37 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertIn("account", res.json["result"]["error"]["message"].lower(), res.json)
+
+    def test_permanent_ip_block_message_wins_over_timed_lock(self):
+        # Escalation case: the user is temp-locked (1 min) AND their IP is now
+        # permanently blocked. The rejection must report the permanent block - the
+        # longer-lasting (binding) restriction - not "try again in a minute", which
+        # would be misleading since waiting it out cannot help.
+        self._lock_user()  # timed user lock, 600s
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.commit()
+        res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("blocked", message.lower(), message)
+        self.assertIn("203.0.113.7", message, message)
+        self.assertIn("administrator", message.lower(), message)
+        self.assertNotIn("minute", message.lower(), message)
+        self.assertNotIn("account", message.lower(), message)
+
+    def test_permanent_lock_message_wins_over_timed_ip_block(self):
+        # Symmetric: a permanent user lock outranks a timed IP block.
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, is_locked=True,
+                                        lock_expires_at=None))
+        self._block_ip("203.0.113.7")  # timed block, 600s
+        res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("account", message.lower(), message)
+        self.assertIn("administrator", message.lower(), message)
+        self.assertNotIn("minute", message.lower(), message)
+        self.assertNotIn("203.0.113.7", message, message)
 
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)

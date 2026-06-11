@@ -486,6 +486,35 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertIsNone(self._block("203.0.113.7").block_expires_at)
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
+    def test_permanent_block_ip_action(self):
+        # Mirror of PERMANENT_LOCK_USER: a permanent IP block (block_expires_at None).
+        self._make_policy(name="permblock", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        block = self._block("203.0.113.7")
+        self.assertIsNotNone(block)
+        self.assertTrue(block.is_blocked)
+        self.assertIsNone(block.block_expires_at)
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+
+    def test_permanent_block_ip_ignores_action_value(self):
+        # action_value is irrelevant for the permanent variant: even a "valid"
+        # duration does not make it timed.
+        self._make_policy(name="permblockdur", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        self.assertIsNone(self._block("203.0.113.7").block_expires_at)
+
+    def test_permanent_block_ip_without_source_ip_skipped(self):
+        # Like BLOCK_IP, a request with no source IP is logged and skipped, not raised.
+        self._make_policy(name="permblocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.PERMANENT_BLOCK_IP, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None)
+        self.assertEqual(0, db.session.query(BlockList).count())
+
     def test_block_ip_and_lock_user_combined(self):
         # A stage can both lock the user and block the source IP in one trigger.
         _, stages = self._make_policy(

@@ -201,6 +201,37 @@ def _blocked_ip_error_message(client_ip: str | None, block: dict) -> str:
     return _("Authentication failure. Your IP ({ip}) has been blocked. "
              "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
 
+
+def _binding_restriction(lockout: dict | None, ip_block: dict | None) -> str | None:
+    """
+    When both a user lockout and a source-IP block are in force, decide which one
+    to report to the user. The binding constraint is the one that lasts longest (a
+    permanent restriction outranks any timed one), so that is what we surface:
+    telling a permanently-blocked user to "try again in 1 minute" because a shorter
+    user lock also happens to be active would be misleading. This is exactly the
+    case when a temporary lock escalates into a permanent IP block on the same
+    request. On a tie the user lock wins, matching the lock-before-block order of
+    the pre-check.
+
+    :param lockout: the dict from :func:`get_user_lockout`, or ``None``
+    :param ip_block: the dict from :func:`get_ip_block`, or ``None``
+    :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
+        if neither is in force
+    """
+    def _remaining(state: dict | None) -> float | None:
+        if not state:
+            return None
+        return float("inf") if state["permanent"] else state["seconds_remaining"]
+
+    lock_rem = _remaining(lockout)
+    block_rem = _remaining(ip_block)
+    if lock_rem is None and block_rem is None:
+        return None
+    if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
+        return "block"
+    return "lock"
+
+
 @jwtauth.route('', methods=['POST'])
 @prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -311,27 +342,27 @@ def get_auth_token():
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
     g.audit_object.log({"user": user.login, "realm": user.realm})
-    # Conditional-access pre-check: a currently-locked user is rejected before any
-    # credential check. The rejection states the lockout (how long it lasts, or
-    # that it is permanent) so the user understands why login fails; an admin who
-    # prefers not to reveal it can enable the hide_specific_error_message policy,
-    # which the AuthError handler applies to this message. An unresolved user / local
-    # DB admin has no (resolver, uid, realm) identity tuple and is therefore never locked.
+    # Conditional-access pre-check: a currently-locked user or a blocked source IP
+    # is rejected before any credential check. The rejection states the restriction
+    # (how long it lasts, or that it is permanent) so the user understands why login
+    # fails; an admin who prefers not to reveal it can enable the
+    # hide_specific_error_message policy, which the AuthError handler applies to this
+    # message. An unresolved user / local DB admin has no (resolver, uid, realm)
+    # identity tuple and is therefore never locked. When both apply (e.g. a temporary
+    # lock that escalated into a permanent IP block), surface the longer-lasting one
+    # so we never tell a permanently-blocked user to "try again in a minute".
     lockout = get_user_lockout(user)
-    if lockout:
-        log.info(f"Rejecting /auth login for locked user {user!r}.")
-        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
-        raise AuthError(_lockout_error_message(lockout),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-    # A source IP blocked by a BLOCK_IP action is rejected before any credential
-    # check. Like the user lock, the rejection names the block and the offending
-    # IP so the user understands why login fails; an admin who prefers not to
-    # reveal it can enable the hide_specific_error_message policy.
     ip_block = get_ip_block(g.client_ip)
-    if ip_block:
+    restriction = _binding_restriction(lockout, ip_block)
+    if restriction == "block":
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"info": "Rejected: source IP is blocked"})
         raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+    if restriction == "lock":
+        log.info(f"Rejecting /auth login for locked user {user!r}.")
+        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
+        raise AuthError(_lockout_error_message(lockout),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # Pre-auth conditional-access decision (DENY action), after the lock/block
     # pre-checks so ALLOW cannot override them. A DENY rejects this single login
@@ -593,10 +624,11 @@ def get_auth_token():
         # is in force now, so that is the more useful thing to tell the user.
         lockout = get_user_lockout(user)
         ip_block = get_ip_block(g.client_ip)
-        if lockout:
-            message = _lockout_error_message(lockout)
-        elif ip_block:
+        restriction = _binding_restriction(lockout, ip_block)
+        if restriction == "block":
             message = _blocked_ip_error_message(g.client_ip, ip_block)
+        elif restriction == "lock":
+            message = _lockout_error_message(lockout)
         else:
             message = _("Authentication failure. Wrong credentials")
         if lockout_notices:
