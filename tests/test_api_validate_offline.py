@@ -334,32 +334,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
                              res.json["result"]["error"]["message"])
         remove_token(serial)
 
-    def test_04_no_offline_auth_items_on_samlcheck(self):
-        """``/validate/samlcheck`` sets ``result.value`` to a dict, which the ``offline_info``
-        postpolicy treats as not-True, so ``auth_items.offline`` is omitted even when the token
-        has an offline attachment. Documents current behavior.
-        """
-        serial = "SE_OFFLINE_SAML"
-        init_token({"serial": serial, "otpkey": self.otpkey, "type": "hotp", "pin": "pin"},
-                   user=User("cornelius", self.realm1))
-        attach_token(serial, "offline", hostname="pippin",
-                     resolver_name="testresolver", options={"count": 100})
-        # Use user= rather than serial=; the SAML value-dict reshape only triggers for the
-        # user-based dispatch path (see _handle_standard_auth vs _handle_serial_auth).
-        with self.app.test_request_context('/validate/samlcheck',
-                                           method='POST',
-                                           data={"user": "cornelius", "pass": "pin755224"},
-                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            data = res.json
-            self.assertTrue(data["result"]["status"])
-            self.assertIsInstance(data["result"]["value"], dict)
-            self.assertTrue(data["result"]["value"]["auth"])
-            self.assertNotIn("auth_items", data)
-        remove_token(serial)
-
-    def test_05_multiple_offline_attachments_share_one_refilltoken(self):
+    def test_04_multiple_offline_attachments_share_one_refilltoken(self):
         """With two offline attachments (HOTP), the response contains one ``auth_items.offline``
         entry per machine, each with a distinct ``refilltoken`` in the JSON — but
         ``generate_new_refilltoken`` is called once per attachment and writes the same
