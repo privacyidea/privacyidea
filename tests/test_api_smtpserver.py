@@ -1,6 +1,6 @@
 import email
 
-from privacyidea.lib.crypto import encryptPassword
+from privacyidea.lib.crypto import encryptPassword, CENSORED
 from . import smtpmock
 from .base import MyApiTestCase
 
@@ -185,3 +185,86 @@ class SMTPServerTestCase(MyApiTestCase):
         body = parsed.get_payload(decode=True).decode("utf-8")
         assert "This is a test email from privacyIDEA." in body
         assert "The configuration someServer is working." in body
+
+    def test_password_not_overwritten_by_censored(self):
+        """Updating an SMTP server with __CENSORED__ password must preserve the original."""
+        # Create a server with a known password
+        self._create_server()
+
+        # Update the server, sending CENSORED as the password (simulating UI re-save)
+        data = {
+            "username": "cornelius",
+            "password": CENSORED,
+            "port": "123",
+            "server": "1.2.3.4",
+            "sender": "privacyidea@local",
+            "description": "updated description",
+        }
+        with self.app.test_request_context(
+                '/smtpserver/server1',
+                method='POST',
+                data=data,
+                headers={'Authorization': self.at},
+        ):
+            res = self.app.full_dispatch_request()
+        assert res.status_code == 200
+
+        # Verify the password was NOT replaced with __CENSORED__ in the DB
+        from privacyidea.lib.smtpserver import list_smtpservers
+        servers = list_smtpservers(identifier="server1")
+        server = servers["server1"]
+        # The decrypted password should still be "secret" (the original)
+        assert server["password"] == "secret"
+        # Other fields should be updated
+        assert server["description"] == "updated description"
+
+    def test_private_key_password_censored_in_response(self):
+        """GET /smtpserver/ must censor private_key_password if it has a value."""
+        self._create_server(extra_data={"private_key_password": "pkpass"})
+        res = self._list_servers()
+        assert res.status_code == 200
+        server_list = res.json["result"]["value"]
+        server = server_list["server1"]
+        assert server["private_key_password"] == CENSORED
+
+    def test_private_key_password_not_overwritten_by_censored(self):
+        """Updating with __CENSORED__ private_key_password must preserve the original."""
+        # Create a server with a private_key_password
+        self._create_server(extra_data={"private_key_password": "my_key_pass"})
+
+        # Update the server, sending CENSORED for private_key_password (simulating UI re-save)
+        data = {
+            "username": "cornelius",
+            "password": CENSORED,
+            "port": "123",
+            "server": "1.2.3.4",
+            "sender": "privacyidea@local",
+            "private_key_password": CENSORED,
+            "description": "updated with censored pkpass",
+        }
+        with self.app.test_request_context(
+                '/smtpserver/server1',
+                method='POST',
+                data=data,
+                headers={'Authorization': self.at},
+        ):
+            res = self.app.full_dispatch_request()
+        assert res.status_code == 200
+
+        # Verify the private_key_password was NOT overwritten
+        from privacyidea.lib.crypto import decryptPassword
+        from privacyidea.models import db
+        from privacyidea.models.server import SMTPServer as SMTPServerDB
+        from sqlalchemy import select
+
+        # Check raw DB value is still encrypted (not None or __CENSORED__)
+        stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == "server1")
+        db_server = db.session.execute(stmt).scalar_one()
+        # The private_key_password in DB should still be a valid encrypted value
+        assert db_server.private_key_password is not None
+        assert db_server.private_key_password != ""
+        assert db_server.private_key_password != CENSORED
+        # Decrypting should give back the original
+        assert decryptPassword(db_server.private_key_password) == "my_key_pass"
+        # Other fields should be updated
+        assert db_server.description == "updated with censored pkpass"

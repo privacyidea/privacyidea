@@ -1,17 +1,16 @@
 from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.crypto import CENSORED
 
 
 class APISmsGatewayTestCase(MyApiTestCase):
 
     def test_01_crud_smsgateway(self):
-
         # list empty sms gateway definitions
         with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
-
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -44,7 +43,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={
                                                'Authorization': self.at}):
-
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -70,7 +68,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            data=param,
                                            method='POST',
                                            headers={'Authorization': self.at}):
-
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -94,7 +91,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
-
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -112,7 +108,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), [])
 
     def test_02_test_options(self):
-
         # create an sms gateway configuration
         param = {
             "name": "myGW",
@@ -148,7 +143,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
         with self.app.test_request_context('/smsgateway/',
                                            method='GET',
                                            headers={
-                                                   'Authorization': self.at}):
+                                               'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -221,7 +216,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             smtp_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'SmtpSMSProvider.SmtpSMSProvider')
             sipgate_parameters = value.get('privacyidea.lib.smsprovider.'
-                                        'SipgateSMSProvider.SipgateSMSProvider')
+                                           'SipgateSMSProvider.SipgateSMSProvider')
             smpp_parameters = value.get('privacyidea.lib.smsprovider.'
                                         'SmppSMSProvider.SmppSMSProvider')
             self.assertEqual(http_parameters.get("options_allowed"), True)
@@ -279,3 +274,90 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
+
+    def test_06_password_censored_in_response(self):
+        """GET /smsgateway/ must censor PASSWORD options in the response."""
+        # Create a gateway with a PASSWORD option
+        param = {
+            "name": "mySecureGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "description": "gateway with password",
+            "option.URL": "http://sms.example.com",
+            "option.USERNAME": "apiuser",
+            "option.PASSWORD": "supersecret123",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # Verify the PASSWORD is censored in the GET response
+        with self.app.test_request_context('/smsgateway/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            sms_gw = result.get("value")[0]
+            # PASSWORD must be censored
+            self.assertEqual(sms_gw.get("options").get("PASSWORD"), CENSORED)
+            # Non-sensitive options must NOT be censored
+            self.assertEqual(sms_gw.get("options").get("URL"), "http://sms.example.com")
+            self.assertEqual(sms_gw.get("options").get("USERNAME"), "apiuser")
+
+        # Clean up
+        with self.app.test_request_context('/smsgateway/mySecureGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()
+
+    def test_07_password_not_overwritten_by_censored(self):
+        """Saving a gateway with __CENSORED__ password must preserve the original password."""
+        # Create a gateway with a PASSWORD option
+        param = {
+            "name": "myPreserveGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "description": "gateway for preserve test",
+            "option.URL": "http://sms.example.com",
+            "option.PASSWORD": "original_secret",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            gw_id = res.json["result"]["value"]
+
+        # Now update the gateway, sending CENSORED as the password (simulating UI re-save)
+        param_update = {
+            "name": "myPreserveGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "description": "updated description",
+            "option.URL": "http://sms-new.example.com",
+            "option.PASSWORD": CENSORED,
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param_update,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        # Verify the password is still functional (not literally __CENSORED__)
+        # We check via the model directly since the API censors the response
+        from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
+        gw_list = get_smsgateway(identifier="myPreserveGW")
+        gw = gw_list[0]
+        # option_dict decrypts - should return original password
+        self.assertEqual(gw.option_dict.get("PASSWORD"), "original_secret")
+        # Other options should be updated
+        self.assertEqual(gw.option_dict.get("URL"), "http://sms-new.example.com")
+
+        # Clean up
+        with self.app.test_request_context('/smsgateway/myPreserveGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()
