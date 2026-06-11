@@ -347,11 +347,10 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
 
     # remove the CENSORED placeholder so that it will not be written to the database. This allows to update other
     # parameters without changing the password, if the password is not provided in the update request.
-    if password == CENSORED:
+    if password == CENSORED or password == "":
         encrypted_password = None
     else:
         encrypted_password = encryptPassword(password)
-        
     if private_key_password == CENSORED:
         private_key_password = None
 
