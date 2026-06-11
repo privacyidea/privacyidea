@@ -30,7 +30,7 @@ from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, CENSORED)
-from privacyidea.lib.resolver import CENSORED
+from privacyidea.lib.log import log_with
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.utils.export import (register_import, register_export)
