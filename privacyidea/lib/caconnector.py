@@ -179,20 +179,21 @@ def get_caconnector_list(filter_caconnector_type=None,
 
     if censor:
         # Censor password-type config values by looking up types from the DB
-        from sqlalchemy import select as sa_select
+        connector_names = [c.get("connectorname") for c in Connectors if c.get("connectorname")]
+        password_keys_by_name: dict[str, set[str]] = {}
+        if connector_names:
+            rows = db.session.execute(
+                select(CAConnector.name, CAConnectorConfig.Key)
+                .join(CAConnectorConfig, CAConnectorConfig.caconnector_id == CAConnector.id)
+                .where(CAConnector.name.in_(connector_names), CAConnectorConfig.Type == "password")
+            ).all()
+            for name, key in rows:
+                password_keys_by_name.setdefault(name, set()).add(key)
         censored_connectors = []
         for conn in Connectors:
             conn_copy = dict(conn)
             connector_name = conn.get("connectorname")
-            # Look up which config keys are password-type
-            ca_db = db.session.scalars(
-                sa_select(CAConnector).filter_by(name=connector_name)
-            ).first()
-            password_keys = set()
-            if ca_db:
-                for conf in ca_db.caconfig:
-                    if conf.Type == "password":
-                        password_keys.add(conf.Key)
+            password_keys = password_keys_by_name.get(connector_name, set())
             if password_keys and conn_copy.get("data"):
                 conn_copy["data"] = dict(conn_copy["data"])
                 for key in password_keys:

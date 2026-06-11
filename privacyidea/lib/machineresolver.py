@@ -134,7 +134,7 @@ def save_resolver(params):
     return resolver_id
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 # @cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
                       filter_resolver_name=None,
