@@ -22,7 +22,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
-import { MockSystemService, MockTokenService, MockContentService} from "@testing/mock-services";
+import { MockSystemService, MockTokenService, MockContentService } from "@testing/mock-services";
 import { EnrollRadiusComponent } from "./enroll-radius.component";
 import { ContentService } from "@services/content/content.service";
 

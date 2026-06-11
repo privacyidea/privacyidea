@@ -17,16 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { OutputEmitterRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventConditionListComponent } from "./event-condition-list.component";
 
+interface ConditionEvent {
+  conditionName: string;
+  conditionValue: string | string[];
+}
+
 describe("EventConditionListComponent", () => {
   let component: EventConditionListComponent;
   let fixture: ComponentFixture<EventConditionListComponent>;
-  let mockEventService: MockEventService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,7 +41,6 @@ describe("EventConditionListComponent", () => {
 
     fixture = TestBed.createComponent(EventConditionListComponent);
     component = fixture.componentInstance;
-    mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     fixture.componentRef.setInput("conditions", { condA: "valA", condB: "valB" });
     fixture.componentRef.setInput("action", "add");
     fixture.detectChanges();
@@ -77,7 +81,7 @@ describe("EventConditionListComponent", () => {
   it("should emit newConditionValue on value change if emitOnConditionValueChange is true", () => {
     const emitSpy = jest.fn();
     fixture.componentRef.setInput("emitOnConditionValueChange", true);
-    component.newConditionValue = { emit: emitSpy } as any;
+    component.newConditionValue = { emit: emitSpy } as unknown as OutputEmitterRef<ConditionEvent>;
     component.onConditionValueChange("condA", "newVal");
     expect(component.editConditions()["condA"]).toBe("newVal");
     expect(emitSpy).toHaveBeenCalledWith({ conditionName: "condA", conditionValue: "newVal" });
@@ -86,7 +90,7 @@ describe("EventConditionListComponent", () => {
   it("should emit multi value conditions as comma separated list", () => {
     const emitSpy = jest.fn();
     fixture.componentRef.setInput("emitOnConditionValueChange", true);
-    component.newConditionValue = { emit: emitSpy } as any;
+    component.newConditionValue = { emit: emitSpy } as unknown as OutputEmitterRef<ConditionEvent>;
     component.onConditionValueChange("condD", ["option1", "option2"]);
     expect(component.editConditions()["condD"]).toEqual(["option1", "option2"]);
     expect(component.multiValueConditions()["condD"]).toEqual(["option1", "option2"]);
@@ -96,7 +100,7 @@ describe("EventConditionListComponent", () => {
   it("should not emit newConditionValue if emitOnConditionValueChange is false", () => {
     const emitSpy = jest.fn();
     fixture.componentRef.setInput("emitOnConditionValueChange", false);
-    component.newConditionValue = { emit: emitSpy } as any;
+    component.newConditionValue = { emit: emitSpy } as unknown as OutputEmitterRef<ConditionEvent>;
     component.onConditionValueChange("condB", "anotherVal");
     expect(component.editConditions()["condB"]).toBe("anotherVal");
     expect(emitSpy).not.toHaveBeenCalled();
@@ -104,7 +108,7 @@ describe("EventConditionListComponent", () => {
 
   it("should emit actionButtonClicked with correct values", () => {
     const emitSpy = jest.fn();
-    component.actionButtonClicked = { emit: emitSpy } as any;
+    component.actionButtonClicked = { emit: emitSpy } as unknown as OutputEmitterRef<ConditionEvent>;
     component.editConditions()["condA"] = "testVal";
     component.onActionButtonClicked("condA");
     expect(emitSpy).toHaveBeenCalledWith({ conditionName: "condA", conditionValue: "testVal" });
@@ -113,7 +117,7 @@ describe("EventConditionListComponent", () => {
   it("should compute availableConditionValues correctly", () => {
     const values = component.availableConditionValues();
     expect(values).toEqual({
-      condC: [1, 2, 3],
+      condC: ["1", "2", "3"],
       condD: ["option1", "option2"]
     });
   });

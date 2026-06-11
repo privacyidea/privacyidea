@@ -16,38 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { CaConnector, CaConnectors, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
+import {
+  CaConnector,
+  CaConnectors,
+  CaConnectorServiceInterface,
+  CaSpecificOptions
+} from "@services/ca-connector/ca-connector.service";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
 export class MockCaConnectorService implements CaConnectorServiceInterface {
-  caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined> = {
-    value: signal(undefined),
-    status: signal(0) as any,
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<CaConnectors> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: function (): void {}
-  } as any;
+  caConnectorResource = new MockHttpResourceRef<PiResponse<CaConnectors> | undefined>(
+    MockPiResponse.fromValue<CaConnectors>([])
+  );
 
   caConnectors = signal<CaConnectors>([]);
 
-  postCaConnector = jest.fn(async (_connector: CaConnector): Promise<void> => {
-    return Promise.resolve();
-  });
+  postCaConnector = jest.fn<Promise<void>, [CaConnector]>(() => Promise.resolve());
+  deleteCaConnector = jest.fn<Promise<void>, [string]>(() => Promise.resolve());
 
-  deleteCaConnector = jest.fn(async (_connectorname: string): Promise<void> => {
-    return Promise.resolve();
-  });
-
-  getCaSpecificOptions = jest.fn(async (_catype: string, _params: any): Promise<any> => {
+  getCaSpecificOptions = jest.fn(async (): Promise<CaSpecificOptions | undefined> => {
     return Promise.resolve({});
   });
 }

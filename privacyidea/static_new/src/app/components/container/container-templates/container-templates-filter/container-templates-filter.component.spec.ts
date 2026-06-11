@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter.component";
 
 describe("ContainerTemplatesFilterComponent", () => {
@@ -27,7 +28,7 @@ describe("ContainerTemplatesFilterComponent", () => {
   let fixture: ComponentFixture<ContainerTemplatesFilterComponent>;
 
   const createFilterWithText = (text: string) => {
-    return new FilterValueGeneric<any>({ availableFilters: [] }).setByString(text);
+    return new FilterValueGeneric<ContainerTemplate>({ availableFilters: [] }).setByString(text);
   };
 
   beforeEach(async () => {

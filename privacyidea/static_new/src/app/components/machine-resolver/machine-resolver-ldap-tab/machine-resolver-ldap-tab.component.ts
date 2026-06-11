@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
+import { Component, input, linkedSignal, output, ViewEncapsulation, OnInit } from "@angular/core";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -34,7 +34,7 @@ import { MatButton } from "@angular/material/button";
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })
-export class MachineResolverLdapTabComponent {
+export class MachineResolverLdapTabComponent implements OnInit {
   readonly isEditMode = input.required<boolean>();
   readonly machineResolverData = input.required<MachineResolverData>();
   readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
@@ -42,11 +42,11 @@ export class MachineResolverLdapTabComponent {
     data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };
     return data;
   });
-  readonly onNewData = output<MachineResolverData>();
-  readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
+  readonly newData = output<MachineResolverData>();
+  readonly newValidator = output<(data: MachineResolverData) => boolean>();
 
   ngOnInit(): void {
-    this.onNewValidator.emit(this.isValid.bind(this));
+    this.newValidator.emit(this.isValid.bind(this));
   }
 
   updateData(
@@ -55,8 +55,8 @@ export class MachineResolverLdapTabComponent {
       | { patch?: Partial<LdapMachineResolverData>; remove: (keyof LdapMachineResolverData)[] }
       | Partial<LdapMachineResolverData>
   ) {
-    let patch: Partial<LdapMachineResolverData> = {};
-    let remove: (keyof LdapMachineResolverData)[] = [];
+    let patch: Partial<LdapMachineResolverData>;
+    let remove: (keyof LdapMachineResolverData)[];
     if ("remove" in args || "patch" in args) {
       const complexArgs = args as {
         patch?: Partial<LdapMachineResolverData>;
@@ -66,6 +66,7 @@ export class MachineResolverLdapTabComponent {
       remove = complexArgs.remove || [];
     } else {
       patch = args as Partial<LdapMachineResolverData>;
+      remove = [];
     }
     const newData = { ...this.machineResolverData(), ...patch, type: "ldap" };
     if (remove.length > 0) {
@@ -73,7 +74,7 @@ export class MachineResolverLdapTabComponent {
         delete newData[key];
       });
     }
-    this.onNewData.emit(newData);
+    this.newData.emit(newData);
   }
   updateTlsVerify($event: boolean) {
     this.updateData({ patch: { TLS_VERIFY: $event, TLS_CA_FILE: undefined }, remove: ["TLS_CA_FILE"] });

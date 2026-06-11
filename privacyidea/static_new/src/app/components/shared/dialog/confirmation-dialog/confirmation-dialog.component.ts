@@ -43,9 +43,9 @@ export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<S
   }
 }
 
-export type SimpleConfirmationDialogData = {
+export interface SimpleConfirmationDialogData {
   title: string;
   confirmAction: DialogAction<true>;
   items: string[];
   itemType: string;
-};
+}

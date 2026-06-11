@@ -60,7 +60,7 @@ export class EnrollVascoComponent extends EnrollTokenBase<VascoEnrollmentData> {
   vascoSerial = signal<string>("");
 
   otpKeyForm = form(this.otpKey, (f) => {
-    validate(f, (ctx) => (ctx.value().length !== 496 ? [{ kind: "invalidLength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length !== 496 ? [{ kind: "invalidLength" }] : []));
     disabled(f, () => this.disabled() || this.useVascoSerial());
   });
 

@@ -69,9 +69,7 @@
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n>
-                Select at least one value or remove the condition.
-              </mat-error>
+              <mat-error i18n> Select at least one value or remove the condition. </mat-error>
             </mat-form-field>
           } @else {
             <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
@@ -89,9 +87,7 @@
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-select>
-              <mat-error i18n>
-                Select a value or remove the condition.
-              </mat-error>
+              <mat-error i18n> Select a value or remove the condition. </mat-error>
             </mat-form-field>
           }
         } @else {
@@ -103,7 +99,7 @@
               @case ("int") {
                 <input
                   #selectedConditionInput
-                  (input)="onConditionValueChange(conditionName, +$event['target']['value'])"
+                  (input)="onConditionValueChange(conditionName, $event['target']['value'])"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"
@@ -128,9 +124,7 @@
                   type="text" />
               }
             }
-            <mat-error i18n>
-              Enter a value or remove the condition.
-            </mat-error>
+            <mat-error i18n> Enter a value or remove the condition. </mat-error>
           </mat-form-field>
         }
         <button
@@ -144,4 +138,3 @@
     </div>
   }
 </div>
-

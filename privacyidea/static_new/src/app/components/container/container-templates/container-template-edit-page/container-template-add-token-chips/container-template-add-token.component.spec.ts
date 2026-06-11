@@ -54,8 +54,8 @@ describe("ContainerTemplateAddTokenComponent", () => {
     expect(chips[2].nativeElement.textContent).toContain("Webauthn");
   });
 
-  it("should emit onAddToken when addToken is called directly", () => {
-    const spy = jest.spyOn(component.onAddToken, "emit");
+  it("should emit addTokenRequest when addToken is called directly", () => {
+    const spy = jest.spyOn(component.addTokenRequest, "emit");
     const tokenType = "totp";
 
     component.addToken(tokenType);
@@ -63,8 +63,8 @@ describe("ContainerTemplateAddTokenComponent", () => {
     expect(spy).toHaveBeenCalledWith(tokenType);
   });
 
-  it("should emit onAddToken when a chip is clicked", () => {
-    const spy = jest.spyOn(component.onAddToken, "emit");
+  it("should emit addTokenRequest when a chip is clicked", () => {
+    const spy = jest.spyOn(component.addTokenRequest, "emit");
     const firstChip = fixture.debugElement.query(By.css("mat-chip")).nativeElement;
 
     firstChip.click();

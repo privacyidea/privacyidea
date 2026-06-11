@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, computed, inject, Input } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 import { MatFabAnchor } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { RouterLink, RouterLinkActive } from "@angular/router";
@@ -33,13 +33,13 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 })
 export class NavigationSelfServiceButtonComponent {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  @Input({ required: true }) key!: string;
-  @Input({ required: true }) title!: string;
-  @Input() matIconName?: string;
-  @Input() matIconClass?: string;
-  @Input() matIconSize?: "tile-icon-small" | "tile-icon-medium" | "tile-icon-large" | "tile-icon-x-large";
-  routePath = computed(() => this.key);
+  key = input.required<string>();
+  title = input.required<string>();
+  matIconName = input<string>();
+  matIconClass = input<string>();
+  matIconSize = input<"tile-icon-small" | "tile-icon-medium" | "tile-icon-large" | "tile-icon-x-large">();
+  routePath = computed(() => this.key());
 
-  isSelected = computed(() => this.contentService.routeUrl() === this.key);
+  isSelected = computed(() => this.contentService.routeUrl() === this.key());
   protected readonly Boolean = Boolean;
 }

@@ -155,7 +155,6 @@ export class Base64Service implements Base64ServiceInterface {
    * @returns {Uint8Array} - The encoded string.
    */
   public strToUtf8Arr(sDOMStr: string): Uint8Array {
-    let aBytes: Uint8Array;
     let nChr: number;
     const nStrLen = sDOMStr.length;
     let nArrLen = 0;
@@ -170,7 +169,7 @@ export class Base64Service implements Base64ServiceInterface {
         nChr < 0x80 ? 1 : nChr < 0x800 ? 2 : nChr < 0x10000 ? 3 : nChr < 0x200000 ? 4 : nChr < 0x4000000 ? 5 : 6;
     }
 
-    aBytes = new Uint8Array(nArrLen);
+    const aBytes = new Uint8Array(nArrLen);
 
     let nIdx = 0;
     for (let nChrIdx = 0; nChrIdx < nStrLen; nChrIdx++) {
@@ -276,7 +275,7 @@ export class Base64Service implements Base64ServiceInterface {
    * @returns {Uint8Array} - The decoded string.
    */
   private base64DecToArr(sBase64: string, nBlockSize?: number): Uint8Array {
-    const sB64Enc = sBase64.replace(/[^A-Za-z0-9+\/]/g, "");
+    const sB64Enc = sBase64.replace(/[^A-Za-z0-9+/]/g, "");
     const nInLen = sB64Enc.length;
     const nOutLen = nBlockSize ? Math.ceil(((nInLen * 3 + 1) >>> 2) / nBlockSize) * nBlockSize : (nInLen * 3 + 1) >>> 2;
     const aBytes = new Uint8Array(nOutLen);

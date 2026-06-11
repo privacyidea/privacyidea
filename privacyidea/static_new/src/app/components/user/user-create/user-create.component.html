@@ -24,7 +24,8 @@
   i18n-aria-label>
   <h3
     class="heading"
-    i18n>Create New User
+    i18n>
+    Create New User
   </h3>
   <div class="flex-row gap-8">
     <button
@@ -59,9 +60,7 @@
         {{ correspondingRealms().join(", ") }}
       </mat-hint>
       @if (resolverForm().errors().some(e => e.kind === 'required') && resolverForm().touched()) {
-        <mat-error i18n>
-          Resolver is <strong>required</strong>
-        </mat-error>
+        <mat-error i18n> Resolver is <strong>required</strong> </mat-error>
       }
     </mat-form-field>
 
@@ -71,9 +70,7 @@
         [formField]="usernameForm"
         matInput />
       @if (usernameForm().errors().some(e => e.kind === 'required') && usernameForm().touched()) {
-        <mat-error i18n>
-          Username is <strong>required</strong>
-        </mat-error>
+        <mat-error i18n> Username is <strong>required</strong> </mat-error>
       }
     </mat-form-field>
   </div>

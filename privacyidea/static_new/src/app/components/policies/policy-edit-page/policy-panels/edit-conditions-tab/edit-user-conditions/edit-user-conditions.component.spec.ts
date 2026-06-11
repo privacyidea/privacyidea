@@ -80,6 +80,11 @@ describe("EditUserConditionsComponent", () => {
   it("should validate that user does not contain commas", () => {
     component.userSignal.set("user,name");
     expect(component.userField().valid()).toBe(false);
-    expect(component.userField().errors().some((e) => e.kind === "includesComma")).toBe(true);
+    expect(
+      component
+        .userField()
+        .errors()
+        .some((e) => e.kind === "includesComma")
+    ).toBe(true);
   });
 });

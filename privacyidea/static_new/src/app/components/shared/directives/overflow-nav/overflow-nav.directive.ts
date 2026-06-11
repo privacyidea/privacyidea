@@ -81,7 +81,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.menuContainer?.parentNode?.removeChild(this.menuContainer);
   }
 
-  private listen(target: any, event: string, handler: (e: any) => void): void {
+  private listen(target: "window" | "document" | "body" | Element, event: string, handler: (e: Event) => void): void {
     this.unlisteners.push(this.renderer.listen(target, event, handler));
   }
 
@@ -117,9 +117,10 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       e.stopPropagation();
       this.toggleMenu();
     });
-    this.listen(this.moreButton, "keydown", (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
+    this.listen(this.moreButton, "keydown", (e: Event) => {
+      const keyboardEvent = e as KeyboardEvent;
+      if (keyboardEvent.key === "Enter" || keyboardEvent.key === " ") {
+        keyboardEvent.preventDefault();
         this.toggleMenu();
       }
     });

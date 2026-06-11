@@ -22,11 +22,12 @@ import { TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
-import { Tokens, TokenService } from "@services/token/token.service";
-import { UserAttributePolicy, UserData, UserService } from "./user.service";
+import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
+import { EditUserData, UserAttributePolicy, UserData, UserService } from "./user.service";
 
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { NotificationService } from "@services/notification/notification.service";
@@ -61,15 +62,15 @@ function setTokenDetailUsername(name: string) {
 
   if (!ref.value()) {
     const seeded = MockPiResponse.fromValue<Tokens>({
-      tokens: [{ username: name } as any]
-    } as any) as unknown as PiResponse<Tokens>;
+      tokens: [{ username: name } as Partial<TokenDetails> as TokenDetails]
+    } as Partial<Tokens> as Tokens) as unknown as PiResponse<Tokens>;
     ref.set(seeded);
     return;
   }
 
   ref.update((resp) => {
     const current = resp!.result!.value as unknown as Tokens;
-    const first = (current.tokens?.[0] ?? {}) as any;
+    const first = (current.tokens?.[0] ?? ({} as Partial<TokenDetails> as TokenDetails));
     first.username = name;
     return {
       ...resp!,
@@ -255,7 +256,8 @@ describe("UserService", () => {
         }
       };
 
-      (userService as any).editableAttributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(policy));
+      (userService as { editableAttributesResource: UserService["editableAttributesResource"] }).editableAttributesResource =
+        new MockHttpResourceRef(MockPiResponse.fromValue(policy)) as unknown as UserService["editableAttributesResource"];
 
       expect(userService.attributePolicy()).toEqual(policy);
       expect(userService.deletableAttributes()).toEqual(["department", "attr2", "attr1"]);
@@ -267,7 +269,8 @@ describe("UserService", () => {
     it("userAttributes and userAttributesList derive from userAttributesResource value", () => {
       const attrs = { city: "Berlin", department: ["sales", "finance"] };
 
-      (userService as any).userAttributesResource = new MockHttpResourceRef(MockPiResponse.fromValue(attrs));
+      (userService as { userAttributesResource: UserService["userAttributesResource"] }).userAttributesResource =
+        new MockHttpResourceRef(MockPiResponse.fromValue(attrs)) as unknown as UserService["userAttributesResource"];
 
       expect(userService.userAttributes()).toEqual(attrs);
       expect(userService.userAttributesList()).toEqual([
@@ -278,11 +281,12 @@ describe("UserService", () => {
 
     it("userAttributes falls back to {} when userAttributesResource becomes undefined", () => {
       const ref = new MockHttpResourceRef(MockPiResponse.fromValue({ city: "Berlin" }));
-      (userService as any).userAttributesResource = ref;
+      (userService as { userAttributesResource: UserService["userAttributesResource"] }).userAttributesResource =
+        ref as unknown as UserService["userAttributesResource"];
 
       expect(userService.userAttributes()).toEqual({ city: "Berlin" });
 
-      ref.set(undefined as any);
+      ref.set(undefined as unknown as MockPiResponse<{ city: string }>);
 
       expect(userService.userAttributes()).toEqual({});
       expect(userService.userAttributesList()).toEqual([]);
@@ -324,7 +328,7 @@ describe("UserService", () => {
         ["givenname", "   "],
         ["surname", "*"]
       ])
-    } as any);
+    } as Partial<FilterValue> as FilterValue);
 
     const params = userService.filterParams();
     expect(params).not.toHaveProperty("username");
@@ -375,18 +379,15 @@ describe("UserService", () => {
 
   describe("selectedUser", () => {
     let contentService: MockContentService;
-    let tokenService: MockTokenService;
     let authService: MockAuthService;
 
     beforeEach(() => {
       contentService = TestBed.inject(ContentService) as unknown as MockContentService;
-      tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
       authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
       contentService.routeUrl.set(ROUTE_PATHS.USERS);
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", username: "enduser" });
 
-      // tokenService.tokenDetailResource = new MockHttpResourceRef(undefined as any);
       userService.selectionFilter.set("");
       userService.selectedUserRealm.set("realm1");
       userService.usersResource = new MockHttpResourceRef(MockPiResponse.fromValue(users));
@@ -574,7 +575,7 @@ describe("UserService", () => {
   describe("UserService createUser", () => {
     it("should create user successfully", () => {
       const resolver = "test";
-      const userData = { username: "new-user" } as any;
+      const userData: EditUserData = { username: "new-user" };
       let resultValue: boolean | undefined;
       userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -587,7 +588,7 @@ describe("UserService", () => {
 
     it("should handle shallow failure of creating user", () => {
       const resolver = "test";
-      const userData = { username: "new-user" } as any;
+      const userData: EditUserData = { username: "new-user" };
       let resultValue: boolean | undefined;
       userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -600,7 +601,7 @@ describe("UserService", () => {
 
     it("should handle create user failure", () => {
       const resolver = "test";
-      const userData = { username: "fail-user" } as any;
+      const userData: EditUserData = { username: "fail-user" };
       let resultValue: boolean | undefined;
       userService.createUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -618,7 +619,7 @@ describe("UserService", () => {
   describe("UserService editUser", () => {
     it("should edit user successfully", () => {
       const resolver = "test";
-      const userData = { username: "edit-user" } as any;
+      const userData: EditUserData = { username: "edit-user" };
       let resultValue: boolean | undefined;
       userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -631,7 +632,7 @@ describe("UserService", () => {
 
     it("should handle shallow edit user failure", () => {
       const resolver = "test";
-      const userData = { username: "edit-user" } as any;
+      const userData: EditUserData = { username: "edit-user" };
       let resultValue: boolean | undefined;
       userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;
@@ -644,7 +645,7 @@ describe("UserService", () => {
 
     it("should handle edit user failure", () => {
       const resolver = "test";
-      const userData = { username: "fail-user" } as any;
+      const userData: EditUserData = { username: "fail-user" };
       let resultValue: boolean | undefined;
       userService.editUser(resolver, userData).subscribe((result) => {
         resultValue = result;

@@ -123,11 +123,11 @@ export class TokenTableComponent {
     source: this.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
-        const emptyRow: any = {};
+        const emptyRow: Record<string, string> = {};
         columnKeysMap.forEach((column) => {
           emptyRow[column.key] = "";
         });
-        return emptyRow;
+        return emptyRow as unknown as TokenDetails;
       })
   });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({

@@ -29,7 +29,7 @@ import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit
 import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/machine-resolver-panel-new.component";
 
 @Component({
-  selector: "app-machineResolver",
+  selector: "app-machine-resolver",
   templateUrl: "./machine-resolver.component.html",
   styleUrls: ["./machine-resolver.component.scss"],
   imports: [MachineResolverPanelNewComponent, MachineResolverPanelEditComponent, MatExpansionModule]

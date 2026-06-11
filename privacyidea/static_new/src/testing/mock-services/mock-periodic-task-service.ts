@@ -18,13 +18,22 @@
  **/
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { PeriodicTask, PeriodicTaskModule, PeriodicTaskOption, PeriodicTaskServiceInterface } from "@services/periodic-task/periodic-task.service";
+import {
+  PeriodicTask,
+  PeriodicTaskModule,
+  PeriodicTaskOption,
+  PeriodicTaskServiceInterface
+} from "@services/periodic-task/periodic-task.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
 export class MockPeriodicTaskService implements PeriodicTaskServiceInterface {
-  periodicTasksResource = new MockHttpResourceRef<PiResponse<PeriodicTask[]> | undefined>(MockPiResponse.fromValue<PeriodicTask[]>([]));
-  periodicTaskModuleResource = new MockHttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>(MockPiResponse.fromValue<PeriodicTaskModule[]>([]));
+  periodicTasksResource = new MockHttpResourceRef<PiResponse<PeriodicTask[]> | undefined>(
+    MockPiResponse.fromValue<PeriodicTask[]>([])
+  );
+  periodicTaskModuleResource = new MockHttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>(
+    MockPiResponse.fromValue<PeriodicTaskModule[]>([])
+  );
   moduleOptions = signal<Record<string, Record<string, PeriodicTaskOption>>>({
     SimpleStats: {
       hardware_tokens: { name: "hardware_tokens", type: "bool", description: "" },

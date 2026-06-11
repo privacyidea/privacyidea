@@ -14,7 +14,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
-  queryParams: Observable<Record<string, any>> = of({});
+  queryParams: Observable<Record<string, unknown>> = of({});
 }
 
 describe("TokenTypeConfigComponent", () => {
@@ -55,7 +55,9 @@ describe("TokenTypeConfigComponent", () => {
 
     httpMock = TestBed.inject(HttpTestingController);
     activatedRoute = TestBed.inject(ActivatedRoute) as unknown as MockActivatedRoute;
-    jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: jest.fn() } as any);
+    jest
+      .spyOn(document, "getElementById")
+      .mockReturnValue({ scrollIntoView: jest.fn() } as unknown as HTMLElement);
 
     fixture = TestBed.createComponent(TokenTypeConfigComponent);
     component = fixture.componentInstance;
@@ -67,7 +69,7 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   it("should initialize formData from systemConfig", () => {
-    expect(component.formData()["splitAtSign"]).toBe(true);
+    expect(component.formData()["splitAtSign"]).toBe("True");
     expect(component.formData()["someOtherConfig"]).toBe("test_value");
   });
 
@@ -90,9 +92,9 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   it("should call saveSystemConfig on save", async () => {
-    const systemService = TestBed.inject(SystemService);
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
     const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
-    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
+    const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
 
     await component.save();
 
@@ -113,15 +115,15 @@ describe("TokenTypeConfigComponent", () => {
   });
 
   it("should update formData and pendingDeletes but not call service on deleteSystemEntry", () => {
-    const systemService = TestBed.inject(SystemService);
-    const deleteSpy = jest.spyOn(systemService as any, "deleteSystemConfig");
-    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
+    const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    const deleteSpy = jest.spyOn(systemService, "deleteSystemConfig");
+    const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
 
     const entryToDelete = "yubikey.apiid.123";
     const entryToKeep = "yubikey.apiid.456";
 
     // Set initial config so it's tracked for deferred deletion
-    (systemService as any).systemConfig.set({ [entryToDelete]: "123", [entryToKeep]: "456" });
+    systemService.systemConfig.set({ [entryToDelete]: "123", [entryToKeep]: "456" });
     fixture.detectChanges();
 
     component.deleteSystemEntry(entryToDelete);
@@ -204,7 +206,9 @@ describe("TokenTypeConfigComponent", () => {
 
     it("should not scroll if expandedPanel is null", () => {
       const scrollSpy = jest.fn();
-      jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: scrollSpy } as any);
+      jest
+        .spyOn(document, "getElementById")
+        .mockReturnValue({ scrollIntoView: scrollSpy } as unknown as HTMLElement);
       component.ngAfterViewInit();
       expect(scrollSpy).not.toHaveBeenCalled();
     });
@@ -223,7 +227,9 @@ describe("TokenTypeConfigComponent", () => {
 
       it("should scroll to referenced panel when expandedPanel is defined", () => {
         const scrollSpy = jest.fn();
-        jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: scrollSpy } as any);
+        jest
+          .spyOn(document, "getElementById")
+          .mockReturnValue({ scrollIntoView: scrollSpy } as unknown as HTMLElement);
         component.ngAfterViewInit();
         expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth" });
       });

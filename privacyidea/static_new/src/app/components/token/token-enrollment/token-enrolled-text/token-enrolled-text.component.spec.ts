@@ -19,6 +19,7 @@
 
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -44,7 +45,7 @@ describe("TokenEnrolledTextComponent", () => {
     fixture = TestBed.createComponent(TokenEnrolledTextComponent);
     component = fixture.componentInstance;
     mockContentService = TestBed.inject(ContentService) as unknown as MockContentService;
-    mockContentService.router = { navigateByUrl: jest.fn() } as any;
+    mockContentService.router = { navigateByUrl: jest.fn() } as unknown as Router;
     mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
     fixture.detectChanges();
   });

@@ -36,7 +36,7 @@ describe("EditAdminConditionsComponent", () => {
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },
-        { provide: ResolverService, useClass: MockResolverService },
+        { provide: ResolverService, useClass: MockResolverService }
       ]
     }).compileComponents();
 

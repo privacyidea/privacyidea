@@ -16,34 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpResourceRef } from "@angular/common/http";
 import { signal } from "@angular/core";
-import { PiResponse } from "@app/app.component";
 import { Tokengroup, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
+import { MockHttpResourceRef, MockPiResponse } from "@testing/mock-services/mock-utils";
 
 export class MockTokengroupService implements TokengroupServiceInterface {
-  tokengroupResource: HttpResourceRef<PiResponse<any> | undefined> = {
-    value: signal(undefined),
-    status: signal(0) as any,
-    error: signal(null),
-    isLoading: signal(false),
-    reload: jest.fn(),
-    headers: signal(undefined),
-    statusCode: signal(undefined),
-    progress: signal(undefined),
-    hasValue: function (): this is HttpResourceRef<Exclude<PiResponse<any> | undefined, undefined>> {
-      return this.value() !== undefined;
-    },
-    destroy: function (): void {}
-  } as any;
+  tokengroupResource = new MockHttpResourceRef(MockPiResponse.fromValue<Record<string, never>>({}));
 
   tokengroups = signal<Tokengroup[]>([]);
 
-  postTokengroup = jest.fn(async (_tokengroup: Tokengroup): Promise<void> => {
+  postTokengroup = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 
-  deleteTokengroup = jest.fn(async (_groupname: string): Promise<void> => {
+  deleteTokengroup = jest.fn(async (): Promise<void> => {
     return Promise.resolve();
   });
 }

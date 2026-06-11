@@ -22,12 +22,13 @@
   i18n-title
   [showCancelButton]="true"
   [handleCloseExternally]="true"
-  (close)="close()"
+  (wrapperClose)="close()"
   [actions]="actions()"
-  (onAction)="onAction($event)">
+  (actionTriggered)="onAction($event)">
   <div class="flex-column">
     <p i18n>
-      Please enter a unique name for the new copy of <b>{{ data }}</b>.
+      Please enter a unique name for the new copy of <b>{{ data }}</b
+      >.
     </p>
 
     <mat-form-field>
@@ -39,15 +40,15 @@
         (input)="editName($any($event.target).value)"
         [errorStateMatcher]="nameErrorMatcher"
         (keydown.enter)="canSave() && onAction('copy')"
-        aria-label="New Template Name"
-        autofocus />
+        aria-label="New Template Name" />
 
       @if (nameConflict()) {
         <mat-error i18n>A template with this name already exists.</mat-error>
       }
       @if (isNameDirty() && template().name.length > 0 && nameInvalidPattern()) {
-        <mat-error
-          i18n>Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+        <mat-error i18n
+          >Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+          and hyphens are allowed.
         </mat-error>
       }
     </mat-form-field>

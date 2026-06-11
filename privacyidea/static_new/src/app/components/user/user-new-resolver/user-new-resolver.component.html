@@ -165,38 +165,31 @@
         </button>
       </div>
     </div>
-
     @if (resolverType() === "ldapresolver") {
-      <app-ldap-resolver [data]="formData" />
+      <app-ldap-resolver [data]="$any(formData)" />
     }
-
     @if (resolverType() === "sqlresolver") {
-      <app-sql-resolver [data]="formData" />
+      <app-sql-resolver [data]="$any(formData)" />
     }
-
     @if (resolverType() === "passwdresolver") {
-      <app-passwd-resolver [data]="formData" />
+      <app-passwd-resolver [data]="$any(formData)" />
     }
-
     @if (resolverType() === "scimresolver") {
-      <app-scim-resolver [data]="formData" />
+      <app-scim-resolver [data]="$any(formData)" />
     }
-
     @if (resolverType() === "httpresolver") {
       <app-http-resolver
-        [data]="formData"
+        [data]="$any(formData)"
         [type]="resolverType()" />
     }
-
     @if (resolverType() === "entraidresolver") {
       <app-entraid-resolver
-        [data]="formData"
+        [data]="$any(formData)"
         [type]="resolverType()" />
     }
-
     @if (resolverType() === "keycloakresolver") {
       <app-keycloak-resolver
-        [data]="formData"
+        [data]="$any(formData)"
         [type]="resolverType()" />
     }
   </div>

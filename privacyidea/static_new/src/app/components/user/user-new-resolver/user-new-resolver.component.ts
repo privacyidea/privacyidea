@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, pattern, required } from "@angular/forms/signals";
@@ -27,6 +28,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ActivatedRoute, Router } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -35,7 +37,7 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { ResolverService, ResolverType } from "@services/resolver/resolver.service";
+import { ResolverData, ResolverService, ResolverType } from "@services/resolver/resolver.service";
 import { finalize } from "rxjs";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
@@ -97,7 +99,7 @@ export class UserNewResolverComponent implements OnDestroy {
   keycloakResolver = viewChild(KeycloakResolverComponent);
 
   resolverType = signal<ResolverType>("passwdresolver");
-  formData: Record<string, any> = { fileName: "/etc/passwd" };
+  formData: ResolverData = { fileName: "/etc/passwd" };
   testUsername = signal<string>("");
   testUserId = signal<string>("");
 
@@ -319,10 +321,10 @@ export class UserNewResolverComponent implements OnDestroy {
     }
   }
 
-  private _getAdditionalData(): Record<string, any> {
+  private _getAdditionalData(): ResolverData {
     const resolver = this._activeResolver();
     if (!resolver) return {};
-    return resolver.getValue() as Record<string, any>;
+    return resolver.getValue() as unknown as ResolverData;
   }
 
   private _runTest(quick: boolean): void {
@@ -338,7 +340,7 @@ export class UserNewResolverComponent implements OnDestroy {
 
     this.isTesting.set(true);
 
-    const payload: any = {
+    const payload: ResolverData = {
       type: this.resolverType(),
       ...this.formData,
       test_username: this.testUsername(),
@@ -347,11 +349,11 @@ export class UserNewResolverComponent implements OnDestroy {
     };
 
     if (quick) {
-      payload.SIZELIMIT = 1;
+      payload["SIZELIMIT"] = 1;
     }
 
     if (this.isEditMode()) {
-      payload.resolver = this.resolverNameModel().resolverName;
+      payload["resolver"] = this.resolverNameModel().resolverName;
     }
 
     this._resolverService
@@ -359,7 +361,7 @@ export class UserNewResolverComponent implements OnDestroy {
       .pipe(finalize(() => setTimeout(() => this.isTesting.set(false))))
       .subscribe({
         next: (res) => {
-          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+          if (res.result?.status === true && res.result.value === true) {
             const detail = res.detail?.description || "";
             this._notificationService.success($localize`Resolver test executed: ${detail}`, { duration: 20000 });
           } else {
@@ -370,13 +372,19 @@ export class UserNewResolverComponent implements OnDestroy {
       });
   }
 
-  private _notifyError(prefix: string, errorSource: any, testFallback?: string): void {
+  private _notifyError(
+    prefix: string,
+    errorSource: HttpErrorResponse | PiResponse<unknown>,
+    testFallback?: string
+  ): void {
+    const source = errorSource as Partial<HttpErrorResponse> &
+      Partial<PiResponse<unknown, { description?: string } | undefined>>;
     const detail =
-      errorSource.error?.result?.error?.message ||
-      errorSource.error?.message ||
-      errorSource.message ||
-      errorSource.detail?.description ||
-      errorSource.result?.error?.message ||
+      source.error?.result?.error?.message ||
+      source.error?.message ||
+      source.message ||
+      source.detail?.description ||
+      source.result?.error?.message ||
       $localize`Unknown server error.`;
 
     if (detail.includes("Detailed error")) {

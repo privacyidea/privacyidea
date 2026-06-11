@@ -22,6 +22,7 @@ import { TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
 import { TableUtilsService } from "./table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
@@ -137,7 +138,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true");
       expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false");
       // Allow enable / disable
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -157,7 +158,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })).toBe("highlight-warning");
       expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false");
       // Allow reset failcount
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -304,7 +305,7 @@ describe("TableUtilsService", () => {
   });
 
   describe("clientsideSortTokenData", () => {
-    const makeToken = (overrides: any = {}) =>
+    const makeToken = (overrides: Partial<ContainerDetailToken> & Record<string, unknown> = {}) =>
       ({
         active: true,
         container_serial: "C1",
@@ -323,7 +324,7 @@ describe("TableUtilsService", () => {
         user_realm: "",
         username: "",
         ...overrides
-      }) as any;
+      }) as unknown as ContainerDetailToken;
 
     it("returns the input untouched when direction is empty", () => {
       const data = [makeToken({ serial: "B" }), makeToken({ serial: "A" })];
@@ -333,11 +334,7 @@ describe("TableUtilsService", () => {
     });
 
     it("sorts ascending by the chosen key (case-insensitive)", () => {
-      const data = [
-        makeToken({ serial: "beta" }),
-        makeToken({ serial: "Alpha" }),
-        makeToken({ serial: "gamma" })
-      ];
+      const data = [makeToken({ serial: "beta" }), makeToken({ serial: "Alpha" }), makeToken({ serial: "gamma" })];
       const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
       expect(result.map((t) => t.serial)).toEqual(["Alpha", "beta", "gamma"]);
     });
