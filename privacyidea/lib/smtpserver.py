@@ -344,21 +344,23 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     :type server: basestring
     :return: The Id of the database object
     """
+
+    # remove the CENSORED placeholder so that it will not be written to the database. This allows to update other
+    # parameters without changing the password, if the password is not provided in the update request.
+    if password == CENSORED:
+        password = None
+    if private_key_password == CENSORED:
+        private_key_password = None
+
     encrypted_password = encryptPassword(password)
     # private_key_password could be empty string or None, which have a different effect later.
     # here we only care if it has an actual value that we should encrypt, otherwise leave it at empty string or None
     encrypted_private_key_password = private_key_password
-    if private_key_password and private_key_password != CENSORED:
+    if private_key_password:
         encrypted_private_key_password = encryptPassword(private_key_password)
 
     stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
     smtp_server = db.session.execute(stmt).scalar_one_or_none()
-
-    # If the password is CENSORED, keep the existing encrypted value
-    if password == CENSORED and smtp_server:
-        encrypted_password = smtp_server.password
-    if private_key_password == CENSORED and smtp_server:
-        encrypted_private_key_password = smtp_server.private_key_password
 
     if smtp_server:
         # Update existing entry

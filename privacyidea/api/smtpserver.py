@@ -125,10 +125,6 @@ def list_smtpservers_api():
     ``dont_send_on_error``, ``private_key``, ``private_key_password`` and
     ``certificate``.
 
-    .. warning::
-       The response currently returns the SMTP password decrypted, not
-       redacted. Treat it accordingly.
-
     Requires admin authentication and the policy action
     :ref:`policy_smtpserver_read`.
 

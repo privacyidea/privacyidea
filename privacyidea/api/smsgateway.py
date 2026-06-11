@@ -46,7 +46,6 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
 
 log = logging.getLogger(__name__)
 
-
 smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 
 
@@ -90,6 +89,10 @@ def get_gateway(gwid=None):
             for key in list(gw_dict.get("options", {}).keys()):
                 if "PASSWORD" in key.upper() or "SECRET" in key.upper():
                     gw_dict["options"][key] = CENSORED
+                # Censor secret-bearing headers (e.g. Authorization, API keys)
+                for key in list(gw_dict.get("headers", {}).keys()):
+                    if any(token in key.upper() for token in ("AUTH", "TOKEN", "KEY", "SECRET", "PASS")):
+                        gw_dict["headers"][key] = CENSORED
             res.append(gw_dict)
 
     g.audit_object.log({"success": True})
