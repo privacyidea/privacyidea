@@ -27,7 +27,12 @@ import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
-export type SelectableAction = { label: string; actionName: string; scope: string; detail: PolicyActionDetail };
+export interface SelectableAction {
+  label: string;
+  actionName: string;
+  scope: string;
+  detail: PolicyActionDetail;
+}
 
 @Component({
   selector: "app-policy-action-item-new",
@@ -54,7 +59,7 @@ export class PolicyActionItemComponent {
   readonly inputIsValid = computed<boolean>(() => {
     const detail = this.selectableAction().detail;
     const actionValue = this.currentAction()?.value;
-    if (!detail || actionValue === undefined) return false;
+    if (!detail || actionValue === undefined || actionValue === "") return false;
     return this.policyService.actionValueIsValid(detail, actionValue);
   });
   readonly selectActionByName = output<string>();
@@ -64,7 +69,7 @@ export class PolicyActionItemComponent {
     source: () => this.selectableAction(),
     computation: (selectableAction) => {
       const { actionName, detail } = selectableAction;
-      const defaultValue = detail?.type === "bool" ? "true" : this.actionValue();
+      const defaultValue = detail?.type === "bool" ? "true" : (this.actionValue() ?? "");
       return { name: actionName, value: defaultValue };
     }
   });

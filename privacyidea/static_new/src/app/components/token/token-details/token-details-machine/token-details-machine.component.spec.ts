@@ -20,16 +20,16 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContentService } from "@services/content/content.service";
-import { MachineService } from "@services/machine/machine.service";
-import { MockContainerService, MockMachineService } from "@testing/mock-services";
+import { MachineService, TokenApplication } from "@services/machine/machine.service";
+import { MockContentService, MockMachineService } from "@testing/mock-services";
 import { TokenDetailsMachineComponent } from "./token-details-machine.component";
 
-describe("TokenDetailsInfoComponent", () => {
+describe("TokenDetailsMachineComponent", () => {
   let component: TokenDetailsMachineComponent;
   let fixture: ComponentFixture<TokenDetailsMachineComponent>;
 
   let machineService: MockMachineService;
-  let contentService: MockContainerService;
+  let contentService: MockContentService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -38,12 +38,12 @@ describe("TokenDetailsInfoComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
-        { provide: ContentService, useClass: MockContainerService }
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 
     machineService = TestBed.inject(MachineService) as unknown as MockMachineService;
-    contentService = TestBed.inject(ContentService) as unknown as MockContainerService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
 
     fixture = TestBed.createComponent(TokenDetailsMachineComponent);
     component = fixture.componentInstance;
@@ -53,5 +53,37 @@ describe("TokenDetailsInfoComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("visibleEntries hides internal keys, flattens options, and skips empty values", () => {
+    const machine = {
+      serial: "Mock serial",
+      application: "ssh",
+      type: "ssh",
+      id: 42,
+      machine_id: "machine1",
+      hostname: "host1",
+      resolver: "",
+      options: { service_id: "webserver", user: "root", empty: "", missing: undefined }
+    } as unknown as TokenApplication;
+
+    expect(component.visibleEntries(machine)).toEqual([
+      ["machine_id", "machine1"],
+      ["hostname", "host1"],
+      ["service_id", "webserver"],
+      ["user", "root"]
+    ]);
+  });
+
+  it("unassignMachine deletes the assignment and reloads the applications", () => {
+    contentService.tokenSerial.set("Mock serial");
+    const deleteSpy = jest.spyOn(machineService, "deleteAssignMachineToToken");
+    const reloadSpy = machineService.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+
+    component.unassignMachine(42, "ssh");
+
+    expect(deleteSpy).toHaveBeenCalledWith({ serial: "Mock serial", application: "ssh", mtid: "42" });
+    expect(reloadSpy).toHaveBeenCalled();
   });
 });
