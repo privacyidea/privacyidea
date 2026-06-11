@@ -472,10 +472,10 @@ def check():
 
 
     """
-    # Conditional-access pre-check (step 1): runs before any token logic and
-    # before the existing failcounter / max_auth checks. A currently-locked user
-    # is rejected immediately with a generic failure response that leaks no
-    # reason (the real reason is recorded only in the audit log).
+    # Conditional-access pre-check: runs before any token logic and before the
+    # failcounter / max_auth checks. A currently-locked user is rejected
+    # immediately with a generic failure response that leaks no reason (the
+    # real reason is recorded only in the audit log).
     if is_user_locked(request.User):
         log.info(f"Rejecting authentication for locked user {request.User!r}.")
         g.audit_object.log({"success": False,
@@ -837,7 +837,7 @@ def _log_authentication_event(context):
 
 def _evaluate_lockout_policies(context):
     """
-    Run the conditional-access policy engine (step 5) for this request's
+    Run the conditional-access policy engine for this request's
     classified outcome.
 
     Called from check()'s finally, after the authentication-log row is written,

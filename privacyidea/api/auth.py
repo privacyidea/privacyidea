@@ -312,7 +312,7 @@ def get_auth_token():
     user = request.User or User()
     g.audit_object.log({"user": user.login, "realm": user.realm})
     # Conditional-access pre-check: a currently-locked user is rejected before any
-    # credential check. The rejection now states the lockout (how long it lasts, or
+    # credential check. The rejection states the lockout (how long it lasts, or
     # that it is permanent) so the user understands why login fails; an admin who
     # prefers not to reveal it can enable the hide_specific_error_message policy,
     # which the AuthError handler applies to this message. An unresolved user / local
@@ -600,8 +600,8 @@ def get_auth_token():
         else:
             message = _("Authentication failure. Wrong credentials")
         if lockout_notices:
-            # Append the notice(s) to the message (not an extra detail key) so the existing
-            # hide_specific_error_message policy still masks them, and the login screen shows
+            # Append the notice(s) to the message (not an extra detail key) so the
+            # hide_specific_error_message policy masks them, and the login screen shows
             # them in error.message exactly as it shows a lockout rejection. The result reads
             # e.g. "Your account is temporarily locked ... in about 10 minute(s). Your
             # administrator has been notified by email."

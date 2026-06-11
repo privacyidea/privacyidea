@@ -40,11 +40,12 @@ class LockoutAction(str, Enum):
     can execute when its failure threshold is met.
 
     :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER` and :attr:`BLOCK_IP` are implemented. :attr:`ALLOW` and
-    :attr:`DENY` are reserved: they decide the *current* request and therefore
-    need a pre-auth decision step (the lockout engine runs post-response).
-    Reserving them as enum members lets the action table grow without a schema
-    change (the column stores the string value).
+    :attr:`EMAIL_USER` and :attr:`BLOCK_IP` are post-response side effects
+    executed by :func:`evaluate_lockout_policies`. :attr:`ALLOW` and
+    :attr:`DENY` decide the *current* request and are therefore handled by the
+    pre-auth decision step (:func:`evaluate_access_decision`) instead. The
+    action table stores the string value, so the enum can grow without a
+    schema change.
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
@@ -251,11 +252,11 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
     yields a decision wins, so a higher-priority ALLOW overrides a lower-priority
     DENY and vice versa. ``dry_run`` policies are logged but never enforced.
 
-    V1 limitation: like the rest of the engine the decision is keyed on the
-    resolved ``(resolver, uid, realm)`` user, so an unresolved user (unknown
-    login, local admin) is never denied here; IP-scoped / spraying decisions are
-    a separate, deferred feature. ``source_ip`` is accepted for signature
-    symmetry with :func:`evaluate_lockout_policies` and reserved for that.
+    Like the rest of the engine the decision is keyed on the resolved
+    ``(resolver, uid, realm)`` user, so an unresolved user (unknown login,
+    local admin) is never denied here. ``source_ip`` is accepted for signature
+    symmetry with :func:`evaluate_lockout_policies` but is not evaluated:
+    IP-scoped decisions (e.g. against password spraying) are not implemented.
 
     :param user: the authenticating user; an unresolved user yields ``CONTINUE``
     :param source_ip: the resolved client IP (reserved for IP-scoped decisions)
@@ -328,9 +329,9 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
                               now: datetime | None = None) -> list[str]:
     """
     Evaluate every enabled lockout policy that tracks *event_type* and execute
-    the actions of the triggered stage, if any. This is step 5 of the
-    authentication request workflow and runs *after* the request's
-    ``authentication_log`` row has been written (so the count includes it).
+    the actions of the triggered stage, if any. This runs post-response, *after*
+    the request's ``authentication_log`` row has been written (so the count
+    includes it).
 
     The persistent side effects (lock state) are consulted by the *next* inbound
     request via the pre-check. In addition, an executed ``EMAIL_*`` action yields
@@ -344,7 +345,7 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
     :param user: the authenticating user; ignored unless fully resolved
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
-    :param source_ip: the resolved client IP (reserved for IP-scoped actions)
+    :param source_ip: the resolved client IP; the ``BLOCK_IP`` action blocks it
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the de-duplicated, order-preserving list of user-facing notices
         produced by executed actions (empty if nothing was triggered/notified)
@@ -617,11 +618,10 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
                 if notice:
                     notices.append(notice)
             elif action_type == LockoutAction.BLOCK_IP:
-                # V1 limitation: this blocks the source IP of the request that
-                # tripped a *per-user* policy. True password-spraying detection
-                # (counting failures by IP across many users) is a separate,
-                # deferred feature; here BLOCK_IP is simply available as an
-                # action that blocks the offending request's IP.
+                # Failures are counted per user, so this blocks the source IP
+                # of the request that tripped a *per-user* policy. It does not
+                # detect password spraying (failures from one IP across many
+                # users); BLOCK_IP simply blocks the offending request's IP.
                 if not source_ip:
                     log.warning(f"BLOCK_IP action {action.id} on stage {stage.id}: this request has "
                                 f"no source IP; skipping.")

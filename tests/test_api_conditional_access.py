@@ -327,7 +327,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                                         realm=self.user.realm, is_locked=True,
                                         lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
-        # Correct userstore password, but the user is locked -> 401 that now states the lockout.
+        # Correct userstore password, but the user is locked -> 401 that states the lockout.
         res = self._auth("cornelius", "test")
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
