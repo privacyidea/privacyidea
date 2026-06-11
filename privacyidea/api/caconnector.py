@@ -27,6 +27,7 @@ All endpoints require admin authentication. Read access is gated by the
 admin policy action :ref:`caconnectorread`, write access by
 :ref:`caconnectorwrite`, and deletion by :ref:`caconnectordelete`.
 """
+
 from flask import (Blueprint, request)
 from .lib.utils import (send_result)
 from ..lib.log import log_with
@@ -38,10 +39,8 @@ from privacyidea.lib.caconnector import (save_caconnector,
                                          get_caconnector_list)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
-from ..lib.resolver import CENSORED
 
 log = logging.getLogger(__name__)
-
 
 caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 

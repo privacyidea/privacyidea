@@ -36,7 +36,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
-from ..lib.resolver import CENSORED
+from ..lib.crypto import CENSORED
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,

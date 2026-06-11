@@ -44,11 +44,10 @@ from sqlalchemy import select
 from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
+                                    FAILED_TO_DECRYPT_PASSWORD, CENSORED)
 from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB

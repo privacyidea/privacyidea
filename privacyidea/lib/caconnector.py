@@ -36,9 +36,8 @@ from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetc
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .config import (get_caconnector_types,
                      get_caconnector_class_dict)
-from .crypto import encryptPassword, decryptPassword
+from .crypto import encryptPassword, decryptPassword, CENSORED
 from .log import log_with
-from .resolver import CENSORED
 from privacyidea.lib.params import get_required
 from ..models import (CAConnector,
                       CAConnectorConfig, db, save_config_timestamp)
