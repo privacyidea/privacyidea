@@ -1,0 +1,132 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Runs the full unit test suite against MariaDB with a live Redis as the real
+# challenge backend (PI_REDIS_URL + PI_REDIS_CACHE_CHALLENGES). This is the only
+# job that exercises the Redis storage path end-to-end: every challenge created
+# anywhere in the suite goes through Redis, so any DB/Redis behavioural
+# divergence surfaces here. A single Python version is enough - the Redis path
+# is independent of the Python version, so a per-version matrix would only add
+# redundant runs. The DB-only matrix lives in the MariaDB/Postgres workflows.
+# Migration tests are excluded - they have their own dedicated workflow.
+
+name: Unit Tests Redis
+
+on:
+  pull_request:
+    paths:
+      - 'privacyidea/**.py'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - 'tools/**'
+      - '.github/workflows/unit-tests-redis.yml'
+      - '.github/python-versions.env'
+  schedule:
+    # Nightly at 02:00 UTC, alongside the other unit-test workflows.
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+
+# Cancel any in-progress run for the same PR when a new commit is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  versions:
+    name: Load Python versions
+    runs-on: ubuntu-latest
+    outputs:
+      min: ${{ steps.load.outputs.min }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - id: load
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "min=$MIN" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: versions
+    name: 'Redis backend (Python ${{ needs.versions.outputs.min }})'
+    permissions:
+      checks: write # allow the python tests to mark an action run as failed
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: privacyidea_test
+          MARIADB_USER: privacyidea
+          MARIADB_PASSWORD: privacyidea
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ needs.versions.outputs.min }}
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: ${{ needs.versions.outputs.min }}
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          tests/requirements.txt
+
+    - name: Install dependencies
+      run: |
+        pip install -r tests/requirements.txt
+        pip install PyMySQL
+
+    - name: Pre-create per-worker databases
+      # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL and use
+      # the matching Redis logical DB index (see tests/conftest.py).
+      # db.create_all() creates tables inside an existing database — the
+      # databases themselves must be pre-created. Eight covers typical GH
+      # runners (2-4 cores) with room to spare.
+      run: |
+        for i in $(seq 0 7); do
+          mysql -h 127.0.0.1 -u root -proot -e \
+            "CREATE DATABASE privacyidea_test_gw$i; \
+             GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
+        done
+
+    - name: Test with pytest
+      id: pytest_run
+      env:
+        TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test"
+        # Real challenge backend: the app stores challenges in Redis for the
+        # whole suite. TEST_REDIS_URL additionally enables the white-box cache
+        # tests (TTL/EXPIRE NX-GT/hash structure/cooldown).
+        PI_REDIS_URL: "redis://127.0.0.1:6379/0"
+        PI_REDIS_CACHE_CHALLENGES: "true"
+        TEST_REDIS_URL: "redis://127.0.0.1:6379/0"
+        PYTHONWARNINGS: "once::DeprecationWarning"
+      run: |
+        pip freeze
+        # --dist=loadfile keeps all tests in one file on one worker, preserving
+        # the intra-file ordering the unittest-style suite currently relies on.
+        python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
