@@ -36,6 +36,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
+from ..lib.resolver import CENSORED
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -82,7 +83,14 @@ def get_gateway(gwid=None):
                                               classname.rsplit(".", 1)[1])
             res[classname] = smsclass.parameters()
     else:
-        res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
+        res = []
+        for gw in get_smsgateway(id=gwid):
+            gw_dict = gw.as_dict()
+            # Censor password-like options
+            for key in list(gw_dict.get("options", {}).keys()):
+                if "PASSWORD" in key.upper() or "SECRET" in key.upper():
+                    gw_dict["options"][key] = CENSORED
+            res.append(gw_dict)
 
     g.audit_object.log({"success": True})
     return send_result(res)

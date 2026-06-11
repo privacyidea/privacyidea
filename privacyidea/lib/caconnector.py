@@ -110,6 +110,9 @@ def save_caconnector(params: dict) -> int:
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
+            if value == CENSORED:
+                # Keep the existing value, do not overwrite with CENSORED
+                continue
             value = encryptPassword(value)
 
         stmt = select(CAConnectorConfig).filter_by(caconnector_id=connector_id, Key=key)

@@ -31,6 +31,7 @@ from sqlalchemy import select
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -348,11 +349,17 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     # private_key_password could be empty string or None, which have a different effect later.
     # here we only care if it has an actual value that we should encrypt, otherwise leave it at empty string or None
     encrypted_private_key_password = private_key_password
-    if private_key_password:
+    if private_key_password and private_key_password != CENSORED:
         encrypted_private_key_password = encryptPassword(private_key_password)
 
     stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
     smtp_server = db.session.execute(stmt).scalar_one_or_none()
+
+    # If the password is CENSORED, keep the existing encrypted value
+    if password == CENSORED and smtp_server:
+        encrypted_password = smtp_server.password
+    if private_key_password == CENSORED and smtp_server:
+        encrypted_private_key_password = smtp_server.private_key_password
 
     if smtp_server:
         # Update existing entry
