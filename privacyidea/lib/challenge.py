@@ -35,7 +35,7 @@ import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
-from .cache import (ChallengeDTO, evict_challenge,
+from .cache import (ChallengeDTO, evict_challenge, evict_transaction,
                     evict_challenges_for_serial, get_challenges_from_cache,
                     get_redis, redis_feature_configured, redis_feature_enabled)
 from .log import log_with
@@ -285,8 +285,9 @@ def delete_challenges(serial: str = None, transaction_id: str = None,
             else:
                 # MISS or UNAVAILABLE: defensive evict to close the race
                 # where another worker's cache_challenge lands between
-                # our read and the DB delete.
-                evict_challenge(transaction_id, serial or "")
+                # our read and the DB delete. Drop the whole txn hash so a
+                # sibling field we never saw is removed too.
+                evict_transaction(transaction_id, [serial] if serial else [])
         elif serial is not None:
             # Iterate the serial-set so we can count removed entries.
             # MISS/UNAVAILABLE collapse to an empty list here, the

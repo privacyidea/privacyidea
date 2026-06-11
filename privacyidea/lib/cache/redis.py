@@ -105,7 +105,16 @@ def _retry_cooldown_seconds() -> int:
     return value if value > 0 else _DEFAULT_RETRY_COOLDOWN_SECONDS
 
 # Redis key templates
-_TXN_KEY = "pi:challenge:txn:{}"  # pi:challenge:txn:<transaction_id>  -> JSON
+#
+# A transaction can carry more than one challenge: a single authentication
+# request triggers one challenge per matching token (push + SMS, several
+# passkeys, ...), and they all share the same transaction_id - mirroring the
+# SQL model where multiple Challenge rows share a transaction_id. The txn key
+# is therefore a HASH keyed by token serial (field "" for usernameless passkey
+# challenges, which are looked up by transaction_id only). A token never
+# creates two challenges in one transaction, so serial uniquely identifies a
+# challenge within the hash.
+_TXN_KEY = "pi:challenge:txn:{}"  # pi:challenge:txn:<transaction_id> -> HASH {serial -> JSON}
 _SERIAL_KEY = "pi:challenge:serial:{}"  # pi:challenge:serial:<serial>       -> SET of txn ids
 
 # Keep Redis keys a bit beyond validitytime so we don't evict just before the
@@ -454,8 +463,18 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
             challenge=challenge, data=data or '', session=session or '',
             received_count=received_count, otp_valid=otp_valid,
         ).to_payload()
+        txn_key = _TXN_KEY.format(transaction_id)
         pipe = r.pipeline()
-        pipe.setex(_TXN_KEY.format(transaction_id), ttl, payload)
+        # One field per token serial. Tokens sharing this transaction_id keep
+        # their own field, so a second token's challenge no longer overwrites
+        # the first. The hash TTL covers the whole transaction; NX seeds it on
+        # the first field, GT extends (never shrinks) it so a shorter-lived
+        # sibling added later cannot expire still-valid challenges early. Both
+        # flags require Redis 7+. A shorter-lived field that outlives its own
+        # validity is filtered out on read by is_valid(), not by per-field TTL.
+        pipe.hset(txn_key, serial, payload)
+        pipe.expire(txn_key, ttl, nx=True)
+        pipe.expire(txn_key, ttl, gt=True)
         # Only index by serial when one is given. Usernameless passkey auth
         # creates challenges with serial="", and indexing those would funnel
         # every such request into one shared set whose TTL never settles
@@ -464,12 +483,9 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
         # transaction_id, so the set serves no purpose for them.
         if serial:
             pipe.sadd(_SERIAL_KEY.format(serial), transaction_id)
-            # The serial set is shared across all open challenges for the
-            # token, so its TTL must cover the longest-lived member. NX
-            # seeds the TTL on the first write; GT extends it only when the
-            # new TTL is larger, so a shorter-lived challenge added later
-            # cannot shrink it and expire still-valid siblings early. Both
-            # flags require Redis 7+.
+            # Same NX+GT TTL discipline as the txn hash above: the serial set
+            # is shared across all of the token's open challenges, so its TTL
+            # must cover the longest-lived member.
             pipe.expire(_SERIAL_KEY.format(serial), ttl, nx=True)
             pipe.expire(_SERIAL_KEY.format(serial), ttl, gt=True)
         pipe.execute()
@@ -479,8 +495,12 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
 
 def evict_challenge(transaction_id: str, serial: str):
     """
-    Remove a challenge from Redis.
-    Called from ChallengeDTO.delete() and can be called on explicit invalidation.
+    Remove a single challenge (one ``serial`` within ``transaction_id``) from
+    Redis. Called from ChallengeDTO.delete() and on explicit invalidation.
+
+    Only this token's field is removed; sibling tokens that share the
+    transaction keep their challenges. Redis drops the txn hash automatically
+    once its last field is deleted.
 
     Skips silently when the cache feature is off or when ``get_redis()``
     returns None (cooldown after a recent failure). The unified retry
@@ -492,11 +512,37 @@ def evict_challenge(transaction_id: str, serial: str):
         return
     try:
         pipe = r.pipeline()
-        pipe.delete(_TXN_KEY.format(transaction_id))
+        pipe.hdel(_TXN_KEY.format(transaction_id), serial)
         # cache_challenge() only writes the serial set when serial is truthy,
         # so don't try to remove from it otherwise - it doesn't exist.
         if serial:
             pipe.srem(_SERIAL_KEY.format(serial), transaction_id)
+        pipe.execute()
+    except redis_lib.exceptions.RedisError as e:
+        _disable_redis(e)
+
+
+def evict_transaction(transaction_id: str, serials: "list[str]"):
+    """
+    Remove every challenge under ``transaction_id`` from Redis - the whole
+    multi-token transaction at once. Called when cancelling a transaction.
+
+    ``serials`` are the token serials whose challenges live under this
+    transaction (as returned by ``get_challenges``); their index entries are
+    cleaned up alongside the hash. Deleting the hash also covers any field we
+    did not know about (e.g. a sibling written by another worker after our
+    read), which is why this is also the defensive eviction used on a cache
+    miss.
+    """
+    r = redis_client_for_feature("challenges")
+    if r is None:
+        return
+    try:
+        pipe = r.pipeline()
+        pipe.delete(_TXN_KEY.format(transaction_id))
+        for serial in serials:
+            if serial:
+                pipe.srem(_SERIAL_KEY.format(serial), transaction_id)
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
@@ -508,22 +554,24 @@ def evict_challenges_for_serial(serial: str):
 
     Used when a token or container is deleted so that in-flight transaction
     IDs cannot continue to resolve against the cache after their owning
-    object is gone. Iterates the serial-set and deletes each per-transaction
-    key plus the set itself.
+    object is gone. Iterates the serial-set and removes only this token's
+    field from each transaction hash, then deletes the set itself. Sibling
+    tokens that share a transaction keep their challenges (Redis drops a hash
+    once its last field is gone), so deleting one token does not cancel
+    another token's in-flight challenge.
 
     Race window (intentionally accepted): SMEMBERS and the subsequent
     pipeline are not atomic. If another worker calls ``cache_challenge``
-    between the SMEMBERS snapshot and ``pipe.execute()``, the new
-    transaction key it writes is not in our snapshot - we delete the
-    serial set (wiping its index entry along with the dead ones) but
-    leave the new txn key alive until its TTL. ``get_challenges`` by
-    transaction_id then resolves it directly against the txn key,
-    handing back a challenge for a token that no longer exists; the
-    eventual lookup of that token fails with ResourceNotFoundError and
-    the user retries the auth flow.
+    for this serial between the SMEMBERS snapshot and ``pipe.execute()``,
+    the new transaction it writes is not in our snapshot - we delete the
+    serial set (wiping its index entry along with the dead ones) but leave
+    the new field alive until its TTL. ``get_challenges`` by transaction_id
+    then resolves it directly against the txn hash, handing back a challenge
+    for a token that no longer exists; the eventual lookup of that token
+    fails with ResourceNotFoundError and the user retries the auth flow.
 
     The race window is bounded by the duration between SMEMBERS and
-    EXEC (microseconds on a healthy Redis), and the orphan key survives
+    EXEC (microseconds on a healthy Redis), and the orphan field survives
     at most one challenge-validity TTL. Token deletions are rare events.
     Closing the race fully would require either a server-side Lua
     script or a WATCH/MULTI retry loop; both add complexity that
@@ -538,7 +586,7 @@ def evict_challenges_for_serial(serial: str):
         txn_ids = r.smembers(serial_key)
         pipe = r.pipeline()
         for tid in txn_ids:
-            pipe.delete(_TXN_KEY.format(tid))
+            pipe.hdel(_TXN_KEY.format(tid), serial)
         pipe.delete(serial_key)
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:
@@ -578,24 +626,31 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
         return CacheState.UNAVAILABLE
     try:
         if transaction_id:
-            raw = r.get(_TXN_KEY.format(transaction_id))
-            if raw is None:
+            # The txn hash holds one field per token serial. HGETALL returns
+            # every challenge in the transaction - all triggered tokens.
+            raws = r.hgetall(_TXN_KEY.format(transaction_id))
+            if not raws:
                 return CacheState.MISS
-            dto = _deserialize(raw)
-            if dto is None:
-                # Payload corrupt - we can't trust the cache for this entry.
+            candidates = [_deserialize(raw) for raw in raws.values()]
+            candidates = [c for c in candidates if c is not None]
+            if not candidates:
+                # Hash held only corrupt payloads - can't trust the cache here.
                 return CacheState.UNAVAILABLE
-            candidates = [dto]
 
         elif serial:
             txn_ids = r.smembers(_SERIAL_KEY.format(serial))
             if not txn_ids:
                 return CacheState.MISS
-            raws = r.mget([_TXN_KEY.format(tid) for tid in txn_ids])
+            # This serial's challenge in each of its transactions is the
+            # field named after the serial. One HGET per transaction.
+            pipe = r.pipeline()
+            for tid in txn_ids:
+                pipe.hget(_TXN_KEY.format(tid), serial)
+            raws = pipe.execute()
             candidates = [_deserialize(raw) for raw in raws if raw is not None]
             candidates = [c for c in candidates if c is not None]
             if not candidates:
-                # Set membership pointed at txn keys that have all expired
+                # Set membership pointed at hash fields that have all expired
                 # individually. The cache no longer has authoritative state
                 # for this serial - fall back to DB rather than guess.
                 return CacheState.UNAVAILABLE
@@ -653,13 +708,19 @@ def _update_challenge_in_cache(dto: ChallengeDTO):
             # TTL.
             return
         remaining = int((dto.expiration - utc_now()).total_seconds()) + _TTL_BUFFER_SECONDS
+        txn_key = _TXN_KEY.format(dto.transaction_id)
         pipe = r.pipeline()
-        pipe.setex(_TXN_KEY.format(dto.transaction_id), remaining, dto.to_payload())
-        # Also refresh the serial-set TTL so it can't expire before the
-        # individual txn key it indexes. Same NX+GT pattern as
-        # cache_challenge - GT only extends, never shrinks, so a shorter
-        # save() can't kill siblings.
+        # Rewrite just this token's field; sibling challenges in the same
+        # transaction are untouched. HSET preserves the hash's existing TTL,
+        # but refresh it with GT as a floor in case the hash lost it.
+        pipe.hset(txn_key, dto.serial, dto.to_payload())
+        pipe.expire(txn_key, remaining, gt=True)
+        # Re-assert the serial index. A bare HSET would otherwise leave a
+        # mutated challenge unreachable by serial if its index entry had been
+        # dropped (e.g. evicted while this DTO was held). GT only extends the
+        # set TTL, never shrinks it, so a shorter save() can't kill siblings.
         if dto.serial:
+            pipe.sadd(_SERIAL_KEY.format(dto.serial), dto.transaction_id)
             pipe.expire(_SERIAL_KEY.format(dto.serial), remaining, gt=True)
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:

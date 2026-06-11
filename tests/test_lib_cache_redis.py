@@ -332,6 +332,55 @@ class TestRedisCacheOperations(_RealRedisBase):
         self.assertEqual({c.transaction_id for c in result},
                          {'txn-rcache-004a', 'txn-rcache-004b'})
 
+    def test_multiple_challenges_same_transaction(self):
+        """Regression: several tokens triggered in one authentication share a
+        single transaction_id (one challenge per token). Each must keep its own
+        payload - the second token's challenge must not overwrite the first.
+        The txn hash holds one field per serial; both query shapes must see
+        both challenges."""
+        self._write_dto(_make_dto(serial='RTXN_A', txn='txn-shared', challenge='chal-a'))
+        self._write_dto(_make_dto(serial='RTXN_B', txn='txn-shared', challenge='chal-b'))
+        with redis_in_store(self._real_client):
+            # By transaction_id: both tokens' challenges.
+            by_txn = get_challenges_from_cache(transaction_id='txn-shared')
+            # By (serial, transaction_id): only that token's challenge.
+            a_only = get_challenges_from_cache(serial='RTXN_A', transaction_id='txn-shared')
+            b_only = get_challenges_from_cache(serial='RTXN_B', transaction_id='txn-shared')
+            # By serial alone: that token's challenge across its transactions.
+            by_serial_a = get_challenges_from_cache(serial='RTXN_A')
+        self.assertEqual({c.serial for c in by_txn}, {'RTXN_A', 'RTXN_B'})
+        self.assertEqual({c.challenge for c in by_txn}, {'chal-a', 'chal-b'})
+        self.assertEqual([c.serial for c in a_only], ['RTXN_A'])
+        self.assertEqual([c.challenge for c in a_only], ['chal-a'])
+        self.assertEqual([c.serial for c in b_only], ['RTXN_B'])
+        self.assertEqual([c.challenge for c in by_serial_a], ['chal-a'])
+
+    def test_evict_one_challenge_keeps_transaction_siblings(self):
+        """Evicting one token's challenge from a shared transaction must leave
+        the sibling tokens' challenges intact (deleting one token does not
+        cancel another's in-flight challenge)."""
+        from privacyidea.lib.cache import CacheState
+        self._write_dto(_make_dto(serial='RTXN_C', txn='txn-sib', challenge='c-c'))
+        self._write_dto(_make_dto(serial='RTXN_D', txn='txn-sib', challenge='c-d'))
+        with redis_in_store(self._real_client):
+            evict_challenge('txn-sib', 'RTXN_C')
+            remaining = get_challenges_from_cache(transaction_id='txn-sib')
+            gone = get_challenges_from_cache(serial='RTXN_C')
+        self.assertEqual([c.serial for c in remaining], ['RTXN_D'])
+        self.assertIs(gone, CacheState.MISS)
+
+    def test_evict_for_serial_keeps_transaction_siblings(self):
+        """Deleting a token (evict_challenges_for_serial) must remove only that
+        token's field from each shared transaction, not the whole hash."""
+        from privacyidea.lib.cache import evict_challenges_for_serial
+        self._write_dto(_make_dto(serial='RTXN_E', txn='txn-del', challenge='c-e'))
+        self._write_dto(_make_dto(serial='RTXN_F', txn='txn-del', challenge='c-f'))
+        with redis_in_store(self._real_client):
+            evict_challenges_for_serial('RTXN_E')
+            remaining = get_challenges_from_cache(transaction_id='txn-del')
+        self.assertEqual([c.serial for c in remaining], ['RTXN_F'])
+        self.assertEqual(self._real_client.smembers('pi:challenge:serial:RTXN_E'), set())
+
     def test_serial_set_ttl_not_shrunk_by_shorter_challenge(self):
         """Writing a shorter-lived challenge after a longer-lived one for the
         same serial must not shrink the shared serial-set TTL. EXPIRE NX + GT
@@ -405,8 +454,8 @@ class TestRedisCacheOperations(_RealRedisBase):
     def test_get_from_cache_disables_redis_on_error(self):
         from privacyidea.lib.cache import CacheState
         with redis_in_store(self._real_client):
-            with patch.object(self._real_client, 'get',
-                              side_effect=redis_lib.exceptions.ConnectionError("simulated get failure")):
+            with patch.object(self._real_client, 'hgetall',
+                              side_effect=redis_lib.exceptions.ConnectionError("simulated hgetall failure")):
                 self.assertIs(get_challenges_from_cache(transaction_id='whatever'),
                               CacheState.UNAVAILABLE)
             self.assertIsNone(get_redis())
@@ -425,9 +474,10 @@ class TestRedisCacheOperations(_RealRedisBase):
                             data='', session='',
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
 
-        # Per-transaction keys must exist, but the shared serial set must not.
-        self.assertIsNotNone(self._real_client.get('pi:challenge:txn:txn-empty-1'))
-        self.assertIsNotNone(self._real_client.get('pi:challenge:txn:txn-empty-2'))
+        # Per-transaction hashes must exist (the challenge lives under field
+        # "" for the empty serial), but the shared serial set must not.
+        self.assertTrue(self._real_client.exists('pi:challenge:txn:txn-empty-1'))
+        self.assertTrue(self._real_client.exists('pi:challenge:txn:txn-empty-2'))
         self.assertEqual(self._real_client.smembers('pi:challenge:serial:'), set())
 
         # And txn-keyed retrieval must still work for both.
@@ -437,14 +487,15 @@ class TestRedisCacheOperations(_RealRedisBase):
 
     def test_evict_with_empty_serial(self):
         """evict_challenge() must tolerate serial="" too - there is no set to
-        SREM from, but the txn key must still go."""
+        SREM from, but the txn hash field (and thus the now-empty hash) must
+        still go."""
         with redis_in_store(self._real_client):
             cache_challenge(serial='', transaction_id='txn-evict-empty', challenge='c',
                             data='', session='',
                             timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
-            self.assertIsNotNone(self._real_client.get('pi:challenge:txn:txn-evict-empty'))
+            self.assertTrue(self._real_client.exists('pi:challenge:txn:txn-evict-empty'))
             evict_challenge('txn-evict-empty', '')
-        self.assertIsNone(self._real_client.get('pi:challenge:txn:txn-evict-empty'))
+        self.assertFalse(self._real_client.exists('pi:challenge:txn:txn-evict-empty'))
 
     def test_get_from_cache_filters_by_challenge_value(self):
         """Two challenges on the same serial; query must apply the
@@ -460,7 +511,7 @@ class TestRedisCacheOperations(_RealRedisBase):
         """_update_challenge_in_cache's flag-disabled early return."""
         dto = _make_dto(serial='RCACHE_SOFF', txn='txn-soff')
         self._write_dto(dto)
-        original = self._real_client.get('pi:challenge:txn:txn-soff')
+        original = self._real_client.hget('pi:challenge:txn:txn-soff', 'RCACHE_SOFF')
         with redis_in_store(self._real_client, enable_challenges=False):
             cached_dto = ChallengeDTO(
                 transaction_id='txn-soff', serial='RCACHE_SOFF',
@@ -468,8 +519,8 @@ class TestRedisCacheOperations(_RealRedisBase):
                 timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120),
             )
             cached_dto.set_otp_status(True)
-            cached_dto.save()  # must short-circuit; key untouched
-        self.assertEqual(self._real_client.get('pi:challenge:txn:txn-soff'), original)
+            cached_dto.save()  # must short-circuit; field untouched
+        self.assertEqual(self._real_client.hget('pi:challenge:txn:txn-soff', 'RCACHE_SOFF'), original)
 
     def test_save_disables_redis_on_error(self):
         dto = _make_dto(serial='RCACHE_SAVE_ERR', txn='txn-save-err')
@@ -510,8 +561,8 @@ class TestRedisCacheOperations(_RealRedisBase):
     def test_get_from_cache_returns_unavailable_on_corrupt_payload(self):
         """Corrupt payload -> can't trust the cache for this entry -> UNAVAILABLE."""
         from privacyidea.lib.cache import CacheState
-        self._real_client.set('pi:challenge:txn:txn-corrupt',
-                              '{"not": "a valid challenge"')  # truncated JSON
+        self._real_client.hset('pi:challenge:txn:txn-corrupt', 'RCORRUPT',
+                               '{"not": "a valid challenge"')  # truncated JSON
         with redis_in_store(self._real_client):
             self.assertIs(get_challenges_from_cache(transaction_id='txn-corrupt'),
                           CacheState.UNAVAILABLE)
@@ -524,10 +575,10 @@ class TestRedisCacheOperations(_RealRedisBase):
             # Force the DTO into the past so _update_challenge_in_cache hits
             # the "already expired" early return without re-writing the key.
             cached.expiration = utc_now() - timedelta(seconds=120)
-            existing_payload = self._real_client.get('pi:challenge:txn:txn-rcache-exp')
+            existing_payload = self._real_client.hget('pi:challenge:txn:txn-rcache-exp', 'RCACHE_EXP')
             cached.set_otp_status(True)
             cached.save()
-        self.assertEqual(self._real_client.get('pi:challenge:txn:txn-rcache-exp'),
+        self.assertEqual(self._real_client.hget('pi:challenge:txn:txn-rcache-exp', 'RCACHE_EXP'),
                          existing_payload)
 
     def test_redis_disabled_on_operation_error(self):
@@ -898,11 +949,11 @@ class TestCooldownLifecycle(_RealRedisBase):
         from privacyidea.lib.cache.redis import _disable_redis
         # Pre-populate Redis with an entry - it should remain after the
         # in-cooldown evict (which is a no-op).
-        self._real_client.set('pi:challenge:txn:txn-cooldown', '{"placeholder":1}')
+        self._real_client.hset('pi:challenge:txn:txn-cooldown', 'RCOOL', '{"placeholder":1}')
         with redis_in_store(self._real_client):
             _disable_redis(RuntimeError("simulated"))
             evict_challenge('txn-cooldown', 'RCOOL')
-        self.assertEqual(self._real_client.get('pi:challenge:txn:txn-cooldown'),
+        self.assertEqual(self._real_client.hget('pi:challenge:txn:txn-cooldown', 'RCOOL'),
                          '{"placeholder":1}')
 
     def test_evict_after_cooldown_reaches_redis(self):
@@ -910,7 +961,7 @@ class TestCooldownLifecycle(_RealRedisBase):
         import time as _time
         from privacyidea.lib.cache.redis import _disable_redis
         from privacyidea.lib.framework import get_app_local_store
-        self._real_client.set('pi:challenge:txn:txn-recovered', '{"placeholder":1}')
+        self._real_client.hset('pi:challenge:txn:txn-recovered', 'RREC', '{"placeholder":1}')
         self._real_client.sadd('pi:challenge:serial:RREC', 'txn-recovered')
         with redis_in_store(self._real_client):
             _disable_redis(RuntimeError("simulated"))
@@ -918,7 +969,7 @@ class TestCooldownLifecycle(_RealRedisBase):
             get_app_local_store()['_redis_retry_after'] = _time.monotonic() - 1
             evict_challenge('txn-recovered', 'RREC')
         # Eviction reached Redis post-cooldown.
-        self.assertIsNone(self._real_client.get('pi:challenge:txn:txn-recovered'))
+        self.assertFalse(self._real_client.exists('pi:challenge:txn:txn-recovered'))
         self.assertNotIn('txn-recovered',
                          self._real_client.smembers('pi:challenge:serial:RREC'))
 

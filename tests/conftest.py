@@ -50,9 +50,64 @@ def _redis_reachable(host="127.0.0.1", port=6379, timeout=0.2):
 if "TEST_REDIS_URL" not in os.environ and _redis_reachable():
     os.environ["TEST_REDIS_URL"] = "redis://127.0.0.1:6379/0"
 
+
+def _redis_url_for_worker(url, worker):
+    """Point each xdist worker at its own Redis logical DB so the parallel
+    suite doesn't collide on the shared ``pi:challenge:*`` keyspace - the
+    Redis analogue of the per-worker DB-name suffix above. Worker names are
+    ``gw0``, ``gw1``, ...; Redis ships 16 logical DBs (0-15), so wrap with
+    modulo. CI runs far fewer workers than that, so no two share a DB."""
+    import re
+    match = re.match(r"gw(\d+)$", worker)
+    if not match:
+        return url
+    db_index = int(match.group(1)) % 16
+    url, _, query = url.partition("?")
+    head = re.sub(r"/\d+$", "", url.rstrip("/"))
+    rewritten = f"{head}/{db_index}"
+    return f"{rewritten}?{query}" if query else rewritten
+
+
+# Each worker gets its own Redis logical DB, mirroring the per-worker DB above.
+# Done before any privacyidea import so TestingConfig.PI_REDIS_URL (read at
+# import time) and the cache tests' TEST_REDIS_URL both pick up the worker DB.
+if _worker:
+    for _redis_var in ("PI_REDIS_URL", "TEST_REDIS_URL"):
+        _redis_url = os.environ.get(_redis_var)
+        if _redis_url:
+            os.environ[_redis_var] = _redis_url_for_worker(_redis_url, _worker)
+
 import pytest
 
 from privacyidea.lib.caconnector import save_caconnector
+
+_redis_flush_client = None
+
+
+@pytest.fixture(autouse=True)
+def _flush_redis_between_tests():
+    """When the suite runs against a real Redis challenge backend (the
+    dedicated CI job sets PI_REDIS_URL + PI_REDIS_CACHE_CHALLENGES), wipe
+    this worker's logical DB after each test. Tests reuse fixed serials and
+    transaction ids, so without this their challenge state would leak across
+    tests via Redis (which the DB teardown doesn't touch). Each worker owns
+    its own DB index, so FLUSHDB is isolated. No-op for the default DB-only
+    runs, where PI_REDIS_URL is unset."""
+    yield
+    url = os.environ.get("PI_REDIS_URL")
+    if not url:
+        return
+    global _redis_flush_client
+    try:
+        if _redis_flush_client is None:
+            import redis as _redis
+            _redis_flush_client = _redis.Redis.from_url(
+                url, socket_connect_timeout=1, socket_timeout=1)
+        _redis_flush_client.flushdb()
+    except Exception:
+        # Best effort: a flush failure must not mask the test's own result.
+        pass
+
 
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
