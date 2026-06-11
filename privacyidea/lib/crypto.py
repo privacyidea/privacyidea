@@ -92,6 +92,7 @@ DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
 DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
+CENSORED = "__CENSORED__"  # nosec B105 # Sentinel value for censored secrets in API responses
 
 log = logging.getLogger(__name__)
 

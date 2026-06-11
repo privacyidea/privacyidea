@@ -36,9 +36,8 @@ import re
 
 from sqlalchemy import select, update
 
-from privacyidea.lib import lazy_gettext
+from privacyidea.lib.crypto import encryptPassword, CENSORED
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMSGateway, SMSGatewayOption, db

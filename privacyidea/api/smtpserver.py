@@ -43,7 +43,7 @@ from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
-from ..lib.resolver import CENSORED
+from ..lib.crypto import CENSORED
 from ..lib.utils import is_true
 
 log = logging.getLogger(__name__)
