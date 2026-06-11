@@ -10,8 +10,9 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import text
+from sqlalchemy import text, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.schema import CreateSequence
 
 # revision identifiers, used by Alembic.
 revision = '7d4e9b2c1a3f'
@@ -61,8 +62,14 @@ def upgrade():
     # The model declares Sequence('internaluserattribute_seq'), so SQLAlchemy
     # emits SELECT nextval(...) on every ORM insert. Create the sequence on
     # any backend that supports CREATE SEQUENCE (Postgres + MariaDB 10.3+).
+    # Build it through SQLAlchemy's CreateSequence construct rather than a raw
+    # "CREATE SEQUENCE" string: CreateSequence is rewritten by the
+    # increment_by_zero @compiles hook in privacyidea.models.db, which appends
+    # INCREMENT BY 0 on MariaDB so a Galera cluster accepts the cached sequence.
+    # A raw string bypasses the hook and fails with "CACHE without INCREMENT BY
+    # 0 in Galera cluster".
     if bind.dialect.supports_sequences:
-        op.execute("CREATE SEQUENCE IF NOT EXISTS internaluserattribute_seq")
+        op.execute(CreateSequence(Sequence("internaluserattribute_seq"), if_not_exists=True))
 
     try:
         if is_postgres:

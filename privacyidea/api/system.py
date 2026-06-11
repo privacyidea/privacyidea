@@ -68,7 +68,7 @@ from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.resolver import get_resolver_list, CENSORED
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
 from .auth import admin_required
@@ -81,6 +81,7 @@ from ..lib.config import (get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config,
+                          get_config_object,
                           get_privacyidea_nodes)
 from ..lib.error import ParameterError
 from ..lib.log import log_with
@@ -110,7 +111,12 @@ def get_config_documentation():
     P = PolicyClass()
 
     config = get_from_config()
-    resolvers = get_resolver_list()
+    # Do not expose decrypted password-typed values in the exported report
+    config_object = get_config_object()
+    for config_key, config_entry in config_object.config.items():
+        if config_entry.get("Type") == "password" and config_key in config:
+            config[config_key] = CENSORED
+    resolvers = get_resolver_list(censor=True)
     realms = get_realms()
     policies = P.list_policies()
     admins = get_all_db_admins()
@@ -301,7 +307,9 @@ def set_config():
             desc = get_optional(param, key + ".desc")
             res = set_privacyidea_config(key, value, typ, desc)
             result[key] = res
-            g.audit_object.add_to_log({"info": f"{key!s}={value!s}, "})
+            # Do not write password-typed values to the audit log in cleartext
+            audit_value = CENSORED if typ == "password" else value
+            g.audit_object.add_to_log({"info": f"{key!s}={audit_value!s}, "})
     g.audit_object.log({"success": True})
     return send_result(result)
 
