@@ -335,11 +335,13 @@ def get_auth_token():
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # Pre-auth conditional-access decision (DENY action), after the lock/block
     # pre-checks so ALLOW cannot override them. A DENY rejects this single login
-    # generically (no IP/decision reason leaked); ALLOW / CONTINUE fall through.
+    # with a message stating it was a conditional-access decision (the policy is
+    # not named); like the lock/block messages it is maskable via the
+    # hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
     if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
         log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
         g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
-        raise AuthError(_("Authentication failure. Wrong credentials"),
+        raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")

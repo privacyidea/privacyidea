@@ -405,7 +405,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_deny_policy_rejects_at_auth(self):
         # After enough prior PASSWORD_FAILs the next login is denied pre-auth, even with
-        # the correct password - generically, with no new log row and no persisted lock.
+        # the correct password. The message states it was a conditional-access decision
+        # (without naming the policy); no new log row and no persisted lock.
         self._make_deny_policy(threshold=3)
         for _ in range(3):
             res = self._auth("cornelius", "wrongpass")
@@ -415,7 +416,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
         message = res.json["result"]["error"]["message"]
-        self.assertIn("Wrong credentials", message, message)
+        self.assertIn("denied", message.lower(), message)
+        self.assertIn("conditional-access policy", message.lower(), message)
+        self.assertNotIn("Wrong credentials", message, message)
         self.assertNotIn("locked", message.lower(), message)
         self.assertEqual(logs_before, len(get_authentication_logs()))
         self.assertFalse(is_user_locked(self.user))
