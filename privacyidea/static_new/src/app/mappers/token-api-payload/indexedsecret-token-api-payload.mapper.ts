@@ -53,9 +53,13 @@ export class IndexedSecretApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): IndexedSecretEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as IndexedSecretEnrollmentData;
+  override fromApiPayload(payload: IndexedSecretEnrollmentPayload): IndexedSecretEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "indexedsecret",
+      otpKey: payload.otpkey ?? undefined
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): IndexedSecretEnrollmentData {

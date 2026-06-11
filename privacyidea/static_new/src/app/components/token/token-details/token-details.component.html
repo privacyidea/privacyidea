@@ -17,87 +17,310 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Details"
   class="details-container"
   i18n-aria-label>
-  <div class="details-flex-layout flex-column">
-    <app-details-header
-      [serial]="tokenSerial()"
-      entityLabel="Token"
-      [showAuditButton]="authService.actionAllowed('auditlog')"
-      [auditRoute]="ROUTE_PATHS.AUDIT"
-      auditTooltip="Show token in audit log"
-      (auditClick)="showTokenAuditLog()">
-      <ng-container headerExtra>
-        @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-          <h3 i18n>{{ " (Offline)" }}</h3>
+  <app-details-header
+    [serial]="tokenSerial()"
+    entityLabel="Token"
+    [showAuditButton]="false"
+    [auditRoute]="ROUTE_PATHS.AUDIT"
+    auditTooltip="Show token in audit log"
+    (auditClick)="showTokenAuditLog()">
+    <ng-container headerExtra>
+      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+        <h3 i18n>{{ " (Offline)" }}</h3>
+      }
+    </ng-container>
+  </app-details-header>
+
+  <div
+    #stickySentinel
+    class="sticky-sentinel"></div>
+
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="header-status-actions" appOverflowNav>
+      @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
+      (!tokenIsActive() && authService.actionAllowed("enable"))) {
+        <button
+          (click)="toggleActive()"
+          [disabled]="tokenIsRevoked()"
+          [ngClass]="[tokenIsActive()
+                      ? 'action-button-warn-secondary button-width-m'
+                      : 'action-button-primary button-width-m']"
+          i18n
+          mat-stroked-button>
+          <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+          {{ tokenIsActive() ? "Deactivate" : "Activate" }}
+        </button>
+      }
+      @if (authService.actionAllowed("revoke")) {
+        <button
+          (click)="revokeToken()"
+          [disabled]="tokenIsRevoked()"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>undo</mat-icon>
+          Revoke
+        </button>
+      }
+      @if (authService.actionAllowed("delete")) {
+        <button
+          (click)="deleteToken()"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      }
+      @if (authService.actionAllowed("losttoken")) {
+        <button
+          (click)="openLostTokenDialog()"
+          class="action-button-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>remove_red_eye</mat-icon>
+          Lost This Token?
+        </button>
+      }
+      @if (authService.tokenRollover().indexOf(tokenType()) >= 0 &&
+      rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
+        <button
+          (click)="rolloverToken()"
+          class="action-button-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>sync</mat-icon>
+          Rollover
+        </button>
+      }
+      @if (authService.actionAllowed("auditlog")) {
+        <button
+          (click)="showTokenAuditLog()"
+          [routerLink]="[ROUTE_PATHS.AUDIT]"
+          class="action-button-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>receipt_long</mat-icon>
+          Show in Audit
+        </button>
+      }
+      @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
+        @if (tokenType() === "sshkey") {
+          <button
+            (click)="attachSshToMachineDialog()"
+            class="action-button-secondary button-width-m"
+            i18n
+            mat-stroked-button>
+            <mat-icon>computer</mat-icon>
+            Attach to Machine
+          </button>
+        } @else if (tokenType() === "passkey") {
+          @if (isAttachedToMachine()) {
+            <button
+              (click)="removePasskeyFromMachine()"
+              class="action-button-secondary button-width-m"
+              i18n
+              mat-stroked-button>
+              <mat-icon>computer</mat-icon>
+              Disable Offline
+            </button>
+          } @else {
+            <button
+              (click)="attachPasskeyToMachine()"
+              class="action-button-secondary button-width-m"
+              i18n
+              mat-stroked-button>
+              <mat-icon>computer</mat-icon>
+              Use Offline
+            </button>
+          }
+        } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
+          <button
+            (click)="attachHotpToMachineDialog()"
+            class="action-button-secondary button-width-m"
+            i18n
+            mat-stroked-button>
+            <mat-icon>computer</mat-icon>
+            Use Offline
+          </button>
         }
+      }
+    </div>
+  </div>
+
+  <div class="details-grid margin-bottom-16">
+    @if (descriptionRow(); as desc) {
+      <section
+        class="description-row"
+        [class.is-editing]="desc.isEditing()">
+        <div class="value-row">
+          <div class="value-content">
+            @if (desc.isEditing()) {
+              <mat-form-field
+                class="description-field"
+                subscriptSizing="dynamic">
+                <mat-label i18n>Description</mat-label>
+                <textarea
+                  [value]="desc.value"
+                  (input)="desc.value = $any($event.target).value"
+                  maxlength="80"
+                  appAutofocus
+                  matInput
+                  rows="7"></textarea>
+                <mat-hint align="end">{{ desc.value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+                </mat-hint>
+              </mat-form-field>
+            } @else {
+              <div class="flex-column">
+                <h4
+                  class="details-card-title"
+                  i18n>Description</h4>
+                <span class="description-text">{{ desc.value || "—" }}</span>
+              </div>
+            }
+          </div>
+          <div class="value-edit">
+            @if (isEditableElement(desc.keyMap.key)) {
+              <app-edit-buttons
+                [cancelEdit]="cancelTokenEdit.bind(this)"
+                [element]="desc"
+                [isEditingInfo]="isEditingInfo"
+                [isEditingUser]="isEditingUser"
+                [saveEdit]="saveTokenEdit.bind(this)"
+                [shouldHideEdit]="isAnyEditingOrRevoked"
+                [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    @for (group of tokenDetailDataByGroup(); track group.id) {
+      @if (group.rows.length > 0) {
+        <section
+          class="details-card details-card--group"
+          [class.details-card--identity]="group.id === 'identity'"
+          [class.details-card--counters]="group.id === 'counters'"
+          [class.details-card--assignment]="group.id === 'assignment'">
+          <h4
+            class="details-card-title"
+            i18n>{{ group.label }}
+          </h4>
+          <ng-container
+            *ngTemplateOutlet="groupRowsTemplate; context: { $implicit: group.rows, label: group.label }"></ng-container>
+        </section>
+      }
+    }
+
+    <app-token-details-user
+      class="details-card-user"
+      [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+      [isEditingInfo]="isEditingInfo"
+      [isEditingUser]="isEditingUser"
+      [tokenSerial]="tokenSerial"
+      [userData]="userData"></app-token-details-user>
+
+    @if (tokenType() === "sshkey" || tokenType() === "hotp") {
+      <app-token-details-machine class="details-card-machine" />
+    }
+
+    <app-token-details-actions
+      class="details-card-actions"
+      [repeatPinValue]="repeatPinValue"
+      [setPinValue]="setPinValue"
+      [tokenType]="tokenType"
+      [token]="tokenDetails()"
+      [passkeyTestResult]="passkeyTestResult"
+      (testPasskey)="testPasskey()"></app-token-details-actions>
+
+    <app-token-details-info
+      class="details-info-area"
+      [detailData]="tokenDetailData"
+      [infoData]="infoData"
+      [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
+      [isEditingInfo]="isEditingInfo"
+      [isEditingUser]="isEditingUser"></app-token-details-info>
+  </div>
+
+  <ng-template
+    #groupRowsTemplate
+    let-rows
+    let-label="label">
+    <table
+      [dataSource]="rows"
+      attr.aria-label="{{ label }} details"
+      class="details-table"
+      mat-table>
+      <ng-container matColumnDef="key">
+        <td
+          *matCellDef="let element"
+          class="details-key-row"
+          mat-cell>
+          {{ element.keyMap.label }}
+        </td>
       </ng-container>
-    </app-details-header>
-    <div
-      class="details-flex-layout responsive-flex-row-1310">
-      <div>
-        <table
-          [dataSource]="tokenDetailData()"
-          aria-label="Token Details Data Table"
-          class="details-table"
-          i18n-aria-label
-          mat-table>
-          <ng-container matColumnDef="key">
-            <td
-              *matCellDef="let element"
-              class="details-key-row"
-              mat-cell>
-              {{ element.keyMap.label }}
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="value">
-            <td
-              *matCellDef="let element"
-              [ngClass]="
-                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
-              "
-              mat-cell>
+      <ng-container matColumnDef="value">
+        <td
+          *matCellDef="let element"
+          [ngClass]="
+            tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
+          "
+          mat-cell>
+          <div class="value-row">
+            <div class="value-content">
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <mat-label i18n>Enter Container</mat-label>
-                      <app-clearable-input
-                        (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
-                        [showClearButton]="containerService.selectedContainerSerial() !== ''">
-                        <input
-                          [value]="containerService.selectedContainerSerial()"
-                          (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
-                          [matAutocomplete]="containerAuto"
-                          matInput />
-                      </app-clearable-input>
-                      <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of containerService.containersForTokenType(); track option) {
-                          <mat-option [value]="option">{{ option }}</mat-option>
+                  <div class="container-serial-row">
+                    @if (element.isEditing()) {
+                      <mat-form-field
+                        class="input-width-m height-52"
+                        subscriptSizing="dynamic">
+                        <mat-label i18n>Enter Container</mat-label>
+                        <app-clearable-input
+                          (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
+                          [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                          <input
+                            [value]="containerService.selectedContainerSerial()"
+                            (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
+                            [matAutocomplete]="containerAuto"
+                            appAutofocus
+                            matInput />
+                        </app-clearable-input>
+                        <mat-autocomplete
+                          #containerAuto="matAutocomplete"
+                          (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
+                          @for (option of containerService.containersForTokenType(); track option) {
+                            <mat-option [value]="option">{{ option }}</mat-option>
+                          }
+                        </mat-autocomplete>
+                      </mat-form-field>
+                      <mat-checkbox
+                        [checked]="containerService.filterContainersByTokenOwner()"
+                        (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
+                        [disabled]="!tokenDetails().username"
+                        i18n>
+                        Filter by token owner
+                      </mat-checkbox>
+                    } @else {
+                      <div class="flex-row flex-nowrap ali-center">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.value)"
+                          attr.aria-label="{{ element.keyMap.label }} Link">
+                          {{ element.value }}
+                        </a>
+                        @if (element.value !== "") {
+                          <app-copy-button [copyText]="element.value"></app-copy-button>
                         }
-                      </mat-autocomplete>
-                    </mat-form-field>
-                    <mat-checkbox
-                      [(ngModel)]="containerService.filterContainersByTokenOwner"
-                      [disabled]="!tokenDetails().username"
-                      i18n>
-                      Filter by token owner
-                    </mat-checkbox>
-                  } @else {
-                    <app-copyable [copyText]="element.value">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.value)"
-                        (keyup.enter)="contentService.navigateContainerDetails(element.value)"
-                        tabindex="0"
-                        attr.aria-label="{{ element.keyMap.label }} Link">
-                        {{ element.value }}
-                      </a>
-                    </app-copyable>
-                  }
+                      </div>
+                    }
+                  </div>
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {
@@ -108,6 +331,7 @@
                       <mat-select
                         [value]="realmService.selectedRealms()"
                         (selectionChange)="realmService.selectedRealms.set($event.value)"
+                        appAutofocus
                         multiple>
                         @for (option of realmService.realmOptions(); track option) {
                           @if (option === userRealm) {
@@ -128,9 +352,7 @@
                       class="details-scrollable-container">
                       @for (realm of element.value; track realm) {
                         <mat-list-item class="height-auto pad-0">
-                          <app-copyable [copyText]="realm">
-                            <span class="font-14">• {{ realm }}</span>
-                          </app-copyable>
+                          <span class="font-14">• {{ realm }}</span>
                         </mat-list-item>
                       }
                     </div>
@@ -145,6 +367,7 @@
                       <mat-select
                         [value]="selectedTokengroup()"
                         (selectionChange)="selectedTokengroup.set($event.value)"
+                        appAutofocus
                         multiple>
                         @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {
@@ -162,9 +385,9 @@
                   } @else {
                     <div
                       [ngClass]="{
-                        'details-scrollable-container': true,
-                        'height-77': element.value.length > 2
-                      }">
+                    'details-scrollable-container': true,
+                    'height-77': element.value.length > 2
+                  }">
                       @for (tokengroup of element.value; track tokengroup) {
                         <mat-list-item class="height-auto pad-0">
                           <span class="font-14">• {{ tokengroup }}</span>
@@ -173,28 +396,72 @@
                     </div>
                   }
                 }
+                @case ("active") {
+                  @if (!isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")) {
+                    <button
+                      type="button"
+                      class="status-toggle"
+                      (click)="toggleActive()"
+                      i18n-aria-label="Toggle Status">
+                  <span
+                    [ngClass]="[
+                      tableUtilsService.getSpanClassForKey({
+                        key: element.keyMap.key,
+                        value: element.value,
+                        maxfail: maxfail
+                      })
+                    ]">
+                    {{
+                      tableUtilsService.getDisplayTextForKeyAndRevoked(
+                        element.keyMap.key,
+                        element.value,
+                        tokenIsRevoked()
+                      )
+                    }}
+                  </span>
+                    </button>
+                  } @else {
+                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
+                  <span
+                    [ngClass]="[
+                      tableUtilsService.getSpanClassForKey({
+                        key: element.keyMap.key,
+                        value: element.value,
+                        maxfail: maxfail
+                      })
+                    ]">
+                    {{
+                      tableUtilsService.getDisplayTextForKeyAndRevoked(
+                        element.keyMap.key,
+                        element.value,
+                        tokenIsRevoked()
+                      )
+                    }}
+                  </span>
+                    </div>
+                  }
+                }
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field
                       class="input-width-m description height-136"
                       subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        maxlength="80"
-                        i18n-placeholder
-                        matInput
-                        placeholder="Enter description"
-                        rows="4"></textarea>
-                      <mat-hint align="end"
-                        >{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+                  <textarea
+                    [value]="element.value"
+                    (input)="element.value = $any($event.target).value"
+                    maxlength="80"
+                    i18n-placeholder
+                    matInput
+                    placeholder="Enter description"
+                    rows="4"></textarea>
+                      <mat-hint align="end">{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
                       </mat-hint>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div height-136">
-                      <span class="details-table-item">
-                        {{ element.value }}
-                      </span>
+                  <span class="details-table-item">
+                    {{ element.value }}
+                  </span>
                     </div>
                   }
                 }
@@ -206,6 +473,7 @@
                       <input
                         [value]="element.value"
                         (input)="element.value = $any($event.target).value"
+                        appAutofocus
                         matInput
                         type="number" />
                     </mat-form-field>
@@ -213,112 +481,73 @@
                     <mat-form-field
                       class="input-width-m"
                       subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        matInput
-                        rows="1"></textarea>
+                  <textarea
+                    [value]="element.value"
+                    (input)="element.value = $any($event.target).value"
+                    appAutofocus
+                    matInput
+                    rows="1"></textarea>
                     </mat-form-field>
                   } @else {
                     <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                      <span
-                        [ngClass]="[
-                          tableUtilsService.getSpanClassForKey({
-                            key: element.keyMap.key,
-                            value: element.value,
-                            maxfail: maxfail
-                          })
-                        ]">
-                        {{
-                          tableUtilsService.getDisplayTextForKeyAndRevoked(
-                            element.keyMap.key,
-                            element.value,
-                            tokenIsRevoked()
-                          )
-                        }}
-                      </span>
+                  <span
+                    [ngClass]="[
+                      tableUtilsService.getSpanClassForKey({
+                        key: element.keyMap.key,
+                        value: element.value,
+                        maxfail: maxfail
+                      })
+                    ]">
+                    {{
+                      tableUtilsService.getDisplayTextForKeyAndRevoked(
+                        element.keyMap.key,
+                        element.value,
+                        tokenIsRevoked()
+                      )
+                    }}
+                  </span>
                     </div>
                   }
                 }
               }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="edit">
-            <td
-              *matCellDef="let element"
-              class="edit-column-cell"
-              mat-cell>
-              <div class="ali-center">
-                @if (
-                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
-                ) {
-                  <div class="edit-button-container">
-                    <button
-                      (click)="resetFailCount()"
-                      i18n-aria-label="Reset Fail Count"
-                      mat-icon-button>
-                      <mat-icon> lock_reset</mat-icon>
-                    </button>
-                  </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" &&
-                  !isAnyEditingOrRevoked() &&
-                  element.value &&
-                  authService.actionAllowed("container_remove_token")
-                ) {
-                  <div class="edit-button-container">
-                    <button
-                      (click)="removeFromContainer()"
-                      class="red"
-                      i18n-aria-label="Delete Container"
-                      mat-icon-button>
-                      <mat-icon>folder_delete</mat-icon>
-                    </button>
-                  </div>
-                } @else if (isEditableElement(element.keyMap.key)) {
-                  <app-edit-buttons
-                    [cancelEdit]="cancelTokenEdit.bind(this)"
-                    [element]="element"
-                    [isEditingInfo]="isEditingInfo"
-                    [isEditingUser]="isEditingUser"
-                    [saveEdit]="saveTokenEdit.bind(this)"
-                    [shouldHideEdit]="isAnyEditingOrRevoked"
-                    [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
-                }
-              </div>
-            </td>
-          </ng-container>
-          <tr
-            *matRowDef="let row; columns: ['key', 'value', 'edit']"
-            class="height-52"
-            mat-row></tr>
-        </table>
-      </div>
-      <div class="responsive-flex-row-1580">
-        <div class="flex-column">
-          <app-token-details-user
-            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
-            [tokenSerial]="tokenSerial"
-            [userData]="userData"
-            class="flex"></app-token-details-user>
-          <app-token-details-info
-            [detailData]="tokenDetailData"
-            [infoData]="infoData"
-            [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"></app-token-details-info>
-          @if (tokenType() === "sshkey" || tokenType() === "hotp") {
-            <app-token-details-machine />
-          }
-        </div>
-        <app-token-details-actions
-          [repeatPinValue]="repeatPinValue"
-          [setPinValue]="setPinValue"
-          [tokenType]="tokenType"
-          [token]="tokenDetails()"></app-token-details-actions>
-      </div>
-    </div>
-  </div>
+            </div>
+            <div class="value-edit">
+              @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
+                <button
+                  (click)="resetFailCount()"
+                  i18n-aria-label="Reset Fail Count"
+                  mat-icon-button>
+                  <mat-icon>lock_reset</mat-icon>
+                </button>
+              } @else if (element.keyMap.key === "container_serial" &&
+              !isAnyEditingOrRevoked() &&
+              element.value &&
+              authService.actionAllowed("container_remove_token")) {
+                <button
+                  (click)="removeFromContainer()"
+                  class="red"
+                  i18n-aria-label="Delete Container"
+                  mat-icon-button>
+                  <mat-icon>folder_delete</mat-icon>
+                </button>
+              } @else if (isEditableElement(element.keyMap.key)) {
+                <app-edit-buttons
+                  [cancelEdit]="cancelTokenEdit.bind(this)"
+                  [element]="element"
+                  [isEditingInfo]="isEditingInfo"
+                  [isEditingUser]="isEditingUser"
+                  [saveEdit]="saveTokenEdit.bind(this)"
+                  [shouldHideEdit]="isAnyEditingOrRevoked"
+                  [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
+              }
+            </div>
+          </div>
+        </td>
+      </ng-container>
+      <tr
+        *matRowDef="let row; columns: ['key', 'value']"
+        class="height-52"
+        mat-row></tr>
+    </table>
+  </ng-template>
 </div>

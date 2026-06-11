@@ -21,7 +21,6 @@
   appScrollToTop
   class="radius-server-page-layout">
   <div class="radius-server-page-container">
-
     @if (isEditMode()) {
       <h3
         class="margin-8"
@@ -37,12 +36,8 @@
     }
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
         <button
           (click)="onCancel()"
@@ -76,13 +71,12 @@
         </app-clearable-input>
         <mat-hint i18n>The unique identifying name of the RADIUS server definition.</mat-hint>
         @if (radiusForm.identifier().errors().some(e => e.kind === 'required')) {
-          <mat-error
-            i18n>Identifier is <strong>required</strong>
-          </mat-error>
+          <mat-error i18n>Identifier is <strong>required</strong> </mat-error>
         }
         @if (radiusForm.identifier().errors().some(e => e.kind === 'pattern')) {
-          <mat-error
-            i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+          <mat-error i18n
+            >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+            and hyphens are allowed.
           </mat-error>
         }
       </mat-form-field>
@@ -101,9 +95,7 @@
               placeholder="1.2.3.4" />
           </app-clearable-input>
           @if (radiusForm.server().errors().some(e => e.kind === 'required')) {
-            <mat-error
-              i18n>Server is <strong>required</strong>
-            </mat-error>
+            <mat-error i18n>Server is <strong>required</strong> </mat-error>
           }
         </mat-form-field>
 
@@ -133,9 +125,7 @@
               type="password" />
           </app-clearable-input>
           @if (radiusForm.secret().errors().some(e => e.kind === 'required')) {
-            <mat-error
-              i18n>Secret is <strong>required</strong>
-            </mat-error>
+            <mat-error i18n>Secret is <strong>required</strong> </mat-error>
           }
         </mat-form-field>
 
@@ -196,7 +186,8 @@
         <mat-checkbox
           [checked]="radiusModel().message_authenticator"
           (change)="radiusModel.update(m => ({...m, message_authenticator: $event.checked}))"
-          i18n>Require Message-Authenticator
+          i18n
+          >Require Message-Authenticator
         </mat-checkbox>
       </div>
 

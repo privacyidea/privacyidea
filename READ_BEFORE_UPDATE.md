@@ -22,6 +22,37 @@
   `GET /token/challenges/user` endpoint. Integrations that indexed responses by `id` need to be
   updated to use `transaction_id`.
 
+* The `/validate/samlcheck` endpoint has been removed (deprecated in 3.11). The
+  `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration
+  options are removed along with it; the corresponding WebUI controls are gone
+  and stored values become inert. Switch any clients to `/validate/check` with
+  the authorization policies `add_user_in_response` and/or
+  `add_resolver_in_response`; user attributes are then returned under
+  `detail.user` (and resolver/realm under `detail.user-resolver` /
+  `detail.user-realm`) instead of inside `result.value.attributes`.
+
+  **No direct replacement for `ReturnSamlAttributesOnFail`**: the
+  `add_user_in_response` policy only fires when authentication succeeds, so
+  applications that relied on receiving user attributes on a failed
+  authentication need to be reworked (e.g. look the user up via the user API
+  on the relying-party side).
+
+* A new admin policy action `get_user_internal_attributes` controls who may read the
+  privacyIDEA-internal user attributes (e.g. `fido2_user_id`, `last_used_token`) via the
+  new `GET /user/internal_attribute` endpoint and the *Internal attributes* panel in the
+  user details view. **If you have any admin policies defined**, your administrators will
+  not be able to read these attributes until you grant them this action — review your
+  superuser/helpdesk policies and add `get_user_internal_attributes` where needed.
+  Installations without any admin policies are unaffected (all actions remain allowed).
+
+* Internal user state (the `fido2_user_id` value and `last_used_token_*` entries) is moved out
+  of the `customuserattribute` table into a new `internaluserattribute` table during the schema
+  update, and the original rows are then deleted from `customuserattribute`. Because the migration
+  both moves and deletes these rows, run the schema update with the privacyIDEA service stopped. In
+  a multi-node setup, do not keep an old version serving while the upgrade runs: a concurrent
+  old-version node could write these values back into `customuserattribute` and have them dropped by
+  the cleanup. (Single-node / offline upgrades are unaffected.)
+
 * The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,
   the schema update will flip them to `tokentype='deprecated'` and disable them, preserving the
   original type in `tokeninfo['original_tokentype']`. The migration logs a loud warning with the

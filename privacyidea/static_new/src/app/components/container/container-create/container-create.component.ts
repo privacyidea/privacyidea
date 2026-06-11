@@ -22,10 +22,8 @@ import {
   Component,
   computed,
   effect,
-  ElementRef,
   inject,
   linkedSignal,
-  Renderer2,
   signal,
   untracked,
   ViewChild,
@@ -41,6 +39,7 @@ import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import {
   ContainerCreatedDialogComponent,
   ContainerCreationDialogData
@@ -83,6 +82,7 @@ import { firstValueFrom } from "rxjs";
     MatIconButton,
     MatTooltip,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     NgClass,
     CommonModule,
     UserAssignmentComponent,
@@ -99,17 +99,12 @@ export class ContainerCreateComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly router = inject(Router);
   private readonly pendingChangesService = inject(PendingChangesService);
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent) userAssignmentComponent!: UserAssignmentComponent;
   @ViewChild(ContainerRegistrationConfigComponent) registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
-  private observer!: IntersectionObserver;
   validInput = true;
 
   description = signal("");
@@ -206,29 +201,7 @@ export class ContainerCreateComponent {
     }
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    const options = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
-    if (this.observer) this.observer.disconnect();
     this.containerService.stopPolling();
     this.pendingChangesService.clearAllRegistrations();
   }

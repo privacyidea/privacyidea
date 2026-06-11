@@ -54,21 +54,12 @@ describe("EnrollHotpComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
-    jest.spyOn(component.additionalFormFieldsChange, "emit");
-    jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
   }
 
   it("should create", () => {
     createAndInit();
     expect(component).toBeTruthy();
-  });
-
-  it("emits the enrollmentArgsGetter on init", () => {
-    createAndInit();
-
-    expect(component.additionalFormFieldsChange.emit).toHaveBeenCalledTimes(1);
-    expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 
   it("Check default values are set correctly on init", () => {
@@ -225,7 +216,7 @@ describe("EnrollHotpComponent", () => {
     component.hashAlgorithm.set("sha256");
 
     const basic = { realm: "r", username: "u" } as any;
-    const args = component.enrollmentArgsGetter(basic);
+    const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({
@@ -248,7 +239,7 @@ describe("EnrollHotpComponent", () => {
     fixture.detectChanges();
 
     const basic = { foo: "bar" } as any;
-    const args = component.enrollmentArgsGetter(basic);
+    const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({

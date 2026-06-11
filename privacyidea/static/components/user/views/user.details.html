@@ -444,4 +444,31 @@
             </table>
         </div>
     </div>
+
+    <div style="margin-top: 20px;" ng-show="canReadInternalAttributes">
+        <uib-accordion close-others="false">
+            <div uib-accordion-group
+                 class="panel-default"
+                 is-open="accordionState.internalAttributesOpen">
+                <uib-accordion-heading>
+                    <translate>Internal attributes</translate>
+                    <span class="pull-right glyphicon" aria-hidden="true"
+                          ng-class="{'glyphicon-chevron-down': accordionState.internalAttributesOpen,
+                                     'glyphicon-chevron-right': !accordionState.internalAttributesOpen}">
+                    </span>
+                </uib-accordion-heading>
+                <table class="table table-hover" ng-show="internalAttributesLoaded">
+                    <tr ng-repeat="(key, value) in internal_attributes">
+                        <td class="col-sm-4"><b>{{ key }}</b></td>
+                        <td class="col-sm-8">{{ formatInternalAttribute(value) }}</td>
+                    </tr>
+                    <tr ng-show="!(internal_attributes | json) || (internal_attributes | json) === '{}'">
+                        <td colspan="2" class="text-muted text-center" translate>
+                            No internal attributes recorded for this user.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </uib-accordion>
+    </div>
 </div>

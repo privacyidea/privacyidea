@@ -162,9 +162,9 @@ class PasskeyTokenClass(TokenClass):
                                          validitytime=challenge_validity)
 
             # User ID
+            internal_attrs = token_user.internal_attributes
             fido2_user_id = base64url_to_bytes(
-                token_user.attributes[
-                    FIDO2TokenInfo.USER_ID]) if FIDO2TokenInfo.USER_ID in token_user.attributes else None
+                internal_attrs[FIDO2TokenInfo.USER_ID]) if FIDO2TokenInfo.USER_ID in internal_attrs else None
 
             # Excluded Credentials
             reg_ids = get_optional(params, "registered_credential_ids") or []
@@ -207,7 +207,7 @@ class PasskeyTokenClass(TokenClass):
             # Save the userid if there was none before
             if not fido2_user_id:
                 fido2_user_id = registration_options.user.id
-                token_user.set_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(fido2_user_id))
+                token_user.set_internal_attribute(FIDO2TokenInfo.USER_ID, bytes_to_base64url(fido2_user_id))
 
             options_json: str = options_to_json(registration_options)
             response_detail["passkey_registration"] = json.loads(options_json)
@@ -486,5 +486,5 @@ class PasskeyTokenClass(TokenClass):
         """
         super().import_token(token_information)
         if self.user:
-            self.user.set_attribute(FIDO2TokenInfo.USER_ID,
-                                    self.token.get_tokeninfo(FIDO2TokenInfo.USER_ID, default=""))
+            self.user.set_internal_attribute(FIDO2TokenInfo.USER_ID,
+                                             self.get_tokeninfo(FIDO2TokenInfo.USER_ID, default=""))

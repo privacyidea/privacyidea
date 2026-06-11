@@ -58,6 +58,13 @@ select.ng-invalid:focus:not(#username):not(#password){
   cursor: pointer;
 }
 
+/* Make the full accordion panel-heading clickable, not just the link text. */
+.panel-heading a.accordion-toggle {
+    display: block;
+    margin: -10px -15px;
+    padding: 10px 15px;
+}
+
 /* Utilize the available screen real-estate on large screens. */
 @media (min-width: 1440px) {
     .container {

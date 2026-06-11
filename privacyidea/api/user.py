@@ -50,7 +50,6 @@ custom-attribute write/delete endpoints are gated by the
 :ref:`policy_delete_custom_user_attributes` policies and may be
 invoked by users on themselves as well as by admins on other users.
 """
-from flask_babel import _
 import logging
 
 from flask import g, Blueprint, request
@@ -59,12 +58,11 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
-from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -178,8 +176,7 @@ def set_user_attribute():
 
     Authorization is gated by the :ref:`policy_set_custom_user_attributes`
     policy. The policy value whitelists allowed key/value combinations
-    (the ``*`` wildcard is allowed for keys or values). Attribute keys
-    starting with an internal privacyIDEA prefix are rejected.
+    (the ``*`` wildcard is allowed for keys or values).
 
     :jsonparam user: user name (required).
     :jsonparam resolver: resolver name.
@@ -188,7 +185,6 @@ def set_user_attribute():
     :jsonparam value: attribute value (required).
     :jsonparam type: optional attribute type identifier.
     :status 200: database id of the attribute row in ``result.value``.
-    :status 400: attribute name uses a reserved internal prefix.
     :status 403: the active policy does not allow this key/value
         combination.
     """
@@ -199,13 +195,6 @@ def set_user_attribute():
     attrkey = get_required(request.all_data, "key")
     attrvalue = get_required(request.all_data, "value")
     attrtype = get_optional(request.all_data, "type")
-
-    # Check if the attribute starts with an internally used prefix
-    internal_prefixes = InternalCustomUserAttributes.get_internal_prefixes()
-    for prefix in internal_prefixes:
-        if attrkey.startswith(prefix):
-            raise ParameterError(_("Invalid attribute name! The name shall not start with {prefix}. "
-                                   "This is an internally used prefix.").format(prefix=prefix))
 
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     g.audit_object.log({"success": True,
@@ -239,6 +228,42 @@ def get_user_attribute():
         r = r.get(attrkey)
     g.audit_object.log({"success": True,
                         "info": f"{attrkey!s}"})
+    return send_result(r)
+
+
+@user_blueprint.route('/internal_attribute', methods=['GET'])
+@admin_required
+@prepolicy(realmadmin, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@prepolicy(check_base_action, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@event("get_user_internal_attribute", request, g)
+def get_user_internal_attribute():
+    """
+    Return privacyIDEA-internal attributes for a user. These are caches
+    privacyIDEA writes about itself (e.g. ``fido2_user_id``,
+    ``last_used_token``) and are NOT user-facing — admin-only, read-only.
+
+    Requires the policy action :ref:`policy_get_user_internal_attributes`.
+    A realm-restricted admin is confined to their realms.
+
+    Intended for support / debugging via the WebUI details panel.
+
+    :query user: user name (required).
+    :query resolver: resolver name.
+    :query realm: realm name.
+    :status 200: dict of internal attributes in ``result.value``.
+    """
+    # Resolve the user from request.all_data *after* the prepolicies ran, not
+    # from request.User: realmadmin may have injected the admin's realm into
+    # request.all_data when no realm was given. request.User was built earlier
+    # (in before_request) from the original params and would resolve in the
+    # default realm, so reading it would return data for a different realm than
+    # the one check_base_action authorized.
+    user = get_user_from_param(request.all_data)
+    if not user or not user.exist():
+        username = get_required(request.all_data, "user")
+        raise UserError(f"The user '{username!s}' does not exist.")
+    r = user.internal_attributes
+    g.audit_object.log({"success": True, "info": f"{user.login!s}"})
     return send_result(r)
 
 
