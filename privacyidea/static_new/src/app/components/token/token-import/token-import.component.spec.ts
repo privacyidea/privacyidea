@@ -23,14 +23,11 @@ import { NotificationService } from "@services/notification/notification.service
 import { RealmService } from "@services/realm/realm.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
-import {
-    MockNotificationService,
-    MockRealmService,
-    MockTokenService,
-    MockUserService
-} from "@testing/mock-services";
+import { MockNotificationService, MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TokenImportResult } from "@services/token/token.service";
 import { of } from "rxjs";
 import { TokenImportComponent } from "./token-import.component";
 
@@ -59,11 +56,9 @@ describe("TokenImportComponent", () => {
     class IO {
       observe = jest.fn();
       disconnect = jest.fn();
-
-      constructor(_: any, __?: any) {}
     }
 
-    (global as any).IntersectionObserver = IO;
+    (globalThis as unknown as { IntersectionObserver: typeof IO }).IntersectionObserver = IO;
   });
 
   beforeEach(async () => {
@@ -96,7 +91,7 @@ describe("TokenImportComponent", () => {
 
   it("should update fileName and file on file selection", () => {
     const file = new File(["dummy content"], "test.csv", { type: "text/csv" });
-    const event = { target: { files: [file] } } as any;
+    const event = { target: { files: [file] } } as unknown as Event;
     component.onFileSelected(event);
     expect(component.fileName()).toBe("test.csv");
     expect(component.file()).toBe(file);
@@ -111,12 +106,10 @@ describe("TokenImportComponent", () => {
   });
 
   it("should call importTokens and show notification on success", () => {
-    component.file.set(new Blob(["data"]) as any);
+    component.file.set(new File(["data"], "import.csv"));
     component.fileName.set("import.csv");
     jest.spyOn(tokenService, "importTokens").mockReturnValue(
-      of({
-        result: { value: { n_imported: 2, n_not_imported: 1 } }
-      } as any)
+      of(MockPiResponse.fromValue<TokenImportResult>({ n_imported: 2, n_not_imported: 1 }))
     );
     component.importTokens();
     expect(tokenService.importTokens).toHaveBeenCalled();
@@ -163,9 +156,7 @@ describe("TokenImportComponent", () => {
     component.selectedRealms.set(["realm1", "realm2"]);
 
     const importTokensSpy = jest.spyOn(tokenService, "importTokens").mockReturnValue(
-      of({
-        result: { value: { n_imported: 1, n_not_imported: 0 } }
-      } as any)
+      of(MockPiResponse.fromValue<TokenImportResult>({ n_imported: 1, n_not_imported: 0 }))
     );
 
     component.importTokens();
@@ -192,9 +183,7 @@ describe("TokenImportComponent", () => {
     component.selectedRealms.set(["realm1"]);
 
     const importTokensSpy = jest.spyOn(tokenService, "importTokens").mockReturnValue(
-      of({
-        result: { value: { n_imported: 1, n_not_imported: 0 } }
-      } as any)
+      of(MockPiResponse.fromValue<TokenImportResult>({ n_imported: 1, n_not_imported: 0 }))
     );
 
     component.importTokens();

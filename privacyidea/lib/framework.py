@@ -18,6 +18,9 @@ from flask import current_app, g
 # We import the gettext function here and export it as ``_``.
 from flask_babel import gettext as _
 
+from privacyidea.config import ConfigKey
+from privacyidea.lib.error import ConfigAdminError
+
 
 def get_app_local_store():
     """
@@ -57,5 +60,36 @@ def get_app_config_value(key, default=None):
     return get_app_config().get(key, default)
 
 
+def get_base_url(required=False):
+    """
+    Return the trusted public base URL of this privacyIDEA server.
+
+    This is used to build user-facing links that are sent out of band (the
+    password-recovery link, the ``{url}`` notification tag, ...). Such links are
+    never derived from the inbound HTTP ``Host`` header.
+    The value is taken solely from the ``PI_BASE_URL`` app configuration (set in ``pi.cfg``).
+
+    If ``PI_BASE_URL`` is not configured:
+
+    * with ``required=True`` a :class:`~privacyidea.lib.error.ConfigAdminError`
+      is raised. This is used for security-critical links such as the
+      password-recovery link.
+    * otherwise an empty string is returned. The missing configuration is announced once at
+      startup (see ``app.py``).
+
+    :param required: if True, raise instead of returning an empty base URL
+    :return: the trusted base URL (without a trailing slash), or ``""`` if unset
+    """
+    base_url = get_app_config_value(ConfigKey.BASE_URL)
+    if base_url:
+        return base_url.rstrip("/")
+    if required:
+        raise ConfigAdminError(
+            "PI_BASE_URL is not configured. Refusing to build a user-facing link "
+            "without a trusted base URL. Set PI_BASE_URL in pi.cfg to the public URL of "
+            "this privacyIDEA server.")
+    return ""
+
+
 __all__ = ['get_app_local_store', 'get_request_local_store',
-           'get_app_config', 'get_app_config_value', '_']
+           'get_app_config', 'get_app_config_value', 'get_base_url', '_']

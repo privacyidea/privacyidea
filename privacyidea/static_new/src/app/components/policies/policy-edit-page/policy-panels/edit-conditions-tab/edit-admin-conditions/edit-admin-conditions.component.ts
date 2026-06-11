@@ -60,7 +60,7 @@ export class EditAdminConditionsComponent {
 
   readonly adminSignal = signal("");
   readonly adminField = form(this.adminSignal, (f) => {
-    validate(f, (ctx) => /[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []);
+    validate(f, (ctx) => (/[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []));
   });
 
   readonly selectedRealms = computed(() => this.policy().realm || []);

@@ -18,8 +18,46 @@
  **/
 import "@angular/localize/init";
 import { setupZonelessTestEnv } from "jest-preset-angular/setup-env/zoneless";
+import { webcrypto } from "node:crypto";
 
 setupZonelessTestEnv();
+
+// jsdom provides no `crypto.subtle`, so tests fall back to Node's webcrypto. Node's
+// implementation rejects ArrayBuffers/views created in the jsdom realm with
+// "2nd argument is not instance of ArrayBuffer". Install Node webcrypto behind a proxy
+// whose `digest` re-wraps the input in a Node-realm Buffer so cross-realm buffers from
+// component and test code are accepted.
+if (!globalThis.crypto?.subtle) {
+  const real = webcrypto as unknown as Crypto;
+  const realDigest = real.subtle.digest.bind(real.subtle);
+  const subtleProxy = new Proxy(real.subtle, {
+    get(target, prop) {
+      if (prop === "digest") {
+        return (algorithm: AlgorithmIdentifier, data: BufferSource) => {
+          const view =
+            data instanceof ArrayBuffer
+              ? new Uint8Array(data)
+              : new Uint8Array(
+                  (data as ArrayBufferView).buffer,
+                  (data as ArrayBufferView).byteOffset,
+                  (data as ArrayBufferView).byteLength
+                );
+          return realDigest(algorithm, Buffer.from(view));
+        };
+      }
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    }
+  });
+  const cryptoProxy = new Proxy(real, {
+    get(target, prop) {
+      if (prop === "subtle") return subtleProxy;
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    }
+  });
+  Object.defineProperty(globalThis, "crypto", { value: cryptoProxy, configurable: true });
+}
 
 global.console = {
   ...global.console,

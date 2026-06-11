@@ -19,6 +19,10 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ContentService } from "@services/content/content.service";
+import {
+  BaseApiPayloadMapper,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "@testing/mock-services";
@@ -44,7 +48,10 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     tokenType: "totp",
     userRealm: "test-realm",
     onlyAddToRealm: false,
-    enrollParameters: { data: {} as any, mapper: jest.fn() as any }
+    enrollParameters: {
+      data: {} as unknown as TokenEnrollmentData,
+      mapper: {} as unknown as BaseApiPayloadMapper
+    }
   };
 
   beforeEach(async () => {

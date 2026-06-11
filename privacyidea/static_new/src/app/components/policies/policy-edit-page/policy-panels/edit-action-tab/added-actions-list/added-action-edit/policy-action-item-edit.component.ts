@@ -48,11 +48,11 @@ import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@serv
   templateUrl: "./policy-action-item-edit.component.html",
   styleUrl: "./policy-action-item-edit.component.scss"
 })
-export class PolicyActionItemEditComponent<T extends string | number = string | number> {
+export class PolicyActionItemEditComponent<T extends string | number | boolean = string | number | boolean> {
   readonly action = input.required<{ name: string; value: T }>();
   readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
-  readonly onRemoveAction = output<void>();
-  readonly onUpdateAction = output<T | undefined>();
+  readonly removeAction = output<void>();
+  readonly updateAction = output<T | undefined>();
 
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
@@ -69,23 +69,23 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
     return valueList as T[];
   });
 
-  isBooleanAction(_actionName: string): boolean {
+  isBooleanAction(): boolean {
     return this.actionDetail()?.type === "bool";
   }
 
-  removeAction() {
-    this.onRemoveAction.emit();
+  handleRemoveAction() {
+    this.removeAction.emit();
   }
 
-  updateAction(value?: T | T[]): void {
+  handleUpdateAction(value?: T | T[]): void {
     if (Array.isArray(value)) {
       const stringValue = value.map((v) => v.toString()).join(" ");
-      this.onUpdateAction.emit(stringValue as T);
+      this.updateAction.emit(stringValue as T);
     } else {
-      this.onUpdateAction.emit(value as T);
+      this.updateAction.emit(value as T);
     }
   }
-  isNumber(value: T): boolean {
+  isNumber(value: T | null): boolean {
     return value !== null && value !== "" && !isNaN(Number(value));
   }
 }

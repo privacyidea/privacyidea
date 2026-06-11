@@ -31,7 +31,7 @@ const baseTemplate: ContainerTemplate = {
   container_type: "generic",
   default: false,
   template_options: {
-    tokens: [{ type: "hotp" } as any, { type: "totp" } as any]
+    tokens: [{ type: "hotp" } as TokenEnrollmentPayload, { type: "totp" } as TokenEnrollmentPayload]
   }
 };
 
@@ -65,20 +65,20 @@ describe("ContainerTemplateEditBodyComponent", () => {
 
   it("onAddToken appends a new token with the given type", () => {
     const before = component["tokens"]().length;
-    (component as any).onAddToken("hotp");
+    component["onAddToken"]("hotp");
     expect(component["tokens"]().length).toBe(before + 1);
-    expect((component["tokens"]()[before] as any).type).toBe("hotp");
+    expect(component["tokens"]()[before].type).toBe("hotp");
     expect(component.template().template_options.tokens.length).toBe(before + 1);
-    expect((component.template().template_options.tokens[before] as any).type).toBe("hotp");
+    expect(component.template().template_options.tokens[before].type).toBe("hotp");
   });
 
   it("onDeleteToken removes the token at the given index", () => {
     const before = component["tokens"]().length;
-    (component as any).onDeleteToken(0);
+    component["onDeleteToken"](0);
     expect(component["tokens"]().length).toBe(before - 1);
-    expect((component["tokens"]()[0] as any).type).toBe("totp");
+    expect(component["tokens"]()[0].type).toBe("totp");
     expect(component.template().template_options.tokens.length).toBe(before - 1);
-    expect((component.template().template_options.tokens[0] as any).type).toBe("totp");
+    expect(component.template().template_options.tokens[0].type).toBe("totp");
   });
 
   it("collectTokens aggregates every row's getCurrentPayload result", () => {

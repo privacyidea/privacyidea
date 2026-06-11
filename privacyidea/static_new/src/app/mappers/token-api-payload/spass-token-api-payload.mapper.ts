@@ -29,7 +29,7 @@ export interface SpassEnrollmentData extends TokenEnrollmentData {
   type: "spass";
 }
 
-export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
+export type SpassEnrollmentPayload = TokenEnrollmentPayload;
 
 @Injectable({ providedIn: "root" })
 export class SpassApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {
@@ -44,7 +44,7 @@ export class SpassApiPayloadMapper extends BaseApiPayloadMapper implements Token
     return payload;
   }
 
-  override fromApiPayload(payload: any): SpassEnrollmentData {
+  override fromApiPayload(payload: SpassEnrollmentPayload): SpassEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as SpassEnrollmentData;
   }

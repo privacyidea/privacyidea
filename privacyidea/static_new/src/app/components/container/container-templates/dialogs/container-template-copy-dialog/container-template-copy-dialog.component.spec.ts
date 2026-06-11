@@ -22,6 +22,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -33,7 +34,7 @@ describe("ContainerTemplateCopyDialogComponent", () => {
   let component: ContainerTemplateCopyDialogComponent;
   let fixture: ComponentFixture<ContainerTemplateCopyDialogComponent>;
   let containerTemplateServiceMock: MockContainerTemplateService;
-  let dialogRefMock: MockMatDialogRef<any, string>;
+  let dialogRefMock: MockMatDialogRef<ContainerTemplateCopyDialogComponent, string>;
 
   const INITIAL_NAME = "OriginalTemplate";
 
@@ -53,13 +54,17 @@ describe("ContainerTemplateCopyDialogComponent", () => {
 
     containerTemplateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
     // Set up some initial templates in the service
-    containerTemplateServiceMock.templates.set([
-      { name: INITIAL_NAME, container_type: "type1", template_options: { tokens: [] } } as any,
-      { name: "ExistingCopy", container_type: "type1", template_options: { tokens: [] } } as any
-    ]);
+    const templates: ContainerTemplate[] = [
+      { name: INITIAL_NAME, container_type: "type1", default: false, template_options: { tokens: [] } },
+      { name: "ExistingCopy", container_type: "type1", default: false, template_options: { tokens: [] } }
+    ];
+    containerTemplateServiceMock.templates.set(templates);
 
     fixture = TestBed.createComponent(ContainerTemplateCopyDialogComponent);
-    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, string>;
+    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<
+      ContainerTemplateCopyDialogComponent,
+      string
+    >;
     component = fixture.componentInstance;
 
     fixture.detectChanges();

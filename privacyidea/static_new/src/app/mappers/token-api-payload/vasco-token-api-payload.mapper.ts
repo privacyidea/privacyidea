@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
+import { TokenDetails } from "@services/token/token.service";
 import {
   BaseApiPayloadMapper,
   TokenApiPayloadMapper,
@@ -54,12 +55,12 @@ export class VascoApiPayloadMapper extends BaseApiPayloadMapper implements Token
     return payload;
   }
 
-  override fromApiPayload(payload: any): VascoEnrollmentData {
+  override fromApiPayload(payload: VascoEnrollmentPayload): VascoEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as VascoEnrollmentData;
   }
 
-  override fromTokenDetailsToEnrollmentData(details: any): VascoEnrollmentData {
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): VascoEnrollmentData {
     return {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "vasco"

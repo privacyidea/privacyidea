@@ -34,7 +34,4 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci
       - name: Run ESLint
-        # Reporting-only for now: surface violations without blocking PRs while the
-        # existing backlog is worked down. Remove once the count is manageable.
-        continue-on-error: true
         run: npm run lint

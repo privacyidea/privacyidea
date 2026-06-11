@@ -50,7 +50,6 @@
 
   <div class="tokengroup-content">
     <div class="tokengroup-form">
-
       <div class="flex-column gap-16">
         <mat-form-field
           appearance="fill"
@@ -69,8 +68,9 @@
             <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
           }
           @if (tokengroupForm.groupname().errors().some(e => e.kind === 'pattern')) {
-            <mat-error
-              i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            <mat-error i18n
+              >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+              and hyphens are allowed.
             </mat-error>
           }
         </mat-form-field>

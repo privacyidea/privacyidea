@@ -31,8 +31,11 @@ describe("EnrollSshkeyComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollSshkeyComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollSshkeyComponent);

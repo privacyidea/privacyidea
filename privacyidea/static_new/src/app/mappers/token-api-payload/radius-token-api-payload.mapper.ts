@@ -55,7 +55,7 @@ export class RadiusApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): RadiusEnrollmentData {
+  override fromApiPayload(payload: RadiusEnrollmentPayload): RadiusEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as RadiusEnrollmentData;
   }

@@ -20,8 +20,8 @@
   [title]="'Assign Selected Token to User'"
   [showCancelButton]="true"
   [actions]="actions()"
-  (onAction)="onAction($event)"
-  (close)="onCancel()">
+  (actionTriggered)="onAction($event)"
+  (wrapperClose)="onCancel()">
   @if (selectionContainsAssignedToken()) {
     <p
       class="inline-warning"
@@ -32,8 +32,7 @@
     </p>
   }
   <div class="selected-user-attach-container">
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Select Realm of User</mat-label>
       <mat-select
         (selectionChange)="onRealmChange($event.value)"
@@ -47,8 +46,7 @@
         <mat-error i18n>User Realm is <strong>required</strong></mat-error>
       }
     </mat-form-field>
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Enter User</mat-label>
       <app-clearable-input
         (clearButtonClick)="onUserFilterInput('')"

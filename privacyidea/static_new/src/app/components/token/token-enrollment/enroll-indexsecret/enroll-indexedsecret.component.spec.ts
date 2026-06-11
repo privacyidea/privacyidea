@@ -31,8 +31,11 @@ describe("EnrollIndexedsecretComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollIndexedsecretComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollIndexedsecretComponent);

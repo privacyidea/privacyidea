@@ -365,7 +365,9 @@
               matInput
               placeholder="sAMAccountName" />
           </app-clearable-input>
-          @if (ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()) {
+          @if (
+            ldapForm.LOGINNAMEATTRIBUTE().errors().some(e => e.kind === 'required') && ldapForm.LOGINNAMEATTRIBUTE().touched()
+          ) {
             <mat-error i18n>
               Loginname attribute is
               <strong>required</strong>
@@ -397,7 +399,9 @@
             matInput
             placeholder="(sAMAccountName=*)(objectClass=person)" />
         </app-clearable-input>
-        @if (ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()) {
+        @if (
+          ldapForm.LDAPSEARCHFILTER().errors().some(e => e.kind === 'required') && ldapForm.LDAPSEARCHFILTER().touched()
+        ) {
           <mat-error i18n>
             Search filter is
             <strong>required</strong>

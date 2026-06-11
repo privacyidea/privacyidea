@@ -24,38 +24,29 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { MockContentService, MockPiResponse } from "@testing/mock-services";
-import { SmsGatewayService } from "./sms-gateway.service";
+import { MockAuthService, MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { SmsGatewayPayload, SmsGatewayService } from "./sms-gateway.service";
 
 describe("SmsGatewayService", () => {
   let service: SmsGatewayService;
   let httpMock: HttpTestingController;
-  let notificationService: NotificationService;
+  let notifyMock: MockNotificationService;
   let contentServiceMock: MockContentService;
 
   beforeEach(() => {
-    const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({})
-    };
-    const notificationServiceMock = {
-      success: jest.fn(),
-      error: jest.fn(),
-      warning: jest.fn()
-    };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         SmsGatewayService,
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(SmsGatewayService);
     httpMock = TestBed.inject(HttpTestingController);
-    notificationService = TestBed.inject(NotificationService);
+    notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
@@ -68,7 +59,7 @@ describe("SmsGatewayService", () => {
   });
 
   it("should post SMS gateway", async () => {
-    const gateway = { name: "test", providermodule: "mod" } as any;
+    const gateway: SmsGatewayPayload = { name: "test", module: "mod" };
     const promise = service.postSmsGateway(gateway);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway`);
@@ -76,11 +67,11 @@ describe("SmsGatewayService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMS gateway.");
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully saved SMS gateway.");
   });
 
   it("should show error notification when posting SMS gateway fails", async () => {
-    const gateway = { name: "test", providermodule: "mod" } as any;
+    const gateway: SmsGatewayPayload = { name: "test", module: "mod" };
     const promise = service.postSmsGateway(gateway);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway`);
@@ -90,7 +81,7 @@ describe("SmsGatewayService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to save SMS gateway. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to save SMS gateway. Something went wrong");
   });
 
   it("should delete SMS gateway", async () => {
@@ -101,7 +92,7 @@ describe("SmsGatewayService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMS gateway: test/1.");
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully deleted SMS gateway: test/1.");
   });
 
   it("should show error notification when deleting SMS gateway fails", async () => {
@@ -114,7 +105,7 @@ describe("SmsGatewayService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete SMS gateway. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to delete SMS gateway. Something went wrong");
   });
 
   describe("smsGateways", () => {

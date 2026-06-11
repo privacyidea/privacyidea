@@ -19,12 +19,16 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { SaveAndExitDialogComponent, SaveAndExitDialogData } from "./save-and-exit-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogData,
+  SaveAndExitDialogResult
+} from "./save-and-exit-dialog.component";
 
 describe("SaveAndExitDialogComponent", () => {
   let component: SaveAndExitDialogComponent;
   let fixture: ComponentFixture<SaveAndExitDialogComponent>;
-  let mockDialogRef: MockMatDialogRef<any, any>;
+  let mockDialogRef: MockMatDialogRef<SaveAndExitDialogComponent, SaveAndExitDialogResult>;
 
   beforeEach(async () => {
     const mockValue: SaveAndExitDialogData = {
@@ -52,7 +56,10 @@ describe("SaveAndExitDialogComponent", () => {
 
     fixture = TestBed.createComponent(SaveAndExitDialogComponent);
     component = fixture.componentInstance;
-    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, any>;
+    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<
+      SaveAndExitDialogComponent,
+      SaveAndExitDialogResult
+    >;
     fixture.detectChanges();
   });
 

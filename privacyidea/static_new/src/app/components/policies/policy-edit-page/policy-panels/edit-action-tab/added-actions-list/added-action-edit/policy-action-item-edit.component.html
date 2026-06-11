@@ -22,14 +22,14 @@
     class="delete-icon-button"
     aria-label="Remove action"
     i18n-aria-label
-    (click)="removeAction(); $event.stopPropagation()">
+    (click)="handleRemoveAction(); $event.stopPropagation()">
     <mat-icon>delete</mat-icon>
   </button>
 
   <span class="detail-label">{{ action().name }}</span>
 
   <div class="detail-input">
-    @if (!isBooleanAction(action().name)) {
+    @if (!isBooleanAction()) {
       @if (actionDetail()?.value; as actionValues) {
         @if (actionDetail()?.multiple) {
           <app-multi-select-only
@@ -38,7 +38,7 @@
             placeholder="Select options..."
             [items]="actionValues"
             [selectedItems]="selectedItems()"
-            (selectionChange)="updateAction($event)">
+            (selectionChange)="handleUpdateAction($event)">
           </app-multi-select-only>
         } @else if (actionValues.length === 0) {
           <p i18n>No values available.</p>
@@ -47,7 +47,7 @@
             class="flex-1"
             [values]="actionValues"
             [initialValue]="action().value"
-            (onSelect)="updateAction($event)" />
+            (selected)="handleUpdateAction($event)" />
         } @else {
           <mat-form-field
             appearance="fill"
@@ -55,7 +55,7 @@
             subscriptSizing="dynamic">
             <mat-select
               [value]="isNumber(action().value) ? +action().value : action().value"
-              (selectionChange)="updateAction($event.value)">
+              (selectionChange)="handleUpdateAction($event.value)">
               @for (option of actionValues; track option) {
                 <mat-option [value]="option">{{ option }}</mat-option>
               }
@@ -69,20 +69,20 @@
               type="text"
               class="action-value-input flex-2"
               [value]="action().value"
-              (input)="updateAction($any($any($event.target).value))" />
+              (input)="handleUpdateAction($any($any($event.target).value))" />
           }
           @case ("int") {
             <input
               type="number"
               class="action-value-input flex-2"
               [value]="action().value"
-              (input)="updateAction($any(+$any($event.target).value))" />
+              (input)="handleUpdateAction($any(+$any($event.target).value))" />
           }
           @case ("text") {
             <textarea
               class="action-value-textarea flex-2"
               [value]="action().value"
-              (input)="updateAction($any($any($event.target).value))"></textarea>
+              (input)="handleUpdateAction($any($any($event.target).value))"></textarea>
           }
         }
       }

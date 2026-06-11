@@ -35,7 +35,7 @@ export class TestOtpPinActionComponent {
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  hide: boolean = true;
+  hide = true;
   otpOrPinToTest = signal("");
 
   testToken() {

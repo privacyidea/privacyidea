@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, Input, WritableSignal } from "@angular/core";
+import { Component, inject, model } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -40,8 +40,8 @@ export class SetPinActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  @Input() setPinValue!: WritableSignal<string>;
-  @Input() repeatPinValue!: WritableSignal<string>;
+  setPinValue = model.required<string>();
+  repeatPinValue = model.required<string>();
 
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {

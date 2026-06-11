@@ -336,16 +336,16 @@ describe("PolicyService", () => {
         expect(service.allPolicies()[0].action).toEqual({ "updated-action": true });
 
         // Handle POST request for update
-        let postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
+        const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
         expect(postReq.request.method).toBe("POST");
         expect(postReq.request.body).toMatchObject(updatedPolicy);
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Give patch request time to be sent after successful POST
-        await new Promise((resolve) => process.nextTick(resolve));
+        await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 
         // Handle PATCH request for rename
-        let patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
+        const patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
         expect(patchReq.request.method).toBe("PATCH");
         expect(patchReq.request.body).toEqual({ name: "renamed-policy" });
         patchReq.flush(MockPiResponse.fromValue({ status: true }));
@@ -397,7 +397,7 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Wait for microtasks to complete
-        await new Promise((resolve) => process.nextTick(resolve));
+        await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 
         // Handle failed PATCH request
         const patchReq = httpTestingController.expectOne(

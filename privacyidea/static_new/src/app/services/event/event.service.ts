@@ -29,7 +29,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 
-export type EventHandler = {
+export interface EventHandler {
   id: number | null;
   name: string;
   active: boolean;
@@ -38,9 +38,9 @@ export type EventHandler = {
   position: string;
   event: string[];
   action: string;
-  options: Record<string, any> | null;
-  conditions: Record<string, any>;
-};
+  options: Record<string, string> | null;
+  conditions: Record<string, string>;
+}
 
 export const EMPTY_EVENT: EventHandler = {
   id: null,
@@ -55,26 +55,43 @@ export const EMPTY_EVENT: EventHandler = {
   conditions: {}
 };
 
-export type EventCondition = {
+export interface EventConditionMultiValue {
+  name: string;
+}
+
+export interface EventCondition {
   desc: string;
   type: string;
   group?: string;
-  value?: any[];
-};
+  value?: EventConditionMultiValue[] | string[];
+}
 
-export type ActionOptionDetails = {
+export interface ActionOptionDetails {
   type?: string;
   desc?: string;
   description?: string;
   required?: boolean;
-  value?: any[];
+  value?: string[];
   visibleIf?: string;
-  visibleValue?: any;
-};
+  visibleValue?: string;
+}
 
 export type ActionOptions = Record<string, ActionOptionDetails>;
 
 export type EventActions = Record<string, ActionOptions>;
+
+export interface EventHandlerSaveParams {
+  id?: string;
+  name: string;
+  active: boolean;
+  handlermodule: string | null;
+  ordering: number;
+  position: string;
+  event: string[];
+  action: string;
+  conditions: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 export interface EventServiceInterface {
   selectedHandlerModule: WritableSignal<string | null>;
@@ -83,15 +100,15 @@ export interface EventServiceInterface {
 
   getEventHandlers(): Observable<PiResponse<EventHandler[]>>;
 
-  saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined>;
+  saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined>;
 
-  enableEvent(eventId: number | null): Promise<Object | undefined>;
+  enableEvent(eventId: number | null): Promise<object | undefined>;
 
-  disableEvent(eventId: number | null): Promise<Object | undefined>;
+  disableEvent(eventId: number | null): Promise<object | undefined>;
 
-  deleteEvent(eventId: number): Observable<PiResponse<number, any>>;
+  deleteEvent(eventId: number): Observable<PiResponse<number>>;
 
-  deleteWithConfirmDialog(event: EventHandler, dialog: any, afterDelete?: () => void): void;
+  deleteWithConfirmDialog(event: EventHandler): void;
 
   readonly eventHandlerModulesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   eventHandlerModules: Signal<string[]>;
@@ -110,12 +127,12 @@ export interface EventServiceInterface {
 export class EventService implements EventServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   readonly eventBaseUrl = environment.proxyUrl + "/event";
-  selectedHandlerModule: WritableSignal<string | null> = signal(null);
+  selectedHandlerModule = signal<string | null>(null);
 
   // ----------------------------
   // Read existing event handlers
@@ -155,13 +172,13 @@ export class EventService implements EventServiceInterface {
     });
   }
 
-  saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined> {
+  saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined> {
     const headers = this.authService.getHeaders();
-    let params = { ...event } as any;
+    const params = { ...event };
     if (params.id == null) {
       delete params.id;
     }
-    return this.http.post<PiResponse<number, any>>(this.eventBaseUrl, params, { headers }).pipe(
+    return this.http.post<PiResponse<number>>(this.eventBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
         const message = error.error.result?.error?.message || "";
@@ -207,11 +224,11 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  deleteEvent(eventId: number): Observable<PiResponse<number, any>> {
+  deleteEvent(eventId: number): Observable<PiResponse<number>> {
     const headers = this.authService.getHeaders();
 
     return this.http
-      .delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers })
+      .delete<PiResponse<number>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete event handler.", error);
@@ -222,7 +239,7 @@ export class EventService implements EventServiceInterface {
       );
   }
 
-  async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number, any> | undefined> {
+  async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number> | undefined> {
     const confirmation = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -248,7 +265,7 @@ export class EventService implements EventServiceInterface {
 
       this.notificationService.success("Successfully deleted event handler.");
       return result;
-    } catch (error) {
+    } catch {
       // error already handled in deleteEvent
       return;
     }
@@ -359,7 +376,7 @@ export class EventService implements EventServiceInterface {
   });
 
   moduleConditionsByGroup = computed(() => {
-    const conditions: Record<string, any> = {};
+    const conditions: Record<string, Record<string, EventCondition>> = {};
     for (const [conditionName, conditionDetails] of Object.entries(this.moduleConditions())) {
       const group = conditionDetails.group || "miscellaneous";
       if (!(group in conditions)) {

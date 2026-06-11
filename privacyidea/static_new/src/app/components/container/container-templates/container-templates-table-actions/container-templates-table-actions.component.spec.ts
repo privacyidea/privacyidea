@@ -23,6 +23,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockContainerTemplateService, MockDialogService } from "@testing/mock-services";
@@ -37,7 +38,7 @@ describe("ContainerTemplatesTableActionsComponent", () => {
   const mockTemplates = [
     { name: "Template1", container_type: "type1" },
     { name: "Template2", container_type: "type2" }
-  ] as any[];
+  ] as unknown as ContainerTemplate[];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

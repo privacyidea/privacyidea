@@ -64,6 +64,27 @@ class APIEventsTestCase(MyApiTestCase):
         self.assertEqual(auditentry['action'], 'POST /event/enable/<eventid>', auditentry)
         self.assertEqual(auditentry['success'], 0, auditentry)
 
+    def test_00b_invalid_conditions_rejected_cleanly(self):
+        # A malformed 'conditions' string (JSONDecodeError) or a non-string value
+        # (TypeError from json.loads) must yield a clean 400 ParameterError, not an
+        # uncaught exception / HTTP 500.
+        base = {"name": "cond_check", "event": "token_init",
+                "action": "sendmail", "handlermodule": "UserNotification"}
+        # Malformed JSON string (form data is always a string).
+        with self.app.test_request_context('/event', method='POST',
+                                           data=dict(base, conditions="{not valid json"),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json["result"]["status"], res.json)
+        # Non-string conditions via a JSON body (a list is valid JSON but not a dict).
+        with self.app.test_request_context('/event', method='POST',
+                                           json=dict(base, conditions=[1, 2, 3]),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json["result"]["status"], res.json)
+
     def test_01_crud_events(self):
         # list empty events
         with self.app.test_request_context('/event/',

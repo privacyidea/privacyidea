@@ -44,16 +44,16 @@ export interface NotificationServiceInterface {
   providedIn: "root"
 })
 export class NotificationService implements NotificationServiceInterface {
-  readonly snackBar = inject(MatSnackBar);
+  private readonly snackBar = inject(MatSnackBar);
   private _totalDuration = 5000;
 
-  private readonly _debounceMs: number = 200;
-  private readonly _maxBatchedDuration: number = 15000;
+  private readonly _debounceMs = 200;
+  private readonly _maxBatchedDuration = 15000;
   private _queue: QueuedNotification[] = [];
   private _flushTimer: ReturnType<typeof setTimeout> | undefined;
 
   remainingTime: number = this._totalDuration;
-  timerSub: Subscription = new Subscription();
+  timerSub = new Subscription();
   startTime = 0;
 
   success(message: string, options?: { duration?: number }): void {

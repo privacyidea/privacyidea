@@ -52,7 +52,7 @@ export class TanApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     return payload;
   }
 
-  override fromApiPayload(payload: any): TanEnrollmentData {
+  override fromApiPayload(payload: TanEnrollmentPayload): TanEnrollmentData {
     return {
       ...payload,
       tanCount: payload.tancount,

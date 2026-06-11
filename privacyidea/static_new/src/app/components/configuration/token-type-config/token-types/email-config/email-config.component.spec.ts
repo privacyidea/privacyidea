@@ -49,5 +49,4 @@ describe("EmailConfigComponent", () => {
     component.updateFormData(EMAIL_SMTP_SERVER_KEY, newValue);
     expect(component.formDataChange.emit).toHaveBeenCalledWith({ [EMAIL_SMTP_SERVER_KEY]: newValue });
   });
-
 });

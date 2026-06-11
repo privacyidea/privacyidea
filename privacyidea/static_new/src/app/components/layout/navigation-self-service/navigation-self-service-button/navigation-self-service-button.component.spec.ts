@@ -40,6 +40,8 @@ describe("NavigationSelfServiceButtonComponent", () => {
 
     fixture = TestBed.createComponent(NavigationSelfServiceButtonComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput("key", "tokens");
+    fixture.componentRef.setInput("title", "Tokens");
     fixture.detectChanges();
   });
 

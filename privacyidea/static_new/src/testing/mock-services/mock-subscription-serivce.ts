@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { PiResponse } from "@app/app.component";
+import { Subscription } from "@services/subscription/subscription.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -25,5 +26,7 @@ export class MockSubscriptionService {
   getSubscriptions = jest.fn(() => of(MockPiResponse.fromValue<Record<string, any>>({})));
   deleteSubscription = jest.fn(() => of(MockPiResponse.fromValue(true)));
   uploadSubscriptionFile = jest.fn(() => of(MockPiResponse.fromValue({})));
-  subscriptionsResource = new MockHttpResourceRef<PiResponse<Record<string, any>>>(MockPiResponse.fromValue({}));
+  subscriptionsResource = new MockHttpResourceRef<PiResponse<Record<string, Subscription>>>(
+    MockPiResponse.fromValue({})
+  );
 }

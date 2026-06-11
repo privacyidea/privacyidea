@@ -56,7 +56,7 @@ export class MotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     return payload;
   }
 
-  override fromApiPayload(payload: any): MotpEnrollmentData {
+  override fromApiPayload(payload: MotpEnrollmentPayload): MotpEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as MotpEnrollmentData;
   }

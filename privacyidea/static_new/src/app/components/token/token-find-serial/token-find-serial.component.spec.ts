@@ -21,8 +21,9 @@ import { HttpParams, provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import {
-    FindSerialResultDialogComponent,
-    GetSerialResultDialogReturn
+  FindSerialResultDialogComponent,
+  GetSerialResultDialogData,
+  GetSerialResultDialogReturn
 } from "@components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -30,25 +31,28 @@ import { NotificationService } from "@services/notification/notification.service
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-    MockContentService,
-    MockDialogService,
-    MockNotificationService,
-    MockTokenService
+  MockContentService,
+  MockDialogService,
+  MockNotificationService,
+  MockPiResponse,
+  MockRouter,
+  MockTokenService
 } from "@testing/mock-services";
 import { of, Subject, Subscription } from "rxjs";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
 import { TokenFindSerialComponent } from "./token-find-serial.component";
 
-const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
+interface SerialPayload {
+  count: number;
+  serial?: string;
+}
 
-const makeSerialResp = (serial?: string) => ({ result: { value: { serial } } }) as any;
+const makeCountResp = (count: number) => MockPiResponse.fromValue<SerialPayload>({ count });
+
+const makeSerialResp = (serial?: string) => MockPiResponse.fromValue<SerialPayload>({ count: 0, serial });
 
 let confirmClosed$: Subject<boolean | GetSerialResultDialogReturn>;
-let lastResultDialogData: any;
-
-const routerMock = {
-  navigateByUrl: jest.fn().mockResolvedValue(true)
-} as unknown as jest.Mocked<Router>;
+let lastResultDialogData: GetSerialResultDialogData | undefined;
 
 describe("TokenGetSerialComponent", () => {
   let fixture: ComponentFixture<TokenFindSerialComponent>;
@@ -70,7 +74,7 @@ describe("TokenGetSerialComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
-        { provide: Router, useValue: routerMock }
+        { provide: Router, useClass: MockRouter }
       ]
     }).compileComponents();
 
@@ -81,9 +85,9 @@ describe("TokenGetSerialComponent", () => {
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
 
-    (tokenServiceMock as any).getSerial = jest.fn();
+    tokenServiceMock.getSerial = jest.fn();
     confirmClosed$ = new Subject<boolean | GetSerialResultDialogReturn>();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed$);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     fixture.detectChanges();
@@ -206,7 +210,8 @@ describe("TokenGetSerialComponent", () => {
     });
     expect(component.foundSerial()).toBe("J-007");
     expect(component.currentStep()).toBe("found");
-    lastResultDialogData = dialogServiceMock.openDialog.mock.calls.slice(-1)[0]?.[0]?.data;
+    lastResultDialogData = dialogServiceMock.openDialog.mock.calls.slice(-1)[0]?.[0]
+      ?.data as GetSerialResultDialogData;
 
     expect(lastResultDialogData).toBeDefined();
   });
@@ -221,15 +226,15 @@ describe("TokenGetSerialComponent", () => {
     expect(component.currentStep()).toBe("found");
 
     component.currentStep.set("counting");
-    const resetSpy = jest.spyOn(component as any, "resetSteps");
+    const resetSpy = jest.spyOn(component, "resetSteps");
     component.onClickRunSearch();
     expect(resetSpy).toHaveBeenCalled();
   });
 
   it("resetSteps unsubscribes serialSubscription and clears state", () => {
-    const src$ = new Subject<any>();
+    const src$ = new Subject<void>();
     const sub: Subscription = src$.subscribe();
-    (component as any).serialSubscription = sub;
+    component.serialSubscription = sub;
 
     expect(sub.closed).toBe(false);
     component.resetSteps();

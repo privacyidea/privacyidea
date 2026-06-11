@@ -23,7 +23,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
-  WebAuthnFinalizeApiPayloadMapper
+  WebAuthnFinalizeApiPayloadMapper,
+  WebauthnEnrollmentResponse
 } from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
 import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
 import { Base64Service } from "@services/base64/base64.service";
@@ -33,26 +34,27 @@ import { TokenService } from "@services/token/token.service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 
-const makeEnrollInitResponse = () => ({
-  detail: {
-    serial: "SER123",
-    webAuthnRegisterRequest: {
-      transaction_id: "tx-1",
-      relyingParty: { id: "example.com", name: "Example" },
-      serialNumber: "SER123",
-      name: "alice",
-      displayName: "Alice",
-      nonce: "abc",
-      pubKeyCredAlgorithms: [{ type: "public-key", alg: -7 }],
-      timeout: 60000,
-      excludeCredentials: [{ id: "ex1", type: "public-key", transports: ["internal"] }],
-      authenticatorSelection: {},
-      attestation: "none",
-      extensions: {}
-    }
-  },
-  type: "webauthn"
-});
+const makeEnrollInitResponse = (): WebauthnEnrollmentResponse =>
+  ({
+    detail: {
+      serial: "SER123",
+      webAuthnRegisterRequest: {
+        transaction_id: "tx-1",
+        relyingParty: { id: "example.com", name: "Example" },
+        serialNumber: "SER123",
+        name: "alice",
+        displayName: "Alice",
+        nonce: "abc",
+        pubKeyCredAlgorithms: [{ type: "public-key", alg: -7 }],
+        timeout: 60000,
+        excludeCredentials: [{ id: "ex1", type: "public-key", transports: ["internal"] }],
+        authenticatorSelection: {},
+        attestation: "none",
+        extensions: {}
+      }
+    },
+    type: "webauthn"
+  }) as unknown as WebauthnEnrollmentResponse;
 
 const makePublicKeyCredential = () => {
   const rawId = new Uint8Array([5, 6]).buffer as ArrayBuffer;
@@ -65,7 +67,7 @@ const makePublicKeyCredential = () => {
     authenticatorAttachment: "platform",
     response: { attestationObject, clientDataJSON },
     getClientExtensionResults: () => ({ credProps: { rk: true } })
-  } as any;
+  } as PublicKeyCredential;
 };
 
 const BASIC = { user: "alice", realm: "default" } as unknown as TokenEnrollmentData;
@@ -79,19 +81,23 @@ describe("EnrollWebauthnComponent", () => {
   let base64: jest.Mocked<Base64Service>;
   let dialogServiceMock: MockDialogService;
 
-  const setNavigatorCreate = (impl: () => Promise<any>) => {
-    (navigator as any).credentials = {
+  const setNavigatorCreate = (impl: () => Promise<PublicKeyCredential>) => {
+    (navigator as { credentials: CredentialsContainer }).credentials = {
       create: jest.fn().mockImplementation(impl)
-    };
+    } as CredentialsContainer;
   };
 
   beforeEach(async () => {
-    tokenService = { enrollToken: jest.fn() } as any;
-    notification = { success: jest.fn(), error: jest.fn(), warning: jest.fn() } as any;
+    tokenService = { enrollToken: jest.fn() } as unknown as jest.Mocked<TokenService>;
+    notification = {
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn()
+    } as unknown as jest.Mocked<NotificationService>;
     base64 = {
       base64URLToBytes: jest.fn().mockReturnValue(new Uint8Array([1])),
       bytesToBase64: jest.fn().mockReturnValue("b64")
-    } as any;
+    } as unknown as jest.Mocked<Base64Service>;
 
     await TestBed.configureTestingModule({
       imports: [EnrollWebauthnComponent],
@@ -129,7 +135,7 @@ describe("EnrollWebauthnComponent", () => {
   });
 
   it("should notify when WebAuthn API is unavailable", async () => {
-    (navigator as any).credentials = undefined;
+    (navigator as { credentials?: CredentialsContainer }).credentials = undefined;
     await detectChangesStable();
     const enrollemntData = component.buildEnrollmentArgs(BASIC);
     expect(enrollemntData).toBeNull();
@@ -138,7 +144,7 @@ describe("EnrollWebauthnComponent", () => {
 
   it("should notify when init response missing detail", async () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
-    tokenService.enrollToken.mockReturnValue(of({ detail: undefined, type: "webauthn" } as any) as any);
+    tokenService.enrollToken.mockReturnValue(of({ detail: undefined, type: "webauthn" } as unknown as EnrollmentResponse));
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs!));
@@ -155,7 +161,7 @@ describe("EnrollWebauthnComponent", () => {
   it("should notify when register request missing", async () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken.mockReturnValue(
-      of({ detail: { webAuthnRegisterRequest: undefined }, type: "webauthn" } as any) as any
+      of({ detail: { webAuthnRegisterRequest: undefined }, type: "webauthn" } as unknown as EnrollmentResponse)
     );
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
@@ -176,7 +182,7 @@ describe("EnrollWebauthnComponent", () => {
       of({
         detail: { webAuthnRegisterRequest: { transaction_id: null }, serial: null },
         type: "webauthn"
-      } as any) as any
+      } as unknown as EnrollmentResponse)
     );
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
@@ -195,7 +201,7 @@ describe("EnrollWebauthnComponent", () => {
     setNavigatorCreate(async () => {
       throw new Error("blocked");
     });
-    tokenService.enrollToken.mockReturnValue(of(makeEnrollInitResponse() as any) as any);
+    tokenService.enrollToken.mockReturnValue(of(makeEnrollInitResponse()));
 
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
@@ -212,8 +218,8 @@ describe("EnrollWebauthnComponent", () => {
   it("should complete full happy path and return final response", async () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken
-      .mockReturnValueOnce(of(makeEnrollInitResponse() as any) as any)
-      .mockReturnValueOnce(of({ detail: { serial: "" }, type: "webauthn" } as any) as any);
+      .mockReturnValueOnce(of(makeEnrollInitResponse()))
+      .mockReturnValueOnce(of({ detail: { serial: "" }, type: "webauthn" } as unknown as EnrollmentResponse));
 
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
@@ -232,8 +238,8 @@ describe("EnrollWebauthnComponent", () => {
   it("should notify when finalization fails", async () => {
     setNavigatorCreate(async () => makePublicKeyCredential());
     tokenService.enrollToken
-      .mockReturnValueOnce(of(makeEnrollInitResponse() as any) as any)
-      .mockReturnValueOnce(throwError(() => new Error("finalize-fail")) as any);
+      .mockReturnValueOnce(of(makeEnrollInitResponse()))
+      .mockReturnValueOnce(throwError(() => new Error("finalize-fail")));
 
     await detectChangesStable();
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);
@@ -247,7 +253,9 @@ describe("EnrollWebauthnComponent", () => {
   });
 
   it("buildEnrollmentArgs returns the webauthn payload and mapper", async () => {
-    (navigator as any).credentials = { create: jest.fn().mockResolvedValue(makePublicKeyCredential()) };
+    (navigator as { credentials: CredentialsContainer }).credentials = {
+      create: jest.fn().mockResolvedValue(makePublicKeyCredential())
+    } as CredentialsContainer;
     await detectChangesStable();
 
     const enrollmentArgs = component.buildEnrollmentArgs(BASIC);

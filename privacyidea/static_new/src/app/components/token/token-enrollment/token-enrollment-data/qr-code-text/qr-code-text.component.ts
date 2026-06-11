@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input } from "@angular/core";
+import { Component, input } from "@angular/core";
 
 @Component({
   selector: "app-qr-code-text",
@@ -26,7 +26,7 @@ import { Component, Input } from "@angular/core";
   styleUrl: "./qr-code-text.component.scss"
 })
 export class QrCodeTextComponent {
-  @Input() tokenType!: string;
-  @Input() url!: string;
-  @Input() showRegenerateText: boolean = true;
+  tokenType = input.required<string>();
+  url = input.required<string>();
+  showRegenerateText = input(true);
 }

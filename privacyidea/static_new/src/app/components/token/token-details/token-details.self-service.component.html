@@ -35,8 +35,7 @@
         }
       </ng-container>
     </app-details-header>
-    <div
-      class="details-flex-layout responsive-flex-row-1310">
+    <div class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="tokenDetailData()"
@@ -88,7 +87,13 @@
                       @if (containerService.containerBelongsToUser(element.value)) {
                         <a
                           attr.aria-label="{{ element.keyMap.label }} Link"
-                          (click)="contentService.navigateContainerDetails(element.value)">
+                          (click)="contentService.navigateContainerDetails(element.value)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.value)"
+                          (keydown.space)="
+                            $event.preventDefault(); contentService.navigateContainerDetails(element.value)
+                          "
+                          role="button"
+                          tabindex="0">
                           {{ element.value }}
                         </a>
                       } @else {
@@ -228,9 +233,9 @@
                     [toggleEdit]="toggleTokenEdit.bind(this)"
                     [saveEdit]="saveTokenEdit.bind(this)"
                     [cancelEdit]="cancelTokenEdit.bind(this)"
-                    [shouldHideEdit]="isAnyEditingOrRevoked"
-                    [isEditingUser]="isEditingUser"
-                    [isEditingInfo]="isEditingInfo"
+                    [shouldHideEdit]="isAnyEditingOrRevoked()"
+                    [isEditingUser]="isEditingUser()"
+                    [isEditingInfo]="isEditingInfo()"
                     [element]="element"></app-edit-buttons>
                 }
               </div>
