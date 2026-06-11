@@ -139,7 +139,8 @@ from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
 from ..lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from ..lib.conditional_access.engine import is_user_locked, evaluate_lockout_policies
+from ..lib.conditional_access.engine import (is_user_locked, is_ip_blocked, evaluate_lockout_policies,
+                                              evaluate_access_decision, AccessDecision)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..models import db
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
@@ -479,6 +480,22 @@ def check():
         log.info(f"Rejecting authentication for locked user {request.User!r}.")
         g.audit_object.log({"success": False,
                             "info": "Rejected: account is temporarily locked"})
+        return send_result(False, rid=2, details={})
+    # Same generic rejection for a source IP blocked by a BLOCK_IP action. Unlike
+    # the WebUI login, the machine-facing /validate response does not reveal the block.
+    if is_ip_blocked(g.client_ip):
+        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: source IP is blocked"})
+        return send_result(False, rid=2, details={})
+    # Pre-auth conditional-access decision (DENY action). Evaluated after the
+    # lock/block pre-checks (so ALLOW cannot override them) and before any token
+    # logic. A DENY rejects this single request generically without persisting
+    # state; ALLOW / CONTINUE fall through to the normal flow.
+    if evaluate_access_decision(request.User, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying authentication for {request.User!r} by conditional-access policy.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: denied by conditional-access policy"})
         return send_result(False, rid=2, details={})
 
     # Handle Enrollment Cancellation (Immediate Return)

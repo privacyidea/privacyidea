@@ -145,3 +145,38 @@ class UserLockoutState(MethodsMixin, db.Model):
         DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")
+
+
+class BlockList(MethodsMixin, db.Model):
+    """
+    A blocked source identity (currently a source IP), written by the
+    ``BLOCK_IP`` conditional-access action and consulted by the authentication
+    pre-check on the *next* inbound request — exactly the live-state pattern of
+    :class:`UserLockoutState`, but keyed by the request's source IP rather than
+    by the user.
+
+    The IP is the natural primary key. ``block_expires_at`` is the load-bearing
+    field: a row whose ``block_expires_at`` lies in the future means the IP is
+    currently blocked, and a ``NULL`` value means a permanent block (only an
+    admin reset clears it). ``is_blocked`` lets an admin lift a block without
+    deleting the row, so ``last_stage_triggered`` (which records the stage that
+    produced the block, for de-duplication) is preserved. Timestamps are naive
+    UTC, see :func:`~privacyidea.models.utils.utc_now`.
+    """
+    __tablename__ = 'block_list'
+    # 50 matches authentication_log.source_ip, which is wide enough for an
+    # IPv4-mapped IPv6 address.
+    ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    block_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # Free-form note on why the IP was blocked (e.g. the policy name); purely
+    # informational, shown to admins, never to the blocked client.
+    reason: Mapped[str | None] = mapped_column(Unicode(255), nullable=True)
+    # SET NULL on delete: keep the block if its originating stage is removed.
+    last_stage_triggered: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey('lockout_policy_stages.id', ondelete='SET NULL'),
+        nullable=True, index=True)
+    last_updated: Mapped[datetime] = mapped_column(
+        DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+    last_stage: Mapped["LockoutPolicyStage | None"] = relationship("LockoutPolicyStage")

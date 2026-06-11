@@ -25,7 +25,7 @@ from sqlalchemy import func, select
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
-from privacyidea.models import AuthenticationLog, LockoutPolicy, UserLockoutState, db
+from privacyidea.models import AuthenticationLog, BlockList, LockoutPolicy, UserLockoutState, db
 from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
@@ -39,13 +39,12 @@ class LockoutAction(str, Enum):
     Action types a :class:`~privacyidea.models.lockout_policy.LockoutPolicyStage`
     can execute when its failure threshold is met.
 
-    :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN` and
-    :attr:`EMAIL_USER` are implemented. :attr:`BLOCK_IP`, :attr:`ALLOW` and
-    :attr:`DENY` are reserved: BLOCK_IP needs an IP-blocklist store, and
-    ALLOW/DENY decide the *current* request and therefore need a pre-auth
-    decision step (the lockout engine runs post-response). Reserving them as
-    enum members lets the action table grow without a schema change (the column
-    stores the string value).
+    :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
+    :attr:`EMAIL_USER` and :attr:`BLOCK_IP` are implemented. :attr:`ALLOW` and
+    :attr:`DENY` are reserved: they decide the *current* request and therefore
+    need a pre-auth decision step (the lockout engine runs post-response).
+    Reserving them as enum members lets the action table grow without a schema
+    change (the column stores the string value).
 
     ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
     3.10, mirroring
@@ -58,6 +57,28 @@ class LockoutAction(str, Enum):
     BLOCK_IP = "BLOCK_IP"
     ALLOW = "ALLOW"
     DENY = "DENY"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class AccessDecision(str, Enum):
+    """
+    The verdict of the pre-auth conditional-access decision step
+    (:func:`evaluate_access_decision`) for a single request.
+
+    :attr:`DENY` rejects the current request outright (no persistent state is
+    written); :attr:`ALLOW` permits it and short-circuits any lower-priority
+    DENY policy, but does **not** bypass the credential check; :attr:`CONTINUE`
+    is the default ("no decision policy matched") and lets the normal flow
+    proceed. These map to the :attr:`LockoutAction.ALLOW` / :attr:`LockoutAction.DENY`
+    stage actions, which - unlike the lockout/email/block actions - decide the
+    current request and so are handled here, before authentication, rather than
+    in the post-response engine.
+    """
+    ALLOW = "ALLOW"
+    DENY = "DENY"
+    CONTINUE = "CONTINUE"
 
     def __str__(self) -> str:
         return self.value
@@ -148,6 +169,159 @@ def is_user_locked(user: "User", now: datetime | None = None) -> bool:
     :return: ``True`` if the user is currently locked
     """
     return get_user_lockout(user, now=now) is not None
+
+
+def get_ip_block(source_ip: str | None, now: datetime | None = None) -> dict | None:
+    """
+    Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
+    action, or ``None`` if the IP is not currently blocked. This is the IP
+    counterpart of :func:`get_user_lockout` and is meant for the authentication
+    pre-check hot path.
+
+    Like :func:`get_user_lockout` it is a **pure read**: it never writes, so a
+    stale ``is_blocked=True`` row whose ``block_expires_at`` lies in the past
+    simply reads as *not blocked* (it is overwritten by the next block or by a
+    cleanup job). A row with ``block_expires_at IS NULL`` is a permanent block.
+
+    The remaining time is surfaced so the WebUI login (``/auth``) can tell the
+    user how long the block lasts, just like the user lock (maskable via the
+    ``hide_specific_error_message`` policy); the machine-facing ``/validate``
+    endpoints keep the generic failure response.
+
+    :param source_ip: the client IP to check; a falsy value is never blocked
+    :param now: the reference time; defaults to :func:`utc_now`
+    :return: ``None`` if not blocked, else a dict with keys ``permanent`` (bool),
+        ``expires_at`` (naive-UTC :class:`datetime` or ``None`` if permanent) and
+        ``seconds_remaining`` (whole seconds until a timed block expires, ``>= 0``,
+        or ``None`` if permanent)
+    """
+    if not source_ip:
+        return None
+    state = db.session.get(BlockList, source_ip)
+    if not state or not state.is_blocked:
+        return None
+    if state.block_expires_at is None:
+        # Permanent block; only an admin reset clears it.
+        return {"permanent": True, "expires_at": None, "seconds_remaining": None}
+    now = _naive_utc(now) if now is not None else utc_now()
+    if state.block_expires_at <= now:
+        return None
+    remaining = int((state.block_expires_at - now).total_seconds())
+    return {"permanent": False, "expires_at": state.block_expires_at, "seconds_remaining": remaining}
+
+
+def is_ip_blocked(source_ip: str | None, now: datetime | None = None) -> bool:
+    """
+    Return whether *source_ip* is currently blocked by the ``BLOCK_IP`` action.
+    Thin boolean wrapper over :func:`get_ip_block` for the authentication
+    pre-check hot path; see that function for the expiry and permanent-block
+    semantics.
+
+    :param source_ip: the client IP to check; a falsy value is never blocked
+    :param now: the reference time; defaults to :func:`utc_now`
+    :return: ``True`` if the IP is currently blocked
+    """
+    return get_ip_block(source_ip, now=now) is not None
+
+
+def evaluate_access_decision(user: "User", source_ip: str | None = None,
+                             now: datetime | None = None) -> "AccessDecision":
+    """
+    Pre-auth conditional-access decision for the current request: should it be
+    denied, explicitly allowed, or left to the normal flow?
+
+    This runs **before** the credential check (and, per the chosen precedence,
+    *after* the persistent :func:`is_user_locked` / :func:`is_ip_blocked`
+    pre-checks, so an :attr:`AccessDecision.ALLOW` can never override a lock or
+    block). It handles only the :attr:`LockoutAction.ALLOW` /
+    :attr:`LockoutAction.DENY` actions; the lockout/email/block actions are
+    post-response side effects handled by :func:`evaluate_lockout_policies`.
+
+    Because there is no event for the current request yet, the decision is keyed
+    on the user's **prior** event history: for each enabled policy the events of
+    its ``counter_type_to_track`` are counted over its window, and the
+    highest-priority stage whose threshold is met supplies the decision. A
+    ``DENY`` stage therefore rejects this single request without persisting any
+    state — a stateless, self-healing reject that lifts on its own as the
+    failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
+    A stage with ``failure_threshold`` 0 always matches, so an ``ALLOW`` stage at
+    threshold 0 acts as a default-allow / allowlist exception.
+
+    Policies are evaluated highest ``priority`` first and the first one that
+    yields a decision wins, so a higher-priority ALLOW overrides a lower-priority
+    DENY and vice versa. ``dry_run`` policies are logged but never enforced.
+
+    V1 limitation: like the rest of the engine the decision is keyed on the
+    resolved ``(resolver, uid, realm)`` user, so an unresolved user (unknown
+    login, local admin) is never denied here; IP-scoped / spraying decisions are
+    a separate, deferred feature. ``source_ip`` is accepted for signature
+    symmetry with :func:`evaluate_lockout_policies` and reserved for that.
+
+    :param user: the authenticating user; an unresolved user yields ``CONTINUE``
+    :param source_ip: the resolved client IP (reserved for IP-scoped decisions)
+    :param now: the reference time; defaults to :func:`utc_now`
+    :return: the :class:`AccessDecision` for this request
+    """
+    if not _resolved(user):
+        return AccessDecision.CONTINUE
+    now = _naive_utc(now) if now is not None else utc_now()
+    policies = db.session.scalars(
+        select(LockoutPolicy)
+        .where(LockoutPolicy.enabled.is_(True))
+        .order_by(LockoutPolicy.priority.desc())
+    ).all()
+    for policy in policies:
+        decision = _policy_access_decision(policy, user, now)
+        if decision is not None:
+            return decision
+    return AccessDecision.CONTINUE
+
+
+def _policy_access_decision(policy: LockoutPolicy, user: "User",
+                            now: datetime) -> "AccessDecision | None":
+    """
+    The ALLOW/DENY decision a single policy contributes pre-auth, or ``None`` if
+    this policy does not decide the request (no stage met, the met stage carries
+    only lockout-style actions, or the policy is in dry-run).
+    """
+    count = count_user_events(user.resolver, user.uid, user.realm,
+                              policy.counter_type_to_track, policy.time_window_seconds, now=now)
+    triggered_stage = next((stage for stage in policy.stages
+                            if count >= stage.failure_threshold), None)
+    if triggered_stage is None:
+        return None
+    decision = _stage_access_decision(triggered_stage)
+    if decision is None:
+        # The met stage only locks / emails / blocks; that is handled
+        # post-response, not as a pre-auth decision.
+        return None
+    if policy.dry_run:
+        log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {user!r}: "
+                 f"{count} {policy.counter_type_to_track} event(s) in "
+                 f"{policy.time_window_seconds}s.")
+        return None
+    log.info(f"Policy {policy.name!r} returns access decision {decision} for {user!r}: "
+             f"{count} {policy.counter_type_to_track} event(s) in {policy.time_window_seconds}s.")
+    return decision
+
+
+def _stage_access_decision(stage) -> "AccessDecision | None":
+    """
+    Extract the pre-auth ALLOW/DENY decision from a triggered stage's actions, or
+    ``None`` if the stage carries no ALLOW/DENY action. If a stage is
+    misconfigured with both, DENY wins (fail closed).
+    """
+    has_allow = False
+    for action in stage.actions:
+        try:
+            action_type = LockoutAction(action.action_type)
+        except ValueError:
+            continue
+        if action_type == LockoutAction.DENY:
+            return AccessDecision.DENY
+        if action_type == LockoutAction.ALLOW:
+            has_allow = True
+    return AccessDecision.ALLOW if has_allow else None
 
 
 def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = None,
@@ -442,6 +616,29 @@ def _execute_stage_actions(stage, user: "User", source_ip: str | None, now: date
                 notice = _send_lockout_email(action_type, action, user, tags)
                 if notice:
                     notices.append(notice)
+            elif action_type == LockoutAction.BLOCK_IP:
+                # V1 limitation: this blocks the source IP of the request that
+                # tripped a *per-user* policy. True password-spraying detection
+                # (counting failures by IP across many users) is a separate,
+                # deferred feature; here BLOCK_IP is simply available as an
+                # action that blocks the offending request's IP.
+                if not source_ip:
+                    log.warning(f"BLOCK_IP action {action.id} on stage {stage.id}: this request has "
+                                f"no source IP; skipping.")
+                    continue
+                duration = _lock_duration_seconds(action.action_value)
+                if duration is None:
+                    log.warning(f"BLOCK_IP action {action.id} on stage {stage.id} has no valid duration "
+                                f"({action.action_value!r}); skipping.")
+                    continue
+                _upsert_ip_block(source_ip, block_expires_at=now + timedelta(seconds=duration),
+                                 stage_id=stage.id, reason=tags.get("policy"))
+            elif action_type in (LockoutAction.ALLOW, LockoutAction.DENY):
+                # ALLOW/DENY decide the current request pre-auth (see
+                # evaluate_access_decision); they are not post-response side
+                # effects, so there is nothing to do here.
+                log.debug(f"{action_type} is a pre-auth access decision; skipping in the "
+                          f"post-response engine.")
             else:
                 log.info(f"Lockout action {action_type} is recognized but not implemented yet; skipping.")
         except Exception as ex:
@@ -474,4 +671,32 @@ def _upsert_user_lockout_state(user: "User", *, is_locked: bool,
         db.session.commit()
     except Exception as ex:
         log.warning(f"Failed to write the user lockout state for {user!r}: {ex!r}")
+        db.session.rollback()
+
+
+def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, stage_id: int,
+                     reason: str | None = None) -> None:
+    """
+    Create or update the :class:`BlockList` row for *source_ip*.
+
+    The IP counterpart of :func:`_upsert_user_lockout_state`: the write is
+    defensive (a failure is logged and rolled back so that blocking an IP can
+    never break the authentication response that already completed) and an
+    existing **permanent** block is never downgraded to a timed one.
+    """
+    try:
+        state = db.session.get(BlockList, source_ip)
+        if state is None:
+            state = BlockList(ip=source_ip)
+            db.session.add(state)
+        elif state.is_blocked and state.block_expires_at is None and block_expires_at is not None:
+            log.info(f"Not downgrading the existing permanent block for IP {source_ip!r} to a timed block.")
+            return
+        state.is_blocked = True
+        state.block_expires_at = block_expires_at
+        state.last_stage_triggered = stage_id
+        state.reason = reason
+        db.session.commit()
+    except Exception as ex:
+        log.warning(f"Failed to write the IP block for {source_ip!r}: {ex!r}")
         db.session.rollback()

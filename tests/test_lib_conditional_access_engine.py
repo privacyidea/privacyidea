@@ -26,10 +26,14 @@ from email import message_from_string
 
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.engine import (
+    AccessDecision,
     LockoutAction,
     count_user_events,
+    evaluate_access_decision,
     evaluate_lockout_policies,
     is_user_locked,
+    is_ip_blocked,
+    get_ip_block,
     _lock_duration_seconds,
     _safe_format,
     _resolve_admin_recipients,
@@ -39,6 +43,7 @@ from privacyidea.lib.user import User
 from privacyidea.models import Admin, db
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
+    BlockList,
     LockoutPolicy,
     LockoutPolicyStage,
     LockoutStageAction,
@@ -64,7 +69,7 @@ class LockoutEngineTestCase(MyTestCase):
 
     @staticmethod
     def _clear():
-        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
                       LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
@@ -108,6 +113,9 @@ class LockoutEngineTestCase(MyTestCase):
     def _state(self, user=None):
         user = user or self.user
         return db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+
+    def _block(self, ip):
+        return db.session.get(BlockList, ip)
 
     # --- count_user_events ----------------------------------------------------
 
@@ -166,6 +174,70 @@ class LockoutEngineTestCase(MyTestCase):
 
     def test_is_user_locked_unresolved_user(self):
         self.assertFalse(is_user_locked(User()))
+
+    # --- is_ip_blocked --------------------------------------------------------
+
+    def test_is_ip_blocked_no_row(self):
+        self.assertFalse(is_ip_blocked("203.0.113.5"))
+
+    def test_is_ip_blocked_timed_future(self):
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
+                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self.assertTrue(is_ip_blocked("203.0.113.5"))
+
+    def test_is_ip_blocked_timed_expired(self):
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
+                                 block_expires_at=utc_now() - timedelta(seconds=600)))
+        db.session.commit()
+        self.assertFalse(is_ip_blocked("203.0.113.5"))
+
+    def test_is_ip_blocked_permanent(self):
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True, block_expires_at=None))
+        db.session.commit()
+        self.assertTrue(is_ip_blocked("203.0.113.5"))
+
+    def test_is_ip_blocked_flag_false(self):
+        # A future expiry but is_blocked=False (admin lifted it) means not blocked.
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=False,
+                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self.assertFalse(is_ip_blocked("203.0.113.5"))
+
+    def test_is_ip_blocked_empty_ip(self):
+        # A request without a resolvable source IP is never blocked.
+        self.assertFalse(is_ip_blocked(None))
+        self.assertFalse(is_ip_blocked(""))
+
+    # --- get_ip_block ---------------------------------------------------------
+
+    def test_get_ip_block_none_when_not_blocked(self):
+        self.assertIsNone(get_ip_block("203.0.113.5"))
+        self.assertIsNone(get_ip_block(None))
+
+    def test_get_ip_block_timed_reports_remaining(self):
+        now = utc_now()
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
+                                 block_expires_at=now + timedelta(seconds=600)))
+        db.session.commit()
+        block = get_ip_block("203.0.113.5", now=now)
+        self.assertEqual(False, block["permanent"], block)
+        self.assertEqual(600, block["seconds_remaining"], block)
+        self.assertIsNotNone(block["expires_at"], block)
+
+    def test_get_ip_block_expired_reads_as_unblocked(self):
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
+                                 block_expires_at=utc_now() - timedelta(seconds=1)))
+        db.session.commit()
+        self.assertIsNone(get_ip_block("203.0.113.5"))
+
+    def test_get_ip_block_permanent(self):
+        db.session.add(BlockList(ip="203.0.113.5", is_blocked=True, block_expires_at=None))
+        db.session.commit()
+        block = get_ip_block("203.0.113.5")
+        self.assertEqual(True, block["permanent"], block)
+        self.assertIsNone(block["seconds_remaining"], block)
+        self.assertIsNone(block["expires_at"], block)
 
     # --- evaluate_lockout_policies --------------------------------------------
 
@@ -295,6 +367,142 @@ class LockoutEngineTestCase(MyTestCase):
         # Unknown action types are logged and skipped, not raised.
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertIsNone(self._state())
+
+    # --- BLOCK_IP action ------------------------------------------------------
+
+    def test_block_ip_action_blocks_source_ip(self):
+        _, stages = self._make_policy(
+            name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
+            stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        block = self._block("203.0.113.7")
+        self.assertIsNotNone(block)
+        self.assertTrue(block.is_blocked)
+        self.assertIsNotNone(block.block_expires_at)
+        self.assertGreater(block.block_expires_at, utc_now())
+        # The originating stage and policy name are recorded for de-dup / auditing.
+        self.assertEqual(stages[0].id, block.last_stage_triggered)
+        self.assertEqual("blockip", block.reason)
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+        # A BLOCK_IP-only stage writes no user lock.
+        self.assertIsNone(self._state())
+
+    def test_block_ip_action_without_source_ip_skipped(self):
+        # No source IP for the request -> the action is logged and skipped, not raised.
+        self._make_policy(name="blocknoip", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip=None)
+        self.assertEqual(0, db.session.query(BlockList).count())
+
+    def test_block_ip_action_invalid_duration_skipped(self):
+        self._make_policy(name="blockbaddur", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        self.assertIsNone(self._block("203.0.113.7"))
+
+    def test_block_ip_does_not_downgrade_permanent_block(self):
+        # Pre-existing permanent block (block_expires_at is None).
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.commit()
+        self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        # The permanent block must remain permanent (block_expires_at stays None).
+        self.assertIsNone(self._block("203.0.113.7").block_expires_at)
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+
+    def test_block_ip_and_lock_user_combined(self):
+        # A stage can both lock the user and block the source IP in one trigger.
+        _, stages = self._make_policy(
+            name="lockandblock", counter_type=AuthEventType.PASSWORD_FAIL,
+            stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+        db.session.add(LockoutStageAction(
+            stage_id=stages[0].id, action_type=str(LockoutAction.BLOCK_IP), action_value=900))
+        db.session.commit()
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        self.assertTrue(self._state().is_locked)
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+
+    # --- evaluate_access_decision (ALLOW / DENY) ------------------------------
+
+    def test_access_decision_no_policies_is_continue(self):
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_deny_when_threshold_met(self):
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
+        # DENY is stateless: it persists no lockout state.
+        self.assertIsNone(self._state())
+
+    def test_access_decision_below_threshold_is_continue(self):
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_allow_threshold_zero_is_default_allow(self):
+        # A stage with threshold 0 always matches -> default allow, no events needed.
+        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((0, 1, LockoutAction.ALLOW, None),))
+        self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(self.user))
+
+    def test_access_decision_higher_priority_allow_overrides_deny(self):
+        # An ALLOW policy at higher priority wins over a lower-priority DENY.
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
+                          stages=((0, 1, LockoutAction.ALLOW, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
+        self.assertEqual(AccessDecision.ALLOW, evaluate_access_decision(self.user))
+
+    def test_access_decision_higher_priority_deny_overrides_allow(self):
+        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+                          stages=((0, 1, LockoutAction.ALLOW, None),))
+        self._make_policy(name="deny", counter_type=AuthEventType.PASSWORD_FAIL, priority=10,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
+
+    def test_access_decision_ignores_lockout_only_stage(self):
+        # A LOCK_USER stage is a post-response side effect, not a pre-auth decision.
+        self._make_policy(name="lock", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.LOCK_USER, 600),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_dry_run_not_enforced(self):
+        self._make_policy(name="drydeny", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_disabled_policy_skipped(self):
+        self._make_policy(name="offdeny", counter_type=AuthEventType.PASSWORD_FAIL, enabled=False,
+                          stages=((3, 1, LockoutAction.DENY, None),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 5)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(self.user))
+
+    def test_access_decision_unresolved_user_is_continue(self):
+        self._make_policy(name="allow", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((0, 1, LockoutAction.ALLOW, None),))
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(User()))
+
+    def test_access_decision_both_actions_on_stage_denies(self):
+        # A stage misconfigured with both ALLOW and DENY fails closed (DENY wins).
+        _, stages = self._make_policy(name="both", counter_type=AuthEventType.PASSWORD_FAIL,
+                                      stages=((3, 1, LockoutAction.ALLOW, None),))
+        db.session.add(LockoutStageAction(stage_id=stages[0].id,
+                                          action_type=str(LockoutAction.DENY), action_value=None))
+        db.session.commit()
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(self.user))
 
     # --- _lock_duration_seconds -----------------------------------------------
 

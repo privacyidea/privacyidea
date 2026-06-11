@@ -74,7 +74,9 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.engine import get_user_lockout, evaluate_lockout_policies
+from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
+                                                        evaluate_lockout_policies,
+                                                        evaluate_access_decision, AccessDecision)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
@@ -183,6 +185,21 @@ def _lockout_error_message(lockout: dict) -> str:
     return _("Your account is temporarily locked due to too many failed login attempts. "
              "Please try again in about {minutes} minute(s).").format(minutes=minutes)
 
+
+def _blocked_ip_error_message(client_ip: str | None, block: dict) -> str:
+    """
+    Build the user-facing message for a login rejected because the source IP is
+    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the dict
+    returned by :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
+    a permanent block points the user at the administrator, a timed block states
+    the approximate remaining time (rounded up to whole minutes, at least one).
+    """
+    if block["permanent"]:
+        return _("Authentication failure. Your IP ({ip}) has been permanently blocked. "
+                 "Please contact your administrator.").format(ip=client_ip)
+    minutes = max(1, -(-block["seconds_remaining"] // 60))
+    return _("Authentication failure. Your IP ({ip}) has been blocked. "
+             "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
 
 @jwtauth.route('', methods=['POST'])
 @prepolicy(auth_timelimit, request=request)
@@ -305,6 +322,24 @@ def get_auth_token():
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
         raise AuthError(_lockout_error_message(lockout),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+    # A source IP blocked by a BLOCK_IP action is rejected before any credential
+    # check. Like the user lock, the rejection names the block and the offending
+    # IP so the user understands why login fails; an admin who prefers not to
+    # reveal it can enable the hide_specific_error_message policy.
+    ip_block = get_ip_block(g.client_ip)
+    if ip_block:
+        log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"info": "Rejected: source IP is blocked"})
+        raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+    # Pre-auth conditional-access decision (DENY action), after the lock/block
+    # pre-checks so ALLOW cannot override them. A DENY rejects this single login
+    # generically (no IP/decision reason leaked); ALLOW / CONTINUE fall through.
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
+        g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
+        raise AuthError(_("Authentication failure. Wrong credentials"),
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
@@ -551,11 +586,17 @@ def get_auth_token():
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
 
     if not admin_auth and not user_auth:
-        # If this very request tripped a stage that locked the user, lead with the lockout
-        # message (how long it lasts) instead of the generic "Wrong credentials" — the
-        # account is locked now, so that is the more useful thing to tell the user.
+        # If this very request tripped a stage that locked the user or blocked its source
+        # IP, lead with that instead of the generic "Wrong credentials" — the lock/block
+        # is in force now, so that is the more useful thing to tell the user.
         lockout = get_user_lockout(user)
-        message = _lockout_error_message(lockout) if lockout else _("Authentication failure. Wrong credentials")
+        ip_block = get_ip_block(g.client_ip)
+        if lockout:
+            message = _lockout_error_message(lockout)
+        elif ip_block:
+            message = _blocked_ip_error_message(g.client_ip, ip_block)
+        else:
+            message = _("Authentication failure. Wrong credentials")
         if lockout_notices:
             # Append the notice(s) to the message (not an extra detail key) so the existing
             # hide_specific_error_message policy still masks them, and the login screen shows

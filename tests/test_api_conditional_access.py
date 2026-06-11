@@ -25,13 +25,14 @@ from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
-from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked
+from privacyidea.lib.conditional_access.engine import LockoutAction, is_user_locked, is_ip_blocked
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
+    BlockList,
     LockoutPolicy,
     LockoutPolicyStage,
     LockoutStageAction,
@@ -62,13 +63,14 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear():
-        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
                       LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _check(self, data):
-        with self.app.test_request_context('/validate/check', method='POST', data=data):
+    def _check(self, data, remote_addr=None):
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/validate/check', method='POST', data=data, **kwargs):
             response = self.app.full_dispatch_request()
             self.assertEqual(200, response.status_code, response)
             return response.json
@@ -90,6 +92,31 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.add(LockoutStageAction(stage_id=stage.id,
                                           action_type=str(LockoutAction.LOCK_USER),
                                           action_value=duration))
+        db.session.commit()
+
+    def _make_block_ip_policy(self, *, counter_type, threshold, duration, window=3600):
+        policy = LockoutPolicy(name="ca_blockip", counter_type_to_track=str(counter_type),
+                               time_window_seconds=window, enabled=True, priority=1)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id,
+                                          action_type=str(LockoutAction.BLOCK_IP),
+                                          action_value=duration))
+        db.session.commit()
+
+    def _make_decision_policy(self, *, name, counter_type, threshold, action, priority=1, window=3600):
+        policy = LockoutPolicy(name=name, counter_type_to_track=str(counter_type),
+                               time_window_seconds=window, enabled=True, priority=priority)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(action),
+                                          action_value=None))
         db.session.commit()
 
     def _failcount(self):
@@ -149,6 +176,88 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
 
+    # --- BLOCK_IP -------------------------------------------------------------
+
+    def test_blocked_ip_rejected_without_token_logic(self):
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self.assertEqual(0, self._failcount())
+
+        # Even valid credentials must be rejected while the source IP is blocked.
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="203.0.113.7")
+        self.assertTrue(body["result"]["status"], body)
+        self.assertFalse(body["result"]["value"], body)
+        # Generic response: no detail leaks the reason.
+        self.assertFalse(body.get("detail"), body)
+        # No token logic ran and the pre-check wrote no authentication-log row.
+        self.assertEqual(0, self._failcount())
+        self.assertEqual(0, len(get_authentication_logs()))
+
+        # The block is per-IP: the same user from a clean IP still authenticates
+        # (the valid OTP was never consumed by the rejected request above).
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr="198.51.100.9")
+        self.assertTrue(body["result"]["value"], body)
+
+    def test_ip_blocked_after_threshold_failures(self):
+        # Repeated failures from one IP trip a BLOCK_IP stage; that IP is then blocked.
+        self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+        attacker_ip = "203.0.113.7"
+        for _ in range(3):
+            body = self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr=attacker_ip)
+            self.assertFalse(body["result"]["value"], body)
+
+        self.assertEqual(3, len(get_authentication_logs()))
+        self.assertTrue(is_ip_blocked(attacker_ip))
+        # The user themselves is not locked - only the IP was blocked.
+        self.assertFalse(is_user_locked(self.user))
+
+        # The next request from that IP is rejected by the pre-check (no new log row),
+        # even with valid credentials.
+        logs_before = len(get_authentication_logs())
+        body = self._check({"user": "cornelius", "pass": "pin755224"}, remote_addr=attacker_ip)
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(logs_before, len(get_authentication_logs()))
+
+    # --- ALLOW / DENY ---------------------------------------------------------
+
+    def test_deny_policy_rejects_after_threshold(self):
+        self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
+                                   threshold=3, action=LockoutAction.DENY)
+        for _ in range(3):
+            body = self._check({"user": "cornelius", "pass": "pin000000"})
+            self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(3, len(get_authentication_logs()))
+
+        # The 4th request - even with a valid OTP - is denied pre-auth: a stateless
+        # reject that persists no lock and writes no new authentication-log row.
+        logs_before = len(get_authentication_logs())
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertFalse(body.get("detail"), body)
+        self.assertEqual(logs_before, len(get_authentication_logs()))
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_allow_policy_does_not_block_valid_auth(self):
+        # A default-allow policy (threshold 0) must not interfere with a valid login.
+        self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
+                                   threshold=0, action=LockoutAction.ALLOW)
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+
+    def test_allow_overrides_lower_priority_deny(self):
+        # A higher-priority ALLOW exception lets a valid login through despite a
+        # lower-priority DENY whose threshold is met.
+        self._make_decision_policy(name="ca_deny", counter_type=AuthEventType.MFA_FAIL,
+                                   threshold=3, action=LockoutAction.DENY, priority=1)
+        self._make_decision_policy(name="ca_allow", counter_type=AuthEventType.MFA_FAIL,
+                                   threshold=0, action=LockoutAction.ALLOW, priority=10)
+        for _ in range(3):
+            self._check({"user": "cornelius", "pass": "pin000000"})
+        # The DENY threshold is met, but the higher-priority ALLOW wins -> valid auth succeeds.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+
 
 class ConditionalAccessAuthTestCase(MyApiTestCase):
     """The WebUI JWT login (/auth) is gated by the same lockout engine."""
@@ -165,14 +274,15 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear():
-        for model in (UserLockoutState, LockoutStageAction, LockoutPolicyStage,
+        for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
                       LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _auth(self, username, password):
+    def _auth(self, username, password, remote_addr=None):
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
         with self.app.test_request_context('/auth', method='POST',
-                                           data={"username": username, "password": password}):
+                                           data={"username": username, "password": password}, **kwargs):
             return self.app.full_dispatch_request()
 
     def _make_password_policy(self, *, threshold, duration=600, window=3600):
@@ -185,6 +295,30 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         db.session.commit()
         db.session.add(LockoutStageAction(stage_id=stage.id,
                                           action_type=str(LockoutAction.LOCK_USER),
+                                          action_value=duration))
+        db.session.commit()
+
+    def _make_deny_policy(self, *, threshold, window=3600):
+        policy = LockoutPolicy(name="ca_deny", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+                               time_window_seconds=window, enabled=True, priority=1)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.DENY),
+                                          action_value=None))
+        db.session.commit()
+
+    def _make_block_ip_policy(self, *, threshold, duration=600, window=3600):
+        policy = LockoutPolicy(name="ca_block_ip", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+                               time_window_seconds=window, enabled=True, priority=1)
+        db.session.add(policy)
+        db.session.commit()
+        stage = LockoutPolicyStage(policy_id=policy.id, failure_threshold=threshold, priority=1)
+        db.session.add(stage)
+        db.session.commit()
+        db.session.add(LockoutStageAction(stage_id=stage.id, action_type=str(LockoutAction.BLOCK_IP),
                                           action_value=duration))
         db.session.commit()
 
@@ -218,6 +352,73 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("locked", message.lower(), message)
         self.assertIn("administrator", message.lower(), message)
         self.assertNotIn("minute", message.lower(), message)
+
+    def test_blocked_ip_rejected_at_auth(self):
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
+                                 block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        # Correct userstore password, but the source IP is blocked -> 401 whose message
+        # names the block, the offending IP and the remaining time (like the user lock).
+        res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("blocked", message.lower(), message)
+        self.assertIn("203.0.113.7", message, message)
+        self.assertIn("minute", message.lower(), message)
+        self.assertNotIn("account", message.lower(), message)
+        self.assertNotIn("Wrong credentials", message, message)
+        # Rejected before classification -> no authentication-log row.
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_permanently_blocked_ip_message_at_auth(self):
+        # A permanent block (no expiry) points the user at the administrator, no minutes.
+        db.session.add(BlockList(ip="203.0.113.7", is_blocked=True, block_expires_at=None))
+        db.session.commit()
+        res = self._auth("cornelius", "test", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("blocked", message.lower(), message)
+        self.assertIn("203.0.113.7", message, message)
+        self.assertIn("administrator", message.lower(), message)
+        self.assertNotIn("minute", message.lower(), message)
+        self.assertNotIn("Wrong credentials", message, message)
+
+    def test_ip_block_trip_message_at_auth(self):
+        # The failure that trips the BLOCK_IP stage already tells the user about
+        # the block instead of "Wrong credentials".
+        self._make_block_ip_policy(threshold=3)
+        for _ in range(2):
+            res = self._auth("cornelius", "wrongpass", remote_addr="203.0.113.7")
+            self.assertEqual(401, res.status_code, res)
+            self.assertIn("Wrong credentials", res.json["result"]["error"]["message"], res.json)
+        res = self._auth("cornelius", "wrongpass", remote_addr="203.0.113.7")
+        self.assertEqual(401, res.status_code, res)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("blocked", message.lower(), message)
+        self.assertIn("203.0.113.7", message, message)
+        self.assertIn("minute", message.lower(), message)
+        self.assertNotIn("Wrong credentials", message, message)
+        # The user themselves is not locked - only the IP was blocked.
+        self.assertFalse(is_user_locked(self.user))
+
+    def test_deny_policy_rejects_at_auth(self):
+        # After enough prior PASSWORD_FAILs the next login is denied pre-auth, even with
+        # the correct password - generically, with no new log row and no persisted lock.
+        self._make_deny_policy(threshold=3)
+        for _ in range(3):
+            res = self._auth("cornelius", "wrongpass")
+            self.assertEqual(401, res.status_code, res)
+        logs_before = len(get_authentication_logs())
+        res = self._auth("cornelius", "test")
+        self.assertEqual(401, res.status_code, res)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("Wrong credentials", message, message)
+        self.assertNotIn("locked", message.lower(), message)
+        self.assertEqual(logs_before, len(get_authentication_logs()))
+        self.assertFalse(is_user_locked(self.user))
 
     def test_user_locked_after_password_failures(self):
         self._make_password_policy(threshold=3)
