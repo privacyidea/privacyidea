@@ -38,6 +38,7 @@ from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMSGateway, SMSGatewayOption, db
@@ -230,6 +231,9 @@ def set_smsgateway(identifier, providermodule=None, description=None,
     header_and_options = {"option": options, "header": headers}
     for option_type, options in header_and_options.items():
         for option in options:
+            # Skip updating if the value is CENSORED (keep existing value)
+            if options[option] == CENSORED:
+                continue
             if (option_type == "option" and option in existing_option_keys) or (
                     option_type == "header" and option in existing_header_keys):
                 # Update existing option

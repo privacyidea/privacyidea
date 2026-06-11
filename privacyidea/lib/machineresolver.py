@@ -112,6 +112,9 @@ def save_resolver(params):
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
+            if value == CENSORED:
+                # Keep the existing value, do not overwrite with CENSORED
+                continue
             value = encryptPassword(value)
 
         stmt = select(MachineResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
