@@ -47,7 +47,7 @@ interface TokenCountResponses {
   standalone: true,
   imports: [RouterLink, WidgetStateComponent],
   templateUrl: "./tokens-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./tokens-widget.component.scss"]
+  styleUrl: "./tokens-widget.component.scss"
 })
 export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "tokens";

@@ -35,15 +35,15 @@ export interface EventPartition {
   standalone: true,
   imports: [RouterLink, WidgetStateComponent],
   templateUrl: "./events-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./events-widget.component.scss"]
+  styleUrl: "./events-widget.component.scss"
 })
 export class EventsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "events";
   static override readonly title = $localize`Events`;
   static override readonly icon = "flag";
-  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 5 };
-  static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
+  static override readonly defaultSize: WidgetSize = { cols: 6, rows: 3 };
+  static override readonly minSize: WidgetSize = { cols: 4, rows: 3 };
+  static override readonly maxSize: WidgetSize = { cols: 10, rows: 6 };
 
   private readonly eventService: EventServiceInterface = inject(EventService);
   private readonly authService: AuthServiceInterface = inject(AuthService);

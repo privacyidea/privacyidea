@@ -23,6 +23,7 @@ import { provideRouter } from "@angular/router";
 import { WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { TokenService } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -76,6 +77,7 @@ describe("DashboardComponent", () => {
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
+        PendingChangesService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: SubscriptionService, useClass: MockSubscriptionService }
@@ -83,7 +85,10 @@ describe("DashboardComponent", () => {
     }).compileComponents();
 
     layoutService = TestBed.inject(DashboardLayoutService);
-    layoutService.resetLayout();
+    layoutService.widgets.set([
+      { id: "tokens-1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8 },
+      { id: "subscriptions-1", type: "subscriptions", x: 16, y: 0, cols: 8, rows: 5 }
+    ]);
     layoutService.editMode.set(false);
 
     fixture = TestBed.createComponent(DashboardComponent);
@@ -190,7 +195,7 @@ describe("DashboardComponent", () => {
     it("should clamp an oversized stored widget down to its max for display", () => {
       const oversized: WidgetInstance = { id: "x", type: "tokens", x: 0, y: 0, cols: 20, rows: 20 };
       expect(component['effectiveCols'](oversized)).toBe(12);
-      expect(component['effectiveRows'](oversized)).toBe(10);
+      expect(component['effectiveRows'](oversized)).toBe(9);
     });
 
     it("should clamp an undersized stored widget up to its min for display", () => {
@@ -243,12 +248,12 @@ describe("DashboardComponent", () => {
       expect(component['resizePreview']()?.rows).toBe(5);
     });
 
-    it("should clamp the height up to the widget's max (tokens: 10 rows)", () => {
+    it("should clamp the height up to the widget's max (tokens: 9 rows)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "s", pointerEvent({ clientY: 0 }));
       component['onResizeMove'](pointerEvent({ clientY: 100000 }));
 
-      expect(component['resizePreview']()?.rows).toBe(10);
+      expect(component['resizePreview']()?.rows).toBe(9);
     });
 
     it("should apply a valid resize to the layout on resize end", () => {
@@ -259,7 +264,7 @@ describe("DashboardComponent", () => {
       component['onResizeMove'](pointerEvent({ clientX: 100, clientY: 88 }));
       component['onResizeEnd']();
 
-      expect(resizeSpy).toHaveBeenCalledWith(widget.id, 8, 10);
+      expect(resizeSpy).toHaveBeenCalledWith(widget.id, 8, 9);
       expect(component['resizePreview']()).toBeNull();
     });
 
@@ -366,16 +371,27 @@ describe("DashboardComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    it("should delegate edit toggling to the layout service", () => {
-      const toggleSpy = jest.spyOn(layoutService, "toggleEditMode");
-      component['toggleEdit']();
-      expect(toggleSpy).toHaveBeenCalled();
+    it("should begin a staged edit when entering edit mode", () => {
+      const beginSpy = jest.spyOn(layoutService, "beginEdit");
+      component['enterEdit']();
+      expect(beginSpy).toHaveBeenCalled();
+      expect(layoutService.editMode()).toBe(true);
     });
 
-    it("should delegate reset to the layout service", () => {
-      const resetSpy = jest.spyOn(layoutService, "resetLayout");
-      component['reset']();
-      expect(resetSpy).toHaveBeenCalled();
+    it("should commit the staged edit on save", () => {
+      const saveSpy = jest.spyOn(layoutService, "saveEdit");
+      component['enterEdit']();
+      component['save']();
+      expect(saveSpy).toHaveBeenCalled();
+      expect(layoutService.editMode()).toBe(false);
+    });
+
+    it("should discard the staged edit on cancel", () => {
+      const cancelSpy = jest.spyOn(layoutService, "cancelEdit");
+      component['enterEdit']();
+      component['cancel']();
+      expect(cancelSpy).toHaveBeenCalled();
+      expect(layoutService.editMode()).toBe(false);
     });
   });
 });

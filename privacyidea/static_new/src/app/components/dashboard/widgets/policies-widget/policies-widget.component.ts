@@ -20,7 +20,7 @@ import { Component, computed, effect, inject, OnInit, signal } from "@angular/co
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
-import { DashboardWidget, WidgetSize } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
@@ -35,15 +35,15 @@ export interface PolicyPartition {
   standalone: true,
   imports: [RouterLink, WidgetStateComponent],
   templateUrl: "./policies-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./policies-widget.component.scss"]
+  styleUrl: "./policies-widget.component.scss"
 })
 export class PoliciesWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "policies";
   static override readonly title = $localize`Policies`;
   static override readonly icon = "gavel";
-  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 5 };
-  static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
+  static override readonly defaultSize: WidgetSize = { cols: 10, rows: 5 };
+  static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
+  static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };
 
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
   private readonly authService: AuthServiceInterface = inject(AuthService);

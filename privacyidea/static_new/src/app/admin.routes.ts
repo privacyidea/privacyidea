@@ -76,7 +76,12 @@ export const routes: Routes = [
     pathMatch: "full",
     redirectTo: () => (inject(AuthService).adminDashboard() ? "dashboard" : "tokens")
   },
-  { path: "dashboard", component: DashboardComponent, canActivate: [dashboardGuard] },
+  {
+    path: "dashboard",
+    component: DashboardComponent,
+    canActivate: [dashboardGuard],
+    canDeactivate: [pendingChangesGuard]
+  },
   {
     path: "tokens",
     children: [

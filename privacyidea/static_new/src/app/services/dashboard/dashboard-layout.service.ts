@@ -30,7 +30,13 @@ export interface DashboardLayoutServiceInterface {
   readonly editMode: WritableSignal<boolean>;
   readonly insertRow: WritableSignal<number>;
 
-  toggleEditMode(): void;
+  beginEdit(): void;
+
+  saveEdit(): void;
+
+  cancelEdit(): void;
+
+  hasPendingChanges(): boolean;
 
   addWidget(type: string): void;
 
@@ -61,8 +67,29 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public readonly insertRow: WritableSignal<number> = signal(0);
 
-  public toggleEditMode(): void {
-    this.editMode.update((value) => !value);
+  private snapshot: WidgetInstance[] | null = null;
+
+  public beginEdit(): void {
+    this.snapshot = this.widgets().map((widget) => ({ ...widget }));
+    this.editMode.set(true);
+  }
+
+  public saveEdit(): void {
+    this.snapshot = null;
+    this.editMode.set(false);
+    this.persist();
+  }
+
+  public cancelEdit(): void {
+    if (this.snapshot) {
+      this.widgets.set(this.snapshot);
+      this.snapshot = null;
+    }
+    this.editMode.set(false);
+  }
+
+  public hasPendingChanges(): boolean {
+    return this.snapshot !== null && !this.sameLayout(this.widgets(), this.snapshot);
   }
 
   public addWidget(type: string): void {
@@ -77,7 +104,7 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     const { x, y } = this.findFreeSpot(cols, rows);
     const widget: WidgetInstance = { id: uuid(), type: widgetType.type, x, y, cols, rows };
     this.widgets.update((widgets) => [...widgets, widget]);
-    this.persist();
+    this.persistIfLive();
   }
 
   public hasWidgetOfType(type: string): boolean {
@@ -90,17 +117,17 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       return;
     }
     this.widgets.update((widgets) => widgets.filter((widget) => widget.id !== id));
-    this.persist();
+    this.persistIfLive();
   }
 
   public moveWidgetTo(id: string, x: number, y: number): void {
     this.widgets.update((widgets) => widgets.map((widget) => (widget.id === id ? { ...widget, x, y } : widget)));
-    this.persist();
+    this.persistIfLive();
   }
 
   public resizeWidget(id: string, cols: number, rows: number): void {
     this.widgets.update((widgets) => widgets.map((widget) => (widget.id === id ? { ...widget, cols, rows } : widget)));
-    this.persist();
+    this.persistIfLive();
   }
 
   public persist(): void {
@@ -109,7 +136,31 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public resetLayout(): void {
     this.widgets.set(this.reconcilePinned(this.defaultWidgets()));
-    this.persist();
+    this.persistIfLive();
+  }
+
+  private persistIfLive(): void {
+    if (!this.editMode()) {
+      this.persist();
+    }
+  }
+
+  private sameLayout(a: WidgetInstance[], b: WidgetInstance[]): boolean {
+    if (a.length !== b.length) {
+      return false;
+    }
+    const byId = new Map(b.map((widget) => [widget.id, widget]));
+    return a.every((widget) => {
+      const other = byId.get(widget.id);
+      return (
+        !!other &&
+        other.type === widget.type &&
+        other.x === widget.x &&
+        other.y === widget.y &&
+        other.cols === widget.cols &&
+        other.rows === widget.rows
+      );
+    });
   }
 
   private reconcilePinned(widgets: WidgetInstance[]): WidgetInstance[] {
@@ -141,10 +192,19 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private defaultWidgets(): WidgetInstance[] {
-    const tokens = this.registry.get("tokens");
-    if (!tokens) {
-      return [];
-    }
-    return [{ id: uuid(), type: tokens.type, x: 0, y: 0, ...tokens.defaultSize }];
+    const positions: { type: string; x: number; y: number }[] = [
+      { type: "tokens", x: 0, y: 0 },
+      { type: "events", x: 0, y: 8 },
+      { type: "policies", x: 6, y: 0 },
+      { type: "administration", x: 6, y: 5 },
+      { type: "authentications", x: 16, y: 5 }
+    ];
+    return positions.reduce<WidgetInstance[]>((result, { type, x, y }) => {
+      const widgetType = this.registry.get(type);
+      if (widgetType) {
+        result.push({ id: uuid(), type, x, y, ...widgetType.defaultSize });
+      }
+      return result;
+    }, []);
   }
 }

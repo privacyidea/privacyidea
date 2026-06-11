@@ -17,16 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+@use "../widget";
+
 :host {
-  display: flex;
+  @include widget.host;
   flex-direction: column;
   overflow: hidden;
 }
 
 .table-container {
+  box-sizing: border-box;
   overflow: auto;
   height: 100%;
-  padding: var(--global-padding);
+  width: 100%;
 }
 
 .admin-table {

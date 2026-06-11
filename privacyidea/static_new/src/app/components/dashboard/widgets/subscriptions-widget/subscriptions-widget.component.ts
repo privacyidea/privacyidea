@@ -30,7 +30,7 @@ import { Subscription, SubscriptionService } from "@services/subscription/subscr
   standalone: true,
   imports: [RouterLink, WidgetStateComponent],
   templateUrl: "./subscriptions-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./subscriptions-widget.component.scss"]
+  styleUrl: "./subscriptions-widget.component.scss"
 })
 export class SubscriptionsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "subscriptions";

@@ -16,8 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+@use "../widget";
+
 :host {
-  align-items: flex-start;
+  @include widget.host;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: flex-start;
   overflow: auto;
 }
@@ -31,8 +36,14 @@
     vertical-align: top;
   }
 
-  td:last-child {
+  td:nth-child(2) {
+    text-align: center;
+    font-weight: 600;
+  }
+
+  td[colspan] {
     text-align: right;
+    overflow-wrap: anywhere;
   }
 }
 

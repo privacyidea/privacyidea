@@ -78,6 +78,49 @@ describe("DashboardDataStore", () => {
     expect(ref.revalidating()).toBe(false);
   });
 
+  it("does not cancel or restart an in-flight request when a widget remounts (per key)", () => {
+    const subject = new Subject<number>();
+    const factory = jest.fn(() => subject.asObservable());
+
+    // first visit: widget mounts and starts the request
+    const ref1 = store.load("dashboard:tokens", factory);
+    expect(ref1.revalidating()).toBe(true);
+
+    // user leaves and returns while the request is still running: the widget
+    // remounts and calls load() again with the same key
+    const ref2 = store.load("dashboard:tokens", factory);
+
+    // no second request was started and the same entry is reused
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(ref2).toBe(ref1);
+
+    // the original request was never cancelled: it still resolves the entry
+    subject.next(99);
+    subject.complete();
+    expect(ref2.value()).toBe(99);
+    expect(ref2.revalidating()).toBe(false);
+  });
+
+  it("checks in-flight state independently per key", () => {
+    const tokens = new Subject<number>();
+    const events = new Subject<number>();
+    const tokensFactory = jest.fn(() => tokens.asObservable());
+    const eventsFactory = jest.fn(() => events.asObservable());
+
+    store.load("dashboard:tokens", tokensFactory);
+    tokens.next(1);
+    tokens.complete();
+
+    store.load("dashboard:events", eventsFactory);
+
+    // revisiting reloads tokens (its request finished) but events stays deduped
+    store.load("dashboard:tokens", tokensFactory);
+    store.load("dashboard:events", eventsFactory);
+
+    expect(tokensFactory).toHaveBeenCalledTimes(2);
+    expect(eventsFactory).toHaveBeenCalledTimes(1);
+  });
+
   it("refetches after invalidate", () => {
     const factory = jest.fn(() => of(1));
     store.load("k", factory);

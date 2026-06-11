@@ -102,9 +102,9 @@ describe("AuthenticationsWidgetComponent", () => {
   });
 
   it("should override the static size constraints", () => {
-    expect(AuthenticationsWidgetComponent.defaultSize).toEqual({ cols: 6, rows: 5 });
-    expect(AuthenticationsWidgetComponent.minSize).toEqual({ cols: 5, rows: 4 });
-    expect(AuthenticationsWidgetComponent.maxSize).toEqual({ cols: 12, rows: 8 });
+    expect(AuthenticationsWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 6 });
+    expect(AuthenticationsWidgetComponent.minSize).toEqual({ cols: 5, rows: 5 });
+    expect(AuthenticationsWidgetComponent.maxSize).toEqual({ cols: 10, rows: 8 });
   });
 
   it("should render success and fail counts when right is granted", () => {

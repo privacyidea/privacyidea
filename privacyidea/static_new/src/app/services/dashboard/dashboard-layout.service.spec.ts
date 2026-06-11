@@ -47,8 +47,15 @@ describe("DashboardLayoutService", () => {
   describe("initialisation", () => {
     it("should fall back to the default layout when persistence is empty", () => {
       build();
-      expect(service.widgets()).toHaveLength(2);
-      expect(service.widgets().map((widget) => widget.type).sort()).toEqual(["subscriptions", "tokens"]);
+      expect(service.widgets()).toHaveLength(6);
+      expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
+        "administration",
+        "authentications",
+        "events",
+        "policies",
+        "subscriptions",
+        "tokens"
+      ]);
     });
 
     it("should load an existing layout from persistence", () => {
@@ -70,27 +77,59 @@ describe("DashboardLayoutService", () => {
     });
   });
 
-  describe("editMode", () => {
-    beforeEach(() => build());
+  describe("staged editing", () => {
+    beforeEach(() => build([]));
 
-    it("should toggle the edit mode flag", () => {
-      service.toggleEditMode();
+    it("should enter edit mode on beginEdit", () => {
+      service.beginEdit();
       expect(service.editMode()).toBe(true);
-      service.toggleEditMode();
+      expect(service.hasPendingChanges()).toBe(false);
+    });
+
+    it("should not persist changes made while editing", () => {
+      service.beginEdit();
+      const saveSpy = jest.spyOn(persistence, "save");
+      service.addWidget("events");
+      expect(saveSpy).not.toHaveBeenCalled();
+      expect((persistence.load() ?? []).some((widget) => widget.type === "events")).toBe(false);
+    });
+
+    it("should report pending changes once the layout diverges", () => {
+      service.beginEdit();
+      expect(service.hasPendingChanges()).toBe(false);
+      service.addWidget("events");
+      expect(service.hasPendingChanges()).toBe(true);
+    });
+
+    it("should persist the staged layout on saveEdit", () => {
+      service.beginEdit();
+      service.addWidget("events");
+      service.saveEdit();
       expect(service.editMode()).toBe(false);
+      expect(service.hasPendingChanges()).toBe(false);
+      expect(persistence.load()?.some((widget) => widget.type === "events")).toBe(true);
+    });
+
+    it("should revert the staged layout on cancelEdit", () => {
+      service.beginEdit();
+      service.addWidget("events");
+      service.cancelEdit();
+      expect(service.editMode()).toBe(false);
+      expect(service.widgets().some((widget) => widget.type === "events")).toBe(false);
+      expect((persistence.load() ?? []).some((widget) => widget.type === "events")).toBe(false);
     });
   });
 
   describe("addWidget", () => {
-    beforeEach(() => build());
+    beforeEach(() => build([]));
 
     it("should add a widget with the definition's default size", () => {
       service.addWidget("events");
 
       const added = service.widgets().find((widget) => widget.type === "events");
       expect(added).toBeDefined();
-      expect(added?.cols).toBe(8);
-      expect(added?.rows).toBe(5);
+      expect(added?.cols).toBe(6);
+      expect(added?.rows).toBe(3);
     });
 
     it("should place the new widget so it does not overlap existing ones", () => {
@@ -142,7 +181,7 @@ describe("DashboardLayoutService", () => {
   });
 
   describe("hasWidgetOfType", () => {
-    beforeEach(() => build());
+    beforeEach(() => build([]));
 
     it("should report whether a widget type is present in the layout", () => {
       expect(service.hasWidgetOfType("events")).toBe(false);
@@ -234,17 +273,24 @@ describe("DashboardLayoutService", () => {
     beforeEach(() => build());
 
     it("should restore the default layout", () => {
-      service.addWidget("events");
+      service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
 
-      expect(service.widgets()).toHaveLength(2);
-      expect(service.widgets().map((widget) => widget.type).sort()).toEqual(["subscriptions", "tokens"]);
+      expect(service.widgets()).toHaveLength(6);
+      expect(service.widgets().map((widget) => widget.type).sort()).toEqual([
+        "administration",
+        "authentications",
+        "events",
+        "policies",
+        "subscriptions",
+        "tokens"
+      ]);
     });
 
     it("should persist the reset layout", () => {
-      service.addWidget("events");
+      service.removeWidget(service.widgets().find((widget) => widget.type === "events")!.id);
       service.resetLayout();
-      expect(persistence.load()).toHaveLength(2);
+      expect(persistence.load()).toHaveLength(6);
     });
   });
 

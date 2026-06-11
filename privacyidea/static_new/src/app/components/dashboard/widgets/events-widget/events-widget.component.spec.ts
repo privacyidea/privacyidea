@@ -108,9 +108,9 @@ describe("EventsWidgetComponent", () => {
   });
 
   it("should override the static size constraints", () => {
-    expect(EventsWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 5 });
-    expect(EventsWidgetComponent.minSize).toEqual({ cols: 5, rows: 4 });
-    expect(EventsWidgetComponent.maxSize).toEqual({ cols: 12, rows: 8 });
+    expect(EventsWidgetComponent.defaultSize).toEqual({ cols: 6, rows: 3 });
+    expect(EventsWidgetComponent.minSize).toEqual({ cols: 4, rows: 3 });
+    expect(EventsWidgetComponent.maxSize).toEqual({ cols: 10, rows: 6 });
   });
 
   it("should render Active Events and Inactive Events labels", () => {

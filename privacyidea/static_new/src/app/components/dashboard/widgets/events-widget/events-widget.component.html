@@ -24,30 +24,34 @@
         <td i18n>Active Events</td>
         <td>{{ events().active.length }}</td>
       </tr>
-      <tr>
-        <td colspan="2">
-          @for (event of events().active; track event.id; let first = $first) {
-            @if (!first) {
-              <span class="separator">|</span>
+      @if (events().active.length) {
+        <tr>
+          <td colspan="2">
+            @for (event of events().active; track event.id; let first = $first) {
+              @if (!first) {
+                <span class="separator">|</span>
+              }
+              <a [routerLink]="['/events/details', event.id]">{{ event.name }}</a>
             }
-            <a [routerLink]="['/events/details', event.id]">{{ event.name }}</a>
-          }
-        </td>
-      </tr>
+          </td>
+        </tr>
+      }
       <tr>
         <td i18n>Inactive Events</td>
         <td>{{ events().inactive.length }}</td>
       </tr>
-      <tr>
-        <td colspan="2">
-          @for (event of events().inactive; track event.id; let first = $first) {
-            @if (!first) {
-              <span class="separator">|</span>
+      @if (events().inactive.length) {
+        <tr>
+          <td colspan="2">
+            @for (event of events().inactive; track event.id; let first = $first) {
+              @if (!first) {
+                <span class="separator">|</span>
+              }
+              <a [routerLink]="['/events/details', event.id]">{{ event.name }}</a>
             }
-            <a [routerLink]="['/events/details', event.id]">{{ event.name }}</a>
-          }
-        </td>
-      </tr>
+          </td>
+        </tr>
+      }
     </tbody>
   </table>
 </app-widget-state>

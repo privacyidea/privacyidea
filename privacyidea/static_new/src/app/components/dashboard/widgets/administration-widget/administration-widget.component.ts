@@ -20,9 +20,9 @@ import { DatePipe } from "@angular/common";
 import { Component, OnInit, computed, effect, inject, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
-import { DashboardWidget, WidgetSize } from "@models/dashboard";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DASHBOARD_COLUMNS, DashboardWidget, WidgetSize } from "@models/dashboard";
 import { Audit, AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { forkJoin } from "rxjs";
 
@@ -31,15 +31,15 @@ import { forkJoin } from "rxjs";
   standalone: true,
   imports: [DatePipe, WidgetStateComponent],
   templateUrl: "./administration-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./administration-widget.component.scss"]
+  styleUrl: "./administration-widget.component.scss"
 })
 export class AdministrationWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "administration";
   static override readonly title = $localize`Administration`;
   static override readonly icon = "supervised_user_circle";
-  static override readonly defaultSize: WidgetSize = { cols: 10, rows: 5 };
-  static override readonly minSize: WidgetSize = { cols: 6, rows: 4 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
+  static override readonly defaultSize: WidgetSize = { cols: 10, rows: 6 };
+  static override readonly minSize: WidgetSize = { cols: 7, rows: 4 };
+  static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);

@@ -17,9 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-:host {
+@mixin host {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
+}
+
+@mixin stat-table($padding-block: var(--quarter-global-padding)) {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    padding: $padding-block var(--global-padding);
+
+    &:nth-child(2) {
+      text-align: center;
+      font-weight: 600;
+    }
+  }
+
+  tr:not(:last-child) td {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
 }

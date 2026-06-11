@@ -103,7 +103,7 @@ describe("TokensWidgetComponent", () => {
   it("should override the static size constraints", () => {
     expect(TokensWidgetComponent.defaultSize).toEqual({ cols: 6, rows: 8 });
     expect(TokensWidgetComponent.minSize).toEqual({ cols: 4, rows: 5 });
-    expect(TokensWidgetComponent.maxSize).toEqual({ cols: 12, rows: 10 });
+    expect(TokensWidgetComponent.maxSize).toEqual({ cols: 12, rows: 9 });
   });
 
   it("should render the token count rows when the right is granted", () => {

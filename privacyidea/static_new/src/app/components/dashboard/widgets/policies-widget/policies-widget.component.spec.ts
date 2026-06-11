@@ -19,7 +19,7 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
-import { DashboardWidget, WidgetInstance } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -80,9 +80,9 @@ describe("PoliciesWidgetComponent", () => {
   });
 
   it("should override the static size constraints", () => {
-    expect(PoliciesWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 5 });
-    expect(PoliciesWidgetComponent.minSize).toEqual({ cols: 5, rows: 4 });
-    expect(PoliciesWidgetComponent.maxSize).toEqual({ cols: 12, rows: 8 });
+    expect(PoliciesWidgetComponent.defaultSize).toEqual({ cols: 10, rows: 5 });
+    expect(PoliciesWidgetComponent.minSize).toEqual({ cols: 6, rows: 5 });
+    expect(PoliciesWidgetComponent.maxSize).toEqual({ cols: DASHBOARD_COLUMNS, rows: 8 });
   });
 
   it("should render the active and inactive counts", () => {

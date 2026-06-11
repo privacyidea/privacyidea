@@ -17,26 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+@use "../widget";
+
 :host {
+  @include widget.host;
   width: 100%;
   align-items: flex-start;
 }
 
 .events-table {
-  width: 100%;
-  border-collapse: collapse;
+  @include widget.stat-table;
 
-  td {
-    padding: var(--global-padding) calc(var(--global-padding) * 2);
-
-    &:last-child {
-      text-align: right;
-      font-weight: 600;
-    }
-  }
-
-  tr:not(:last-child) td {
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  td[colspan] {
+    text-align: right;
+    overflow-wrap: anywhere;
   }
 }
 

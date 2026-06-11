@@ -50,15 +50,15 @@ interface AuthenticationResponses {
   standalone: true,
   imports: [RouterLink, WidgetStateComponent],
   templateUrl: "./authentications-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./authentications-widget.component.scss"]
+  styleUrl: "./authentications-widget.component.scss"
 })
 export class AuthenticationsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "authentications";
   static override readonly title = $localize`Authentications`;
   static override readonly icon = "receipt_long";
-  static override readonly defaultSize: WidgetSize = { cols: 6, rows: 5 };
-  static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
+  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 6 };
+  static override readonly minSize: WidgetSize = { cols: 5, rows: 5 };
+  static override readonly maxSize: WidgetSize = { cols: 10, rows: 8 };
 
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -125,7 +125,9 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
         }
       }
     }
-    return Object.values(dict).sort((a, b) => (b.latestError > a.latestError ? 1 : b.latestError < a.latestError ? -1 : 0));
+    return Object.values(dict).sort((a, b) =>
+      b.latestError > a.latestError ? 1 : b.latestError < a.latestError ? -1 : 0
+    );
   }
 
   private collectSerials(auditdata: AuditData[]): string[] {

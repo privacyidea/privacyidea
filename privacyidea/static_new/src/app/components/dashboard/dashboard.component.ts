@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkDrag, CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
-import { afterRenderEffect, Component, computed, ElementRef, inject, signal, viewChild } from "@angular/core";
+import { afterRenderEffect, Component, computed, ElementRef, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { WidgetFrameComponent } from "@components/dashboard/widget-frame/widget-frame.component";
@@ -25,6 +25,7 @@ import { WidgetPaletteComponent } from "@components/dashboard/widget-palette/wid
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 interface FieldRect {
   x: number;
@@ -70,9 +71,10 @@ type DragTarget = FieldRect & { valid: boolean };
   templateUrl: "./dashboard.component.html",
   styleUrl: "./dashboard.component.scss"
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnDestroy {
   protected readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
+  private readonly pendingChanges = inject(PendingChangesService);
   protected readonly widgets = this.layoutService.widgets;
 
   private resizeState: ResizeState | null = null;
@@ -293,11 +295,30 @@ export class DashboardComponent {
     );
   }
 
-  protected toggleEdit(): void {
-    this.layoutService.toggleEditMode();
+  protected enterEdit(): void {
+    this.layoutService.beginEdit();
+    this.pendingChanges.registerHasChanges(() => this.layoutService.hasPendingChanges());
+    this.pendingChanges.registerValidChanges(() => true);
+    this.pendingChanges.registerSave(() => {
+      this.layoutService.saveEdit();
+      return Promise.resolve(true);
+    });
   }
 
-  protected reset(): void {
-    this.layoutService.resetLayout();
+  protected save(): void {
+    this.layoutService.saveEdit();
+    this.pendingChanges.clearAllRegistrations();
+  }
+
+  protected cancel(): void {
+    this.layoutService.cancelEdit();
+    this.pendingChanges.clearAllRegistrations();
+  }
+
+  ngOnDestroy(): void {
+    if (this.layoutService.editMode()) {
+      this.layoutService.cancelEdit();
+    }
+    this.pendingChanges.clearAllRegistrations();
   }
 }

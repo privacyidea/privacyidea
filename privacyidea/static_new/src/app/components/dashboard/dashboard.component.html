@@ -19,28 +19,32 @@
 
 <div class="dashboard-page">
   <div class="dashboard-toolbar">
-    <button
-      mat-stroked-button
-      class="action-button-primary button-width-m"
-      (click)="toggleEdit()">
-      <mat-icon>{{ layoutService.editMode() ? "check" : "edit" }}</mat-icon>
-      @if (layoutService.editMode()) {
-        <span i18n>Done</span>
-      } @else {
-        <span i18n>Edit dashboard</span>
-      }
-    </button>
-
     @if (layoutService.editMode()) {
       <button
         mat-stroked-button
+        class="action-button-primary button-width-m"
+        (click)="save()">
+        <mat-icon>check</mat-icon>
+        <span i18n>Save</span>
+      </button>
+
+      <button
+        mat-stroked-button
         class="action-button-secondary button-width-m"
-        (click)="reset()">
-        <mat-icon>restart_alt</mat-icon>
-        <span i18n>Reset</span>
+        (click)="cancel()">
+        <mat-icon>close</mat-icon>
+        <span i18n>Cancel</span>
       </button>
 
       <app-widget-palette />
+    } @else {
+      <button
+        mat-stroked-button
+        class="action-button-primary button-width-m"
+        (click)="enterEdit()">
+        <mat-icon>edit</mat-icon>
+        <span i18n>Edit dashboard</span>
+      </button>
     }
   </div>
 

@@ -18,7 +18,7 @@
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DashboardWidget, WidgetInstance } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { Audit, AuditData, AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuditService } from "@testing/mock-services/mock-audit-service";
@@ -86,9 +86,9 @@ describe("AdministrationWidgetComponent", () => {
 
   it("should override the static size constraints", () => {
     fixture.detectChanges();
-    expect(AdministrationWidgetComponent.defaultSize).toEqual({ cols: 10, rows: 5 });
-    expect(AdministrationWidgetComponent.minSize).toEqual({ cols: 6, rows: 4 });
-    expect(AdministrationWidgetComponent.maxSize).toEqual({ cols: 12, rows: 8 });
+    expect(AdministrationWidgetComponent.defaultSize).toEqual({ cols: 10, rows: 6 });
+    expect(AdministrationWidgetComponent.minSize).toEqual({ cols: 7, rows: 4 });
+    expect(AdministrationWidgetComponent.maxSize).toEqual({ cols: DASHBOARD_COLUMNS, rows: 8 });
   });
 
   it("should render audit rows in the table", () => {
