@@ -65,39 +65,41 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
     :param recoverycode: Only used for testing purpose
     :return: bool
     """
-    base_url = base_url.strip("recover")
-    base_url += "#!"
+    # Validate everything before persisting a recovery code, so a rejected
+    # request never leaves a PasswordReset row behind.
+    if not user:
+        raise UserError("User required for recovery token.")
+    user_email = user.get_specific_info(["email"]).get("email")
+    if not user_email:
+        raise UserError("The user has no email address on file. "
+                        "Cannot send a password recovery code.")
+    if email and email.lower() != user_email.lower():
+        raise UserError("The email does not match the users email.")
+    identifier = get_from_config("recovery.identifier")
+    if not identifier:
+        raise ConfigAdminError("Missing configuration "
+                               "recovery.identifier.")
+
+    # ``base_url`` is expected to be a trusted base URL (see
+    # privacyidea.lib.framework.get_base_url); append the Web UI hashbang route
+    # that consumes the recovery code.
+    base_url = base_url.rstrip("/") + "/#!"
     recoverycode = recoverycode or generate_password(size=24)
     hash_code = hash_with_pepper(recoverycode)
-    # send this recoverycode
-    #
     pwreset = PasswordReset(hash_code, username=user.login,
                             realm=user.realm,
                             expiration_seconds=expiration_seconds)
     pwreset.save()
 
-    res = False
-    if not user:
-        raise UserError("User required for recovery token.")
-    user_email = user.get_specific_info(["email"]).get("email")
-    if email and email.lower() != user_email.lower():
-        raise UserError("The email does not match the users email.")
-
-    identifier = get_from_config("recovery.identifier")
-    if identifier:
-        # send email
-        r = send_email_identifier(identifier, user_email,
-                                  "Your password reset",
-                                  BODY.format(base_url,
-                                              user.login, user.realm,
-                                              recoverycode))
-        if not r:
-            raise PrivacyIDEAError(f"Failed to send email. {r!s}")
-    else:
-        raise ConfigAdminError("Missing configuration "
-                               "recovery.identifier.")
-    res = True
-    return res
+    # send this recoverycode
+    r = send_email_identifier(identifier, user_email,
+                              "Your password reset",
+                              BODY.format(base_url,
+                                          user.login, user.realm,
+                                          recoverycode))
+    if not r:
+        raise PrivacyIDEAError(f"Failed to send email. {r!s}")
+    return True
 
 
 @log_with(log)
