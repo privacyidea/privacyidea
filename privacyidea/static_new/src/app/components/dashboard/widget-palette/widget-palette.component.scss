@@ -16,14 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-.widget-palette {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--half-global-gap);
-}
+@use "buttons";
 
-.palette-label {
-  font-weight: 500;
-  margin-right: var(--half-global-gap);
+:host {
+  display: contents;
 }

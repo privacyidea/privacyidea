@@ -37,7 +37,7 @@ describe("WidgetRegistryService", () => {
 
   it("should expose the built-in widget types", () => {
     const types = service.widgetTypes.map((widget) => widget.type);
-    expect(types).toEqual(expect.arrayContaining(["welcome", "stat"]));
+    expect(types).toEqual(expect.arrayContaining(["tokens", "subscriptions"]));
   });
 
   it("should give every widget type a title, icon and positive default size", () => {
@@ -57,8 +57,8 @@ describe("WidgetRegistryService", () => {
   });
 
   it("should return the widget class for a known type", () => {
-    expect(service.get("welcome")?.type).toBe("welcome");
-    expect(service.get("stat")?.type).toBe("stat");
+    expect(service.get("tokens")?.type).toBe("tokens");
+    expect(service.get("subscriptions")?.type).toBe("subscriptions");
   });
 
   it("should return undefined for an unknown type", () => {

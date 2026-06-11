@@ -204,6 +204,8 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private getFilteredNavItems(): NavItem[] {
     return this.primaryNavItems.filter((item) => {
       switch (item.section) {
+        case "dashboard":
+          return this.authService.adminDashboard();
         case "token":
           return this.authService.anyTokenActionAllowed();
         case "container":

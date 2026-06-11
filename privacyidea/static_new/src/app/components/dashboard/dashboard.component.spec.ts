@@ -19,8 +19,15 @@
 import { CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideRouter } from "@angular/router";
 import { WidgetInstance } from "@models/dashboard";
+import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
+import { TokenService } from "@services/token/token.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { DashboardComponent } from "./dashboard.component";
 
 describe("DashboardComponent", () => {
@@ -61,10 +68,18 @@ describe("DashboardComponent", () => {
 
   const firstWidget = (): WidgetInstance => layoutService.widgets()[0];
 
+  const pinnedWidget = (): WidgetInstance => layoutService.widgets().find((widget) => widget.type === "subscriptions")!;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
-      providers: [provideZonelessChangeDetection()]
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: SubscriptionService, useClass: MockSubscriptionService }
+      ]
     }).compileComponents();
 
     layoutService = TestBed.inject(DashboardLayoutService);
@@ -104,14 +119,14 @@ describe("DashboardComponent", () => {
 
   describe("rowCount / fieldHeight", () => {
     it("should be exactly the lowest widget's bottom in view mode", () => {
-      expect(component['rowCount']()).toBe(4);
-      expect(component['fieldHeight']()).toBe(component['heightPx'](4));
+      expect(component['rowCount']()).toBe(8);
+      expect(component['fieldHeight']()).toBe(component['heightPx'](8));
     });
 
     it("should add trailing rows in edit mode", () => {
       layoutService.editMode.set(true);
       component['viewportBottom'].set(0);
-      expect(component['rowCount']()).toBe(8);
+      expect(component['rowCount']()).toBe(12);
     });
 
     it("should extend past the visible viewport while editing", () => {
@@ -173,19 +188,19 @@ describe("DashboardComponent", () => {
     });
 
     it("should clamp an oversized stored widget down to its max for display", () => {
-      const oversized: WidgetInstance = { id: "x", type: "welcome", x: 0, y: 0, cols: 20, rows: 10 };
+      const oversized: WidgetInstance = { id: "x", type: "tokens", x: 0, y: 0, cols: 20, rows: 20 };
       expect(component['effectiveCols'](oversized)).toBe(12);
-      expect(component['effectiveRows'](oversized)).toBe(6);
+      expect(component['effectiveRows'](oversized)).toBe(10);
     });
 
     it("should clamp an undersized stored widget up to its min for display", () => {
-      const tiny: WidgetInstance = { id: "x", type: "welcome", x: 0, y: 0, cols: 1, rows: 1 };
-      expect(component['effectiveCols'](tiny)).toBe(5);
-      expect(component['effectiveRows'](tiny)).toBe(3);
+      const tiny: WidgetInstance = { id: "x", type: "tokens", x: 0, y: 0, cols: 1, rows: 1 };
+      expect(component['effectiveCols'](tiny)).toBe(4);
+      expect(component['effectiveRows'](tiny)).toBe(5);
     });
 
     it("should clamp display width to the field's right edge", () => {
-      const nearEdge: WidgetInstance = { id: "x", type: "welcome", x: 22, y: 0, cols: 8, rows: 4 };
+      const nearEdge: WidgetInstance = { id: "x", type: "tokens", x: 22, y: 0, cols: 8, rows: 8 };
       expect(component['effectiveCols'](nearEdge)).toBe(2);
     });
 
@@ -204,15 +219,15 @@ describe("DashboardComponent", () => {
       layoutService.editMode.set(true);
     });
 
-    it("should clamp the width down to the effective minimum (welcome: 5 cols)", () => {
+    it("should clamp the width down to the effective minimum (tokens: 4 cols)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "e", pointerEvent({ clientX: 1000 }));
       component['onResizeMove'](pointerEvent({ clientX: 0 }));
 
-      expect(component['resizePreview']()?.cols).toBe(5);
+      expect(component['resizePreview']()?.cols).toBe(4);
     });
 
-    it("should clamp the width up to the widget's max (welcome: 12 cols)", () => {
+    it("should clamp the width up to the widget's max (tokens: 12 cols)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "e", pointerEvent({ clientX: 0 }));
       component['onResizeMove'](pointerEvent({ clientX: 100000 }));
@@ -220,20 +235,20 @@ describe("DashboardComponent", () => {
       expect(component['resizePreview']()?.cols).toBe(12);
     });
 
-    it("should clamp the height down to the effective minimum (3 rows)", () => {
+    it("should clamp the height down to the effective minimum (tokens: 5 rows)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "s", pointerEvent({ clientY: 1000 }));
       component['onResizeMove'](pointerEvent({ clientY: 0 }));
 
-      expect(component['resizePreview']()?.rows).toBe(3);
+      expect(component['resizePreview']()?.rows).toBe(5);
     });
 
-    it("should clamp the height up to the widget's max (welcome: 6 rows)", () => {
+    it("should clamp the height up to the widget's max (tokens: 10 rows)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "s", pointerEvent({ clientY: 0 }));
       component['onResizeMove'](pointerEvent({ clientY: 100000 }));
 
-      expect(component['resizePreview']()?.rows).toBe(6);
+      expect(component['resizePreview']()?.rows).toBe(10);
     });
 
     it("should apply a valid resize to the layout on resize end", () => {
@@ -244,7 +259,7 @@ describe("DashboardComponent", () => {
       component['onResizeMove'](pointerEvent({ clientX: 100, clientY: 88 }));
       component['onResizeEnd']();
 
-      expect(resizeSpy).toHaveBeenCalledWith(widget.id, 10, 6);
+      expect(resizeSpy).toHaveBeenCalledWith(widget.id, 8, 10);
       expect(component['resizePreview']()).toBeNull();
     });
 
@@ -255,6 +270,32 @@ describe("DashboardComponent", () => {
       component['onResizeEnd']();
 
       expect(resizeSpy).not.toHaveBeenCalled();
+    });
+
+    it("should pin a pinned widget to its fixed size while resizing", () => {
+      const pinned = pinnedWidget();
+
+      component['onResizeStart'](pinned, "se", pointerEvent({ clientX: 0, clientY: 0 }));
+      component['onResizeMove'](pointerEvent({ clientX: 100000, clientY: 100000 }));
+
+      const preview = component['resizePreview']();
+      expect(preview?.cols).toBe(8);
+      expect(preview?.rows).toBe(5);
+    });
+
+    it("should ignore a resize move without an active resize", () => {
+      component['onResizeMove'](pointerEvent({ clientX: 100, clientY: 100 }));
+      expect(component['resizePreview']()).toBeNull();
+    });
+  });
+
+  describe("pinned widgets", () => {
+    it("should report the pinned widget as pinned", () => {
+      expect(component['isPinned'](pinnedWidget())).toBe(true);
+    });
+
+    it("should report a regular widget as not pinned", () => {
+      expect(component['isPinned'](firstWidget())).toBe(false);
     });
   });
 
@@ -294,6 +335,33 @@ describe("DashboardComponent", () => {
       expect(moveSpy).toHaveBeenCalledWith(widget.id, 0, 0);
       expect(component['dragTarget']()).toBeNull();
       expect(component['dragState']).toBeNull();
+    });
+
+    it("should not move the widget when the drop target collides", () => {
+      const moveSpy = jest.spyOn(layoutService, "moveWidgetTo");
+      const widget = firstWidget();
+      const element = document.createElement("div");
+      element.getBoundingClientRect = () =>
+        ({ left: 800, top: 0, width: 0, height: 0, right: 800, bottom: 0, x: 800, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+      component['onDragEnded'](widget, dragEvent(element) as unknown as CdkDragEnd);
+
+      expect(moveSpy).not.toHaveBeenCalled();
+      expect(component['dragTarget']()).toBeNull();
+    });
+
+    it("should follow the scroll position and update the drop target while dragging", () => {
+      const widget = firstWidget();
+      const element = document.createElement("div");
+
+      stubScroll(0, 400, 1000);
+      component['onDragStarted'](widget, dragEvent(element) as unknown as CdkDragStart);
+
+      stubScroll(100, 400, 1000);
+      component['onFieldScroll']();
+
+      expect(element.style.translate).toBe("0 100px");
+      expect(component['dragTarget']()).not.toBeNull();
     });
   });
 

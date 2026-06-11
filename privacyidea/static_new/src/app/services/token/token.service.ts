@@ -322,6 +322,8 @@ export interface TokenServiceInterface {
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
+  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<Tokens>>;
+
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
     mapper: TokenApiPayloadMapper<T>;
@@ -1044,6 +1046,13 @@ export class TokenService implements TokenServiceInterface {
     const params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
+      params
+    });
+  }
+
+  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<Tokens>> {
+    return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
+      headers: this.authService.getHeaders(),
       params
     });
   }

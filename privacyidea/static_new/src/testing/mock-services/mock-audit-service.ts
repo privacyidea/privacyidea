@@ -21,6 +21,7 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { Audit, AuditServiceInterface } from "@services/audit/audit.service";
+import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockAuditService implements AuditServiceInterface {
@@ -47,4 +48,7 @@ export class MockAuditService implements AuditServiceInterface {
     this.auditFilter.set(new FilterValue({ value: inputElement.value }));
   });
   downloadCSV = jest.fn();
+  fetchAuditPage = jest.fn((_params: Record<string, string | number>) =>
+    of(MockPiResponse.fromValue<Audit>({ auditcolumns: [], auditdata: [], count: 0, current: 0 }))
+  );
 }

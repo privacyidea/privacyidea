@@ -16,9 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject, Signal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
 import { WidgetComponentType } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
@@ -26,7 +27,7 @@ import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services
 @Component({
   selector: "app-widget-palette",
   standalone: true,
-  imports: [MatButton, MatIcon],
+  imports: [MatButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger],
   templateUrl: "./widget-palette.component.html",
   styleUrl: "./widget-palette.component.scss"
 })
@@ -34,7 +35,11 @@ export class WidgetPaletteComponent {
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
   private readonly layoutService: DashboardLayoutServiceInterface = inject(DashboardLayoutService);
 
-  protected readonly widgetTypes: WidgetComponentType[] = this.registry.widgetTypes;
+  private readonly widgetTypes: WidgetComponentType[] = this.registry.widgetTypes.filter((widget) => !widget.pinned);
+
+  protected readonly availableWidgetTypes: Signal<WidgetComponentType[]> = computed(() =>
+    this.widgetTypes.filter((widget) => !this.layoutService.hasWidgetOfType(widget.type))
+  );
 
   protected add(type: string): void {
     this.layoutService.addWidget(type);

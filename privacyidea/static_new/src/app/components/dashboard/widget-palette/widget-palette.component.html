@@ -17,18 +17,22 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="widget-palette">
-  <span
-    class="palette-label"
-    i18n
-    >Add widget:</span
-  >
-  @for (widget of widgetTypes; track widget.type) {
-    <button
-      mat-stroked-button
-      (click)="add(widget.type)">
-      <mat-icon>{{ widget.icon }}</mat-icon>
-      {{ widget.title }}
-    </button>
-  }
-</div>
+@if (availableWidgetTypes().length > 0) {
+  <button
+    mat-stroked-button
+    class="action-button-secondary button-width-m"
+    [matMenuTriggerFor]="widgetMenu">
+    <mat-icon>add</mat-icon>
+    <span i18n>Add widget</span>
+  </button>
+  <mat-menu #widgetMenu="matMenu">
+    @for (widget of availableWidgetTypes(); track widget.type) {
+      <button
+        mat-menu-item
+        (click)="add(widget.type)">
+        <mat-icon class="margin-right-16">{{ widget.icon }}</mat-icon>
+        {{ widget.title }}
+      </button>
+    }
+  </mat-menu>
+}

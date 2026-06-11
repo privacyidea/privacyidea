@@ -17,8 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { StatWidgetComponent } from "@components/dashboard/widgets/stat-widget/stat-widget.component";
-import { WelcomeWidgetComponent } from "@components/dashboard/widgets/welcome-widget/welcome-widget.component";
+import { AdministrationWidgetComponent } from "@components/dashboard/widgets/administration-widget/administration-widget.component";
+import { AuthenticationsWidgetComponent } from "@components/dashboard/widgets/authentications-widget/authentications-widget.component";
+import { EventsWidgetComponent } from "@components/dashboard/widgets/events-widget/events-widget.component";
+import { PoliciesWidgetComponent } from "@components/dashboard/widgets/policies-widget/policies-widget.component";
+import { SubscriptionsWidgetComponent } from "@components/dashboard/widgets/subscriptions-widget/subscriptions-widget.component";
+import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { WidgetComponentType } from "@models/dashboard";
 
 export interface WidgetRegistryServiceInterface {
@@ -31,7 +35,14 @@ export interface WidgetRegistryServiceInterface {
   providedIn: "root"
 })
 export class WidgetRegistryService implements WidgetRegistryServiceInterface {
-  public readonly widgetTypes: WidgetComponentType[] = [WelcomeWidgetComponent, StatWidgetComponent];
+  public readonly widgetTypes: WidgetComponentType[] = [
+    TokensWidgetComponent,
+    AuthenticationsWidgetComponent,
+    AdministrationWidgetComponent,
+    PoliciesWidgetComponent,
+    EventsWidgetComponent,
+    SubscriptionsWidgetComponent
+  ];
 
   private readonly byType = new Map<string, WidgetComponentType>(
     this.widgetTypes.map((widget) => [widget.type, widget])

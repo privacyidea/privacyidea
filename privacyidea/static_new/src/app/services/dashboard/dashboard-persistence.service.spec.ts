@@ -24,7 +24,7 @@ import { DashboardPersistenceService } from "./dashboard-persistence.service";
 describe("DashboardPersistenceService", () => {
   let service: DashboardPersistenceService;
 
-  const sampleWidgets = (): WidgetInstance[] => [{ id: "w1", type: "welcome", x: 0, y: 0, cols: 8, rows: 4 }];
+  const sampleWidgets = (): WidgetInstance[] => [{ id: "w1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8 }];
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -53,7 +53,7 @@ describe("DashboardPersistenceService", () => {
     service.save(widgets);
 
     widgets[0].x = 99;
-    widgets.push({ id: "w2", type: "stat", x: 0, y: 0, cols: 4, rows: 4 });
+    widgets.push({ id: "w2", type: "events", x: 0, y: 0, cols: 8, rows: 5 });
 
     const loaded = service.load();
     expect(loaded).toHaveLength(1);

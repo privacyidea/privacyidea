@@ -81,6 +81,8 @@ export interface EventServiceInterface {
   readonly allEventsResource: HttpResourceRef<PiResponse<EventHandler[]> | undefined>;
   eventHandlers: Signal<EventHandler[] | undefined>;
 
+  getEventHandlers(): Observable<PiResponse<EventHandler[]>>;
+
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined>;
 
   enableEvent(eventId: number | null): Promise<Object | undefined>;
@@ -146,6 +148,12 @@ export class EventService implements EventServiceInterface {
   // -------------------------------------
   // Edit functionality for event handlers
   // -------------------------------------
+
+  getEventHandlers(): Observable<PiResponse<EventHandler[]>> {
+    return this.http.get<PiResponse<EventHandler[]>>(`${this.eventBaseUrl}/`, {
+      headers: this.authService.getHeaders()
+    });
+  }
 
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();

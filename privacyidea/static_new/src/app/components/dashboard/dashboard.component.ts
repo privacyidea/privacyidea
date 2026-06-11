@@ -232,8 +232,15 @@ export class DashboardComponent {
     this.resizePreview.set({ id: state.id, cols, rows, valid: !this.collides(target, state.id) });
   }
 
+  protected isPinned(widget: WidgetInstance): boolean {
+    return this.registry.get(widget.type)?.pinned ?? false;
+  }
+
   private constraintsFor(widget: WidgetInstance): { min: WidgetSize; max: WidgetSize } {
     const widgetType = this.registry.get(widget.type);
+    if (widgetType?.pinned) {
+      return { min: widgetType.defaultSize, max: widgetType.defaultSize };
+    }
     const floor = DashboardWidget.minSize;
     return {
       min: {

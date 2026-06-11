@@ -16,20 +16,46 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
-import { DashboardWidget, WidgetSize } from "@models/dashboard";
 
-@Component({
-  selector: "app-stat-widget",
-  standalone: true,
-  templateUrl: "./stat-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./stat-widget.component.scss"]
-})
-export class StatWidgetComponent extends DashboardWidget {
-  static override readonly type = "stat";
-  static override readonly title = $localize`Statistic`;
-  static override readonly icon = "insights";
-  static override readonly defaultSize: WidgetSize = { cols: 4, rows: 4 };
-  static override readonly minSize: WidgetSize = { cols: 3, rows: 3 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 8 };
+.auth-subtitle {
+  flex: none;
+  margin: 0 0 var(--global-padding) 0;
+  opacity: 0.7;
+}
+
+.auth-table-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+}
+
+.auth-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    padding: var(--quarter-global-padding) calc(var(--global-padding) * 2);
+
+    &:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+  }
+
+  tr:not(:last-child) td {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.auth-failed-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--global-gap) / 2);
+  justify-content: flex-end;
+  font-weight: normal;
+}
+
+.auth-separator {
+  opacity: 0.4;
 }

@@ -17,9 +17,19 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="stat-value">—</div>
-<div
-  class="stat-caption"
-  i18n>
-  Statistic
-</div>
+<app-widget-state [state]="state()">
+  <table class="subscriptions-table">
+    <tbody>
+      @for (subscription of subscriptions(); track subscription.application) {
+        <tr>
+          <td>
+            <a [routerLink]="['/configuration/subscription']">{{ subscription.application }}</a>
+            ({{ subscription.level }})
+          </td>
+          <td>{{ subscription.active_users }}/{{ subscription.num_users }}</td>
+          <td>{{ subscription.date_till }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</app-widget-state>

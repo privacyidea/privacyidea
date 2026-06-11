@@ -34,6 +34,8 @@ export interface DashboardLayoutServiceInterface {
 
   addWidget(type: string): void;
 
+  hasWidgetOfType(type: string): boolean;
+
   removeWidget(id: string): void;
 
   moveWidgetTo(id: string, x: number, y: number): void;
@@ -53,7 +55,9 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
 
   public readonly editMode = signal(false);
-  public readonly widgets: WritableSignal<WidgetInstance[]> = signal(this.persistence.load() ?? this.defaultWidgets());
+  public readonly widgets: WritableSignal<WidgetInstance[]> = signal(
+    this.reconcilePinned(this.persistence.load() ?? this.defaultWidgets())
+  );
 
   public readonly insertRow: WritableSignal<number> = signal(0);
 
@@ -66,14 +70,25 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     if (!widgetType) {
       return;
     }
+    if (this.hasWidgetOfType(widgetType.type)) {
+      return;
+    }
     const { cols, rows } = widgetType.defaultSize;
     const { x, y } = this.findFreeSpot(cols, rows);
-    const widget: WidgetInstance = { id: uuid(), type, x, y, cols, rows };
+    const widget: WidgetInstance = { id: uuid(), type: widgetType.type, x, y, cols, rows };
     this.widgets.update((widgets) => [...widgets, widget]);
     this.persist();
   }
 
+  public hasWidgetOfType(type: string): boolean {
+    return this.widgets().some((widget) => widget.type === type);
+  }
+
   public removeWidget(id: string): void {
+    const widget = this.widgets().find((candidate) => candidate.id === id);
+    if (widget && this.registry.get(widget.type)?.pinned) {
+      return;
+    }
     this.widgets.update((widgets) => widgets.filter((widget) => widget.id !== id));
     this.persist();
   }
@@ -93,8 +108,21 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   public resetLayout(): void {
-    this.widgets.set(this.defaultWidgets());
+    this.widgets.set(this.reconcilePinned(this.defaultWidgets()));
     this.persist();
+  }
+
+  private reconcilePinned(widgets: WidgetInstance[]): WidgetInstance[] {
+    const result = widgets.filter((widget) => !this.registry.get(widget.type)?.pinned);
+    for (const widgetType of this.registry.widgetTypes) {
+      if (!widgetType.pinned) {
+        continue;
+      }
+      const { x, y } = widgetType.fixedPosition ?? { x: 0, y: 0 };
+      const { cols, rows } = widgetType.defaultSize;
+      result.push({ id: uuid(), type: widgetType.type, x, y, cols, rows });
+    }
+    return result;
   }
 
   private findFreeSpot(cols: number, rows: number): { x: number; y: number } {
@@ -113,6 +141,10 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private defaultWidgets(): WidgetInstance[] {
-    return [{ id: uuid(), type: "welcome", x: 0, y: 0, cols: 8, rows: 4 }];
+    const tokens = this.registry.get("tokens");
+    if (!tokens) {
+      return [];
+    }
+    return [{ id: uuid(), type: tokens.type, x: 0, y: 0, ...tokens.defaultSize }];
   }
 }

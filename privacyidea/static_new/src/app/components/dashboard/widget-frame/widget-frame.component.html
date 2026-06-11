@@ -21,11 +21,11 @@
   <div
     class="widget-header"
     cdkDragHandle
-    [cdkDragHandleDisabled]="!layoutService.editMode()"
-    [class.draggable]="layoutService.editMode()">
+    [cdkDragHandleDisabled]="!layoutService.editMode() || pinned()"
+    [class.draggable]="layoutService.editMode() && !pinned()">
     <span class="widget-title">{{ widgetType()?.title }}</span>
 
-    @if (layoutService.editMode()) {
+    @if (layoutService.editMode() && !pinned()) {
       <button
         mat-icon-button
         class="widget-remove"

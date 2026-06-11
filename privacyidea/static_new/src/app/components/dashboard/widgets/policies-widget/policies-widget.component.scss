@@ -16,20 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
-import { DashboardWidget, WidgetSize } from "@models/dashboard";
+:host {
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: auto;
+}
 
-@Component({
-  selector: "app-welcome-widget",
-  standalone: true,
-  templateUrl: "./welcome-widget.component.html",
-  styleUrls: ["../dashboard-widget.scss", "./welcome-widget.component.scss"]
-})
-export class WelcomeWidgetComponent extends DashboardWidget {
-  static override readonly type = "welcome";
-  static override readonly title = $localize`Welcome`;
-  static override readonly icon = "waving_hand";
-  static override readonly defaultSize: WidgetSize = { cols: 8, rows: 4 };
-  static override readonly minSize: WidgetSize = { cols: 5, rows: 3 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 6 };
+.policies-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    padding: calc(var(--global-padding) / 4) calc(var(--global-padding) / 2);
+    vertical-align: top;
+  }
+
+  td:last-child {
+    text-align: right;
+  }
+}
+
+.separator {
+  margin: 0 calc(var(--global-gap) / 4);
+  opacity: 0.5;
 }

@@ -20,7 +20,8 @@
 <div class="dashboard-page">
   <div class="dashboard-toolbar">
     <button
-      mat-flat-button
+      mat-stroked-button
+      class="action-button-primary button-width-m"
       (click)="toggleEdit()">
       <mat-icon>{{ layoutService.editMode() ? "check" : "edit" }}</mat-icon>
       @if (layoutService.editMode()) {
@@ -33,6 +34,7 @@
     @if (layoutService.editMode()) {
       <button
         mat-stroked-button
+        class="action-button-secondary button-width-m"
         (click)="reset()">
         <mat-icon>restart_alt</mat-icon>
         <span i18n>Reset</span>
@@ -68,7 +70,7 @@
             class="widget-cell"
             cdkDrag
             cdkDragBoundary=".dashboard-field"
-            [cdkDragDisabled]="!layoutService.editMode()"
+            [cdkDragDisabled]="!layoutService.editMode() || isPinned(widget)"
             [class.resizing-invalid]="isResizingInvalid(widget)"
             [style.left]="leftCss(widget.x)"
             [style.top.px]="topPx(widget.y)"
@@ -79,7 +81,7 @@
             (cdkDragEnded)="onDragEnded(widget, $event)">
             <app-widget-frame [instance]="widget" />
 
-            @if (layoutService.editMode()) {
+            @if (layoutService.editMode() && !isPinned(widget)) {
               <span
                 class="resize-handle handle-e"
                 (pointerdown)="onResizeStart(widget, 'e', $event)"

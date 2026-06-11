@@ -149,6 +149,9 @@ export class MockTokenService implements TokenServiceInterface {
   setRandomPin = jest.fn();
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
+  readonly getTokenCount = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
   verifyToken = jest.fn().mockReturnValue(
     of({

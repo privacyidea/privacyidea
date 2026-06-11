@@ -47,15 +47,21 @@ describe("DashboardLayoutService", () => {
   describe("initialisation", () => {
     it("should fall back to the default layout when persistence is empty", () => {
       build();
-      expect(service.widgets()).toHaveLength(1);
-      expect(service.widgets()[0].type).toBe("welcome");
+      expect(service.widgets()).toHaveLength(2);
+      expect(service.widgets().map((widget) => widget.type).sort()).toEqual(["subscriptions", "tokens"]);
     });
 
     it("should load an existing layout from persistence", () => {
-      const stored: WidgetInstance[] = [{ id: "stat-1", type: "stat", x: 2, y: 3, cols: 4, rows: 4 }];
+      const stored: WidgetInstance[] = [{ id: "events-1", type: "events", x: 2, y: 3, cols: 8, rows: 5 }];
       build(stored);
 
-      expect(service.widgets()).toEqual(stored);
+      expect(service.widgets()).toContainEqual(stored[0]);
+    });
+
+    it("should always include the pinned widget at its fixed position", () => {
+      build();
+      const pinned = service.widgets().find((widget) => widget.type === "subscriptions");
+      expect(pinned).toMatchObject({ x: 16, y: 0 });
     });
 
     it("should start in view mode", () => {
@@ -79,22 +85,24 @@ describe("DashboardLayoutService", () => {
     beforeEach(() => build());
 
     it("should add a widget with the definition's default size", () => {
-      service.addWidget("stat");
+      service.addWidget("events");
 
-      const added = service.widgets().find((widget) => widget.type === "stat");
+      const added = service.widgets().find((widget) => widget.type === "events");
       expect(added).toBeDefined();
-      expect(added?.cols).toBe(4);
-      expect(added?.rows).toBe(4);
+      expect(added?.cols).toBe(8);
+      expect(added?.rows).toBe(5);
     });
 
     it("should place the new widget so it does not overlap existing ones", () => {
-      service.addWidget("stat");
-      const [first, second] = service.widgets();
-      expect(overlaps(first, second)).toBe(false);
+      service.addWidget("events");
+      const added = service.widgets().find((widget) => widget.type === "events")!;
+      for (const other of service.widgets().filter((widget) => widget.id !== added.id)) {
+        expect(overlaps(added, other)).toBe(false);
+      }
     });
 
     it("should keep new widgets within the column grid", () => {
-      service.addWidget("stat");
+      service.addWidget("events");
       for (const widget of service.widgets()) {
         expect(widget.x).toBeGreaterThanOrEqual(0);
         expect(widget.x + widget.cols).toBeLessThanOrEqual(DASHBOARD_COLUMNS);
@@ -103,9 +111,9 @@ describe("DashboardLayoutService", () => {
 
     it("should insert at the preferred row when scrolled down", () => {
       service.insertRow.set(10);
-      service.addWidget("stat");
+      service.addWidget("events");
 
-      const added = service.widgets().find((widget) => widget.type === "stat");
+      const added = service.widgets().find((widget) => widget.type === "events");
       expect(added?.y).toBeGreaterThanOrEqual(10);
     });
 
@@ -116,29 +124,58 @@ describe("DashboardLayoutService", () => {
     });
 
     it("should persist the layout after adding", () => {
-      service.addWidget("stat");
-      expect(persistence.load()).toHaveLength(2);
+      const before = service.widgets().length;
+      service.addWidget("events");
+      expect(persistence.load()).toHaveLength(before + 1);
+    });
+
+    it("should not add a second widget of a type that is already placed", () => {
+      service.addWidget("events");
+      const countAfterFirst = service.widgets().filter((widget) => widget.type === "events").length;
+
+      service.addWidget("events");
+      const countAfterSecond = service.widgets().filter((widget) => widget.type === "events").length;
+
+      expect(countAfterFirst).toBe(1);
+      expect(countAfterSecond).toBe(1);
+    });
+  });
+
+  describe("hasWidgetOfType", () => {
+    beforeEach(() => build());
+
+    it("should report whether a widget type is present in the layout", () => {
+      expect(service.hasWidgetOfType("events")).toBe(false);
+      service.addWidget("events");
+      expect(service.hasWidgetOfType("events")).toBe(true);
     });
   });
 
   describe("removeWidget", () => {
     beforeEach(() => build());
 
-    it("should remove the widget with the given id", () => {
-      const id = service.widgets()[0].id;
-      service.removeWidget(id);
-      expect(service.widgets()).toHaveLength(0);
+    it("should remove a non-pinned widget with the given id", () => {
+      const tokens = service.widgets().find((widget) => widget.type === "tokens")!;
+      service.removeWidget(tokens.id);
+      expect(service.widgets().some((widget) => widget.type === "tokens")).toBe(false);
+    });
+
+    it("should not remove a pinned widget", () => {
+      const pinned = service.widgets().find((widget) => widget.type === "subscriptions")!;
+      service.removeWidget(pinned.id);
+      expect(service.widgets().some((widget) => widget.type === "subscriptions")).toBe(true);
     });
 
     it("should leave the layout untouched for an unknown id", () => {
+      const before = service.widgets().length;
       service.removeWidget("missing");
-      expect(service.widgets()).toHaveLength(1);
+      expect(service.widgets()).toHaveLength(before);
     });
 
     it("should persist after removing", () => {
-      const id = service.widgets()[0].id;
-      service.removeWidget(id);
-      expect(persistence.load()).toHaveLength(0);
+      const tokens = service.widgets().find((widget) => widget.type === "tokens")!;
+      service.removeWidget(tokens.id);
+      expect(persistence.load()?.some((widget) => widget.type === "tokens")).toBe(false);
     });
   });
 
@@ -155,7 +192,7 @@ describe("DashboardLayoutService", () => {
     });
 
     it("should not change other widgets", () => {
-      service.addWidget("stat");
+      service.addWidget("events");
       const target = service.widgets()[0];
       const other = service.widgets()[1];
       const otherBefore = { ...other };
@@ -196,18 +233,18 @@ describe("DashboardLayoutService", () => {
   describe("resetLayout", () => {
     beforeEach(() => build());
 
-    it("should restore the default single-welcome layout", () => {
-      service.addWidget("stat");
+    it("should restore the default layout", () => {
+      service.addWidget("events");
       service.resetLayout();
 
-      expect(service.widgets()).toHaveLength(1);
-      expect(service.widgets()[0].type).toBe("welcome");
+      expect(service.widgets()).toHaveLength(2);
+      expect(service.widgets().map((widget) => widget.type).sort()).toEqual(["subscriptions", "tokens"]);
     });
 
     it("should persist the reset layout", () => {
-      service.addWidget("stat");
+      service.addWidget("events");
       service.resetLayout();
-      expect(persistence.load()).toHaveLength(1);
+      expect(persistence.load()).toHaveLength(2);
     });
   });
 

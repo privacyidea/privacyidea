@@ -23,10 +23,10 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--mat-sys-surface-container);
-  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-lowest);
+  border: 1px solid var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  box-shadow: var(--elevation-5);
 }
 
 .widget-header {
@@ -37,7 +37,7 @@
   gap: var(--half-global-gap);
   min-height: 38px;
   padding: var(--quarter-global-padding) var(--global-padding);
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-bottom: 1px solid var(--mat-sys-surface-container-highest);
 
   &.draggable {
     cursor: move;

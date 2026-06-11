@@ -17,8 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
+import { dashboardGuard } from "@app/guards/dashboard.guard";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
+import { AuthService } from "@services/auth/auth.service";
 import { AuditComponent } from "@components/audit/audit.component";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
@@ -68,8 +71,12 @@ import { UserResolversComponent } from "@components/user/user-resolver/user-reso
 import { UserTableComponent } from "@components/user/user-table/user-table.component";
 
 export const routes: Routes = [
-  { path: "", redirectTo: "dashboard", pathMatch: "full" },
-  { path: "dashboard", component: DashboardComponent },
+  {
+    path: "",
+    pathMatch: "full",
+    redirectTo: () => (inject(AuthService).adminDashboard() ? "dashboard" : "tokens")
+  },
+  { path: "dashboard", component: DashboardComponent, canActivate: [dashboardGuard] },
   {
     path: "tokens",
     children: [

@@ -154,6 +154,10 @@ describe("LoginComponent", () => {
     beforeEach(() => {
       component.username.set("test-user");
       component.password.set("test-pass");
+      authService.authData.set({
+        ...authService.authData()!,
+        admin_dashboard: true
+      });
     });
 
     it("should call authService.authenticate with username/password", () => {
@@ -187,6 +191,16 @@ describe("LoginComponent", () => {
         password: "test-pass"
       });
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.DASHBOARD);
+    });
+
+    it("should redirect admins to the token overview when the dashboard policy is disabled", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        admin_dashboard: false
+      });
+      component.onSubmit();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
     });
 
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
@@ -366,6 +380,10 @@ describe("LoginComponent", () => {
 
   describe("passkeyLogin", () => {
     it("should call validateService.authenticatePasskey and handle success", () => {
+      authService.authData.set({
+        ...authService.authData()!,
+        admin_dashboard: true
+      });
       const successResponse = MockPiResponse.fromValue<AuthData, AuthDetail>({ token: "passkey-token" } as AuthData);
       jest.spyOn(validateService, "authenticatePasskey").mockReturnValue(of(successResponse));
 

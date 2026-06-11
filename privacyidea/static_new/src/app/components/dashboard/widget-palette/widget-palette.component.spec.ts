@@ -36,6 +36,7 @@ describe("WidgetPaletteComponent", () => {
 
     layoutService = TestBed.inject(DashboardLayoutService);
     registry = TestBed.inject(WidgetRegistryService);
+    layoutService.widgets.set([]);
 
     fixture = TestBed.createComponent(WidgetPaletteComponent);
     component = fixture.componentInstance;
@@ -46,23 +47,52 @@ describe("WidgetPaletteComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should render one button per registered widget type", () => {
+  it("should render a single add-widget trigger button", () => {
     const buttons = fixture.nativeElement.querySelectorAll("button");
-    expect(buttons.length).toBe(registry.widgetTypes.length);
+    expect(buttons.length).toBe(1);
   });
 
-  it("should add the corresponding widget when a palette button is clicked", () => {
+  it("should open a menu with one item per non-pinned widget type", () => {
+    fixture.nativeElement.querySelector("button").click();
+    fixture.detectChanges();
+
+    const items = document.querySelectorAll(".mat-mdc-menu-item");
+    expect(items.length).toBe(registry.widgetTypes.filter((widget) => !widget.pinned).length);
+  });
+
+  it("should add the corresponding widget when a menu item is clicked", () => {
     const addSpy = jest.spyOn(layoutService, "addWidget");
-    const firstType = registry.widgetTypes[0].type;
+    const firstType = registry.widgetTypes.filter((widget) => !widget.pinned)[0].type;
 
     fixture.nativeElement.querySelector("button").click();
+    fixture.detectChanges();
+    (document.querySelector(".mat-mdc-menu-item") as HTMLButtonElement).click();
 
     expect(addSpy).toHaveBeenCalledWith(firstType);
   });
 
   it("should delegate add() to the layout service", () => {
     const addSpy = jest.spyOn(layoutService, "addWidget");
-    component['add']("stat");
-    expect(addSpy).toHaveBeenCalledWith("stat");
+    component['add']("events");
+    expect(addSpy).toHaveBeenCalledWith("events");
+  });
+
+  it("should not render a menu item for a widget type that is already placed", () => {
+    const nonPinned = registry.widgetTypes.filter((widget) => !widget.pinned);
+    layoutService.addWidget(nonPinned[0].type);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector("button").click();
+    fixture.detectChanges();
+
+    const items = document.querySelectorAll(".mat-mdc-menu-item");
+    expect(items.length).toBe(nonPinned.length - 1);
+  });
+
+  it("should hide the add-widget button when every widget type is already placed", () => {
+    registry.widgetTypes.filter((widget) => !widget.pinned).forEach((widget) => layoutService.addWidget(widget.type));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("button")).toBeNull();
   });
 });

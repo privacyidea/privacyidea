@@ -16,9 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Directive, input, Type } from "@angular/core";
+import { Directive, input, signal, Type } from "@angular/core";
 
 export const DASHBOARD_COLUMNS = 24;
+
+export type WidgetState = "loading" | "ready" | "denied" | "error";
+
+export type WidgetTypeId =
+  | "tokens"
+  | "authentications"
+  | "administration"
+  | "policies"
+  | "events"
+  | "subscriptions";
 
 export interface WidgetSize {
   cols: number;
@@ -27,7 +37,7 @@ export interface WidgetSize {
 
 export interface WidgetInstance extends WidgetSize {
   id: string;
-  type: string;
+  type: WidgetTypeId;
   x: number;
   y: number;
 }
@@ -35,13 +45,16 @@ export interface WidgetInstance extends WidgetSize {
 @Directive()
 export abstract class DashboardWidget {
   readonly instance = input<WidgetInstance>();
+  readonly state = signal<WidgetState>("loading");
 
-  static readonly type: string = "";
+  static readonly type: WidgetTypeId;
   static readonly title: string = "";
   static readonly icon: string = "";
   static readonly defaultSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly minSize: WidgetSize = { cols: 3, rows: 3 };
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
+  static readonly pinned: boolean = false;
+  static readonly fixedPosition: { x: number; y: number } | null = null;
 }
 
 export type WidgetComponentType = typeof DashboardWidget & Type<DashboardWidget>;

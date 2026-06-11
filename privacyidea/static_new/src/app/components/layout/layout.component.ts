@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, effect, inject, Renderer2, signal } from "@angular/core";
+import { Component, computed, DOCUMENT, effect, inject, Renderer2, signal } from "@angular/core";
 
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
@@ -48,6 +49,11 @@ export class LayoutComponent {
   private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
+  protected readonly hasSecondaryToolbar = computed(
+    () =>
+      this.authService.role() === "admin" &&
+      !this.contentService.routeUrl().startsWith(ROUTE_PATHS.DASHBOARD)
+  );
 
   constructor() {
     effect(() => {

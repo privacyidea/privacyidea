@@ -40,6 +40,7 @@ export class WidgetFrameComponent {
 
   protected readonly widgetType = computed(() => this.registry.get(this.instance().type));
   protected readonly component = computed(() => this.widgetType() ?? null);
+  protected readonly pinned = computed(() => this.widgetType()?.pinned ?? false);
   protected readonly outletInputs = computed(() => ({ instance: this.instance() }));
 
   protected remove(): void {

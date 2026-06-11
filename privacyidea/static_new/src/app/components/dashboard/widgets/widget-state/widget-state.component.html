@@ -17,8 +17,25 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<p
-  class="welcome-text"
-  i18n>
-  Welcome to your privacyIDEA dashboard.
-</p>
+@switch (state()) {
+  @case ("ready") {
+    <ng-content />
+  }
+  @case ("loading") {
+    <div class="widget-state-status">
+      <mat-progress-spinner
+        mode="indeterminate"
+        [diameter]="40" />
+    </div>
+  }
+  @case ("denied") {
+    <div class="widget-state-status">
+      <p i18n>You are not allowed to view this widget.</p>
+    </div>
+  }
+  @case ("error") {
+    <div class="widget-state-status">
+      <p i18n>Could not load data.</p>
+    </div>
+  }
+}

@@ -32,6 +32,8 @@ export class MockEventService implements EventServiceInterface {
 
   eventHandlers: WritableSignal<EventHandler[] | undefined> = signal([]);
 
+  getEventHandlers = jest.fn(() => of({ result: { value: [] } } as unknown as PiResponse<EventHandler[]>));
+
   saveEventHandler = jest.fn((event: Record<string, any>) => of({ result: { value: 1 } } as PiResponse<number, any>));
 
   enableEvent = jest.fn((eventId: number) => Promise.resolve({}));

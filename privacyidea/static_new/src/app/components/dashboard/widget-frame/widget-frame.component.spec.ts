@@ -18,9 +18,16 @@
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { WelcomeWidgetComponent } from "@components/dashboard/widgets/welcome-widget/welcome-widget.component";
+import { provideRouter } from "@angular/router";
+import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
 import { WidgetInstance } from "@models/dashboard";
+import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
+import { TokenService } from "@services/token/token.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
 
 describe("WidgetFrameComponent", () => {
@@ -28,12 +35,18 @@ describe("WidgetFrameComponent", () => {
   let component: WidgetFrameComponent;
   let layoutService: DashboardLayoutService;
 
-  const welcomeInstance: WidgetInstance = { id: "w1", type: "welcome", x: 0, y: 0, cols: 8, rows: 4 };
+  const tokensInstance: WidgetInstance = { id: "w1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8 };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [WidgetFrameComponent],
-      providers: [provideZonelessChangeDetection()]
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: SubscriptionService, useClass: MockSubscriptionService }
+      ]
     }).compileComponents();
 
     layoutService = TestBed.inject(DashboardLayoutService);
@@ -41,7 +54,7 @@ describe("WidgetFrameComponent", () => {
 
     fixture = TestBed.createComponent(WidgetFrameComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("instance", welcomeInstance);
+    fixture.componentRef.setInput("instance", tokensInstance);
     fixture.detectChanges();
   });
 
@@ -50,19 +63,19 @@ describe("WidgetFrameComponent", () => {
   });
 
   it("should resolve the widget type for the instance type", () => {
-    expect(component['widgetType']()?.type).toBe("welcome");
+    expect(component['widgetType']()?.type).toBe("tokens");
   });
 
   it("should resolve the component to render", () => {
-    expect(component['component']()).toBe(WelcomeWidgetComponent);
+    expect(component['component']()).toBe(TokensWidgetComponent);
   });
 
   it("should pass the instance through to the outlet inputs", () => {
-    expect(component['outletInputs']()).toEqual({ instance: welcomeInstance });
+    expect(component['outletInputs']()).toEqual({ instance: tokensInstance });
   });
 
   it("should render the widget title", () => {
-    expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Welcome");
+    expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Tokens");
   });
 
   it("should hide the remove button in view mode", () => {
@@ -89,5 +102,27 @@ describe("WidgetFrameComponent", () => {
     fixture.nativeElement.querySelector(".widget-remove").click();
 
     expect(removeSpy).toHaveBeenCalledWith("w1");
+  });
+
+  describe("pinned widget", () => {
+    const subscriptionsInstance: WidgetInstance = { id: "s1", type: "subscriptions", x: 16, y: 0, cols: 8, rows: 5 };
+
+    beforeEach(() => {
+      fixture.componentRef.setInput("instance", subscriptionsInstance);
+      layoutService.editMode.set(true);
+      fixture.detectChanges();
+    });
+
+    it("should report the widget type as pinned", () => {
+      expect(component['pinned']()).toBe(true);
+    });
+
+    it("should not offer a remove button in edit mode", () => {
+      expect(fixture.nativeElement.querySelector(".widget-remove")).toBeNull();
+    });
+
+    it("should not mark the header as draggable in edit mode", () => {
+      expect(fixture.nativeElement.querySelector(".widget-header.draggable")).toBeNull();
+    });
   });
 });
