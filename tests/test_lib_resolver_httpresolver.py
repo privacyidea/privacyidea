@@ -59,13 +59,13 @@ class RequestConfigTestCase(MyTestCase):
                        HAS_ERROR_HANDLER: True,
                        ERROR_RESPONSE: {"success": False}
                        }
-        config = RequestConfig(config_dict, {}, {"userid": "1234", "username": "test"})
+        config = RequestConfig(config_dict, {}, {"userid": "1234,56:78", "username": "test"})
         self.assertTrue("http://example.com/users/test", config.endpoint)
         self.assertTrue(config_dict["method"], config.method)
         self.assertTrue(isinstance(config.headers, dict))
         self.assertEqual("application/json", config.headers["Content-Type"])
         self.assertTrue(isinstance(config.request_mapping, dict))
-        self.assertEqual("1234", config.request_mapping["customid"])
+        self.assertEqual("1234,56:78", config.request_mapping["customid"])
         self.assertTrue(isinstance(config.response_mapping, dict))
         self.assertEqual("{Username}", config.response_mapping["username"])
         self.assertTrue(config.has_error_handler)
@@ -93,7 +93,8 @@ class RequestConfigTestCase(MyTestCase):
                        REQUEST_MAPPING: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
                        }
         config = RequestConfig(config_dict, {}, {"password": "1234", "username": "test"})
-        self.assertEqual("grant_type=password&client_id=admin-cli&username=test&password=1234",
+        self.assertIsInstance(config.request_mapping, dict)
+        self.assertEqual({"grant_type": "password", "client_id": "admin-cli", "username": "test", "password": "1234"},
                          config.request_mapping)
 
     def test_02_init_invalid_params(self):
@@ -149,6 +150,200 @@ class RequestConfigTestCase(MyTestCase):
         # endpoint is required
         del config_dict[ENDPOINT]
         self.assertRaises(ParameterError, RequestConfig, config_dict, {}, {"userid": "1234", "username": "test"})
+
+    def test_04_urlencoded_request_mapping_special_chars(self):
+        config_dict = {ENDPOINT: "http://example.com/token",
+                       METHOD: "post",
+                       HEADERS: {"Content-Type": "application/x-www-form-urlencoded"},
+                       REQUEST_MAPPING: "grant_type=password&username={username}&password={password}"
+                       }
+        # Special chars are stored as raw values; requests' urlencode encodes them when sending
+        config = RequestConfig(config_dict, {}, {"username": "user@example.com", "password": "P@ss+w0rd&secret=1"})
+        self.assertIsInstance(config.request_mapping, dict)
+        self.assertEqual("password", config.request_mapping["grant_type"])
+        self.assertEqual("user@example.com", config.request_mapping["username"])
+        self.assertEqual("P@ss+w0rd&secret=1", config.request_mapping["password"])
+
+        # A malicious value containing & cannot inject extra parameters
+        config = RequestConfig(config_dict, {}, {"username": "user", "password": "pw&grant_type=client_credentials"})
+        self.assertEqual("pw&grant_type=client_credentials", config.request_mapping["password"])
+        self.assertEqual("password", config.request_mapping["grant_type"])
+
+    def test_05_nested_dict_tag_replacement(self):
+        config_dict = {ENDPOINT: "http://example.com/users",
+                       METHOD: "post",
+                       HEADERS: {"Content-Type": "application/json"},
+                       REQUEST_MAPPING: '{"displayName": "{givenname}", "passwordProfile": {"password": "{password}"}}'
+                       }
+        config = RequestConfig(config_dict, {}, {"givenname": "Alice", "password": "s3cr3t!"})
+        self.assertEqual("Alice", config.request_mapping["displayName"])
+        self.assertEqual("s3cr3t!", config.request_mapping["passwordProfile"]["password"])
+
+
+class DoRequestTestCase(MyTestCase):
+    """Tests _do_request routing: params go to json=, data=, or query string depending on method and Content-Type."""
+
+    USERNAME = "bärbel.lefèvre@żółw.pl"
+    PASSWORD = "P@ss+w0rd&ä=1 end/"
+
+    def _make_resolver(self):
+        return HTTPResolver()
+
+    def _make_config(self, method, content_type, request_mapping=None, tags=None):
+        config_dict = {ENDPOINT: "http://example.com/api", METHOD: method,
+                       HEADERS: {"Content-Type": content_type}}
+        if request_mapping is not None:
+            config_dict[REQUEST_MAPPING] = request_mapping
+        return RequestConfig(config_dict, {}, tags or {})
+
+    @responses.activate
+    def test_01_post_json_sends_json_body(self):
+        received = {}
+
+        def client_mock(request):
+            received["content_type"] = request.headers.get("Content-Type", "")
+            received["body"] = json.loads(request.body)
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("post", "application/json",
+                                   json.dumps({"username": self.USERNAME, "password": self.PASSWORD}))
+        resolver._do_request(config, config.request_mapping)
+
+        self.assertIn("application/json", received["content_type"])
+        self.assertEqual({"username": self.USERNAME, "password": self.PASSWORD}, received["body"])
+
+    @responses.activate
+    def test_02_post_urlencoded_sends_form_body(self):
+        received = {}
+
+        def client_mock(request):
+            from urllib.parse import parse_qs
+            received["content_type"] = request.headers.get("Content-Type", "")
+            received["params"] = {k: v[0] for k, v in parse_qs(request.body).items()}
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("post", "application/x-www-form-urlencoded",
+                                   "grant_type=password&username={username}&password={password}",
+                                   tags={"username": self.USERNAME, "password": self.PASSWORD})
+        resolver._do_request(config, config.request_mapping)
+
+        self.assertIn("application/x-www-form-urlencoded", received["content_type"])
+        self.assertEqual("password", received["params"]["grant_type"])
+        self.assertEqual(self.USERNAME, received["params"]["username"])
+        self.assertEqual(self.PASSWORD, received["params"]["password"])
+
+    @responses.activate
+    def test_03_post_urlencoded_special_chars_encoded(self):
+        received = {}
+
+        def client_mock(request):
+            from urllib.parse import parse_qs
+            received["params"] = {k: v[0] for k, v in parse_qs(request.body).items()}
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.POST, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("post", "application/x-www-form-urlencoded",
+                                   "username={username}&password={password}")
+        resolver._do_request(config, {"username": self.USERNAME, "password": self.PASSWORD})
+
+        self.assertEqual(self.USERNAME, received["params"]["username"])
+        self.assertEqual(self.PASSWORD, received["params"]["password"])
+
+    @responses.activate
+    def test_04_get_sends_params_as_query_string(self):
+        received = {}
+
+        def client_mock(request):
+            from urllib.parse import urlparse, parse_qs
+            parsed = urlparse(request.url)
+            received["query"] = {k: v[0] for k, v in parse_qs(parsed.query).items()}
+            received["body"] = request.body
+            return 200, {}, "[]"
+
+        responses.add_callback(responses.GET, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("get", "application/json")
+        resolver._do_request(config, {"username": self.USERNAME, "password": self.PASSWORD})
+
+        self.assertEqual(self.USERNAME, received["query"]["username"])
+        self.assertEqual(self.PASSWORD, received["query"]["password"])
+        self.assertFalse(received["body"])
+
+    @responses.activate
+    def test_05_delete_sends_params_as_query_string(self):
+        received = {}
+
+        def client_mock(request):
+            from urllib.parse import urlparse, parse_qs
+            parsed = urlparse(request.url)
+            received["query"] = {k: v[0] for k, v in parse_qs(parsed.query).items()}
+            received["body"] = request.body
+            return 204, {}, ""
+
+        responses.add_callback(responses.DELETE, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("delete", "application/json")
+        resolver._do_request(config, {"username": self.USERNAME, "password": self.PASSWORD})
+
+        self.assertEqual(self.USERNAME, received["query"]["username"])
+        self.assertEqual(self.PASSWORD, received["query"]["password"])
+        self.assertFalse(received["body"])
+
+    @responses.activate
+    def test_06_put_json_sends_json_body(self):
+        received = {}
+
+        def client_mock(request):
+            received["body"] = json.loads(request.body)
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.PUT, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("put", "application/json",
+                                   json.dumps({"username": self.USERNAME, "password": self.PASSWORD}))
+        resolver._do_request(config, config.request_mapping)
+
+        self.assertEqual({"username": self.USERNAME, "password": self.PASSWORD}, received["body"])
+
+    @responses.activate
+    def test_07_patch_json_sends_json_body(self):
+        received = {}
+
+        def client_mock(request):
+            received["body"] = json.loads(request.body)
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.PATCH, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("patch", "application/json",
+                                   json.dumps({"username": self.USERNAME, "password": self.PASSWORD}))
+        resolver._do_request(config, config.request_mapping)
+
+        self.assertEqual({"username": self.USERNAME, "password": self.PASSWORD}, received["body"])
+
+    @responses.activate
+    def test_08_put_urlencoded_sends_form_body(self):
+        received = {}
+
+        def client_mock(request):
+            from urllib.parse import parse_qs
+            received["params"] = {k: v[0] for k, v in parse_qs(request.body).items()}
+            return 200, {}, "{}"
+
+        responses.add_callback(responses.PUT, "http://example.com/api", callback=client_mock)
+        resolver = self._make_resolver()
+        config = self._make_config("put", "application/x-www-form-urlencoded",
+                                   "username={username}&password={password}",
+                                   tags={"username": self.USERNAME, "password": self.PASSWORD})
+        resolver._do_request(config, config.request_mapping)
+
+        self.assertEqual(self.USERNAME, received["params"]["username"])
+        self.assertEqual(self.PASSWORD, received["params"]["password"])
 
 
 class HTTPResolverTestCase(MyTestCase):
@@ -2775,7 +2970,8 @@ class KeycloakResolverTestCase(MyTestCase):
                       body="""{"success": false, "message": "User not found"}""")
 
     def check_pass_callback(self, request):
-        params = {x.split("=")[0]: x.split("=")[1] for x in request.body.split("&")}
+        from urllib.parse import parse_qs
+        params = {k: v[0] for k, v in parse_qs(request.body).items()}
         if params.get("username") == "testuser" and params.get("password") == "testpassword" and params.get(
                 "grant_type") == "password" and params.get("client_id") == "admin-cli":
             return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
@@ -2813,6 +3009,21 @@ class KeycloakResolverTestCase(MyTestCase):
         responses.add(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
                       status=200, body="""{"success": false, "description": "Invalid credentials"}""")
         self.assertFalse(resolver.checkPass("111-aaa-333", "wrongPassword", "testuser"))
+
+    @responses.activate
+    def test_23b_check_pass_special_chars(self):
+        from urllib.parse import parse_qs
+        resolver = self.set_up_resolver()
+
+        def special_char_callback(request):
+            params = {k: v[0] for k, v in parse_qs(request.body).items()}
+            if params.get("username") == "testuser" and params.get("password") == "P@ss+w0rd&secret=1":
+                return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
+            return 401, {}, json.dumps({"error": "invalid_grant", "error_description": "Invalid user credentials"})
+
+        responses.add_callback(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",
+                               callback=special_char_callback)
+        self.assertTrue(resolver.checkPass("111-aaa-333", "P@ss+w0rd&secret=1", "testuser"))
 
     @responses.activate
     def test_24_testconnection(self):
