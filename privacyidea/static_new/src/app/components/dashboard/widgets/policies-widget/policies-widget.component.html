@@ -30,7 +30,7 @@
             @if (!first) {
               <span class="separator">|</span>
             }
-            <a [routerLink]="routePaths.POLICIES_DETAILS + name">{{ name }}</a>
+            <a [routerLink]="[routePaths.POLICIES_DETAILS, name]">{{ name }}</a>
           }
         </td>
       </tr>
@@ -44,7 +44,7 @@
             @if (!first) {
               <span class="separator">|</span>
             }
-            <a [routerLink]="routePaths.POLICIES_DETAILS + name">{{ name }}</a>
+            <a [routerLink]="[routePaths.POLICIES_DETAILS, name]">{{ name }}</a>
           }
         </td>
       </tr>

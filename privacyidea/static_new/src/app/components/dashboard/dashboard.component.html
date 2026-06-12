@@ -88,16 +88,19 @@
             @if (layoutService.editMode() && !isPinned(widget)) {
               <span
                 class="resize-handle handle-e"
+                aria-hidden="true"
                 (pointerdown)="onResizeStart(widget, 'e', $event)"
                 (pointermove)="onResizeMove($event)"
                 (pointerup)="onResizeEnd()"></span>
               <span
                 class="resize-handle handle-s"
+                aria-hidden="true"
                 (pointerdown)="onResizeStart(widget, 's', $event)"
                 (pointermove)="onResizeMove($event)"
                 (pointerup)="onResizeEnd()"></span>
               <span
                 class="resize-handle handle-se"
+                aria-hidden="true"
                 (pointerdown)="onResizeStart(widget, 'se', $event)"
                 (pointermove)="onResizeMove($event)"
                 (pointerup)="onResizeEnd()"></span>

@@ -30,7 +30,7 @@ export interface FailedUser {
   user: string;
   realm: string;
   fails: number;
-  latestError: string;
+  latestFailure: string;
 }
 
 export interface AuthenticationCounts {
@@ -116,17 +116,17 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
       if (entry.user) {
         const key = entry.user + "-" + entry.realm;
         if (!dict[key]) {
-          dict[key] = { user: entry.user, realm: entry.realm ?? "", fails: 1, latestError: entry.date ?? "" };
+          dict[key] = { user: entry.user, realm: entry.realm ?? "", fails: 1, latestFailure: entry.date ?? "" };
         } else {
           dict[key].fails++;
-          if ((entry.date ?? "") > dict[key].latestError) {
-            dict[key].latestError = entry.date ?? "";
+          if ((entry.date ?? "") > dict[key].latestFailure) {
+            dict[key].latestFailure = entry.date ?? "";
           }
         }
       }
     }
     return Object.values(dict).sort((a, b) =>
-      b.latestError > a.latestError ? 1 : b.latestError < a.latestError ? -1 : 0
+      b.latestFailure > a.latestFailure ? 1 : b.latestFailure < a.latestFailure ? -1 : 0
     );
   }
 

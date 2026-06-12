@@ -25,7 +25,9 @@
     <div class="widget-state-status">
       <mat-progress-spinner
         mode="indeterminate"
-        [diameter]="40" />
+        [diameter]="40"
+        aria-label="Loading widget data"
+        i18n-aria-label />
     </div>
   }
   @case ("denied") {
