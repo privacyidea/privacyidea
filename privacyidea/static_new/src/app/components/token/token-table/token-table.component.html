@@ -155,8 +155,12 @@
                   <app-copyable [copyText]="tokenDetails.serial">
                     <a
                       (click)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
                       attr.aria-label="{{ column.label }} Link"
-                      class="flex ali-center">
+                      class="flex ali-center"
+                      role="button"
+                      tabindex="0">
                       {{ tokenDetails[column.key] }}
                     </a>
                   </app-copyable>
@@ -165,7 +169,11 @@
                   @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                     <span
                       (click)="toggleActive(tokenDetails)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
+                      (keydown.enter)="toggleActive(tokenDetails)"
+                      (keydown.space)="$event.preventDefault(); toggleActive(tokenDetails)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      role="button"
+                      tabindex="0">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
                   }
@@ -174,7 +182,11 @@
                   @if (authService.actionAllowed("reset")) {
                     <span
                       (click)="resetFailCount(tokenDetails)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
+                      (keydown.enter)="resetFailCount(tokenDetails)"
+                      (keydown.space)="$event.preventDefault(); resetFailCount(tokenDetails)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      role="button"
+                      tabindex="0">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
                   }
@@ -194,7 +206,13 @@
                   <app-copyable [copyText]="tokenDetails.container_serial">
                     <a
                       (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.navigateContainerDetails(tokenDetails.container_serial)
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ tokenDetails[column.key] }}
                     </a>
                   </app-copyable>
@@ -203,7 +221,16 @@
                   <app-copyable [copyText]="tokenDetails[column.key]">
                     <a
                       (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="
+                        contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                      "
+                      (keydown.space)="
+                        $event.preventDefault();
+                        contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ tokenDetails[column.key] }}
                     </a>
                   </app-copyable>

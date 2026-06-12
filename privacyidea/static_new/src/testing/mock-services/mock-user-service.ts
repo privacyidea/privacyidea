@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpResourceRef } from "@angular/common/http";
-import { linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { linkedSignal, Signal, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { UserAttributePolicy, UserData, UserServiceInterface } from "@services/user/user.service";
@@ -26,7 +26,7 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockUserService implements UserServiceInterface {
   userAttributes: Signal<Record<string, string>> = signal({});
-  userAttributesList: WritableSignal<{ key: string; value: string }[]> = signal([]);
+  userAttributesList = signal<{ key: string; value: string }[]>([]);
   userAttributesResource: HttpResourceRef<PiResponse<Record<string, string>, unknown> | undefined> =
     new MockHttpResourceRef(MockPiResponse.fromValue({}));
   attributePolicy: Signal<UserAttributePolicy> = signal<UserAttributePolicy>({
@@ -37,7 +37,7 @@ export class MockUserService implements UserServiceInterface {
   attributeSetMap = signal<Record<string, string[]>>({});
   hasWildcardKey: Signal<boolean> = signal(false);
   keyOptions: Signal<string[]> = signal([]);
-  selectedUser: WritableSignal<UserData | null> = signal(null);
+  selectedUser = signal<UserData | null>(null);
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );
@@ -49,7 +49,7 @@ export class MockUserService implements UserServiceInterface {
     this.selectedUserRealm.set("");
   }
 
-  detailsUsername: WritableSignal<string> = signal("");
+  detailsUsername = signal("");
 
   setUserAttribute = jest.fn().mockReturnValue(of({}));
   deleteUserAttribute = jest.fn().mockReturnValue(of({}));
@@ -63,9 +63,9 @@ export class MockUserService implements UserServiceInterface {
     this.apiUserFilter.set(new FilterValue({ value: inputElement.value }));
   });
 
-  apiUserFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-  pageIndex: WritableSignal<number> = signal(0);
-  pageSize: WritableSignal<number> = signal(10);
+  apiUserFilter = signal(new FilterValue());
+  pageIndex = signal(0);
+  pageSize = signal(10);
   apiFilterOptions: string[] = [];
   advancedApiFilterOptions: string[] = [];
 
@@ -73,7 +73,7 @@ export class MockUserService implements UserServiceInterface {
     MockPiResponse.fromValue([])
   );
 
-  user: WritableSignal<UserData> = signal({
+  user = signal<UserData>({
     description: "",
     editable: false,
     email: "",
@@ -90,7 +90,7 @@ export class MockUserService implements UserServiceInterface {
     MockPiResponse.fromValue([])
   );
 
-  users: WritableSignal<UserData[]> = signal([]);
+  users = signal<UserData[]>([]);
   allUsernames: Signal<string[]> = signal([]);
 
   selectionFilteredUsernames: Signal<string[]> = signal([]);

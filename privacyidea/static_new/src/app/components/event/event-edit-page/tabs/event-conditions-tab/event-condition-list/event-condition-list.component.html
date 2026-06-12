@@ -99,7 +99,7 @@
               @case ("int") {
                 <input
                   #selectedConditionInput
-                  (input)="onConditionValueChange(conditionName, +$event['target']['value'])"
+                  (input)="onConditionValueChange(conditionName, $event['target']['value'])"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
                   [name]="'conditionInput_' + conditionName"
                   [required]="inputRequired()"

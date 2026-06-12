@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthData, AuthDetail, AuthResponse, AuthRole } from "@services/auth/auth.service";
+import { AuthData, AuthDetail, AuthResponse, AuthRole, ContainerWizardConfig } from "@services/auth/auth.service";
 import { ValidateCheckResponse, ValidateServiceInterface } from "@services/validate/validate.service";
-import { Observable, of } from "rxjs";
+import { of } from "rxjs";
 import { MockPiResponse } from "./mock-utils";
 
 export class MockAuthData implements AuthData {
   log_level = 0;
-  menus = [] as any[];
+  menus: string[] = [];
   realm = "";
-  rights = [] as any[];
-  role: AuthRole = "" as any;
+  rights: string[] = [];
+  role: AuthRole = "";
   token = "";
   username = "";
   logout_time = 0;
@@ -56,7 +56,12 @@ export class MockAuthData implements AuthData {
   logout_redirect_url = "";
   require_description: string[] = [];
   rss_age = 0;
-  container_wizard = { enabled: false, type: "", registration: false, template: null } as any;
+  container_wizard: ContainerWizardConfig = {
+    enabled: false,
+    type: "",
+    registration: false,
+    template: null
+  };
   versionnumber = "";
 }
 
@@ -65,36 +70,30 @@ export class MockAuthDetail implements AuthDetail {
 }
 
 export class MockValidateService implements ValidateServiceInterface {
-  testToken(_tokenSerial: string, _otpOrPinToTest: string, _otponly?: string): Observable<ValidateCheckResponse> {
-    return of({
+  testToken = jest.fn().mockReturnValue(
+    of({
       id: 1,
       jsonrpc: "2.0",
       result: { status: true, value: true },
       detail: {},
       signature: "",
-      time: Date.now(),
+      time: 0,
       version: "1.0",
       versionnumber: "1.0"
-    });
-  }
+    } as ValidateCheckResponse)
+  );
 
-  authenticatePasskey(_args?: {
-    isTest?: boolean;
-    onCredentialId?: (id: string) => void;
-  }): Observable<AuthResponse> {
-    return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as any);
-  }
+  authenticatePasskey = jest
+    .fn()
+    .mockReturnValue(
+      of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as AuthResponse)
+    );
 
-  authenticateWebAuthn(_args: {
-    signRequest: any;
-    transaction_id: string;
-    username: string;
-    isTest?: boolean;
-  }): Observable<AuthResponse> {
-    return of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as any);
-  }
+  authenticateWebAuthn = jest
+    .fn()
+    .mockReturnValue(
+      of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail()) as AuthResponse)
+    );
 
-  pollTransaction(_transactionId: string): Observable<boolean> {
-    return of(true);
-  }
+  pollTransaction = jest.fn().mockReturnValue(of(true));
 }

@@ -75,13 +75,17 @@
             @for (event of remainingEvents(); track event) {
               <div
                 class="event-item"
-                (click)="addEvent(event)">
+                tabindex="0"
+                role="button"
+                (click)="addEvent(event)"
+                (keydown.enter)="addEvent(event)"
+                (keydown.space)="$event.preventDefault(); addEvent(event)">
                 <span class="event-name">{{ event }}</span>
                 <button
                   mat-icon-button
-                  (click)="$event.stopPropagation(); addEvent(event)"
-                  [attr.aria-label]="'Add event ' + event"
-                  i18n-aria-label>
+                  tabindex="-1"
+                  aria-hidden="true"
+                  (click)="$event.stopPropagation(); addEvent(event)">
                   <mat-icon>add</mat-icon>
                 </button>
               </div>

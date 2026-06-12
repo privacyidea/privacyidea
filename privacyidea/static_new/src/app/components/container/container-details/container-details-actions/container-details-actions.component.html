@@ -47,7 +47,7 @@
           <span i18n>Compare to Template</span>
         </button>
       }
-      @if (containerType === "smartphone") {
+      @if (containerType() === "smartphone") {
         @if (
           authService.actionAllowed("container_delete") &&
           (registrationAllowed() || rolloverAllowed() || unregisterAllowed())

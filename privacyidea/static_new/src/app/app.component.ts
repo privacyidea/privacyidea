@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, HostListener, inject, OnInit } from "@angular/core";
+import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
+import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
-import { WelcomeDialogService } from "./services/welcome/welcome-dialog.service";
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -106,7 +106,7 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.scss"
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
@@ -119,13 +119,11 @@ export class AppComponent implements OnInit {
       console.warn("User is already logged in.");
       this.notificationService.warning("User is already logged in.");
     }
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _welcomeInit = inject(WelcomeDialogService);
     /** Uncomment to enable subscription expiry dialog
      * const _subscriptionExpiryInit = inject(SubscriptionExpiryService); **/
   }
-
-  ngOnInit(): void {}
 
   @HostListener("document:click")
   @HostListener("document:keydown")

@@ -21,12 +21,12 @@ import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
 import { ContainerService } from "@services/container/container.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContainerService } from "@testing/mock-services";
+import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
 
-const detectChangesStable = async (fixture: ComponentFixture<any>) => {
+const detectChangesStable = async (fixture: ComponentFixture<ContainerRegistrationFinalizeDialogComponent>) => {
   fixture.detectChanges();
   await Promise.resolve();
   fixture.detectChanges();
@@ -60,7 +60,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
         provideHttpClient(),
         { provide: MAT_DIALOG_DATA, useValue: mockData },
         { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: ContainerService, useClass: MockContainerService}
+        { provide: ContainerService, useClass: MockContainerService }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
@@ -96,9 +96,9 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     fixture = TestBed.createComponent(ContainerRegistrationFinalizeDialogComponent);
     component = fixture.componentInstance;
     await detectChangesStable(fixture);
-    const titles = fixture.nativeElement.querySelectorAll("h3");
+    const titles = (fixture.nativeElement as HTMLElement).querySelectorAll("h3");
     const titleText = Array.from(titles)
-      .map((el: any) => el.textContent.trim())
+      .map((el) => el.textContent?.trim() ?? "")
       .join(" ");
     expect(titleText).toContain("Container Rollover");
   });

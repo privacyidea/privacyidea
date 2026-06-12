@@ -42,9 +42,9 @@ describe("MachineResolverHostsTabComponent", () => {
   });
 
   it("should emit validator on init", () => {
-    jest.spyOn(component.onNewValidator, "emit");
+    jest.spyOn(component.newValidator, "emit");
     component.ngOnInit();
-    expect(component.onNewValidator.emit).toHaveBeenCalled();
+    expect(component.newValidator.emit).toHaveBeenCalled();
   });
 
   it("should check validity", () => {
@@ -53,19 +53,19 @@ describe("MachineResolverHostsTabComponent", () => {
       filename: "testFileName",
       resolver: "test"
     };
-    const invalidData1 = { type: "ldap" };
+    const invalidData1 = { type: "ldap" } as unknown as HostsMachineResolverData;
     const invalidData2: HostsMachineResolverData = {
       type: "hosts",
       filename: " ",
       resolver: ""
     };
     expect(component.isValid(validData)).toBeTruthy();
-    expect(component.isValid(invalidData1 as any)).toBeFalsy();
+    expect(component.isValid(invalidData1)).toBeFalsy();
     expect(component.isValid(invalidData2)).toBeFalsy();
   });
 
   it("should update data with patch only", () => {
-    jest.spyOn(component.onNewData, "emit");
+    jest.spyOn(component.newData, "emit");
     const initialData: HostsMachineResolverData = {
       type: "hosts",
       filename: "initial",
@@ -74,11 +74,11 @@ describe("MachineResolverHostsTabComponent", () => {
     fixture.componentRef.setInput("machineResolverData", initialData);
     const patch = { filename: "updated" };
     component.updateData(patch);
-    expect(component.onNewData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "hosts" });
+    expect(component.newData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "hosts" });
   });
 
   it("should update data with patch and remove", () => {
-    jest.spyOn(component.onNewData, "emit");
+    jest.spyOn(component.newData, "emit");
     const initialData: HostsMachineResolverData = {
       type: "hosts",
       filename: "initial",
@@ -88,15 +88,15 @@ describe("MachineResolverHostsTabComponent", () => {
     const patch = { filename: "updated" };
     component.updateData({ patch, remove: ["resolver"] });
     const expectedData: Partial<HostsMachineResolverData> = { type: "hosts", filename: "updated" };
-    expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
+    expect(component.newData.emit).toHaveBeenCalledWith(expectedData);
   });
 
   it("should update data with remove only", () => {
-    jest.spyOn(component.onNewData, "emit");
+    jest.spyOn(component.newData, "emit");
     const initialData: HostsMachineResolverData = { type: "hosts", filename: "initial", resolver: "name" };
     fixture.componentRef.setInput("machineResolverData", initialData);
     component.updateData({ remove: ["resolver"] });
     const expectedData: Partial<HostsMachineResolverData> = { type: "hosts", filename: "initial" };
-    expect(component.onNewData.emit).toHaveBeenCalledWith(expectedData);
+    expect(component.newData.emit).toHaveBeenCalledWith(expectedData);
   });
 });

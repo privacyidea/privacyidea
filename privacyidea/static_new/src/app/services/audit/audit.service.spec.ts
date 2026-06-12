@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { provideHttpClient } from "@angular/common/http";
+import { HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -59,9 +59,9 @@ describe("AuditService (signals & helpers)", () => {
       ]
     });
     auditService = TestBed.inject(AuditService);
-    content = TestBed.inject(ContentService) as any;
-    authService = TestBed.inject(AuthService) as any;
-    dialogService = TestBed.inject(DialogService) as any;
+    content = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     httpMock = TestBed.inject(HttpTestingController);
   });
 
@@ -125,7 +125,7 @@ describe("AuditService (signals & helpers)", () => {
         ["serial", "   "],
         ["container_serial", "*"]
       ])
-    } as any);
+    } as unknown as FilterValue);
 
     const params = auditService.filterParams();
     expect(params).not.toHaveProperty("action");
@@ -135,7 +135,7 @@ describe("AuditService (signals & helpers)", () => {
   });
 
   it("downloadCSV triggers a GET request with correct params and headers after dialog confirmation", async () => {
-    const getHeadersMock = jest.spyOn(authService, "getHeaders").mockReturnValue({} as any);
+    const getHeadersMock = jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders());
     auditService.auditFilter.set(new FilterValue({ value: "action: LOGIN" }));
 
     auditService.downloadCSV();

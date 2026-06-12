@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { Signal, signal } from "@angular/core";
 import {
   PolicyActionDetail,
   PolicyActionGroups,
@@ -49,14 +49,14 @@ export class MockPolicyService implements PolicyServiceInterface {
   });
   isEditMode: Signal<boolean> = signal(false);
   policyActions: Signal<ScopedPolicyActions> = signal({});
-  allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }> = signal({});
+  allPolicyActionsFlat: Signal<Record<string, PolicyActionDetail>> = signal({});
   allPolicyScopes: Signal<string[]> = signal([]);
   policyActionsByGroup: Signal<PolicyActionGroups> = signal({});
   filteredPolicyActionGroups = jest.fn().mockReturnValue({});
   getActionDetail = jest.fn().mockReturnValue(null);
   getGroupOfAction = jest.fn().mockReturnValue(null);
   getScopeOfAction = jest.fn().mockReturnValue(null);
-  allPolicies: WritableSignal<PolicyDetail[]> = signal([]);
+  allPolicies = signal<PolicyDetail[]>([]);
   canSavePolicy = jest.fn().mockReturnValue(true);
   getDetailsOfAction = jest.fn().mockReturnValue(null);
   copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));

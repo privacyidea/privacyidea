@@ -52,7 +52,7 @@
             class="flex-1"
             [values]="availableNonEmptyGroups()"
             [initialValue]="selectedGroup()"
-            (onSelect)="selectedGroup.set($event ?? '')" />
+            (selected)="selectedGroup.set($event ?? '')" />
         </div>
       }
 

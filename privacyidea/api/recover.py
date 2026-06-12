@@ -33,6 +33,7 @@ The endpoints are anonymous (no auth header).
 from flask import (Blueprint, request, g)
 from .lib.utils import send_result
 from ..lib.params import get_required
+from privacyidea.lib.framework import get_base_url
 from privacyidea.lib.user import get_user_from_param
 import logging
 from privacyidea.lib.passwordreset import (create_recoverycode,
@@ -62,6 +63,10 @@ def get_recover_code():
     ``email`` form field has to match the user's stored email address
     (case-insensitive); otherwise the request is rejected.
 
+    The recovery link is built from the configured ``PI_BASE_URL`` (see
+    ``pi.cfg``). If ``PI_BASE_URL`` is not configured, this endpoint refuses
+    to operate.
+
     This endpoint is anonymous — no authentication header is required.
 
     :jsonparam user: login name of the user (required).
@@ -73,7 +78,8 @@ def get_recover_code():
     param = request.all_data
     user_obj = get_user_from_param(param, False)
     email = get_required(param, "email")
-    r = create_recoverycode(user_obj, email, base_url=request.base_url)
+    # The recovery link must be built from a trusted, configured base URL
+    r = create_recoverycode(user_obj, email, base_url=get_base_url(required=True))
     g.audit_object.log({"success": r,
                         "info": f"{user_obj!s}"})
     return send_result(r)

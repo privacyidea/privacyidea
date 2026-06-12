@@ -28,7 +28,6 @@ describe("UserAssignmentComponent", () => {
   let component: UserAssignmentComponent;
   let fixture: ComponentFixture<UserAssignmentComponent>;
   let userServiceMock: MockUserService;
-  let realmServiceMock: MockRealmService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -41,7 +40,6 @@ describe("UserAssignmentComponent", () => {
 
     fixture = TestBed.createComponent(UserAssignmentComponent);
     userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
-    realmServiceMock = TestBed.inject(RealmService) as unknown as MockRealmService;
     component = fixture.componentInstance;
     fixture.componentRef.setInput("showOnlyAddToRealm", true);
     fixture.detectChanges();

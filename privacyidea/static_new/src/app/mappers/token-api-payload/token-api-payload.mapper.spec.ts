@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { RemoteServer } from "@services/privacyidea-server/privacyidea-server.service";
+import { TokenDetails } from "@services/token/token.service";
 import { FourEyesApiPayloadMapper, FourEyesEnrollmentData } from "./4eyes-token-api-payload.mapper";
 import { BaseApiPayloadMapper, TokenEnrollmentData } from "./_token-api-payload.mapper";
 import { ApplspecApiPayloadMapper, ApplspecEnrollmentData } from "./applspec-token-api-payload.mapper";
@@ -27,10 +29,10 @@ import { IndexedSecretApiPayloadMapper, IndexedSecretEnrollmentData } from "./in
 import { MotpApiPayloadMapper, MotpEnrollmentData } from "./motp-token-api-payload.mapper";
 import { PaperApiPayloadMapper, PaperEnrollmentData } from "./paper-token-api-payload.mapper";
 import {
-    PasskeyApiPayloadMapper,
-    PasskeyEnrollmentData,
-    PasskeyFinalizeApiPayloadMapper,
-    PasskeyFinalizeData
+  PasskeyApiPayloadMapper,
+  PasskeyEnrollmentData,
+  PasskeyFinalizeApiPayloadMapper,
+  PasskeyFinalizeData
 } from "./passkey-token-api-payload.mapper";
 import { PushApiPayloadMapper, PushEnrollmentData } from "./push-token-api-payload.mapper";
 import { QuestionApiPayloadMapper, QuestionEnrollmentData } from "./question-token-api-payload.mapper";
@@ -46,10 +48,10 @@ import { TotpApiPayloadMapper, TotpEnrollmentData } from "./totp-token-api-paylo
 import { U2fApiPayloadMapper, U2fEnrollmentData } from "./u2f-token-api-payload.mapper";
 import { VascoApiPayloadMapper, VascoEnrollmentData } from "./vasco-token-api-payload.mapper";
 import {
-    WebAuthnApiPayloadMapper,
-    WebAuthnEnrollmentData,
-    WebAuthnFinalizeApiPayloadMapper,
-    WebauthnFinalizeData
+  WebAuthnApiPayloadMapper,
+  WebAuthnEnrollmentData,
+  WebAuthnFinalizeApiPayloadMapper,
+  WebauthnFinalizeData
 } from "./webauthn-token-api-payload.mapper";
 import { YubicoApiPayloadMapper, YubicoEnrollmentData } from "./yubico-token-api-payload.mapper";
 import { YubikeyApiPayloadMapper, YubikeyEnrollmentData } from "./yubikey-token-api-payload.mapper";
@@ -174,7 +176,7 @@ describe("FourEyesApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("4eyes");
     expect(result.serial).toBe("S1");
     expect(result.separator).toBe(";");
@@ -194,7 +196,7 @@ describe("FourEyesApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("4eyes");
     expect(result.separator).toBe("");
     expect(result.requiredTokenOfRealms).toEqual([]);
@@ -262,7 +264,7 @@ describe("ApplspecApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("applspec");
     expect(result.serial).toBe("S1");
     expect(result.serviceId).toBe("1234");
@@ -278,7 +280,7 @@ describe("ApplspecApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("applspec");
     expect(result.serial).toBe("S1");
     expect(result.serviceId).toBeUndefined();
@@ -321,7 +323,7 @@ describe("CertificateApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("certificate");
     expect(result.serial).toBe("S1");
     expect(result.caConnector).toBeUndefined();
@@ -337,7 +339,7 @@ describe("CertificateApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("certificate");
     expect(result.serial).toBe("S1");
     expect(result.caConnector).toBe("testCA");
@@ -385,7 +387,7 @@ describe("DaypasswordApiPayloadMapper", () => {
       serial: "S1",
       otplen: 8
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("daypassword");
     expect(result.serial).toBe("S1");
     expect(result.hashAlgorithm).toBe("sha256");
@@ -403,7 +405,7 @@ describe("DaypasswordApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("daypassword");
     expect(result.serial).toBe("S1");
     expect(result.hashAlgorithm).toBeUndefined();
@@ -443,7 +445,7 @@ describe("EmailApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("email");
     expect(result.serial).toBe("S1");
     expect(result.emailAddress).toBe("test@example.com");
@@ -460,7 +462,7 @@ describe("EmailApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("email");
     expect(result.serial).toBe("S1");
     expect(result.emailAddress).toBeUndefined();
@@ -475,7 +477,7 @@ describe("HotpApiPayloadMapper", () => {
     type: "hotp",
     generateOnServer: false,
     otpKey: "K",
-    otpLength: "8" as any,
+    otpLength: "8" as unknown as number,
     hashAlgorithm: "sha256",
     serial: "SER123",
     twoStepInit: true
@@ -524,7 +526,7 @@ describe("HotpApiPayloadMapper", () => {
       serial: "S1",
       otplen: 8
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("hotp");
     expect(result.description).toBe("desc");
     expect(result.containerSerial).toBe("CONT-1");
@@ -547,7 +549,7 @@ describe("HotpApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("hotp");
     expect(result.description).toBe("desc");
     expect(result.containerSerial).toBe("CONT-1");
@@ -586,7 +588,7 @@ describe("IndexedSecretApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("indexedsecret");
     expect(result.serial).toBe("S1");
   });
@@ -633,7 +635,7 @@ describe("MotpApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("motp");
     expect(result.serial).toBe("S1");
   });
@@ -665,7 +667,7 @@ describe("PaperApiPayloadMapper", () => {
   });
 
   it("fromApiPayload maps back", () => {
-    const result = mapper.fromApiPayload({ otplen: 7, otpcount: 20 });
+    const result = mapper.fromApiPayload({ type: "paper", otplen: 7, otpcount: 20 });
     expect(result.otpLength).toBe(7);
     expect(result.otpCount).toBe(20);
   });
@@ -681,7 +683,7 @@ describe("PaperApiPayloadMapper", () => {
       serial: "S1",
       otplen: 8
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("paper");
     expect(result.serial).toBe("S1");
     expect(result.otpLength).toBe(8);
@@ -697,7 +699,7 @@ describe("PaperApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("paper");
     expect(result.serial).toBe("S1");
     expect(result.otpLength).toBeUndefined();
@@ -730,7 +732,7 @@ describe("PasskeyApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("passkey");
   });
 });
@@ -782,7 +784,7 @@ describe("PushApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("push");
     expect(result.serial).toBe("S1");
   });
@@ -817,7 +819,7 @@ describe("QuestionApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("question");
     expect(result.serial).toBe("S1");
   });
@@ -855,7 +857,7 @@ describe("RadiusApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("radius");
     expect(result.serial).toBe("S1");
     expect(result.radiusServerConfiguration).toBe("radius1");
@@ -872,7 +874,7 @@ describe("RadiusApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("radius");
     expect(result.serial).toBe("S1");
     expect(result.radiusServerConfiguration).toBe("");
@@ -901,7 +903,7 @@ describe("RegistrationApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("registration");
     expect(result.serial).toBe("S1");
   });
@@ -912,7 +914,7 @@ describe("RemoteApiPayloadMapper", () => {
   const base = (): RemoteEnrollmentData => ({
     ...common,
     type: "remote",
-    remoteServer: { id: "srv1" } as any,
+    remoteServer: { id: "srv1" } as RemoteServer,
     remoteSerial: "RS",
     remoteUser: "ru",
     remoteRealm: "rr",
@@ -953,7 +955,7 @@ describe("RemoteApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("remote");
     expect(result.serial).toBe("S1");
     expect(result.remoteServer).toEqual({ id: "1234" });
@@ -964,7 +966,7 @@ describe("RemoteApiPayloadMapper", () => {
     expect(result.checkPinLocally).toBe(true);
 
     details.info["remote.local_checkpin"] = "False";
-    const result2 = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result2 = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result2.checkPinLocally).toBe(false);
   });
 
@@ -978,7 +980,7 @@ describe("RemoteApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("remote");
     expect(result.serial).toBe("S1");
     expect(result.remoteServer).toBeNull();
@@ -1030,7 +1032,7 @@ describe("SmsApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("sms");
     expect(result.serial).toBe("S1");
     expect(result.smsGateway).toBe("1234");
@@ -1048,7 +1050,7 @@ describe("SmsApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("sms");
     expect(result.serial).toBe("S1");
     expect(result.smsGateway).toBe("1234");
@@ -1056,7 +1058,7 @@ describe("SmsApiPayloadMapper", () => {
     expect(result.readNumberDynamically).toBe(true);
 
     details.info.dynamic_phone = "False";
-    const result2 = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result2 = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result2.readNumberDynamically).toBe(false);
   });
 });
@@ -1080,7 +1082,7 @@ describe("SpassApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("spass");
     expect(result.serial).toBe("S1");
   });
@@ -1116,7 +1118,7 @@ describe("SshkeyApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("sshkey");
     expect(result.serial).toBe("S1");
   });
@@ -1142,7 +1144,7 @@ describe("TanApiPayloadMapper", () => {
   });
 
   it("fromApiPayload maps back", () => {
-    const r = mapper.fromApiPayload({ tancount: 5, tanlength: 6 });
+    const r = mapper.fromApiPayload({ type: "tan", tancount: 5, tanlength: 6 });
     expect(r.tanCount).toBe(5);
     expect(r.tanLength).toBe(6);
   });
@@ -1157,7 +1159,7 @@ describe("TanApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("tan");
     expect(result.serial).toBe("S1");
     expect(result.tanCount).toBe(100);
@@ -1183,7 +1185,7 @@ describe("TiqrApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("tiqr");
     expect(result.serial).toBe("S1");
   });
@@ -1196,9 +1198,9 @@ describe("TotpApiPayloadMapper", () => {
     type: "totp",
     generateOnServer: false,
     otpKey: "K",
-    otpLength: "6" as any,
+    otpLength: "6" as unknown as number,
     hashAlgorithm: "sha1",
-    timeStep: "30" as any,
+    timeStep: "30" as unknown as number,
     serial: "S1",
     twoStepInit: false
   });
@@ -1249,7 +1251,7 @@ describe("TotpApiPayloadMapper", () => {
       serial: "S1",
       otplen: 8
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("totp");
     expect(result.serial).toBe("S1");
     expect(result.hashAlgorithm).toBe("sha256");
@@ -1267,7 +1269,7 @@ describe("TotpApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("totp");
     expect(result.serial).toBe("S1");
     expect(result.hashAlgorithm).toBeUndefined();
@@ -1295,7 +1297,7 @@ describe("U2fApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("u2f");
     expect(result.serial).toBe("S1");
   });
@@ -1338,7 +1340,7 @@ describe("VascoApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("vasco");
     expect(result.serial).toBe("S1");
   });
@@ -1373,7 +1375,7 @@ describe("WebAuthnApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("webauthn");
     expect(result.serial).toBe("S1");
   });
@@ -1431,7 +1433,7 @@ describe("YubicoApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("yubico");
     expect(result.serial).toBe("S1");
     expect(result.yubicoIdentifier).toBe("1234");
@@ -1447,7 +1449,7 @@ describe("YubicoApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("yubico");
     expect(result.serial).toBe("S1");
     expect(result.yubicoIdentifier).toBeUndefined();
@@ -1482,7 +1484,7 @@ describe("YubikeyApiPayloadMapper", () => {
       serial: "S1",
       otplen: 38
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("yubikey");
     expect(result.serial).toBe("S1");
     expect(result.otpLength).toBe(38);
@@ -1498,7 +1500,7 @@ describe("YubikeyApiPayloadMapper", () => {
       realms: ["realm1"],
       serial: "S1"
     };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
+    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("yubikey");
     expect(result.serial).toBe("S1");
     expect(result.otpLength).toBe(0);

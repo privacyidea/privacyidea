@@ -18,7 +18,7 @@
  **/
 
 import { HttpHeaders } from "@angular/common/http";
-import { computed, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, linkedSignal, signal } from "@angular/core";
 import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData } from "@services/auth/auth.service";
 import { of } from "rxjs";
 import { MockPiResponse } from "./mock-utils";
@@ -37,8 +37,8 @@ export class MockAuthService implements AuthServiceInterface {
   readonly jwtNonce = signal(this.jwtData()?.nonce ?? "");
   readonly authtype = signal<"cookie" | "none">("cookie");
   readonly jwtExpDate = signal(new Date());
-  jwtLogoutTimeS: WritableSignal<number | null> = signal(300);
-  logoutTimeS: WritableSignal<number | null> = signal(120);
+  jwtLogoutTimeS = signal<number | null>(300);
+  logoutTimeS = signal<number | null>(120);
   readonly isAuthenticated = signal(true);
   readonly logLevel = signal(0);
   readonly menus = computed(() => this.authData()?.menus ?? []);

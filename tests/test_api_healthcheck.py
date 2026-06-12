@@ -1,8 +1,9 @@
+import base64
 import json
 from contextlib import contextmanager
 from typing import Optional
 from .pkcs11mock import PKCS11Mock
-from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, enable_policy, get_policies, set_policy
+from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, set_policy
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 from tests import ldap3mock
@@ -162,17 +163,44 @@ class APIHealthcheckTestCase(MyApiTestCase):
             with ldapr, sqlr:
                 yield
 
-        check_resolvers(200, "OK", ldap_expected_status="fail", sql_expected_status="fail")
+        # /healthz/resolversz stays anonymous so orchestrators can probe it, but it
+        # returns only the overall status to anonymous callers — the per-resolver
+        # names are revealed solely to an authenticated admin.
+        check_resolvers(200, "OK")  # anonymous: status only, no resolver names
+        check_resolvers(200, "OK", ldap_expected_status="fail", sql_expected_status="fail", auth_token=self.at)
         with setup_test_resolvers():
-            check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK")
+            check_resolvers(200, "OK")  # anonymous: still status only
+            check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK", auth_token=self.at)
 
+        # With the require_auth_for_resolver_details policy set, the names stay
+        # admin-only as always, but a *present* but invalid token is rejected with
+        # 401 (legacy behavior) — while a header-less probe is still served the
+        # status anonymously.
         with setup_policy("auth_for_resolvers", scope=SCOPE.AUTHZ,
                           action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true"):
-            check_resolvers(200, "OK")
+            check_resolvers(200, "OK")  # anonymous (no header): status only
             check_resolvers(200, "OK", ldap_expected_status="fail", sql_expected_status="fail", auth_token=self.at)
-            check_resolvers(401, auth_token="")
-
+            check_resolvers(401, auth_token="")  # present but invalid token -> rejected
             with setup_test_resolvers():
-                check_resolvers(200, "OK")
+                check_resolvers(200, "OK")  # anonymous (no header): status only
                 check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK", auth_token=self.at)
-                check_resolvers(401, auth_token="")
+                check_resolvers(401, auth_token="")  # present but invalid token -> rejected
+
+    def test_resolversz_rejects_crafted_jwt_alg(self):
+        # A token whose header alg is a trusted-JWT algorithm (e.g. RS256) but matches no
+        # PI_TRUSTED_JWT entry decodes against HS256 and would raise jwt.InvalidAlgorithmError.
+        # The endpoint must treat such an invalid token as anonymous (200, status only),
+        # never let the exception escape as an HTTP 500.
+        header = base64.urlsafe_b64encode(b'{"alg":"RS256","typ":"JWT"}').rstrip(b"=")
+        payload = base64.urlsafe_b64encode(b'{"role":"admin","username":"x"}').rstrip(b"=")
+        signature = base64.urlsafe_b64encode(b"sig").rstrip(b"=")
+        crafted_token = b".".join([header, payload, signature]).decode()
+        with self.app.test_request_context('/healthz/resolversz', method='GET',
+                                           headers={'Authorization': crafted_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+            self.assertIn("status", value)
+            # An invalid token is anonymous, so the per-resolver names must not be disclosed.
+            self.assertNotIn("ldapresolver", value)
+            self.assertNotIn("sqlresolver", value)

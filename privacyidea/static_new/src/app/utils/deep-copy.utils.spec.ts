@@ -64,7 +64,7 @@ describe("deepCopy", () => {
   });
 
   it("should handle circular references (will throw an error with JSON.stringify)", () => {
-    const original: any = {};
+    const original: { a?: unknown } = {};
     original.a = original;
 
     expect(() => deepCopy(original)).toThrow(TypeError);

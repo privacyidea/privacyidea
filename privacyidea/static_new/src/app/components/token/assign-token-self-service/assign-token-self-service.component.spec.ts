@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
-import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { MockContentService, MockRouter, MockTokenService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
 
@@ -30,18 +30,14 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let component: AssignTokenSelfServiceComponent;
 
   let tokenService: MockTokenService;
-  let routerMock: { navigateByUrl: jest.Mock };
+  let routerMock: MockRouter;
 
   beforeEach(async () => {
-    routerMock = {
-      navigateByUrl: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [AssignTokenSelfServiceComponent],
       providers: [
         provideHttpClient(),
-        { provide: Router, useValue: routerMock },
+        { provide: Router, useClass: MockRouter },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService }
       ]
@@ -50,6 +46,7 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
     component = fixture.componentInstance;
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    routerMock = TestBed.inject(Router) as unknown as MockRouter;
     tokenService.assignUser.mockReturnValue(of(null));
 
     fixture.detectChanges();

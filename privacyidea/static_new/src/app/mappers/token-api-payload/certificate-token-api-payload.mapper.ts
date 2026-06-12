@@ -62,7 +62,7 @@ export class CertificateApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): CertificateEnrollmentData {
+  override fromApiPayload(payload: CertificateEnrollmentPayload): CertificateEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as CertificateEnrollmentData;
   }

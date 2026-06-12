@@ -17,29 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { ElementRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatSelectModule } from "@angular/material/select";
+import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
+import { MockPolicyService } from "@testing/mock-services";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item-new.component";
-
-@Component({
-  selector: "app-selector-buttons",
-  template: "",
-  standalone: true
-})
-class MockSelectorButtonsComponent {
-  initialValue = input<any>();
-  values = input.required<any[]>();
-  onSelect = output<any>();
-  focusFirst = jest.fn();
-}
 
 describe("PolicyActionItemComponent", () => {
   let component: PolicyActionItemComponent;
   let fixture: ComponentFixture<PolicyActionItemComponent>;
-  let policyServiceMock: jest.Mocked<PolicyService>;
+  let policyServiceMock: MockPolicyService;
 
   const mockActionDetail: PolicyActionDetail = {
     type: "str",
@@ -55,13 +45,9 @@ describe("PolicyActionItemComponent", () => {
   };
 
   beforeEach(async () => {
-    policyServiceMock = {
-      actionValueIsValid: jest.fn().mockReturnValue(true)
-    } as any;
-
     await TestBed.configureTestingModule({
       imports: [PolicyActionItemComponent, MatSelectModule],
-      providers: [{ provide: PolicyService, useValue: policyServiceMock }]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
     })
       .overrideComponent(PolicyActionItemComponent, {
         set: {
@@ -69,6 +55,8 @@ describe("PolicyActionItemComponent", () => {
         }
       })
       .compileComponents();
+
+    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
 
     fixture = TestBed.createComponent(PolicyActionItemComponent);
     component = fixture.componentInstance;
@@ -171,7 +159,10 @@ describe("PolicyActionItemComponent", () => {
     });
 
     it("should return false when detail is falsy", () => {
-      fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: null as any });
+      fixture.componentRef.setInput("selectableAction", {
+        ...defaultAction,
+        detail: null as unknown as PolicyActionDetail
+      });
       expect(component.inputIsValid()).toBe(false);
     });
   });
@@ -246,7 +237,7 @@ describe("PolicyActionItemComponent", () => {
   describe("focusFirstInput", () => {
     it("should focus the input element when present", async () => {
       const mockInput = { focus: jest.fn() };
-      jest.spyOn(component, "inputElementRef").mockReturnValue({ nativeElement: mockInput } as any);
+      jest.spyOn(component, "inputElementRef").mockReturnValue({ nativeElement: mockInput } as ElementRef);
 
       component.focusFirstInput();
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -256,7 +247,7 @@ describe("PolicyActionItemComponent", () => {
 
     it("should focus the select element when no input is present", async () => {
       const mockSelect = { focus: jest.fn() };
-      jest.spyOn(component, "selectElementRef").mockReturnValue(mockSelect as any);
+      jest.spyOn(component, "selectElementRef").mockReturnValue(mockSelect as unknown as MatSelect);
       jest.spyOn(component, "inputElementRef").mockReturnValue(undefined);
 
       component.focusFirstInput();
@@ -267,7 +258,7 @@ describe("PolicyActionItemComponent", () => {
 
     it("should focus the button element when no input or select is present", async () => {
       const mockButton = { focus: jest.fn() };
-      jest.spyOn(component, "buttonElementRef").mockReturnValue({ nativeElement: mockButton } as any);
+      jest.spyOn(component, "buttonElementRef").mockReturnValue({ nativeElement: mockButton } as ElementRef);
       jest.spyOn(component, "inputElementRef").mockReturnValue(undefined);
       jest.spyOn(component, "selectElementRef").mockReturnValue(undefined);
       jest.spyOn(component, "selectorComponent").mockReturnValue(undefined);

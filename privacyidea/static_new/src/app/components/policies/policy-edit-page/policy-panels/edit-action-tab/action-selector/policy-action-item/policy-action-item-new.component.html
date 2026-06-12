@@ -18,7 +18,11 @@
 -->
 <div
   class="policy-action-item"
-  (click)="selectActionByName.emit(selectableAction().actionName)">
+  tabindex="0"
+  role="button"
+  (click)="selectActionByName.emit(selectableAction().actionName)"
+  (keydown.enter)="selectActionByName.emit(selectableAction().actionName)"
+  (keydown.space)="$event.preventDefault(); selectActionByName.emit(selectableAction().actionName)">
   <div class="detail-text">
     <span
       class="detail-label"
@@ -51,7 +55,7 @@
               class="flex-1"
               [initialValue]="currentAction().value"
               [values]="actionValues"
-              (onSelect)="updateSelectedActionValue($event)" />
+              (selected)="updateSelectedActionValue($event ?? '')" />
           } @else {
             <mat-form-field
               appearance="fill"
@@ -99,7 +103,8 @@
       }
     </div>
 
-    @if (!selectableAction().detail.value || selectableAction().detail.value.length > 0) {
+    @let detailValue = selectableAction().detail.value;
+    @if (!detailValue || detailValue.length > 0) {
       <button
         #buttonElement
         mat-icon-button

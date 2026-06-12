@@ -65,15 +65,15 @@ export interface ChallengesServiceInterface {
 
   handleFilterInput($event: Event): void;
 
-  deleteExpiredChallenges(): Observable<PiResponse<unknown>>;
+  deleteExpiredChallenges(): Observable<PiResponse<{ status: boolean; deleted: number }>>;
 }
 
 @Injectable()
 export class ChallengesService implements ChallengesServiceInterface {
-  private readonly http = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly http = inject(HttpClient);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   challengesFilter = linkedSignal({
@@ -152,8 +152,8 @@ export class ChallengesService implements ChallengesServiceInterface {
     this.challengesFilter.set(newFilter);
   }
 
-  deleteExpiredChallenges(): Observable<PiResponse<unknown>> {
-    return this.http.delete<PiResponse<unknown>>(`${this.tokenBaseUrl}challenges/expired`, {
+  deleteExpiredChallenges(): Observable<PiResponse<{ status: boolean; deleted: number }>> {
+    return this.http.delete<PiResponse<{ status: boolean; deleted: number }>>(`${this.tokenBaseUrl}challenges/expired`, {
       headers: this.authService.getHeaders()
     });
   }

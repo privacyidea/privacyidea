@@ -19,6 +19,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -32,12 +33,10 @@ import { of } from "rxjs";
 import { NewSmtpServerComponent } from "./new-smtp-server.component";
 
 describe("NewSmtpServerComponent", () => {
-  let smtpServiceMock: any;
+  let smtpServiceMock: MockSmtpService;
   let router: Router;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
-
-  beforeEach(() => {});
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -61,7 +60,7 @@ describe("NewSmtpServerComponent", () => {
         ]
       }).compileComponents();
 
-      smtpServiceMock = TestBed.inject(SmtpService);
+      smtpServiceMock = TestBed.inject(SmtpService) as unknown as MockSmtpService;
       pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
       dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
       router = TestBed.inject(Router);
@@ -170,13 +169,15 @@ describe("NewSmtpServerComponent", () => {
     });
 
     describe("onCancel", () => {
-      let mockSaveExitDialogRef: any;
+      let mockSaveExitDialogRef: { afterClosed: jest.Mock };
 
       beforeEach(() => {
         mockSaveExitDialogRef = {
           afterClosed: jest.fn()
         };
-        dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
+        dialogService.openDialog.mockReturnValue(
+          mockSaveExitDialogRef as unknown as MatDialogRef<SaveAndExitDialogComponent>
+        );
       });
 
       it("should navigate back directly when there are no changes", () => {

@@ -76,12 +76,12 @@ type ContainerRegistrationState = "registered" | "client_wait";
 export interface ContainerDetailData {
   description?: string;
   info?: {
-    [key: string]: any;
     registration_state?: ContainerRegistrationState;
+    [key: string]: unknown;
   };
-  internal_info_keys?: any[];
-  last_authentication?: any;
-  last_synchronization?: any;
+  internal_info_keys?: string[];
+  last_authentication?: string;
+  last_synchronization?: string;
   realms: string[];
   serial: string;
   states: string[];
@@ -115,7 +115,7 @@ export interface ContainerDetailToken {
   rollout_state?: string;
   serial: string;
   sync_window: number;
-  tokengroup: any[];
+  tokengroup: string[];
   tokentype: string;
   user_editable: false;
   user_id: string;
@@ -171,7 +171,7 @@ export interface ContainerRegisterData {
   hash_algorithm: string;
   key_algorithm: string;
   nonce: string;
-  offline_tokens: any[];
+  offline_tokens: string[];
   passphrase_prompt: string;
   server_url: string;
   ssl_verify: boolean;
@@ -260,12 +260,15 @@ export interface ContainerServiceInterface {
 
 @Injectable()
 export class ContainerService implements ContainerServiceInterface {
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly userService: UserServiceInterface = inject(UserService);
+  private readonly http = inject(HttpClient);
+
+  containerBaseUrl = environment.proxyUrl + "/container/";
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
@@ -275,10 +278,7 @@ export class ContainerService implements ContainerServiceInterface {
   readonly isPollingActive = signal(false);
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-
   stopPolling$ = new Subject<void>();
-  containerBaseUrl = environment.proxyUrl + "/container/";
-  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   readonly eventPageSize = signal(10);
 
   states = signal<string[]>([]);
@@ -368,7 +368,7 @@ export class ContainerService implements ContainerServiceInterface {
     return String(assigned).trim() !== "";
   });
 
-  private containerRequest(params: Record<string, any>) {
+  private containerRequest(params: Record<string, string | number | boolean>) {
     return {
       url: this.containerBaseUrl,
       method: "GET" as const,
@@ -377,7 +377,7 @@ export class ContainerService implements ContainerServiceInterface {
     };
   }
 
-  private paginatedContainerRequest(params: Record<string, any>) {
+  private paginatedContainerRequest(params: Record<string, string | number | boolean>) {
     return this.containerRequest({
       page: this.pageIndex() + 1,
       pagesize: this.pageSize(),
@@ -441,7 +441,7 @@ export class ContainerService implements ContainerServiceInterface {
     }
 
     const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
-    const params: Record<string, any> = {
+    const params: Record<string, string | number | boolean> = {
       no_token: 1,
       ...this.serialFilterParam(),
       ...(this.filterContainersByTokenOwner() && token?.username && { user: token.username }),

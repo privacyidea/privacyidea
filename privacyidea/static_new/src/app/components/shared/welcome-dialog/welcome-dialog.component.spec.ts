@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { MatDialogRef } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services";
 import { WelcomeDialogServiceMock } from "@testing/mock-services/mock-welcome-dialog-service";
 import { WelcomeDialogComponent } from "./welcome-dialog.component";
 
@@ -27,26 +27,20 @@ describe("WelcomeDialogComponent", () => {
   let component: WelcomeDialogComponent;
   let dialogRefMock: { close: jest.Mock };
   let welcomeDialogServiceMock: WelcomeDialogServiceMock;
-  let authMock: {
-    hideWelcome: ReturnType<typeof signal<boolean>>;
-    subscriptionStatus: ReturnType<typeof signal<number>>;
-  };
+  let authMock: MockAuthService;
 
   beforeEach(() => {
     dialogRefMock = { close: jest.fn() };
     welcomeDialogServiceMock = new WelcomeDialogServiceMock();
-    authMock = {
-      hideWelcome: signal(false),
-      subscriptionStatus: signal(0)
-    };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: AuthService, useValue: authMock }
+        { provide: AuthService, useClass: MockAuthService }
       ]
     });
 
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     component = TestBed.createComponent(WelcomeDialogComponent).componentInstance;
   });
 
@@ -55,7 +49,7 @@ describe("WelcomeDialogComponent", () => {
   });
 
   it("should not open the dialog when hideWelcome is true", () => {
-    authMock.hideWelcome.set(true);
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true });
     expect(welcomeDialogServiceMock.opened()).toBe(false);
   });
 
@@ -67,14 +61,14 @@ describe("WelcomeDialogComponent", () => {
     component.nextWelcome();
     expect(component.step()).toBe(3);
 
-    authMock.subscriptionStatus.set(0);
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 0 });
     component.nextWelcome();
     expect(dialogRefMock.close).toHaveBeenCalled();
   });
 
   it("should allow step 4 when subscriptionStatus is 1, then close on next", () => {
     component = TestBed.createComponent(WelcomeDialogComponent).componentInstance;
-    authMock.subscriptionStatus.set(1);
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 1 });
     component.nextWelcome(); // 1
     component.nextWelcome(); // 2
     component.nextWelcome(); // 3

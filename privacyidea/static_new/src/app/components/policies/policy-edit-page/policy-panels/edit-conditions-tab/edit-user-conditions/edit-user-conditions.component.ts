@@ -62,7 +62,7 @@ export class EditUserConditionsComponent {
 
   readonly userSignal = signal("");
   readonly userField = form(this.userSignal, (f) => {
-    validate(f, (ctx) => /[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []);
+    validate(f, (ctx) => (/[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []));
   });
 
   readonly selectedRealms = computed(() => this.policy().realm || []);
@@ -151,5 +151,4 @@ export class EditUserConditionsComponent {
   toggleUserCaseInsensitive() {
     this.emitEdits({ user_case_insensitive: !this.userCaseInsensitive() });
   }
-
 }

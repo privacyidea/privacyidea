@@ -70,8 +70,8 @@ import { TokenEnrollmentComponent } from "./token-enrollment.component";
   styleUrl: "./token-enrollment.component.scss"
 })
 export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
-  protected readonly http: HttpClient = inject(HttpClient);
-  protected readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+  protected readonly http = inject(HttpClient);
+  protected readonly sanitizer = inject(DomSanitizer);
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly realmService: RealmServiceInterface = inject(RealmService);
   protected override readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -80,7 +80,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected override readonly authService: AuthService = inject(AuthService);
+  protected override readonly authService = inject(AuthService);
   protected override wizard = true;
   protected readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";

@@ -36,7 +36,7 @@ describe("EventsSelectionComponent", () => {
     fixture = TestBed.createComponent(EventSelectionComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("events", ["eventA", "eventB"]);
-    component.newEvents = { emit: jest.fn() } as any;
+    jest.spyOn(component.newEvents, "emit");
     fixture.detectChanges();
   });
 

@@ -109,7 +109,7 @@ export class UserUtilsPanelComponent {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   isLargeScreen = signal(window.innerWidth > 1630);
 

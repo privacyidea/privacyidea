@@ -18,18 +18,23 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { provideHttpClient } from "@angular/common/http";
+import { HttpResourceRef, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
+import { ValidationError } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { AuthService } from "@services/auth/auth.service";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { EnrollSmsComponent } from "./enroll-sms.component";
-import { SystemService } from "@services/system/system.service";
-import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
-import { TokenService } from "@services/token/token.service";
+import { SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
+import { AuthData, AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
-import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SmsGateway, SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SystemConfigResponse, SystemService } from "@services/system/system.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { EnrollSmsComponent } from "./enroll-sms.component";
+
+type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
 describe("EnrollSmsComponent", () => {
   let component: EnrollSmsComponent;
@@ -38,7 +43,7 @@ describe("EnrollSmsComponent", () => {
   let smsGatewayServiceMock: MockSmsGatewayService;
   let systemServiceMock: MockSystemService;
 
-  const basicOptions: TokenEnrollmentData = { type: "sms" } as any;
+  const basicOptions: TokenEnrollmentData = { type: "sms" } as TokenEnrollmentData;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -49,7 +54,7 @@ describe("EnrollSmsComponent", () => {
         { provide: SystemService, useClass: MockSystemService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: SmsGatewayService, useClass: MockSmsGatewayService}
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService }
       ]
     }).compileComponents();
 
@@ -96,14 +101,16 @@ describe("EnrollSmsComponent", () => {
 
   describe("smsGatewayOptions computed", () => {
     it("should parse gateways from the sms_gateways right when available", () => {
-      authServiceMock.authData.set({ rights: ["sms_gateways=gw1 gw2 gw3"] } as any);
+      authServiceMock.authData.set({ rights: ["sms_gateways=gw1 gw2 gw3"] } as Partial<AuthData> as AuthData);
       const opts = component.smsGatewayOptions();
       expect(opts).toEqual(["gw1", "gw2", "gw3"]);
     });
 
     it("should fall back to smsGateways service when no right exists", () => {
-      authServiceMock.authData.set({ rights: [] } as any);
-      (smsGatewayServiceMock as any).smsGateways = signal([
+      authServiceMock.authData.set({ rights: [] } as Partial<AuthData> as AuthData);
+      (smsGatewayServiceMock as unknown as { smsGateways: WritableSignal<SmsGateway[]> }).smsGateways = signal<
+        SmsGateway[]
+      >([
         { name: "service-gw1", providermodule: "m", options: {}, headers: {} },
         { name: "service-gw2", providermodule: "m", options: {}, headers: {} }
       ]);
@@ -112,10 +119,10 @@ describe("EnrollSmsComponent", () => {
     });
 
     it("should append the default identifier when not already present", () => {
-      authServiceMock.authData.set({ rights: ["sms_gateways=gw1"] } as any);
-      (systemServiceMock.systemConfigResource as any).value.set({
-        result: { value: { "sms.identifier": "default-gw" } }
-      });
+      authServiceMock.authData.set({ rights: ["sms_gateways=gw1"] } as Partial<AuthData> as AuthData);
+      (
+        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
+      ).value.set(MockPiResponse.fromValue({ "sms.identifier": "default-gw" }));
       const opts = component.smsGatewayOptions();
       expect(opts).toContain("default-gw");
       expect(opts).toContain("gw1");
@@ -124,16 +131,16 @@ describe("EnrollSmsComponent", () => {
 
   describe("defaultSMSGatewayIsSet", () => {
     it("should be false when no sms gateway is configured", () => {
-      (systemServiceMock.systemConfigResource as any).value.set({
-        result: { value: {} }
-      });
+      (
+        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
+      ).value.set(MockPiResponse.fromValue({}));
       expect(component.defaultSMSGatewayIsSet()).toBe(false);
     });
 
     it("should be true when sms.identifier is configured", () => {
-      (systemServiceMock.systemConfigResource as any).value.set({
-        result: { value: { "sms.identifier": "main-gw" } }
-      });
+      (
+        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
+      ).value.set(MockPiResponse.fromValue({ "sms.identifier": "main-gw" }));
       expect(component.defaultSMSGatewayIsSet()).toBe(true);
     });
   });
@@ -162,7 +169,7 @@ describe("EnrollSmsComponent", () => {
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.readNumberDynamically).toBe(true);
-      expect((result!.data as any).phoneNumber).toBeUndefined();
+      expect((result!.data as SmsEnrollmentData).phoneNumber).toBeUndefined();
     });
 
     it("should include phoneNumber when readNumberDynamically is false", () => {
@@ -172,7 +179,7 @@ describe("EnrollSmsComponent", () => {
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.smsGateway).toBe("gw1");
-      expect((result!.data as any).phoneNumber).toBe("+12345678");
+      expect((result!.data as SmsEnrollmentData).phoneNumber).toBe("+12345678");
     });
   });
 
@@ -180,33 +187,39 @@ describe("EnrollSmsComponent", () => {
     it("should reject malformed numbers", () => {
       component.phoneNumber.set("abc");
       expect(
-        component.phoneNumberForm().errors().some((e: any) => e.kind === "invalidPhoneNumber")
+        component
+          .phoneNumberForm()
+          .errors()
+          .some((e: ValidationError) => e.kind === "invalidPhoneNumber")
       ).toBe(true);
     });
 
     it("should accept E.164-style numbers", () => {
       component.phoneNumber.set("+4915112345678");
       expect(
-        component.phoneNumberForm().errors().some((e: any) => e.kind === "invalidPhoneNumber")
+        component
+          .phoneNumberForm()
+          .errors()
+          .some((e: ValidationError) => e.kind === "invalidPhoneNumber")
       ).toBe(false);
     });
   });
 
   describe("onSmsConfigKeydown", () => {
     it("should navigate when Enter pressed", () => {
-      const spy = jest.spyOn(component, "goToSmsConfig").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "Enter" }));
       expect(spy).toHaveBeenCalled();
     });
 
     it("should navigate when Space pressed", () => {
-      const spy = jest.spyOn(component, "goToSmsConfig").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: " " }));
       expect(spy).toHaveBeenCalled();
     });
 
     it("should ignore other keys", () => {
-      const spy = jest.spyOn(component, "goToSmsConfig").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "a" }));
       expect(spy).not.toHaveBeenCalled();
     });

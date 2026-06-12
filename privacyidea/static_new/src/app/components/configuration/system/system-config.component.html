@@ -22,7 +22,6 @@
   aria-label="System Configuration"
   class="system-config-container"
   i18n-aria-label>
-
   <div class="system-config-scroll-container">
     <div class="system-config-form">
       <h3
@@ -71,8 +70,7 @@
           </mat-checkbox>
         </div>
 
-        <mat-form-field
-          class="margin-left-auto input-width-s">
+        <mat-form-field class="margin-left-auto input-width-s">
           <mat-label i18n>Clear Failcounter</mat-label>
           <input
             [value]="params().failcounter_clear_timeout ?? ''"
@@ -108,8 +106,7 @@
           </mat-checkbox>
         </div>
 
-        <mat-form-field
-          class="margin-left-auto input-width-s">
+        <mat-form-field class="margin-left-auto input-width-s">
           <mat-label i18n>Auto Resync</mat-label>
           <input
             [value]="params().AutoResyncTimeout ?? ''"
@@ -123,17 +120,14 @@
 
       <div class="flex-column gap-16">
         <div class="flex-row just-space-between ali-center">
-          <mat-form-field
-            class="input-width-l">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>User Cache Expiration</mat-label>
             <input
               [value]="params().UserCacheExpiration ?? ''"
               (input)="updateParam('UserCacheExpiration', $any($event.target).value)"
               matInput
               placeholder="0" />
-            <mat-hint i18n>
-              Time in seconds.
-            </mat-hint>
+            <mat-hint i18n> Time in seconds. </mat-hint>
           </mat-form-field>
 
           <button
@@ -147,8 +141,7 @@
         </div>
 
         <div class="flex-row gap-16">
-          <mat-form-field
-            class="input-width-l">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>Override Authorization Clients</mat-label>
             <app-clearable-input
               (clearButtonClick)="updateParam('OverrideAuthorizationClient', '')"
@@ -160,20 +153,18 @@
                 name="OverrideAuthorizationClient"
                 placeholder="127.0.0.1, 10.0.0.8" />
             </app-clearable-input>
-            <mat-hint i18n>
-              These client IP addresses or subnets are allowed to masquerade as another client
-            </mat-hint>
+            <mat-hint i18n> These client IP addresses or subnets are allowed to masquerade as another client </mat-hint>
           </mat-form-field>
 
-          <mat-form-field
-            class="input-width-l">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>SMTP Server for Password Recovery</mat-label>
             <mat-select
               [value]="params()['recovery.identifier']"
               (selectionChange)="updateParam('recovery.identifier', $event.value)">
               <mat-option
                 [value]="''"
-                i18n>None
+                i18n
+                >None
               </mat-option>
               @for (identifier of smtpIdentifiers; track identifier) {
                 <mat-option [value]="identifier">{{ identifier }}</mat-option>
@@ -191,7 +182,8 @@
         <div class="flex-column">
           <h4
             class="margin-bottom-16"
-            i18n>Default Settings for New Enrolled Tokens
+            i18n>
+            Default Settings for New Enrolled Tokens
           </h4>
 
           <div class="flex-row gap-16">

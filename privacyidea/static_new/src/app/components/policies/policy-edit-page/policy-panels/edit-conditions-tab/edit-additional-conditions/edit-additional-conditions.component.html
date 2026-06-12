@@ -48,8 +48,14 @@
     @for (condition of additionalConditions(); track $index) {
       <div
         class="additional-condition-row"
+        tabindex="0"
+        role="button"
         [class.selected]="editIndex() === $index"
-        (click)="editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)">
+        (click)="editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)"
+        (keydown.enter)="editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)"
+        (keydown.space)="
+          $event.preventDefault(); editIndex() === $index ? cancelEdit() : startEditCondition(condition, $index)
+        ">
         <div class="center">
           <mat-slide-toggle
             #slideToggle
@@ -85,7 +91,9 @@
       <div class="form-row">
         <mat-form-field appearance="outline">
           <mat-label>Section</mat-label>
-          <mat-select [value]="conditionSection()" (selectionChange)="conditionSection.set($event.value)">
+          <mat-select
+            [value]="conditionSection()"
+            (selectionChange)="conditionSection.set($event.value)">
             @for (option of SECTION_OPTIONS; track option.key) {
               <mat-option [value]="option.key">{{ option.label }}</mat-option>
             }
@@ -94,7 +102,9 @@
 
         <mat-form-field appearance="outline">
           <mat-label>If Data Missing</mat-label>
-          <mat-select [value]="conditionHandleMissingData()" (selectionChange)="conditionHandleMissingData.set($event.value)">
+          <mat-select
+            [value]="conditionHandleMissingData()"
+            (selectionChange)="conditionHandleMissingData.set($event.value)">
             @for (opt of HANDLE_MISSING_DATA_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
@@ -111,7 +121,9 @@
               [value]="conditionKey()"
               (input)="conditionKey.set($any($event.target).value)"
               [matAutocomplete]="auto" />
-            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="conditionKey.set($event.option.value)">
+            <mat-autocomplete
+              #auto="matAutocomplete"
+              (optionSelected)="conditionKey.set($event.option.value)">
               @for (key of availableKeys(); track key) {
                 <mat-option [value]="key">{{ key }}</mat-option>
               }
@@ -127,7 +139,9 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Comparator</mat-label>
-          <mat-select [value]="conditionComparator()" (selectionChange)="conditionComparator.set($event.value)">
+          <mat-select
+            [value]="conditionComparator()"
+            (selectionChange)="conditionComparator.set($event.value)">
             @for (opt of COMPARATOR_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }

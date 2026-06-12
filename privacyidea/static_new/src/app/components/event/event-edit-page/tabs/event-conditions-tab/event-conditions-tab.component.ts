@@ -53,11 +53,11 @@ import { EventService } from "@services/event/event.service";
 })
 export class EventConditionsTabComponent {
   protected readonly eventService = inject(EventService);
-  conditions = input.required<Record<string, any>>();
-  newConditions = output<Record<string, any>>();
+  conditions = input.required<Record<string, string>>();
+  newConditions = output<Record<string, string>>();
 
   selectedConditions = linkedSignal(() => this.conditions());
-  conditionsToBeAdded: Record<string, any> = {};
+  conditionsToBeAdded: Record<string, string> = {};
   protected readonly Object = Object;
 
   addToolTip = $localize`Add Condition`;
@@ -92,7 +92,7 @@ export class EventConditionsTabComponent {
     computation: ({ available, selected, search }) => {
       // TODO: Can we simplify this logic?
       // let remaining = deepCopy(available);
-      const remaining: Record<string, any> = {};
+      const remaining: Record<string, Record<string, string>> = {};
       for (const [groupName, condition] of Object.entries(available)) {
         remaining[groupName] = {};
         for (const conditionName of Object.keys(condition)) {
@@ -107,17 +107,18 @@ export class EventConditionsTabComponent {
     }
   });
 
-  onConditionValueToBeAddedChange(conditionName: string, value: any) {
-    this.conditionsToBeAdded[conditionName] = value;
+  onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
+    this.conditionsToBeAdded[conditionName] = Array.isArray(value) ? value.join(",") : value;
   }
 
-  onConditionValueChange(conditionName: string, value: any) {
+  onConditionValueChange(conditionName: string, value: string | string[]) {
+    const normalizedValue = Array.isArray(value) ? value.join(",") : value;
     this.selectedConditions.set({
       ...this.selectedConditions(),
-      [conditionName]: value
+      [conditionName]: normalizedValue
     });
     this.newConditions.emit(this.selectedConditions());
-    if (value === "") {
+    if (normalizedValue === "") {
       // notify selected condition list to focus the new empty input
       this.addedCondition.set(conditionName);
     }

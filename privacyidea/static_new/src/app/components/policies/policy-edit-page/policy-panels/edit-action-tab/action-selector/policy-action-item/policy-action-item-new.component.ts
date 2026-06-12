@@ -65,7 +65,7 @@ export class PolicyActionItemComponent {
     return this.policyService.actionValueIsValid(detail, actionValue);
   });
   readonly selectActionByName = output<string>();
-  readonly actionAdd = output<{ name: string; value: string | number | undefined }>();
+  readonly actionAdd = output<{ name: string; value: string | number | boolean | undefined }>();
 
   currentAction = linkedSignal({
     source: () => this.selectableAction(),
@@ -82,19 +82,19 @@ export class PolicyActionItemComponent {
     return valueList as (string | number)[];
   });
 
-  addAction(value?: string | number) {
+  addAction(value?: string | number | boolean) {
     const name = this.selectableAction().actionName;
     const finalValue = value !== undefined ? value : this.currentAction().value;
     this.actionAdd.emit({ name, value: finalValue });
   }
 
-  updateSelectedActionValue(value: string | number | (string | number)[]) {
+  updateSelectedActionValue(value: string | number | boolean | (string | number | boolean)[]) {
     const actionName = this.selectableAction().actionName;
     if (Array.isArray(value)) {
       const stringValue = value.map((v) => v.toString()).join(" ");
       this.currentAction.set({ name: actionName, value: stringValue });
     } else {
-      this.currentAction.set({ name: actionName, value: value });
+      this.currentAction.set({ name: actionName, value: typeof value === "boolean" ? String(value) : value });
     }
   }
 
@@ -108,7 +108,7 @@ export class PolicyActionItemComponent {
   inputElementRef = viewChild<ElementRef>("inputElement");
   selectElementRef = viewChild<MatSelect>("selectElement");
   buttonElementRef = viewChild<ElementRef>("buttonElement");
-  selectorComponent = viewChild<SelectorButtonsComponent<any>>("selectorComponent");
+  selectorComponent = viewChild<SelectorButtonsComponent<string | number>>("selectorComponent");
 
   focusFirstInput() {
     setTimeout(() => {
