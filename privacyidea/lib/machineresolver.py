@@ -36,7 +36,7 @@ from sqlalchemy import func, select
 from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
-from .crypto import encryptPassword, decryptPassword, CENSORED
+from .crypto import encryptPassword, decryptPassword, CENSORED, is_censored
 from .log import log_with
 from privacyidea.lib.params import get_required
 from ..models import (MachineResolver,
@@ -111,7 +111,7 @@ def save_resolver(params):
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
-            if value == CENSORED:
+            if is_censored(value):
                 # Keep the existing value, do not overwrite with CENSORED
                 continue
             value = encryptPassword(value)

@@ -36,7 +36,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
-from ..lib.crypto import CENSORED
+from ..lib.crypto import censor_dict
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -85,10 +85,15 @@ def get_gateway(gwid=None):
         res = []
         for gw in get_smsgateway(id=gwid):
             gw_dict = gw.as_dict()
-            # Censor password-like options
-            for key in list(gw_dict.get("options", {}).keys()):
-                if "PASSWORD" in key.upper() or "SECRET" in key.upper():
-                    gw_dict["options"][key] = CENSORED
+            # Censor secret-looking options AND headers (e.g. auth headers) so they
+            # are not returned in clear text. NOTE: this is still a key-name
+            # heuristic; secrets in differently-named keys (e.g. an Authorization
+            # header or a Firebase credentials option) are not detected. A robust
+            # fix needs the provider classes to declare which fields are secret.
+            for section in ("options", "headers"):
+                secret_keys = [key for key in gw_dict.get(section, {})
+                               if "PASSWORD" in key.upper() or "SECRET" in key.upper()]
+                gw_dict[section] = censor_dict(gw_dict.get(section, {}), secret_keys)
             res.append(gw_dict)
 
     g.audit_object.log({"success": True})

@@ -36,7 +36,7 @@ from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetc
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .config import (get_caconnector_types,
                      get_caconnector_class_dict)
-from .crypto import encryptPassword, decryptPassword, CENSORED
+from .crypto import encryptPassword, decryptPassword, is_censored, censor_dict
 from .log import log_with
 from privacyidea.lib.params import get_required
 from ..models import (CAConnector,
@@ -109,7 +109,7 @@ def save_caconnector(params: dict) -> int:
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
-            if value == CENSORED:
+            if is_censored(value):
                 # Keep the existing value, do not overwrite with CENSORED
                 continue
             value = encryptPassword(value)
@@ -192,13 +192,9 @@ def get_caconnector_list(filter_caconnector_type=None,
         censored_connectors = []
         for conn in Connectors:
             conn_copy = dict(conn)
-            connector_name = conn.get("connectorname")
-            password_keys = password_keys_by_name.get(connector_name, set())
-            if password_keys and conn_copy.get("data"):
-                conn_copy["data"] = dict(conn_copy["data"])
-                for key in password_keys:
-                    if key in conn_copy["data"]:
-                        conn_copy["data"][key] = CENSORED
+            password_keys = password_keys_by_name.get(conn.get("connectorname"), set())
+            # censor_dict returns a copy, so the cached config object is not mutated
+            conn_copy["data"] = censor_dict(conn_copy.get("data"), password_keys)
             censored_connectors.append(conn_copy)
         return censored_connectors
 
