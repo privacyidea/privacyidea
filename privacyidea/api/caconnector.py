@@ -53,8 +53,10 @@ def get_caconnector_api(name=None):
     """
     Return CA connectors known to this server. If ``name`` is given as a
     path component, only the matching connector is returned; otherwise all
-    connectors are listed. Each entry includes the full configuration of
-    the connector, including any secrets stored alongside it.
+    connectors are listed. Each entry includes the connector configuration,
+    but password-type values are not returned in clear text: they are replaced
+    by the placeholder ``__CENSORED__``. When updating a connector, submit
+    ``__CENSORED__`` for such a value to keep its stored secret unchanged.
 
     Requires admin authentication and the policy action :ref:`caconnectorread`.
 

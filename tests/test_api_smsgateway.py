@@ -361,3 +361,37 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             self.app.full_dispatch_request()
+
+    def test_08_secret_header_censored_in_response(self):
+        """GET /smsgateway/ must censor secret-named headers (matching PASSWORD/
+        SECRET) the same way as options, while leaving non-secret headers intact."""
+        param = {
+            "name": "myHeaderGW",
+            "module": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+            "option.URL": "http://sms.example.com",
+            "header.X-Api-Secret": "topsecret",
+            "header.Content-Type": "application/json",
+        }
+        with self.app.test_request_context('/smsgateway',
+                                           data=param,
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        with self.app.test_request_context('/smsgateway/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            gateways = res.json["result"]["value"]
+            sms_gw = next(gw for gw in gateways if gw["name"] == "myHeaderGW")
+            # secret-named header is censored ...
+            self.assertEqual(sms_gw["headers"].get("X-Api-Secret"), CENSORED)
+            # ... non-secret header is left untouched
+            self.assertEqual(sms_gw["headers"].get("Content-Type"), "application/json")
+
+        with self.app.test_request_context('/smsgateway/myHeaderGW',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.app.full_dispatch_request()

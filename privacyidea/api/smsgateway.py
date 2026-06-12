@@ -67,6 +67,12 @@ def get_gateway(gwid=None):
       the gateway-creation form; it does not look up a gateway with the
       literal id ``providers``.
 
+    Secret options and headers (those whose name contains ``PASSWORD`` or
+    ``SECRET``) are not returned in clear text; they are replaced by the
+    placeholder ``__CENSORED__``. When updating a gateway, submit
+    ``__CENSORED__`` for such a value to keep it unchanged, or a new value to
+    replace it.
+
     Requires admin authentication and the policy action
     :ref:`policy_smsgateway_read`.
 

@@ -268,3 +268,17 @@ class SMTPServerTestCase(MyApiTestCase):
         assert decryptPassword(db_server.private_key_password) == "my_key_pass"
         # Other fields should be updated
         assert db_server.description == "updated with censored pkpass"
+
+    def test_private_key_not_censored_in_response(self):
+        """private_key holds the *path* to the S/MIME key file (not key material),
+        so it is intentionally returned as-is and NOT censored, unlike password and
+        private_key_password."""
+        self._create_server(extra_data={"smime": "1",
+                                        "private_key": "/etc/privacyidea/smime.key"})
+        res = self._list_servers()
+        assert res.status_code == 200
+        server = res.json["result"]["value"]["server1"]
+        # secrets are censored ...
+        assert server["password"] == CENSORED
+        # ... but the key-file path is returned unchanged
+        assert server["private_key"] == "/etc/privacyidea/smime.key"

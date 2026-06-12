@@ -128,6 +128,12 @@ def list_smtpservers_api():
     ``dont_send_on_error``, ``private_key``, ``private_key_password`` and
     ``certificate``.
 
+    Secret values are not returned in clear text: ``password`` and
+    ``private_key_password`` are replaced by the placeholder ``__CENSORED__``.
+    (``private_key`` holds the *path* to the S/MIME key file, not key material,
+    so it is returned unchanged.) When updating a server, submit ``__CENSORED__``
+    for a secret to keep its stored value, or a new value to change it.
+
     Requires admin authentication and the policy action
     :ref:`policy_smtpserver_read`.
 
