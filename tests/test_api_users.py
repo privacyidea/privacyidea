@@ -4,12 +4,13 @@ from urllib.parse import urlencode, quote
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver, get_resolver_object
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from .base import MyApiTestCase, PristineSqliteFixtures
+from .test_lib_user import patch_resolver_to_raise
 
 PWFILE = "tests/testdata/passwd"
 
@@ -950,29 +951,47 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 2)
 
-        with self.app.test_request_context('/user/',
-                                           method='GET',
-                                           query_string=urlencode({"resolver": second_resolver}),
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            result = res.json.get("result")
-            self.assertTrue(result.get("status"))
-            users = result.get("value")
-            self.assertTrue(len(users) > 0, users)
-            for user in users:
-                self.assertEqual(second_resolver, user.get("resolver"), user)
+        def assert_query_narrows_to(query_params, expected_resolver):
+            with self.app.test_request_context('/user/',
+                                               method='GET',
+                                               query_string=urlencode(query_params),
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"))
+                users = result.get("value")
+                self.assertTrue(len(users) > 0, users)
+                for user in users:
+                    self.assertEqual(expected_resolver, user.get("resolver"), user)
 
-        # And the realm + resolver combination still resolves correctly:
-        # realm1 contains the second resolver, so the query narrows to it.
-        with self.app.test_request_context('/user/',
-                                           method='GET',
-                                           query_string=urlencode({"realm": self.realm1,
-                                                                   "resolver": second_resolver}),
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            users = res.json.get("result").get("value")
-            self.assertTrue(len(users) > 0, users)
-            for user in users:
-                self.assertEqual(second_resolver, user.get("resolver"), user)
+        # ?resolver=<second> alone — narrows across every realm containing it.
+        assert_query_narrows_to({"resolver": second_resolver}, second_resolver)
+        # realm + resolver — realm1 contains the second resolver, so the query
+        # narrows to it within that realm.
+        assert_query_narrows_to({"realm": self.realm1, "resolver": second_resolver}, second_resolver)
+
+    def test_14_get_users_skipped_resolvers_dedup(self):
+        # When a resolver fails across multiple realms, the lib collects one
+        # entry per (resolver, realm), but the API formatter must dedupe by
+        # resolver name so callers see each broken resolver only once in
+        # ``detail.skipped_resolvers``.
+        from privacyidea.lib.error import ResolverError
+        self.setUp_user_realms()
+        flaky = "resolver_flaky"
+        save_resolver({"resolver": flaky, "type": "passwdresolver", "fileName": PWFILE})
+        self.addCleanup(delete_resolver, flaky)
+        self.addCleanup(set_realm, self.realm1, [{"name": self.resolvername1}])
+        self.addCleanup(delete_realm, "extra_realm")
+        set_realm(self.realm1, [{"name": self.resolvername1}, {"name": flaky}])
+        set_realm("extra_realm", [{"name": flaky}])
+
+        with patch_resolver_to_raise(flaky, ResolverError("simulated outage")):
+            with self.app.test_request_context('/user/',
+                                               method='GET',
+                                               query_string=urlencode({"resolver": flaky}),
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                detail = res.json.get("detail") or {}
+                self.assertEqual([flaky], detail.get("skipped_resolvers"), res.json)

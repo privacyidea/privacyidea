@@ -130,8 +130,7 @@ def get_users():
         targeted resolver raised an error (broken connection, unknown
         search key, ...) the request still returns ``200`` with the
         partial result; the names of the skipped resolvers are
-        reported in ``detail.skipped_resolvers`` and the audit entry
-        for this request records ``success=False``.
+        reported in ``detail.skipped_resolvers``.
 
     **Example request**:
 
@@ -181,17 +180,20 @@ def get_users():
                                  and is_attribute_at_all())
     if "include_custom_attributes" in search_parameters:
         del search_parameters["include_custom_attributes"]
-    failures: list[tuple[str, str]] = []
+    failures: list[tuple[str, str, str]] = []
     users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
                           requested_attributes=requested_attributes, failures=failures)
 
     info = f"realm: {realm!s}"
     details = None
     if failures:
-        skipped_names = [name for name, _ in failures]
+        # Lib collects one entry per (resolver, realm) so the per-realm context
+        # is preserved for any future consumer; the audit/API surface only wants
+        # one entry per resolver, so dedupe by name here.
+        skipped_names = sorted({name for name, _realm, _err in failures})
         info += f"; skipped_resolvers: {','.join(skipped_names)}"
         details = {"skipped_resolvers": skipped_names}
-    g.audit_object.log({'success': not failures,
+    g.audit_object.log({'success': True,
                         'info': info})
 
     return send_result(users, details=details)

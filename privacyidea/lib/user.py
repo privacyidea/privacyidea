@@ -50,7 +50,7 @@ import hashlib
 import logging
 import traceback
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import select, delete
 
@@ -815,10 +815,10 @@ def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
 
 
 @log_with(log)
-def get_user_list(param: Optional[dict] = None, user: Optional[User] = None,
+def get_user_list(param: dict | None = None, user: User | None = None,
                   include_custom_attributes: bool = False,
-                  requested_attributes: Optional[list[str]] = None,
-                  failures: Optional[list[tuple[str, str]]] = None) -> list[dict]:
+                  requested_attributes: list[str] | None = None,
+                  failures: list[tuple[str, str, str]] | None = None) -> list[dict]:
     """
     This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
     if requested.
@@ -842,9 +842,11 @@ def get_user_list(param: Optional[dict] = None, user: Optional[User] = None,
     :param requested_attributes: A list of attributes to return for each user. If None or empty, all
         attributes are returned.
     :param failures: optional list. When provided, every resolver that is skipped because it raised
-        ``ResolverError`` or ``ParameterError`` is appended as ``(resolver_name, error_repr)``. Callers
-        that want to surface partial failures (audit log, API response) can pass an empty list and
-        inspect it after the call.
+        ``ResolverError`` or ``ParameterError`` is appended as ``(resolver_name, realm, error_repr)``.
+        The same resolver can fail in several realms (resolver-only queries iterate every realm the
+        resolver is assigned to), so one entry per ``(resolver, realm)`` is recorded — callers that
+        want one entry per resolver (audit log, API response) can dedupe by name. Callers that want
+        to surface partial failures can pass an empty list and inspect it after the call.
     :return: list of user info as dictionaries
     """
     # The user dictionary, what we use to avoid duplicates in realms, while searching for users. The key will be the
@@ -905,7 +907,7 @@ def get_user_list(param: Optional[dict] = None, user: Optional[User] = None,
 
     # Determine some display values. Work on a local copy of requested_attributes
     # so the caller's list is never mutated as a side effect of this call.
-    requested_attributes = list(requested_attributes) if requested_attributes else requested_attributes
+    requested_attributes = list(requested_attributes) if requested_attributes is not None else None
     remove_user_id = False
     if include_custom_attributes and requested_attributes and "userid" not in requested_attributes:
         # user id is required to later get the custom attributes for the user
@@ -960,14 +962,13 @@ def get_user_list(param: Optional[dict] = None, user: Optional[User] = None,
             except (ResolverError, ParameterError) as ex:
                 # In case of wrong search parameters or broken resolver we continue.
                 # All other errors will be passed down. Skipped resolvers are recorded
-                # in the optional ``failures`` list so callers can surface them; the
-                # same resolver can fail in several realms (resolver-only queries
-                # iterate every realm that contains the resolver) so dedupe by name
-                # to avoid reporting it multiple times.
+                # in the optional ``failures`` list (one entry per resolver+realm so the
+                # context is preserved for callers that want it; the audit/API formatter
+                # dedupes by name when it only wants one entry per resolver).
                 log.warning(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
                 log.debug(f"{traceback.format_exc()!s}")
-                if failures is not None and not any(name == resolver_name for name, _ in failures):
-                    failures.append((resolver_name, repr(ex)))
+                if failures is not None:
+                    failures.append((resolver_name, realm, repr(ex)))
                 continue
 
     users = list(users_dict.values())

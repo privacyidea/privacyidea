@@ -35,6 +35,30 @@ PWFILE2 = "tests/testdata/passwords"
 PWFILE3 = "tests/testdata/passwd-mask-user"
 
 
+def patch_resolver_to_raise(resolver_name, exception):
+    """
+    Context-manager helper: patch ``privacyidea.lib.user.get_resolver_object`` so
+    that requesting ``resolver_name`` returns an object whose ``getUserList``
+    raises ``exception``. Other resolvers behave normally. Used by the
+    get_user_list-failure tests (also imported by tests/test_api_users.py).
+    """
+    import privacyidea.lib.user as user_module
+    real_get_resolver_object = user_module.get_resolver_object
+
+    def fake_get_resolver_object(name):
+        resolver = real_get_resolver_object(name)
+        if name == resolver_name:
+            class Broken:
+                editable = resolver.editable
+
+                def getUserList(self, search_dict, attributes):
+                    raise exception
+            return Broken()
+        return resolver
+
+    return mock.patch.object(user_module, "get_resolver_object", side_effect=fake_get_resolver_object)
+
+
 class UserTestCase(PristineSqliteFixtures, MyTestCase):
     """
     Test the user on the database level
@@ -401,68 +425,47 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
     def test_12b_get_user_list_failures(self):
         # A resolver that raises ResolverError/ParameterError must be skipped
-        # and recorded in the caller-supplied ``failures`` list. Other resolvers
-        # in the same realm must still contribute their users.
+        # and recorded in the caller-supplied ``failures`` list as
+        # ``(resolver_name, realm, error_repr)``. Other resolvers in the same
+        # realm must still contribute their users.
         from privacyidea.lib.error import ResolverError
-        import privacyidea.lib.user as user_module
-
-        real_get_resolver_object = user_module.get_resolver_object
-
-        def fake_get_resolver_object(name):
-            resolver = real_get_resolver_object(name)
-            if name == "double2":
-                class Broken:
-                    editable = resolver.editable
-                    def getUserList(self, search_dict, attributes):
-                        raise ResolverError("simulated outage")
-                return Broken()
-            return resolver
 
         failures = []
-        with mock.patch.object(user_module, "get_resolver_object", side_effect=fake_get_resolver_object):
+        with patch_resolver_to_raise("double2", ResolverError("simulated outage")):
             users = get_user_list({"realm": "double"}, failures=failures)
 
         # double1 and double3 still work, so we get users back.
         self.assertTrue(len(users) > 0, users)
-        # The broken resolver is reported exactly once.
+        # The broken resolver appears once (it lives in only one realm here).
         self.assertEqual(len(failures), 1, failures)
-        self.assertEqual(failures[0][0], "double2", failures)
-        self.assertIn("simulated outage", failures[0][1])
+        name, realm, error = failures[0]
+        self.assertEqual(name, "double2")
+        self.assertEqual(realm, "double")
+        self.assertIn("simulated outage", error)
 
-    def test_12c_get_user_list_failures_deduped_across_realms(self):
+    def test_12c_get_user_list_failures_collect_per_realm(self):
         # A resolver-only query iterates every realm that contains the resolver
         # (see realm scoping in get_user_list). When the resolver is broken it
-        # raises in each iteration, so the failures list must dedupe by name —
-        # otherwise the audit log and the API response would report the same
-        # resolver multiple times. Assign double2 to a second realm and query
-        # with only ``resolver=double2`` to exercise this path.
+        # raises in each iteration; the lib must collect one entry per realm so
+        # callers can see the full per-realm context (the API/audit formatter
+        # dedupes by name when it only wants one entry per resolver).
         from privacyidea.lib.error import ResolverError
-        import privacyidea.lib.user as user_module
 
         (added, failed) = set_realm("double_extra", [{"name": "double2"}])
         self.assertEqual(len(failed), 0)
         self.assertEqual(len(added), 1)
 
-        real_get_resolver_object = user_module.get_resolver_object
-
-        def fake_get_resolver_object(name):
-            resolver = real_get_resolver_object(name)
-            if name == "double2":
-                class Broken:
-                    editable = resolver.editable
-                    def getUserList(self, search_dict, attributes):
-                        raise ResolverError("simulated outage")
-                return Broken()
-            return resolver
-
         failures = []
         try:
-            with mock.patch.object(user_module, "get_resolver_object", side_effect=fake_get_resolver_object):
+            with patch_resolver_to_raise("double2", ResolverError("simulated outage")):
                 users = get_user_list({"resolver": "double2"}, failures=failures)
-            # Both realms iterated, both raised — dedupe must collapse to one entry.
+            # Both realms iterated, both raised — both recorded with their realm.
             self.assertEqual(users, [])
-            self.assertEqual(len(failures), 1, failures)
-            self.assertEqual(failures[0][0], "double2", failures)
+            self.assertEqual(len(failures), 2, failures)
+            recorded_realms = {realm for _name, realm, _err in failures}
+            self.assertEqual(recorded_realms, {"double", "double_extra"})
+            for name, _realm, _err in failures:
+                self.assertEqual(name, "double2")
         finally:
             delete_realm("double_extra")
 
