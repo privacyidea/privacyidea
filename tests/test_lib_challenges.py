@@ -61,9 +61,12 @@ class ChallengeTestCase(MyTestCase):
         challenges = get_challenges(serial="CHAL2")
         self.assertEqual(len(challenges), 2)
         self.assertEqual(extract_answered_challenges(challenges), [])
-        # answer one challenge
-        Challenge.query.filter_by(transaction_id=transaction_id1).update({"otp_valid": True})
-        db.session.commit()
+        # answer one challenge (backend-agnostic: set_otp_status + save work
+        # against both the DB and the Redis cache, unlike a raw Challenge.query
+        # update which would silently miss the Redis-backed challenge)
+        answered_challenge = get_challenges(transaction_id=transaction_id1)[0]
+        answered_challenge.set_otp_status(True)
+        answered_challenge.save()
         # two challenges, one answered challenge
         challenges = get_challenges(serial="CHAL2")
         answered = extract_answered_challenges(challenges)

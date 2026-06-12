@@ -821,8 +821,12 @@ class ValidateAPITestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertFalse(result.get("value"))
 
-        # check that the challenge is removed
-        self.assertFalse(get_challenges(transaction_id=transaction_id))
+        # check that no usable challenge remains. The DB janitor deletes the
+        # expired row; the Redis cache reaps via TTL, so an expired challenge
+        # can still be present there briefly - but it is no longer valid, which
+        # is what every consumer checks. Assert on validity, not raw presence,
+        # so the test is backend-agnostic.
+        self.assertFalse([c for c in get_challenges(transaction_id=transaction_id) if c.is_valid()])
 
         # delete the token
         remove_token(serial=serial)
@@ -1680,8 +1684,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual("interactive", multi_challenge[1].get("client_mode"))
 
         # There are two challenges in the database
-        r = Challenge.query.filter(Challenge.transaction_id ==
-                                   transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 2)
 
         # check that both serials appear in the audit log
@@ -1707,8 +1710,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(serial, "CR2B")
 
         # No challenges in the database
-        r = Challenge.query.filter(Challenge.transaction_id ==
-                                   transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")
@@ -1754,8 +1756,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(len(multi_challenge), 1)
 
         # There is ONE challenge in the database
-        r = Challenge.query.filter(Challenge.transaction_id ==
-                                   transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 1)
 
         # Check the second response to the challenge, the second step in
@@ -1777,8 +1778,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(serial, "CR2B")
 
         # No challenges in the database
-        r = Challenge.query.filter(Challenge.transaction_id ==
-                                   transaction_id).all()
+        r = get_challenges(transaction_id=transaction_id)
         self.assertEqual(len(r), 0)
 
         remove_token("CR2A")

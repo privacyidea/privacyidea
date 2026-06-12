@@ -84,29 +84,44 @@ from privacyidea.lib.caconnector import save_caconnector
 _redis_flush_client = None
 
 
+def _flush_worker_redis():
+    """FLUSHDB this worker's Redis logical DB. No-op for the default DB-only
+    runs (PI_REDIS_URL unset).
+
+    Reliability matters here: a *skipped* flush leaves a stale challenge that
+    pollutes the next test on this worker (an unfiltered get_challenges() sees
+    an extra entry, or a presence/poll flow matches the wrong challenge). Under
+    heavy parallel load the single shared Redis can stall past a tight timeout,
+    so use a generous timeout and retry rather than silently giving up after
+    one short attempt."""
+    url = os.environ.get("PI_REDIS_URL")
+    if not url:
+        return
+    global _redis_flush_client
+    import redis as _redis
+    for _attempt in range(3):
+        try:
+            if _redis_flush_client is None:
+                _redis_flush_client = _redis.Redis.from_url(
+                    url, socket_connect_timeout=5, socket_timeout=5)
+            _redis_flush_client.flushdb()
+            return
+        except Exception:
+            # Drop the (maybe broken) client so the next attempt reconnects.
+            _redis_flush_client = None
+
+
 @pytest.fixture(autouse=True)
 def _flush_redis_between_tests():
     """When the suite runs against a real Redis challenge backend (the
     dedicated CI job sets PI_REDIS_URL + PI_REDIS_CACHE_CHALLENGES), wipe
-    this worker's logical DB after each test. Tests reuse fixed serials and
+    this worker's logical DB after every test. Tests reuse fixed serials and
     transaction ids, so without this their challenge state would leak across
     tests via Redis (which the DB teardown doesn't touch). Each worker owns
     its own DB index, so FLUSHDB is isolated. No-op for the default DB-only
     runs, where PI_REDIS_URL is unset."""
     yield
-    url = os.environ.get("PI_REDIS_URL")
-    if not url:
-        return
-    global _redis_flush_client
-    try:
-        if _redis_flush_client is None:
-            import redis as _redis
-            _redis_flush_client = _redis.Redis.from_url(
-                url, socket_connect_timeout=1, socket_timeout=1)
-        _redis_flush_client.flushdb()
-    except Exception:
-        # Best effort: a flush failure must not mask the test's own result.
-        pass
+    _flush_worker_redis()
 
 
 CAKEY = "cakey.pem"

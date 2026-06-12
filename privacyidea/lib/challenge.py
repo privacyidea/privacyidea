@@ -29,6 +29,7 @@ The method is tested in test_lib_challenges
 """
 import datetime
 import logging
+import re
 from typing import NamedTuple
 
 import sqlalchemy
@@ -101,6 +102,18 @@ def get_challenges(serial: str = None, transaction_id: str = None,
     return db.session.execute(stmt).scalars().all()
 
 
+def _wildcard_filter(challenges, pattern, getter):
+    """Filter cached challenges by a wildcard ``pattern``, mirroring the SQL
+    ``LIKE`` the DB path applies (only ``*`` is a wildcard). A ``None`` pattern
+    or a bare ``*``/``**`` (which strips to empty) matches everything; an exact
+    pattern was already resolved via the cache index, so it is left untouched.
+    """
+    if pattern is None or not pattern.strip("*") or "*" not in pattern:
+        return challenges
+    regex = re.compile("^" + ".*".join(re.escape(part) for part in pattern.split("*")) + "$")
+    return [c for c in challenges if regex.match(getter(c) or "")]
+
+
 @log_with(log)
 def get_challenges_paginate(serial=None, transaction_id=None,
                             sortby=Challenge.timestamp,
@@ -130,22 +143,26 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
-    # When Redis is active and a specific exact-match filter is given, serve
-    # from cache. Wildcard filters like "*foo*" (sent by the admin "List
-    # Challenges" view) cannot be answered by Redis key lookups, so fall
-    # through to the DB path - which, when caching is enabled and challenges
-    # only live in Redis, will return an empty list. That is a known
-    # limitation of the cache-only mode; the unfiltered admin listing
-    # requires Redis-side scanning that we don't implement here.
+    # When Redis is active, serve the listing from the cache. An exact serial
+    # or transaction_id hits the index directly; a wildcard ("*foo*", the
+    # pattern the admin "List Challenges" view sends) or no filter at all
+    # enumerates the keyspace and filters in memory, mirroring the SQL LIKE
+    # the DB path applies in _create_challenge_query.
     def _is_exact(v):
         return v is not None and "*" not in v
 
-    if redis_feature_enabled("challenges") and (_is_exact(serial) or _is_exact(transaction_id)):
-        cached = get_challenges_from_cache(
-            serial=serial if _is_exact(serial) else None,
-            transaction_id=transaction_id if _is_exact(transaction_id) else None,
-        )
+    if redis_feature_enabled("challenges"):
+        exact_serial = serial if _is_exact(serial) else None
+        exact_transaction_id = transaction_id if _is_exact(transaction_id) else None
+        if exact_serial or exact_transaction_id:
+            cached = get_challenges_from_cache(serial=exact_serial,
+                                               transaction_id=exact_transaction_id)
+        else:
+            # No exact key to look up (None or wildcard): enumerate everything.
+            cached = get_challenges_from_cache()
         if isinstance(cached, list):
+            cached = _wildcard_filter(cached, serial, lambda c: c.serial)
+            cached = _wildcard_filter(cached, transaction_id, lambda c: c.transaction_id)
             # Apply in-memory sort
             reverse = sortdir == "desc"
             sort_key = sortby if isinstance(sortby, str) else sortby.key

@@ -307,12 +307,18 @@ class TestRedisCacheOperations(_RealRedisBase):
             result = get_challenges_from_cache(serial='WHATEVER')
         self.assertIs(result, CacheState.UNAVAILABLE)
 
-    def test_unfiltered_query_returns_unavailable(self):
-        """Unfiltered query can't be served from a key-value store -> UNAVAILABLE."""
-        from privacyidea.lib.cache import CacheState
+    def test_unfiltered_query_enumerates_all(self):
+        """An unfiltered query enumerates the whole keyspace (SCAN) so the
+        admin listing path is served from the cache. Empty keyspace -> []."""
+        with redis_in_store(self._real_client):
+            self.assertEqual(get_challenges_from_cache(), [])
+        self._write_dto(_make_dto(serial='RENUM_A', txn='txn-enum-a'))
+        self._write_dto(_make_dto(serial='RENUM_B', txn='txn-enum-b'))
+        self._write_dto(_make_dto(serial='', txn='txn-enum-empty'))  # usernameless
         with redis_in_store(self._real_client):
             result = get_challenges_from_cache()
-        self.assertIs(result, CacheState.UNAVAILABLE)
+        self.assertEqual({c.transaction_id for c in result},
+                         {'txn-enum-a', 'txn-enum-b', 'txn-enum-empty'})
 
     def test_evict_removes_from_cache(self):
         from privacyidea.lib.cache import CacheState
@@ -810,14 +816,27 @@ class TestCreateChallengeIntegration(_RealRedisBase):
         returned = {c['transaction_id'] for c in result['challenges']}
         self.assertEqual(returned, {ch1.transaction_id, ch2.transaction_id})
 
-    def test_get_challenges_paginate_unfiltered_empty_with_redis(self):
-        """Unfiltered paginate always queries the DB - empty when Redis is active."""
+    def test_get_challenges_paginate_unfiltered_enumerates_redis(self):
+        """Unfiltered paginate enumerates the Redis keyspace so the admin
+        'List Challenges' view works with the cache enabled."""
         with redis_in_store(self._real_client):
             create_challenge(self.serial, challenge='p_nofilt', validitytime=120)
             result = get_challenges_paginate()  # no serial, no txn_id
 
-        self.assertEqual(result['count'], 0)
-        self.assertEqual(result['challenges'], [])
+        self.assertEqual(result['count'], 1)
+        self.assertEqual(result['challenges'][0]['serial'], self.serial)
+        self.assertTrue(result['redis_cache_enabled'])
+
+    def test_get_challenges_paginate_wildcard_serial_redis(self):
+        """A wildcard serial filter (the pattern the WebUI sends) enumerates
+        and filters in memory, mirroring the DB LIKE semantics."""
+        with redis_in_store(self._real_client):
+            create_challenge('WILDA', challenge='w1', validitytime=120)
+            create_challenge('WILDB', challenge='w2', validitytime=120)
+            create_challenge('OTHER', challenge='w3', validitytime=120)
+            result = get_challenges_paginate(serial='WILD*')
+        self.assertEqual(result['count'], 2)
+        self.assertEqual({c['serial'] for c in result['challenges']}, {'WILDA', 'WILDB'})
 
     def test_cancel_enrollment_via_multichallenge_no_attribute_error(self):
         """cancel_enrollment_via_multichallenge() must not AttributeError on
