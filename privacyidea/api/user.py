@@ -170,6 +170,7 @@ def get_users():
        }
     """
     realm = get_optional(request.all_data, "realm")
+    resolver = get_optional(request.all_data, "resolver")
     search_parameters = dict(request.all_data)
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:
@@ -184,7 +185,7 @@ def get_users():
     users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
                           requested_attributes=requested_attributes, failures=failures)
 
-    info = f"realm: {realm!s}"
+    info = f"realm: {realm!s}; resolver: {resolver!s}"
     details = None
     if failures:
         # Lib collects one entry per (resolver, realm) so the per-realm context
