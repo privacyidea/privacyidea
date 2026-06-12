@@ -221,6 +221,13 @@ class TestChallengeDTO(MyTestCase):
         dto.set_data("raw_string")
         self.assertEqual(dto.data, "raw_string")
 
+    def test_set_data_other_type(self):
+        # Neither str nor dict -> coerced via convert_column_to_unicode,
+        # mirroring the DB Challenge.set_data (covers the else branch).
+        dto = _make_dto()
+        dto.set_data(12345)
+        self.assertEqual(dto.data, "12345")
+
     def test_set_session(self):
         dto = _make_dto()
         dto.set_session("enrollment")
@@ -570,6 +577,18 @@ class TestRedisCacheOperations(_RealRedisBase):
         with redis_in_store(self._real_client):
             self.assertIs(get_challenges_from_cache(transaction_id='txn-corrupt'),
                           CacheState.UNAVAILABLE)
+
+    def test_cache_challenge_refuses_already_expired(self):
+        # cache_challenge must not write a challenge whose expiration is already
+        # in the past (covers the early-return guard); nothing lands in Redis.
+        from privacyidea.lib.cache import CacheState
+        with redis_in_store(self._real_client):
+            cache_challenge(serial='RCEXP', transaction_id='txn-cc-expired', challenge='c',
+                            data='', session='',
+                            timestamp=utc_now() - timedelta(seconds=300),
+                            expiration=utc_now() - timedelta(seconds=120))
+            self.assertIs(get_challenges_from_cache(transaction_id='txn-cc-expired'),
+                          CacheState.MISS)
 
     def test_save_short_circuits_when_already_expired(self):
         dto = _make_dto(serial='RCACHE_EXP', txn='txn-rcache-exp', offset_seconds=120)
@@ -987,6 +1006,45 @@ class TestCooldownLifecycle(_RealRedisBase):
 # -----------------------------------------------------------------------------
 # Server-version gate (uses unittest.mock, no real Redis needed)
 # -----------------------------------------------------------------------------
+
+
+class TestRedisHelpers(MyTestCase):
+    """Pure helper functions in lib/cache/redis.py - no Redis needed."""
+
+    def test_redact_url_strips_credentials(self):
+        from privacyidea.lib.cache.redis import _redact_url
+        # user:password in the URL is masked before logging
+        self.assertEqual(_redact_url("redis://user:secret@host:6379/0"),
+                         "redis://***@host:6379/0")
+
+    def test_redact_url_without_credentials_is_unchanged(self):
+        from privacyidea.lib.cache.redis import _redact_url
+        self.assertEqual(_redact_url("redis://host:6379/0"), "redis://host:6379/0")
+
+    def test_redact_url_unparseable_returns_placeholder(self):
+        # If urlparse blows up, never leak the raw URL or raise - return a safe
+        # placeholder (covers the defensive except branch).
+        from privacyidea.lib.cache import redis as redis_mod
+        with patch.object(redis_mod, "urlparse", side_effect=ValueError("boom")):
+            self.assertEqual(redis_mod._redact_url("redis://user:secret@host/0"),
+                             "<redis-url>")
+
+    def test_retry_cooldown_invalid_or_nonpositive_uses_default(self):
+        from privacyidea.lib.cache.redis import (_retry_cooldown_seconds,
+                                                 _DEFAULT_RETRY_COOLDOWN_SECONDS)
+        from flask import current_app
+        had = "PI_REDIS_RETRY_COOLDOWN" in current_app.config
+        old = current_app.config.get("PI_REDIS_RETRY_COOLDOWN")
+        try:
+            current_app.config["PI_REDIS_RETRY_COOLDOWN"] = "not-an-int"
+            self.assertEqual(_retry_cooldown_seconds(), _DEFAULT_RETRY_COOLDOWN_SECONDS)
+            current_app.config["PI_REDIS_RETRY_COOLDOWN"] = -5
+            self.assertEqual(_retry_cooldown_seconds(), _DEFAULT_RETRY_COOLDOWN_SECONDS)
+        finally:
+            if had:
+                current_app.config["PI_REDIS_RETRY_COOLDOWN"] = old
+            else:
+                current_app.config.pop("PI_REDIS_RETRY_COOLDOWN", None)
 
 
 class TestRedisVersionGate(MyTestCase):
