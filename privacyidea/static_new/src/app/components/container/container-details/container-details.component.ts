@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NgClass } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   ElementRef,
@@ -74,13 +74,32 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 
-export const containerDetailsKeyMap = [
-  { key: "type", label: "Type" },
-  { key: "states", label: "Status" },
-  { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" },
-  { key: "template", label: "Template" }
+type ContainerDetailGroup = "status" | "container";
+
+export const containerDetailsKeyMap: { key: string; label: string; group: ContainerDetailGroup }[] = [
+  { key: "states", label: "Status", group: "status" },
+  { key: "last_authentication", label: "Last Authentication", group: "status" },
+  { key: "last_synchronization", label: "Last Synchronization", group: "status" },
+  { key: "registration_state", label: "Registration State", group: "status" },
+  { key: "type", label: "Type", group: "container" },
+  { key: "template", label: "Template", group: "container" },
+  { key: "realms", label: "Realms", group: "container" },
+  { key: "description", label: "Description", group: "container" }
 ];
+
+export const containerDetailGroups: { id: ContainerDetailGroup; label: string }[] = [
+  { id: "status", label: "Status" },
+  { id: "container", label: "Container" }
+];
+
+const CONTAINER_TIMESTAMP_KEYS = ["last_authentication", "last_synchronization"];
+
+function formatContainerTimestamp(value: string | undefined): string | undefined {
+  if (value === undefined || value === "") return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
 
 const containerUserDetailsKeyMap = [
   { key: "user_realm", label: "User Realm" },
@@ -101,6 +120,7 @@ interface TokenOption {
   standalone: true,
   imports: [
     NgClass,
+    NgTemplateOutlet,
     MatTableModule,
     MatCell,
     MatColumnDef,
@@ -214,14 +234,39 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
         }));
       }
       return containerDetailsKeyMap
-        .map((detail) => ({
-          keyMap: detail,
-          value: containerDetails[detail.key as keyof ContainerDetailData],
-          isEditing: signal(false)
-        }))
+        .map((detail) => {
+          let value: unknown;
+          if (detail.key === "registration_state") {
+            value = containerDetails.info?.registration_state;
+          } else if (CONTAINER_TIMESTAMP_KEYS.includes(detail.key)) {
+            value = formatContainerTimestamp(
+              containerDetails[detail.key as "last_authentication" | "last_synchronization"]
+            );
+          } else {
+            value = containerDetails[detail.key as keyof ContainerDetailData];
+          }
+          return {
+            keyMap: detail,
+            value,
+            isEditing: signal(false)
+          };
+        })
         .filter((detail) => detail.value !== undefined);
     }
   });
+  containerDetailDataByGroup = computed(() => {
+    const data = this.containerDetailData();
+    return containerDetailGroups.map((group) => ({
+      id: group.id,
+      label: group.label,
+      rows: data.filter(
+        (row) => (row.keyMap as { group?: string }).group === group.id && row.keyMap.key !== "description"
+      )
+    }));
+  });
+  descriptionRow = computed(
+    () => this.containerDetailData().find((row) => row.keyMap.key === "description") as EditableElement<string> | undefined
+  );
   infoData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {

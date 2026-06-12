@@ -1,8 +1,6 @@
 @use "styles";
 @use "table";
 
-$gap-small: 8px;
-
 .details-container {
   @include styles.main-component-style;
   display: grid;
@@ -10,18 +8,182 @@ $gap-small: 8px;
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
+
+  .details-grid .details-table {
+    width: 100%;
+    table-layout: fixed;
+
+    td:nth-child(even),
+    th:nth-child(even) {
+      background: transparent;
+    }
+
+    tr.mat-mdc-row:nth-child(odd) td {
+      background: var(--mat-sys-surface-variant);
+    }
+
+    td:nth-child(1) {
+      width: 35%;
+    }
+
+    td:nth-child(2) {
+      width: 65%;
+    }
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
 }
 
-.detail-table-wrapper {
+.container-actions-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
-  gap: 20px;
-  width: auto;
-  max-width: fit-content;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) 0;
+  background: var(--mat-sys-surface-container-lowest);
+
+  ::ng-deep .actions-otp-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--half-global-gap);
+
+    > h4 {
+      display: none;
+    }
+
+    .flex-column {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--half-global-gap);
+    }
+
+    mat-divider {
+      display: none;
+    }
+  }
 }
 
-.details-section {
-  width: auto;
-  max-width: fit-content;
-  table-layout: auto;
-  border-collapse: collapse;
+.details-card-title {
+  margin: 0 0 var(--half-global-padding) 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.details-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--global-gap);
+  align-items: flex-start;
+  margin-top: var(--half-global-padding);
+}
+
+.details-card--group,
+.details-card-user {
+  display: block;
+  min-width: 0;
+  align-self: flex-start;
+  box-sizing: border-box;
+  max-width: 585px;
+}
+
+.details-card--status {
+  order: 1;
+}
+
+.details-card-user {
+  order: 2;
+}
+
+.details-card--container {
+  order: 3;
+}
+
+.details-card--group {
+  app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover app-edit-buttons,
+  ::ng-deep td.padding-0 app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.description-row {
+  order: 9;
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  width: 340px;
+  align-self: flex-start;
+
+  .value-edit {
+    min-width: 80px;
+    justify-content: flex-end;
+  }
+
+  app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover app-edit-buttons,
+  &.is-editing app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .description-text {
+    overflow-wrap: anywhere;
+  }
+
+  .description-field {
+    width: 100%;
+    max-width: 700px;
+  }
+}
+
+.details-info-area {
+  order: 10;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+
+  ::ng-deep .info-container {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
 }

@@ -36,7 +36,7 @@
         mat-cell>
         <div class="info-value-container">
           <mat-list>
-            @for (key of Object.keys(element.value); track key) {
+            @for (key of displayInfoKeys(element.value); track key) {
               @if (isEditingInfo()) {
                 <div class="flex-row">
                   <mat-list-item class="height-auto">

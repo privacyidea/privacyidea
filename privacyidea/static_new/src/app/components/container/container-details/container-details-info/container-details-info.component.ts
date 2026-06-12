@@ -63,6 +63,7 @@ export class ContainerDetailsInfoComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly Object = Object;
+  private readonly hiddenInfoKeys = ["registration_state"];
   containerSerial = this.containerService.containerSerial;
   infoData = input.required<ContainerInfoDetail[]>();
   detailData = input.required<ContainerInfoDetail[]>();
@@ -75,6 +76,10 @@ export class ContainerDetailsInfoComponent {
       return { key: "", value: "" };
     }
   });
+
+  displayInfoKeys(value: Record<string, unknown>): string[] {
+    return Object.keys(value).filter((key) => !this.hiddenInfoKeys.includes(key));
+  }
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);

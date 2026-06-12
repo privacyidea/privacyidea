@@ -30,29 +30,272 @@
       auditTooltip="Show container in audit log"
       (auditClick)="showContainerAuditLog()">
     </app-details-header>
+    <div class="container-actions-bar">
+      <app-container-details-actions
+        [containerSerial]="containerSerial()"
+        [containerType]="containerType()"></app-container-details-actions>
+    </div>
     <div class="details-flex-layout responsive-flex-row-1310">
       <div>
-        <table
-          [dataSource]="containerDetailData()"
-          aria-label="Container Detail Data Table"
-          class="details-table border-bottom-none"
-          i18n-aria-label
-          mat-table>
-          <ng-container matColumnDef="key">
-            <td
-              *matCellDef="let element"
-              class="details-key-row"
-              mat-cell>
-              {{ element.keyMap.label }}
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="value">
-            <td
-              *matCellDef="let element"
-              [ngClass]="
-                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
-              "
-              mat-cell>
+        <div class="details-grid">
+          @if (descriptionRow(); as desc) {
+            <section
+              class="description-row"
+              [class.is-editing]="desc.isEditing()">
+              <div class="value-row">
+                <div class="value-content">
+                  @if (desc.isEditing()) {
+                    <mat-form-field
+                      class="description-field"
+                      subscriptSizing="dynamic">
+                      <mat-label i18n>Description</mat-label>
+                      <textarea
+                        [value]="desc.value"
+                        (input)="desc.value = $any($event.target).value"
+                        i18n-placeholder
+                        matInput
+                        placeholder="Enter description"
+                        rows="7"></textarea>
+                    </mat-form-field>
+                  } @else {
+                    <div class="flex-column">
+                      <h4
+                        class="details-card-title"
+                        i18n>
+                        Description
+                      </h4>
+                      <span class="description-text">{{ desc.value || "—" }}</span>
+                    </div>
+                  }
+                </div>
+                <div class="value-edit">
+                  @if (isEditableElement(desc.keyMap.key)) {
+                    <app-edit-buttons
+                      [cancelEdit]="cancelContainerEdit.bind(this)"
+                      [element]="desc"
+                      [isEditingInfo]="isEditingInfo()"
+                      [isEditingUser]="isEditingUser()"
+                      [saveEdit]="saveContainerEdit.bind(this)"
+                      [shouldHideEdit]="isAnyEditing()"
+                      [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
+                  }
+                </div>
+              </div>
+            </section>
+          }
+
+          @for (group of containerDetailDataByGroup(); track group.id) {
+            @if (group.rows.length > 0) {
+              <section
+                class="details-card details-card--group"
+                [class.details-card--status]="group.id === 'status'"
+                [class.details-card--container]="group.id === 'container'">
+                <h4
+                  class="details-card-title"
+                  i18n>
+                  {{ group.label }}
+                </h4>
+                <ng-container
+                  *ngTemplateOutlet="groupRowsTemplate; context: { $implicit: group.rows, label: group.label }">
+                </ng-container>
+              </section>
+            }
+          }
+
+          <section class="details-card details-card--group details-card-user">
+            <h4
+              class="details-card-title"
+              i18n>
+              User
+            </h4>
+            <table
+              [dataSource]="userData()"
+              aria-label="User Detail Data Table"
+              class="details-table"
+              i18n-aria-label
+              mat-table>
+              <ng-container matColumnDef="key">
+                <td
+                  *matCellDef="let element"
+                  class="details-key-row"
+                  mat-cell>
+                  {{ element.keyMap.label }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="value">
+                <td
+                  *matCellDef="let element"
+                  [ngClass]="
+                    tableUtilsService.getTdClassForKey(element.keyMap.key).concat(isEditingUser() ? ['padding-0'] : [])
+                  "
+                  mat-cell>
+                  <div class="value-row">
+                    <div class="value-content">
+                      @switch (element.keyMap.key) {
+                        @case ("user_name") {
+                          @if (isEditingUser() && userService.selectedUserRealm() !== "") {
+                            <mat-form-field
+                              class="input-width-m height-52"
+                              subscriptSizing="dynamic">
+                              <mat-label>Enter User</mat-label>
+                              <app-clearable-input
+                                (clearButtonClick)="userService.selectionFilter.set('')"
+                                [showClearButton]="userService.selectionFilter() !== ''">
+                                <input
+                                  [value]="userService.selectionFilter()"
+                                  (input)="userService.selectionFilter.set($any($event.target).value)"
+                                  [matAutocomplete]="userAuto"
+                                  matInput />
+                                <mat-autocomplete
+                                  #userAuto="matAutocomplete"
+                                  (optionSelected)="userService.selectionFilter.set($event.option.value)"
+                                  class="user-selection-autocomplete">
+                                  @for (option of userService.selectionFilteredUsernames(); track option) {
+                                    <mat-option [value]="option">{{ option }}</mat-option>
+                                  }
+                                </mat-autocomplete>
+                              </app-clearable-input>
+                            </mat-form-field>
+                          } @else {
+                            <app-copyable [copyText]="element.value">
+                              <a
+                                (click)="contentService.userSelected(element.value, element['user_realm'])"
+                                (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
+                                (keydown.space)="
+                                  $event.preventDefault();
+                                  contentService.userSelected(element.value, element['user_realm'])
+                                "
+                                i18n-aria-label="{{ element.keyMap.label }} Link"
+                                role="button"
+                                tabindex="0">
+                                {{ element.value }}
+                              </a>
+                            </app-copyable>
+                          }
+                        }
+                        @case ("user_realm") {
+                          @if (isEditingUser()) {
+                            <mat-form-field
+                              class="input-width-m height-52"
+                              subscriptSizing="dynamic">
+                              <mat-label i18n>Select Realm of User</mat-label>
+                              <mat-select
+                                (selectionChange)="userService.selectedUserRealm.set($event.value)"
+                                [value]="userService.selectedUserRealm()">
+                                @for (option of realmService.realmOptions(); track option) {
+                                  <mat-option value="{{ option }}">{{ option }}</mat-option>
+                                }
+                              </mat-select>
+                            </mat-form-field>
+                          } @else {
+                            <app-copyable [copyText]="element.value">
+                              <span>{{ element.value }}</span>
+                            </app-copyable>
+                          }
+                        }
+                        @default {
+                          <span>{{ element.value }}</span>
+                        }
+                      }
+                    </div>
+                    <div class="value-edit">
+                      @if (authService.actionAllowed("container_unassign_user")) {
+                        @if (element.keyMap.key === "user_name" && !(isAnyEditing() && !isEditingUser())) {
+                          @if (element.value) {
+                            <button
+                              (click)="unassignUser()"
+                              class="yellow"
+                              i18n-aria-label="Unassign User"
+                              mat-icon-button>
+                              <mat-icon>person_remove</mat-icon>
+                            </button>
+                          } @else {
+                            <app-edit-buttons
+                              [cancelEdit]="cancelContainerEdit.bind(this)"
+                              [element]="element"
+                              [isEditingInfo]="isEditingInfo()"
+                              [isEditingUser]="isEditingUser()"
+                              [saveEdit]="saveContainerEdit.bind(this)"
+                              [shouldHideEdit]="isAnyEditing()"
+                              [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
+                          }
+                        }
+                      }
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+              <tr
+                *matRowDef="let row; columns: ['key', 'value']"
+                class="height-52"
+                mat-row></tr>
+            </table>
+          </section>
+
+          <app-container-details-info
+            class="details-info-area"
+            [detailData]="containerDetailData()"
+            [infoData]="infoData()"
+            [isAnyEditingOrRevoked]="isAnyEditing()"
+            [(isEditingInfo)]="isEditingInfo"
+            [isEditingUser]="isEditingUser()" />
+        </div>
+        <mat-divider class="responsive-divider-1310" />
+      </div>
+      <div class="flex-column responsive-margin-left-1310">
+        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
+        <div class="flex-row gap-32">
+          <app-container-add-token
+            [authService]="authService"
+            [(showOnlyTokenNotInContainer)]="showOnlyTokenNotInContainer"
+            [total]="total()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [filterValue]="tokenService.tokenFilter().filterString"
+            [filterIsNotEmpty]="tokenService.tokenFilter().isNotEmpty"
+            [tokenOptions]="tokenDataSource().data"
+            (pageEvent)="onPageEvent($event)"
+            (filterInput)="tokenService.handleFilterInput($event)"
+            (clearFilter)="tokenService.clearFilter()"
+            (addToken)="addTokenToContainer($event)">
+          </app-container-add-token>
+        </div>
+      </div>
+      <div class="flex-column gap-16 ali-center responsive-margin-left-1310">
+        <app-container-details-token-actions
+          [containerSerial]="containerSerial()"
+          [tokenData]="containerTokenData()"
+          [user]="rawUserData()"></app-container-details-token-actions>
+      </div>
+    </div>
+  </div>
+
+  <ng-template
+    #groupRowsTemplate
+    let-rows
+    let-label="label">
+    <table
+      [dataSource]="rows"
+      attr.aria-label="{{ label }} details"
+      class="details-table"
+      mat-table>
+      <ng-container matColumnDef="key">
+        <td
+          *matCellDef="let element"
+          class="details-key-row"
+          mat-cell>
+          {{ element.keyMap.label }}
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="value">
+        <td
+          *matCellDef="let element"
+          [ngClass]="
+            tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
+          "
+          mat-cell>
+          <div class="value-row">
+            <div class="value-content">
               @switch (element.keyMap.key) {
                 @case ("states") {
                   @if (element.isEditing()) {
@@ -71,7 +314,7 @@
                     </mat-form-field>
                   } @else {
                     <div class="flex-row gap-8 flex-wrap">
-                      @for (state of element.value; track state; let idx = $index) {
+                      @for (state of element.value; track state) {
                         <span
                           [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
                           class="font-14">
@@ -108,7 +351,7 @@
                     <div
                       [ngClass]="{ 'height-77': element.value.length > 2 }"
                       class="details-scrollable-container">
-                      @for (realm of element.value; track realm; let idx = $index) {
+                      @for (realm of element.value; track realm) {
                         <mat-list-item class="height-auto pad-0">
                           <app-copyable [copyText]="realm">
                             <span class="font-14">• {{ realm }}</span>
@@ -118,38 +361,12 @@
                     </div>
                   }
                 }
-                @case ("description") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m description height-115"
-                      subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        i18n-placeholder
-                        matInput
-                        placeholder="Enter description"
-                        rows="4"></textarea>
-                    </mat-form-field>
-                  } @else {
-                    <div class="details-description-div height-115">
-                      <span class="details-table-item scroll-margin-pad">
-                        {{ element.value }}
-                      </span>
-                    </div>
-                  }
-                }
                 @default {
                   <span>{{ element.value }}</span>
                 }
               }
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="edit">
-            <td
-              *matCellDef="let element"
-              class="edit-column-cell"
-              mat-cell>
+            </div>
+            <div class="value-edit">
               @if (isEditableElement(element.keyMap.key)) {
                 <app-edit-buttons
                   [cancelEdit]="cancelContainerEdit.bind(this)"
@@ -160,174 +377,14 @@
                   [shouldHideEdit]="isAnyEditing()"
                   [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
               }
-            </td>
-          </ng-container>
-          <tr
-            *matRowDef="let row; columns: ['key', 'value', 'edit']"
-            class="height-52"
-            mat-row></tr>
-        </table>
-        <table
-          [dataSource]="userData()"
-          aria-label="User Detail Data Table"
-          class="details-table"
-          i18n-aria-label
-          mat-table>
-          <ng-container matColumnDef="key">
-            <td
-              *matCellDef="let element"
-              class="details-key-row"
-              mat-cell>
-              {{ element.keyMap.label }}
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="value">
-            <td
-              *matCellDef="let element"
-              [ngClass]="
-                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(isEditingUser() ? ['padding-0'] : [])
-              "
-              mat-cell>
-              @switch (element.keyMap.key) {
-                @case ("user_name") {
-                  @if (isEditingUser() && userService.selectedUserRealm() !== "") {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <mat-label>Enter User</mat-label>
-                      <app-clearable-input
-                        (clearButtonClick)="userService.selectionFilter.set('')"
-                        [showClearButton]="userService.selectionFilter() !== ''">
-                        <input
-                          [value]="userService.selectionFilter()"
-                          (input)="userService.selectionFilter.set($any($event.target).value)"
-                          [matAutocomplete]="userAuto"
-                          matInput />
-                        <mat-autocomplete
-                          #userAuto="matAutocomplete"
-                          (optionSelected)="userService.selectionFilter.set($event.option.value)"
-                          class="user-selection-autocomplete">
-                          @for (option of userService.selectionFilteredUsernames(); track option) {
-                            <mat-option [value]="option">{{ option }}</mat-option>
-                          }
-                        </mat-autocomplete>
-                      </app-clearable-input>
-                    </mat-form-field>
-                  } @else {
-                    <app-copyable [copyText]="element.value">
-                      <a
-                        (click)="contentService.userSelected(element.value, element['user_realm'])"
-                        (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
-                        (keydown.space)="
-                          $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
-                        "
-                        i18n-aria-label="{{ element.keyMap.label }} Link"
-                        role="button"
-                        tabindex="0">
-                        {{ element.value }}
-                      </a>
-                    </app-copyable>
-                  }
-                }
-                @case ("user_realm") {
-                  @if (isEditingUser()) {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <mat-label i18n>Select Realm of User</mat-label>
-                      <mat-select
-                        (selectionChange)="userService.selectedUserRealm.set($event.value)"
-                        [value]="userService.selectedUserRealm()">
-                        @for (option of realmService.realmOptions(); track option) {
-                          <mat-option value="{{ option }}">{{ option }}</mat-option>
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else {
-                    <app-copyable [copyText]="element.value">
-                      <span>{{ element.value }}</span>
-                    </app-copyable>
-                  }
-                }
-                @default {
-                  {{ element.value }}
-                }
-              }
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="edit">
-            <td
-              *matCellDef="let element"
-              class="edit-column-cell"
-              mat-cell>
-              @if (authService.actionAllowed("container_unassign_user")) {
-                @if (element.keyMap.key === "user_name" && !(isAnyEditing() && !isEditingUser())) {
-                  @if (element.value) {
-                    <div class="edit-button-container">
-                      <button
-                        (click)="unassignUser()"
-                        class="yellow"
-                        i18n-aria-label="Unassign User"
-                        mat-icon-button>
-                        <mat-icon>person_remove</mat-icon>
-                      </button>
-                    </div>
-                  } @else {
-                    <app-edit-buttons
-                      [cancelEdit]="cancelContainerEdit.bind(this)"
-                      [element]="element"
-                      [isEditingInfo]="isEditingInfo()"
-                      [isEditingUser]="isEditingUser()"
-                      [saveEdit]="saveContainerEdit.bind(this)"
-                      [shouldHideEdit]="isAnyEditing()"
-                      [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
-                  }
-                }
-              }
-            </td>
-          </ng-container>
-          <tr
-            *matRowDef="let row; columns: ['key', 'value', 'edit']"
-            class="height-52"
-            mat-row></tr>
-        </table>
-        <app-container-details-info
-          [detailData]="containerDetailData()"
-          [infoData]="infoData()"
-          [isAnyEditingOrRevoked]="isAnyEditing()"
-          [(isEditingInfo)]="isEditingInfo"
-          [isEditingUser]="isEditingUser()" />
-        <mat-divider class="responsive-divider-1310" />
-      </div>
-      <div class="flex-column responsive-margin-left-1310">
-        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
-        <div class="flex-row gap-32">
-          <app-container-add-token
-            [authService]="authService"
-            [(showOnlyTokenNotInContainer)]="showOnlyTokenNotInContainer"
-            [total]="total()"
-            [pageIndex]="pageIndex()"
-            [pageSize]="pageSize()"
-            [filterValue]="tokenService.tokenFilter().filterString"
-            [filterIsNotEmpty]="tokenService.tokenFilter().isNotEmpty"
-            [tokenOptions]="tokenDataSource().data"
-            (pageEvent)="onPageEvent($event)"
-            (filterInput)="tokenService.handleFilterInput($event)"
-            (clearFilter)="tokenService.clearFilter()"
-            (addToken)="addTokenToContainer($event)">
-          </app-container-add-token>
-        </div>
-      </div>
-      <div class="flex-column gap-16 ali-center responsive-margin-left-1310">
-        <app-container-details-actions
-          [containerSerial]="containerSerial()"
-          [containerType]="containerType()"></app-container-details-actions>
-        <app-container-details-token-actions
-          [containerSerial]="containerSerial()"
-          [tokenData]="containerTokenData()"
-          [user]="rawUserData()"></app-container-details-token-actions>
-      </div>
-    </div>
-  </div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+      <tr
+        *matRowDef="let row; columns: ['key', 'value']"
+        class="height-52"
+        mat-row></tr>
+    </table>
+  </ng-template>
 </div>
