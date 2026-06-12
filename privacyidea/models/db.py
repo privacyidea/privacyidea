@@ -36,6 +36,34 @@ def increment_by_zero(element, compiler, **kw):  # pragma: no cover
     text = text + " INCREMENT BY 0"
     return text
 
+
+def build_restart_sequence_sql(name, restart_with, dialect_name):
+    """Build an ``ALTER SEQUENCE`` statement that restarts ``name`` at
+    ``restart_with``, using each dialect's accepted syntax.
+
+    SQLAlchemy has no DDL construct for ``ALTER SEQUENCE ... RESTART``, so
+    migrations build the statement through this helper instead of a raw string
+    that would only be correct on one backend:
+
+    * **MariaDB/MySQL** use ``RESTART WITH n`` and additionally require
+      ``INCREMENT BY 0`` — a Galera cluster otherwise rejects ``RESTART`` on a
+      cached sequence with "CACHE without INCREMENT BY 0 in Galera cluster", the
+      same constraint the :func:`increment_by_zero` hook handles for
+      ``CREATE SEQUENCE``. (MySQL has no sequences and never reaches this path.)
+    * **Oracle** (19c+) uses ``RESTART START WITH n``; ``RESTART WITH n`` is a
+      syntax error there, and ``INCREMENT BY 0`` is invalid.
+    * **PostgreSQL** uses plain ``RESTART WITH n``.
+
+    ``name`` must be a trusted, code-defined sequence identifier — it is
+    interpolated verbatim.
+    """
+    if dialect_name == "oracle":
+        return f"ALTER SEQUENCE {name} RESTART START WITH {restart_with}"
+    sql = f"ALTER SEQUENCE {name} RESTART WITH {restart_with}"
+    if dialect_name in ("mysql", "mariadb"):
+        sql += " INCREMENT BY 0"
+    return sql
+
 # Compile JSON type to CLOB for Oracle
 @compiles(db.JSON, 'oracle')
 def compile_json_oracle(type_, compiler, **kw):  # pragma: no cover
