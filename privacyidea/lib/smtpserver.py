@@ -29,7 +29,7 @@ from flask import current_app
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD, CENSORED)
+                                    FAILED_TO_DECRYPT_PASSWORD, is_censored)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
@@ -345,13 +345,15 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     :return: The Id of the database object
     """
 
-    # remove the CENSORED placeholder so that it will not be written to the database. This allows to update other
-    # parameters without changing the password, if the password is not provided in the update request.
-    if password == CENSORED or password == "":
+    # The CENSORED placeholder (what the API returned for the password) means
+    # "keep the stored password unchanged" -> leave encrypted_password = None so
+    # the update below skips the column. An empty string clears the password, any
+    # other value sets it.
+    if is_censored(password):
         encrypted_password = None
     else:
         encrypted_password = encryptPassword(password)
-    if private_key_password == CENSORED:
+    if is_censored(private_key_password):
         private_key_password = None
 
     # private_key_password could be empty string or None, which have a different effect later.

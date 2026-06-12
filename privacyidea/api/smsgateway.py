@@ -70,8 +70,8 @@ def get_gateway(gwid=None):
     Secret options and headers (those whose name contains ``PASSWORD`` or
     ``SECRET``) are not returned in clear text; they are replaced by the
     placeholder ``__CENSORED__``. When updating a gateway, submit
-    ``__CENSORED__`` for such a value to keep it unchanged, or a new value to
-    replace it.
+    ``__CENSORED__`` for such a value to keep it unchanged, an empty string to
+    clear it, or a new value to replace it.
 
     Requires admin authentication and the policy action
     :ref:`policy_smsgateway_read`.

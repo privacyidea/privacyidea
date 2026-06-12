@@ -282,3 +282,32 @@ class SMTPServerTestCase(MyApiTestCase):
         assert server["password"] == CENSORED
         # ... but the key-file path is returned unchanged
         assert server["private_key"] == "/etc/privacyidea/smime.key"
+
+    def test_password_cleared_with_empty_string(self):
+        """An empty password clears the stored password (only __CENSORED__ keeps
+        it). This is the counterpart to test_password_not_overwritten_by_censored."""
+        from privacyidea.lib.crypto import decryptPassword
+        from privacyidea.models import db
+        from privacyidea.models.server import SMTPServer as SMTPServerDB
+        from sqlalchemy import select
+
+        self._create_server(extra_data={"password": "to_be_cleared"})
+        data = {
+            "username": "cornelius",
+            "password": "",
+            "port": "123",
+            "server": "1.2.3.4",
+            "sender": "privacyidea@local",
+            "description": "cleared password",
+        }
+        with self.app.test_request_context('/smtpserver/server1',
+                                           method='POST',
+                                           data=data,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        assert res.status_code == 200
+
+        stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == "server1")
+        db_server = db.session.execute(stmt).scalar_one()
+        # the password was overwritten and now decrypts to the empty string
+        assert decryptPassword(db_server.password) == ""

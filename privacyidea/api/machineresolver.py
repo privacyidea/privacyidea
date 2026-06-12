@@ -57,7 +57,8 @@ def get_resolvers():
 
     Password-type configuration values are not returned in clear text: they
     are replaced by the placeholder ``__CENSORED__``. When updating a resolver,
-    submit ``__CENSORED__`` for such a value to keep its stored secret unchanged.
+    submit ``__CENSORED__`` for such a value to keep its stored secret unchanged,
+    or an empty string to clear it.
 
     Requires admin authentication and the policy action :ref:`mresolverread`.
 
