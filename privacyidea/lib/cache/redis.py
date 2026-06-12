@@ -596,25 +596,22 @@ def evict_challenges_for_serial(serial: str):
 def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
                               challenge: str = None) -> "list[ChallengeDTO] | CacheState":
     """
-    Try to serve a get_challenges() call from Redis.
-
-    With no ``serial`` or ``transaction_id`` this enumerates the whole
-    challenge keyspace (SCAN) so the admin listing path is served from the
-    cache too; wildcard filtering is applied in memory by the caller.
+    Try to serve a get_challenges() call from Redis. Only exact serial /
+    transaction_id lookups are served; an unfiltered (list-all) query returns
+    UNAVAILABLE because a key-value store cannot enumerate in aggregate.
 
     Returns:
         * ``list[ChallengeDTO]`` - cache hit. List may be empty after
           filtering by ``challenge`` (the txn or serial set was found,
-          but the in-memory filter eliminated all members), or when an
-          unfiltered enumeration found no challenges at all. The list
+          but the in-memory filter eliminated all members). The list
           itself being non-None is the authoritative signal that the
           cache spoke for this query.
         * ``CacheState.MISS`` - cache is reachable and confirms the key
           (or serial set) is not present. Callers can treat this as
           authoritative-empty.
-        * ``CacheState.UNAVAILABLE`` - cache is disabled, errored, or the
-          payload was malformed (all set members expired). Callers should
-          fall back to the database / issue defensive eviction.
+        * ``CacheState.UNAVAILABLE`` - cache is disabled, errored, the
+          payload was malformed, or the query shape cannot be served
+          (unfiltered list-all). Callers fall back to the database.
 
     The three-state result intentionally avoids the older
     ``None`` collapse that hid the miss/unavailable distinction -
@@ -660,16 +657,14 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
                 return CacheState.UNAVAILABLE
 
         else:
-            # Unfiltered "get all": enumerate every transaction hash. scan_iter
-            # is a cursor scan (non-blocking, unlike KEYS) and only runs on the
-            # admin listing path (get_challenges_paginate, GET /token/challenges
-            # with no/wildcard serial), never the hot auth path. An empty
-            # keyspace authoritatively yields an empty list. Wildcard filtering
-            # is applied by the caller in memory.
-            candidates = []
-            for key in r.scan_iter(match=_TXN_KEY.format("*"), count=200):
-                candidates.extend(_deserialize(raw) for raw in r.hgetall(key).values())
-            candidates = [c for c in candidates if c is not None]
+            # Unfiltered "get all" cannot be served from a key-value store.
+            # When caching is on, challenges live only in Redis, so the admin
+            # "list all challenges" aggregate view is intentionally degraded:
+            # this returns UNAVAILABLE, the caller falls back to the (empty) DB,
+            # and the WebUI shows the "cannot be listed in aggregate" banner.
+            # Per-token / per-user listing works via the serial and
+            # transaction_id branches above.
+            return CacheState.UNAVAILABLE
 
         # Apply remaining filters
         if serial is not None:
@@ -723,16 +718,22 @@ def _update_challenge_in_cache(dto: ChallengeDTO):
         txn_key = _TXN_KEY.format(dto.transaction_id)
         pipe = r.pipeline()
         # Rewrite just this token's field; sibling challenges in the same
-        # transaction are untouched. HSET preserves the hash's existing TTL,
-        # but refresh it with GT as a floor in case the hash lost it.
+        # transaction are untouched. HSET preserves the hash's existing TTL
+        # when the hash already exists, but if the hash was evicted between the
+        # read and this save() the HSET re-creates it with NO TTL - so seed the
+        # TTL with NX (GT alone cannot set a TTL on a key that has none) and
+        # then extend with GT, exactly as cache_challenge does.
         pipe.hset(txn_key, dto.serial, dto.to_payload())
+        pipe.expire(txn_key, remaining, nx=True)
         pipe.expire(txn_key, remaining, gt=True)
         # Re-assert the serial index. A bare HSET would otherwise leave a
         # mutated challenge unreachable by serial if its index entry had been
-        # dropped (e.g. evicted while this DTO was held). GT only extends the
-        # set TTL, never shrinks it, so a shorter save() can't kill siblings.
+        # dropped (e.g. evicted while this DTO was held). NX seeds the set TTL
+        # if it was re-created here; GT only extends it, never shrinks it, so a
+        # shorter save() can't kill siblings.
         if dto.serial:
             pipe.sadd(_SERIAL_KEY.format(dto.serial), dto.transaction_id)
+            pipe.expire(_SERIAL_KEY.format(dto.serial), remaining, nx=True)
             pipe.expire(_SERIAL_KEY.format(dto.serial), remaining, gt=True)
         pipe.execute()
     except redis_lib.exceptions.RedisError as e:

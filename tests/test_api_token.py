@@ -29,6 +29,7 @@ from dateutil.tz import tzlocal
 from mock import mock
 
 from privacyidea.lib import _
+from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
@@ -2203,20 +2204,10 @@ class APITokenTestCase(MyApiTestCase):
         self.assertEqual(r[0], False)
         self.assertEqual(r[1].get("message"), _("please enter otp: "))
         transaction_id = r[1].get("transaction_id")
+        redis_on = redis_feature_enabled("challenges")
 
-        with self.app.test_request_context('/token/challenges/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            value = result.get("value")
-            self.assertEqual(value.get("count"), 1)
-            challenges = value.get("challenges")
-            self.assertEqual(challenges[0].get("transaction_id"),
-                             transaction_id)
-
-        # There is one challenge for token CHAL1
+        # There is one challenge for token CHAL1. The per-serial listing is
+        # served from the cache when Redis is on, so it works on both backends.
         with self.app.test_request_context('/token/challenges/CHAL1',
                                            method='GET',
                                            headers={'Authorization': self.at}):
@@ -2228,6 +2219,25 @@ class APITokenTestCase(MyApiTestCase):
             challenges = value.get("challenges")
             self.assertEqual(challenges[0].get("transaction_id"),
                              transaction_id)
+
+        # The aggregate (no-serial) listing is served from the DB. With Redis
+        # enabled the challenges live only in the cache, so the aggregate view
+        # is intentionally empty and flags redis_cache_enabled (the WebUI shows
+        # a banner pointing the admin to the per-token Active Challenges view).
+        with self.app.test_request_context('/token/challenges/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            value = result.get("value")
+            if redis_on:
+                self.assertEqual(value.get("count"), 0)
+                self.assertTrue(value.get("redis_cache_enabled"))
+            else:
+                self.assertEqual(value.get("count"), 1)
+                self.assertEqual(value.get("challenges")[0].get("transaction_id"),
+                                 transaction_id)
 
         # A nonexistent serial - the realm-scope helper resolves the token
         # for its owner, so it raises ResourceNotFoundError -> 404. (Before
@@ -2243,7 +2253,9 @@ class APITokenTestCase(MyApiTestCase):
         check_serial_pass(serial, "pin")
         check_serial_pass(serial, "pin")
         transaction_ids = []
-        with self.app.test_request_context('/token/challenges/',
+        # Per-serial listing (works on both backends) - all three challenges
+        # for CHAL1.
+        with self.app.test_request_context('/token/challenges/CHAL1',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

@@ -127,6 +127,11 @@ jobs:
         PYTHONWARNINGS: "once::DeprecationWarning"
       run: |
         pip freeze
+        # Cap workers at 16: each xdist worker gets its own Redis logical DB
+        # (tests/conftest.py) and Redis has only 16 (0-15). conftest fails fast
+        # above that, so don't let a larger runner spawn more than 16 workers.
+        WORKERS=$(nproc)
+        if [ "$WORKERS" -gt 16 ]; then WORKERS=16; fi
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
-        python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
+        python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration" tests/

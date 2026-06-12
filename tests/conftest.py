@@ -51,17 +51,34 @@ if "TEST_REDIS_URL" not in os.environ and _redis_reachable():
     os.environ["TEST_REDIS_URL"] = "redis://127.0.0.1:6379/0"
 
 
+# Redis ships 16 logical DBs (0-15) by default, and we give each xdist worker
+# its own DB so the parallel suite can't collide on the shared
+# pi:challenge:* keyspace. That caps the Redis test run at 16 workers; the
+# dedicated CI job pins -n to this (and CI runners are far smaller anyway).
+_REDIS_TEST_MAX_WORKERS = 16
+
+
 def _redis_url_for_worker(url, worker):
     """Point each xdist worker at its own Redis logical DB so the parallel
     suite doesn't collide on the shared ``pi:challenge:*`` keyspace - the
     Redis analogue of the per-worker DB-name suffix above. Worker names are
-    ``gw0``, ``gw1``, ...; Redis ships 16 logical DBs (0-15), so wrap with
-    modulo. CI runs far fewer workers than that, so no two share a DB."""
+    ``gw0``, ``gw1``, ...
+
+    Fails fast rather than wrapping the DB index with modulo: silently
+    collapsing two workers onto one logical DB would let one worker's FLUSHDB
+    wipe the other's challenges mid-test - the hardest kind of flake to trace.
+    A loud error pointing at ``-n`` is far better than that."""
     import re
     match = re.match(r"gw(\d+)$", worker)
     if not match:
         return url
-    db_index = int(match.group(1)) % 16
+    db_index = int(match.group(1))
+    if db_index >= _REDIS_TEST_MAX_WORKERS:
+        raise RuntimeError(
+            f"xdist worker {worker} would need Redis logical DB {db_index}, but "
+            f"Redis has only {_REDIS_TEST_MAX_WORKERS} (0-{_REDIS_TEST_MAX_WORKERS - 1}). "
+            f"Run the Redis test suite with at most {_REDIS_TEST_MAX_WORKERS} workers "
+            f"(e.g. -n {_REDIS_TEST_MAX_WORKERS}) so workers don't share a DB.")
     url, _, query = url.partition("?")
     head = re.sub(r"/\d+$", "", url.rstrip("/"))
     rewritten = f"{head}/{db_index}"
@@ -99,6 +116,7 @@ def _flush_worker_redis():
         return
     global _redis_flush_client
     import redis as _redis
+    last_error = None
     for _attempt in range(3):
         try:
             if _redis_flush_client is None:
@@ -106,9 +124,18 @@ def _flush_worker_redis():
                     url, socket_connect_timeout=5, socket_timeout=5)
             _redis_flush_client.flushdb()
             return
-        except Exception:
+        except Exception as exc:
             # Drop the (maybe broken) client so the next attempt reconnects.
+            last_error = exc
             _redis_flush_client = None
+    # All attempts failed. Don't raise (that would mask the test's own result),
+    # but make it loud: a skipped flush leaks challenge state into the next test
+    # on this worker, which is the hardest CI flake to trace. See
+    # notes/flaky-push-test.md.
+    import sys
+    print(f"WARNING: _flush_worker_redis could not flush {url} after 3 attempts "
+          f"({last_error!r}); the next test on this worker may see stale "
+          f"challenge state.", file=sys.stderr)
 
 
 @pytest.fixture(autouse=True)
