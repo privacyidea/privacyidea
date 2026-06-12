@@ -92,7 +92,7 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
-                                   ParameterError,
+                                   ParameterError, Error,
                                    PrivacyIDEAError, ResourceNotFoundError, PolicyError, UserError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
@@ -2538,7 +2538,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
 
         if len(token_object_list) == 0:
             # If there is no unlocked token left.
-            raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
+            raise TokenAdminError(_("This action is not possible, since the token is locked"),
+                                  id=Error.TOKEN_LOCKED)
 
     # Remove disabled token types from token_object_list
     if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
