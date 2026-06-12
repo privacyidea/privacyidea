@@ -134,4 +134,21 @@ jobs:
         if [ "$WORKERS" -gt 16 ]; then WORKERS=16; fi
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
-        python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration" tests/
+        # Collect coverage: this job is the ONLY one that exercises the Redis
+        # cache path (lib/cache/redis.py and the cache branches), so its report
+        # must reach Codecov - otherwise that code shows as uncovered, since the
+        # MariaDB upload runs DB-only. Codecov merges both reports per commit.
+        python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
+
+    - name: Codecov upload
+      if: ${{ steps.pytest_run.outcome == 'success' }}
+      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      with:
+        files: ./coverage.xml
+        # Upload under the same `backend` flag as the MariaDB job. The `backend`
+        # status/component in codecov.yml is scoped to that flag, and Codecov
+        # unions multiple `backend` uploads per commit - so this run's coverage
+        # of the Redis cache path is merged into the backend total instead of
+        # being a separate flag that the backend status would ignore.
+        flags: backend
+        token: ${{ secrets.CODECOV_TOKEN }}

@@ -1305,8 +1305,12 @@ class TokenTestCase(MyTestCase):
         tokendata = get_tokens_paginate(sortby="id", page=1, psize=100)
         tokens = tokendata.get("tokens")
 
-        self.assertEqual(1, tokens[0].get("id"), tokens[0])
-        self.assertGreaterEqual(tokens[-1].get("id"), len(tokens), tokens[-1])
+        # Assert ascending id order without assuming absolute id values: token
+        # ids are a non-resetting sequence, so under parallel test execution
+        # other tests on this worker's DB may have consumed the lower ids and
+        # the lowest surviving id need not be 1.
+        ids = [token.get("id") for token in tokens]
+        self.assertEqual(ids, sorted(ids), ids)
 
         # unknown sort key results in sorting by serial
         tokendata = get_tokens_paginate(sortby="unknown", page=1, psize=100)
