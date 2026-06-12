@@ -13,6 +13,7 @@ from alembic import op
 from sqlalchemy import text, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.schema import CreateSequence
+from privacyidea.models.db import build_restart_sequence_sql
 
 # revision identifiers, used by Alembic.
 revision = '7d4e9b2c1a3f'
@@ -111,7 +112,7 @@ def upgrade():
         max_id = bind.execute(
             text("SELECT COALESCE(MAX(id), 0) FROM internaluserattribute")
         ).scalar() or 0
-        op.execute(f"ALTER SEQUENCE internaluserattribute_seq RESTART WITH {max_id + 1}")
+        op.execute(build_restart_sequence_sql("internaluserattribute_seq", max_id + 1, bind.dialect.name))
 
     _run_data_migration(op.get_bind())
 

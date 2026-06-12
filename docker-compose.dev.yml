@@ -33,3 +33,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  oracle-test:
+    # DB URI: oracle+oracledb://privacyidea:privacyidea@127.0.0.1:1521/?service_name=XEPDB1
+    # gvenzl/oracle-xe is a no-login Oracle XE image on Docker Hub. XE 21c (< 23c)
+    # rejects "CREATE/DROP SEQUENCE IF EXISTS" and accepts "RESTART START WITH",
+    # so it matches the documented Oracle 19c+ baseline for migration testing.
+    image: gvenzl/oracle-xe:21-slim
+    container_name: pi-oracle-test
+    environment:
+      ORACLE_PASSWORD: root
+      APP_USER: privacyidea
+      APP_USER_PASSWORD: privacyidea
+    ports:
+      - "1521:1521"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      start_period: 30s
+      interval: 10s
+      timeout: 10s
+      retries: 30
