@@ -72,7 +72,6 @@
   use `enrolled` instead. You can find affected event handlers in the WebUI under *Config -> Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
-## Update from 3.13 to 3.14
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
   Previously, the order was undefined and depended on the database insertion order, which could
   differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering
