@@ -3124,17 +3124,18 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     """
     Create a new challenge and persist it - to Redis if available, to the DB otherwise.
 
-    This is the single entry point for challenge creation. When Redis is
-    configured (PI_REDIS_URL), the challenge is written to Redis only and the
-    SQL INSERT is skipped. If Redis is not configured or fails, the challenge
-    falls back to the database so it is never silently lost.
+    This is the single entry point for challenge creation. When the challenge
+    cache is enabled (PI_REDIS_URL set *and* PI_REDIS_CACHE_CHALLENGES on), the
+    challenge is written to Redis only and the SQL INSERT is skipped. If the
+    cache is off or Redis fails, the challenge falls back to the database so it
+    is never silently lost.
 
     Always returns a ``Challenge`` instance. On the cache path that instance is
     the in-memory object used to build the Redis payload; it is not added to the
-    SQL session, so it has no ``.id`` and must not be ``save()``-ed or mutated
-    by the caller. Use ``transaction_id`` for identity - it's the only stable
-    identifier across both backends. To read the challenge back (from whichever
-    backend holds it) use ``get_challenges()``.
+    SQL session, so its ``.id`` is ``None`` and it must not be ``save()``-ed or
+    mutated by the caller. Use ``transaction_id`` for identity - it's the only
+    stable identifier across both backends. To read the challenge back (from
+    whichever backend holds it) use ``get_challenges()``.
 
     :param serial: Serial number of the token this challenge belongs to
     :param transaction_id: Transaction id of the challenge. A new one is generated if None.
