@@ -105,6 +105,38 @@ def delete_authentication_log_event(event_id: int) -> None:
     db.session.commit()
 
 
+def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType,
+                                        serial: str | None = None, transaction_id: str | None = None) -> None:
+    """
+    Override the classification of an existing entry written earlier in the same request.
+
+    This is for the case where a later request stage changes the outcome of an already-logged event — specifically
+    ``enroll_via_multichallenge``, where a successful authentication (logged as ``LOGIN_SUCCESS`` in check()'s finally)
+    is turned into an enrollment challenge by a post-policy.
+
+    Like the insert, this must never break the response: a failure is logged and swallowed, and runs inside a
+    SAVEPOINT so it rolls back only this update.
+
+    :param event_id: id of the entry to reclassify
+    :param event_type: the new event type
+    :param serial: the new serial (default None)
+    :param transaction_id: the new transaction_id (default None)
+    """
+    try:
+        with db.session.begin_nested():
+            entry = db.session.get(AuthenticationLog, event_id)
+            if entry is None:
+                log.info(f"Cannot reclassify authentication log entry {event_id!r}: not found.")
+                return
+            entry.event_type = _truncate("event_type", event_type)
+            entry.serial = _truncate("serial", serial)
+            if transaction_id:
+                entry.transaction_id = _truncate("transaction_id", transaction_id)
+        db.session.commit()
+    except Exception as ex:
+        log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")
+
+
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     """
     Return a single AuthenticationLog entry by event_id, or None if not found.

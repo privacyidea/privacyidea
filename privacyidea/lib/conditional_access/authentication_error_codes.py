@@ -23,6 +23,9 @@ log = logging.getLogger(__name__)
 # Key under which the classified AuthEventType is carried from lib to api layer
 AUTH_EVENT_TYPE_KEY = "authentication_event_type"
 
+# Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
+NO_FIRST_FACTOR_KEY = "no_first_factor"
+
 
 class AuthEventType(str, Enum):
     """
@@ -34,15 +37,19 @@ class AuthEventType(str, Enum):
     """
     PASSWORD_FAIL = "PASSWORD_FAIL"
     PIN_FAIL = "PIN_FAIL"
-    OTP_FAIL = "OTP_FAIL"
+    TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
     MFA_FAIL = "MFA_FAIL"
     USER_UNKNOWN = "USER_UNKNOWN"
     NO_TOKEN = "NO_TOKEN"
+    NO_USABLE_TOKEN = "NO_USABLE_TOKEN"
     LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    CHALLENGE_CONTINUED = "CHALLENGE_CONTINUED"
     CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
-    CHALLENGE_ANSWERED_OK = "CHALLENGE_ANSWERED_OK"
+    CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
     CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
     CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+    ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
+    ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
 
     def __str__(self) -> str:
         return self.value
@@ -50,17 +57,21 @@ class AuthEventType(str, Enum):
 
 # Request-level precedence, highest signal first.
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
+    AuthEventType.ENROLLMENT_TRIGGERED,
     AuthEventType.LOGIN_SUCCESS,
-    AuthEventType.CHALLENGE_ANSWERED_OK,
+    AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
+    AuthEventType.CHALLENGE_CONTINUED,
     AuthEventType.CHALLENGE_TRIGGERED,
     AuthEventType.CHALLENGE_ANSWERED_FAIL,
     AuthEventType.CHALLENGE_DECLINED,
+    AuthEventType.ENROLLMENT_CANCELED_FAIL,
     AuthEventType.MFA_FAIL,
-    AuthEventType.OTP_FAIL,
+    AuthEventType.TOKEN_ONLY_FAIL,
     AuthEventType.PASSWORD_FAIL,
     AuthEventType.PIN_FAIL,
+    AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
-    AuthEventType.USER_UNKNOWN,
+    AuthEventType.USER_UNKNOWN
 ]
 
 # Precedence rank of each event.

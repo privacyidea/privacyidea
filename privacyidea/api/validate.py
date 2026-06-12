@@ -122,7 +122,8 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import (get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError
+from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
+                                   TokenAdminError)
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
@@ -501,6 +502,11 @@ def check():
         else:
             _handle_standard_auth(context)
         response = _finalize_auth_response(context)
+    except TokenAdminError as error:
+        # classify locked token which raises an error and hence can not be classified on lib layer
+        if error.id == Error.TOKEN_LOCKED:
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+        raise
     finally:
         # Write the single authentication-log row for this request
         _log_authentication_event(context)
@@ -513,6 +519,24 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
     Returns the Flask response object directly.
     """
     transaction_id = get_required(data, "transaction_id")
+
+    # Resolve the user from the open enrollment challenge before cancelling for logging
+    user = request.User
+    if not user or not user.login:
+        challenges = get_challenges(transaction_id=transaction_id)
+        if challenges:
+            serial = challenges[0].serial
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token and token.user:
+                user = token.user
+            else:
+                try:
+                    owners = find_container_by_serial(serial).get_users()
+                    if owners:
+                        user = owners[0]
+                except Exception as ex:
+                    log.debug(f"Could not resolve the container owner for the cancel-enrollment log: {ex!r}")
+
     success = cancel_enrollment_via_multichallenge(transaction_id)
 
     details = {}
@@ -530,6 +554,13 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
         "authentication": ret.json.get("result", {}).get("authentication", ""),
         "action_detail": message,
     })
+
+    # write to the authentication log
+    log_authentication(
+        AuthEventType.LOGIN_SUCCESS if success else AuthEventType.ENROLLMENT_CANCELED_FAIL,
+        user=user,
+        transaction_id=transaction_id,
+    )
     return ret
 
 
@@ -676,7 +707,8 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
     else:
         success, details = check_otp(serial, password)
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.OTP_FAIL
+        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
 
     context["result"] = success
     context["details"] = details
@@ -793,7 +825,8 @@ def _log_authentication_event(context):
     classified outcome is read from the explicit *context* dict (no framework global), and log_authentication is a
     no-op if nothing classified the request.
     """
-    log_authentication(
+    # Stash the written row id so a later post-policy (enroll_via_multichallenge) can reclassify this same row
+    g.auth_log_event_id = log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,

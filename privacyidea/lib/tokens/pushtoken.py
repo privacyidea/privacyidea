@@ -815,9 +815,9 @@ class PushTokenClass(TokenClass):
             if decline:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_DECLINED
             elif "display_code" in details:
-                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_TRIGGERED
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_CONTINUED
             elif result:
-                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_OK
+                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
 
         # Carry the answered challenge's transaction_id up for the authentication log, so the /ttype/push row correlates
         # to the rest of the attempt.

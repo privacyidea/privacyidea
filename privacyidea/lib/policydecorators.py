@@ -50,7 +50,8 @@ import pyrad
 from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                           NO_FIRST_FACTOR_KEY)
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
@@ -545,11 +546,9 @@ def auth_otppin(wrapped_function, *args, **kwds):
                                  user_object=user).action_values(unique=True)
         if otppin_dict:
             if list(otppin_dict)[0] == ACTIONVALUE.NONE:
-                # With otppin=none there is no first factor, so any failure of this token is an OTP failure, not an
-                # MFA/PIN failure. Record it so the authentication-log classification does not inflate a wrong OTP to
-                # the high-signal MFA_FAIL.
+                # Record that no otppin is used for later correct authentication event classification
                 if token:
-                    token.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.OTP_FAIL
+                    token.auth_details[NO_FIRST_FACTOR_KEY] = True
                 if pin == "":
                     # No PIN checking, we expect an empty PIN!
                     return True

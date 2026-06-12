@@ -251,7 +251,7 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
                 resolved = True
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
-    log_authentication_event(
+    return log_authentication_event(
         event_type=event_type,
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,

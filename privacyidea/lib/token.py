@@ -83,7 +83,7 @@ from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
-                                                                           reduce_request_events)
+                                                                           NO_FIRST_FACTOR_KEY, reduce_request_events)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF,
@@ -2531,6 +2531,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     messages = []
     # Per-token outcomes for the authentication log
     request_events: list[AuthEventType] = []
+    num_all_tokens = len(token_object_list)
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:
@@ -2593,11 +2594,16 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     # This is a successful authentication
                     valid_token_list.append(token_object)
                 elif pin_match:
-                    # The PIN (first factor) of the token matches, but the OTP did not
+                    # The PIN (first factor) of the token matches, but the OTP did not. For logging check if a pin was
+                    # required / checked at all.
                     pin_matching_token_list.append(token_object)
-                    request_events.append(_token_event(token_object, AuthEventType.MFA_FAIL))
+                    default_event = (AuthEventType.TOKEN_ONLY_FAIL
+                                     if token_object.auth_details.get(NO_FIRST_FACTOR_KEY)
+                                     else AuthEventType.MFA_FAIL)
+                    request_events.append(_token_event(token_object, default_event))
                 else:
-                    # Nothing matches at all: a wrong first factor (PIN_FAIL or PASSWORD_FAIL with otppin=userstore)
+                    # Nothing matches at all: a wrong first factor (PIN_FAIL, or PASSWORD_FAIL with otppin=userstore).
+                    # This stays PIN_FAIL even with otppin=none, if a pin was given unexpectedly
                     invalid_token_list.append(token_object)
                     request_events.append(_token_event(token_object, AuthEventType.PIN_FAIL))
             else:
@@ -2719,7 +2725,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         # reset the fail counter of the challenge response token
                         token_object.reset()
                         token_object.post_success()
-                        request_events.append(_token_event(token_object, AuthEventType.CHALLENGE_ANSWERED_OK))
+                        request_events.append(_token_event(token_object, AuthEventType.LOGIN_SUCCESS))
 
                     # Clean up all challenges with this transaction_id
                     transaction_id = options.get("transaction_id") or options.get("state")
@@ -2802,8 +2808,13 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
         reply_dict["message"] = _("No suitable token found for authentication.")
 
     # Classify the request outcome for the authentication log by reducing the per-token events collected during the
-    # walk to the single highest-precedence one.
-    reply_dict[AUTH_EVENT_TYPE_KEY] = reduce_request_events(request_events) or AuthEventType.NO_TOKEN
+    # walk to the single highest-precedence one. If no token contributed an event, the user either owns tokens that
+    # were all unusable (revoked, disabled, disabled type, max-fail exceeded, out of validity) -> NO_USABLE_TOKEN, or
+    # owns no token at all -> NO_TOKEN.
+    reduced_event = reduce_request_events(request_events)
+    if reduced_event is None:
+        reduced_event = AuthEventType.NO_USABLE_TOKEN if num_all_tokens else AuthEventType.NO_TOKEN
+    reply_dict[AUTH_EVENT_TYPE_KEY] = reduced_event
 
     return res, reply_dict
 

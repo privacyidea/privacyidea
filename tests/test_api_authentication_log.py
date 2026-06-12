@@ -22,7 +22,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
-from privacyidea.lib.token import init_token, remove_token, get_tokens
+from privacyidea.lib.token import init_token, remove_token, get_tokens, get_one_token, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
@@ -97,6 +97,38 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.NO_TOKEN])
         assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=User("cornelius", self.realm1))
 
+    def test_disabled_token_logs_no_usable_token(self):
+        # The user has a token, but it is disabled, so it cannot be used -> NO_USABLE_TOKEN 
+        token = get_one_token(serial=self.serial)
+        token.enable(False)
+        body = self._check({"user": "cornelius", "pass": "pin123456"})
+        self.assertFalse(body["result"]["value"], body)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=User("cornelius", self.realm1))
+
+    def test_maxfail_token_logs_no_usable_token(self):
+        # The user's only token has its fail counter exceeded, so it cannot be used -> NO_USABLE_TOKEN.
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() + 1):
+            token.inc_failcount()
+        body = self._check({"user": "cornelius", "pass": "pin123456"})
+        self.assertFalse(body["result"]["value"], body)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=User("cornelius", self.realm1))
+
+    def test_revoked_token_logs_no_usable_token(self):
+        # All of the user's tokens are revoked: check_token_list raises TOKEN_LOCKED (ERR1007) before it can classify
+        # the request. The API catches that, records NO_USABLE_TOKEN for the log, and re-raises so the error response
+        # is unchanged.
+        revoke_token(self.serial)
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "cornelius", "pass": "pin755224"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertEqual(1007, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=User("cornelius", self.realm1))
+
     def test_unknown_user_logs_user_unknown(self):
         # An unknown user is rejected by the auth_user_does_not_exist policy decorator;
         # the API catches that and still logs USER_UNKNOWN (high-signal for stuffing).
@@ -165,6 +197,45 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=User("cornelius", self.realm1),
                                         serials={self.serial}, client_label="myapp")
 
+    # --- otppin=none: only the token is verified, no first factor (end-to-end through check_user_pass) ---
+
+    def test_otppin_none_wrong_otp_is_token_only_fail(self):
+        # otppin=none: no first factor, only the token. A wrong OTP (empty PIN) is TOKEN_ONLY_FAIL, not MFA_FAIL.
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        try:
+            body = self._check({"user": "cornelius", "pass": "000000", "client_id": "myapp"})
+            self.assertFalse(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL], user=User("cornelius", self.realm1),
+                                        serials={self.serial}, client_label="myapp")
+
+    def test_otppin_none_correct_otp_is_login_success(self):
+        # otppin=none: the correct OTP (empty PIN) succeeds -> LOGIN_SUCCESS, with no stale token-only failure.
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        try:
+            body = self._check({"user": "cornelius", "pass": "755224", "client_id": "myapp"})
+            self.assertTrue(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User("cornelius", self.realm1),
+                                        serials={self.serial}, client_label="myapp")
+
+    def test_otppin_none_pin_given_is_pin_fail(self):
+        # otppin=none but a PIN is supplied anyway: the PIN check fails, the OTP is never checked, so this is a
+        # rejected first-factor attempt -> PIN_FAIL (matches PIN brute-force), not TOKEN_ONLY_FAIL.
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        try:
+            body = self._check({"user": "cornelius", "pass": "somepin755224", "client_id": "myapp"})
+            self.assertFalse(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.PIN_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=User("cornelius", self.realm1),
+                                        client_label="myapp")
+
     # --- Challenge response ---
 
     def test_challenge_triggered(self):
@@ -228,7 +299,7 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                         user=User("cornelius", self.realm1), transaction_id="9" * 20)
 
-    def test_challenge_answered_ok(self):
+    def test_challenge_answered_correct_logs_success(self):
         # Trigger, then answer with the correct OTP -> CHALLENGE_ANSWERED_OK
         self._enable_challenge_response()
         try:
@@ -237,14 +308,108 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
             self.assertTrue(body["result"]["value"], body)
         finally:
             delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OK],
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
                                             transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=User("cornelius", self.realm1), serials={self.serial},
                                         transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_OK],
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
                                         user=User("cornelius", self.realm1), serials={self.serial},
                                         transaction_id=transaction_id)
+
+    # --- Enroll via multi challenge ---
+
+    def test_enroll_via_multichallenge_logs_enrollment_triggered(self):
+        # The user authenticates successfully with the existing token; and triggers an enrollment challenge for a token
+        # type the user does not have yet (totp) in the post-policy.
+        set_policy("authlog_enroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
+            self.assertTrue(body["detail"].get("enroll_via_multichallenge"), body)
+            transaction_id = body["detail"]["transaction_id"]
+            enrolled_serial = body["detail"]["serial"]
+        finally:
+            delete_policy("authlog_enroll")
+        entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.ENROLLMENT_TRIGGERED],
+                                        user=User("cornelius", self.realm1), serials={enrolled_serial},
+                                        transaction_id=transaction_id)
+        remove_token(enrolled_serial)
+
+    def test_enroll_via_multichallenge_completion_logs_login_success(self):
+        # Trigger a totp enrollment, then complete it by answering with the new token's OTP. The trigger row is
+        # ENROLLMENT_TRIGGERED, the completion is a LOGIN_SUCCESS via the freshly enrolled token, both correlated by
+        # the enrollment transaction_id.
+        set_policy("authlog_enroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
+            transaction_id = body["detail"]["transaction_id"]
+            enrolled_serial = body["detail"]["serial"]
+            otp = get_one_token(serial=enrolled_serial).get_otp()[2]
+            body = self._check({"user": "cornelius", "transaction_id": transaction_id, "pass": otp})
+            self.assertTrue(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_enroll")
+        entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.ENROLLMENT_TRIGGERED],
+                                        user=User("cornelius", self.realm1), serials={enrolled_serial},
+                                        transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                        user=User("cornelius", self.realm1), serials={enrolled_serial},
+                                        transaction_id=transaction_id)
+        remove_token(enrolled_serial)
+
+    def test_enroll_via_multichallenge_cancel_logs_login_success(self):
+        # With enroll_via_multichallenge_optional, cancelling the enrollment completes the already-authenticated
+        # login -> LOGIN_SUCCESS (correlated to ENROLLMENT_TRIGGERED by the enrollment transaction_id).
+        set_policy("authlog_enroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
+        set_policy("authlog_enroll_optional", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
+            transaction_id = body["detail"]["transaction_id"]
+            serial = body["detail"]["serial"]
+            body = self._check({"transaction_id": transaction_id, "cancel_enrollment": True})
+            self.assertTrue(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_enroll")
+            delete_policy("authlog_enroll_optional")
+        # The cancellation removed the enrollment token; the user is resolved from it before deletion.
+        entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.ENROLLMENT_TRIGGERED], serials={serial},
+                                        user=User("cornelius", self.realm1), transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                        user=User("cornelius", self.realm1), transaction_id=transaction_id)
+
+    def test_enroll_via_multichallenge_cancel_not_allowed_logs_canceled_fail(self):
+        # Without enroll_via_multichallenge_optional, cancellation is rejected -> ENROLLMENT_CANCELED_FAIL.
+        set_policy("authlog_enroll", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=totp")
+        try:
+            body = self._check({"user": "cornelius", "pass": "pin755224"})
+            self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
+            transaction_id = body["detail"]["transaction_id"]
+            enrolled_serial = body["detail"]["serial"]
+            body = self._check({"transaction_id": transaction_id, "cancel_enrollment": True})
+            self.assertFalse(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_enroll")
+        entries = assert_authentication_log(
+            [AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.ENROLLMENT_CANCELED_FAIL],
+            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.ENROLLMENT_TRIGGERED], serials={enrolled_serial},
+                                        user=User("cornelius", self.realm1), transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.ENROLLMENT_CANCELED_FAIL],
+                                        user=User("cornelius", self.realm1), transaction_id=transaction_id)
+        remove_token(enrolled_serial)  # still exists because the enrollment was not cancelled
 
     # --- Serial auth (serial provided instead of user) ---
     # TODO: Serial should be added to logs (context) if passed as request parameter
@@ -258,12 +423,12 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User("cornelius", self.realm1))
 
     def test_serial_otp_only_fail(self):
-        # serial + otponly validates only the OTP (no PIN), so a wrong value is OTP_FAIL.
+        # serial + otponly verifies only the token (no PIN/password), so a wrong value is TOKEN_ONLY_FAIL.
         body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"})
         self.assertFalse(body["result"]["value"], body)
 
-        entries = assert_authentication_log([AuthEventType.OTP_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.OTP_FAIL], user=User("cornelius", self.realm1))
+        entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL], user=User("cornelius", self.realm1))
 
     def test_serial_pass_success(self):
         # serial + pin+otp (no otponly) goes through check_serial_pass -> check_token_list -> LOGIN_SUCCESS.
@@ -413,6 +578,48 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL],
                                         user=User("cornelius", self.realm1), serials={self.serial})
 
+    # --- otppin=none via /auth: only the token is verified, no first factor ---
+
+    def test_auth_otppin_none_wrong_otp_is_token_only_fail(self):
+        # otppin=none: no first factor. A wrong OTP (empty PIN) is TOKEN_ONLY_FAIL, not MFA_FAIL.
+        self._enable_privacyidea_login()
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        try:
+            self._login("000000", status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL],
+                                        user=User("cornelius", self.realm1), serials={self.serial})
+
+    def test_auth_otppin_none_correct_otp_is_login_success(self):
+        # otppin=none: the correct OTP (empty PIN) succeeds -> LOGIN_SUCCESS, with no stale token-only failure.
+        self._enable_privacyidea_login()
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        try:
+            body = self._login("755224")
+            self.assertTrue(body["result"]["value"]["token"], body)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                        user=User("cornelius", self.realm1), serials={self.serial})
+
+    def test_auth_otppin_none_pin_given_is_pin_fail(self):
+        # otppin=none but a PIN is supplied anyway: the PIN check fails, the OTP is never checked, so this is a
+        # rejected first-factor attempt -> PIN_FAIL (matches PIN brute-force), not TOKEN_ONLY_FAIL.
+        self._enable_privacyidea_login()
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none")
+        try:
+            self._login("somepin755224", status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_otppin")
+        entries = assert_authentication_log([AuthEventType.PIN_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=User("cornelius", self.realm1))
+
     # --- Challenge response (LOGINMODE=privacyIDEA + challenge_response) ---
 
     def test_auth_challenge_triggered(self):
@@ -477,7 +684,7 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                         user=User("cornelius", self.realm1), transaction_id="9" * 20)
 
-    def test_auth_challenge_answered_ok(self):
+    def test_auth_challenge_answered_correct_logs_final_success(self):
         self._enable_privacyidea_login()
         self._enable_challenge_response()
         try:
@@ -487,12 +694,12 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
         finally:
             delete_policy("authlog_login_mode")
             delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OK],
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
                                             transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=User("cornelius", self.realm1), serials={self.serial},
                                         transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_OK],
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
                                         user=User("cornelius", self.realm1), serials={self.serial},
                                         transaction_id=transaction_id)
 
