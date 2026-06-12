@@ -24,6 +24,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   BulkResult,
   LostTokenResponse,
+  TokenCount,
   TokenDetails,
   Tokens,
   TokenService,
@@ -144,7 +145,7 @@ export class MockTokenService implements TokenServiceInterface {
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
   readonly getTokenCount = jest
     .fn()
-    .mockReturnValue(of(MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })));
+    .mockReturnValue(of(MockPiResponse.fromValue<TokenCount>({ count: 0 })));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as unknown as EnrollmentResponse));
   verifyToken = jest.fn().mockReturnValue(
     of(

@@ -160,7 +160,7 @@ export class DashboardComponent implements OnDestroy {
     const el = this.fieldScroll().nativeElement;
     this.viewportBottom.set(el.scrollTop + el.clientHeight);
     this.atBottom.set(el.scrollHeight - el.scrollTop - el.clientHeight <= 1);
-    this.layoutService.insertRow.set(Math.round(el.scrollTop / (this.rowHeight + this.gap)));
+    this.layoutService.insertRow.set(Math.floor(el.scrollTop / (this.rowHeight + this.gap)));
   }
 
   protected onDragMoved(widget: WidgetInstance, event: CdkDragMove): void {

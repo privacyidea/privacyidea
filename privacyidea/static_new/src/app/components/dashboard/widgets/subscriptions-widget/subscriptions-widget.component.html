@@ -23,7 +23,7 @@
       @for (subscription of subscriptions(); track subscription.application) {
         <tr>
           <td>
-            <a [routerLink]="['/configuration/subscription']">{{ subscription.application }}</a>
+            <a [routerLink]="routePaths.SUBSCRIPTION">{{ subscription.application }}</a>
             ({{ subscription.level }})
           </td>
           <td>{{ subscription.active_users }}/{{ subscription.num_users }}</td>

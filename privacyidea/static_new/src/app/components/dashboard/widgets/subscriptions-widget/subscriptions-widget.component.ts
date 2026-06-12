@@ -19,6 +19,7 @@
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -41,6 +42,8 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   static override readonly maxSize: WidgetSize = { cols: 8, rows: 5 };
   static override readonly pinned = true;
   static override readonly fixedPosition = { x: 16, y: 0 };
+
+  protected readonly routePaths = ROUTE_PATHS;
 
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
