@@ -87,8 +87,9 @@ export class AuthenticationsWidgetComponent extends DashboardWidget implements O
       if (!ref) {
         return;
       }
-      if (ref.value() !== undefined) {
-        this.state.set("ready");
+      const value = ref.value();
+      if (value !== undefined) {
+        this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
       } else if (ref.error()) {
         this.state.set("error");
       } else {

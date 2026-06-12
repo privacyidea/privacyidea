@@ -75,8 +75,9 @@ export class PoliciesWidgetComponent extends DashboardWidget implements OnInit {
       if (!ref) {
         return;
       }
-      if (ref.value() !== undefined) {
-        this.state.set("ready");
+      const value = ref.value();
+      if (value !== undefined) {
+        this.state.set(value.result?.status === true ? "ready" : "error");
       } else if (ref.error()) {
         this.state.set("error");
       } else {
