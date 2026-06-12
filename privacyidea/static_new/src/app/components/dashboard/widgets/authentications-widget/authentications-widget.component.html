@@ -41,10 +41,10 @@
               @if (!first) {
                 <span class="auth-separator">|</span>
               }
-              <a [routerLink]="['/users/details', userobj.user]">{{ userobj.user }}&#64;{{ userobj.realm }}[{{ userobj.fails }}]</a>
+              <a [routerLink]="[routePaths.USERS_DETAILS, userobj.user]">{{ userobj.user }}&#64;{{ userobj.realm }}[{{ userobj.fails }}]</a>
             }
             @for (serial of counts().serials; track serial) {
-              <a [routerLink]="['/tokens/details', serial]">{{ serial }}</a>
+              <a [routerLink]="[routePaths.TOKENS_DETAILS, serial]">{{ serial }}</a>
             }
           </td>
         </tr>

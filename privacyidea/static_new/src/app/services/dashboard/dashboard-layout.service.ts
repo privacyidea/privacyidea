@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, WidgetInstance, WidgetTypeId } from "@models/dashboard";
 import {
   DashboardPersistenceService,
   DashboardPersistenceServiceInterface
@@ -169,9 +169,10 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       if (!widgetType.pinned) {
         continue;
       }
+      const existing = widgets.find((widget) => widget.type === widgetType.type);
       const { x, y } = widgetType.fixedPosition ?? { x: 0, y: 0 };
       const { cols, rows } = widgetType.defaultSize;
-      result.push({ id: uuid(), type: widgetType.type, x, y, cols, rows });
+      result.push({ id: existing?.id ?? `pinned-${widgetType.type}`, type: widgetType.type, x, y, cols, rows });
     }
     return result;
   }
@@ -192,7 +193,7 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private defaultWidgets(): WidgetInstance[] {
-    const positions: { type: string; x: number; y: number }[] = [
+    const positions: { type: WidgetTypeId; x: number; y: number }[] = [
       { type: "tokens", x: 0, y: 0 },
       { type: "events", x: 0, y: 8 },
       { type: "policies", x: 6, y: 0 },

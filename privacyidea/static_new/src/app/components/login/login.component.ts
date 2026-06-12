@@ -321,6 +321,10 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.adminDashboard()) {
         this.router.navigateByUrl(ROUTE_PATHS.DASHBOARD).then();
+      } else if (this.authService.anyTokenActionAllowed()) {
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+      } else if (this.authService.anyContainerActionAllowed()) {
+        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
       } else {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       }

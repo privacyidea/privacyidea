@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { finalize, Observable, Subscription } from "rxjs";
+import { finalize, Observable, Subscription, take } from "rxjs";
 
 export interface DashboardDataRef<T> {
   readonly value: Signal<T | undefined>;
@@ -51,6 +51,7 @@ export class DashboardDataStore implements DashboardDataStoreInterface {
       entry.revalidating.set(true);
       entry.subscription = factory()
         .pipe(
+          take(1),
           finalize(() => {
             entry.revalidating.set(false);
             entry.inFlight = false;

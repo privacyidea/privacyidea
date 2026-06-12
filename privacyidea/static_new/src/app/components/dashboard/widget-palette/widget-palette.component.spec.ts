@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { OverlayContainer } from "@angular/cdk/overlay";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
@@ -27,6 +28,8 @@ describe("WidgetPaletteComponent", () => {
   let component: WidgetPaletteComponent;
   let layoutService: DashboardLayoutService;
   let registry: WidgetRegistryService;
+  let overlayContainer: OverlayContainer;
+  let overlayContainerElement: HTMLElement;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,11 +39,17 @@ describe("WidgetPaletteComponent", () => {
 
     layoutService = TestBed.inject(DashboardLayoutService);
     registry = TestBed.inject(WidgetRegistryService);
+    overlayContainer = TestBed.inject(OverlayContainer);
+    overlayContainerElement = overlayContainer.getContainerElement();
     layoutService.widgets.set([]);
 
     fixture = TestBed.createComponent(WidgetPaletteComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    fixture.destroy();
   });
 
   it("should create", () => {
@@ -56,7 +65,7 @@ describe("WidgetPaletteComponent", () => {
     fixture.nativeElement.querySelector("button").click();
     fixture.detectChanges();
 
-    const items = document.querySelectorAll(".mat-mdc-menu-item");
+    const items = overlayContainerElement.querySelectorAll(".mat-mdc-menu-item");
     expect(items.length).toBe(registry.widgetTypes.filter((widget) => !widget.pinned).length);
   });
 
@@ -66,7 +75,7 @@ describe("WidgetPaletteComponent", () => {
 
     fixture.nativeElement.querySelector("button").click();
     fixture.detectChanges();
-    (document.querySelector(".mat-mdc-menu-item") as HTMLButtonElement).click();
+    (overlayContainerElement.querySelector(".mat-mdc-menu-item") as HTMLButtonElement).click();
 
     expect(addSpy).toHaveBeenCalledWith(firstType);
   });
@@ -85,7 +94,7 @@ describe("WidgetPaletteComponent", () => {
     fixture.nativeElement.querySelector("button").click();
     fixture.detectChanges();
 
-    const items = document.querySelectorAll(".mat-mdc-menu-item");
+    const items = overlayContainerElement.querySelectorAll(".mat-mdc-menu-item");
     expect(items.length).toBe(nonPinned.length - 1);
   });
 

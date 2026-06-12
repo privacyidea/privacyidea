@@ -31,7 +31,7 @@
               @if (!first) {
                 <span class="separator">|</span>
               }
-              <a [routerLink]="['/events/details', event.id]">{{ event.name }}</a>
+              <a [routerLink]="[routePaths.EVENTS_DETAILS, event.id]">{{ event.name }}</a>
             }
           </td>
         </tr>
@@ -47,7 +47,7 @@
               @if (!first) {
                 <span class="separator">|</span>
               }
-              <a [routerLink]="['/events/details', event.id]">{{ event.name }}</a>
+              <a [routerLink]="[routePaths.EVENTS_DETAILS, event.id]">{{ event.name }}</a>
             }
           </td>
         </tr>
