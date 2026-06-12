@@ -26,7 +26,7 @@ import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.ser
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { TokenService } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
 

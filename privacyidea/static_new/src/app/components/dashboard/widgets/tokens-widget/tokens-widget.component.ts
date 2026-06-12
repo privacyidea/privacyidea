@@ -19,11 +19,12 @@
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
-import { Tokens, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokenCount, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { forkJoin } from "rxjs";
 
 export interface TokenCounts {
@@ -35,11 +36,11 @@ export interface TokenCounts {
 }
 
 interface TokenCountResponses {
-  total: PiResponse<Tokens>;
-  hardware: PiResponse<Tokens>;
-  software: PiResponse<Tokens>;
-  unassigned_hardware: PiResponse<Tokens>;
-  unassigned_software: PiResponse<Tokens>;
+  total: PiResponse<TokenCount>;
+  hardware: PiResponse<TokenCount>;
+  software: PiResponse<TokenCount>;
+  unassigned_hardware: PiResponse<TokenCount>;
+  unassigned_software: PiResponse<TokenCount>;
 }
 
 @Component({
@@ -56,6 +57,8 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 8 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: 12, rows: 9 };
+
+  protected readonly routePaths = ROUTE_PATHS;
 
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);

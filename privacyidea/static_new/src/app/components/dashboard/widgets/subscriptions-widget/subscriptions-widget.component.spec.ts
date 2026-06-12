@@ -23,7 +23,7 @@ import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { Subscription, SubscriptionService } from "@services/subscription/subscription.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of } from "rxjs";
 import { SubscriptionsWidgetComponent } from "./subscriptions-widget.component";
