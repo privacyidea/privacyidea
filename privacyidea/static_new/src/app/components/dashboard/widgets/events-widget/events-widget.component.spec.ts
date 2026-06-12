@@ -19,15 +19,16 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
-import { EventService } from "@services/event/event.service";
+import { EventHandler, EventService } from "@services/event/event.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { of } from "rxjs";
 import { EventsWidgetComponent } from "./events-widget.component";
 
-function makeEventsResponse(events: { id: number; name: string; active: boolean }[]) {
+function makeEventsResponse(events: { id: number; name: string; active: boolean }[]): PiResponse<EventHandler[]> {
   return {
     id: 1,
     jsonrpc: "2.0",
@@ -83,7 +84,7 @@ describe("EventsWidgetComponent", () => {
           { id: 1, name: "SendMail", active: true },
           { id: 2, name: "SetTokenInfo", active: true },
           { id: 3, name: "OldHandler", active: false }
-        ]) as any
+        ])
       )
     );
 
@@ -121,7 +122,7 @@ describe("EventsWidgetComponent", () => {
 
   it("should display the correct active and inactive counts", () => {
     const cells = fixture.nativeElement.querySelectorAll("td:last-child");
-    const values = Array.from(cells).map((td: any) => td.textContent.trim());
+    const values = Array.from(cells).map((td: Element) => td.textContent?.trim());
     expect(values).toContain("2");
     expect(values).toContain("1");
   });

@@ -19,6 +19,7 @@
 import "@angular/localize/init";
 import { setupZonelessTestEnv } from "jest-preset-angular/setup-env/zoneless";
 import { webcrypto } from "node:crypto";
+import { deserialize, serialize } from "node:v8";
 
 setupZonelessTestEnv();
 
@@ -87,7 +88,7 @@ global.MutationObserver = jest.fn().mockImplementation(() => ({
 }));
 
 if (typeof globalThis.structuredClone !== "function") {
-  globalThis.structuredClone = (<T>(value: T): T => JSON.parse(JSON.stringify(value))) as typeof structuredClone;
+  globalThis.structuredClone = (<T>(value: T): T => deserialize(serialize(value)) as T) as typeof structuredClone;
 }
 
 Object.defineProperty(window, "matchMedia", {

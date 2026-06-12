@@ -175,6 +175,7 @@ export interface PolicyServiceInterface {
   deletePolicy(name: string): Promise<PiResponse<number>>;
   enablePolicy(name: string): Promise<PiResponse<number>>;
   disablePolicy(name: string): Promise<PiResponse<number>>;
+  isScopeChangeable(policy: PolicyDetail): boolean;
   getPolicies(): Observable<PiResponse<PolicyDetail[]>>;
   getActionNamesOf(scope?: string, group?: string): string[];
   getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;

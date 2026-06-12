@@ -117,7 +117,7 @@ describe("TokensWidgetComponent", () => {
 
   it("should display the fetched counts", () => {
     const cells = fixture.nativeElement.querySelectorAll("td:last-child");
-    const values = Array.from(cells).map((td: any) => td.textContent.trim());
+    const values = Array.from(cells).map((td: Element) => td.textContent?.trim());
     expect(values).toContain("100");
     expect(values).toContain("12");
     expect(values).toContain("25");

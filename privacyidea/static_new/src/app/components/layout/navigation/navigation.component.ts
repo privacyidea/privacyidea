@@ -120,6 +120,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     }
   ];
   visibleNavCount = signal(this.primaryNavItems.length);
+  landingPage = computed(() => (this.authService.adminDashboard() ? ROUTE_PATHS.DASHBOARD : ROUTE_PATHS.TOKENS));
   customLogo = computed(() => {
     if (!this.configService.config()?.logo) {
       return null;

@@ -121,6 +121,26 @@ describe("DashboardDataStore", () => {
     expect(eventsFactory).toHaveBeenCalledTimes(1);
   });
 
+  it("cancels an in-flight request and does not write to the dropped entry on invalidate", () => {
+    const subject = new Subject<number>();
+    const ref = store.load("k", () => subject.asObservable());
+    expect(ref.revalidating()).toBe(true);
+
+    store.invalidate("k");
+
+    // the orphaned entry is no longer driven by the cancelled request
+    subject.next(123);
+    subject.complete();
+    expect(ref.value()).toBeUndefined();
+
+    // a fresh load creates a new entry and starts a new request
+    const factory = jest.fn(() => of(456));
+    const ref2 = store.load("k", factory);
+    expect(ref2).not.toBe(ref);
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(ref2.value()).toBe(456);
+  });
+
   it("refetches after invalidate", () => {
     const factory = jest.fn(() => of(1));
     store.load("k", factory);

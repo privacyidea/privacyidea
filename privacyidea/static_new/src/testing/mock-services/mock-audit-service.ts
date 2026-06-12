@@ -48,7 +48,7 @@ export class MockAuditService implements AuditServiceInterface {
     this.auditFilter.set(new FilterValue({ value: inputElement.value }));
   });
   downloadCSV = jest.fn();
-  fetchAuditPage = jest.fn((_params: Record<string, string | number>) =>
+  fetchAuditPage = jest.fn((_: Record<string, string | number>) =>
     of(MockPiResponse.fromValue<Audit>({ auditcolumns: [], auditdata: [], count: 0, current: 0 }))
   );
 }

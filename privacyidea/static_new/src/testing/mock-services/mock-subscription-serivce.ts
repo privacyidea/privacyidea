@@ -23,7 +23,7 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockSubscriptionService {
   reload = jest.fn();
-  getSubscriptions = jest.fn(() => of(MockPiResponse.fromValue<Record<string, any>>({})));
+  getSubscriptions = jest.fn(() => of(MockPiResponse.fromValue<Record<string, Subscription>>({})));
   deleteSubscription = jest.fn(() => of(MockPiResponse.fromValue(true)));
   uploadSubscriptionFile = jest.fn(() => of(MockPiResponse.fromValue({})));
   subscriptionsResource = new MockHttpResourceRef<PiResponse<Record<string, Subscription>>>(
