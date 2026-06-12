@@ -19,6 +19,7 @@
 
 import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
@@ -38,6 +39,7 @@ export interface SelectableAction {
   selector: "app-policy-action-item-new",
   standalone: true,
   imports: [
+    MatButtonModule,
     MatIconModule,
     MatTooltipModule,
     SelectorButtonsComponent,

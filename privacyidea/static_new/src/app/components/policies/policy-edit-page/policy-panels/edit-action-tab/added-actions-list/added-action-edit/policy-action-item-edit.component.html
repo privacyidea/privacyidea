@@ -17,18 +17,15 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="policy-action-item">
-  <button
-    mat-icon-button
-    class="delete-icon-button"
-    aria-label="Remove action"
-    i18n-aria-label
-    (click)="removeAction(); $event.stopPropagation()">
-    <mat-icon>delete</mat-icon>
-  </button>
-
-  <span class="detail-label">{{ action().name }}</span>
+  <div class="detail-text">
+    <span class="detail-label">{{ action().name }}</span>
+    @if (actionDetail()?.desc) {
+      <span class="detail-description">{{ actionDetail()?.desc }}</span>
+    }
+  </div>
 
   <div class="detail-input">
+    <div class="detail-value">
     @if (!isBooleanAction(action().name)) {
       @if (actionDetail()?.value; as actionValues) {
         @if (actionDetail()?.multiple) {
@@ -87,7 +84,14 @@
         }
       }
     }
+    </div>
+    <button
+      mat-icon-button
+      class="delete-icon-button"
+      aria-label="Remove action"
+      i18n-aria-label
+      (click)="removeAction(); $event.stopPropagation()">
+      <mat-icon>delete</mat-icon>
+    </button>
   </div>
-
-  <span class="detail-description">{{ actionDetail()?.desc }}</span>
 </div>

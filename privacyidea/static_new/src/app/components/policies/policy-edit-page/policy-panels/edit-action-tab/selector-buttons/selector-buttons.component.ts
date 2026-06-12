@@ -19,11 +19,12 @@
 
 import { Component, ElementRef, input, linkedSignal, output, viewChildren, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-selector-buttons",
   standalone: true,
-  imports: [MatButtonModule],
+  imports: [MatButtonModule, MatTooltipModule],
   templateUrl: "./selector-buttons.component.html",
   styleUrl: "./selector-buttons.component.scss"
 })
@@ -61,6 +62,11 @@ export class SelectorButtonsComponent<T> {
     }
     this.selectedValue.set(value);
     this.onSelect.emit(value);
+  }
+
+  /** True when the label is truncated by the ellipsis (so a tooltip is useful). */
+  isOverflowing(element: HTMLElement): boolean {
+    return element.scrollWidth > element.clientWidth;
   }
 
   public focusFirst(): void {

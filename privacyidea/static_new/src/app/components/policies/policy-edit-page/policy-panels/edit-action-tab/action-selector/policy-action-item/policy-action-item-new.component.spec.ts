@@ -133,7 +133,7 @@ describe("PolicyActionItemComponent", () => {
     fixture.detectChanges();
 
     const spy = jest.spyOn(component.actionAdd, "emit");
-    const addButton = fixture.debugElement.query(By.css(".add-action-button"));
+    const addButton = fixture.debugElement.query(By.css("button[mat-icon-button]"));
 
     addButton.nativeElement.click();
 
@@ -171,7 +171,7 @@ describe("PolicyActionItemComponent", () => {
     });
 
     it("should return false when detail is falsy", () => {
-      jest.spyOn(component, "selectableAction").mockReturnValue({ ...defaultAction, detail: null as any });
+      fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: null as any });
       expect(component.inputIsValid()).toBe(false);
     });
   });

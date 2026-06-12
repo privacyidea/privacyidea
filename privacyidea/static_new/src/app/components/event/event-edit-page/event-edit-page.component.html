@@ -69,7 +69,7 @@
     <div>
       @if (isNewEvent()) {
         <div class="two-col-grid">
-          <mat-form-field class="input-width-xl">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <app-clearable-input
               (clearButtonClick)="updateEventHandler('name', '')"
@@ -93,7 +93,7 @@
               >
             }
           </mat-form-field>
-          <mat-form-field class="input-width-xl">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>Handler Module</mat-label>
             <mat-select
               (selectionChange)="setNewHandlerModule($event.value)"
@@ -110,7 +110,7 @@
       }
 
       <div class="two-col-grid margin-bottom-32">
-        <mat-form-field class="input-width-xl">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>Position</mat-label>
           <mat-select
             (selectionChange)="updateEventHandler('position', $event.value)"
@@ -124,7 +124,7 @@
           <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.</mat-hint>
           <mat-error i18n>Selecting a position is <strong>required</strong>.</mat-error>
         </mat-form-field>
-        <mat-form-field class="input-width-xl">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>Ordering</mat-label>
           <input
             (input)="updateEventHandler('ordering', +$event['target']['value'])"

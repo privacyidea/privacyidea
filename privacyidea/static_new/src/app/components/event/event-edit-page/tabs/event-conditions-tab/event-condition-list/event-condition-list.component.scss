@@ -1,4 +1,5 @@
 @use "styles";
+@use "inputs";
 
 // override hover style for read only view to not change on hover
 .selected-actions-container .action-card:hover {
@@ -22,7 +23,7 @@
   display: flex;
   align-items: center;
   justify-content: end;
-  gap: 16px;
+  gap: var(--global-gap);
 }
 
 .action-card-row-grid {
@@ -34,8 +35,6 @@
   display: grid;
   grid-template-columns: auto auto;
   justify-content: space-between;
-  align-items: center;
-  width: 100%;
 }
 
 .description {

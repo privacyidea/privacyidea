@@ -1,5 +1,3 @@
-@use "buttons";
-
 .event-selection-container {
   display: flex;
   flex-direction: column;
@@ -73,25 +71,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.add-event-button {
-  appearance: none;
-  background-color: var(--mat-sys-surface-variant);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  color: var(--mat-sys-on-surface-variant);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 44px;
-  height: 40px;
-  padding: 0;
-  width: 44px;
-
-  &:focus-visible {
-    outline: buttons.$button-focus-outline;
-    outline-offset: 1px;
-  }
 }
