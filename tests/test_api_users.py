@@ -5,7 +5,7 @@ from urllib.parse import urlencode, quote
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver, get_resolver_object
+from privacyidea.lib.resolver import save_resolver, delete_resolver, get_resolver_object
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
@@ -925,3 +925,54 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # Clean up
         User("cornelius", self.realm1).delete_attribute()
+
+    def test_13_get_users_resolver_scoping(self):
+        # Add a second passwd resolver to realm1 alongside resolvername1.
+        # Both resolvers read the same PWFILE, so they hold the same set of users.
+        # Querying with ``?resolver=<second>`` must return users carrying the
+        # second resolver's name in their record — under the pre-fix behaviour
+        # the resolver parameter was silently expanded to every resolver in the
+        # realm and the higher-priority resolver won (username, realm) dedup,
+        # so callers saw the wrong ``resolver`` field.
+        self.setUp_user_realms()
+        second_resolver = "resolver_secondary"
+        save_resolver({"resolver": second_resolver,
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        # Both the realm-membership change and the resolver row need to be
+        # rolled back even if a later assertion raises; register cleanups
+        # before mutating realm1 so they fire in reverse order on teardown.
+        self.addCleanup(delete_resolver, second_resolver)
+        self.addCleanup(set_realm, self.realm1, [{"name": self.resolvername1}])
+        (added, failed) = set_realm(self.realm1,
+                                    [{"name": self.resolvername1, "priority": 1},
+                                     {"name": second_resolver, "priority": 2}])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 2)
+
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode({"resolver": second_resolver}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            users = result.get("value")
+            self.assertTrue(len(users) > 0, users)
+            for user in users:
+                self.assertEqual(second_resolver, user.get("resolver"), user)
+
+        # And the realm + resolver combination still resolves correctly:
+        # realm1 contains the second resolver, so the query narrows to it.
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode({"realm": self.realm1,
+                                                                   "resolver": second_resolver}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            users = res.json.get("result").get("value")
+            self.assertTrue(len(users) > 0, users)
+            for user in users:
+                self.assertEqual(second_resolver, user.get("resolver"), user)

@@ -131,11 +131,19 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         userlist = get_user_list()
         self.assertTrue(len(userlist) > 10, userlist)
 
-        # users from one realm
+        # realm + resolver where the resolver IS part of the realm:
+        # query is narrowed to that resolver and finds "root".
+        userlist = get_user_list({"realm": self.realm1,
+                                  "username": "root",
+                                  "resolver": self.resolvername1})
+        self.assertTrue(len(userlist) == 1, userlist)
+
+        # realm + resolver where the resolver is NOT part of the realm:
+        # result is empty (the resolver is no longer silently dropped).
         userlist = get_user_list({"realm": self.realm1,
                                   "username": "root",
                                   "resolver": self.resolvername2})
-        self.assertTrue(len(userlist) == 1, userlist)
+        self.assertEqual(userlist, [])
 
         # get the list with user
         userlist = get_user_list(user=User(login="root",
@@ -390,6 +398,85 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
 
         user = get_user_from_param({"user": "cornelius", "realm": "double"})
         self.assertEqual(user.resolver, "double3")
+
+    def test_12b_get_user_list_failures(self):
+        # A resolver that raises ResolverError/ParameterError must be skipped
+        # and recorded in the caller-supplied ``failures`` list. Other resolvers
+        # in the same realm must still contribute their users.
+        from privacyidea.lib.error import ResolverError
+        import privacyidea.lib.user as user_module
+
+        real_get_resolver_object = user_module.get_resolver_object
+
+        def fake_get_resolver_object(name):
+            resolver = real_get_resolver_object(name)
+            if name == "double2":
+                class Broken:
+                    editable = resolver.editable
+                    def getUserList(self, search_dict, attributes):
+                        raise ResolverError("simulated outage")
+                return Broken()
+            return resolver
+
+        failures = []
+        with mock.patch.object(user_module, "get_resolver_object", side_effect=fake_get_resolver_object):
+            users = get_user_list({"realm": "double"}, failures=failures)
+
+        # double1 and double3 still work, so we get users back.
+        self.assertTrue(len(users) > 0, users)
+        # The broken resolver is reported exactly once.
+        self.assertEqual(len(failures), 1, failures)
+        self.assertEqual(failures[0][0], "double2", failures)
+        self.assertIn("simulated outage", failures[0][1])
+
+    def test_12c_get_user_list_failures_deduped_across_realms(self):
+        # A resolver-only query iterates every realm that contains the resolver
+        # (see realm scoping in get_user_list). When the resolver is broken it
+        # raises in each iteration, so the failures list must dedupe by name —
+        # otherwise the audit log and the API response would report the same
+        # resolver multiple times. Assign double2 to a second realm and query
+        # with only ``resolver=double2`` to exercise this path.
+        from privacyidea.lib.error import ResolverError
+        import privacyidea.lib.user as user_module
+
+        (added, failed) = set_realm("double_extra", [{"name": "double2"}])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        real_get_resolver_object = user_module.get_resolver_object
+
+        def fake_get_resolver_object(name):
+            resolver = real_get_resolver_object(name)
+            if name == "double2":
+                class Broken:
+                    editable = resolver.editable
+                    def getUserList(self, search_dict, attributes):
+                        raise ResolverError("simulated outage")
+                return Broken()
+            return resolver
+
+        failures = []
+        try:
+            with mock.patch.object(user_module, "get_resolver_object", side_effect=fake_get_resolver_object):
+                users = get_user_list({"resolver": "double2"}, failures=failures)
+            # Both realms iterated, both raised — dedupe must collapse to one entry.
+            self.assertEqual(users, [])
+            self.assertEqual(len(failures), 1, failures)
+            self.assertEqual(failures[0][0], "double2", failures)
+        finally:
+            delete_realm("double_extra")
+
+    def test_12a_get_user_list_resolver_only(self):
+        # Realm "double" from test_12 contains double1 (prio 3), double2 (prio 2),
+        # double3 (prio 1) — all backed by the same PWFILE. Querying with only
+        # ``resolver=double1`` must return users from double1 exclusively. Before
+        # the fix the resolver parameter was expanded to every sibling resolver
+        # in the realm and the highest-priority resolver (double3) won the
+        # (username, realm) dedup, so callers saw ``resolver=double3`` instead.
+        userlist = get_user_list({"resolver": "double1"})
+        self.assertTrue(len(userlist) > 0, userlist)
+        for entry in userlist:
+            self.assertEqual(entry["resolver"], "double1", entry)
 
     def test_13_update_user(self):
         realm = "sqlrealm"
