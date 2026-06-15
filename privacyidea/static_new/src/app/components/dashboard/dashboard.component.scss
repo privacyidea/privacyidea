@@ -29,7 +29,7 @@
   flex-direction: column;
   gap: var(--global-gap);
   box-sizing: border-box;
-  height: var(--max-height);
+  height: calc(var(--max-height) + 80px);
   width: 100%;
   padding: var(--global-padding);
 }
