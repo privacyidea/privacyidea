@@ -476,7 +476,7 @@ class EntraIDResolver(HTTPResolver):
                 success = False
                 log.debug(f"Failed to authenticate user {user_identifier}: {error} - {error_message}")
             else:
-                success = super()._delete_user_error_handling(response, config, user_identifier)
+                success = super()._user_auth_error_handling(response, config, user_identifier)
         else:
             # Custom errors can also occur in successful responses
             success = self._custom_error_handling(response, config)
