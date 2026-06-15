@@ -18,36 +18,6 @@
 -->
 
 <div class="dashboard-page">
-  <div class="dashboard-toolbar">
-    @if (layoutService.editMode()) {
-      <button
-        mat-stroked-button
-        class="action-button-primary button-width-m"
-        (click)="save()">
-        <mat-icon>check</mat-icon>
-        <span i18n>Save</span>
-      </button>
-
-      <button
-        mat-stroked-button
-        class="action-button-secondary button-width-m"
-        (click)="cancel()">
-        <mat-icon>close</mat-icon>
-        <span i18n>Cancel</span>
-      </button>
-
-      <app-widget-palette />
-    } @else {
-      <button
-        mat-stroked-button
-        class="action-button-primary button-width-m"
-        (click)="enterEdit()">
-        <mat-icon>edit</mat-icon>
-        <span i18n>Edit dashboard</span>
-      </button>
-    }
-  </div>
-
   <div class="dashboard-scroll-wrapper">
     <div
       class="dashboard-field-scroll"

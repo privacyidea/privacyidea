@@ -20,7 +20,6 @@
 import { Component, computed, DOCUMENT, effect, inject, OnDestroy, OnInit, Renderer2, signal } from "@angular/core";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "@components/layout/navigation-self-service/navigation-self-service.wizard.component";
 import { NavigationComponent } from "@components/layout/navigation/navigation.component";
@@ -49,9 +48,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
-  protected readonly hasSecondaryToolbar = computed(
-    () => this.authService.role() === "admin" && !this.contentService.routeUrl().startsWith(ROUTE_PATHS.DASHBOARD)
-  );
+  protected readonly hasSecondaryToolbar = computed(() => this.authService.role() === "admin");
 
   constructor() {
     effect(() => {

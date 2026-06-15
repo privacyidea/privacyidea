@@ -370,26 +370,14 @@ describe("DashboardComponent", () => {
     });
   });
 
-  describe("toolbar actions", () => {
-    it("should begin a staged edit when entering edit mode", () => {
-      const beginSpy = jest.spyOn(layoutService, "beginEdit");
-      component['enterEdit']();
-      expect(beginSpy).toHaveBeenCalled();
-      expect(layoutService.editMode()).toBe(true);
-    });
-
-    it("should commit the staged edit on save", () => {
-      const saveSpy = jest.spyOn(layoutService, "saveEdit");
-      component['enterEdit']();
-      component['save']();
-      expect(saveSpy).toHaveBeenCalled();
-      expect(layoutService.editMode()).toBe(false);
-    });
-
-    it("should discard the staged edit on cancel", () => {
+  describe("edit lifecycle cleanup", () => {
+    it("should cancel a staged edit when the component is destroyed", () => {
       const cancelSpy = jest.spyOn(layoutService, "cancelEdit");
-      component['enterEdit']();
-      component['cancel']();
+      layoutService.beginEdit();
+      expect(layoutService.editMode()).toBe(true);
+
+      fixture.destroy();
+
       expect(cancelSpy).toHaveBeenCalled();
       expect(layoutService.editMode()).toBe(false);
     });

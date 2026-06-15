@@ -34,13 +34,6 @@
   padding: var(--global-padding);
 }
 
-.dashboard-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--global-gap);
-}
-
 .dashboard-scroll-wrapper {
   position: relative;
   flex: 1;

@@ -18,10 +18,7 @@
  **/
 import { CdkDrag, CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
 import { afterRenderEffect, Component, computed, ElementRef, inject, OnDestroy, signal, viewChild } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
 import { WidgetFrameComponent } from "@components/dashboard/widget-frame/widget-frame.component";
-import { WidgetPaletteComponent } from "@components/dashboard/widget-palette/widget-palette.component";
 import { DASHBOARD_COLUMNS, DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
@@ -67,7 +64,7 @@ type DragTarget = FieldRect & { valid: boolean };
 @Component({
   selector: "app-dashboard",
   standalone: true,
-  imports: [CdkDrag, WidgetFrameComponent, WidgetPaletteComponent, MatButton, MatIcon],
+  imports: [CdkDrag, WidgetFrameComponent],
   templateUrl: "./dashboard.component.html",
   styleUrl: "./dashboard.component.scss"
 })
@@ -293,26 +290,6 @@ export class DashboardComponent implements OnDestroy {
         rect.y < other.y + other.rows &&
         rect.y + rect.rows > other.y
     );
-  }
-
-  protected enterEdit(): void {
-    this.layoutService.beginEdit();
-    this.pendingChanges.registerHasChanges(() => this.layoutService.hasPendingChanges());
-    this.pendingChanges.registerValidChanges(() => true);
-    this.pendingChanges.registerSave(() => {
-      this.layoutService.saveEdit();
-      return Promise.resolve(true);
-    });
-  }
-
-  protected save(): void {
-    this.layoutService.saveEdit();
-    this.pendingChanges.clearAllRegistrations();
-  }
-
-  protected cancel(): void {
-    this.layoutService.cancelEdit();
-    this.pendingChanges.clearAllRegistrations();
   }
 
   ngOnDestroy(): void {
