@@ -46,6 +46,7 @@ import functools
 import logging
 import pyrad
 import re
+from typing import Optional, TYPE_CHECKING
 
 from dateutil.tz import tzlocal
 
@@ -58,6 +59,9 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta, split_pin_pass
+
+if TYPE_CHECKING:
+    from privacyidea.lib.tokenclass import TokenClass
 
 log = logging.getLogger(__name__)
 
@@ -574,6 +578,38 @@ def config_lost_token(wrapped_function, *args, **kwds):
     return wrapped_function(*args, **kwds)
 
 
+def reset_all_user_tokens_active(g, user_object: Optional[User]) -> bool:
+    """
+    Return True if the ``reset_all_user_tokens`` policy is set for the given user.
+
+    The policy is matched user-independently when ``user_object`` is empty, which
+    is the case for the libpolicy decorator path when the involved tokens have no
+    owner.
+
+    :param g: The flask g object used for policy matching.
+    :param user_object: The token owner whose policies are evaluated.
+    """
+    if not g:
+        return False
+    return bool(Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
+                           user_object=user_object or None).policies())
+
+
+def reset_token_failcounters(token_objects: list["TokenClass"]) -> None:
+    """
+    Reset the failcounter of all the given tokens. Registration tokens are skipped.
+
+    :param token_objects: The tokens whose failcounter should be reset.
+    """
+    for token_object in token_objects:
+        if token_object.get_class_type() in ['registration']:
+            continue
+        try:
+            token_object.reset()
+        except Exception as exx:
+            log.warning(f"Failed to reset failcounter of token {token_object.get_serial()}: {exx}")
+
+
 def reset_all_user_tokens(wrapped_function, *args, **kwds):
     """
     Resets all tokens if the corresponding policy is set.
@@ -590,21 +626,12 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 
     r = wrapped_function(*args, **kwds)
 
-    available_tokens = [tok for tok in token_objects if tok.get_class_type() not in ['registration']]
-
     # A successful authentication was done
-    if r[0] and g and allow_reset and available_tokens:
-        token_owner = kwds.get('user') or available_tokens[0].user
-        reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
-                               user_object=token_owner if token_owner else None).policies()
-        if reset_all:
-            log.debug("Reset failcounter of all tokens of {0!s}".format(
-                token_owner))
-            for tok_obj_reset in available_tokens:
-                try:
-                    tok_obj_reset.reset()
-                except Exception:
-                    log.debug("Registration token does not exist anymore and cannot be reset.")
+    if r[0] and allow_reset:
+        token_owner = kwds.get("user") or next(
+            (tok.user for tok in token_objects if tok.get_class_type() not in ['registration']), None)
+        if reset_all_user_tokens_active(g, token_owner):
+            reset_token_failcounters(token_objects)
 
     return r
 
