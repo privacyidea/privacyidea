@@ -259,9 +259,9 @@ class LockoutEngineTestCase(MyTestCase):
                                  block_expires_at=now + timedelta(seconds=600)))
         db.session.commit()
         block = get_ip_block("203.0.113.5", now=now)
-        self.assertEqual(False, block["permanent"], block)
-        self.assertEqual(600, block["seconds_remaining"], block)
-        self.assertIsNotNone(block["expires_at"], block)
+        self.assertEqual(False, block.permanent, block)
+        self.assertEqual(600, block.seconds_remaining, block)
+        self.assertIsNotNone(block.expires_at, block)
 
     def test_get_ip_block_expired_reads_as_unblocked(self):
         db.session.add(BlockList(ip="203.0.113.5", is_blocked=True,
@@ -273,9 +273,9 @@ class LockoutEngineTestCase(MyTestCase):
         db.session.add(BlockList(ip="203.0.113.5", is_blocked=True, block_expires_at=None))
         db.session.commit()
         block = get_ip_block("203.0.113.5")
-        self.assertEqual(True, block["permanent"], block)
-        self.assertIsNone(block["seconds_remaining"], block)
-        self.assertIsNone(block["expires_at"], block)
+        self.assertEqual(True, block.permanent, block)
+        self.assertIsNone(block.seconds_remaining, block)
+        self.assertIsNone(block.expires_at, block)
 
     # --- evaluate_lockout_policies --------------------------------------------
 

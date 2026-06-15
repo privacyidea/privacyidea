@@ -472,31 +472,12 @@ def check():
 
 
     """
-    # Conditional-access pre-check: runs before any token logic and before the
-    # failcounter / max_auth checks. A currently-locked user is rejected
-    # immediately with a generic failure response that leaks no reason (the
-    # real reason is recorded only in the audit log).
-    if is_user_locked(request.User):
-        log.info(f"Rejecting authentication for locked user {request.User!r}.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: account is temporarily locked"})
-        return send_result(False, rid=2, details={})
-    # Same generic rejection for a source IP blocked by a BLOCK_IP action. Unlike
-    # the WebUI login, the machine-facing /validate response does not reveal the block.
-    if is_ip_blocked(g.client_ip):
-        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: source IP is blocked"})
-        return send_result(False, rid=2, details={})
-    # Pre-auth conditional-access decision (DENY action). Evaluated after the
-    # lock/block pre-checks (so ALLOW cannot override them) and before any token
-    # logic. A DENY rejects this single request generically without persisting
-    # state; ALLOW / CONTINUE fall through to the normal flow.
-    if evaluate_access_decision(request.User, g.client_ip) == AccessDecision.DENY:
-        log.info(f"Denying authentication for {request.User!r} by conditional-access policy.")
-        g.audit_object.log({"success": False,
-                            "info": "Rejected: denied by conditional-access policy"})
-        return send_result(False, rid=2, details={})
+    # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
+    # policy DENY decision before any token logic (generic failure response, reason
+    # recorded only in the audit log; see the helper for details).
+    rejection = _conditional_access_precheck(request.User)
+    if rejection is not None:
+        return rejection
 
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
@@ -537,6 +518,42 @@ def check():
         _log_authentication_event(context)
         _evaluate_lockout_policies(context)
     return response
+
+
+def _conditional_access_precheck(user) -> Response | None:
+    """
+    Reject a /validate request pre-auth (before any token logic and before the
+    failcounter / max_auth checks) when conditional-access policies forbid it.
+    Returns a generic failure ``Response`` to be returned to the client, or
+    ``None`` to continue with the normal flow.
+
+    The rejection is deliberately generic and leaks no reason: unlike the WebUI
+    login, the machine-facing /validate response never reveals that the user is
+    locked, the source IP is blocked, or a policy denied access — the real reason
+    is recorded only in the audit log.
+
+    A currently-locked user is rejected first, then a source IP blocked by a
+    BLOCK_IP action. The pre-auth conditional-access DENY decision is evaluated
+    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
+    DENY rejects this single request without persisting state, while
+    ALLOW / CONTINUE fall through.
+    """
+    if is_user_locked(user):
+        log.info(f"Rejecting authentication for locked user {user!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: account is temporarily locked"})
+        return send_result(False, rid=2, details={})
+    if is_ip_blocked(g.client_ip):
+        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: source IP is blocked"})
+        return send_result(False, rid=2, details={})
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying authentication for {user!r} by conditional-access policy.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: denied by conditional-access policy"})
+        return send_result(False, rid=2, details={})
+    return None
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:

@@ -125,10 +125,16 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
     # --- pre-check ------------------------------------------------------------
 
     def test_locked_user_rejected_without_token_logic(self):
+        # Safety check: confirm these credentials are valid *before* locking, so the
+        # rejection below is provably the conditional-access lock and not a bad OTP.
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        logs_after_success = len(get_authentication_logs())
+
         self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertEqual(0, self._failcount())
 
-        # Even valid credentials must be rejected while the user is locked.
+        # The very same request is now rejected while the user is locked.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["status"], body)
         self.assertFalse(body["result"]["value"], body)
@@ -136,8 +142,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body.get("detail"), body)
         # No token logic ran: the fail counter did not move and no valid OTP was consumed.
         self.assertEqual(0, self._failcount())
-        # The pre-check rejects before classification, so it writes no authentication-log row.
-        self.assertEqual(0, len(get_authentication_logs()))
+        # The pre-check rejects before classification, so it writes no new authentication-log row.
+        self.assertEqual(logs_after_success, len(get_authentication_logs()))
 
     def test_expired_lock_does_not_reject(self):
         self._lock_user(utc_now() - timedelta(seconds=10))

@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING
@@ -26,7 +27,8 @@ from sqlalchemy import func, select
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
-from privacyidea.models import AuthenticationLog, BlockList, LockoutPolicy, UserLockoutState, db
+from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutStageAction,
+                                 UserLockoutState, db)
 from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
@@ -90,6 +92,25 @@ class AccessDecision(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+@dataclass(frozen=True)
+class RestrictionStatus:
+    """
+    The state of an active conditional-access restriction on a single identity:
+    a user lock (:func:`get_user_lockout`) or a source-IP block
+    (:func:`get_ip_block`). Both return this same shape so callers (e.g. the
+    ``/auth`` rejection messages) can treat them uniformly.
+
+    :ivar permanent: ``True`` for a restriction that only an admin reset clears.
+    :ivar expires_at: naive-UTC expiry of a timed restriction, or ``None`` when
+        permanent.
+    :ivar seconds_remaining: whole seconds until a timed restriction expires
+        (``>= 0``), or ``None`` when permanent.
+    """
+    permanent: bool
+    expires_at: "datetime | None"
+    seconds_remaining: "int | None"
 
 
 def _resolved(user: "User") -> bool:
@@ -169,7 +190,7 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
     return db.session.scalar(stmt) or 0
 
 
-def get_user_lockout(user: "User", now: datetime | None = None) -> dict | None:
+def get_user_lockout(user: "User", now: datetime | None = None) -> "RestrictionStatus | None":
     """
     Return information about *user*'s **current** lock, or ``None`` if the user
     is not currently locked. This is a **pure read** intended for the
@@ -182,10 +203,7 @@ def get_user_lockout(user: "User", now: datetime | None = None) -> dict | None:
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: ``None`` if not locked, else a dict with keys ``permanent`` (bool),
-        ``expires_at`` (naive-UTC :class:`datetime` or ``None`` if permanent) and
-        ``seconds_remaining`` (whole seconds until a timed lock expires, ``>= 0``,
-        or ``None`` if permanent)
+    :return: ``None`` if not locked, else a :class:`RestrictionStatus`
     """
     if not _resolved(user):
         return None
@@ -194,12 +212,13 @@ def get_user_lockout(user: "User", now: datetime | None = None) -> dict | None:
         return None
     if state.lock_expires_at is None:
         # Permanent lock; only an admin reset clears it.
-        return {"permanent": True, "expires_at": None, "seconds_remaining": None}
+        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
         return None
     remaining = int((state.lock_expires_at - now).total_seconds())
-    return {"permanent": False, "expires_at": state.lock_expires_at, "seconds_remaining": remaining}
+    return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
+                             seconds_remaining=remaining)
 
 
 def is_user_locked(user: "User", now: datetime | None = None) -> bool:
@@ -215,7 +234,7 @@ def is_user_locked(user: "User", now: datetime | None = None) -> bool:
     return get_user_lockout(user, now=now) is not None
 
 
-def get_ip_block(source_ip: str | None, now: datetime | None = None) -> dict | None:
+def get_ip_block(source_ip: str | None, now: datetime | None = None) -> "RestrictionStatus | None":
     """
     Return information about *source_ip*'s **current** block by the ``BLOCK_IP``
     action, or ``None`` if the IP is not currently blocked. This is the IP
@@ -234,10 +253,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> dict | N
 
     :param source_ip: the client IP to check; a falsy value is never blocked
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: ``None`` if not blocked, else a dict with keys ``permanent`` (bool),
-        ``expires_at`` (naive-UTC :class:`datetime` or ``None`` if permanent) and
-        ``seconds_remaining`` (whole seconds until a timed block expires, ``>= 0``,
-        or ``None`` if permanent)
+    :return: ``None`` if not blocked, else a :class:`RestrictionStatus`
     """
     if not source_ip:
         return None
@@ -246,12 +262,13 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None) -> dict | N
         return None
     if state.block_expires_at is None:
         # Permanent block; only an admin reset clears it.
-        return {"permanent": True, "expires_at": None, "seconds_remaining": None}
+        return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None)
     now = _naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
         return None
     remaining = int((state.block_expires_at - now).total_seconds())
-    return {"permanent": False, "expires_at": state.block_expires_at, "seconds_remaining": remaining}
+    return RestrictionStatus(permanent=False, expires_at=state.block_expires_at,
+                             seconds_remaining=remaining)
 
 
 def is_ip_blocked(source_ip: str | None, now: datetime | None = None) -> bool:
@@ -545,6 +562,11 @@ def _base_action_tags(policy: LockoutPolicy, stage, user: "User", event_type: st
     user attributes (email, givenname, surname) are added lazily in
     :func:`_send_lockout_email`, so a non-email action never triggers a resolver
     lookup.
+
+    Some values are exposed under two names on purpose (``user``/``username`` and
+    ``source_ip``/``client_ip``): an admin authoring a template may reach for
+    either spelling, so both resolve rather than silently leaving a ``{tag}``
+    unsubstituted.
     """
     return {
         "user": user.login,
@@ -562,7 +584,7 @@ def _base_action_tags(policy: LockoutPolicy, stage, user: "User", event_type: st
     }
 
 
-def _resolve_admin_recipients(recipient_group) -> list[str]:
+def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     """
     Resolve the EMAIL_ADMIN ``recipient_group`` to a list of email addresses.
 
@@ -605,27 +627,28 @@ def _login_notice(action_type: "LockoutAction", cfg: dict, render_tags: dict) ->
     return _("Your administrator has been notified by email.")
 
 
-def _send_lockout_email(action_type: "LockoutAction", action, user: "User", tags: dict) -> str | None:
+def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStageAction,
+                        user: "User", tags: dict) -> str | None:
     """
     Send the EMAIL_ADMIN / EMAIL_USER notification for a triggered stage action.
 
-    The ``action_value`` is a JSON object carrying ``smtp_identifier`` (the SMTP
-    server configuration to use), ``subject`` and ``body`` (both rendered with
-    ``{tag}`` substitution), an optional ``mimetype`` (``plain``/``html``), an
-    optional ``login_notice`` (overrides the message surfaced on the login
-    screen) and, for EMAIL_ADMIN, an optional ``recipient_group``. EMAIL_USER
-    sends to the user's own email address. A missing field or a user without an
-    email address is logged and skipped; this runs post-response and must never
-    raise.
+    The stage action's ``action_value`` is a JSON object carrying
+    ``smtp_identifier`` (the SMTP server configuration to use), ``subject`` and
+    ``body`` (both rendered with ``{tag}`` substitution), an optional ``mimetype``
+    (``plain``/``html``), an optional ``login_notice`` (overrides the message
+    surfaced on the login screen) and, for EMAIL_ADMIN, an optional
+    ``recipient_group``. EMAIL_USER sends to the user's own email address. A
+    missing field or a user without an email address is logged and skipped; this
+    runs post-response and must never raise.
 
     :return: the user-facing login-screen notice if the email was sent, else
         ``None`` (misconfiguration, no recipient, or delivery failure).
     """
-    cfg = action.action_value if isinstance(action.action_value, dict) else {}
+    cfg = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
     identifier = cfg.get("smtp_identifier") or cfg.get("identifier")
     subject, body = cfg.get("subject"), cfg.get("body")
     if not identifier or not subject or not body:
-        log.warning(f"{action_type} action {action.id}: needs smtp_identifier, subject and body in "
+        log.warning(f"{action_type} action {stage_action.id}: needs smtp_identifier, subject and body in "
                     f"action_value; skipping.")
         return
 
@@ -637,12 +660,12 @@ def _send_lockout_email(action_type: "LockoutAction", action, user: "User", tags
     if action_type == LockoutAction.EMAIL_USER:
         recipients = [info["email"]] if info.get("email") else []
         if not recipients:
-            log.warning(f"EMAIL_USER action {action.id}: user {user!r} has no email address; skipping.")
+            log.warning(f"EMAIL_USER action {stage_action.id}: user {user!r} has no email address; skipping.")
             return
     else:  # EMAIL_ADMIN
         recipients = _resolve_admin_recipients(cfg.get("recipient_group"))
         if not recipients:
-            log.warning(f"EMAIL_ADMIN action {action.id}: no recipients for "
+            log.warning(f"EMAIL_ADMIN action {stage_action.id}: no recipients for "
                         f"recipient_group={cfg.get('recipient_group')!r}; skipping.")
             return
 

@@ -105,6 +105,7 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
             res = self.app.full_dispatch_request()
             self.assertFalse(res.json["result"]["status"], res.json)
         entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
+        # TODO: What should be logged here for the user?
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=None,
                                         other_info={"login": "doesnotexist"})
 
@@ -118,7 +119,9 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         finally:
             delete_policy("passonnouser")
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        # TODO: What should be logged here for the user?
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=None)
+        # self.assertIsNone(entries[AuthEventType.LOGIN_SUCCESS].uid)
 
     # --- Normal auth: a single request with PIN/password + OTP concatenated ---
 
@@ -212,6 +215,7 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         body = self._check({"user": "cornelius", "transaction_id": "9" * 20, "pass": "pin755224"})
         self.assertFalse(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        # TODO: Should we have the serial here in the log?
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                         user=User("cornelius", self.realm1))
 
@@ -230,6 +234,7 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
                                         user=User("cornelius", self.realm1), serial=self.serial)
 
     # --- Serial auth (serial provided instead of user) ---
+    # TODO: Serial should be added to logs (context) if passed as request parameter
 
     def test_serial_otponly_success(self):
         # serial + otponly validates only the OTP (no PIN); a correct value is LOGIN_SUCCESS.
