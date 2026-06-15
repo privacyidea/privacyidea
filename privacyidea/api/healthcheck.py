@@ -331,14 +331,22 @@ def resolversz():
     # context the policy match needs here — and only here. The other probes
     # (livez/readyz/startupz) deliberately stay independent of the DB/config
     # subsystem so they keep answering even while the database is unavailable.
-    ensure_no_config_object()
-    g.policy_object = PolicyClass()
-    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
-    # write_to_audit_log=False: this lightweight context has no audit object, and
-    # we do not want frequent probes writing to the audit log anyway.
-    require_auth = Match.action_only(g, scope=SCOPE.AUTHZ,
-                                     action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any(
-        write_to_audit_log=False)
+    # Building this context reads the config/policies from the DB, so guard it the
+    # same way as the resolver probe below: on a DB/config failure answer with the
+    # 503 status response rather than letting an unhandled exception become a 500.
+    try:
+        ensure_no_config_object()
+        g.policy_object = PolicyClass()
+        g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+        # write_to_audit_log=False: this lightweight context has no audit object,
+        # and we do not want frequent probes writing to the audit log anyway.
+        require_auth = Match.action_only(g, scope=SCOPE.AUTHZ,
+                                         action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any(
+            write_to_audit_log=False)
+    except Exception as e:
+        log.debug(f"Exception building policy context in /resolversz endpoint: {e}")
+        return send_result({"status": "error"}), 503
+
     authenticated = False
     try:
         check_auth_token(required_role=[ROLE.ADMIN])

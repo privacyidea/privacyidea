@@ -218,6 +218,18 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 self.assertNotIn("ldapresolver", value)
                 self.assertNotIn("sqlresolver", value)
 
+    def test_resolversz_returns_503_when_config_unavailable(self):
+        # Building the policy context reads config/policies from the DB. If that
+        # fails (e.g. DB outage), resolversz must degrade to its documented 503
+        # status response, not raise an unhandled exception that becomes a 500.
+        from unittest.mock import patch
+        with patch("privacyidea.api.healthcheck.get_from_config",
+                   side_effect=Exception("DB down")):
+            with self.app.test_request_context('/healthz/resolversz', method='GET'):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(503, res.status_code, res.data)
+                self.assertEqual("error", res.json["result"]["value"]["status"])
+
     def test_resolversz_rejects_crafted_jwt_alg(self):
         # A token whose header alg is a trusted-JWT algorithm (e.g. RS256) but matches no
         # PI_TRUSTED_JWT entry decodes against HS256 and would raise jwt.InvalidAlgorithmError.
