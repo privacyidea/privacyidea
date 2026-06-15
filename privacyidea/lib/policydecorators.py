@@ -603,8 +603,8 @@ def reset_all_user_tokens_if_policy(g, token_objects, user_object=None):
     for token_object in available_tokens:
         try:
             token_object.reset()
-        except Exception:
-            log.debug(f"Token {token_object.get_serial()} does not exist anymore and cannot be reset.")
+        except Exception as exx:
+            log.warning(f"Failed to reset failcounter of token {token_object.get_serial()}: {exx}")
     return True
 
 

@@ -664,8 +664,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         context["serial_list"].append(token.get_serial())
 
         # FIDO2/passkey authentication does not pass through check_token_list,
-        # so the reset_all_user_tokens policy is applied here explicitly.
-        if user:
+        # so the reset_all_user_tokens policy is applied here explicitly. This
+        # must only happen for actual authentication, not for enrollment via
+        # multichallenge (attestation_object present), which also ends up here.
+        if user and not attestation_object:
             reset_all_user_tokens_if_policy(g, get_tokens(user=user), user_object=user)
     else:
         context["details"]["message"] = _("Authentication failed.")
