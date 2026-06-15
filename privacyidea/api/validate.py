@@ -667,7 +667,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         # so the reset_all_user_tokens policy is applied here explicitly. This
         # must only happen for actual authentication, not for enrollment via
         # multichallenge (attestation_object present), which also ends up here.
-        if user and not attestation_object:
+        # The policy is matched before loading the user's tokens to avoid that
+        # extra query on every successful authentication when it is not set.
+        if not attestation_object and Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
+                                                 user_object=user).policies():
             reset_all_user_tokens_if_policy(g, get_tokens(user=user), user_object=user)
     else:
         context["details"]["message"] = _("Authentication failed.")
