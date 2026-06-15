@@ -119,7 +119,7 @@ def _resolved(user: "User") -> bool:
     ``(resolver, uid, realm)`` identity tuple. The lockout state and the
     authentication-log count are both keyed by that tuple, so an unresolved user
     (e.g. ``USER_UNKNOWN``, which has ``uid=None``) is never counted or locked
-    here.
+    here. TODO replace later with #5170
     """
     return bool(user and user.uid and user.resolver and user.realm)
 
