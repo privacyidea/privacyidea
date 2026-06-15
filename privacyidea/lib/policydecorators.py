@@ -574,6 +574,40 @@ def config_lost_token(wrapped_function, *args, **kwds):
     return wrapped_function(*args, **kwds)
 
 
+def reset_all_user_tokens_if_policy(g, token_objects, user_object=None):
+    """
+    Reset the failcounter of all the given tokens if the ``reset_all_user_tokens``
+    policy is set for the token owner. Registration tokens are never reset.
+
+    This is the shared implementation behind the ``reset_all_user_tokens``
+    libpolicy decorator (which wraps ``check_token_list``) and the FIDO2/passkey
+    authentication path, which does not pass through ``check_token_list``.
+
+    :param g: The flask g object used for policy matching.
+    :param token_objects: The list of token objects to consider for the reset.
+    :param user_object: The token owner used to look up policies. If not given,
+        the owner of the first available token is used.
+    :return: True if a matching policy was found and the tokens were reset.
+    """
+    available_tokens = [tok for tok in token_objects if tok.get_class_type() not in ['registration']]
+    if not (g and available_tokens):
+        return False
+
+    token_owner = user_object or available_tokens[0].user
+    reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
+                           user_object=token_owner if token_owner else None).policies()
+    if not reset_all:
+        return False
+
+    log.debug(f"Reset failcounter of all tokens of {token_owner}")
+    for token_object in available_tokens:
+        try:
+            token_object.reset()
+        except Exception:
+            log.debug(f"Token {token_object.get_serial()} does not exist anymore and cannot be reset.")
+    return True
+
+
 def reset_all_user_tokens(wrapped_function, *args, **kwds):
     """
     Resets all tokens if the corresponding policy is set.
@@ -590,21 +624,9 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
 
     r = wrapped_function(*args, **kwds)
 
-    available_tokens = [tok for tok in token_objects if tok.get_class_type() not in ['registration']]
-
     # A successful authentication was done
-    if r[0] and g and allow_reset and available_tokens:
-        token_owner = kwds.get('user') or available_tokens[0].user
-        reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
-                               user_object=token_owner if token_owner else None).policies()
-        if reset_all:
-            log.debug("Reset failcounter of all tokens of {0!s}".format(
-                token_owner))
-            for tok_obj_reset in available_tokens:
-                try:
-                    tok_obj_reset.reset()
-                except Exception:
-                    log.debug("Registration token does not exist anymore and cannot be reset.")
+    if r[0] and allow_reset:
+        reset_all_user_tokens_if_policy(g, token_objects, user_object=kwds.get('user'))
 
     return r
 
