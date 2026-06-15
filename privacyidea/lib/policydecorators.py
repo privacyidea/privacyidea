@@ -578,38 +578,29 @@ def config_lost_token(wrapped_function, *args, **kwds):
     return wrapped_function(*args, **kwds)
 
 
-def reset_all_user_tokens_if_policy(g, user_object: Optional[User],
-                                    token_objects: Optional[list["TokenClass"]] = None) -> bool:
+def reset_all_user_tokens_active(g, user_object: Optional[User]) -> bool:
     """
-    Reset the failcounter of all the user's tokens if the ``reset_all_user_tokens``
-    policy is set for the user. Registration tokens are never reset.
+    Return True if the ``reset_all_user_tokens`` policy is set for the given user.
 
-    This is the single place where the policy is matched. It is shared by the
-    ``reset_all_user_tokens`` libpolicy decorator (which wraps ``check_token_list``
-    and already holds the user's token list) and the FIDO2/passkey authentication
-    paths in ``/validate`` and ``/auth``, which do not pass through
-    ``check_token_list``. The tokens are only loaded after the policy matched, so
-    an unset policy costs no extra query on the authentication hot path.
+    The policy is matched user-independently when ``user_object`` is empty, which
+    is the case for the libpolicy decorator path when the involved tokens have no
+    owner.
 
     :param g: The flask g object used for policy matching.
     :param user_object: The token owner whose policies are evaluated.
-    :param token_objects: The tokens to reset. If not given, all of the user's
-        tokens are loaded once the policy matched.
-    :return: True if the policy matched and the tokens were reset.
     """
-    if not (g and user_object):
+    if not g:
         return False
+    return bool(Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
+                           user_object=user_object or None).policies())
 
-    reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
-                           user_object=user_object).policies()
-    if not reset_all:
-        return False
 
-    if token_objects is None:
-        from privacyidea.lib.token import get_tokens
-        token_objects = get_tokens(user=user_object)
+def reset_token_failcounters(token_objects: list["TokenClass"]) -> None:
+    """
+    Reset the failcounter of all the given tokens. Registration tokens are skipped.
 
-    log.debug(f"Reset failcounter of all tokens of {user_object}")
+    :param token_objects: The tokens whose failcounter should be reset.
+    """
     for token_object in token_objects:
         if token_object.get_class_type() in ['registration']:
             continue
@@ -617,7 +608,6 @@ def reset_all_user_tokens_if_policy(g, user_object: Optional[User],
             token_object.reset()
         except Exception as exx:
             log.warning(f"Failed to reset failcounter of token {token_object.get_serial()}: {exx}")
-    return True
 
 
 def reset_all_user_tokens(wrapped_function, *args, **kwds):
@@ -640,7 +630,8 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
     if r[0] and allow_reset:
         token_owner = kwds.get("user") or next(
             (tok.user for tok in token_objects if tok.get_class_type() not in ['registration']), None)
-        reset_all_user_tokens_if_policy(g, token_owner, token_objects=token_objects)
+        if reset_all_user_tokens_active(g, token_owner):
+            reset_token_failcounters(token_objects)
 
     return r
 
