@@ -33,7 +33,6 @@ import {
 } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
-import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
@@ -47,13 +46,14 @@ import {
   ContainerDetailsInfoComponent,
   ContainerInfoDetail
 } from "@components/container/container-details/container-details-info/container-details-info.component";
-import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { MasonryDirective } from "@components/shared/directives/masonry/masonry.directive";
 import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "@components/token/token-details/token-details.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -135,13 +135,13 @@ interface TokenOption {
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    MatDivider,
     ClearableInputComponent,
     CopyableComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
-    ContainerDetailsTokenActionsComponent,
+    MasonryDirective,
     DetailsHeaderComponent,
+    DetailsCardComponent,
     ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.component.html",

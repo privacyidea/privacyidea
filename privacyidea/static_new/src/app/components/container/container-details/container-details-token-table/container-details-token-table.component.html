@@ -21,11 +21,17 @@
   class="container-details-token-table-layout"
   i18n-aria-label>
   <div class="flex-column">
-    <h3
-      class="margin-8"
-      i18n>
-      Tokens in Container
-    </h3>
+    <div class="flex-row ali-center gap-8">
+      <h4
+        class="details-card-title"
+        i18n>
+        Tokens in Container
+      </h4>
+      <app-container-details-token-actions
+        [containerSerial]="containerSerial()"
+        [user]="assignedUser()"
+        [tokenData]="containerTokenData()" />
+    </div>
     <div class="flex-row filter-paginator-container ali-center">
       @if (dataSource().data.length > 1) {
         <mat-form-field

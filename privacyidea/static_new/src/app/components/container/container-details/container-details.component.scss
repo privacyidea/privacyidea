@@ -1,9 +1,18 @@
 @use "styles";
 @use "table";
 
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
 .details-container {
   @include styles.main-component-style;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
 
   .mat-mdc-select-value-text {
     font-size: 14px;
@@ -88,41 +97,17 @@
   }
 }
 
-.details-card-title {
-  margin: 0 0 var(--half-global-padding) 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--mat-sys-on-surface-variant);
-}
-
 .details-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--global-gap);
-  align-items: flex-start;
+  position: relative;
   margin-top: var(--half-global-padding);
 }
 
-.details-card--group,
-.details-card-user {
-  display: block;
-  min-width: 0;
-  align-self: flex-start;
-  box-sizing: border-box;
-  max-width: 585px;
-}
-
-.details-card--status {
-  order: 1;
-}
-
-.details-card-user {
-  order: 2;
-}
-
-.details-card--container {
-  order: 3;
+.token-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--global-gap);
+  align-items: flex-start;
+  margin-top: var(--global-padding);
 }
 
 .details-card--group {
@@ -139,15 +124,7 @@
   }
 }
 
-.description-row {
-  order: 9;
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  box-sizing: border-box;
-  display: flex;
-  align-items: baseline;
-  width: 340px;
+.details-card--description {
   align-self: flex-start;
 
   .value-edit {
@@ -167,23 +144,11 @@
     pointer-events: auto;
   }
 
-  .description-text {
-    overflow-wrap: anywhere;
-  }
-
   .description-field {
     width: 100%;
-    max-width: 700px;
   }
 }
 
 .details-info-area {
-  order: 10;
-  align-self: flex-start;
-  width: fit-content;
   max-width: 100%;
-
-  ::ng-deep .info-container {
-    border-top: 1px solid var(--mat-sys-outline-variant);
-  }
 }

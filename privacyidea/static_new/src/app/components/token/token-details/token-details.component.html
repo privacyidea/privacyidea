@@ -208,22 +208,18 @@
 
     @for (group of tokenDetailDataByGroup(); track group.id) {
       @if (group.rows.length > 0) {
-        <section
-          class="details-card details-card--group"
+        <app-details-card
+          class="details-card--group"
           [class.details-card--identity]="group.id === 'identity'"
           [class.details-card--counters]="group.id === 'counters'"
-          [class.details-card--assignment]="group.id === 'assignment'">
-          <h4
-            class="details-card-title"
-            i18n>
-            {{ group.label }}
-          </h4>
+          [class.details-card--assignment]="group.id === 'assignment'"
+          [title]="group.label">
           <ng-container
             *ngTemplateOutlet="
               groupRowsTemplate;
               context: { $implicit: group.rows, label: group.label }
             "></ng-container>
-        </section>
+        </app-details-card>
       }
     }
 

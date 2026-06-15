@@ -65,6 +65,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
@@ -173,6 +174,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     ClearableInputComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
+    DetailsCardComponent,
     OverflowNavDirective
   ],
   templateUrl: "./token-details.component.html",
