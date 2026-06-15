@@ -610,7 +610,7 @@ def _resolve_admin_recipients(recipient_group: str | None) -> list[str]:
     return []
 
 
-def _login_notice(action_type: "LockoutAction", cfg: dict, render_tags: dict) -> str:
+def _login_notice(action_type: "LockoutAction", email_config: dict, render_tags: dict) -> str:
     """
     Build the short message shown to the user on the login screen once an
     ``EMAIL_*`` action has been sent, mirroring how a lockout rejection is
@@ -619,7 +619,7 @@ def _login_notice(action_type: "LockoutAction", cfg: dict, render_tags: dict) ->
     default keyed by the action type is used. The wording never reveals the
     recipient address.
     """
-    custom = cfg.get("login_notice")
+    custom = email_config.get("login_notice")
     if custom:
         return _safe_format(str(custom), render_tags)
     if action_type == LockoutAction.EMAIL_USER:
@@ -644,9 +644,9 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
     :return: the user-facing login-screen notice if the email was sent, else
         ``None`` (misconfiguration, no recipient, or delivery failure).
     """
-    cfg = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
-    identifier = cfg.get("smtp_identifier") or cfg.get("identifier")
-    subject, body = cfg.get("subject"), cfg.get("body")
+    email_config = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
+    identifier = email_config.get("smtp_identifier") or email_config.get("identifier")
+    subject, body = email_config.get("subject"), email_config.get("body")
     if not identifier or not subject or not body:
         log.warning(f"{action_type} action {stage_action.id}: needs smtp_identifier, subject and body in "
                     f"action_value; skipping.")
@@ -663,20 +663,20 @@ def _send_lockout_email(action_type: "LockoutAction", stage_action: LockoutStage
             log.warning(f"EMAIL_USER action {stage_action.id}: user {user!r} has no email address; skipping.")
             return
     else:  # EMAIL_ADMIN
-        recipients = _resolve_admin_recipients(cfg.get("recipient_group"))
+        recipients = _resolve_admin_recipients(email_config.get("recipient_group"))
         if not recipients:
             log.warning(f"EMAIL_ADMIN action {stage_action.id}: no recipients for "
-                        f"recipient_group={cfg.get('recipient_group')!r}; skipping.")
+                        f"recipient_group={email_config.get('recipient_group')!r}; skipping.")
             return
 
     from privacyidea.lib.smtpserver import send_email_identifier
     sent = send_email_identifier(identifier, recipients,
                                  _safe_format(str(subject), render_tags),
                                  _safe_format(str(body), render_tags),
-                                 mimetype=cfg.get("mimetype", "plain"))
+                                 mimetype=email_config.get("mimetype", "plain"))
     if sent:
         log.info(f"{action_type} for {user!r} sent to {len(recipients)} recipient(s) via {identifier!r}.")
-        return _login_notice(action_type, cfg, render_tags)
+        return _login_notice(action_type, email_config, render_tags)
     log.warning(f"{action_type} for {user!r} could not be delivered via {identifier!r}.")
     return None
 

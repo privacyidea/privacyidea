@@ -296,7 +296,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # behaviour (per the chosen design): attempts made WHILE the user is
         # temp-locked are rejected at the pre-check and never counted, so the
         # escalation only happens once the lock expires and the user fails again.
-        # A higher policy priority does NOT pre-empt the temp lock - both policies
+        # A higher policy priority does NOT preempt the temp lock - both policies
         # fire when both thresholds are met.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=60)
         policy = LockoutPolicy(name="ca_permblock", counter_type_to_track=str(AuthEventType.MFA_FAIL),

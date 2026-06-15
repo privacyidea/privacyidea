@@ -513,8 +513,7 @@ def check():
         response = _finalize_auth_response(context)
     finally:
         # Write the single authentication-log row for this request, then let the
-        # conditional-access engine react to the classified outcome. Both run in
-        # the finally so they cover early returns and handler errors alike.
+        # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
         _evaluate_lockout_policies(context)
     return response

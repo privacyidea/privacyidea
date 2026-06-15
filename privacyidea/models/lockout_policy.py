@@ -164,6 +164,9 @@ class BlockList(MethodsMixin, db.Model):
     UTC, see :func:`~privacyidea.models.utils.utc_now`.
     """
     __tablename__ = 'block_list'
+    # TODO: the blocked identity is a source IP for now. A future revision may
+    # block other identifiers (device, API key, ...); the suggested shape is then
+    # generic columns (id, entry_type, value) instead of an IP-typed primary key.
     # 50 matches authentication_log.source_ip, which is wide enough for an
     # IPv4-mapped IPv6 address.
     ip: Mapped[str] = mapped_column(Unicode(50), primary_key=True)
