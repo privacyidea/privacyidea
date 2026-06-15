@@ -77,7 +77,7 @@ from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
+from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
 from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
@@ -470,6 +470,7 @@ def before_request():
 @info_blueprint.after_request
 @jwtauth.after_request
 @postrequest(sign_response, request=request)
+@postrequest(hide_version, request=request)
 def after_request(response):
     """
     This function is called after a request
