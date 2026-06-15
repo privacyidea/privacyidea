@@ -232,31 +232,6 @@ def sign_response(request, response):
     return resp
 
 
-def hide_version(request, response):
-    """
-    This policy function is used as a postrequest decorator.
-    If the policy action HIDE_VERSION is set in the HARDENING scope,
-    the version and versionnumber fields are removed from all JSON responses.
-
-    :param request: The request object
-    :param response: The response object
-    :return: The (maybe modified) response
-    """
-    if response.is_json:
-        try:
-            policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
-                write_to_audit_log=False)
-        except AttributeError:
-            # g.policy_object might not be set in some edge cases
-            return response
-        if policy:
-            content = response.json
-            content.pop("version", None)
-            content.pop("versionnumber", None)
-            response.set_data(json.dumps(content))
-    return response
-
-
 def check_tokentype(request, response):
     """
     This policy function is to be used in a decorator of an API function.

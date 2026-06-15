@@ -87,7 +87,7 @@ export class ConfigService implements ConfigServiceInterface {
       )
       .subscribe((data) => {
         this.config.set(data.result?.value as AppConfig);
-        this.versioningService.rawVersion.set(data.versionnumber);
+        this.versioningService.rawVersion.set(data.versionnumber ?? "");
       });
   }
 }

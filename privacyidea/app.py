@@ -391,6 +391,33 @@ def create_app(config_name="development",
 
     _register_blueprints(app)
 
+    # Register a global after_request handler to hide version information
+    # from all responses if the hide_version policy is active and no user is logged in.
+    @app.after_request
+    def global_hide_version(response):
+        import json as _json
+        from flask import g as _g
+        from privacyidea.lib.policy import SCOPE, Match
+        from privacyidea.lib.policies.actions import PolicyAction
+
+        # Only hide the version for unauthenticated requests
+        logged_in_user = getattr(_g, "logged_in_user", None)
+        if logged_in_user:
+            return response
+
+        if response.is_json:
+            try:
+                policy = Match.action_only(_g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
+                    write_to_audit_log=False)
+            except AttributeError:
+                return response
+            if policy:
+                content = response.json
+                content.pop("version", None)
+                content.pop("versionnumber", None)
+                response.set_data(_json.dumps(content))
+        return response
+
     # Set up Plug-Ins
     db.init_app(app)
 
