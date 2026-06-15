@@ -243,8 +243,12 @@ def hide_version(request, response):
     :return: The (maybe modified) response
     """
     if response.is_json:
-        policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
-            write_to_audit_log=False)
+        try:
+            policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
+                write_to_audit_log=False)
+        except AttributeError:
+            # g.policy_object might not be set in some edge cases
+            return response
         if policy:
             content = response.json
             content.pop("version", None)

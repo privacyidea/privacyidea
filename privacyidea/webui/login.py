@@ -184,6 +184,11 @@ def get_render_context():
     passkey_login = list(passkey_login_policy)[0] if len(
         passkey_login_policy) else PasskeyLoginButtonOptions.SHOW
 
+    # Check if the version number should be hidden
+    hide_version = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
+        write_to_audit_log=False)
+    version_number = "" if hide_version else get_version_number()
+
     render_context: dict = {
         'instance': instance,
         'backendUrl': backend_url,
@@ -207,7 +212,7 @@ def get_render_context():
         'logo': logo,
         'page_title': page_title,
         'otp_pin_set_random_user': otp_pin_set_random_user,
-        'privacyideaVersionNumber': get_version_number(),
+        'privacyideaVersionNumber': version_number,
         'passkey_login': passkey_login,
     }
     return render_context
