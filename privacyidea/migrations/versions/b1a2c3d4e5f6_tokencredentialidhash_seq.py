@@ -1,4 +1,4 @@
-"""Create missing tokencredentialidhash_seq on existing installs
+"""v3.13: Create missing tokencredentialidhash_seq on existing installs
 
 The TokenCredentialIdHash model declares Sequence('tokencredentialidhash_seq')
 on its id column, so SQLAlchemy 2.0's MariaDB/Postgres/Oracle dialect emits
