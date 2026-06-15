@@ -46,6 +46,7 @@ import functools
 import logging
 import pyrad
 import re
+from typing import Optional, TYPE_CHECKING
 
 from dateutil.tz import tzlocal
 
@@ -58,6 +59,9 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta, split_pin_pass
+
+if TYPE_CHECKING:
+    from privacyidea.lib.tokenclass import TokenClass
 
 log = logging.getLogger(__name__)
 
@@ -574,7 +578,8 @@ def config_lost_token(wrapped_function, *args, **kwds):
     return wrapped_function(*args, **kwds)
 
 
-def reset_all_user_tokens_if_policy(g, token_objects, user_object=None):
+def reset_all_user_tokens_if_policy(g, token_objects: list["TokenClass"],
+                                    user_object: Optional[User] = None) -> bool:
     """
     Reset the failcounter of all the given tokens if the ``reset_all_user_tokens``
     policy is set for the token owner. Registration tokens are never reset.

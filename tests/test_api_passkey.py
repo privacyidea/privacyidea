@@ -1316,6 +1316,68 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
+    def test_24_auth_reset_all_user_tokens(self):
+        """
+        A successful passkey login via /auth must reset the failcounter of all
+        the user's tokens when the reset_all_user_tokens policy is set. The /auth
+        passkey path uses verify_fido2_challenge directly and does not pass through
+        check_token_list, so this is handled explicitly in get_auth_token.
+        """
+        serial = self._enroll_static_passkey()
+        other_token = init_token({"type": "spass", "pin": "test"}, user=self.user)
+        other_token.inc_failcount()
+        other_token.inc_failcount()
+        self.assertEqual(2, other_token.token.failcount)
+
+        self.set_policy_with_cleanup("reset_all", scope=SCOPE.AUTH,
+                                     action=PolicyAction.RESETALLTOKENS)
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"])
+            self.assertTrue(res.json["result"]["value"]["token"])
+
+        # The failcounter of the other token must have been reset
+        self.assertEqual(0, get_one_token(serial=other_token.get_serial()).token.failcount)
+
+        remove_token(serial)
+        remove_token(other_token.get_serial())
+
+    def test_25_auth_reset_all_user_tokens_not_set(self):
+        """
+        Without the reset_all_user_tokens policy, a successful passkey login via
+        /auth must not touch the failcounter of the user's other tokens.
+        """
+        serial = self._enroll_static_passkey()
+        other_token = init_token({"type": "spass", "pin": "test"}, user=self.user)
+        other_token.inc_failcount()
+        other_token.inc_failcount()
+        self.assertEqual(2, other_token.token.failcount)
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["status"])
+
+        # The failcounter of the other token must be unchanged
+        self.assertEqual(2, get_one_token(serial=other_token.get_serial()).token.failcount)
+
+        remove_token(serial)
+        remove_token(other_token.get_serial())
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
