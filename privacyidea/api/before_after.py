@@ -121,6 +121,22 @@ def before_user_request():
     before_request()
 
 
+@healthz_blueprint.before_request
+def before_healthz_request():
+    """
+    Lightweight request setup for the anonymous /healthz probes.
+
+    The healthz endpoints are polled frequently by orchestrators and must stay
+    cheap, so unlike :func:`before_request` this does not build an audit object
+    or resolve a user. It only populates the minimal request context that policy
+    matching relies on (the policy object and the client IP), so endpoints like
+    /healthz/resolversz can evaluate policies without raising AttributeError.
+    """
+    g.policy_object = PolicyClass()
+    g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    g.policies = {}
+
+
 def before_create_user_request():
     """
     This function is executed before the create user endpoint.

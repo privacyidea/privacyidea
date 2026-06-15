@@ -186,6 +186,23 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK", auth_token=self.at)
                 check_resolvers(401, auth_token="")  # present but invalid token -> rejected
 
+    def test_resolversz_without_before_request_context(self):
+        # The endpoint evaluates the require_auth_for_resolver_details policy, which
+        # needs g.client_ip and g.policy_object. A fresh request reaches the endpoint
+        # with these unset (the test base pre-seeds them on a shared app context, so
+        # we remove them here to mirror a real request); the blueprint's before_request
+        # hook must populate them so the probe still answers 200.
+        from flask import g
+        with setup_policy("auth_for_resolvers", scope=SCOPE.AUTHZ,
+                          action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true"):
+            with self.app.test_request_context('/healthz/resolversz', method='GET'):
+                for attr in ("client_ip", "policy_object", "policies"):
+                    if hasattr(g, attr):
+                        delattr(g, attr)
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.data)
+                self.assertIn("status", res.json["result"]["value"])
+
     def test_resolversz_rejects_crafted_jwt_alg(self):
         # A token whose header alg is a trusted-JWT algorithm (e.g. RS256) but matches no
         # PI_TRUSTED_JWT entry decodes against HS256 and would raise jwt.InvalidAlgorithmError.
