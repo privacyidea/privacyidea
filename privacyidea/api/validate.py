@@ -848,11 +848,22 @@ def _evaluate_lockout_policies(context):
     ``return`` inside the finally would mask an in-flight exception.
     """
     try:
-        with db.session.begin_nested():
-            evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
-        db.session.commit()
+        # The engine commits its own writes (and rolls them back on failure), so
+        # this caller must NOT wrap them in a transaction. Wrapping in
+        # db.session.begin_nested() and then committing breaks under SQLAlchemy 2.x:
+        # the engine's inner commit closes the transaction, so leaving the savepoint
+        # context raises InvalidRequestError ("Can't operate on closed transaction
+        # inside context manager") — which this finally would silently swallow.
+        evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
     except Exception as ex:
         log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+        # A failure may leave the session in an aborted state; clear it so request
+        # teardown can proceed cleanly. Guard the rollback so this finally-context
+        # helper never raises (it must never break the already-completed response).
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
 
 
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])

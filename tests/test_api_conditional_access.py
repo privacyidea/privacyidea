@@ -167,6 +167,26 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
+    def test_lockout_write_does_not_corrupt_transaction(self):
+        # Regression: _evaluate_lockout_policies wrapped the engine (which commits
+        # its own writes) in db.session.begin_nested() + commit. Under SQLAlchemy
+        # 2.x the engine's first inner commit closes the transaction, so the next
+        # DB operation still inside the savepoint context raised InvalidRequestError
+        # ("Can't operate on closed transaction inside context manager") on every
+        # request that wrote more than once. The finally swallowed it as a warning.
+        # Two policies tripping in one request force that second write; assert the
+        # validate logger stays quiet through the full /validate/check flow.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+        self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=900)
+        with self.assertNoLogs("privacyidea.api.validate", level="WARNING"):
+            for _ in range(3):
+                body = self._check({"user": "cornelius", "pass": "pin000000"},
+                                   remote_addr="203.0.113.9")
+                self.assertFalse(body["result"]["value"], body)
+        # Both policies' writes landed and the transaction was never corrupted.
+        self.assertTrue(is_user_locked(self.user))
+        self.assertTrue(is_ip_blocked("203.0.113.9"))
+
     def test_user_locked_again_after_lock_expires(self):
         # Once the lock has run out, further failures must be able to re-lock the
         # user. Regression: the stage de-dup used to swallow every re-trigger for

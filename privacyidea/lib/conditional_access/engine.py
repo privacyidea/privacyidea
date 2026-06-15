@@ -164,7 +164,8 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
                    AuthenticationLog.uid == uid,
                    AuthenticationLog.realm == realm,
                    AuthenticationLog.event_type == str(event_type),
-                   AuthenticationLog.timestamp >= window_start))
+                   AuthenticationLog.timestamp >= window_start,
+                   AuthenticationLog.timestamp <= now))
     return db.session.scalar(stmt) or 0
 
 
@@ -453,19 +454,38 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
                  f"{count} {event_type} event(s) in {window}s.")
         return []
 
-    state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
-    # De-dup: skip a stage that already fired for this user within the window.
-    # An EXPIRED lock ends the incident though: once the lock has run out, the
-    # next trigger is a new incident and must execute again - otherwise the
-    # de-dup would leave a dead zone of (window - lock_duration) after expiry in
-    # which the user could keep failing without ever being re-locked.
-    lock_expired = (state is not None and state.is_locked
-                    and state.lock_expires_at is not None
-                    and state.lock_expires_at <= now)
-    if (state is not None and not lock_expired
-            and state.last_stage_triggered == triggered_stage.id
-            and state.last_updated is not None
-            and state.last_updated >= now - timedelta(seconds=window)):
+    dedup_window_start = now - timedelta(seconds=window)
+    # De-dup: skip a stage that already fired within the window for this user, or
+    # (for IP-blocking stages) for this source IP. An incident *ends* when its
+    # lock/block is lifted — whether by expiry OR by an admin clearing
+    # ``is_locked`` / ``is_blocked`` — so the next trigger is a fresh incident
+    # that must execute again. Otherwise an expired or admin-lifted lock would
+    # leave a dead zone for the rest of the window in which the offender could
+    # keep failing without ever being re-locked / re-blocked.
+    user_state = db.session.get(UserLockoutState, (user.resolver, user.uid, user.realm))
+    user_incident_active = (user_state is not None and user_state.is_locked
+                            and (user_state.lock_expires_at is None
+                                 or user_state.lock_expires_at > now))
+    user_dedup = (user_incident_active
+                  and user_state.last_stage_triggered == triggered_stage.id
+                  and user_state.last_updated is not None
+                  and user_state.last_updated >= dedup_window_start)
+    # An IP-blocking stage de-dups on its BlockList row, mirroring the user
+    # de-dup. Without this such a stage has no de-dup at all (it never writes
+    # UserLockoutState): every in-window failure would re-fire it, refreshing the
+    # block and re-running any sibling actions.
+    ip_dedup = False
+    if source_ip and any(a.action_type in (LockoutAction.BLOCK_IP, LockoutAction.PERMANENT_BLOCK_IP)
+                         for a in triggered_stage.actions):
+        ip_state = db.session.get(BlockList, source_ip)
+        ip_incident_active = (ip_state is not None and ip_state.is_blocked
+                              and (ip_state.block_expires_at is None
+                                   or ip_state.block_expires_at > now))
+        ip_dedup = (ip_incident_active
+                    and ip_state.last_stage_triggered == triggered_stage.id
+                    and ip_state.last_updated is not None
+                    and ip_state.last_updated >= dedup_window_start)
+    if user_dedup or ip_dedup:
         log.debug(f"De-dup: stage {triggered_stage.id} already triggered within the window for "
                   f"{user!r}; skipping actions.")
         return []

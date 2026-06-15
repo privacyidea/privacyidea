@@ -130,6 +130,15 @@ class LockoutEngineTestCase(MyTestCase):
         self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
                                               AuthEventType.MFA_FAIL, 100000, now=now))
 
+    def test_count_user_events_excludes_future_rows(self):
+        now = utc_now()
+        self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=60))
+        # A row time-stamped after `now` (clock skew, a concurrent insert, or an
+        # explicitly historical `now`) must not be counted: the window ends at `now`.
+        self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now + timedelta(seconds=60))
+        self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
+                                              AuthEventType.MFA_FAIL, 3600, now=now))
+
     def test_count_user_events_filters_event_type_and_user(self):
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         self._seed_events(AuthEventType.PIN_FAIL, 5)
@@ -393,6 +402,27 @@ class LockoutEngineTestCase(MyTestCase):
         evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
+    def test_dedup_does_not_survive_admin_unlock(self):
+        # An admin lifting the lock (is_locked=False) ends the incident just like
+        # an expiry: the next in-window failure is a new incident and must re-lock.
+        # Regression: the de-dup used to ignore is_locked, so after an admin unlock
+        # the same stage stayed suppressed for the rest of the window.
+        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+        # Admin lifts the lock without deleting the row (last_stage / last_updated remain).
+        state = self._state()
+        state.is_locked = False
+        db.session.commit()
+        self.assertFalse(is_user_locked(self.user))
+
+        # The next failure trips the same stage again and must re-lock the user.
+        self._seed_events(AuthEventType.MFA_FAIL, 1)
+        evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
@@ -526,6 +556,42 @@ class LockoutEngineTestCase(MyTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         self.assertTrue(self._state().is_locked)
+        self.assertTrue(is_ip_blocked("203.0.113.7"))
+
+    def test_block_ip_dedup_suppresses_repeat_within_window(self):
+        # An IP-blocking stage de-dups on its BlockList row: a repeat trigger
+        # within the window must not re-run the action. Regression: BLOCK_IP-only
+        # stages had no de-dup at all (de-dup keyed solely on UserLockoutState),
+        # so every in-window failure kept refreshing the block.
+        self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        # Tamper with the expiry, then re-evaluate within the window: the de-dup
+        # must skip the action and leave our sentinel untouched.
+        sentinel = utc_now() + timedelta(seconds=99999)
+        block = self._block("203.0.113.7")
+        block.block_expires_at = sentinel
+        db.session.commit()
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        self.assertEqual(sentinel, self._block("203.0.113.7").block_expires_at)
+
+    def test_block_ip_dedup_does_not_survive_block_expiry(self):
+        # Mirror of test_dedup_does_not_survive_lock_expiry for the IP dimension:
+        # an expired block ends the incident, so the next failure re-fires and
+        # refreshes the block.
+        self._make_policy(name="blockip", counter_type=AuthEventType.PASSWORD_FAIL,
+                          stages=((3, 1, LockoutAction.BLOCK_IP, 900),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
+        # The block runs out while the failures are still in the window.
+        block = self._block("203.0.113.7")
+        block.block_expires_at = utc_now() - timedelta(seconds=10)
+        db.session.commit()
+        self.assertFalse(is_ip_blocked("203.0.113.7"))
+        # The next failure re-fires the same stage and must re-block the IP.
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 1)
+        evaluate_lockout_policies(self.user, AuthEventType.PASSWORD_FAIL, source_ip="203.0.113.7")
         self.assertTrue(is_ip_blocked("203.0.113.7"))
 
     # --- evaluate_access_decision (ALLOW / DENY) ------------------------------
