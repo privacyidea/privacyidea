@@ -35,7 +35,7 @@ runs:
         BODY: ${{ inputs.body }}
         LABEL: ${{ inputs.label }}
       run: |
-        set -uo pipefail
+        set -euo pipefail
 
         # Ensure the dedup label exists (idempotent; --force updates if present).
         gh label create "$LABEL" --color ec2358 --description "Nightly CI failure on master" --force \
@@ -59,8 +59,10 @@ runs:
         # (body or any comment).
         view_json=$(gh issue view "$number" --json body,comments) \
           || { echo "::error::gh issue view failed"; exit 1; }
-        recorded=$(printf '%s' "$view_json" | jq -r '.body, (.comments[].body)' \
-          | grep -oE '[0-9a-f]{40}' | sort -u || true)
+        # Parse with jq first (a jq error aborts via set -e); only the grep is
+        # allowed to "fail" — no 40-hex match simply means nothing recorded yet.
+        texts=$(printf '%s' "$view_json" | jq -r '.body, (.comments[].body)')
+        recorded=$(printf '%s\n' "$texts" | grep -oE '[0-9a-f]{40}' | sort -u || true)
         if printf '%s\n' "$recorded" | grep -qx "$GITHUB_SHA"; then
           echo "Commit $GITHUB_SHA already recorded on issue #$number; skipping."
         else
