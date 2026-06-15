@@ -38,3 +38,25 @@ jobs:
         run: npm ci
       - name: Build the new WebUI
         run: npm run build
+
+  notify-failure:
+    needs: build-webui
+    # Surface nightly build breakage as a GitHub issue. Scheduled runs only —
+    # PR failures already show up as PR checks.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly WebUI build failed on master
+          body: |
+            The nightly WebUI build (npm run build) failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

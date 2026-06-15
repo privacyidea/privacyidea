@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Opens a GitHub issue when a scheduled run fails, or — if an issue with the
+# same title is already open — adds at most one comment per failing commit.
+# The current commit (GITHUB_SHA) is the dedup key: the same master HEAD failing
+# again stays quiet; a new merge that is still red gets exactly one comment.
+name: Notify nightly failure
+description: Open or update a GitHub issue on a scheduled-run failure, deduped by commit SHA.
+
+inputs:
+  title:
+    description: Issue title; also the key used to find an already-open issue.
+    required: true
+  body:
+    description: Issue/comment body. Must contain the commit SHA so repeats dedup.
+    required: true
+  token:
+    description: Token with issues:write permission.
+    required: true
+  label:
+    description: Label applied to the issue and used to scope the search.
+    required: false
+    default: nightly-failure
+
+runs:
+  using: composite
+  steps:
+    - name: Open or update the nightly-failure issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GH_REPO: ${{ github.repository }}
+        TITLE: ${{ inputs.title }}
+        BODY: ${{ inputs.body }}
+        LABEL: ${{ inputs.label }}
+      run: |
+        set -uo pipefail
+
+        # Ensure the dedup label exists (idempotent; --force updates if present).
+        gh label create "$LABEL" --color ec2358 --description "Nightly CI failure on master" --force \
+          || { echo "::error::gh label create failed"; exit 1; }
+
+        # Scope by label, then exact title match via standalone jq with --arg
+        # (gh's --jq has no --arg). The label disambiguates from other workflows'
+        # nightly issues only partially, so the title match is still required.
+        issues_json=$(gh issue list --state open --search "$TITLE in:title" --label "$LABEL" --limit 100 \
+          --json number,title) || { echo "::error::gh issue list failed"; exit 1; }
+        number=$(printf '%s' "$issues_json" \
+          | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')
+
+        if [ -z "$number" ]; then
+          gh issue create --title "$TITLE" --body "$BODY" --label "$LABEL" \
+            || { echo "::error::gh issue create failed"; exit 1; }
+          exit 0
+        fi
+
+        # Comment only when this commit hasn't been recorded on the issue yet
+        # (body or any comment).
+        view_json=$(gh issue view "$number" --json body,comments) \
+          || { echo "::error::gh issue view failed"; exit 1; }
+        recorded=$(printf '%s' "$view_json" | jq -r '.body, (.comments[].body)' \
+          | grep -oE '[0-9a-f]{40}' | sort -u || true)
+        if printf '%s\n' "$recorded" | grep -qx "$GITHUB_SHA"; then
+          echo "Commit $GITHUB_SHA already recorded on issue #$number; skipping."
+        else
+          gh issue comment "$number" --body "$BODY" \
+            || { echo "::error::gh issue comment failed"; exit 1; }
+        fi
