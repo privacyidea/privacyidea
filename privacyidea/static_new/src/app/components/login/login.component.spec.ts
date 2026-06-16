@@ -300,7 +300,23 @@ describe("LoginComponent", () => {
       component.onSubmit();
 
       expect(component.errorMessage()).toBe("Invalid credentials");
+      expect(component.errorRestriction()).toBe(""); // ordinary error -> no restriction tint
       expect(component.password()).toBe(""); // Password field should be cleared
+    });
+
+    it("should pick up the conditional-access restriction kind from the error detail", () => {
+      const errorResponse = {
+        error: {
+          detail: { restriction: "temporary" },
+          result: { error: { message: "Your account is temporarily locked." } }
+        }
+      };
+      authService.authenticate.mockReturnValue(throwError(() => errorResponse));
+
+      component.onSubmit();
+
+      expect(component.errorMessage()).toBe("Your account is temporarily locked.");
+      expect(component.errorRestriction()).toBe("temporary");
     });
 
     it("should toggle password visibility", () => {

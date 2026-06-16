@@ -74,6 +74,10 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
+                                                        evaluate_lockout_policies,
+                                                        evaluate_access_decision, AccessDecision,
+                                                        RestrictionStatus)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
@@ -166,6 +170,125 @@ def before_request():
         token = get_fido2_token_by_credential_id(credential_id)
         if token:
             request.User = token.user
+
+
+def _lockout_error_message(lockout: RestrictionStatus) -> str:
+    """
+    Build the user-facing message for a login rejected by the conditional-access
+    lockout. *lockout* is the :class:`RestrictionStatus` returned by
+    :func:`~privacyidea.lib.conditional_access.engine.get_user_lockout`: a
+    permanent lock points the user at the administrator, a timed lock states the
+    approximate remaining time (rounded up to whole minutes, at least one).
+    """
+    if lockout.permanent:
+        return _("Your account has been permanently locked. Please contact your administrator.")
+    minutes = max(1, -(-lockout.seconds_remaining // 60))
+    return _("Your account is temporarily locked due to too many failed login attempts. "
+             "Please try again in about {minutes} minute(s).").format(minutes=minutes)
+
+
+def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -> str:
+    """
+    Build the user-facing message for a login rejected because the source IP is
+    blocked by a conditional-access ``BLOCK_IP`` action. *block* is the
+    :class:`RestrictionStatus` returned by
+    :func:`~privacyidea.lib.conditional_access.engine.get_ip_block`:
+    a permanent block points the user at the administrator, a timed block states
+    the approximate remaining time (rounded up to whole minutes, at least one).
+    """
+    if block.permanent:
+        return _("Authentication failure. Your IP ({ip}) has been permanently blocked. "
+                 "Please contact your administrator.").format(ip=client_ip)
+    minutes = max(1, -(-block.seconds_remaining // 60))
+    return _("Authentication failure. Your IP ({ip}) has been blocked. "
+             "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
+
+
+def _restriction_kind(state: RestrictionStatus) -> str:
+    """
+    Classify a lock/block as ``"permanent"`` or ``"temporary"`` for the WebUI.
+
+    Surfaced in the rejection's ``detail`` so the login screen can style a
+    permanent (only-an-admin-can-clear-it) restriction differently from a
+    recoverable timed one. It is a coarse hint, not the specific message, and is
+    dropped when the ``hide_specific_error_message`` policy is active (see
+    :func:`~privacyidea.api.before_after.auth_error`), so it never leaks more than
+    the message itself would.
+    """
+    return "permanent" if state.permanent else "temporary"
+
+
+def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
+    """
+    When both a user lockout and a source-IP block are in force, decide which one
+    to report to the user. The binding constraint is the one that lasts longest (a
+    permanent restriction outranks any timed one), so that is what we surface:
+    telling a permanently-blocked user to "try again in 1 minute" because a shorter
+    user lock also happens to be active would be misleading. This is exactly the
+    case when a temporary lock escalates into a permanent IP block on the same
+    request. On a tie the user lock wins, matching the lock-before-block order of
+    the pre-check.
+
+    :param lockout: the :class:`RestrictionStatus` from :func:`get_user_lockout`, or ``None``
+    :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
+    :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
+        if neither is in force
+    """
+    def _remaining(state: RestrictionStatus | None) -> float | None:
+        if not state:
+            return None
+        return float("inf") if state.permanent else state.seconds_remaining
+
+    lock_rem = _remaining(lockout)
+    block_rem = _remaining(ip_block)
+    if lock_rem is None and block_rem is None:
+        return None
+    if block_rem is not None and (lock_rem is None or block_rem > lock_rem):
+        return "block"
+    return "lock"
+
+
+def _conditional_access_precheck(user: User) -> None:
+    """
+    Reject an /auth login pre-auth (before any credential check) when conditional-
+    access policies forbid it. Raises :class:`AuthError` when the request must be
+    rejected and returns ``None`` otherwise.
+
+    A currently-locked user or a blocked source IP is rejected first. The rejection
+    states the restriction (how long it lasts, or that it is permanent) so the user
+    understands why login fails; an admin who prefers not to reveal it can enable
+    the hide_specific_error_message policy, which the AuthError handler applies to
+    this message. An unresolved user / local DB admin has no (resolver, uid, realm)
+    identity tuple and is therefore never locked. When both apply (e.g. a temporary
+    lock that escalated into a permanent IP block), the longer-lasting one is
+    surfaced so we never tell a permanently-blocked user to "try again in a minute".
+
+    The pre-auth conditional-access DENY decision is evaluated after the lock/block
+    pre-checks so an ALLOW cannot override them. A DENY rejects this single login
+    with a message stating it was a conditional-access decision (the policy is not
+    named); like the lock/block messages it is maskable via the
+    hide_specific_error_message policy. ALLOW / CONTINUE fall through silently.
+    """
+    lockout = get_user_lockout(user)
+    ip_block = get_ip_block(g.client_ip)
+    restriction = _binding_restriction(lockout, ip_block)
+    if restriction == "block":
+        log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"info": "Rejected: source IP is blocked"})
+        raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details={"restriction": _restriction_kind(ip_block)})
+    if restriction == "lock":
+        log.info(f"Rejecting /auth login for locked user {user!r}.")
+        g.audit_object.log({"info": "Rejected: account is temporarily locked"})
+        raise AuthError(_lockout_error_message(lockout),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details={"restriction": _restriction_kind(lockout)})
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
+        g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
+        raise AuthError(_("Authentication failure. Access has been denied by a conditional-access policy."),
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
 @jwtauth.route('', methods=['POST'])
@@ -278,6 +401,9 @@ def get_auth_token():
     #  information like the role (local / external admin) would be helpful
     user = request.User or User()
     g.audit_object.log({"user": user.login, "realm": user.realm})
+    # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
+    # policy DENY decision before any credential check (see the helper for details).
+    _conditional_access_precheck(user)
     username = get_optional(request.all_data, "username")
     password = get_optional(request.all_data, "password")
     realm_param = get_optional(request.all_data, "realm")
@@ -511,9 +637,42 @@ def get_auth_token():
                        transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
                        login=username if auth_event_type == AuthEventType.USER_UNKNOWN else None)
 
+    # Feed the classified outcome to the lockout engine (after the log row is written so the
+    # count includes it). It writes lockout state for the next request and returns any
+    # user-facing notices produced by executed actions (e.g. "an email was sent"), which we
+    # surface on the rejection below just like the lockout message. It must never break this
+    # login response.
+    lockout_notices = []
+    try:
+        lockout_notices = evaluate_lockout_policies(user, auth_event_type, source_ip=g.client_ip) or []
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+
     if not admin_auth and not user_auth:
-        raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details=details or {})
+        # If this very request tripped a stage that locked the user or blocked its source
+        # IP, lead with that instead of the generic "Wrong credentials" — the lock/block
+        # is in force now, so that is the more useful thing to tell the user.
+        lockout = get_user_lockout(user)
+        ip_block = get_ip_block(g.client_ip)
+        restriction = _binding_restriction(lockout, ip_block)
+        details = details or {}
+        if restriction == "block":
+            message = _blocked_ip_error_message(g.client_ip, ip_block)
+            details["restriction"] = _restriction_kind(ip_block)
+        elif restriction == "lock":
+            message = _lockout_error_message(lockout)
+            details["restriction"] = _restriction_kind(lockout)
+        else:
+            message = _("Authentication failure. Wrong credentials")
+        if lockout_notices:
+            # Append the notice(s) to the message (not an extra detail key) so the
+            # hide_specific_error_message policy masks them, and the login screen shows
+            # them in error.message exactly as it shows a lockout rejection. The result reads
+            # e.g. "Your account is temporarily locked ... in about 10 minute(s). Your
+            # administrator has been notified by email."
+            message = message.rstrip(".") + ". " + " ".join(lockout_notices)
+        raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details=details)
     else:
         g.audit_object.log({"success": True})
         request.User = user
