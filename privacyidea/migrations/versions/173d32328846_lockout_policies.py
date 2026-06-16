@@ -70,7 +70,7 @@ def upgrade():
         'lockout_policies',
         _id_column(is_postgres, 'lockoutpolicy_seq'),
         sa.Column('name', sa.Unicode(length=255), nullable=False),
-        sa.Column('counter_type_to_track', sa.Unicode(length=100), nullable=False),
+        sa.Column('counter_types_to_track', sa.JSON(), nullable=False),
         sa.Column('time_window_seconds', sa.Integer(), nullable=False),
         sa.Column('enabled', sa.Boolean(), nullable=False),
         sa.Column('dry_run', sa.Boolean(), nullable=False),

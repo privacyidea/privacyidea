@@ -40,10 +40,12 @@ class LockoutPolicy(MethodsMixin, db.Model):
     """
     Container for a set of conditional-access lockout rules.
 
-    A policy defines which failure counter to track (e.g. ``MFA_FAIL``,
-    ``PASSWORD_FAIL``) within a sliding time window. Admins can define
-    multiple policies (e.g. "Admin Policy" vs "Default User Policy");
-    policies are evaluated highest ``priority`` first.
+    A policy defines which failure counter(s) to track (e.g. ``MFA_FAIL``,
+    ``PASSWORD_FAIL``) within a sliding time window. ``counter_types_to_track``
+    is a list of :class:`AuthEventType` values; their events are counted
+    **together** (a single combined count over all listed types) against the
+    stage thresholds. Admins can define multiple policies (e.g. "Admin Policy"
+    vs "Default User Policy"); policies are evaluated highest ``priority`` first.
 
     The actual thresholds and reactions live in the related
     :class:`LockoutPolicyStage` and :class:`LockoutStageAction` rows.
@@ -51,7 +53,7 @@ class LockoutPolicy(MethodsMixin, db.Model):
     __tablename__ = 'lockout_policies'
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicy_seq"), primary_key=True)
     name: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
-    counter_type_to_track: Mapped[str] = mapped_column(Unicode(100), nullable=False)
+    counter_types_to_track: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     time_window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # With dry_run the policy is evaluated and the decision is logged,

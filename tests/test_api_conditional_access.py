@@ -43,6 +43,13 @@ from . import smtpmock
 from .base import MyApiTestCase
 
 
+def _counter_types(counter_type):
+    """Normalize a single AuthEventType (or string) or an iterable of them into
+    the list-of-strings shape stored in ``LockoutPolicy.counter_types_to_track``."""
+    values = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
+    return [str(t) for t in values]
+
+
 class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     serial = "CA_HOTP"
@@ -82,7 +89,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.commit()
 
     def _make_lock_policy(self, *, counter_type, threshold, duration, window=3600):
-        policy = LockoutPolicy(name="ca_lock", counter_type_to_track=str(counter_type),
+        policy = LockoutPolicy(name="ca_lock", counter_types_to_track=_counter_types(counter_type),
                                time_window_seconds=window, enabled=True, priority=1)
         db.session.add(policy)
         db.session.commit()
@@ -95,7 +102,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.commit()
 
     def _make_block_ip_policy(self, *, counter_type, threshold, duration, window=3600):
-        policy = LockoutPolicy(name="ca_blockip", counter_type_to_track=str(counter_type),
+        policy = LockoutPolicy(name="ca_blockip", counter_types_to_track=_counter_types(counter_type),
                                time_window_seconds=window, enabled=True, priority=1)
         db.session.add(policy)
         db.session.commit()
@@ -108,7 +115,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         db.session.commit()
 
     def _make_decision_policy(self, *, name, counter_type, threshold, action, priority=1, window=3600):
-        policy = LockoutPolicy(name=name, counter_type_to_track=str(counter_type),
+        policy = LockoutPolicy(name=name, counter_types_to_track=_counter_types(counter_type),
                                time_window_seconds=window, enabled=True, priority=priority)
         db.session.add(policy)
         db.session.commit()
@@ -299,7 +306,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # A higher policy priority does NOT preempt the temp lock - both policies
         # fire when both thresholds are met.
         self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=60)
-        policy = LockoutPolicy(name="ca_permblock", counter_type_to_track=str(AuthEventType.MFA_FAIL),
+        policy = LockoutPolicy(name="ca_permblock", counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
                                time_window_seconds=3600, enabled=True, priority=99)
         db.session.add(policy)
         db.session.commit()
@@ -463,7 +470,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             return self.app.full_dispatch_request()
 
     def _make_password_policy(self, *, threshold, duration=600, window=3600):
-        policy = LockoutPolicy(name="ca_pw", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+        policy = LockoutPolicy(name="ca_pw", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                                time_window_seconds=window, enabled=True, priority=1)
         db.session.add(policy)
         db.session.commit()
@@ -476,7 +483,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         db.session.commit()
 
     def _make_decision_policy(self, *, name, threshold, action, priority=1, window=3600):
-        policy = LockoutPolicy(name=name, counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+        policy = LockoutPolicy(name=name, counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                                time_window_seconds=window, enabled=True, priority=priority)
         db.session.add(policy)
         db.session.commit()
@@ -488,7 +495,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         db.session.commit()
 
     def _make_block_ip_policy(self, *, threshold, duration=600, window=3600):
-        policy = LockoutPolicy(name="ca_block_ip", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+        policy = LockoutPolicy(name="ca_block_ip", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                                time_window_seconds=window, enabled=True, priority=1)
         db.session.add(policy)
         db.session.commit()
@@ -738,7 +745,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
-            policy = LockoutPolicy(name="ca_mail", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+            policy = LockoutPolicy(name="ca_mail", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                                    time_window_seconds=3600, enabled=True, priority=1)
             db.session.add(policy)
             db.session.commit()
@@ -775,7 +782,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
-            policy = LockoutPolicy(name="ca_lockmail", counter_type_to_track=str(AuthEventType.PASSWORD_FAIL),
+            policy = LockoutPolicy(name="ca_lockmail", counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
                                    time_window_seconds=3600, enabled=True, priority=1)
             db.session.add(policy)
             db.session.commit()

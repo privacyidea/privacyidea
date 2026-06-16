@@ -751,7 +751,7 @@ class LockoutPolicyTestCase(MyTestCase):
 
     def test_01_create_policy_with_stages_and_actions(self):
         policy = LockoutPolicy(name="Default MFA Lockout Policy",
-                               counter_type_to_track="MFA_FAIL",
+                               counter_types_to_track=["MFA_FAIL"],
                                time_window_seconds=3600)
         policy_id = policy.save()
         self.assertGreaterEqual(policy_id, 1)
@@ -761,7 +761,7 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertTrue(policy.enabled)
         self.assertFalse(policy.dry_run)
         self.assertEqual(1, policy.priority)
-        self.assertEqual("MFA_FAIL", policy.counter_type_to_track)
+        self.assertEqual(["MFA_FAIL"], policy.counter_types_to_track)
         self.assertEqual(3600, policy.time_window_seconds)
 
         # Add two stages with different thresholds
@@ -795,3 +795,16 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([], LockoutPolicy.query.filter_by(id=policy_id).all())
         self.assertEqual([], LockoutPolicyStage.query.filter_by(policy_id=policy_id).all())
         self.assertEqual([], LockoutStageAction.query.all())
+
+    def test_03_counter_types_to_track_is_a_list(self):
+        # A policy can track several counter types; the JSON column round-trips
+        # the list (order preserved).
+        policy = LockoutPolicy(name="Multi counter policy",
+                               counter_types_to_track=["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
+                               time_window_seconds=900)
+        policy.save()
+
+        reloaded = LockoutPolicy.query.filter_by(name="Multi counter policy").one()
+        self.assertEqual(["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
+                         reloaded.counter_types_to_track)
+        reloaded.delete()

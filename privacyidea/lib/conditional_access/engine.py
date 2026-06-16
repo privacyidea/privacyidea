@@ -124,15 +124,28 @@ def _resolved(user: "User") -> bool:
     return bool(user and user.uid and user.resolver and user.realm)
 
 
-def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
+def _types_label(types: "list[str]") -> str:
+    """Render a policy's tracked counter types for log messages, e.g.
+    ``PASSWORD_FAIL, OTP_FAIL`` (or ``(none)`` for an empty list)."""
+    return ", ".join(types) if types else "(none)"
+
+
+def count_user_events(resolver: str, uid: str, realm: str,
+                      event_types: "str | list[str]",
                       window_seconds: int, now: datetime | None = None,
                       since_last_success: bool = False) -> int:
     """
-    Count the ``authentication_log`` rows for one user identity and event type
-    within a sliding time window ending *now*.
+    Count the ``authentication_log`` rows for one user identity and event
+    type(s) within a sliding time window ending *now*.
+
+    *event_types* may be a single :class:`AuthEventType` value or a list of
+    them; events matching **any** of the listed types are counted together (one
+    combined count), so a policy tracking ``[PASSWORD_FAIL, OTP_FAIL]`` trips on
+    the total of both rather than on either in isolation.
 
     The ``WHERE`` column order matches the composite index
-    ``ix_authlog_user_event_time`` so this is an index range scan.
+    ``ix_authlog_user_event_time`` so this is an index range scan (the ``IN``
+    over the event types still uses the same composite index).
 
     With *since_last_success* the count is floored at the user's most recent
     completed login (:attr:`AuthEventType.LOGIN_SUCCESS`) inside the window:
@@ -146,7 +159,8 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
     :param resolver: resolver name of the user
     :param uid: resolver-local user id
     :param realm: realm name of the user
-    :param event_type: the :class:`AuthEventType` value to count
+    :param event_types: the :class:`AuthEventType` value, or list of values, to
+        count; rows matching any of them are counted together
     :param window_seconds: width of the look-back window in seconds
     :param now: window end; defaults to :func:`utc_now`. An aware value is
         normalized to naive UTC to match the stored ``timestamp`` column.
@@ -156,6 +170,10 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
     """
     now = _naive_utc(now) if now is not None else utc_now()
     window_start = now - timedelta(seconds=window_seconds)
+    # Accept a single type or a list; an AuthEventType is a str subclass, so a
+    # bare value is wrapped, while an explicit list is used as-is.
+    types = [event_types] if isinstance(event_types, str) else list(event_types)
+    type_values = [str(t) for t in types]
     if since_last_success:
         # A successful login inside the window resets the counter: count only the
         # failures that follow it. ``> last_success`` excludes the success row
@@ -175,7 +193,7 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
                     .where(AuthenticationLog.resolver == resolver,
                            AuthenticationLog.uid == uid,
                            AuthenticationLog.realm == realm,
-                           AuthenticationLog.event_type == str(event_type),
+                           AuthenticationLog.event_type.in_(type_values),
                            AuthenticationLog.timestamp > last_success,
                            AuthenticationLog.timestamp <= now))
             return db.session.scalar(stmt) or 0
@@ -184,7 +202,7 @@ def count_user_events(resolver: str, uid: str, realm: str, event_type: str,
             .where(AuthenticationLog.resolver == resolver,
                    AuthenticationLog.uid == uid,
                    AuthenticationLog.realm == realm,
-                   AuthenticationLog.event_type == str(event_type),
+                   AuthenticationLog.event_type.in_(type_values),
                    AuthenticationLog.timestamp >= window_start,
                    AuthenticationLog.timestamp <= now))
     return db.session.scalar(stmt) or 0
@@ -300,8 +318,9 @@ def evaluate_access_decision(user: "User", source_ip: str | None = None,
 
     Because there is no event for the current request yet, the decision is keyed
     on the user's **prior** event history: for each enabled policy the events of
-    its ``counter_type_to_track`` are counted over its window, and the
-    highest-priority stage whose threshold is met supplies the decision. A
+    its ``counter_types_to_track`` are counted (combined across all tracked
+    types) over its window, and the highest-priority stage whose threshold is
+    met supplies the decision. A
     ``DENY`` stage therefore rejects this single request without persisting any
     state — a stateless, self-healing reject that lifts on its own as the
     failures age out of the window (contrast the durable :attr:`LockoutAction.LOCK_USER`).
@@ -346,7 +365,7 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User",
     only lockout-style actions, or the policy is in dry-run).
     """
     count = count_user_events(user.resolver, user.uid, user.realm,
-                              policy.counter_type_to_track, policy.time_window_seconds, now=now)
+                              policy.counter_types_to_track, policy.time_window_seconds, now=now)
     triggered_stage = next((stage for stage in policy.stages
                             if count >= stage.failure_threshold), None)
     if triggered_stage is None:
@@ -356,13 +375,13 @@ def _policy_access_decision(policy: LockoutPolicy, user: "User",
         # The met stage only locks / emails / blocks; that is handled
         # post-response, not as a pre-auth decision.
         return None
+    types = _types_label(policy.counter_types_to_track)
     if policy.dry_run:
         log.info(f"[dry-run] policy {policy.name!r} would return {decision} for {user!r}: "
-                 f"{count} {policy.counter_type_to_track} event(s) in "
-                 f"{policy.time_window_seconds}s.")
+                 f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
         return None
     log.info(f"Policy {policy.name!r} returns access decision {decision} for {user!r}: "
-             f"{count} {policy.counter_type_to_track} event(s) in {policy.time_window_seconds}s.")
+             f"{count} event(s) of {types} in {policy.time_window_seconds}s.")
     return decision
 
 
@@ -417,14 +436,20 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
         return []
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
+    # counter_types_to_track is a JSON list and array-containment has no portable SQL
+    #  form across the supported backends (SQLite/MySQL/PostgreSQL/Oracle).
     policies = db.session.scalars(
         select(LockoutPolicy)
-        .where(LockoutPolicy.enabled.is_(True),
-               LockoutPolicy.counter_type_to_track == event_type)
+        .where(LockoutPolicy.enabled.is_(True))
         .order_by(LockoutPolicy.priority.desc())
     ).all()
     notices: list[str] = []
     for policy in policies:
+        # The policy reacts to this request only if the current event type is one
+        # of the types it tracks; the combined count over *all* of its tracked
+        # types is then computed in _evaluate_policy.
+        if event_type not in (policy.counter_types_to_track or []):
+            continue
         notices.extend(_evaluate_policy(policy, user, event_type, source_ip, now))
     # De-duplicate while preserving order: several policies tracking the same
     # user can emit the same notice in one request.
@@ -452,7 +477,11 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
     # a successful authentication clears the slate, so a legitimate user is not
     # re-locked by stale pre-login failures on their next single typo. (The DENY
     # decision deliberately does not reset on success — see _policy_access_decision.)
-    count = count_user_events(user.resolver, user.uid, user.realm, event_type, window,
+    # The count is the *combined* total over all of the policy's tracked types,
+    # not just the current request's event_type, so a policy tracking several
+    # failure types trips on their sum.
+    count = count_user_events(user.resolver, user.uid, user.realm,
+                              policy.counter_types_to_track, window,
                               now=now, since_last_success=True)
 
     # Stages are ordered highest-priority first by the relationship; the first
@@ -468,7 +497,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
         # in-window request that would trip the stage.
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
                  f"(threshold {triggered_stage.failure_threshold}) for {user!r}: "
-                 f"{count} {event_type} event(s) in {window}s.")
+                 f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
         return []
 
     dedup_window_start = now - timedelta(seconds=window)
@@ -509,7 +538,7 @@ def _evaluate_policy(policy: LockoutPolicy, user: "User", event_type: str,
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {user!r}: "
-             f"{count} {event_type} event(s) in {window}s.")
+             f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
     tags = _base_action_tags(policy, triggered_stage, user, event_type, count, source_ip, now)
     return _execute_stage_actions(triggered_stage, user, source_ip, now, tags)
 
