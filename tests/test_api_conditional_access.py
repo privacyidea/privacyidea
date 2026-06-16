@@ -513,6 +513,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("locked", message.lower(), message)
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
+        # The WebUI gets a coarse severity hint so it can color a timed lock differently.
+        self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
         # Rejected before classification -> no authentication-log row.
         self.assertEqual(0, len(get_authentication_logs()))
 
@@ -529,6 +531,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("locked", message.lower(), message)
         self.assertIn("administrator", message.lower(), message)
         self.assertNotIn("minute", message.lower(), message)
+        self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
 
     def test_blocked_ip_rejected_at_auth(self):
         db.session.add(BlockList(ip="203.0.113.7", is_blocked=True,
@@ -545,6 +548,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("minute", message.lower(), message)
         self.assertNotIn("account", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
+        self.assertEqual("temporary", res.json["detail"]["restriction"], res.json)
         # Rejected before classification -> no authentication-log row.
         self.assertEqual(0, len(get_authentication_logs()))
 
@@ -561,6 +565,28 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIn("administrator", message.lower(), message)
         self.assertNotIn("minute", message.lower(), message)
         self.assertNotIn("Wrong credentials", message, message)
+        self.assertEqual("permanent", res.json["detail"]["restriction"], res.json)
+
+    def test_hide_specific_error_message_strips_restriction_hint(self):
+        # With hide_specific_error_message the lockout becomes a generic failure and the
+        # restriction hint must be stripped, so neither the message nor the detail leaks
+        # that the account is (permanently) locked.
+        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+        from privacyidea.lib.policies.actions import PolicyAction
+        db.session.add(UserLockoutState(resolver=self.user.resolver, uid=self.user.uid,
+                                        realm=self.user.realm, is_locked=True,
+                                        lock_expires_at=None))
+        db.session.commit()
+        set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
+        try:
+            res = self._auth("cornelius", "test")
+            self.assertEqual(401, res.status_code, res)
+            message = res.json["result"]["error"]["message"]
+            self.assertNotIn("locked", message.lower(), message)
+            self.assertNotIn("administrator", message.lower(), message)
+            self.assertNotIn("restriction", (res.json.get("detail") or {}), res.json)
+        finally:
+            delete_policy("ca_hide")
 
     def test_ip_block_trip_message_at_auth(self):
         # The failure that trips the BLOCK_IP stage already tells the user about

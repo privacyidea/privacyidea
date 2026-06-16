@@ -204,6 +204,20 @@ def _blocked_ip_error_message(client_ip: str | None, block: RestrictionStatus) -
              "Please try again in about {minutes} minute(s).").format(ip=client_ip, minutes=minutes)
 
 
+def _restriction_kind(state: RestrictionStatus) -> str:
+    """
+    Classify a lock/block as ``"permanent"`` or ``"temporary"`` for the WebUI.
+
+    Surfaced in the rejection's ``detail`` so the login screen can style a
+    permanent (only-an-admin-can-clear-it) restriction differently from a
+    recoverable timed one. It is a coarse hint, not the specific message, and is
+    dropped when the ``hide_specific_error_message`` policy is active (see
+    :func:`~privacyidea.api.before_after.auth_error`), so it never leaks more than
+    the message itself would.
+    """
+    return "permanent" if state.permanent else "temporary"
+
+
 def _binding_restriction(lockout: RestrictionStatus | None, ip_block: RestrictionStatus | None) -> str | None:
     """
     When both a user lockout and a source-IP block are in force, decide which one
@@ -262,12 +276,14 @@ def _conditional_access_precheck(user: User) -> None:
         log.info(f"Rejecting /auth login from blocked IP {g.client_ip!r}.")
         g.audit_object.log({"info": "Rejected: source IP is blocked"})
         raise AuthError(_blocked_ip_error_message(g.client_ip, ip_block),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details={"restriction": _restriction_kind(ip_block)})
     if restriction == "lock":
         log.info(f"Rejecting /auth login for locked user {user!r}.")
         g.audit_object.log({"info": "Rejected: account is temporarily locked"})
         raise AuthError(_lockout_error_message(lockout),
-                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+                        id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
+                        details={"restriction": _restriction_kind(lockout)})
     if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
         log.info(f"Denying /auth login for {user!r} by conditional-access policy.")
         g.audit_object.log({"info": "Rejected: denied by conditional-access policy"})
@@ -639,10 +655,13 @@ def get_auth_token():
         lockout = get_user_lockout(user)
         ip_block = get_ip_block(g.client_ip)
         restriction = _binding_restriction(lockout, ip_block)
+        details = details or {}
         if restriction == "block":
             message = _blocked_ip_error_message(g.client_ip, ip_block)
+            details["restriction"] = _restriction_kind(ip_block)
         elif restriction == "lock":
             message = _lockout_error_message(lockout)
+            details["restriction"] = _restriction_kind(lockout)
         else:
             message = _("Authentication failure. Wrong credentials")
         if lockout_notices:
@@ -653,7 +672,7 @@ def get_auth_token():
             # administrator has been notified by email."
             message = message.rstrip(".") + ". " + " ".join(lockout_notices)
         raise AuthError(message, id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
-                        details=details or {})
+                        details=details)
     else:
         g.audit_object.log({"success": True})
         request.User = user
