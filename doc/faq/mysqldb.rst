@@ -9,6 +9,22 @@ databases with the help of corresponding database drivers.
 The database and corresponding diver are specified in the connect string
 ``SQLALCHEMY_DATABASE_URI`` in :ref:`cfgfile`
 
+.. _tested_databases:
+
+Tested database versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The continuous integration runs the full test suite against **MariaDB 10.11**
+(the LTS most installations run) and **PostgreSQL 17**; a nightly job also runs
+it against the rolling **MariaDB 11** as a forward-compatibility check. On every
+change to the database models or migrations it additionally runs the migration
+test suite, which verifies that the schema migrations apply cleanly in both
+directions (upgrade *and* downgrade) starting from the v3.9 schema — against
+**MariaDB 10.11 and 11** and **PostgreSQL 17**. A single-node MariaDB Galera
+cluster is covered as well, to catch cluster-specific DDL constraints.
+
+**SQLite** is the default for development and small, single-node installations.
+
 .. _mysqldb:
 
 MySQL / MariaDB

@@ -48,17 +48,22 @@ def upgrade():
                 fk_name = next((fk['name'] for fk in fks if fk['referred_table'] == ref_table), None)
                 if fk_name:
                     op.drop_constraint(fk_name, 'resolverrealm', type_='foreignkey')
-        # Oracle creates a backing index for the unique constraint. Canonically
-        # it shares the constraint name, but after cross-dialect import or
-        # `USING INDEX <other_name>` DDL the names can diverge, so look the
-        # index up by its column set as well.
+        # Oracle creates a backing index for the unique constraint that shares
+        # the constraint's name, and drops it automatically when the constraint
+        # is dropped. Only an index whose name diverges from the constraint
+        # (e.g. an independent index adopted via `USING INDEX <other_name>`, or
+        # one left behind by a cross-dialect import) survives the constraint
+        # drop and must be removed explicitly — dropping the auto-created index
+        # would fail with ORA-01418 because it is already gone.
         oracle_idx_name = None
         if migration_context.dialect.name == 'oracle':
-            oracle_idx_name = next(
+            found_idx = next(
                 (idx['name'] for idx in insp.get_indexes('resolverrealm')
                  if set(idx['column_names']) == target_cols and idx['name']),
-                uq_name,
+                None,
             )
+            if found_idx and found_idx != uq_name:
+                oracle_idx_name = found_idx
         # drop the unique constraint
         # for SQLAlchemy we need a batch operation
         with op.batch_alter_table('resolverrealm') as batch_op:
@@ -106,13 +111,18 @@ def downgrade():
                 if fk_name:
                     op.drop_constraint(fk_name, 'resolverrealm', type_='foreignkey')
         # Resolve the Oracle backing index by column set (see upgrade() for why).
+        # Only a divergently-named, independent index survives the constraint
+        # drop and must be removed explicitly; the auto-created same-name index
+        # is dropped with the constraint.
         oracle_idx_name = None
         if migration_context.dialect.name == 'oracle':
-            oracle_idx_name = next(
+            found_idx = next(
                 (idx['name'] for idx in insp.get_indexes('resolverrealm')
                  if set(idx['column_names']) == target_cols and idx['name']),
-                uq_name,
+                None,
             )
+            if found_idx and found_idx != uq_name:
+                oracle_idx_name = found_idx
         # now we can drop the unique constraint
         with op.batch_alter_table('resolverrealm') as batch_op:
             batch_op.drop_constraint(uq_name, type_='unique')

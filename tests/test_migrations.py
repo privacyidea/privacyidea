@@ -59,6 +59,7 @@ from tests.migration_test_utils import (
     START_REVISION,
     drop_all_tables,
     get_alembic_cfg,
+    is_oracle,
     is_postgres,
     load_seed,
 )
@@ -97,18 +98,29 @@ def _get_schema_snapshot(engine) -> dict[str, dict]:
     cycle on the same engine, so dialect-specific artefacts (e.g. MariaDB
     auto-creating indexes for FK columns) appear in both snapshots and cancel.
     """
+    ora = is_oracle(str(engine.url))
+
+    def _norm(name):
+        # Oracle assigns a fresh, non-deterministic name (SYS_C…) to every
+        # unnamed constraint/index, so the same object reflects under a
+        # different name after a downgrade/upgrade round-trip. Normalise those
+        # to None so the comparison keys on structure, not on the generated id.
+        if ora and name and name.lower().startswith("sys_c"):
+            return None
+        return name
+
     inspector = sa_inspect(engine)
     snapshot: dict[str, dict] = {}
     for table in inspector.get_table_names():
         snapshot[table] = {
             "columns": frozenset(col["name"] for col in inspector.get_columns(table)),
             "indexes": frozenset(
-                (idx.get("name"), tuple(idx["column_names"]), bool(idx.get("unique", False)))
+                (_norm(idx.get("name")), tuple(idx["column_names"]), bool(idx.get("unique", False)))
                 for idx in inspector.get_indexes(table)
             ),
             "foreign_keys": frozenset(
                 (
-                    fk.get("name"),
+                    _norm(fk.get("name")),
                     tuple(fk["constrained_columns"]),
                     fk["referred_table"],
                     tuple(fk["referred_columns"]),
@@ -116,7 +128,7 @@ def _get_schema_snapshot(engine) -> dict[str, dict]:
                 for fk in inspector.get_foreign_keys(table)
             ),
             "unique_constraints": frozenset(
-                (uc.get("name"), tuple(uc["column_names"]))
+                (_norm(uc.get("name")), tuple(uc["column_names"]))
                 for uc in inspector.get_unique_constraints(table)
             ),
         }
@@ -135,10 +147,12 @@ def _wait_for_db(engine, timeout: int = 30, interval: float = 1.0) -> None:
     """
     deadline = time.monotonic() + timeout
     last_exc: OperationalError | None = None
+    # Oracle has no bare "SELECT 1" — it requires a FROM clause (the dual table).
+    probe = "SELECT 1 FROM dual" if is_oracle(str(engine.url)) else "SELECT 1"
     while time.monotonic() < deadline:
         try:
             with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
+                conn.execute(text(probe))
             return  # success
         except OperationalError as exc:
             last_exc = exc
@@ -463,12 +477,16 @@ def _get_existing_sequence_names(engine) -> set[str]:
             rows = conn.execute(
                 text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'")
             ).fetchall()
+        elif is_oracle(str(engine.url)):
+            rows = conn.execute(text("SELECT sequence_name FROM user_sequences")).fetchall()
         else:
             rows = conn.execute(text(
                 "SELECT table_name FROM information_schema.tables "
                 "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
             )).fetchall()
-    return {r[0] for r in rows}
+    # Oracle stores unquoted identifiers upper-cased; the models declare them
+    # lower-cased, so compare case-insensitively across all dialects.
+    return {r[0].lower() for r in rows}
 
 
 def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
@@ -583,7 +601,25 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
 
     engine = create_engine(DB_URL)
     is_pg = is_postgres()
+    is_ora = is_oracle()
     failures: list[tuple[str, str]] = []
+
+    # Oracle has no session-level FK switch like MySQL/Postgres, so disable
+    # every FK constraint up front and re-enable them in the finally. The DDL
+    # auto-commits, but no real rows are ever committed (each insert is rolled
+    # back to a savepoint), so re-enabling validates only the untouched seed
+    # data, which already satisfies every FK.
+    disabled_fks: list[tuple[str, str]] = []
+    if is_ora:
+        with engine.connect() as setup_conn:
+            rows = setup_conn.execute(text(
+                "SELECT table_name, constraint_name FROM user_constraints "
+                "WHERE constraint_type = 'R'"
+            )).fetchall()
+            for tbl, con in rows:
+                setup_conn.execute(text(f'ALTER TABLE "{tbl}" DISABLE CONSTRAINT "{con}"'))
+                disabled_fks.append((tbl, con))
+            setup_conn.commit()
 
     try:
         with engine.connect() as conn:
@@ -591,7 +627,7 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
             try:
                 if is_pg:
                     conn.execute(text("SET session_replication_role = 'replica'"))
-                else:
+                elif not is_ora:
                     conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
 
                 for table in db.metadata.sorted_tables:
@@ -613,7 +649,19 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
                         is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
                         if is_auto_pk:
                             continue
-                        if col.default is not None or col.server_default is not None:
+                        # Oracle stores '' as NULL, so a scalar empty-string
+                        # default does not satisfy a NOT NULL column — relying on
+                        # it produces ORA-01400. Fall through to supply a dummy in
+                        # that case instead of trusting the default to fire.
+                        default_is_empty_string = (
+                            col.default is not None
+                            and getattr(col.default, "is_scalar", False)
+                            and col.default.arg == ""
+                        )
+                        skip_for_default = col.default is not None or col.server_default is not None
+                        if is_ora and not col.nullable and default_is_empty_string:
+                            skip_for_default = False
+                        if skip_for_default:
                             continue
                         if col.nullable:
                             continue
@@ -627,6 +675,26 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
                         failures.append((table.name, f"SKIPPED: {skip_reason}"))
                         continue
 
+                    # Oracle has no "INSERT ... DEFAULT VALUES" / empty-column-list
+                    # syntax (ORA-00928). A table whose every column is an auto PK
+                    # or nullable therefore yields an empty value set; supply a
+                    # dummy for one fillable non-PK column so the statement is
+                    # valid (FK checks are disabled, so an FK column is fine).
+                    if is_ora and not values:
+                        for col in table.columns:
+                            is_sole_int_pk = (
+                                col.primary_key
+                                and len(table.primary_key.columns) == 1
+                                and isinstance(col.type, (BigInteger, Integer, SmallInteger))
+                                and col.autoincrement is not False
+                            )
+                            if isinstance(col.default, Sequence) or is_sole_int_pk:
+                                continue
+                            val = _generic_dummy_value(col)
+                            if val is not None:
+                                values[col.name] = val
+                                break
+
                     sp = conn.begin_nested()
                     try:
                         conn.execute(table.insert().values(**values))
@@ -638,6 +706,11 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
             finally:
                 outer.rollback()
     finally:
+        if disabled_fks:
+            with engine.connect() as teardown_conn:
+                for tbl, con in disabled_fks:
+                    teardown_conn.execute(text(f'ALTER TABLE "{tbl}" ENABLE CONSTRAINT "{con}"'))
+                teardown_conn.commit()
         engine.dispose()
 
     assert not failures, (

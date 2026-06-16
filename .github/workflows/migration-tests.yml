@@ -44,19 +44,30 @@ jobs:
       fail-fast: false
       matrix:
         db:
-          - label: MariaDB
-            service: mariadb
+          # MariaDB 10.11 is the LTS most installs run (Ubuntu 24.04 default);
+          # 11.x is the rolling latest. Migrations emit version-specific DDL, so
+          # both are exercised here (this job is path-gated to migration/model
+          # changes, so the extra entry rarely runs).
+          - label: MariaDB 10.11
             db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
             pip_extra: "PyMySQL"
+            mariadb_image: "mariadb:10.11"
+
+          - label: MariaDB 11
+            db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+            pip_extra: "PyMySQL"
+            mariadb_image: "mariadb:11"
 
           - label: PostgreSQL
-            service: postgresql
             db_url: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_migration_test"
             pip_extra: "psycopg2-binary"
+            # Unused by the PostgreSQL entry, but the shared services block below
+            # starts a mariadb container for every matrix job; pin a valid tag.
+            mariadb_image: "mariadb:11"
 
     services:
       mariadb:
-        image: mariadb:11
+        image: ${{ matrix.db.mariadb_image }}
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: privacyidea_migration_test
