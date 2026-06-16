@@ -29,9 +29,12 @@
   flex-direction: column;
   gap: var(--global-gap);
   box-sizing: border-box;
-  height: calc(var(--max-height) + 80px);
+  height: calc(var(--max-height) + 64px);
   width: 100%;
-  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  box-shadow: inset 0px 3px 5px -1px  color-mix(in srgb, var(--mat-sys-shadow) 100%, transparent),
+  inset 0px 5px 8px 0px  color-mix(in srgb, var(--mat-sys-shadow) 100%, transparent),
+  inset 0px 1px 14px 0px  color-mix(in srgb, var(--mat-sys-shadow) 100%, transparent);
 }
 
 .dashboard-scroll-wrapper {
@@ -48,7 +51,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  padding: var(--half-global-padding);
+  padding: var(--global-padding);
 }
 
 .dashboard-bottom-fade {
