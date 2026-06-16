@@ -21,6 +21,8 @@ on:
       - 'tests/test_migrations.py'
       - 'tests/test_migration_*.py'
       - 'tests/testdata/migrations/**'
+      - 'privacyidea/cli/pimanage/backup.py'
+      - 'tests/cli/test_backup_roundtrip.py'
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.github/workflows/migration-tests.yml'
@@ -135,6 +137,24 @@ jobs:
         run: |
           python -b -m pytest -v --tb=short -m migration tests/test_migrations.py tests/test_migration_*.py
 
+      # pi-manage backup shells out to mysqldump/mysql. Install MariaDB's client
+      # (which provides the mysqldump compat name) and fail loudly if it is
+      # missing, so the round-trip below runs for real instead of self-skipping.
+      - name: Install MariaDB client for backup round-trip
+        if: startsWith(matrix.db.label, 'MariaDB')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+          mysqldump --version
+
+      - name: Run backup/restore round-trip test
+        if: startsWith(matrix.db.label, 'MariaDB')
+        env:
+          TEST_DATABASE_URL: ${{ matrix.db.db_url }}
+          PYTHONWARNINGS: "once::DeprecationWarning"
+        run: |
+          python -b -m pytest -v --tb=short -m backup tests/cli/test_backup_roundtrip.py
+
   # MariaDB Galera needs server flags (wsrep provider + --wsrep-new-cluster) that
   # a `services:` container can't pass, so the node is started with `docker run`.
   # A single bootstrapped node is enough to exercise the Galera-only DDL rules
@@ -209,3 +229,18 @@ jobs:
           PYTHONWARNINGS: "once::DeprecationWarning"
         run: |
           python -b -m pytest -v --tb=short -m migration tests/test_migrations.py tests/test_migration_*.py
+
+      # Exercise pi-manage backup/restore against the Galera node — the one place
+      # the mysqldump default-locking failure on sequences actually reproduces.
+      - name: Install MariaDB client for backup round-trip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+          mysqldump --version
+
+      - name: Run backup/restore round-trip test
+        env:
+          TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+          PYTHONWARNINGS: "once::DeprecationWarning"
+        run: |
+          python -b -m pytest -v --tb=short -m backup tests/cli/test_backup_roundtrip.py

@@ -266,6 +266,47 @@ class PIManageBackupTestCase(CliTestCase):
         # TODO: restore backup from a backup file and check consistency
         pass
 
+    def test_07_backup_create_aborts_on_dump_failure(self):
+        """
+        A failed mysqldump must NOT be packaged as a successful backup. The
+        command must exit non-zero and write no backup file. This guards against
+        the silent-failure mode where a non-zero mysqldump exit (e.g. a MariaDB
+        Galera cluster rejecting LOCK TABLE on sequences) was ignored and a
+        partial/empty dump got tar'd up and reported as "Backup written".
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+
+            def failing_run(cmd, **kwargs):
+                # Simulate mysqldump exiting non-zero without writing a dump.
+                result = mock.MagicMock()
+                result.returncode = 1
+                return result
+
+            runner = self.app.test_cli_runner()
+            with mock.patch.dict(self.app.config, {
+                    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
+                    "PI_ENCFILE": str(enc_file)}):
+                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                side_effect=failing_run):
+                    result = runner.invoke(pi_manage, [
+                        "backup", "create",
+                        "-d", str(backup_dir),
+                        "-c", str(config_dir)])
+
+            self.assertNotEqual(result.exit_code, 0, result.output)
+            self.assertIn("Database dump failed", result.output, result.output)
+            written = list(backup_dir.glob("*.tgz")) if backup_dir.exists() else []
+            self.assertEqual(written, [],
+                             f"a backup file was written despite the dump failing: {written}")
+
 
 class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
