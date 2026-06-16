@@ -1,9 +1,16 @@
-Version 3.13.2
+Version 3.13.3
+
+  Fixes:
+  * Fixed migration scripts to be compatible with Oracle (tested with 21c)
+  * Fixed interaction of reset_all_user_tokens with FIDO2 token (#5340)
+  * Fixed an issue that would cause /healthz/resolversz to return HTTP error 500 (#5459)
+
+Version 3.13.2, 2026-06-10
 
   Fixes:
   * Fixed migration script of 3.13.1 to be compatible with Galera.
 
-Version 3.13.1
+Version 3.13.1, 2026-05-20
 
   * The new WebUI beta has been updated to the current state of development. The menu is now back to the known top
     side menu with slightly optimized menu structure, because having the horizontal space is better for displaying our
