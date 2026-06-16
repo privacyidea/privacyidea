@@ -32,9 +32,9 @@
   height: calc(var(--max-height) + 48px);
   width: 100%;
   border-radius: var(--border-radius);
-  box-shadow: inset 0px 3px 5px -1px  color-mix(in srgb, var(--mat-sys-shadow) 100%, transparent),
-  inset 0px 5px 8px 0px  color-mix(in srgb, var(--mat-sys-shadow) 100%, transparent),
-  inset 0px 1px 14px 0px  color-mix(in srgb, var(--mat-sys-shadow) 100%, transparent);
+  box-shadow: inset 0px 3px 5px -1px  var(--dashboard-shadow-color),
+  inset 0px 5px 8px 0px  var(--dashboard-shadow-color),
+  inset 0px 1px 14px 0px  var(--dashboard-shadow-color);
 }
 
 .dashboard-scroll-wrapper {
