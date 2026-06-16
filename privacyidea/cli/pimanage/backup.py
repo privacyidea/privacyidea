@@ -118,7 +118,7 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         if parsed_sqluri.port:
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database), '-r', sqlfile])
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603 - fixed argv, no shell
         if result.returncode != 0:
             # Never package a partial or empty dump as a successful backup.
             if sqlfile.exists():
@@ -172,7 +172,7 @@ def backup_restore(backup_file, keep_db_uri):
     sqlfile = None
     enckey_contained = False
 
-    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,
+    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,  # nosec B607 B603 - fixed argv, no shell
                        text=True)
     if p.returncode != 0:
         click.secho(f"Unable to open backup file {backup_file}", fg="red")
@@ -222,7 +222,7 @@ def backup_restore(backup_file, keep_db_uri):
                     fg="yellow",
                 )
 
-    subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
+    subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])  # nosec B607 B603 - fixed argv, no shell
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
@@ -273,7 +273,7 @@ def backup_restore(backup_file, keep_db_uri):
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database)])
         with open(sqlfile, "r") as sql_file:
-            p = subprocess.run(cmd, input=sql_file.read(), text=True)
+            p = subprocess.run(cmd, input=sql_file.read(), text=True)  # nosec B603 - fixed argv, no shell
         if p.returncode != 0:
             click.secho(
                 f"Database restore failed (mysql exit code {p.returncode}). "
