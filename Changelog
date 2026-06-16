@@ -1,9 +1,9 @@
 Version 3.13.3
 
   Fixes:
-  * Fixed migration scripts to be compatible with Oracle (tested with 21c)
-  * Fixed interaction of reset_all_user_tokens with FIDO2 token (#5340)
-  * Fixed an issue that would cause /healthz/resolversz to return HTTP error 500 (#5459)
+  * Fixed migration scripts to be compatible with Oracle (tested with 21c).
+  * Fixed interaction of reset_all_user_tokens with FIDO2 token. (#5340)
+  * Fixed an issue that would cause /healthz/resolversz to return HTTP error 500. (#5459)
 
 Version 3.13.2, 2026-06-10
 
@@ -21,8 +21,7 @@ Version 3.13.1, 2026-05-20
     default challenge text — useful when both PUSH and a challenge-response token are active for the same user (#5300)
   * Testing a Passkey in the WebUI will now show if the one that was used for the test is the one you are viewing
     the details of. If not, the one that was used is linked. The linking is for admins only. (#5263)
-  * Updated the pinned dependencies for the backend. At the time of release, they contained no known security
-    vulnerabilities.
+  * Updated the pinned dependencies for the backend.
 
   Fixes:
   * Fixed pi-manage backup create failing on Python 3.12 (#5299)
