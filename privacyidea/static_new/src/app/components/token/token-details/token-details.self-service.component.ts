@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
+import { NgClass, NgTemplateOutlet } from "@angular/common";
 import { Component } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
@@ -28,6 +28,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
@@ -48,6 +49,8 @@ import { TokenDetailsComponent } from "./token-details.component";
     MatRow,
     MatTable,
     NgClass,
+    NgTemplateOutlet,
+    DetailsCardComponent,
     MatInput,
     MatFormFieldModule,
     MatSelectModule,

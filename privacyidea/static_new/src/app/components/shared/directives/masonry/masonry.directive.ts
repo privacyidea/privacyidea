@@ -25,7 +25,7 @@ import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy } from "
 export class MasonryDirective implements AfterViewInit, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  readonly columnWidthRem = input(45);
+  readonly columnWidthRem = input(25);
 
   private resizeObserver?: ResizeObserver;
   private mutationObserver?: MutationObserver;
@@ -59,9 +59,21 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
     if (!this.resizeObserver) {
       return;
     }
-    for (const child of Array.from(this.host.children)) {
+    for (const child of this.collectItems(this.host)) {
       this.resizeObserver.observe(child);
     }
+  }
+
+  private collectItems(parent: HTMLElement): HTMLElement[] {
+    const items: HTMLElement[] = [];
+    for (const child of Array.from(parent.children) as HTMLElement[]) {
+      if (getComputedStyle(child).display === "contents") {
+        items.push(...this.collectItems(child));
+      } else {
+        items.push(child);
+      }
+    }
+    return items;
   }
 
   private schedule(): void {
@@ -74,7 +86,7 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
   }
 
   private layout(): void {
-    const children = Array.from(this.host.children) as HTMLElement[];
+    const children = this.collectItems(this.host);
     if (children.length === 0) {
       return;
     }
