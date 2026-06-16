@@ -27,15 +27,15 @@
     <table class="auth-table">
       <tbody>
         <tr>
-          <td i18n>success</td>
+          <td i18n>Success</td>
           <td>{{ counts().success }}</td>
         </tr>
         <tr>
-          <td i18n>failed</td>
+          <td i18n>Failures</td>
           <td>{{ counts().fail }}</td>
         </tr>
         <tr>
-          <td i18n>failed users / tokens</td>
+          <td i18n>Users / Tokens with Failures</td>
           <td class="auth-failed-cell">
             @for (userobj of counts().users; track userobj.user + userobj.realm; let first = $first) {
               @if (!first) {
