@@ -148,10 +148,14 @@ jobs:
         run: |
           for i in $(seq 1 30); do
             if docker exec galera healthcheck.sh --connect --innodb_initialized; then
-              docker exec -e MYSQL_PWD=root galera \
-                mariadb -uroot -N -e "SHOW STATUS LIKE 'wsrep_cluster_size'; SHOW STATUS LIKE 'wsrep_ready'"
-              echo "Galera node is ready."
-              exit 0
+              ready=$(docker exec -e MYSQL_PWD=root galera \
+                mariadb -uroot -N -B -e "SHOW STATUS LIKE 'wsrep_ready'" | awk '{print $2}')
+              if [ "$ready" = "ON" ]; then
+                docker exec -e MYSQL_PWD=root galera \
+                  mariadb -uroot -N -e "SHOW STATUS LIKE 'wsrep_cluster_size'; SHOW STATUS LIKE 'wsrep_ready'"
+                echo "Galera node is ready."
+                exit 0
+              fi
             fi
             echo "Waiting for Galera... ($i)"
             sleep 5
