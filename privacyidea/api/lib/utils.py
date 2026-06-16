@@ -32,10 +32,12 @@ from copy import copy
 from urllib.parse import unquote
 
 import jwt
-from flask import jsonify, current_app, Response, request, g
+from flask import jsonify, current_app, Response, Request, g
 from flask_babel import _
 
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
+from privacyidea.lib.user import User
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -216,7 +218,9 @@ def getLowerParams(param):
     return ret
 
 
-def log_authentication(event_type, user=None, serial=None, transaction_id=None, previous_transaction_id=None):
+def log_authentication(event_type: AuthEventType | None, request: Request, user: User | None = None,
+                       serial: str | None = None, transaction_id: str | None = None,
+                       previous_transaction_id: str | None = None) -> int | None:
     """
     Write one authentication_log entry for the current request.
 

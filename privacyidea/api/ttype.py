@@ -161,7 +161,7 @@ def token(ttype=None):
     # Log push authentication
     push_auth_event = getattr(g, PUSH_AUTH_EVENT, None)
     if push_auth_event:
-        log_authentication(push_auth_event, user=user, serial=serial,
+        log_authentication(push_auth_event, request, user=user, serial=serial,
                            transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None))
 
     if res[0] == "json":

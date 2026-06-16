@@ -295,7 +295,7 @@ def get_auth_token():
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
-            log_authentication(AuthEventType.NO_TOKEN, user=user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.is_active():
@@ -305,15 +305,15 @@ def get_auth_token():
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
-            log_authentication(AuthEventType.NO_TOKEN, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id)
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
-            log_authentication(AuthEventType.USER_UNKNOWN, transaction_id=transaction_id)
+            log_authentication(AuthEventType.USER_UNKNOWN, request, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
-            log_authentication(AuthEventType.NO_TOKEN, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.NO_TOKEN, request, user=token.user, transaction_id=transaction_id)
             raise AuthError(
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
@@ -331,7 +331,7 @@ def get_auth_token():
         except (ResourceNotFoundError, AuthError):
             # The challenge could not be verified (e.g. answered for the wrong serial or expired).
             # It propagates as a failure response, so log the failed attempt here.
-            log_authentication(AuthEventType.MFA_FAIL, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise
         if passkey_login_result.success > 0:
             user = token.user
@@ -343,19 +343,19 @@ def get_auth_token():
             # Record the passkey serial for the authentication log
             serials = token.get_serial()
         else:
-            log_authentication(AuthEventType.MFA_FAIL, user=token.user, transaction_id=transaction_id)
+            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
         # The realm parameter has precedence! Check if it exists
         if realm_param and not realm_is_defined(realm_param):
-            log_authentication(AuthEventType.USER_UNKNOWN, user=user, serial=details.get("serial"),
-                               transaction_id=details.get("transaction_id"), login=username)
+            log_authentication(AuthEventType.USER_UNKNOWN, request, user=user, serial=details.get("serial"),
+                               transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Unknown realm:") + f" {realm_param}.",
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
         if username is None:
-            log_authentication(AuthEventType.USER_UNKNOWN, user=user, serial=details.get("serial"),
+            log_authentication(AuthEventType.USER_UNKNOWN, request, user=user, serial=details.get("serial"),
                                transaction_id=details.get("transaction_id"))
             raise AuthError(_("Authentication failure. Missing Username"), id=Error.AUTHENTICATE_MISSING_USERNAME)
 
@@ -503,14 +503,14 @@ def get_auth_token():
 
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
-                log_authentication(auth_event_type, user=user, serial=serials,
+                log_authentication(auth_event_type, request, user=user, serial=serials,
                                    transaction_id=details.get("transaction_id"))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
     if auth_event_type is None:
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (admin_auth or user_auth) else AuthEventType.PASSWORD_FAIL
-    log_authentication(auth_event_type, user=user, serial=serials or details.get("serial"),
+    log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
                        transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"))
 
     if not admin_auth and not user_auth:

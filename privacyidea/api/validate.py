@@ -558,6 +558,7 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
     # write to the authentication log
     log_authentication(
         AuthEventType.LOGIN_SUCCESS if success else AuthEventType.ENROLLMENT_CANCELED_FAIL,
+        request,
         user=user,
         transaction_id=transaction_id,
     )
@@ -833,6 +834,7 @@ def _log_authentication_event(context):
     previous_txn = request_txn if (details_txn and request_txn and details_txn != request_txn) else None
     g.auth_log_event_id = log_authentication(
         context[AUTH_EVENT_TYPE_KEY],
+        request,
         user=context["user"],
         serial=",".join(context["serial_list"]) or None,
         transaction_id=logged_txn,
@@ -995,6 +997,7 @@ def trigger_challenge():
 
     log_authentication(
         AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN,
+        request,
         user=user,
         serial=",".join(challenge_serials) or None,
         transaction_id=details.get("transaction_id"),
@@ -1164,7 +1167,7 @@ def initialize():
             )
         )
 
-    log_authentication(AuthEventType.CHALLENGE_TRIGGERED, transaction_id=details.get("transaction_id"))
+    log_authentication(AuthEventType.CHALLENGE_TRIGGERED, request, transaction_id=details.get("transaction_id"))
 
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)

@@ -1110,7 +1110,7 @@ def multichallenge_enroll_via_validate(request, response):
             reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
                                                 serial=enrolled_serial, transaction_id=transaction_id)
         else:
-            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, user=user,
+            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
                                serial=enrolled_serial, transaction_id=transaction_id)
     response.set_data(json.dumps(content))
 
