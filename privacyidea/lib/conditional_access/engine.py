@@ -563,17 +563,17 @@ def _base_action_tags(policy: LockoutPolicy, stage, user: "User", event_type: st
     :func:`_send_lockout_email`, so a non-email action never triggers a resolver
     lookup.
 
-    Some values are exposed under two names on purpose (``user``/``username`` and
-    ``source_ip``/``client_ip``): an admin authoring a template may reach for
-    either spelling, so both resolve rather than silently leaving a ``{tag}``
-    unsubstituted.
+    There is exactly one canonical name per value — no aliases — so a template
+    references each value unambiguously. The names match privacyIDEA's existing
+    notification vocabulary (:func:`~privacyidea.lib.utils.create_tag_dict`): the
+    login is ``{username}`` and the request IP is ``{client_ip}``. (Showing the
+    available tags in the policy editor and rejecting unknown ``{tags}`` when a
+    template is saved belong to the policy CRUD/editor layer, not here.)
     """
     return {
-        "user": user.login,
         "username": user.login,
         "realm": user.realm or "",
         "resolver": user.resolver or "",
-        "source_ip": source_ip or "",
         "client_ip": source_ip or "",
         "count": count,
         "threshold": stage.failure_threshold,

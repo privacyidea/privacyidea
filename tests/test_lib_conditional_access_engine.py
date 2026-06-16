@@ -703,8 +703,8 @@ class LockoutEngineTestCase(MyTestCase):
                 name="mailuser", counter_type=AuthEventType.MFA_FAIL,
                 stages=((3, 1, LockoutAction.EMAIL_USER,
                          {"smtp_identifier": "lockoutmail",
-                          "subject": "Locked: {user}",
-                          "body": "{user}@{realm} locked after {count} failures."}),))
+                          "subject": "Locked: {username}",
+                          "body": "{username}@{realm} locked after {count} failures."}),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL, source_ip="10.0.0.9")
 
@@ -735,7 +735,7 @@ class LockoutEngineTestCase(MyTestCase):
                 stages=((3, 1, LockoutAction.EMAIL_ADMIN,
                          {"smtp_identifier": "lockoutmail",
                           "recipient_group": "internal_admins",
-                          "subject": "{user} locked",
+                          "subject": "{username} locked",
                           "body": "{count} failures in realm {realm}."}),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL)
@@ -825,7 +825,7 @@ class LockoutEngineTestCase(MyTestCase):
                 name="mailnotice2", counter_type=AuthEventType.MFA_FAIL,
                 stages=((3, 1, LockoutAction.EMAIL_USER,
                          {"smtp_identifier": "lockoutmail", "subject": "s", "body": "b",
-                          "login_notice": "We emailed {user} about {count} failures."}),))
+                          "login_notice": "We emailed {username} about {count} failures."}),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             self.assertEqual(["We emailed cornelius about 3 failures."],
                              evaluate_lockout_policies(self.user, AuthEventType.MFA_FAIL))
