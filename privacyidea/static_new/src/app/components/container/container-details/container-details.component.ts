@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   ElementRef,
@@ -31,14 +30,11 @@ import {
   linkedSignal,
   signal
 } from "@angular/core";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
+import { MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { MatFormField, MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatFormField } from "@angular/material/select";
+import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerDetailsActionsComponent } from "@components/container/container-details/container-details-actions/container-details-actions.component";
@@ -46,10 +42,13 @@ import {
   ContainerDetailsInfoComponent,
   ContainerInfoDetail
 } from "@components/container/container-details/container-details-info/container-details-info.component";
+import { ContainerRealmsFieldComponent } from "@components/container/container-details/fields/container-realms-field.component";
+import { ContainerStatesFieldComponent } from "@components/container/container-details/fields/container-states-field.component";
+import { ContainerDetailsUserComponent } from "@components/container/container-details/container-details-user/container-details-user.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -60,7 +59,6 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-  CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerDetailToken,
   ContainerService,
@@ -85,11 +83,6 @@ export const containerDetailsKeyMap: { key: string; label: string; group: Contai
   { key: "template", label: "Template", group: "container" },
   { key: "realms", label: "Realms", group: "container" },
   { key: "description", label: "Description", group: "container" }
-];
-
-export const containerDetailGroups: { id: ContainerDetailGroup; label: string }[] = [
-  { id: "status", label: "Status" },
-  { id: "container", label: "Container" }
 ];
 
 const CONTAINER_TIMESTAMP_KEYS = ["last_authentication", "last_synchronization"];
@@ -119,31 +112,23 @@ interface TokenOption {
   selector: "app-container-details",
   standalone: true,
   imports: [
-    NgClass,
-    NgTemplateOutlet,
-    MatTableModule,
-    MatCell,
-    MatColumnDef,
-    MatListItem,
     EditButtonsComponent,
     MatFormField,
-    MatSelectModule,
     MatInput,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
-    MatIcon,
-    MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    ClearableInputComponent,
-    CopyableComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     MasonryDirective,
     DetailsHeaderComponent,
     DetailsCardComponent,
+    DetailFieldComponent,
+    ContainerStatesFieldComponent,
+    ContainerRealmsFieldComponent,
+    ContainerDetailsUserComponent,
     ContainerAddTokenComponent
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
@@ -158,6 +143,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly editRegistry = inject(DetailsEditRegistry);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private previousPageSize = 10;
   private router = inject(Router);
@@ -223,6 +209,18 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   containerType = computed(() => {
     return this.containerDetails()?.type ?? "";
   });
+  protected readonly lastAuthenticationDisplay = computed(() =>
+    formatContainerTimestamp(this.containerDetails()?.last_authentication) ?? ""
+  );
+  protected readonly lastSynchronizationDisplay = computed(() =>
+    formatContainerTimestamp(this.containerDetails()?.last_synchronization) ?? ""
+  );
+  protected readonly registrationStateDisplay = computed(() =>
+    this.str(this.containerDetails()?.info?.registration_state)
+  );
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
+  }
   containerDetailData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
@@ -253,16 +251,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
         })
         .filter((detail) => detail.value !== undefined);
     }
-  });
-  containerDetailDataByGroup = computed(() => {
-    const data = this.containerDetailData();
-    return containerDetailGroups.map((group) => ({
-      id: group.id,
-      label: group.label,
-      rows: data.filter(
-        (row) => (row.keyMap as { group?: string }).group === group.id && row.keyMap.key !== "description"
-      )
-    }));
   });
   descriptionRow = computed(
     () => this.containerDetailData().find((row) => row.keyMap.key === "description") as EditableElement<string> | undefined
@@ -305,7 +293,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     computation: (containerDetails) => containerDetails?.states || []
   });
 
-  readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
   rawUserData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
@@ -338,7 +325,10 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   });
   isAnyEditing = computed(() => {
     return (
-      this.containerDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
+      this.containerDetailData().some((element) => element.isEditing()) ||
+      this.isEditingUser() ||
+      this.isEditingInfo() ||
+      this.editRegistry.anyEditing()
     );
   });
   @ViewChild("filterHTMLInputElement")
@@ -526,6 +516,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
         this.saveContainerEdit(row);
       }
     }
+    await this.editRegistry.saveAll();
     if (this.isEditingUser()) {
       this.saveUser();
     }

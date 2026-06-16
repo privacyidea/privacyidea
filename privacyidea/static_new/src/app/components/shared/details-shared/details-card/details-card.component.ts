@@ -16,14 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
+import { Component, input, signal } from "@angular/core";
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
   selector: "app-details-card",
   standalone: true,
+  imports: [MatIcon],
   templateUrl: "./details-card.component.html",
   styleUrl: "./details-card.component.scss"
 })
 export class DetailsCardComponent {
   readonly title = input<string>("");
+  readonly collapsible = input(false);
+  readonly expanded = signal(false);
+
+  protected toggleExpanded(): void {
+    this.expanded.set(!this.expanded());
+  }
 }

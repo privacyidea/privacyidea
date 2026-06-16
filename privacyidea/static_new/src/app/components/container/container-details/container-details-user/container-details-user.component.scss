@@ -1,0 +1,48 @@
+@use "styles";
+@use "table";
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.details-table {
+  width: 100%;
+  table-layout: fixed;
+
+  td:nth-child(even),
+  th:nth-child(even) {
+    background: transparent;
+  }
+
+  tr.mat-mdc-row:nth-child(odd) td {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  td:nth-child(1) {
+    width: 35%;
+  }
+
+  td:nth-child(2) {
+    width: 65%;
+  }
+}
+
+.value-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.value-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.value-edit {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}

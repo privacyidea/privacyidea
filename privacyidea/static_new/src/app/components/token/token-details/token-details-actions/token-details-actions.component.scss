@@ -4,17 +4,17 @@
 $padding-horizontal: 16px;
 
 :host {
-  display: contents;
+  display: block;
 }
 
 .actions-otp-container {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
 
   app-verify-enrollment,
   > mat-divider {
-    flex-basis: 100%;
     width: 100%;
-    order: 0;
   }
 
   .actions-status-row {
@@ -30,7 +30,11 @@ $padding-horizontal: 16px;
   }
 
   .actions-sections-row {
-    display: contents;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 240px);
+    gap: var(--global-gap);
+    justify-content: start;
+    align-items: start;
   }
 
   .actions-section {
@@ -41,10 +45,6 @@ $padding-horizontal: 16px;
     width: fit-content;
     align-self: flex-start;
   }
-
-  .actions-section--pin { order: 6; }
-  .actions-section--test { order: 7; }
-  .actions-section--sync { order: 8; }
 
   .test-sync-section {
     app-resync-token-action,

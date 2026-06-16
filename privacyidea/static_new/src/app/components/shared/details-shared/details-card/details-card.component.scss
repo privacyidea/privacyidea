@@ -25,6 +25,20 @@
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-lowest);
   padding: var(--half-global-padding);
+
+  ::ng-deep app-edit-buttons {
+    opacity: 0;
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  &:hover ::ng-deep app-edit-buttons,
+  &.is-editing ::ng-deep app-edit-buttons,
+  ::ng-deep td.padding-0 app-edit-buttons,
+  ::ng-deep .detail-field--editing app-edit-buttons {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 .details-card-title {
@@ -34,4 +48,47 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--mat-sys-on-surface-variant);
+}
+
+.details-card-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+
+  .details-card-title {
+    margin: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+    border-radius: var(--border-radius);
+  }
+}
+
+.details-card-chevron {
+  transition: transform 200ms ease;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.details-card-chevron--expanded {
+  transform: rotate(180deg);
+}
+
+.details-card-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin-top: var(--quarter-global-padding);
+}
+
+.details-card-collapse-inner {
+  overflow: hidden;
+  min-height: 0;
 }

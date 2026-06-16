@@ -1,0 +1,10 @@
+@use "styles";
+@use "table";
+
+.container-serial-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 101px;
+}

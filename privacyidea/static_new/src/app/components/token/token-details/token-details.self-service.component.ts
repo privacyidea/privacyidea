@@ -16,23 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass, NgTemplateOutlet } from "@angular/common";
 import { Component } from "@angular/core";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
+import { TokenContainerFieldComponent } from "./fields/token-container-field.component";
+import { TokenFailcountFieldComponent } from "./fields/token-failcount-field.component";
+import { TokenRealmsFieldComponent } from "./fields/token-realms-field.component";
+import { TokenTokengroupFieldComponent } from "./fields/token-tokengroup-field.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
@@ -41,31 +38,22 @@ import { TokenDetailsComponent } from "./token-details.component";
   selector: "app-token-details-self-service",
   standalone: true,
   imports: [
-    MatCell,
-    MatTableModule,
-    MatColumnDef,
-    MatIcon,
-    MatListItem,
-    MatRow,
-    MatTable,
-    NgClass,
-    NgTemplateOutlet,
     DetailsCardComponent,
     MatInput,
     MatFormFieldModule,
-    MatSelectModule,
-    MatIconButton,
     TokenDetailsUserSelfServiceComponent,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
+    DetailFieldComponent,
+    TokenFailcountFieldComponent,
+    TokenRealmsFieldComponent,
+    TokenTokengroupFieldComponent,
+    TokenContainerFieldComponent,
     EditButtonsComponent,
-    CopyableComponent,
-    ClearableInputComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./token-details.self-service.component.html",
   styleUrls: ["./token-details.component.scss"]
 })

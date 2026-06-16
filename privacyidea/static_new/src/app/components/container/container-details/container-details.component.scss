@@ -111,38 +111,12 @@
   margin-top: var(--global-padding);
 }
 
-.details-card--group {
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  ::ng-deep td.padding-0 app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
 .details-card--description {
   align-self: flex-start;
 
   .value-edit {
     min-width: 80px;
     justify-content: flex-end;
-  }
-
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  &.is-editing app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .description-field {

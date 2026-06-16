@@ -1,0 +1,67 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  class="detail-field-key"
+  i18n>
+  Token Groups
+</div>
+<div class="detail-field-value">
+  <div class="value-row">
+    <div class="value-content">
+      @if (isEditing()) {
+        <mat-form-field
+          class="input-width-m height-77"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Select Token Group</mat-label>
+          <mat-select
+            [value]="selectedTokengroup()"
+            (selectionChange)="selectedTokengroup.set($event.value)"
+            appAutofocus
+            multiple>
+            @for (option of tokengroupOptions(); track option) {
+              @if (option === userRealm()) {
+                <mat-option
+                  disabled
+                  value="{{ option }}">
+                  {{ option }}
+                </mat-option>
+              } @else {
+                <mat-option value="{{ option }}">{{ option }}</mat-option>
+              }
+            }
+          </mat-select>
+        </mat-form-field>
+      } @else {
+        <app-details-list-display [items]="tokengroup()" />
+      }
+    </div>
+    <div class="value-edit">
+      @if (editable()) {
+        <app-edit-buttons
+          [element]="editButtonsElement"
+          [toggleEdit]="toggle"
+          [saveEdit]="commit"
+          [cancelEdit]="cancel"
+          [shouldHideEdit]="shouldHideEdit()"
+          [isEditingUser]="false"
+          [isEditingInfo]="false"></app-edit-buttons>
+      }
+    </div>
+  </div>
+</div>

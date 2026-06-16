@@ -16,12 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<section class="user-container responsive-pad-0-1310 details-card">
-  <h4
-    class="details-card-title"
-    i18n>
-    User
-  </h4>
+<app-details-card
+  class="user-container responsive-pad-0-1310"
+  [title]="'User'">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -152,4 +149,4 @@
       *matRowDef="let row; columns: ['key', 'value']"
       mat-row></tr>
   </table>
-</section>
+</app-details-card>

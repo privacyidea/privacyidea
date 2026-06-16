@@ -26,6 +26,7 @@ import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -50,7 +51,8 @@ import { TokenDetailsUserComponent } from "./token-details-user.component";
     MatIconButton,
     MatIcon,
     NgClass,
-    ClearableInputComponent
+    ClearableInputComponent,
+    DetailsCardComponent
   ],
   templateUrl: "./token-details-user.self-service.component.html",
   styleUrl: "./token-details-user.component.scss"

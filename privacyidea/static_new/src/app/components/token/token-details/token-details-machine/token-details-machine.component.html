@@ -17,8 +17,9 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @for (machine of machineData(); track machine.id) {
-  <section class="machine-panel details-card">
-    <h4 class="details-card-title" i18n>Offline Parameter</h4>
+  <app-details-card
+    class="machine-panel"
+    [title]="'Offline Parameter'">
     <div class="machine-panel-row">
       <dl class="machine-grid">
         @for (entry of visibleEntries(machine); track entry[0]) {
@@ -34,5 +35,5 @@
         <mat-icon>delete_outlined</mat-icon>
       </button>
     </div>
-  </section>
+  </app-details-card>
 }

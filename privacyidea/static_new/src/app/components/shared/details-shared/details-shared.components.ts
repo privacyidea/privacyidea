@@ -52,7 +52,7 @@ export class DetailsListDisplayComponent {
         <textarea
           [value]="value()"
           (input)="value.set($any($event.target).value)"
-          [maxlength]="maxlength()"
+          [attr.maxlength]="maxlength()"
           i18n-placeholder
           matInput
           placeholder="Enter description"

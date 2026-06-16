@@ -170,7 +170,7 @@ describe("TokenDetailsComponent", () => {
     ]);
     fixture.detectChanges();
 
-    const textarea = fixture.nativeElement.querySelector(".description-row textarea");
+    const textarea = fixture.nativeElement.querySelector(".details-card--description textarea");
     expect(textarea).toBeTruthy();
     expect(textarea.getAttribute("rows")).toBe("7");
   });

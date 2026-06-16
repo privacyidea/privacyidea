@@ -25,7 +25,7 @@ import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy } from "
 export class MasonryDirective implements AfterViewInit, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
-  readonly columnWidthRem = input(25);
+  readonly columnWidthRem = input(40);
 
   private resizeObserver?: ResizeObserver;
   private mutationObserver?: MutationObserver;

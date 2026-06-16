@@ -31,9 +31,7 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
-import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
 import { Router, RouterLink } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { LostTokenComponent } from "./token-details-actions/lost-token/lost-token.component";
@@ -54,18 +52,19 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 
-import { NgClass, NgTemplateOutlet } from "@angular/common";
-import { MatIconButton } from "@angular/material/button";
+import { NgClass } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { TokenContainerFieldComponent } from "./fields/token-container-field.component";
+import { TokenFailcountFieldComponent } from "./fields/token-failcount-field.component";
+import { TokenRealmsFieldComponent } from "./fields/token-realms-field.component";
+import { TokenStatusFieldComponent } from "./fields/token-status-field.component";
+import { TokenTokengroupFieldComponent } from "./fields/token-tokengroup-field.component";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
@@ -144,39 +143,30 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
 
 @Component({
   imports: [
-    MatCell,
-    MatTableModule,
-    MatColumnDef,
     MatIcon,
-    MatListItem,
-    MatRow,
-    MatTable,
     NgClass,
-    NgTemplateOutlet,
     MatInput,
     MatFormFieldModule,
-    MatSelectModule,
-    MatCheckbox,
-    MatIconButton,
     TokenDetailsUserComponent,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
     EditButtonsComponent,
-    CopyButtonComponent,
     MatButton,
     RouterLink,
     AutofocusDirective,
     ScrollToTopDirective,
-    ClearableInputComponent,
-    CopyButtonComponent,
-    ClearableInputComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
     DetailsCardComponent,
+    DetailFieldComponent,
+    TokenStatusFieldComponent,
+    TokenFailcountFieldComponent,
+    TokenRealmsFieldComponent,
+    TokenTokengroupFieldComponent,
+    TokenContainerFieldComponent,
     OverflowNavDirective
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]
 })
@@ -189,6 +179,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly editRegistry = inject(DetailsEditRegistry);
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly pendingChangesService = inject(PendingChangesService);
@@ -336,6 +327,18 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
         )
       }));
   });
+  showCounters = computed(() => {
+    const type = this.tokenDetails()?.tokentype;
+    return !(type === "webauthn" || type === "passkey" || type === "push");
+  });
+  protected readonly createdDisplay = computed(() => formatTokenTimestamp(this.tokenDetails().info?.["creation_date"]) ?? "");
+  protected readonly lastAuthDisplay = computed(() => formatTokenTimestamp(this.tokenDetails().info?.["last_auth"]) ?? "");
+  protected readonly saveMaxfail = (value: string): void => this.saveTokenDetail("maxfail", value);
+  protected readonly saveCountWindow = (value: string): void => this.saveTokenDetail("count_window", value);
+  protected readonly saveSyncWindow = (value: string): void => this.saveTokenDetail("sync_window", value);
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
+  }
   descriptionRow = computed(
     () => this.tokenDetailData().find((r) => r.keyMap.key === "description") as EditableElement<string> | undefined
   );
@@ -350,6 +353,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   isAnyEditingOrRevoked = computed(() => {
     return (
       this.tokenDetailData().some((element) => element.isEditing()) ||
+      this.editRegistry.anyEditing() ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
       this.tokenIsRevoked()
@@ -379,7 +383,10 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
-        this.tokenDetailData().some((element) => element.isEditing()) || this.isEditingUser() || this.isEditingInfo()
+        this.tokenDetailData().some((element) => element.isEditing()) ||
+        this.editRegistry.anyEditing() ||
+        this.isEditingUser() ||
+        this.isEditingInfo()
     );
     this.pendingChangesService.registerValidChanges(() => true);
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
@@ -391,6 +398,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.saveTokenEdit(row);
       }
     }
+    await this.editRegistry.saveAll();
     if (this.isEditingUser()) {
       this.userChild?.saveUser();
     }

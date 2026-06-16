@@ -128,13 +128,7 @@
   }
 }
 
-.description-row {
-  padding: 8px 14px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  box-sizing: border-box;
-  display: flex;
-  align-items: baseline;
+.details-card--description {
   width: 340px;
   align-self: flex-start;
   order: 9;
@@ -142,24 +136,6 @@
   .value-edit {
     min-width: 80px;
     justify-content: flex-end;
-  }
-
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  &.is-editing app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .description-label {
-    font-weight: 600;
-    margin-right: 8px;
-    color: var(--mat-sys-on-surface-variant);
   }
 
   .description-text {
@@ -184,31 +160,21 @@
 .details-card--identity { order: 1; }
 .details-card-user { order: 2; }
 .details-card--assignment { order: 3; }
-.details-card--counters { order: 4; }
+.details-card--counters {
+  order: 4;
+  min-width: var(--details-card-min-width);
+  max-width: var(--details-card-max-width);
+  box-sizing: border-box;
+}
 .details-card-machine { order: 5; display: contents; }
-.details-card-actions { display: contents; }
+.details-card-actions { flex: 1 1 100%; order: 11; }
 
-.details-card--group,
 .details-card-user {
   display: block;
   min-width: 0;
   align-self: flex-start;
   box-sizing: border-box;
-  max-width: 585px;
-}
-
-.details-card--group {
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  ::ng-deep td.padding-0 app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
+  max-width: var(--details-card-max-width);
 }
 
 .action-button-warn-secondary {

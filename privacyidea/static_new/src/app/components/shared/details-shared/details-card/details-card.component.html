@@ -16,7 +16,32 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (title()) {
-  <h4 class="details-card-title">{{ title() }}</h4>
+@if (collapsible()) {
+  <button
+    type="button"
+    class="details-card-toggle"
+    (click)="toggleExpanded()"
+    [attr.aria-expanded]="expanded()">
+    <h4 class="details-card-title">{{ title() }}</h4>
+    <mat-icon
+      class="details-card-chevron"
+      [class.details-card-chevron--expanded]="expanded()"
+      >expand_more</mat-icon
+    >
+  </button>
+  @if (expanded()) {
+    <div
+      class="details-card-collapse"
+      animate.enter="detail-expand-enter"
+      animate.leave="detail-expand-leave">
+      <div class="details-card-collapse-inner">
+        <ng-content />
+      </div>
+    </div>
+  }
+} @else {
+  @if (title()) {
+    <h4 class="details-card-title">{{ title() }}</h4>
+  }
+  <ng-content />
 }
-<ng-content />

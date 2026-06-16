@@ -16,19 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass, NgTemplateOutlet } from "@angular/common";
 import { Component } from "@angular/core";
-import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ContainerRealmsFieldComponent } from "@components/container/container-details/fields/container-realms-field.component";
+import { ContainerStatesFieldComponent } from "@components/container/container-details/fields/container-states-field.component";
+import { ContainerDetailsUserComponent } from "@components/container/container-details/container-details-user/container-details-user.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
-import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -43,31 +39,23 @@ import { ContainerDetailsComponent } from "./container-details.component";
   selector: "app-container-details-self-service",
   standalone: true,
   imports: [
-    NgClass,
-    NgTemplateOutlet,
-    MatTableModule,
-    MatCell,
-    MatColumnDef,
-    MatListItem,
     EditButtonsComponent,
     MatFormField,
-    MatSelectModule,
     MatInput,
-    MatAutocomplete,
-    MatAutocompleteTrigger,
-    MatIcon,
-    MatIconButton,
     ContainerDetailsInfoComponent,
-    ClearableInputComponent,
-    CopyableComponent,
     ScrollToTopDirective,
     MasonryDirective,
     ContainerDetailsTokenTableComponent,
     ContainerDetailsActionsComponent,
     DetailsHeaderComponent,
     DetailsCardComponent,
+    DetailFieldComponent,
+    ContainerStatesFieldComponent,
+    ContainerRealmsFieldComponent,
+    ContainerDetailsUserComponent,
     ContainerAddTokenComponent
   ],
+  providers: [DetailsEditRegistry],
   templateUrl: "./container-details.self-service.component.html",
   styleUrls: ["./container-details.component.scss"]
 })

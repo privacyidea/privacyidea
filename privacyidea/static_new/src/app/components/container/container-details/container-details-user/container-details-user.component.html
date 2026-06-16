@@ -1,0 +1,141 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-details-card [title]="'User'">
+  <table
+    [dataSource]="userData()"
+    aria-label="User Detail Data Table"
+    class="details-table"
+    i18n-aria-label
+    mat-table>
+    <ng-container matColumnDef="key">
+      <td
+        *matCellDef="let element"
+        class="details-key-row"
+        mat-cell>
+        {{ element.keyMap.label }}
+      </td>
+    </ng-container>
+    <ng-container matColumnDef="value">
+      <td
+        *matCellDef="let element"
+        [ngClass]="
+          tableUtilsService.getTdClassForKey(element.keyMap.key).concat(host().isEditingUser() ? ['padding-0'] : [])
+        "
+        mat-cell>
+        <div class="value-row">
+          <div class="value-content">
+            @switch (element.keyMap.key) {
+              @case ("user_name") {
+                @if (host().isEditingUser() && userService.selectedUserRealm() !== "") {
+                  <mat-form-field
+                    class="input-width-m height-52"
+                    subscriptSizing="dynamic">
+                    <mat-label>Enter User</mat-label>
+                    <app-clearable-input
+                      (clearButtonClick)="userService.selectionFilter.set('')"
+                      [showClearButton]="userService.selectionFilter() !== ''">
+                      <input
+                        [value]="userService.selectionFilter()"
+                        (input)="userService.selectionFilter.set($any($event.target).value)"
+                        [matAutocomplete]="userAuto"
+                        matInput />
+                      <mat-autocomplete
+                        #userAuto="matAutocomplete"
+                        (optionSelected)="userService.selectionFilter.set($event.option.value)"
+                        class="user-selection-autocomplete">
+                        @for (option of userService.selectionFilteredUsernames(); track option) {
+                          <mat-option [value]="option">{{ option }}</mat-option>
+                        }
+                      </mat-autocomplete>
+                    </app-clearable-input>
+                  </mat-form-field>
+                } @else {
+                  <app-copyable [copyText]="element.value">
+                    <a
+                      (click)="contentService.userSelected(element.value, element['user_realm'])"
+                      (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
+                      "
+                      i18n-aria-label="{{ element.keyMap.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ element.value }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("user_realm") {
+                @if (host().isEditingUser()) {
+                  <mat-form-field
+                    class="input-width-m height-52"
+                    subscriptSizing="dynamic">
+                    <mat-label i18n>Select Realm of User</mat-label>
+                    <mat-select
+                      (selectionChange)="userService.selectedUserRealm.set($event.value)"
+                      [value]="userService.selectedUserRealm()">
+                      @for (option of realmService.realmOptions(); track option) {
+                        <mat-option value="{{ option }}">{{ option }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                } @else {
+                  <app-copyable [copyText]="element.value">
+                    <span>{{ element.value }}</span>
+                  </app-copyable>
+                }
+              }
+              @default {
+                <span>{{ element.value }}</span>
+              }
+            }
+          </div>
+          <div class="value-edit">
+            @if (authService.actionAllowed("container_unassign_user")) {
+              @if (element.keyMap.key === "user_name" && !(host().isAnyEditing() && !host().isEditingUser())) {
+                @if (element.value) {
+                  <button
+                    (click)="host().unassignUser()"
+                    class="yellow"
+                    i18n-aria-label="Unassign User"
+                    mat-icon-button>
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                } @else {
+                  <app-edit-buttons
+                    [cancelEdit]="host().cancelContainerEdit.bind(host())"
+                    [element]="element"
+                    [isEditingInfo]="host().isEditingInfo()"
+                    [isEditingUser]="host().isEditingUser()"
+                    [saveEdit]="host().saveContainerEdit.bind(host())"
+                    [shouldHideEdit]="host().isAnyEditing()"
+                    [toggleEdit]="host().toggleContainerEdit.bind(host())"></app-edit-buttons>
+                }
+              }
+            }
+          </div>
+        </div>
+      </td>
+    </ng-container>
+    <tr
+      *matRowDef="let row; columns: ['key', 'value']"
+      class="height-52"
+      mat-row></tr>
+  </table>
+</app-details-card>
