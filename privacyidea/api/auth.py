@@ -511,8 +511,7 @@ def get_auth_token():
     if auth_event_type is None:
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (admin_auth or user_auth) else AuthEventType.PASSWORD_FAIL
     log_authentication(auth_event_type, user=user, serial=serials or details.get("serial"),
-                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
-                       login=username if auth_event_type == AuthEventType.USER_UNKNOWN else None)
+                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"))
 
     if not admin_auth and not user_auth:
         raise AuthError(_("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,

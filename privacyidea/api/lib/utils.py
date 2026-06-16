@@ -216,7 +216,7 @@ def getLowerParams(param):
     return ret
 
 
-def log_authentication(event_type, user=None, serial=None, transaction_id=None):
+def log_authentication(event_type, user=None, serial=None, transaction_id=None, previous_transaction_id=None):
     """
     Write one authentication_log entry for the current request.
 
@@ -253,6 +253,7 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None):
     return log_authentication_event(
         event_type=event_type,
         transaction_id=transaction_id,
+        previous_transaction_id=previous_transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,

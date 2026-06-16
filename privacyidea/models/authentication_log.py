@@ -40,6 +40,7 @@ authentication_log_column_length = {
     "client_label": 1024,
     "serial": 1024,
     "transaction_id": 1024,
+    "previous_transaction_id": 1024,
 }
 
 
@@ -47,7 +48,9 @@ class AuthenticationLog(MethodsMixin, db.Model):
     """
     Append-only log of authentication events: every authenticated HTTP request produces exactly one row.
     Several rows may share a ``transaction_id`` to correlate the multiple requests of one logical authentication
-    attempt (e.g. a challenge trigger and its later response) at query time.
+    attempt (e.g. a challenge trigger and its later response) at query time. In multi-challenge flows where answering
+    one challenge triggers another, ``previous_transaction_id`` records the old transaction so the full chain can be
+    reconstructed.
     """
     __tablename__ = "authentication_log"
     __table_args__ = (
@@ -66,6 +69,7 @@ class AuthenticationLog(MethodsMixin, db.Model):
     client_label: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["client_label"]))
     serial: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["transaction_id"]))
+    previous_transaction_id: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["previous_transaction_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
 
     @property

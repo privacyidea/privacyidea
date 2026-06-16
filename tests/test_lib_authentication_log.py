@@ -54,13 +54,14 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(entry.client_label)
         self.assertIsNone(entry.serial)
         self.assertIsNone(entry.transaction_id)
+        self.assertIsNone(entry.previous_transaction_id)
         self.assertIsNone(entry.other_info)
 
     def test_create_all_fields(self):
         event_id = log_authentication_event(
             event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
             username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
-            transaction_id="txn-123", other_info={"key": "value"}
+            transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
         )
 
         entry = get_authentication_log_event(event_id)
@@ -70,6 +71,7 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("vpn", entry.client_label)
         self.assertEqual("TOK001", entry.serial)
         self.assertEqual("txn-123", entry.transaction_id)
+        self.assertEqual("txn-prev", entry.previous_transaction_id)
         self.assertEqual({"key": "value"}, entry.other_info)
 
     def test_create_returns_unique_ids(self):
@@ -211,6 +213,7 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(entry.uid)
         self.assertIsNone(entry.realm)
         self.assertIsNone(entry.username)
+        self.assertIsNone(entry.previous_transaction_id)
         self.assertEqual("10.0.0.1", entry.source_ip)
 
     def test_cleanup_removes_old_entries(self):
@@ -303,10 +306,12 @@ class AuthenticationLogTestCase(MyTestCase):
 
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=over("resolver"),
                                             uid="u1", realm="r1", username=over("username"),
-                                            client_label=over("client_label"), serial=over("serial"))
+                                            client_label=over("client_label"), serial=over("serial"),
+                                            previous_transaction_id=over("previous_transaction_id"))
         entry = get_authentication_log_event(event_id)
         assert entry is not None
         self.assertEqual("X" * authentication_log_column_length["resolver"], entry.resolver)
         self.assertEqual("X" * authentication_log_column_length["username"], entry.username)
         self.assertEqual("X" * authentication_log_column_length["client_label"], entry.client_label)
         self.assertEqual("X" * authentication_log_column_length["serial"], entry.serial)
+        self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"], entry.previous_transaction_id)

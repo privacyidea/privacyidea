@@ -60,6 +60,7 @@ def _truncate(column: str, value) -> str | None:
 
 def log_authentication_event(event_type: AuthEventType,
                              transaction_id: str | None = None,
+                             previous_transaction_id: str | None = None,
                              resolver: str | None = None,
                              uid: str | None = None,
                              realm: str | None = None,
@@ -78,6 +79,7 @@ def log_authentication_event(event_type: AuthEventType,
     entry = AuthenticationLog(
         event_type=_truncate("event_type", event_type),
         transaction_id=_truncate("transaction_id", transaction_id),
+        previous_transaction_id=_truncate("previous_transaction_id", previous_transaction_id),
         resolver=_truncate("resolver", resolver),
         uid=_truncate("uid", uid),
         realm=_truncate("realm", realm),
@@ -133,7 +135,11 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
             entry.event_type = _truncate("event_type", event_type)
             entry.serial = _truncate("serial", serial)
             if transaction_id:
-                entry.transaction_id = _truncate("transaction_id", transaction_id)
+                new_txn = _truncate("transaction_id", transaction_id)
+                old_txn = entry.transaction_id
+                if old_txn and new_txn != old_txn:
+                    entry.previous_transaction_id = old_txn
+                entry.transaction_id = new_txn
         db.session.commit()
     except Exception as ex:
         log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")

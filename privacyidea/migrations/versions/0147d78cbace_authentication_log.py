@@ -59,6 +59,7 @@ def upgrade():
             sa.Column('client_label', sa.Unicode(length=1024), nullable=True),
             sa.Column('serial', sa.Unicode(length=1024), nullable=True),
             sa.Column('transaction_id', sa.Unicode(length=1024), nullable=True),
+            sa.Column('previous_transaction_id', sa.Unicode(length=1024), nullable=True),
             sa.Column('other_info', sa.JSON(), nullable=True),
             sa.PrimaryKeyConstraint('id'),
         )
