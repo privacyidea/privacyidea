@@ -23,7 +23,7 @@ row is its own `INSERT`, datetime literals use the ANSI `TIMESTAMP '...'` form,
 and sequence-backed PKs use `DEFAULT <seq>.nextval` (so the sequences are
 created before the tables). The migration test suite drives Oracle when
 `TEST_DATABASE_URL` starts with `oracle` — `docker-compose.dev.yml` provides a
-matching `oracle-test` (gvenzl/oracle-xe:21c) container.
+matching `oracle-test` (gvenzl/oracle-xe:21-slim) container.
 
 ## Generating seeds
 

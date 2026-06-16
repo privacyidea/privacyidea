@@ -51,11 +51,11 @@ jobs:
 
     services:
       mariadb:
-        # Pull requests test MariaDB 10.11 (the LTS most installs run, e.g. the
-        # Ubuntu 24.04 default); the nightly schedule tests the rolling 11.x as
-        # a forward-compatibility "lookahead". Version-specific DDL is covered
-        # for both on every migration change by migration-tests.yml.
-        image: ${{ github.event_name == 'schedule' && 'mariadb:11' || 'mariadb:10.11' }}
+        # MariaDB 10.11 is the LTS most installations run (the Ubuntu 24.04
+        # default). Kept as a literal tag: a ${{ }} expression in image: is
+        # flagged by zizmor as an unpinned reference. Both 10.11 and 11 are
+        # covered for version-specific DDL by migration-tests.yml.
+        image: mariadb:10.11
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: privacyidea_test

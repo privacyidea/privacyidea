@@ -107,14 +107,17 @@ def downgrade():
 
     # Oracle cannot alter a CLOB column back to VARCHAR2 (ORA-22859), so reverse
     # the upgrade's CLOB conversion the same way it was applied: add a VARCHAR2
-    # column, copy the data across (values longer than 2000 chars are truncated
-    # on downgrade), then swap the columns by renaming.
+    # column, copy the data across, then swap the columns by renaming. The copy
+    # uses DBMS_LOB.SUBSTR to explicitly truncate to 2000 chars — a direct
+    # CLOB->VARCHAR2 assignment errors (ORA-12899/ORA-22835) instead of
+    # truncating when a value exceeds the column width, which would make the
+    # downgrade fail on real data.
     if context.get_context().dialect.name == "oracle":
         op.execute(
             """
             begin
             execute immediate 'alter table policy add (action_small varchar2(2000))';
-            execute immediate 'update policy set action_small = action';
+            execute immediate 'update policy set action_small = dbms_lob.substr(action, 2000, 1)';
             execute immediate 'alter table policy rename column action to action_old';
             execute immediate 'alter table policy rename column action_small to action';
             execute immediate 'alter table policy drop column action_old';

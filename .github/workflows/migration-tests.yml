@@ -46,28 +46,27 @@ jobs:
         db:
           # MariaDB 10.11 is the LTS most installs run (Ubuntu 24.04 default);
           # 11.x is the rolling latest. Migrations emit version-specific DDL, so
-          # both are exercised here (this job is path-gated to migration/model
-          # changes, so the extra entry rarely runs).
+          # both are exercised (this job is path-gated to migration/model
+          # changes, so the extra entry rarely runs). Both versions run as static
+          # service containers below — 10.11 on host port 3306, 11 on 3307 — so
+          # the image stays a literal tag; a ${{ }} expression in image: is
+          # flagged by zizmor as an unpinned reference. Each entry's db_url
+          # targets the right port.
           - label: MariaDB 10.11
             db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
             pip_extra: "PyMySQL"
-            mariadb_image: "mariadb:10.11"
 
           - label: MariaDB 11
-            db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+            db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3307/privacyidea_migration_test"
             pip_extra: "PyMySQL"
-            mariadb_image: "mariadb:11"
 
           - label: PostgreSQL
             db_url: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_migration_test"
             pip_extra: "psycopg2-binary"
-            # Unused by the PostgreSQL entry, but the shared services block below
-            # starts a mariadb container for every matrix job; pin a valid tag.
-            mariadb_image: "mariadb:11"
 
     services:
-      mariadb:
-        image: ${{ matrix.db.mariadb_image }}
+      mariadb1011:
+        image: mariadb:10.11
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: privacyidea_migration_test
@@ -75,6 +74,21 @@ jobs:
           MARIADB_PASSWORD: privacyidea
         ports:
           - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      mariadb11:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: privacyidea_migration_test
+          MARIADB_USER: privacyidea
+          MARIADB_PASSWORD: privacyidea
+        ports:
+          - 3307:3306
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s
