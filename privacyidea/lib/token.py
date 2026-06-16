@@ -2719,7 +2719,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                         create_challenges_from_tokens([token_object], reply_dict, options)
                         further_challenge = True
                         res = False
-                        request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
+                        request_events.append(AuthEventType.CHALLENGE_CONTINUED)
                     else:
                         # This was the last successful challenge, so
                         # reset the fail counter of the challenge response token
