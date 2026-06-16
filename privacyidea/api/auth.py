@@ -309,7 +309,7 @@ def get_auth_token():
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
-            log_authentication(AuthEventType.USER_UNKNOWN, transaction_id=transaction_id, login=username)
+            log_authentication(AuthEventType.USER_UNKNOWN, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. Token has no user."),
                             id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):

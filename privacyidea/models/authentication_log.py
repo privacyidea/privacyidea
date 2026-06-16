@@ -34,6 +34,7 @@ authentication_log_column_length = {
     "resolver": 120,
     "uid": 320,
     "realm": 255,
+    "username": 255,
     "event_type": 40,
     "source_ip": 50,
     "client_label": 1024,
@@ -58,6 +59,7 @@ class AuthenticationLog(MethodsMixin, db.Model):
     resolver: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["resolver"]))
     uid: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["uid"]))
     realm: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["realm"]))
+    username: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["username"]))
     event_type: Mapped[str] = mapped_column(Unicode(authentication_log_column_length["event_type"]), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["source_ip"]))

@@ -52,6 +52,7 @@ def upgrade():
             sa.Column('resolver', sa.Unicode(length=120), nullable=True),
             sa.Column('uid', sa.Unicode(length=320), nullable=True),
             sa.Column('realm', sa.Unicode(length=255), nullable=True),
+            sa.Column('username', sa.Unicode(length=255), nullable=True),
             sa.Column('event_type', sa.Unicode(length=40), nullable=False),
             sa.Column('timestamp', sa.DateTime(), nullable=False),
             sa.Column('source_ip', sa.Unicode(length=50), nullable=True),

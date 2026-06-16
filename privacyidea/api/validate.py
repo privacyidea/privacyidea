@@ -741,7 +741,6 @@ def _handle_standard_auth(context: dict):
             # classify it. Record the outcome on the context; check() logs it once in its finally.
             if not context["user"] or not context["user"].exist():
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
-                context["login"] = context["user"].login if context["user"] else None
             raise
 
         # A policy decorator (passthru, passonnouser, authcache, accept-no-token) can
@@ -832,7 +831,6 @@ def _log_authentication_event(context):
         serial=",".join(context["serial_list"]) or None,
         transaction_id=(request.all_data.get("transaction_id") or request.all_data.get("state")
                         or context["details"].get("transaction_id")),
-        login=context.get("login"),
     )
 
 

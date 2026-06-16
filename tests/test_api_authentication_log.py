@@ -133,13 +133,12 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         # An unknown user is rejected by the auth_user_does_not_exist policy decorator;
         # the API catches that and still logs USER_UNKNOWN (high-signal for stuffing).
         with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"user": "doesnotexist", "pass": "whatever"}):
+                                           data={"user": "doesnotexist", "realm": self.realm1, "pass": "whatever"}):
             res = self.app.full_dispatch_request()
             self.assertFalse(res.json["result"]["status"], res.json)
         entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
-        # TODO: What should be logged here for the user?
-        assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=None,
-                                        other_info={"login": "doesnotexist"})
+        assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN],
+                                        user=User("doesnotexist", self.realm1))
 
     def test_pass_on_no_user_logs_login_success(self):
         # An unknown user accepted by a PASSONNOUSER policy is a successful login.
@@ -151,9 +150,8 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         finally:
             delete_policy("passonnouser")
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        # TODO: What should be logged here for the user?
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=None)
-        # self.assertIsNone(entries[AuthEventType.LOGIN_SUCCESS].uid)
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
+                                        user=User("doesnotexist", self.realm1))
 
     # --- Normal auth: a single request with PIN/password + OTP concatenated ---
 
@@ -525,14 +523,14 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
         # A wrong /auth login (local admin, userstore mode) is logged as PASSWORD_FAIL
         self._auth({"username": self.testadmin, "password": "wrong"}, status=401)
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=None)
+        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=User(self.testadmin))
 
         self._clear_log()
         # A successful /auth login is logged as LOGIN_SUCCESS
         body = self._auth({"username": self.testadmin, "password": self.testadminpw})
         self.assertTrue(body["result"]["value"]["token"], body)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=None)
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User(self.testadmin))
 
     # --- Normal auth (LOGINMODE=privacyIDEA, login with PIN+OTP) ---
 

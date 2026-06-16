@@ -216,7 +216,7 @@ def getLowerParams(param):
     return ret
 
 
-def log_authentication(event_type, user=None, serial=None, transaction_id=None, login=None):
+def log_authentication(event_type, user=None, serial=None, transaction_id=None):
     """
     Write one authentication_log entry for the current request.
 
@@ -226,9 +226,8 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
     ``client_id`` parameter if supplied, otherwise the User-Agent header.
 
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
-    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with all three None.
-    ``login`` records the claimed username for forensics when there is no resolved
-    identity, stored in ``other_info``.
+    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
+    None while realm and username are still captured from the User object.
 
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
@@ -256,11 +255,11 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
         transaction_id=transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
-        realm=user.realm if resolved else None,
+        realm=(user.realm or None) if user else None,
+        username=(user.login or None) if user else None,
         source_ip=g.client_ip,
         client_label=client_label,
         serial=serial,
-        other_info={"login": login} if login else None,
     )
 
 

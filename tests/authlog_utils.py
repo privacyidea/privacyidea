@@ -88,16 +88,23 @@ def assert_authentication_log_entry(entry: AuthenticationLog, user: User = None,
     event_type is covered by the ordered list in :func:`assert_authentication_log`.
 
     :param entry: an AuthenticationLog entry (e.g. one returned by :func:`assert_authentication_log`)
-    :param user: the entry must carry this user's (resolver, uid, realm); when no user is given, the entry must carry
-        no user (all three None)
+    :param user: the expected identity. All four fields — resolver, uid, realm, and username (login) — are read from
+        this object, with empty strings normalised to None. Pass a fully resolved User for authenticated requests;
+        pass a partially resolved User (resolver and uid will be None, realm and login still set) for cases where the
+        user was not found in a resolver (e.g. USER_UNKNOWN or PASSONNOUSER). Pass None when no identity at all is
+        expected (e.g. userless challenges or local-admin logins).
     :param serials: the entry must carry a comma separated list of these serials (default None: no serial)
     :param client_label: the entry must carry this client_label (default None: no client_label)
     :param other_info: the entry must carry this other_info (default None: no other_info)
     :param transaction_id: the entry must carry this transaction_id (default None: no transaction_id)
     :param source_ip: the entry must carry this source_ip (default None: no source_ip)
     """
-    expected_user = (user.resolver, user.uid, user.realm) if user is not None else (None, None, None)
-    assert (entry.resolver, entry.uid, entry.realm) == expected_user
+    expected_resolver = (user.resolver or None) if user is not None else None
+    expected_uid = (user.uid or None) if user is not None else None
+    expected_realm = (user.realm or None) if user is not None else None
+    expected_username = (user.login or None) if user is not None else None
+    assert (entry.resolver, entry.uid, entry.realm) == (expected_resolver, expected_uid, expected_realm)
+    assert entry.username == expected_username
     assert entry.client_label == client_label
     assert entry.other_info == other_info
     assert entry.transaction_id == transaction_id
