@@ -60,7 +60,7 @@ export class SubscriptionComponent {
 
   upload(event: Event): void {
     const element = event.currentTarget as HTMLInputElement;
-    let fileList: FileList | null = element.files;
+    const fileList: FileList | null = element.files;
     if (fileList && fileList.length > 0) {
       this.subscriptionService.uploadSubscriptionFile(fileList[0]).subscribe(() => {
         this.notificationService.success("File uploaded successfully.");

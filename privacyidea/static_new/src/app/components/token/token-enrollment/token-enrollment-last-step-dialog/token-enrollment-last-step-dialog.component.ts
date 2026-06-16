@@ -46,7 +46,7 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Object = Object;
   protected readonly serial = this.data.response?.detail?.serial ?? "";
-  protected readonly containerSerial = this.data.response?.detail?.["container_serial"] ?? "";
+  protected readonly containerSerial = (this.data.response?.detail?.["container_serial"] ?? "") as string;
   protected readonly qrCode =
     this.data.response?.detail.googleurl?.img ??
     this.data.response?.detail.motpurl?.img ??

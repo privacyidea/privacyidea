@@ -37,5 +37,5 @@ export class MockConfigService implements ConfigServiceInterface {
     passkey_login: "show"
   });
 
-  loadConfig = jest.fn().mockImplementation(() => {});
+  loadConfig = jest.fn().mockReturnValue(undefined);
 }

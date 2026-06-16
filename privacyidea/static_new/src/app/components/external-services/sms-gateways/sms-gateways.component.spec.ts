@@ -18,7 +18,6 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -28,46 +27,49 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockAuthService, MockDialogService, MockTableUtilsService } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockSmsGatewayService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { SmsGatewaysComponent } from "./sms-gateways.component";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;
   let fixture: ComponentFixture<SmsGatewaysComponent>;
-  let smsGatewayServiceMock: any;
+  let smsGatewayServiceMock: MockSmsGatewayService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<SaveAndExitDialogResult>;
   let router: Router;
 
   beforeEach(async () => {
-    smsGatewayServiceMock = {
-      smsGateways: signal([
-        { name: "gw1", providermodule: "mod1" },
-        { name: "gw2", providermodule: "mod2" }
-      ]),
-      deleteSmsGateway: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [SmsGatewaysComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: SmsGatewayService, useValue: smsGatewayServiceMock },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
 
+    smsGatewayServiceMock = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
+    smsGatewayServiceMock.smsGateways.set([
+      { name: "gw1", providermodule: "mod1", options: {}, headers: {} },
+      { name: "gw2", providermodule: "mod2", options: {}, headers: {} }
+    ]);
+
     fixture = TestBed.createComponent(SmsGatewaysComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 

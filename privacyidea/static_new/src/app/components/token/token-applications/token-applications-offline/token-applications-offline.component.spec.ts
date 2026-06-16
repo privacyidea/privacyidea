@@ -40,7 +40,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsOfflineComponent>;
   let component: TokenApplicationsOfflineComponent;
   let machineServiceMock: MockMachineService;
-  let mockTokenService: Partial<TokenService> = {};
+  const mockTokenService: Partial<TokenService> = {};
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -60,7 +60,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenApplicationsOfflineComponent);
-    machineServiceMock = TestBed.inject(MachineService) as any;
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

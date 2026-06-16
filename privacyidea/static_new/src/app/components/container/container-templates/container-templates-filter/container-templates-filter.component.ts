@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, ElementRef, Input, output, signal, viewChild } from "@angular/core";
+import { Component, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
@@ -40,7 +40,7 @@ export class ContainerTemplatesFilterComponent {
     }
   }
 
-  @Input() unfilteredPolicies: ContainerTemplate[] = [];
+  unfilteredPolicies = input<ContainerTemplate[]>([]);
 
   readonly filterChange = output<FilterValueGeneric<ContainerTemplate>>();
   readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>("filterHTMLInputElement");

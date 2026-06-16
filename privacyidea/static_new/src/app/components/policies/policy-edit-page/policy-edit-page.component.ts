@@ -111,15 +111,13 @@ export class PolicyEditPageComponent implements OnDestroy {
   }
 
   async onSave(): Promise<boolean> {
-    let success = false;
-    if (this.mode() === "create") {
-      success = await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() });
-    } else {
-      success = await this.policyService.savePolicyEdits(this.policy().name, {
-        ...this.policy(),
-        ...this.policyEdits()
-      });
-    }
+    const success =
+      this.mode() === "create"
+        ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
+        : await this.policyService.savePolicyEdits(this.policy().name, {
+            ...this.policy(),
+            ...this.policyEdits()
+          });
     if (success) {
       this._navigateBack();
     }

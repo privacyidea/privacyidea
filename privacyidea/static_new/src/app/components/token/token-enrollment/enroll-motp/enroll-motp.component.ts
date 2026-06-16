@@ -68,12 +68,12 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
 
   motpPinForm = form(this.motpPin, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 4 ? [{ kind: "minlength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length < 4 ? [{ kind: "minlength" }] : []));
     disabled(f, () => this.disabled());
   });
 
   repeatMotpPinForm = form(this.repeatMotpPin, (f) => {
-    validate(f, (ctx) => (ctx.value() !== this.motpPin() ? [{ kind: "motpPinMismatch" as any }] : []));
+    validate(f, (ctx) => (ctx.value() !== this.motpPin() ? [{ kind: "motpPinMismatch" }] : []));
     disabled(f, () => this.disabled());
   });
 

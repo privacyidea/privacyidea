@@ -46,14 +46,7 @@ const EMPTY_SERVICE_ID_FORM: ServiceIdFormModel = {
 @Component({
   selector: "app-new-service-id",
   standalone: true,
-  imports: [
-    FormField,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    ClearableInputComponent
-  ],
+  imports: [FormField, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, ClearableInputComponent],
   templateUrl: "./new-service-id.component.html",
   styleUrl: "./new-service-id.component.scss"
 })
@@ -138,7 +131,7 @@ export class NewServiceIdComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

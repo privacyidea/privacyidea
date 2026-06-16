@@ -53,7 +53,7 @@ export class PaperApiPayloadMapper extends BaseApiPayloadMapper implements Token
     return payload;
   }
 
-  override fromApiPayload(payload: any): PaperEnrollmentData {
+  override fromApiPayload(payload: PaperEnrollmentPayload): PaperEnrollmentData {
     return {
       ...payload,
       otpLength: payload.otplen,

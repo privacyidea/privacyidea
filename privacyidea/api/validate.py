@@ -113,7 +113,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
@@ -493,7 +493,8 @@ def check():
         "serial_list": [],
         "is_container_challenge": False,
         AUTH_EVENT_TYPE_KEY: None,
-        "options": request.all_data.copy()
+        # Build the token options from the request, but strip the internal keys
+        "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
     # Add standard context to options and the user object again, because options is passed down to every function
     context["options"].update({"g": g, "clientip": g.client_ip})
@@ -1017,9 +1018,8 @@ def trigger_challenge():
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
 
-    # Add all params to the options
-    options: dict = {}
-    options.update(request.all_data)
+    # Add request params to the options, minus the internal token-engine state keys
+    options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)

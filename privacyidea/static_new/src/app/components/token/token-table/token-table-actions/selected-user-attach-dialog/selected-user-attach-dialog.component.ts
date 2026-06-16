@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
@@ -58,14 +58,17 @@ export interface SelectedUserAssignResult {
   templateUrl: "./selected-user-attach-dialog.component.html",
   styleUrl: "./selected-user-attach-dialog.component.scss"
 })
-export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<any, SelectedUserAssignResult | null> {
+export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
+  undefined,
+  SelectedUserAssignResult | null
+> {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  pin: WritableSignal<string> = signal("");
-  pinRepeat: WritableSignal<string> = signal("");
-  hidePin: WritableSignal<boolean> = signal(true);
+  pin = signal("");
+  pinRepeat = signal("");
+  hidePin = signal(true);
   selectedRealm = signal(this.userService.selectedUserRealm());
   selectedUser = signal<UserData | null>(null);
   userFilter = signal(this.userService.selectionFilter());

@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { AfterViewInit, Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";

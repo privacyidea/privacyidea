@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { WritableSignal, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource } from "@angular/material/table";
 import { ContainerDetailToken } from "@services/container/container.service";
@@ -24,12 +24,8 @@ import { TokenApplication } from "@services/machine/machine.service";
 import { ColumnDef, ColumnKey, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 export class MockTableUtilsService implements TableUtilsServiceInterface {
-  pageSizeOptions: WritableSignal<number[]> = signal([5, 10, 25, 50]);
-  emptyDataSource = jest.fn().mockImplementation((_pageSize: number, _columns: { key: string; label: string }[]) => {
-    const dataSource = new MatTableDataSource<TokenApplication>([]);
-    (dataSource as any).isEmpty = true;
-    return dataSource;
-  });
+  pageSizeOptions = signal([5, 10, 25, 50]);
+  emptyDataSource = jest.fn().mockImplementation(() => new MatTableDataSource<TokenApplication>([]));
   toggleKeywordInFilter = jest.fn();
   public toggleBooleanInFilter = jest.fn();
   isLink = jest.fn().mockReturnValue(false);
@@ -46,20 +42,21 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
   getDisplayTextForState = jest.fn().mockReturnValue("");
 
   pickColumns<const K extends readonly ColumnKey[]>(...keys: K) {
-    return keys.map((k) => ({ key: k as any, label: String(k) })) as any;
+    return keys.map((k) => ({ key: k, label: String(k) })) as {
+      readonly [I in keyof K]: ColumnDef<Extract<K[I], ColumnKey>>;
+    };
   }
 
   getColumnKeys<const C extends readonly ColumnDef[]>(cols: C) {
-    return cols.map((c) => c.key) as any;
+    return cols.map((c) => c.key) as {
+      readonly [I in keyof C]: C[I] extends ColumnDef<infer KK> ? KK : never;
+    };
   }
 
-  getSortIcon(_columnKey: string, _sort: Sort): string {
-    return "";
-  }
-
-  onSortButtonClick(_key: string, _sort: WritableSignal<Sort>): void {}
-
+  getSortIcon = jest.fn().mockReturnValue("");
+  onSortButtonClick = jest.fn();
   clientsideSortTokenData(data: ContainerDetailToken[], _s: Sort): ContainerDetailToken[] {
+    void _s;
     return data;
   }
 

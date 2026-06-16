@@ -74,7 +74,6 @@
     class="periodic-task-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="select">
       <th
         *matHeaderCellDef
@@ -223,7 +222,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr

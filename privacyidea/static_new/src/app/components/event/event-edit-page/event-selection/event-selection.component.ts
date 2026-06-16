@@ -120,9 +120,10 @@ export class EventSelectionComponent {
     });
   }
 
-  onSearchInputChanges(event: any): void {
-    this.lastSearchTerm = event.target.value;
-    this.searchTerm.set(event.target.value);
+  onSearchInputChanges(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.lastSearchTerm = value;
+    this.searchTerm.set(value);
   }
 
   remainingEvents = linkedSignal({

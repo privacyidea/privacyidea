@@ -18,24 +18,41 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { signal } from "@angular/core";
+import { MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { SmsGateway, SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import {
+  SmsGateway,
+  SmsGatewayService,
+  SmsProviderParameter,
+  SmsProviders
+} from "@services/sms-gateway/sms-gateway.service";
 import { MockDialogService } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockSmsGatewayService } from "@testing/mock-services/mock-sms-gateway-service";
-import { of } from "rxjs";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { Observable, of } from "rxjs";
 import { NewSmsGatewayComponent } from "./new-sms-gateway.component";
+
+type ProvidersValueSignal = WritableSignal<PiResponse<SmsProviders> | undefined>;
+const providersValueSignal = (mock: MockSmsGatewayService): ProvidersValueSignal =>
+  mock.smsProvidersResource.value as ProvidersValueSignal;
+
+interface ComponentInternals {
+  data: SmsGateway | null;
+}
+const internals = (component: NewSmsGatewayComponent): ComponentInternals => component as unknown as ComponentInternals;
 
 describe("NewSmsGatewayComponent", () => {
   let component: NewSmsGatewayComponent;
   let fixture: ComponentFixture<NewSmsGatewayComponent>;
-  let smsGatewayServiceMock: any;
+  let smsGatewayServiceMock: MockSmsGatewayService;
   let router: Router;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
@@ -57,19 +74,17 @@ describe("NewSmsGatewayComponent", () => {
       ]
     }).compileComponents();
 
-    smsGatewayServiceMock = TestBed.inject(SmsGatewayService);
+    smsGatewayServiceMock = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
-    (smsGatewayServiceMock.smsProvidersResource as any).value.set({
-      result: {
-        value: {
-          mod1: { parameters: { p1: { description: "desc1" } } }
-        }
-      }
-    });
+    providersValueSignal(smsGatewayServiceMock).set(
+      MockPiResponse.fromValue({
+        mod1: { parameters: { p1: { description: "desc1" } } }
+      })
+    );
 
     fixture = TestBed.createComponent(NewSmsGatewayComponent);
     component = fixture.componentInstance;
@@ -86,7 +101,7 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   it("should update parameters when provider changes", async () => {
-    component.smsModel.update(m => ({ ...m, providermodule: "mod1" }));
+    component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
     fixture.detectChanges();
     await fixture.whenStable();
     expect(component.parametersModel()["p1"]).toBeDefined();
@@ -122,13 +137,15 @@ describe("NewSmsGatewayComponent", () => {
   });
 
   describe("onCancel", () => {
-    let mockSaveExitDialogRef: any;
+    let mockSaveExitDialogRef: { afterClosed: jest.Mock<Observable<string | undefined>> };
 
     beforeEach(() => {
       mockSaveExitDialogRef = {
         afterClosed: jest.fn()
       };
-      dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
+      dialogService.openDialog.mockReturnValue(
+        mockSaveExitDialogRef as unknown as MatDialogRef<SaveAndExitDialogComponent>
+      );
     });
 
     it("should navigate back directly when there are no changes", () => {
@@ -215,7 +232,7 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.smsModel.update(m => ({ ...m, name: "" }));
+      component.smsModel.update((m) => ({ ...m, name: "" }));
       component.parametersDirty.set(true);
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
@@ -248,35 +265,31 @@ describe("NewSmsGatewayComponent", () => {
 
   describe("parameters and validation", () => {
     it("parametersValid should be false when a required parameter is missing", () => {
-      (smsGatewayServiceMock.smsProvidersResource as any).value.set({
-        result: {
-          value: {
-            mod1: {
-              parameters: {
-                required_p: { description: "d", required: true },
-                optional_p: { description: "d2" }
-              }
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          mod1: {
+            parameters: {
+              required_p: { description: "d", required: true },
+              optional_p: { description: "d2" }
             }
           }
-        }
-      });
+        })
+      );
       component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
       component.onProviderChange("mod1");
       expect(component.parametersValid()).toBe(false);
     });
 
     it("parametersValid should be true when required parameters are filled", () => {
-      (smsGatewayServiceMock.smsProvidersResource as any).value.set({
-        result: {
-          value: {
-            mod1: {
-              parameters: {
-                required_p: { description: "d", required: true }
-              }
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          mod1: {
+            parameters: {
+              required_p: { description: "d", required: true }
             }
           }
-        }
-      });
+        })
+      );
       component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
       component.onProviderChange("mod1");
       component.updateParameter("required_p", "value");
@@ -398,23 +411,21 @@ describe("NewSmsGatewayComponent", () => {
 
   describe("edit mode", () => {
     it("onProviderChange in edit mode should fill custom options from data not matching provider parameters", () => {
-      (smsGatewayServiceMock.smsProvidersResource as any).value.set({
-        result: {
-          value: {
-            mod1: {
-              parameters: { p1: { description: "d", required: true } }
-            }
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          mod1: {
+            parameters: { p1: { description: "d", required: true } }
           }
-        }
-      });
-      (component as any).isEditMode.set(true);
-      (component as any).data = {
+        })
+      );
+      component.isEditMode.set(true);
+      internals(component).data = {
         id: 42,
         name: "edit-gw",
         providermodule: "mod1",
         options: { p1: "fromData", extra: "custom-val" },
         headers: { "X-Auth": "secret" }
-      } as SmsGateway;
+      };
       component.smsModel.update((m) => ({ ...m, providermodule: "mod1" }));
 
       component.onProviderChange("mod1");
@@ -425,40 +436,36 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("save in edit mode should include the gateway id in the payload", async () => {
-      (component as any).isEditMode.set(true);
-      (component as any).data = {
+      component.isEditMode.set(true);
+      internals(component).data = {
         id: 99,
         name: "edit-gw",
         providermodule: "mod1",
         options: {},
         headers: {}
-      } as SmsGateway;
+      };
       component.smsModel.set({ name: "edit-gw", providermodule: "mod1", description: "x" });
 
       await component.save();
 
-      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 99 })
-      );
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalledWith(expect.objectContaining({ id: 99 }));
     });
   });
 
   describe("providerEntries / parameterEntries", () => {
     it("providerEntries should map current providers to entries", () => {
-      (smsGatewayServiceMock.smsProvidersResource as any).value.set({
-        result: {
-          value: {
-            modA: { parameters: {} },
-            modB: { parameters: {} }
-          }
-        }
-      });
+      providersValueSignal(smsGatewayServiceMock).set(
+        MockPiResponse.fromValue({
+          modA: { parameters: {} },
+          modB: { parameters: {} }
+        })
+      );
       const entries = component.providerEntries();
       expect(entries.map((e) => e.key).sort()).toEqual(["modA", "modB"]);
     });
 
     it("parameterEntries should return entries for currently selected provider", () => {
-      component.selectedProvider.set({ parameters: { p1: { description: "d" } as any } });
+      component.selectedProvider.set({ parameters: { p1: { description: "d" } as SmsProviderParameter } });
       const entries = component.parameterEntries();
       expect(entries).toEqual([{ key: "p1", value: { description: "d" } }]);
     });

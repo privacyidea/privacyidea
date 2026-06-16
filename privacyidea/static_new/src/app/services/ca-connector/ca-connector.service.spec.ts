@@ -24,39 +24,30 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { MockContentService, MockPiResponse } from "@testing/mock-services";
-import { CaConnectorService } from "./ca-connector.service";
+import { MockAuthService, MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { CaConnector, CaConnectorService } from "./ca-connector.service";
 
 describe("CaConnectorService", () => {
   let service: CaConnectorService;
   let httpMock: HttpTestingController;
-  let notificationService: NotificationService;
+  let notifyMock: MockNotificationService;
   let contentService: MockContentService;
 
   beforeEach(() => {
-    const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({})
-    };
-    const notificationServiceMock = {
-      success: jest.fn(),
-      error: jest.fn(),
-      warning: jest.fn()
-    };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         CaConnectorService,
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(CaConnectorService);
     httpMock = TestBed.inject(HttpTestingController);
-    notificationService = TestBed.inject(NotificationService);
-    contentService = TestBed.inject(ContentService) as any as MockContentService;
+    notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     contentService.onExternalCaConnectors = signal(true);
   });
 
@@ -69,7 +60,7 @@ describe("CaConnectorService", () => {
   });
 
   it("should post CA connector", async () => {
-    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
+    const connector: CaConnector = { connectorname: "test/1", type: "local", data: {} };
     const promise = service.postCaConnector(connector);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
@@ -77,11 +68,11 @@ describe("CaConnectorService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved CA connector.");
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully saved CA connector.");
   });
 
   it("should show error notification when posting CA connector fails", async () => {
-    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
+    const connector: CaConnector = { connectorname: "test/1", type: "local", data: {} };
     const promise = service.postCaConnector(connector);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
@@ -91,7 +82,7 @@ describe("CaConnectorService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to save CA connector. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to save CA connector. Something went wrong");
   });
 
   it("should delete CA connector", async () => {
@@ -102,7 +93,7 @@ describe("CaConnectorService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted CA connector: test/1.");
+    expect(notifyMock.success).toHaveBeenCalledWith("Successfully deleted CA connector: test/1.");
   });
 
   it("should show error notification when deleting CA connector fails", async () => {
@@ -115,7 +106,7 @@ describe("CaConnectorService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete CA connector. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to delete CA connector. Something went wrong");
   });
 
   it("should get CA specific options", async () => {
@@ -143,7 +134,7 @@ describe("CaConnectorService", () => {
     });
 
     await expect(promise).rejects.toThrow();
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to fetch CA specific options. Something went wrong");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to fetch CA specific options. Something went wrong");
   });
 
   it("should get caConnectors", async () => {

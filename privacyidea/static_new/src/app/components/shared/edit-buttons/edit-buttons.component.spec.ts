@@ -19,11 +19,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { signal } from "@angular/core";
-import { EditButtonsComponent } from "./edit-buttons.component";
+import { EditableElement, EditButtonsComponent } from "./edit-buttons.component";
 
 describe("EditButtonsComponent", () => {
-  let component: EditButtonsComponent<any>;
-  let fixture: ComponentFixture<EditButtonsComponent<any>>;
+  let component: EditButtonsComponent<EditableElement>;
+  let fixture: ComponentFixture<EditButtonsComponent<EditableElement>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -32,13 +32,16 @@ describe("EditButtonsComponent", () => {
 
     fixture = TestBed.createComponent(EditButtonsComponent);
     component = fixture.componentInstance;
-    component.element = {
+    fixture.componentRef.setInput("element", {
       keyMap: { key: "value", label: "label" },
       isEditing: signal(false)
-    };
-    component.isEditingUser = signal(false);
-    component.isEditingInfo = signal(false);
-    component.shouldHideEdit = signal(false);
+    });
+    fixture.componentRef.setInput("isEditingUser", false);
+    fixture.componentRef.setInput("isEditingInfo", false);
+    fixture.componentRef.setInput("shouldHideEdit", false);
+    fixture.componentRef.setInput("toggleEdit", jest.fn());
+    fixture.componentRef.setInput("saveEdit", jest.fn());
+    fixture.componentRef.setInput("cancelEdit", jest.fn());
     fixture.detectChanges();
   });
 

@@ -18,12 +18,14 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, input, model, output, ViewChild } from "@angular/core";
+import { Component, input, model, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { PolicyDetail, PolicyService, ScopedPolicyActions } from "@services/policies/policies.service";
+import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { ActionSelectorComponent } from "./action-selector.component";
+import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
 
 @Component({
   selector: "app-policy-action-item-new",
@@ -31,22 +33,9 @@ import { ActionSelectorComponent } from "./action-selector.component";
   standalone: true
 })
 class MockPolicyActionItemComponent {
-  selectableAction = input.required<any>();
-  actionValue = input<any>();
+  selectableAction = input.required<SelectableAction>();
+  actionValue = input<string | number>();
   focusFirstInput = jest.fn();
-}
-
-@Component({
-  selector: "app-selector-buttons",
-  template: "<div></div>",
-  standalone: true
-})
-class MockSelectorButtonsComponent {
-  values = input.required<string[]>();
-  initialValue = input<string>();
-  allowDeselect = input<boolean>();
-  disabled = input<boolean>();
-  onSelect = output<string | null>();
 }
 
 @Component({
@@ -92,12 +81,7 @@ describe("ActionSelectorComponent", () => {
     })
       .overrideComponent(ActionSelectorComponent, {
         set: {
-          imports: [
-            CommonModule,
-            MockPolicyActionItemComponent,
-            MockSelectorButtonsComponent,
-            ClearableInputComponent
-          ]
+          imports: [CommonModule, MockPolicyActionItemComponent, MockSelectorButtonsComponent, ClearableInputComponent]
         }
       })
       .compileComponents();
@@ -141,7 +125,11 @@ describe("ActionSelectorComponent", () => {
     const userAction = { type: "str" as const, desc: "User can do this." };
 
     beforeEach(() => {
-      (hostComponent.component["policyService"].policyActions as any).set({
+      (
+        hostComponent.component["policyService"].policyActions as unknown as {
+          set: (value: ScopedPolicyActions) => void;
+        }
+      ).set({
         admin: { container_add_token: adminAction, configread: { type: "bool" as const, desc: "Read config." } },
         user: { container_add_token: userAction }
       });
@@ -209,12 +197,12 @@ describe("ActionSelectorComponent", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
       fixture.detectChanges();
 
-      const adminItem = component.actionsFiltered().find(
-        (i) => i.actionName === "container_add_token" && i.scope === "admin"
-      );
-      const userItem = component.actionsFiltered().find(
-        (i) => i.actionName === "container_add_token" && i.scope === "user"
-      );
+      const adminItem = component
+        .actionsFiltered()
+        .find((i) => i.actionName === "container_add_token" && i.scope === "admin");
+      const userItem = component
+        .actionsFiltered()
+        .find((i) => i.actionName === "container_add_token" && i.scope === "user");
 
       expect(adminItem?.detail).toEqual(adminAction);
       expect(userItem?.detail).toEqual(userAction);
@@ -225,10 +213,10 @@ describe("ActionSelectorComponent", () => {
       fixture.detectChanges();
       const spy = jest.spyOn(component.actionAdd, "emit");
 
-      component.addPolicyAction({ name: "container_add_token", value: undefined }, "user");
+      component.addPolicyAction({ name: "container_add_token", value: "" }, "user");
 
       expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({ action: { name: "container_add_token", value: undefined }, newScope: "user" })
+        expect.objectContaining({ action: { name: "container_add_token", value: "" }, newScope: "user" })
       );
     });
 
@@ -250,9 +238,7 @@ describe("ActionSelectorComponent", () => {
 
       component.addPolicyAction({ name: "configread", value: true });
 
-      expect(spy).toHaveBeenCalledWith(
-        expect.objectContaining({ newScope: "admin" })
-      );
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ newScope: "admin" }));
     });
   });
 
@@ -261,10 +247,15 @@ describe("ActionSelectorComponent", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
       fixture.detectChanges();
 
-      const mockItem = { focusFirstInput: jest.fn() };
-      jest.spyOn(component, "actionItems").mockReturnValue([mockItem as any]);
+      const mockItem: Partial<PolicyActionItemComponent> = { focusFirstInput: jest.fn() };
+      jest.spyOn(component, "actionItems").mockReturnValue([mockItem as PolicyActionItemComponent]);
       jest.spyOn(component, "actionsFiltered").mockReturnValue([
-        { actionName: "container_add_token", scope: "admin", label: "container_add_token", detail: { type: "bool" as const, desc: "Admin can do this." } }
+        {
+          actionName: "container_add_token",
+          scope: "admin",
+          label: "container_add_token",
+          detail: { type: "bool" as const, desc: "Admin can do this." }
+        }
       ]);
 
       component.focusNextActionItem("container_add_token", "admin");

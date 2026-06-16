@@ -28,7 +28,7 @@ export const selfServiceMatch: CanMatchFn = () => inject(AuthService).role() ===
   providedIn: "root"
 })
 export class AuthGuard implements CanActivate, CanActivateChild {
-  private readonly router: Router = inject(Router);
+  private readonly router = inject(Router);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 

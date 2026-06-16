@@ -37,7 +37,7 @@ import { tokenTypes } from "@utils/token.utils";
 export class TemplateAddedTokenRowComponent {
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
   readonly index = input.required<number>();
-  readonly onRemoveToken = output<number>();
+  readonly removeToken = output<number>();
 
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
   private readonly expansionPanel = viewChild(MatExpansionPanel);
@@ -83,9 +83,9 @@ export class TemplateAddedTokenRowComponent {
     this.userAssign.set(checked);
   }
 
-  removeToken() {
+  emitRemoveToken() {
     if (this.index() >= 0) {
-      this.onRemoveToken.emit(this.index());
+      this.removeToken.emit(this.index());
     }
   }
 }

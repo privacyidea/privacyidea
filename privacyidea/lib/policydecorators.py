@@ -513,8 +513,9 @@ def auth_otppin(wrapped_function, *args, **kwds):
      * checks the pin against the userstore
      * or passes the request to the wrapped_function
 
-    If ACTION.OTPPIN is ACTIONVALUE.USERSTORE, the result is written to options["otppin_userstore_success"] for the use
-    in subsequent calls to this function in the same request (checking all token of a user).
+    If ACTION.OTPPIN is ACTIONVALUE.USERSTORE, the password is checked against the userstore via
+    ``User.check_password``, which caches the result per request (in ``User._checked_passwords``) so that
+    checking all tokens of a user does not repeat the userstore bind.
 
     :param wrapped_function: In this case the wrapped function should be
         :py:func:`privacyidea.lib.tokenclass.TokenClass.check_pin`

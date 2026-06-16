@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  signal,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -74,7 +84,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
   templateUrl: "./user-details-token-table.component.html",
   styleUrl: "./user-details-token-table.component.scss"
 })
-export class UserDetailsTokenTableComponent {
+export class UserDetailsTokenTableComponent implements AfterViewInit {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -97,14 +107,14 @@ export class UserDetailsTokenTableComponent {
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  userTokenData: WritableSignal<MatTableDataSource<any, MatPaginator>> = linkedSignal({
+  userTokenData: WritableSignal<MatTableDataSource<TokenDetails, MatPaginator>> = linkedSignal({
     source: () =>
       this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
     computation: (userTokenResource, previous) => {
       if (!userTokenResource) {
-        return previous?.value ?? new MatTableDataSource<any, MatPaginator>([]);
+        return previous?.value ?? new MatTableDataSource<TokenDetails, MatPaginator>([]);
       }
-      return new MatTableDataSource<any, MatPaginator>(userTokenResource.result?.value?.tokens ?? []);
+      return new MatTableDataSource<TokenDetails, MatPaginator>(userTokenResource.result?.value?.tokens ?? []);
     }
   });
   pageSize = 10;
@@ -117,7 +127,10 @@ export class UserDetailsTokenTableComponent {
         return;
       }
       const base = this.userTokenData().data ?? [];
-      this.dataSource.data = this.tableUtilsService.clientsideSortTokenData(base, this.sort());
+      this.dataSource.data = this.tableUtilsService.clientsideSortTokenData(
+        base as unknown as ContainerDetailToken[],
+        this.sort()
+      );
     });
 
     effect(() => {
@@ -128,11 +141,11 @@ export class UserDetailsTokenTableComponent {
 
   ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    (this.dataSource as any)._sort = this.sort;
+    (this.dataSource as unknown as { _sort: WritableSignal<Sort> })._sort = this.sort;
     this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
       const haystack = [
         row.serial,
-        row.tokentype as any,
+        row.tokentype,
         String(row.active),
         row.description ?? "",
         String(row.failcount ?? ""),

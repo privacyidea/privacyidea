@@ -28,21 +28,26 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n>PIN</mat-label>
       <input
-        [formField]="setPinControl"
+        [formField]="setPinControl()"
         [type]="'password'"
         matInput />
     </mat-form-field>
     <mat-form-field class="input-width-l">
       <mat-label i18n>Repeat PIN</mat-label>
       <input
-        [formField]="repeatPinControl"
+        [formField]="repeatPinControl()"
         [type]="'password'"
         matInput />
     </mat-form-field>
   </div>
-  @if (repeatPinControl().errors().some(e => e.kind === 'pinMismatch') &&
-  (setPinControl().touched() || repeatPinControl().touched())) {
-    <mat-error class="pin-error" i18n>PINs do not match.</mat-error>
+  @if (
+    repeatPinControl()().errors().some(e => e.kind === 'pinMismatch') &&
+  (setPinControl()().touched() || repeatPinControl()().touched())
+  ) {
+    <mat-error
+      class="pin-error"
+      i18n
+      >PINs do not match.</mat-error
+    >
   }
 </div>
-

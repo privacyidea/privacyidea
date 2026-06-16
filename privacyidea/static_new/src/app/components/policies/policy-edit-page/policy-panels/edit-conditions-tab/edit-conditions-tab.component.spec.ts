@@ -20,32 +20,32 @@
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { PolicyService } from "@services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { EditConditionsTabComponent } from "./edit-conditions-tab.component";
 
 @Component({ selector: "app-edit-admin-conditions", standalone: true, template: "" })
 class MockAdminComp {
-  policy = input.required<any>();
-  policyEdit = output<any>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<PolicyDetail>();
 }
 
 @Component({ selector: "app-edit-user-conditions", standalone: true, template: "" })
 class MockUserComp {
-  policy = input.required<any>();
-  policyEdit = output<any>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 }
 
 @Component({ selector: "app-edit-environment-conditions", standalone: true, template: "" })
 class MockEnvComp {
-  policy = input.required<any>();
-  policyEdit = output<any>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 }
 
 @Component({ selector: "app-edit-additional-conditions", standalone: true, template: "" })
 class MockAddComp {
-  policy = input.required<any>();
-  policyEdit = output<any>();
+  policy = input.required<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 }
 
 describe("EditConditionsTabComponent", () => {

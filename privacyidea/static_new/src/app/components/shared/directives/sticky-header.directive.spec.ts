@@ -57,7 +57,7 @@ describe("StickyHeaderDirective", () => {
   beforeEach(async () => {
     observeSpy = jest.fn();
     disconnectSpy = jest.fn();
-    (global.IntersectionObserver as unknown as jest.Mock).mockImplementation(
+    (globalThis.IntersectionObserver as unknown as jest.Mock).mockImplementation(
       (cb: ObserverCallback, options: IntersectionObserverInit) => {
         observerCallback = cb;
         observerOptions = options;

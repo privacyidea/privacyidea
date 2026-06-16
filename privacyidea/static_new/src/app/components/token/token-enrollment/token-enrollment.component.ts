@@ -76,7 +76,8 @@ import {
   EnrollTokenArguments,
   TokenEnrollmentDialogData,
   TokenService,
-  TokenServiceInterface
+  TokenServiceInterface,
+  TokenType
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
@@ -178,11 +179,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   timezoneOptions = TIMEZONE_OFFSETS;
-  enrollResponse: WritableSignal<EnrollmentResponse | null> = linkedSignal({
+  enrollResponse = linkedSignal<TokenType, EnrollmentResponse | null>({
     source: this.tokenService.selectedTokenType,
     computation: () => null
   });
-  tokenTypeDescription: WritableSignal<any> = linkedSignal({
+  tokenTypeDescription = linkedSignal({
     source: this.tokenService.tokenTypeOptions,
     computation: (tokenTypes) => {
       return tokenTypes.find((type) => type.key === this.tokenService.selectedTokenType().key)?.text;
@@ -193,7 +194,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   userAssignmentComponent!: UserAssignmentComponent;
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
-  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
+  enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
 
   descriptionRequired = computed(() => {
     const selectedTokenType = this.tokenService.selectedTokenType();
@@ -250,7 +251,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () => this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
+      () =>
+        this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
     );
     this.pendingChangesService.registerValidChanges(
       () =>

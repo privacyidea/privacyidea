@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { WritableSignal, signal } from "@angular/core";
+import { signal } from "@angular/core";
 
-type TestApplicationsShape = {
+interface TestApplicationsShape {
   ssh: { options: { sshkey: { service_id: { value: string[] } } } };
-};
+}
 
 export class MockApplicationService {
-  applications: WritableSignal<TestApplicationsShape> = signal({
+  applications = signal<TestApplicationsShape>({
     ssh: { options: { sshkey: { service_id: { value: ["svc-1", "svc-2"] } } } }
   });
 }

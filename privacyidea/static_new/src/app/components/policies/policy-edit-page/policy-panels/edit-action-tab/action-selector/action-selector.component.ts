@@ -39,7 +39,6 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
 
-
 @Component({
   selector: "app-action-selector",
   standalone: true,
@@ -61,7 +60,7 @@ export class ActionSelectorComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
   readonly policy = input.required<PolicyDetail>();
-  readonly actionAdd = output<{ action: { name: string; value: any }; newScope?: string | null }>();
+  readonly actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
   readonly scopeChange = output<string | undefined>();
 
   readonly allPolicyScopes = this.policyService.allPolicyScopes();
@@ -138,12 +137,16 @@ export class ActionSelectorComponent {
     this.selectedActionGroup.set(group ?? "");
   }
 
-  addPolicyAction(action: { name: string; value: any }, itemScope?: string | null) {
+  addPolicyAction(action: { name: string; value: string | number | boolean | undefined }, itemScope?: string | null) {
+    const normalizedAction: { name: string; value: string | boolean } = {
+      name: action.name,
+      value: typeof action.value === "number" ? String(action.value) : (action.value ?? "")
+    };
     if (this.policy().scope) {
-      this.actionAdd.emit({ action });
+      this.actionAdd.emit({ action: normalizedAction });
     } else {
       const scope = itemScope || this.policyService.getScopeOfAction(action.name);
-      this.actionAdd.emit({ action, newScope: scope });
+      this.actionAdd.emit({ action: normalizedAction, newScope: scope });
     }
     this.focusNextActionItem(action.name, itemScope);
   }

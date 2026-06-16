@@ -55,11 +55,11 @@ export class EnrollYubikeyComponent extends EnrollTokenBase<YubikeyEnrollmentDat
 
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length !== 32 ? [{ kind: "invalidLength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length !== 32 ? [{ kind: "invalidLength" }] : []));
   });
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value() < 32 ? [{ kind: "min" as any }] : []));
+    validate(f, (ctx) => (ctx.value() < 32 ? [{ kind: "min" }] : []));
   });
 
   constructor() {

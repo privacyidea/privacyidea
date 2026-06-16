@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideHttpClient } from "@angular/common/http";
-import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { MatTableDataSource } from "@angular/material/table";
@@ -38,29 +37,20 @@ import { ContainerDetailsTokenActionsComponent } from "./container-details-token
 describe("ContainerDetailsTokenActionsComponent", () => {
   let component: ContainerDetailsTokenActionsComponent;
   let fixture: ComponentFixture<ContainerDetailsTokenActionsComponent>;
-  let mockDialog: any;
+  let mockDialog: { open: jest.Mock; closeAll: jest.Mock };
   let mockContainerService: MockContainerService;
   let mockTokenService: MockTokenService;
 
-  const userSignal: WritableSignal<any> = signal({
-    user_realm: "realm1",
-    user_name: "alice",
-    user_resolver: "resolver1",
-    user_id: "id1"
-  });
-
-  const tokens = signal([
+  const tokens: Partial<ContainerDetailToken>[] = [
     { serial: "T1", username: "", active: false },
     { serial: "T2", username: "bob", active: true }
-  ]);
-  const tokenDataSignal: WritableSignal<MatTableDataSource<any>> = signal(new MatTableDataSource(tokens()));
+  ];
 
   beforeEach(async () => {
     mockDialog = {
       open: jest.fn().mockReturnValue({ afterClosed: () => of({ confirmed: true }) }),
       closeAll: jest.fn()
     };
-    tokenDataSignal.set(new MatTableDataSource(tokens()));
 
     await TestBed.configureTestingModule({
       imports: [ContainerDetailsTokenActionsComponent],
@@ -77,12 +67,16 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
     fixture = TestBed.createComponent(ContainerDetailsTokenActionsComponent);
     component = fixture.componentInstance;
-    mockContainerService = TestBed.inject(ContainerService) as any;
-    mockTokenService = TestBed.inject(TokenService) as any;
-
-    component.containerSerial = "CONT-1";
-    component.user = userSignal;
-    component.tokenData = tokenDataSignal;
+    mockContainerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    fixture.componentRef.setInput("containerSerial", "CONT-1");
+    fixture.componentRef.setInput("user", {
+      user_realm: "realm1",
+      user_name: "alice",
+      user_resolver: "resolver1",
+      user_id: "id1"
+    });
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as ContainerDetailToken[]));
     fixture.detectChanges();
   });
 
@@ -96,14 +90,14 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
   it("isAssignableToAllToken should be false if all tokens have a user", () => {
     const tokens = [{ serial: "T1", username: "alice", active: false }];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     fixture.detectChanges();
     expect(component.isAssignableToAllToken()).toBe(false);
   });
 
   it("isAssignableToAllToken should be true if no user information is available", () => {
     const tokens = [{ serial: "T1" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     fixture.detectChanges();
     expect(component.isAssignableToAllToken()).toBe(true);
   });
@@ -117,13 +111,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "T1", username: "", active: false },
       { serial: "T2", username: "", active: false }
     ];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.isUnassignableFromAllToken()).toBe(false);
   });
 
   it("isUnassignableFromAllToken should be false if no user information is available", () => {
     const tokens = [{ serial: "T1" }, { serial: "T2" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.isUnassignableFromAllToken()).toBe(false);
   });
 
@@ -136,13 +130,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "T1", username: "", active: false },
       { serial: "T2", username: "", active: false }
     ];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyActiveTokens()).toBe(false);
   });
 
   it("anyActiveTokens should be false if no active information is available", () => {
     const tokens = [{ serial: "T1" }, { serial: "T2" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyActiveTokens()).toBe(false);
   });
 
@@ -155,13 +149,13 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "T1", username: "", active: true },
       { serial: "T2", username: "", active: true }
     ];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyDisabledTokens()).toBe(false);
   });
 
   it("anyDisabledTokens should be false if no active information is available", () => {
     const tokens = [{ serial: "T1" }, { serial: "T2" }];
-    tokenDataSignal.set(new MatTableDataSource(tokens));
+    fixture.componentRef.setInput("tokenData", new MatTableDataSource(tokens as unknown as ContainerDetailToken[]));
     expect(component.anyDisabledTokens()).toBe(false);
   });
 
@@ -170,12 +164,12 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     ds.data = [
       { serial: "S1", username: "", active: true },
       { serial: "S2", username: "", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     jest.spyOn(mockTokenService, "unassignUserFromAll");
 
     component.unassignFromAllToken();
     expect(mockDialog.open).not.toHaveBeenCalled();
-    expect(mockTokenService.unassignUserFromAll as any).not.toHaveBeenCalled();
+    expect(mockTokenService.unassignUserFromAll).not.toHaveBeenCalled();
   });
 
   it("unassignFromAllToken opens confirm and unassigns then reloads", () => {
@@ -183,7 +177,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     ds.data = [
       { serial: "S1", username: "x", active: true },
       { serial: "S2", username: "", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     jest.spyOn(mockTokenService, "unassignUserFromAll");
 
     component.unassignFromAllToken();
@@ -200,7 +194,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
         hasBackdrop: true
       })
     );
-    expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
+    expect(mockTokenService.unassignUserFromAll).toHaveBeenCalledWith(["S1"]);
     expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 
@@ -224,14 +218,14 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     ds.data = [
       { serial: "S1", username: "alice", active: true },
       { serial: "S2", username: "alice", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     jest.spyOn(mockTokenService, "unassignUserFromAll");
     jest.spyOn(mockTokenService, "assignUserToAll");
 
     component.assignToAllToken();
 
-    expect(mockTokenService.unassignUserFromAll as any).not.toHaveBeenCalled();
-    expect(mockTokenService.assignUserToAll as any).not.toHaveBeenCalled();
+    expect(mockTokenService.unassignUserFromAll).not.toHaveBeenCalled();
+    expect(mockTokenService.assignUserToAll).not.toHaveBeenCalled();
   });
 
   it("assignToAllToken unassigns others, assigns all remaining, then reloads", () => {
@@ -240,15 +234,15 @@ describe("ContainerDetailsTokenActionsComponent", () => {
       { serial: "S1", username: "bob", active: true },
       { serial: "S2", username: "", active: true },
       { serial: "S3", username: "alice", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     jest.spyOn(mockTokenService, "unassignUserFromAll");
     jest.spyOn(mockTokenService, "assignUserToAll");
     jest.spyOn(mockContainerService.containerDetailsResource, "reload");
 
     component.assignToAllToken();
 
-    expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
-    expect(mockTokenService.assignUserToAll as any).toHaveBeenCalledWith({
+    expect(mockTokenService.unassignUserFromAll).toHaveBeenCalledWith(["S1"]);
+    expect(mockTokenService.assignUserToAll).toHaveBeenCalledWith({
       tokenSerials: ["S1", "S2"],
       username: "alice",
       realm: "realm1"
@@ -282,7 +276,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
   });
 
   it("removeAll does nothing when confirm=false", () => {
-    mockDialog.open.mockReturnValueOnce({ afterClosed: () => of(false) } as any);
+    mockDialog.open.mockReturnValueOnce({ afterClosed: () => of(false) });
     component.removeAll();
     expect(mockContainerService.removeAll).not.toHaveBeenCalled();
   });
@@ -308,14 +302,14 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     };
     const token2: ContainerDetailToken = { ...token1, serial: "T2" };
     const data = new MatTableDataSource<ContainerDetailToken>([token1, token2]);
-    component.tokenData.set(data);
+    fixture.componentRef.setInput("tokenData", data);
     component.deleteAllTokens();
 
     expect(mockTokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["T1", "T2"], expect.any(Function));
   });
 
   it("deleteAllTokens does NOT delete when confirm=false", () => {
-    mockDialog.open.mockReturnValueOnce({ afterClosed: () => of(false) } as any);
+    mockDialog.open.mockReturnValueOnce({ afterClosed: () => of(false) });
     component.deleteAllTokens();
     expect(mockTokenService.bulkDeleteTokens).not.toHaveBeenCalled();
   });

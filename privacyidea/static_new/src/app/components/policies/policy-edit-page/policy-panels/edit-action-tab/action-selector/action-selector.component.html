@@ -37,7 +37,7 @@
             [values]="allPolicyScopes"
             [initialValue]="policy().scope"
             [allowDeselect]="true"
-            (onSelect)="selectActionScope($event)"
+            (selected)="selectActionScope($event)"
             [disabled]="!policyHasNoActions()" />
         </div>
 
@@ -52,7 +52,7 @@
               class="flex-1"
               [values]="actionGroupNamesFiltered()"
               [initialValue]="selectedActionGroup()"
-              (onSelect)="selectActionGroup($event)"
+              (selected)="selectActionGroup($event)"
               [disabled]="!policy().scope" />
           </div>
         }

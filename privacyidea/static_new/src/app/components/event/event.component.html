@@ -60,7 +60,8 @@
     }
     <mat-slide-toggle
       (change)="toggleDetailedView()"
-      [checked]="detailedView()">Detailed View
+      [checked]="detailedView()"
+      >Detailed View
     </mat-slide-toggle>
   </div>
 
@@ -76,7 +77,7 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ columnKeysMap[column] }}
-              @if (column !== 'delete') {
+              @if (column !== "delete") {
                 <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column, sort)"
@@ -100,11 +101,14 @@
                   [attr.title]="element.name">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
+                      role="button"
+                      tabindex="0"
                       (click)="onEditEventHandler(element)"
-                      [innerHTML]="element.name | highlight:filterString()"
-                      tabindex="0"></a>
+                      (keydown.enter)="onEditEventHandler(element)"
+                      (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
+                      [innerHTML]="element.name | highlight: filterString()"></a>
                   } @else {
-                    <span [innerHTML]="element.name | highlight:filterString()"></span>
+                    <span [innerHTML]="element.name | highlight: filterString()"></span>
                   }
                 </div>
               }
@@ -113,13 +117,13 @@
                   <div class="detailed-cell-container">
                     <ul class="no-indention margin-0">
                       @for (event of getEventArray(element.event); track event) {
-                        <li [innerHTML]="event | highlight:filterString()"></li>
+                        <li [innerHTML]="event | highlight: filterString()"></li>
                       }
                     </ul>
                   </div>
                 } @else {
                   <div class="event-table-cell">
-                  <span [innerHTML]="(element.event?.join(', ')) | highlight:filterString()"></span>
+                    <span [innerHTML]="element.event?.join(', ') | highlight: filterString()"></span>
                   </div>
                 }
               }
@@ -128,22 +132,22 @@
                   <div class="detailed-cell-container">
                     <ul class="no-indention margin-0">
                       @for (condition of Object.entries(element.conditions); track condition[0]) {
-                        <li [innerHTML]="(condition[0] + ': ' + condition[1]) | highlight:filterString()"></li>
+                        <li [innerHTML]="condition[0] + ': ' + condition[1] | highlight: filterString()"></li>
                       }
                     </ul>
                   </div>
                 } @else {
                   <div class="event-table-cell">
-                    <span [innerHTML]="formatConditions(element.conditions) | highlight:filterString()"></span>
+                    <span [innerHTML]="formatConditions(element.conditions) | highlight: filterString()"></span>
                   </div>
                 }
               }
               @case ("action") {
-                <div [innerHTML]="element.action | highlight:filterString()"></div>
+                <div [innerHTML]="element.action | highlight: filterString()"></div>
                 @if (detailedView()) {
                   <ul class="no-indention margin-top-0">
                     @for (option of Object.entries(element.options); track option[0]) {
-                      <li [innerHTML]="(option[0] + ': ' + option[1]) | highlight:filterString()"></li>
+                      <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
                     }
                   </ul>
                 }
@@ -169,7 +173,7 @@
               }
               @default {
                 <span
-                  [innerHTML]="element[column] | highlight:filterString()"
+                  [innerHTML]="element[column] | highlight: filterString()"
                   [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"></span>
               }
             }
