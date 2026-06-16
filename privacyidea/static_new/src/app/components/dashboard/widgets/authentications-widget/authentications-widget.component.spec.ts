@@ -116,9 +116,9 @@ describe("AuthenticationsWidgetComponent", () => {
   it("should render the subtitle and row labels", () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain("Authentications in the last 24 hours");
-    expect(text).toContain("success");
-    expect(text).toContain("failed");
-    expect(text).toContain("failed users / tokens");
+    expect(text).toContain("Success");
+    expect(text).toContain("Failure");
+    expect(text).toContain("Users / Tokens with Failures");
   });
 
   it("should render aggregated failed users with fail counts", async () => {
