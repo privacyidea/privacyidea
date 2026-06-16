@@ -983,9 +983,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
-        transaction_id = passkey_challenge["transaction_id"]
+        passkey_transaction_id = passkey_challenge["transaction_id"]
         data = self.authentication_response_no_uv
-        data["transaction_id"] = transaction_id
+        data["transaction_id"] = passkey_transaction_id
         with self.app.test_request_context('/validate/check', method='POST',
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
@@ -998,8 +998,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             detail = j["detail"]
             evm_serial = detail["serial"]
             self.assertTrue(evm_serial)
-            transaction_id = detail["transaction_id"]
-            self.assertTrue(transaction_id)
+            enroll_transaction_id = detail["transaction_id"]
+            self.assertTrue(enroll_transaction_id)
 
             self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
             self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
@@ -1013,18 +1013,19 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("link", mc[0])
         # The passkey CHALLENGE_TRIGGERED is logged under the passkey transaction.
         auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED],
-                                                 transaction_id=passkey_challenge["transaction_id"])
+                                                 transaction_id=passkey_transaction_id)
         assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        transaction_id=passkey_challenge["transaction_id"])
+                                        transaction_id=passkey_transaction_id)
         # The successful passkey answer turned into an enrollment challenge, so its row was reclassified to
         # ENROLLMENT_TRIGGERED and re-pointed at the enrolled token + enrollment transaction.
-        enroll_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=transaction_id)
+        enroll_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(enroll_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id)
+                                        serials={evm_serial}, transaction_id=enroll_transaction_id,
+                                        previous_transaction_id=passkey_transaction_id)
 
         # Cancel the enrollment
         with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"transaction_id": transaction_id, "cancel_enrollment": True},
+                                           data={"transaction_id": enroll_transaction_id, "cancel_enrollment": True},
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             j = res.json
@@ -1032,9 +1033,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
         # check auth log
         cancel_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
-                                                   transaction_id=transaction_id)
+                                                   transaction_id=enroll_transaction_id)
         assert_authentication_log_entry(cancel_entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
-                                        transaction_id=transaction_id)
+                                        transaction_id=enroll_transaction_id)
         remove_token(serial)
 
     def test_16_cancel_enroll_via_multichallenge_smartphone(self):
@@ -1085,7 +1086,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=passkey_challenge["transaction_id"])
         enroll_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(enroll_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id)
+                                        serials={evm_serial}, transaction_id=transaction_id,
+                                        previous_transaction_id=passkey_challenge["transaction_id"])
 
         # Cancel the enrollment, will work and return a successful authentication
         with self.app.test_request_context('/validate/check', method='POST',
@@ -1145,7 +1147,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=passkey_challenge["transaction_id"])
         enroll_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(enroll_entries[AuthEventType.ENROLLMENT_TRIGGERED], user=self.user,
-                                        serials={evm_serial}, transaction_id=transaction_id)
+                                        serials={evm_serial}, transaction_id=transaction_id,
+                                        previous_transaction_id=passkey_challenge["transaction_id"])
 
         # Try to cancel the enrollment, will result in a REJECT
         with self.app.test_request_context('/validate/check', method='POST',
