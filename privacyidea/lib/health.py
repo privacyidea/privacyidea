@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Health checks intended for admin observability via the /system/health API.
 
-Currently provides certificate expiry information for configured LDAP resolvers
-and the privacyIDEA server certificate.
+Currently provides certificate expiry information for configured LDAP resolvers,
+the TLS server certificate of Keycloak resolvers, the client-certificate
+credential of EntraID resolvers, and the privacyIDEA server certificate.
 """
 import datetime
 import logging
 import socket
 import ssl
 import threading
+from urllib.parse import urlparse
 
 import ldap3
 from cryptography import x509
@@ -140,6 +142,108 @@ def _check_ldap_resolvers() -> list:
     return results
 
 
+def _check_keycloak_endpoint(resolver_name: str, host: str, port: int, timeout: float) -> dict:
+    entry = {
+        "source": "keycloak-resolver",
+        "name": resolver_name,
+        "host": f"{host}:{port}",
+        "tls_mode": "https",
+    }
+    try:
+        # A Keycloak endpoint is a plain TLS server, so the generic TLS-wrap
+        # probe used for ldaps:// reads its certificate too.
+        cert = _fetch_ldaps_cert(host, port, timeout)
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry["error"] = None
+    except Exception as e:
+        log.info(f"Failed to fetch certificate for resolver {resolver_name!r} ({host}:{port}): {e}")
+        entry.update({"subject": None, "issuer": None, "not_after": None,
+                      "days_remaining": None, "status": "error", "error": str(e)})
+    return entry
+
+
+def _check_keycloak_resolvers() -> list:
+    """Probe the TLS server certificate of each Keycloak resolver's ``base_url``.
+
+    Keycloak resolvers talk to an admin-operated (often self-hosted) HTTPS
+    endpoint, so its server certificate is worth surfacing. The EntraID resolver
+    is handled separately because it targets Microsoft-managed endpoints whose
+    certificates rotate automatically and are not the admin's concern.
+    """
+    results = []
+    for name, reso in get_resolver_list(filter_resolver_type="keycloakresolver").items():
+        data = reso.get("data", {})
+        base_url = (data.get("base_url") or "").strip()
+        timeout = float(data.get("timeout") or 5)
+        if not base_url:
+            continue
+        parsed = urlparse(base_url)
+        if parsed.scheme != "https" or not parsed.hostname:
+            # Only an https endpoint presents a TLS server certificate to inspect.
+            continue
+        port = parsed.port or 443
+        results.append(_check_keycloak_endpoint(name, parsed.hostname, port, timeout))
+    return results
+
+
+def _check_entraid_cert_file(resolver_name: str, path: str | None) -> dict:
+    entry = {
+        "source": "entraid-resolver",
+        "name": resolver_name,
+        "host": path,
+        "tls_mode": "client-certificate",
+    }
+    if not path:
+        entry.update({"subject": None, "issuer": None, "not_after": None, "days_remaining": None,
+                      "status": "error", "error": "No private_key_file configured for the client certificate."})
+        return entry
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+        # The file holds the private key; for the common combined-PEM case it also
+        # carries the certificate. load_pem_x509_certificate picks the first
+        # CERTIFICATE block and ignores the key. A key-only file raises ValueError,
+        # which we turn into a clear "no certificate" message below.
+        cert = x509.load_pem_x509_certificate(data)
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry["error"] = None
+    except FileNotFoundError as e:
+        log.info(f"Client certificate file for resolver {resolver_name!r} not found: {e}")
+        entry.update({"subject": None, "issuer": None, "not_after": None, "days_remaining": None,
+                      "status": "error", "error": f"Could not read certificate file '{path}': {e}"})
+    except ValueError as e:
+        log.info(f"No certificate found in private key file for resolver {resolver_name!r} ({path}): {e}")
+        entry.update({"subject": None, "issuer": None, "not_after": None, "days_remaining": None,
+                      "status": "error",
+                      "error": f"No X.509 certificate found in '{path}'. The file may contain only the "
+                               "private key, so the expiry date cannot be determined."})
+    except Exception as e:
+        log.info(f"Failed to read client certificate for resolver {resolver_name!r} ({path}): {e}")
+        entry.update({"subject": None, "issuer": None, "not_after": None, "days_remaining": None,
+                      "status": "error", "error": str(e)})
+    return entry
+
+
+def _check_entraid_client_certs() -> list:
+    """Report expiry of the client-certificate credential each EntraID resolver
+    uses to authenticate against Entra.
+
+    Only resolvers configured with ``client_credential_type = certificate`` have
+    such a credential. The certificate is read from the configured
+    ``private_key_file``; we never need the private key or its passphrase here,
+    only the public certificate's validity period.
+    """
+    results = []
+    for name, reso in get_resolver_list(filter_resolver_type="entraidresolver").items():
+        data = reso.get("data", {})
+        credential_type = (data.get("client_credential_type") or "").strip().lower()
+        if credential_type != "certificate":
+            continue
+        client_certificate = data.get("client_certificate") or {}
+        results.append(_check_entraid_cert_file(name, client_certificate.get("private_key_file")))
+    return results
+
+
 def _check_server_cert_file(path: str) -> dict:
     """Read a server certificate from a configured file path on disk."""
     entry = {"source": "privacyidea-server-file",
@@ -214,7 +318,8 @@ def _server_cert_entries() -> list:
 
 
 def get_certificate_status(refresh: bool = False) -> list:
-    """Return certificate expiry info for configured LDAP resolvers and any
+    """Return certificate expiry info for configured LDAP resolvers, Keycloak
+    resolver endpoints, EntraID client-certificate credentials, and any
     admin-configured server certificates.
 
     Server certificate sources are opt-in via two config keys (see
@@ -232,6 +337,8 @@ def get_certificate_status(refresh: bool = False) -> list:
             return cached[1]
 
     results = _check_ldap_resolvers()
+    results.extend(_check_keycloak_resolvers())
+    results.extend(_check_entraid_client_certs())
     results.extend(_server_cert_entries())
 
     with _CACHE_LOCK:

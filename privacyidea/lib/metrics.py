@@ -280,6 +280,11 @@ def get_metrics(name: str | None = None, since_seconds: int = DEFAULT_QUERY_WIND
             "p50": p50,
             "p95": p95,
             "max": g["max"] if count else None,
+            # Ordered [upper_bound_seconds, cumulative_count] pairs. Exposed so a
+            # caller that rolls several rows into one (e.g. all ops of a resolver)
+            # can sum the histograms and compute a correct combined percentile,
+            # instead of incorrectly taking the max of the per-row percentiles.
+            "buckets": [[boundary, g["buckets"][col]] for boundary, col in _BUCKETS],
             "since_seconds": since_seconds,
         })
     return out

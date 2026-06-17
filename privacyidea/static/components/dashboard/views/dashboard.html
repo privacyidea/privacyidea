@@ -166,7 +166,17 @@
                                        ui-sref="config.resolvers.editldapresolver({resolvername: cert.name})">
                                         <strong>{{ cert.name }}</strong>
                                     </a>
-                                    <strong ng-if="cert.source !== 'ldap-resolver'">{{ cert.name }}</strong>
+                                    <a ng-if="cert.source === 'keycloak-resolver'"
+                                       ui-sref="config.resolvers.editkeycloakresolver({resolvername: cert.name})">
+                                        <strong>{{ cert.name }}</strong>
+                                    </a>
+                                    <a ng-if="cert.source === 'entraid-resolver'"
+                                       ui-sref="config.resolvers.editentraidresolver({resolvername: cert.name})">
+                                        <strong>{{ cert.name }}</strong>
+                                    </a>
+                                    <strong ng-if="cert.source !== 'ldap-resolver'
+                                                   && cert.source !== 'keycloak-resolver'
+                                                   && cert.source !== 'entraid-resolver'">{{ cert.name }}</strong>
                                     <br>
                                     <small>{{ cert.host }}</small>
                                 </td>
@@ -218,8 +228,8 @@
                                     <span translate>p95</span>
                                     <span class="glyphicon glyphicon-info-sign text-muted"
                                           style="cursor: help;"
-                                          title="{{ 'p95 means 95% of requests were faster than this value. The reading is rounded up to the next histogram bucket boundary, so it can appear larger than the exact maximum - that is expected, not a bug. Bucket boundaries: 50ms, 100ms, 150ms, 200ms, 250ms, 500ms, 1s, 2s, 5s.' | translate }}"
-                                          aria-hidden="true"></span>
+                                          uib-tooltip="{{ 'p95 means 95% of requests were faster than this value. The reading is rounded up to the next histogram bucket boundary, so it can appear larger than the exact maximum - that is expected, not a bug. Bucket boundaries: 50ms, 100ms, 150ms, 200ms, 250ms, 500ms, 1s, 2s, 5s. It is shown as a dash for resolvers with fewer than 20 requests in the window, where the bucket rounding would not give a meaningful value.' | translate }}"
+                                          tooltip-placement="top"></span>
                                 </th>
                                 <th translate>Max</th>
                             </tr>
@@ -244,9 +254,9 @@
                                 <td ng-class="resolverLatencyClass(r.avg)">
                                     {{ formatDuration(r.avg) }}
                                 </td>
-                                <td ng-class="resolverLatencyClass(r.p95_max)"
+                                <td ng-class="resolverLatencyClass(r.p95)"
                                     title="{{ r.count < 20 ? ('Approximate - need more samples for a meaningful p95.' | translate) : '' }}">
-                                    <span ng-if="r.count >= 20">{{ formatDuration(r.p95_max) }}</span>
+                                    <span ng-if="r.count >= 20">{{ formatDuration(r.p95) }}</span>
                                     <span ng-if="r.count < 20" class="text-muted">—</span>
                                 </td>
                                 <td ng-class="resolverLatencyClass(r.max)">

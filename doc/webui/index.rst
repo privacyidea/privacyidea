@@ -50,6 +50,16 @@ relevant to the running privacyIDEA instance:
 
 * The certificate of every configured LDAP resolver that uses ``ldaps://`` or
   ``START_TLS``. Each entry links to the corresponding resolver detail page.
+* The TLS server certificate of every Keycloak resolver whose ``base_url`` is
+  an ``https://`` endpoint. The EntraID resolver is intentionally **not**
+  probed this way, because it targets Microsoft-managed endpoints whose
+  certificates rotate automatically.
+* The client-certificate credential of every EntraID resolver configured with
+  ``client_credential_type = certificate``. The certificate is read from the
+  resolver's ``private_key_file``; only its validity period is inspected (the
+  private key and its passphrase are never needed). If that file holds only the
+  private key and no certificate, the entry is reported as ``error`` with an
+  explanatory message.
 * Optionally, the privacyIDEA server certificate. Two opt-in sources can be
   configured in ``pi.cfg``; both are off by default.
 

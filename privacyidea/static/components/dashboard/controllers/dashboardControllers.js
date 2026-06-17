@@ -230,6 +230,20 @@ $scope.getAuthentication = function () {
      var LATENCY_OK_S = 0.1;
      var LATENCY_WARN_S = 0.5;
 
+     // Approximate a quantile from cumulative histogram buckets, mirroring the
+     // server's privacyidea.lib.metrics._percentile_from_buckets: return the
+     // upper bound of the first bucket whose cumulative count crosses q*count.
+     // Returns null for an empty histogram or when the quantile sits in the
+     // open-ended (> largest bucket) tail.
+     function combinedPercentile(bounds, sums, count, q) {
+         if (!count || !bounds || !bounds.length) return null;
+         var target = q * count;
+         for (var i = 0; i < bounds.length; i++) {
+             if ((sums[i] || 0) >= target) return bounds[i];
+         }
+         return null;
+     }
+
      // Map resolver_type -> ui-router state for the resolver detail link.
      var RESOLVER_DETAIL_STATE = {
          "ldapresolver": "config.resolvers.editldapresolver",
@@ -259,7 +273,8 @@ $scope.getAuthentication = function () {
                          "detail_state": RESOLVER_DETAIL_STATE[type] || null,
                          "count": 0,
                          "max": 0,
-                         "p95_max": null,        // worst per-op p95 we've seen
+                         "bucket_bounds": [],    // upper bounds (seconds), from the server
+                         "bucket_sums": [],      // cumulative counts summed across ops
                          "avg_weighted_sum": 0,  // sum(avg * count) for weighted avg
                          "by_op": []
                      };
@@ -267,8 +282,18 @@ $scope.getAuthentication = function () {
                  var r = byKey[key];
                  r.count += e.count || 0;
                  if (e.max !== null && e.max > r.max) r.max = e.max;
-                 if (e.p95 !== null && (r.p95_max === null || e.p95 > r.p95_max)) {
-                     r.p95_max = e.p95;
+                 // Sum the per-op histograms element-wise. Every row uses the same
+                 // ordered bucket boundaries, so a correct resolver-level p95 comes
+                 // from the combined histogram - not from max() of the per-op p95s,
+                 // which overstates it when one low-traffic op has a slow outlier.
+                 var b = e.buckets || [];
+                 if (!r.bucket_bounds.length) {
+                     r.bucket_bounds = b.map(function (p) { return p[0]; });
+                     r.bucket_sums = b.map(function (p) { return p[1] || 0; });
+                 } else {
+                     for (var i = 0; i < b.length; i++) {
+                         r.bucket_sums[i] = (r.bucket_sums[i] || 0) + (b[i][1] || 0);
+                     }
                  }
                  if (e.avg !== null) r.avg_weighted_sum += e.avg * (e.count || 0);
                  r.by_op.push({"op": op, "count": e.count, "avg": e.avg,
@@ -277,12 +302,13 @@ $scope.getAuthentication = function () {
              var entries = [];
              angular.forEach(byKey, function (r) {
                  r.avg = r.count > 0 ? (r.avg_weighted_sum / r.count) : null;
+                 r.p95 = combinedPercentile(r.bucket_bounds, r.bucket_sums, r.count, 0.95);
                  entries.push(r);
              });
              // Sort: highest p95 first, then by count desc.
              entries.sort(function (a, b) {
-                 var ap = a.p95_max === null ? -1 : a.p95_max;
-                 var bp = b.p95_max === null ? -1 : b.p95_max;
+                 var ap = a.p95 === null ? -1 : a.p95;
+                 var bp = b.p95 === null ? -1 : b.p95;
                  if (ap !== bp) return bp - ap;
                  return b.count - a.count;
              });

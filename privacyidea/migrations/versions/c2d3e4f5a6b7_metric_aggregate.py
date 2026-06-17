@@ -8,10 +8,13 @@ Revises: 7d4e9b2c1a3f
 Create Date: 2026-04-29 00:00:00.000000
 
 """
+import logging
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+log = logging.getLogger("alembic.runtime.migration")
 
 revision = 'c2d3e4f5a6b7'
 down_revision = '7d4e9b2c1a3f'
@@ -27,6 +30,13 @@ _BUCKET_COLUMNS = [
 
 
 def upgrade():
+    if sa.inspect(op.get_bind()).has_table("metric_aggregate"):
+        # The table can already exist when the schema was bootstrapped from the
+        # models (create_all) before this migration ran. The model defines the
+        # same indexes and unique constraint, so there is nothing left to do.
+        log.info("Table 'metric_aggregate' already exists, skipping creation.")
+        return
+
     try:
         op.execute(sa.schema.CreateSequence(sa.Sequence("metric_aggregate_seq")))
     except (OperationalError, ProgrammingError):

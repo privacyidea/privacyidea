@@ -180,6 +180,26 @@ class ObserveTest(MyTestCase):
         results = get_metrics(name="test_hist")
         self.assertEqual(results[0]["p95"], 0.1)
 
+    def test_buckets_are_exposed_as_cumulative_pairs(self):
+        # 3 fast (<=50ms) and 1 slow (~160ms) sample. The exposed buckets are
+        # ordered [upper_bound, cumulative_count] pairs so a caller can re-derive
+        # the percentile after summing several histograms together.
+        for _ in range(3):
+            observe("test_hist", 0.01)
+        observe("test_hist", 0.16)
+        results = get_metrics(name="test_hist")
+        buckets = results[0]["buckets"]
+        # Ascending boundaries matching _BUCKETS.
+        self.assertEqual([b[0] for b in buckets], [b for b, _ in _BUCKETS])
+        as_dict = {bound: cnt for bound, cnt in buckets}
+        # All 3 fast samples land in <=50ms; the 160ms one only reaches <=200ms.
+        self.assertEqual(as_dict[0.05], 3)
+        self.assertEqual(as_dict[0.15], 3)
+        self.assertEqual(as_dict[0.2], 4)
+        # Cumulative count never decreases as the boundary grows.
+        counts = [cnt for _, cnt in buckets]
+        self.assertEqual(counts, sorted(counts))
+
 
 class CrossWindowAndNodeAggregationTest(MyTestCase):
     """Reads fold across nodes and 5-minute windows."""

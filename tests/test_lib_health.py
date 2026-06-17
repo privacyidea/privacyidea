@@ -296,6 +296,105 @@ class ResolverListIntegrationTest(MyTestCase):
                          {"a.example:636", "b.example:636"})
 
 
+class KeycloakResolversTest(MyTestCase):
+    """``_check_keycloak_resolvers`` probes the server cert of the base_url."""
+
+    def test_skips_non_https_and_missing_base_url(self):
+        resolvers = {
+            "http_only": {"data": {"base_url": "http://keycloak.example:8080", "timeout": "5"}},
+            "no_url": {"data": {"timeout": "5"}},
+        }
+        with patch.object(health, "get_resolver_list", return_value=resolvers):
+            results = health._check_keycloak_resolvers()
+        self.assertEqual(results, [])
+
+    def test_probes_https_base_url_with_explicit_port(self):
+        cert = _make_cert(days_until_expiry=100)
+        resolvers = {"kc": {"data": {"base_url": "https://keycloak.example:8443", "timeout": "5"}}}
+        with (patch.object(health, "get_resolver_list", return_value=resolvers),
+              patch.object(health, "_fetch_ldaps_cert", return_value=cert) as fetch):
+            results = health._check_keycloak_resolvers()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["source"], "keycloak-resolver")
+        self.assertEqual(results[0]["host"], "keycloak.example:8443")
+        self.assertEqual(results[0]["status"], "ok")
+        fetch.assert_called_once_with("keycloak.example", 8443, 5.0)
+
+    def test_defaults_to_port_443(self):
+        cert = _make_cert(days_until_expiry=10)
+        resolvers = {"kc": {"data": {"base_url": "https://keycloak.example"}}}
+        with (patch.object(health, "get_resolver_list", return_value=resolvers),
+              patch.object(health, "_fetch_ldaps_cert", return_value=cert) as fetch):
+            results = health._check_keycloak_resolvers()
+        self.assertEqual(results[0]["host"], "keycloak.example:443")
+        self.assertEqual(results[0]["status"], "warning")
+        fetch.assert_called_once_with("keycloak.example", 443, 5.0)
+
+    def test_probe_failure_surfaces_error(self):
+        resolvers = {"kc": {"data": {"base_url": "https://keycloak.example"}}}
+        with (patch.object(health, "get_resolver_list", return_value=resolvers),
+              patch.object(health, "_fetch_ldaps_cert", side_effect=OSError("refused"))):
+            results = health._check_keycloak_resolvers()
+        self.assertEqual(results[0]["status"], "error")
+        self.assertIn("refused", results[0]["error"])
+
+
+class EntraIDClientCertTest(MyTestCase):
+    """``_check_entraid_client_certs`` reads the client-certificate credential."""
+
+    def test_skips_secret_credential_type(self):
+        resolvers = {"entra": {"data": {"client_credential_type": "secret"}}}
+        with patch.object(health, "get_resolver_list", return_value=resolvers):
+            results = health._check_entraid_client_certs()
+        self.assertEqual(results, [])
+
+    def test_reads_certificate_from_pem_file(self):
+        from unittest.mock import mock_open
+        pem = _make_cert(days_until_expiry=20).public_bytes(serialization.Encoding.PEM)
+        resolvers = {"entra": {"data": {"client_credential_type": "certificate",
+                                        "client_certificate": {"private_key_file": "/etc/pi/entra.pem"}}}}
+        with (patch.object(health, "get_resolver_list", return_value=resolvers),
+              patch("builtins.open", mock_open(read_data=pem))):
+            results = health._check_entraid_client_certs()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["source"], "entraid-resolver")
+        self.assertEqual(results[0]["host"], "/etc/pi/entra.pem")
+        self.assertEqual(results[0]["status"], "warning")
+        self.assertIsNone(results[0]["error"])
+
+    def test_missing_private_key_file(self):
+        resolvers = {"entra": {"data": {"client_credential_type": "certificate",
+                                        "client_certificate": {}}}}
+        with patch.object(health, "get_resolver_list", return_value=resolvers):
+            results = health._check_entraid_client_certs()
+        self.assertEqual(results[0]["status"], "error")
+        self.assertIn("No private_key_file", results[0]["error"])
+
+    def test_key_only_file_reports_no_certificate(self):
+        from unittest.mock import mock_open
+        key_pem = (rsa.generate_private_key(public_exponent=65537, key_size=2048,
+                                            backend=default_backend())
+                   .private_bytes(serialization.Encoding.PEM,
+                                  serialization.PrivateFormat.PKCS8,
+                                  serialization.NoEncryption()))
+        resolvers = {"entra": {"data": {"client_credential_type": "certificate",
+                                        "client_certificate": {"private_key_file": "/etc/pi/key.pem"}}}}
+        with (patch.object(health, "get_resolver_list", return_value=resolvers),
+              patch("builtins.open", mock_open(read_data=key_pem))):
+            results = health._check_entraid_client_certs()
+        self.assertEqual(results[0]["status"], "error")
+        self.assertIn("No X.509 certificate", results[0]["error"])
+
+    def test_file_not_found_surfaces_error(self):
+        resolvers = {"entra": {"data": {"client_credential_type": "certificate",
+                                        "client_certificate": {"private_key_file": "/nope.pem"}}}}
+        with (patch.object(health, "get_resolver_list", return_value=resolvers),
+              patch("builtins.open", side_effect=FileNotFoundError("missing"))):
+            results = health._check_entraid_client_certs()
+        self.assertEqual(results[0]["status"], "error")
+        self.assertIn("Could not read certificate file", results[0]["error"])
+
+
 class ResolverHookTest(MyTestCase):
     """save_resolver / delete_resolver invalidate the cert cache."""
 
