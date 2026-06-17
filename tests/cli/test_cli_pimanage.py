@@ -285,7 +285,10 @@ class PIManageBackupTestCase(CliTestCase):
             enc_file.write_bytes(b"x" * 96)
 
             def failing_run(cmd, **kwargs):
-                # Simulate mysqldump exiting non-zero without writing a dump.
+                # Simulate mysqldump writing a partial dump and then exiting
+                # non-zero, so the cleanup that removes the partial file runs.
+                if "-r" in cmd:
+                    pathlib.Path(cmd[cmd.index("-r") + 1]).write_text("-- partial\n")
                 result = mock.MagicMock()
                 result.returncode = 1
                 return result
@@ -306,6 +309,54 @@ class PIManageBackupTestCase(CliTestCase):
             written = list(backup_dir.glob("*.tgz")) if backup_dir.exists() else []
             self.assertEqual(written, [],
                              f"a backup file was written despite the dump failing: {written}")
+            # The partial dump must be cleaned up, not left behind.
+            leftover = list(backup_dir.glob("*.sql")) if backup_dir.exists() else []
+            self.assertEqual(leftover, [],
+                             f"a partial dump file was left behind: {leftover}")
+
+    def test_08_backup_restore_aborts_on_mysql_failure(self):
+        """
+        A failed `mysql` restore must exit non-zero and keep the extracted dump
+        file for inspection/retry instead of deleting it and reporting success.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            # backup_restore prepends "/" to every path it reads from the tar
+            # listing, so feed it the real tmp paths with the leading slash
+            # stripped — they round-trip back to the actual files on disk.
+            pi_cfg = tmp / "pi.cfg"
+            pi_cfg.write_text(
+                "SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://u:p@localhost/pi_test'\n")
+            sqlfile = tmp / "dbdump-20260101-0000.sql"
+            sqlfile.write_text("-- dump\n")
+            listing = f"{str(pi_cfg).lstrip('/')}\n{str(sqlfile).lstrip('/')}\n"
+
+            def fake_run(cmd, **kwargs):
+                result = mock.MagicMock()
+                if cmd[0] == "tar" and "-ztf" in cmd:
+                    result.returncode = 0
+                    result.stdout = listing
+                elif cmd[0] == "tar" and "-zxf" in cmd:
+                    # Extraction is a no-op here; the files already exist.
+                    result.returncode = 0
+                else:
+                    # The `mysql` restore fails.
+                    result.returncode = 1
+                return result
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                            side_effect=fake_run):
+                result = runner.invoke(pi_manage, [
+                    "backup", "restore", "--keep-db-uri", "ignored.tgz"])
+
+            self.assertNotEqual(result.exit_code, 0, result.output)
+            self.assertIn("Database restore failed", result.output, result.output)
+            # The dump must be kept for inspection, not unlinked.
+            self.assertTrue(sqlfile.exists(),
+                            "dump file was deleted despite the restore failing")
 
 
 class PIManageRealmTestCase(CliTestCase):
