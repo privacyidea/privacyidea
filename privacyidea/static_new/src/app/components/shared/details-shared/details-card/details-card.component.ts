@@ -27,10 +27,13 @@ import { MatIcon } from "@angular/material/icon";
   styleUrl: "./details-card.component.scss"
 })
 export class DetailsCardComponent {
+  private static nextId = 0;
+
   readonly title = input<string>("");
   readonly collapsible = input(false);
   readonly collapseLocked = input(false);
   readonly expanded = signal(false);
+  protected readonly bodyId = `details-card-body-${DetailsCardComponent.nextId++}`;
 
   protected toggleExpanded(): void {
     if (this.collapseLocked()) {

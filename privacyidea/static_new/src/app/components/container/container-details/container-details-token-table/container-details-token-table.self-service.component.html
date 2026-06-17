@@ -42,7 +42,8 @@
               aria-label="Filter Input"
               matInput
               i18n-placeholder
-              placeholder="Filter across all columns." />
+              placeholder="Filter across all columns."
+              i18n-placeholder />
           </app-clearable-input>
         </mat-form-field>
       }
@@ -63,6 +64,7 @@
           <th
             *matHeaderCellDef
             attr.aria-label="{{ column.label }} Header"
+            i18n-attr.aria-label
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -80,6 +82,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
+            i18n-attr.aria-label
             mat-cell>
             <ng-container>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
@@ -89,6 +92,7 @@
                       @if (element.username === authService.username()) {
                         <a
                           attr.aria-label="{{ column.label }} Link"
+                          i18n-attr.aria-label
                           (click)="contentService.tokenSelected(element.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.serial)"
                           role="button"
@@ -120,6 +124,7 @@
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
+                        i18n-attr.aria-label
                         href="#">
                         {{ element[column.key] }}
                       </a>
@@ -154,7 +159,8 @@
                   (click)="removeTokenFromContainer(containerSerial(), element.serial)"
                   mat-icon-button
                   i18n-matTooltip
-                  matTooltip="Remove Token from Container">
+                  matTooltip="Remove Token from Container"
+                  i18n-matTooltip>
                   <mat-icon> highlight_remove</mat-icon>
                 </button>
               }
@@ -183,7 +189,8 @@
                   (click)="deleteTokenFromContainer(element.serial)"
                   mat-icon-button
                   i18n-matTooltip
-                  matTooltip="Delete Token">
+                  matTooltip="Delete Token"
+                  i18n-matTooltip>
                   <mat-icon> delete</mat-icon>
                 </button>
               }

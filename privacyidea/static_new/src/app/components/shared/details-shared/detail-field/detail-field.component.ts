@@ -57,7 +57,6 @@ export class DetailFieldComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly draft = signal<string>("");
 
-
   protected readonly editButtonsElement: EditableElement<string> = {
     keyMap: { key: "" },
     isEditing: this.isEditing,

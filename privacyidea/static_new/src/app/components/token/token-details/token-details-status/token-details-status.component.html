@@ -18,16 +18,21 @@
 -->
 <app-details-card
   class="details-card--identity"
-  [title]="'Status'">
+  title="Status"
+  i18n-title>
   <div class="details-field-list">
     <app-detail-field
-      [label]="'Type'"
+      label="Type"
+      i18n-label
       [displayText]="str(tokenDetails().tokentype)" />
     @if (selfService()) {
       <app-detail-field
-        [label]="'Status'"
+        label="Status"
+        i18n-label
         [displayText]="tableUtilsService.getDisplayTextForKeyAndRevoked('active', tokenIsActive(), tokenIsRevoked())"
-        [spanClass]="tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })" />
+        [spanClass]="
+          tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
+        " />
     } @else {
       <div class="detail-field">
         <div
@@ -36,9 +41,7 @@
           Status
         </div>
         <div class="detail-field-value">
-          @if (
-            !isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")
-          ) {
+          @if (!isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")) {
             <button
               type="button"
               class="status-toggle"
@@ -65,7 +68,8 @@
       </div>
     }
     <app-detail-field
-      [label]="'Rollout State'"
+      label="Rollout State"
+      i18n-label
       [displayText]="str(tokenDetails().rollout_state)" />
     <div class="detail-field">
       <div
@@ -110,12 +114,14 @@
     </div>
     @if (createdDisplay()) {
       <app-detail-field
-        [label]="'Created'"
+        label="Created"
+        i18n-label
         [displayText]="createdDisplay()" />
     }
     @if (lastAuthDisplay()) {
       <app-detail-field
-        [label]="'Last Authentication'"
+        label="Last Authentication"
+        i18n-label
         [displayText]="lastAuthDisplay()" />
     }
   </div>

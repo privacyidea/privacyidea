@@ -18,7 +18,8 @@
 -->
 <app-details-card
   class="details-card--assignment"
-  [title]="'Assignments'">
+  title="Assignments"
+  i18n-title>
   <div class="details-field-list">
     <div class="detail-field">
       <div
@@ -172,7 +173,9 @@
                     <a
                       (click)="contentService.navigateContainerDetails(containerSerial())"
                       (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                      (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.navigateContainerDetails(containerSerial())
+                      "
                       aria-label="Container Serial Link"
                       i18n-aria-label
                       role="button"
@@ -188,7 +191,9 @@
                   <a
                     (click)="contentService.navigateContainerDetails(containerSerial())"
                     (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                    (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
+                    (keydown.space)="
+                      $event.preventDefault(); contentService.navigateContainerDetails(containerSerial())
+                    "
                     aria-label="Container Serial Link"
                     i18n-aria-label
                     role="button"

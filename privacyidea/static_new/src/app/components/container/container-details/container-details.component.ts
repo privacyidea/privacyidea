@@ -54,7 +54,7 @@ import { DetailsHeaderComponent } from "@components/shared/details-shared/detail
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { MasonryDirective } from "@components/shared/directives/masonry/masonry.directive";
 import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
-import { infoDetailsKeyMap } from "@components/token/token-details/token-details.component";
+import { infoDetailsKeyMap } from "@components/token/token-details/token-details.constants";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";

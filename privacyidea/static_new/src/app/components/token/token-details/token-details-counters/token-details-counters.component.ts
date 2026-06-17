@@ -22,7 +22,7 @@ import { DetailsCardComponent } from "@components/shared/details-shared/details-
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { tokenDetailsRightsMap } from "../token-details.component";
+import { tokenDetailsRightsMap } from "../token-details.constants";
 
 @Component({
   selector: "app-token-details-counters",

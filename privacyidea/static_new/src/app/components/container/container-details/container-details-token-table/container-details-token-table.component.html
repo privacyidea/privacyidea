@@ -48,7 +48,8 @@
               i18n-aria-label
               i18n-placeholder
               matInput
-              placeholder="Filter across all columns." />
+              placeholder="Filter across all columns."
+              i18n-placeholder />
           </app-clearable-input>
         </mat-form-field>
       }
@@ -73,6 +74,7 @@
           <th
             *matHeaderCellDef
             attr.aria-label="{{ column.label }} Header"
+            i18n-attr.aria-label
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -90,6 +92,7 @@
           <td
             *matCellDef="let element"
             attr.aria-label="{{ column.label }} Cell"
+            i18n-attr.aria-label
             mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
@@ -103,6 +106,7 @@
                         (click)="contentService.tokenSelected(element.token.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.token.serial)"
                         attr.aria-label="{{ column.label }} Link"
+                        i18n-attr.aria-label
                         class="cursor-pointer"
                         role="button"
                         tabindex="0">
@@ -136,6 +140,7 @@
                             contentService.userSelected(element.token[column.key], element.token['user_realm'])
                           "
                           attr.aria-label="{{ column.label }} Link"
+                          i18n-attr.aria-label
                           class="cursor-pointer"
                           role="button"
                           tabindex="0">
@@ -147,6 +152,7 @@
                           color="primary"
                           (click)="assignUserToToken(element.token)"
                           matTooltip="Assign Owner"
+                          i18n-matTooltip
                           i18n-matTooltip>
                           <mat-icon>person_add</mat-icon>
                         </button>
@@ -159,6 +165,7 @@
                     @if (tableUtilsService.isLink(column.key)) {
                       <a
                         attr.aria-label="{{ column.label }} Link"
+                        i18n-attr.aria-label
                         href="#">
                         {{ element.token[column.key] }}
                       </a>
@@ -196,7 +203,8 @@
                   (click)="removeTokenFromContainer(containerSerial(), element.token.serial)"
                   i18n-matTooltip
                   mat-icon-button
-                  matTooltip="Remove Token from Container">
+                  matTooltip="Remove Token from Container"
+                  i18n-matTooltip>
                   <mat-icon>remove_circle_outline</mat-icon>
                 </button>
               }
@@ -205,7 +213,8 @@
                   (click)="deleteTokenFromContainer(element.token.serial)"
                   i18n-matTooltip
                   mat-icon-button
-                  matTooltip="Delete Token">
+                  matTooltip="Delete Token"
+                  i18n-matTooltip>
                   <mat-icon>delete</mat-icon>
                 </button>
               }

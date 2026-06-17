@@ -42,7 +42,8 @@
         <app-details-card
           class="details-card--description"
           [class.is-editing]="desc.isEditing()"
-          [title]="'Description'">
+          title="Description"
+          i18n-title>
           <div class="value-row">
             <div class="value-content">
               @if (desc.isEditing()) {
@@ -55,6 +56,7 @@
                     i18n-placeholder
                     matInput
                     placeholder="Enter description"
+                    i18n-placeholder
                     rows="7"></textarea>
                 </mat-form-field>
               } @else {
@@ -79,24 +81,28 @@
 
       <app-details-card
         class="details-card--group"
-        [title]="'Status'">
+        title="Status"
+        i18n-title>
         <div class="details-field-list">
           <app-container-states-field
             [states]="selectedStates()"
             [blockEditing]="isAnyEditing()" />
           @if (lastAuthenticationDisplay()) {
             <app-detail-field
-              [label]="'Last Authentication'"
+              label="Last Authentication"
+              i18n-label
               [displayText]="lastAuthenticationDisplay()" />
           }
           @if (lastSynchronizationDisplay()) {
             <app-detail-field
-              [label]="'Last Synchronization'"
+              label="Last Synchronization"
+              i18n-label
               [displayText]="lastSynchronizationDisplay()" />
           }
           @if (registrationStateDisplay()) {
             <app-detail-field
-              [label]="'Registration State'"
+              label="Registration State"
+              i18n-label
               [displayText]="registrationStateDisplay()" />
           }
         </div>
@@ -104,13 +110,16 @@
 
       <app-details-card
         class="details-card--group"
-        [title]="'Container'">
+        title="Container"
+        i18n-title>
         <div class="details-field-list">
           <app-detail-field
-            [label]="'Type'"
+            label="Type"
+            i18n-label
             [displayText]="str(containerDetails().type)" />
           <app-detail-field
-            [label]="'Template'"
+            label="Template"
+            i18n-label
             [displayText]="str(containerDetails().template)" />
           <app-container-realms-field
             [realms]="selectedRealms()"
@@ -155,5 +164,4 @@
       </app-details-card>
     </div>
   </div>
-
 </div>

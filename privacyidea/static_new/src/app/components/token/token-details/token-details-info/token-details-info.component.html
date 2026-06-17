@@ -17,7 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-details-card
-  [title]="'Token Information'"
+  title="Token Information"
+  i18n-title
   [collapsible]="true"
   [collapseLocked]="isEditingInfo()">
   @if (infoData()[0]; as element) {
@@ -71,7 +72,8 @@
             [(ngModel)]="newInfo().key"
             i18n-placeholder
             matInput
-            placeholder="Add new key" />
+            placeholder="Add new key"
+            i18n-placeholder />
         </mat-form-field>
         <span class="margin-right-16 flex ali-center">:</span>
         <mat-form-field
@@ -82,6 +84,7 @@
             i18n-placeholder
             matInput
             placeholder="Add new info"
+            i18n-placeholder
             rows="1"></textarea>
         </mat-form-field>
       </div>

@@ -19,7 +19,8 @@
 <app-details-card
   class="details-card--description"
   [class.is-editing]="element().isEditing()"
-  [title]="'Description'">
+  title="Description"
+  i18n-title>
   <div class="value-row">
     <div class="value-content">
       @if (element().isEditing()) {
@@ -35,6 +36,7 @@
               i18n-placeholder
               matInput
               placeholder="Enter description"
+              i18n-placeholder
               rows="4"></textarea>
             <mat-hint align="end"
               >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
@@ -52,7 +54,9 @@
               appAutofocus
               matInput
               rows="7"></textarea>
-            <mat-hint align="end">{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
+            <mat-hint align="end"
+              >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+            </mat-hint>
           </mat-form-field>
         }
       } @else {

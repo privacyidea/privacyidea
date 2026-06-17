@@ -29,6 +29,7 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
 
   private resizeObserver?: ResizeObserver;
   private mutationObserver?: MutationObserver;
+  private readonly observedChildren = new Set<HTMLElement>();
   private frame = 0;
 
   ngAfterViewInit(): void {
@@ -42,7 +43,7 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
         this.observeChildren();
         this.schedule();
       });
-      this.mutationObserver.observe(this.host, { childList: true });
+      this.mutationObserver.observe(this.host, { childList: true, subtree: true });
     }
     this.schedule();
   }
@@ -50,6 +51,7 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.mutationObserver?.disconnect();
+    this.observedChildren.clear();
     if (this.frame) {
       cancelAnimationFrame(this.frame);
     }
@@ -59,8 +61,18 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
     if (!this.resizeObserver) {
       return;
     }
-    for (const child of this.collectItems(this.host)) {
-      this.resizeObserver.observe(child);
+    const current = new Set(this.collectItems(this.host));
+    for (const child of this.observedChildren) {
+      if (!current.has(child)) {
+        this.resizeObserver.unobserve(child);
+        this.observedChildren.delete(child);
+      }
+    }
+    for (const child of current) {
+      if (!this.observedChildren.has(child)) {
+        this.resizeObserver.observe(child);
+        this.observedChildren.add(child);
+      }
     }
   }
 

@@ -18,10 +18,12 @@
 -->
 <app-details-card
   class="details-card--counters"
-  [title]="'Counters'">
+  title="Counters"
+  i18n-title>
   <div class="details-field-list">
     <app-detail-field
-      [label]="'Max Count'"
+      label="Max Count"
+      i18n-label
       [displayText]="str(tokenDetails().maxfail)"
       [editValue]="str(tokenDetails().maxfail)"
       [editable]="isEditableElement('maxfail')"
@@ -29,11 +31,13 @@
       [blockEditing]="isAnyEditingOrRevoked()"
       [save]="saveMaxfail" />
     <app-detail-field
-      [label]="'OTP Length'"
+      label="OTP Length"
+      i18n-label
       [displayText]="str(tokenDetails().otplen)"
       [editValue]="str(tokenDetails().otplen)" />
     <app-detail-field
-      [label]="'Count Window'"
+      label="Count Window"
+      i18n-label
       [displayText]="str(tokenDetails().count_window)"
       [editValue]="str(tokenDetails().count_window)"
       [editable]="isEditableElement('count_window')"
@@ -41,7 +45,8 @@
       [blockEditing]="isAnyEditingOrRevoked()"
       [save]="saveCountWindow" />
     <app-detail-field
-      [label]="'Sync Window'"
+      label="Sync Window"
+      i18n-label
       [displayText]="str(tokenDetails().sync_window)"
       [editValue]="str(tokenDetails().sync_window)"
       [editable]="isEditableElement('sync_window')"
@@ -49,7 +54,8 @@
       [blockEditing]="isAnyEditingOrRevoked()"
       [save]="saveSyncWindow" />
     <app-detail-field
-      [label]="'Count'"
+      label="Count"
+      i18n-label
       [displayText]="str(tokenDetails().count)"
       [editValue]="str(tokenDetails().count)" />
   </div>

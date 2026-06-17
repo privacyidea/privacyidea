@@ -37,7 +37,7 @@ export class DetailsEditRegistry {
   readonly anyEditing = computed(() => this.fields().some((field) => field.isEditing()));
 
   register(field: DetailFieldHandle): void {
-    this.fields.update((list) => [...list, field]);
+    this.fields.update((list) => (list.includes(field) ? list : [...list, field]));
   }
 
   unregister(field: DetailFieldHandle): void {

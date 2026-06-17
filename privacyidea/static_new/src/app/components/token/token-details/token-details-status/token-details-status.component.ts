@@ -25,7 +25,7 @@ import { DetailsCardComponent } from "@components/shared/details-shared/details-
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { formatTokenTimestamp } from "../token-details.component";
+import { formatTokenTimestamp } from "../token-details.constants";
 
 @Component({
   selector: "app-token-details-status",

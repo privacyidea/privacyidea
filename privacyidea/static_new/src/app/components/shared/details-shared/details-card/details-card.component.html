@@ -22,7 +22,8 @@
     class="details-card-toggle"
     (click)="toggleExpanded()"
     [disabled]="collapseLocked()"
-    [attr.aria-expanded]="expanded()">
+    [attr.aria-expanded]="expanded()"
+    [attr.aria-controls]="bodyId">
     <h4 class="details-card-title">{{ title() }}</h4>
     <mat-icon
       class="details-card-chevron"
@@ -34,9 +35,12 @@
   <h4 class="details-card-title">{{ title() }}</h4>
 }
 <div
+  [id]="bodyId"
   class="details-card-body"
   [class.details-card-body--collapsible]="collapsible()"
-  [class.details-card-body--collapsed]="collapsible() && !expanded()">
+  [class.details-card-body--collapsed]="collapsible() && !expanded()"
+  [attr.inert]="collapsible() && !expanded() ? '' : null"
+  [attr.aria-hidden]="collapsible() && !expanded() ? 'true' : null">
   <div class="details-card-body-inner">
     <ng-content />
   </div>

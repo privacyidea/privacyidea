@@ -28,7 +28,7 @@ import { EditableElement, EditButtonsComponent } from "@components/shared/edit-b
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
-import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
+import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 
 @Component({
   selector: "app-token-details-info",

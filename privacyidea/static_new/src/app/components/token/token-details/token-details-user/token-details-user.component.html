@@ -18,7 +18,8 @@
 -->
 <app-details-card
   class="user-container responsive-pad-0-1310"
-  [title]="'User'">
+  title="User"
+  i18n-title>
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -71,7 +72,9 @@
                     <a
                       (click)="contentService.userSelected(element.value, element['user_realm'])"
                       (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
-                      (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
+                      "
                       i18n-aria-label="{{ element.keyMap.label }} Link"
                       role="button"
                       tabindex="0">
