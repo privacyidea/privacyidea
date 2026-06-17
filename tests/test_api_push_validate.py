@@ -594,8 +594,8 @@ class PushAPITestCase(MyApiTestCase):
             # Check that we get a presence required message
             challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
             self.assertTrue(challenge_text in challenge_messages)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # We do poll only, so we need to poll (polling does not create an auth-log entry)
@@ -637,8 +637,8 @@ class PushAPITestCase(MyApiTestCase):
                 lc.check_present(("privacyidea.lib.tokens.pushtoken", "WARNING",
                                   "'push_require_presence' Policy is set but the presence "
                                   "answer is not present in the smartphone request!"))
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Finalize fails since the challenge has not been answered -> CHALLENGE_ANSWERED_FAIL
@@ -656,8 +656,8 @@ class PushAPITestCase(MyApiTestCase):
                              res.json.get("detail").get("message"), res.json)
             self.assertEqual(AUTH_RESPONSE.REJECT,
                              res.json.get("result").get("authentication"), res.json)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
 
         # Answer with the wrong presence_answer: the smartphone /ttype confirm fails -> CHALLENGE_ANSWERED_FAIL
@@ -679,8 +679,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("status"), res.json)
             # This fails since the wrong presence_answer was given
             self.assertFalse(res.json.get("result").get("value"), res.json)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Finalize still fails since the wrong answer was given -> CHALLENGE_ANSWERED_FAIL
@@ -698,8 +698,8 @@ class PushAPITestCase(MyApiTestCase):
                              res.json.get("detail").get("message"), res.json)
             self.assertEqual(AUTH_RESPONSE.REJECT,
                              res.json.get("result").get("authentication"), res.json)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
 
         # Answer with the correct presence answer: the smartphone /ttype confirm succeeds -> CHALLENGE_ANSWERED_OK
@@ -718,8 +718,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertTrue(res.json.get("result").get("status"), res.json)
             self.assertTrue(res.json.get("result").get("value"), res.json)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Finalize now succeeds -> LOGIN_SUCCESS
@@ -735,8 +735,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"), res.json)
             self.assertEqual(AUTH_RESPONSE.ACCEPT,
                              res.json.get("result").get("authentication"), res.json)
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
 
         remove_token(self.serial_push)
@@ -808,8 +808,8 @@ class PushAPITestCase(MyApiTestCase):
 
         # require_presence is disabled by push_wait, so this is a standard push_wait that times out: recorded only as
         # CHALLENGE_TRIGGERED, not an MFA_FAIL.
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=User("selfservice", self.realm1),
                                         serials={self.serial_push},
                                         transaction_id=get_challenges()[0].transaction_id)
@@ -904,8 +904,8 @@ class PushAPITestCase(MyApiTestCase):
             # Smartphone has not responded yet and no display_code has been created yet
             self.assertFalse(challenge_data.get("smartphone_confirmed"))
             self.assertNotIn("display_code", challenge_data)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Step 1b: Smartphone polls for the challenge (polling creates no auth-log entry)
@@ -950,8 +950,8 @@ class PushAPITestCase(MyApiTestCase):
             # Check that there is a second message for showing the code to the user on the phone
             self.assertIn("message", detail)
             self.assertEqual(expected_message, detail["message"])
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Verify challenge data was updated
@@ -973,8 +973,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"), res.json)
             self.assertEqual(AUTH_RESPONSE.ACCEPT,
                              res.json.get("result").get("authentication"), res.json)
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
 
         # Verify backwards-compat fallback: with the push-specific policy removed,
@@ -1083,8 +1083,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(challenge_data.get("type"), "push")
             self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
             self.assertFalse(challenge_data.get("smartphone_confirmed"))
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Step 1b: Smartphone polls for the challenge (polling creates no auth-log entry)
@@ -1119,8 +1119,8 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             display_code = detail.get("display_code")
             self.assertTrue(display_code)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Finalize authentication with the WRONG display_code -> CHALLENGE_ANSWERED_FAIL
@@ -1141,8 +1141,8 @@ class PushAPITestCase(MyApiTestCase):
             # Check failcounter after, has been increased
             token = get_tokens(serial=self.serial_push)[0]
             self.assertEqual(1, token.token.failcount)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         client_label="privacyidea-cp/2.0", transaction_id=transaction_id)
 
         remove_token(self.serial_push)
@@ -1278,8 +1278,8 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             self.assertTrue(transaction_id)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Smartphone polls for the challenge (polling creates no auth-log entry)
@@ -1316,8 +1316,8 @@ class PushAPITestCase(MyApiTestCase):
             # No display_code should be returned for a declined challenge
             detail = res.json.get("detail") or {}
             self.assertNotIn("display_code", detail)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_DECLINED])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_DECLINED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         # Verify challenge was not confirmed
@@ -1336,8 +1336,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertFalse(res.json.get("result").get("value"), res.json)
             self.assertEqual(AUTH_RESPONSE.REJECT,
                              res.json.get("result").get("authentication"), res.json)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries.all[0], user=user, serials={self.serial_push},
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id)
 
         remove_token(self.serial_push)
@@ -1418,21 +1418,21 @@ class PushAPITestCase(MyApiTestCase):
         transaction_id, nonce = trigger_and_poll()
         sign_and_post(f"{nonce}|{self.serial_push}")
         finalize(transaction_id)
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
                                                   AuthEventType.LOGIN_SUCCESS])
         # All three rows correlate to the attempt via the same transaction_id: the PIN trigger and the
         # /validate/check collection echo the request parameter, the /ttype/push confirm recovers it from the
         # answered challenge.
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=user, serials={self.serial_push}, transaction_id=transaction_id)
         # CHALLENGE_ANSWERED_OK occurs twice, so assert each occurrence by position:
         # .all[1] is the smartphone confirm at /ttype/push, .all[2] is the client collecting the result at
         # /validate/check. Both carry the user.
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
                                         serials={self.serial_push},
                                         transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_entries[AuthEventType.LOGIN_SUCCESS], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
                                         serials={self.serial_push},
                                         transaction_id=transaction_id)
 
@@ -1440,11 +1440,11 @@ class PushAPITestCase(MyApiTestCase):
         clear_log_and_challenges()
         transaction_id, nonce = trigger_and_poll()
         sign_and_post(f"{nonce}|{self.serial_push}|decline", extra_data={"decline": "1"})
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_DECLINED])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_DECLINED], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_DECLINED], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id)
 
         # Bad signature: verification fails -> CHALLENGE_ANSWERED_FAIL at /ttype/push. No challenge matched the
@@ -1452,13 +1452,13 @@ class PushAPITestCase(MyApiTestCase):
         clear_log_and_challenges()
         transaction_id, _ = trigger_and_poll()
         sign_and_post(f"wrong|{self.serial_push}")
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id)
-        self.assertEqual(transaction_id, auth_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL].transaction_id)
+        self.assertEqual(transaction_id, auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL].transaction_id)
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1527,8 +1527,8 @@ class PushAPITestCase(MyApiTestCase):
             presence_answer = challenge_data.get("correct_answer")
 
         # check auth log
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id)
 
         # /polltransaction: challenge not yet answered
@@ -1580,9 +1580,9 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"), res.json)
             # No display_code should be returned — this is require_presence, not code_to_phone
             self.assertNotIn("display_code", res.json.get("detail") or {})
-        auth_entries = assert_authentication_log(
+        auth_log_entries = assert_authentication_log(
             [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id)
 
         # /polltransaction: challenge is now answered
@@ -1608,10 +1608,10 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.ACCEPT,
                              res.json.get("result").get("authentication"), res.json)
         # Now login is completed
-        auth_entries = assert_authentication_log(
+        auth_log_entries = assert_authentication_log(
             [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
              AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(auth_entries[AuthEventType.LOGIN_SUCCESS], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id,
                                         client_label="privacyidea-cp/2.0")
 
@@ -1683,8 +1683,8 @@ class PushAPITestCase(MyApiTestCase):
             self.assertNotIn("display_code", challenge_data)
 
         # check auth log: a timed-out push_wait is recorded only as CHALLENGE_TRIGGERED
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED],
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=User("selfservice", self.realm1),
                                         serials={self.serial_push},
                                         transaction_id=get_challenges()[0].transaction_id)
@@ -1782,16 +1782,16 @@ class PushAPITestCase(MyApiTestCase):
         self.assertEqual([], confirm_errors, f"smartphone thread failed: {confirm_errors}")
 
         # check auth log
-        auth_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                   AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
                                                   AuthEventType.LOGIN_SUCCESS])
         transaction_id = captured["transaction_id"]
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id,
                                         client_label="privacyidea-cp/2.0")
-        assert_authentication_log_entry(auth_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND],
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND],
                                         user=user, serials={self.serial_push}, transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_entries[AuthEventType.LOGIN_SUCCESS], user=user,
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
                                         serials={self.serial_push}, transaction_id=transaction_id,
                                         client_label="privacyidea-cp/2.0")
 
