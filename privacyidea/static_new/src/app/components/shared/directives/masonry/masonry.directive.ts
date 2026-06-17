@@ -115,6 +115,11 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
       child.style.position = "absolute";
       child.style.boxSizing = "border-box";
       child.style.width = `${columnWidth}px`;
+    }
+
+    const childHeights = children.map((child) => child.offsetHeight);
+
+    children.forEach((child, index) => {
       let target = 0;
       for (let i = 1; i < columns; i++) {
         if (heights[i] < heights[target]) {
@@ -123,8 +128,8 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
       }
       child.style.left = `${target * (columnWidth + gap)}px`;
       child.style.top = `${heights[target]}px`;
-      heights[target] += child.offsetHeight + gap;
-    }
+      heights[target] += childHeights[index] + gap;
+    });
     this.host.style.height = `${Math.max(...heights)}px`;
   }
 }
