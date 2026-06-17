@@ -50,6 +50,7 @@ from flaskext.versioned import Versioned
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.application import application_blueprint
 from privacyidea.api.audit import audit_blueprint
+from privacyidea.api.authentication_log import authentication_log_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.clienttype import client_blueprint
@@ -148,6 +149,7 @@ def _register_blueprints(app):
     app.register_blueprint(jwtauth, url_prefix='/auth')
     app.register_blueprint(user_blueprint, url_prefix='/user')
     app.register_blueprint(audit_blueprint, url_prefix='/audit')
+    app.register_blueprint(authentication_log_blueprint, url_prefix='/authenticationlog')
     app.register_blueprint(machineresolver_blueprint, url_prefix='/machineresolver')
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
     app.register_blueprint(application_blueprint, url_prefix='/application')

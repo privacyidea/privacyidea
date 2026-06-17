@@ -17,15 +17,20 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from datetime import datetime, timezone, timedelta
 
-from .base import MyTestCase
+import mock
+
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
     get_authentication_log_event,
     get_authentication_logs,
+    get_authentication_logs_paginate,
+    delete_authentication_logs,
     cleanup_authentication_log,
 )
+from privacyidea.lib.error import ParameterError
+from .base import MyTestCase
 
 
 class AuthenticationLogTestCase(MyTestCase):
@@ -39,7 +44,8 @@ class AuthenticationLogTestCase(MyTestCase):
         super().tearDown()
 
     def test_create_required_fields_only(self):
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1")
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1",
+                                            realm="realm1")
         self.assertIsNotNone(event_id)
         self.assertGreater(event_id, 0)
 
@@ -80,7 +86,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertNotEqual(id1, id2)
 
     def test_delete_existing_entry(self):
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1")
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1",
+                                            realm="realm1")
         self.assertIsNotNone(get_authentication_log_event(event_id))
 
         delete_authentication_log_event(event_id)
@@ -133,16 +140,20 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(AuthEventType.MFA_FAIL, results[0].event_type)
 
     def test_get_authentication_logs_filter_by_serial(self):
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", serial="TOK001")
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", serial="TOK002")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOK001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOK002")
 
         results = get_authentication_logs(serial="TOK001")
         self.assertEqual(1, len(results))
         self.assertEqual("TOK001", results[0].serial)
 
     def test_get_authentication_logs_filter_by_source_ip(self):
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", source_ip="10.0.0.1")
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", source_ip="10.0.0.2")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="10.0.0.1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="10.0.0.2")
 
         results = get_authentication_logs(source_ip="10.0.0.1")
         self.assertEqual(1, len(results))
@@ -150,9 +161,9 @@ class AuthenticationLogTestCase(MyTestCase):
 
     def test_get_authentication_logs_filter_by_transaction_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-a",
-                                  resolver="res1", uid="u1", realm="r1")
+                                 resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-b",
-                                  resolver="res1", uid="u1", realm="r1")
+                                 resolver="res1", uid="u1", realm="r1")
 
         results = get_authentication_logs(transaction_id="txn-a")
         self.assertEqual(1, len(results))
@@ -183,11 +194,13 @@ class AuthenticationLogTestCase(MyTestCase):
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = past
-            id1 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+            id1 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                           realm="r1")
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = future
-            id2 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
+            id2 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2",
+                                           realm="r1")
 
         # only the past entry
         results = get_authentication_logs(end_timestamp=now)
@@ -225,11 +238,13 @@ class AuthenticationLogTestCase(MyTestCase):
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = old_ts
-            old_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+            old_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                              realm="r1")
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = recent_ts
-            recent_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
+            recent_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2",
+                                                 realm="r1")
 
         cutoff = now - timedelta(days=7)
         deleted = cleanup_authentication_log(older_than=cutoff)
@@ -314,4 +329,152 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("X" * authentication_log_column_length["username"], entry.username)
         self.assertEqual("X" * authentication_log_column_length["client_label"], entry.client_label)
         self.assertEqual("X" * authentication_log_column_length["serial"], entry.serial)
-        self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"], entry.previous_transaction_id)
+        self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"],
+                         entry.previous_transaction_id)
+
+
+class AuthenticationLogDBTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+        super().tearDown()
+
+    def test_get_as_dict(self):
+        log_time_utc_naive = datetime(2026, 6, 1, 5, 23, 21, 1, tzinfo=None)
+        with mock.patch("privacyidea.models.utils.datetime") as datetime_mock:
+            datetime_mock.now.return_value = log_time_utc_naive
+            event_id = log_authentication_event(
+                event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
+                username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
+                transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
+            )
+
+        entry = get_authentication_log_event(event_id)
+        auth_log_dict = entry.to_dict()
+
+        expected_keys = {"id", "resolver", "uid", "realm", "username", "event_type", "timestamp", "source_ip",
+                         "client_label", "serial", "transaction_id", "previous_transaction_id", "other_info"}
+        self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
+        self.assertEqual(event_id, auth_log_dict["id"])
+        self.assertEqual("res1", auth_log_dict["resolver"])
+        self.assertEqual("user1", auth_log_dict["uid"])
+        self.assertEqual("realm1", auth_log_dict["realm"])
+        self.assertEqual("testuser", auth_log_dict["username"])
+        self.assertEqual(AuthEventType.LOGIN_SUCCESS, auth_log_dict["event_type"])
+        log_time_tz_aware = log_time_utc_naive.replace(tzinfo=timezone.utc)
+        self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])
+        self.assertEqual("192.168.1.1", auth_log_dict["source_ip"])
+        self.assertEqual("vpn", auth_log_dict["client_label"])
+        self.assertEqual("TOK001", auth_log_dict["serial"])
+        self.assertEqual("txn-123", auth_log_dict["transaction_id"])
+        self.assertEqual("txn-prev", auth_log_dict["previous_transaction_id"])
+        self.assertEqual({"key": "value"}, auth_log_dict["other_info"])
+
+
+class AuthenticationLogPaginateTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    @staticmethod
+    def _create(count, **kwargs):
+        return [log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid=f"u{i}",
+                                         realm="realm1", **kwargs) for i in range(count)]
+
+    def test_pagination_metadata_across_pages(self):
+        self._create(5)
+        first = get_authentication_logs_paginate(page=1, page_size=2)
+        self.assertEqual(5, first.count)
+        self.assertEqual(2, len(first.auth_logs))
+        self.assertEqual(1, first.current)
+        self.assertIsNone(first.prev)
+        self.assertEqual(2, first.next)
+
+        last = get_authentication_logs_paginate(page=3, page_size=2)
+        self.assertEqual(1, len(last.auth_logs))
+        self.assertEqual(2, last.prev)
+        self.assertIsNone(last.next)
+
+    def test_default_sort_is_newest_first(self):
+        ids = self._create(3)
+        page = get_authentication_logs_paginate()
+        self.assertEqual(sorted(ids, reverse=True), [entry.id for entry in page.auth_logs])
+
+    def test_sort_ascending(self):
+        ids = self._create(3)
+        page = get_authentication_logs_paginate(sort_order="asc")
+        self.assertEqual(sorted(ids), [entry.id for entry in page.auth_logs])
+
+    def test_unknown_sort_falls_back_to_timestamp(self):
+        self._create(2)
+        page = get_authentication_logs_paginate(sort_column="not_a_column")
+        self.assertEqual(2, page.count)
+
+    def test_filters_are_applied(self):
+        self._create(2, serial="TOK_A")
+        self._create(3, serial="TOK_B")
+        page = get_authentication_logs_paginate(serial="TOK_A")
+        self.assertEqual(2, page.count)
+        self.assertTrue(all(entry.serial == "TOK_A" for entry in page.auth_logs))
+
+    def test_allowed_realms_excludes_other_and_null_realms(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm2")
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)  # no realm
+        # None means unrestricted
+        self.assertEqual(3, get_authentication_logs_paginate().count)
+        # Restricting to realm1 hides realm2 and the null-realm row
+        restricted = get_authentication_logs_paginate(allowed_realms=["realm1"])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("realm1", restricted.auth_logs[0].realm)
+
+    def test_to_dict_shape_and_iso_timestamp(self):
+        self._create(1)
+        page_dict = get_authentication_logs_paginate().to_dict()
+        self.assertEqual({"auth_logs", "count", "current", "prev", "next"}, set(page_dict.keys()))
+        timestamp = page_dict["auth_logs"][0]["timestamp"]
+        self.assertIsInstance(timestamp, str)
+        datetime.fromisoformat(timestamp)  # parseable ISO 8601
+
+
+class AuthenticationLogDeleteTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_delete_by_filter_returns_count(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u2", realm="realm1")
+        deleted = delete_authentication_logs(event_type=AuthEventType.MFA_FAIL)
+        self.assertEqual(1, deleted)
+        remaining = get_authentication_logs()
+        self.assertEqual(1, len(remaining))
+        self.assertEqual(AuthEventType.LOGIN_SUCCESS, remaining[0].event_type)
+
+    def test_delete_without_filter_raises(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        self.assertRaises(ParameterError, delete_authentication_logs)
+        # nothing was deleted
+        self.assertEqual(1, len(get_authentication_logs()))
+
+    def test_delete_allowed_realms_excludes_other_and_null_realms(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm2")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)  # no realm
+        # Deleting all LOGIN_SUCCESS while restricted to realm1 only removes the realm1 row.
+        deleted = delete_authentication_logs(event_type=AuthEventType.LOGIN_SUCCESS, allowed_realms=["realm1"])
+        self.assertEqual(1, deleted)
+        remaining_realms = {entry.realm for entry in get_authentication_logs()}
+        self.assertEqual({"realm2", None}, remaining_realms)

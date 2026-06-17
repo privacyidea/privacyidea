@@ -1,0 +1,128 @@
+# (c) NetKnights GmbH 2026,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+import logging
+from datetime import datetime, timezone
+
+from dateutil.parser import isoparse
+from flask import Blueprint, request, g
+
+from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
+from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
+                                                                   delete_authentication_logs,
+                                                                   DEFAULT_PAGE_SIZE)
+from privacyidea.lib.log import log_with
+from privacyidea.lib.params import get_optional
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import get_authentication_log_allowed_realms
+from privacyidea.lib.utils import parse_timedelta
+
+log = logging.getLogger(__name__)
+
+authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name__)
+
+# Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument.
+_FILTER_PARAMS = ["resolver", "uid", "realm", "username", "event_type", "source_ip", "serial",
+                  "transaction_id", "previous_transaction_id"]
+
+
+@authentication_log_blueprint.route("/", methods=["GET"])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
+@log_with(log)
+def get_authentication_log():
+    """
+    Return a paginated, filtered page of authentication-log entries.
+
+    Requires admin authentication and the policy action :ref:`policy_authentication_log_read`. If that policy is
+    scoped to realms, only entries of those realms are returned.
+
+    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
+    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
+
+    :query page: page number, 1-indexed (default 1).
+    :query page_size: entries per page (default 15).
+    :query sort_column: column to sort by (id, timestamp, event_type, realm, username, source_ip, serial).
+    :query sort_order: ``asc`` or ``desc`` (default ``desc``).
+    :query timelimit: only entries newer than now minus this delta (e.g. ``1d``, ``2h``). Overrides ``start``.
+    :query start: only entries at/after this ISO 8601 timestamp.
+    :query end: only entries at/before this ISO 8601 timestamp.
+    :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
+    """
+    params = request.all_data
+    filters = {name: get_optional(params, name) for name in _FILTER_PARAMS}
+
+    timelimit = get_optional(params, "timelimit")
+    if timelimit:
+        start_timestamp = datetime.now(timezone.utc) - parse_timedelta(timelimit)
+    else:
+        start = get_optional(params, "start")
+        start_timestamp = isoparse(start) if start else None
+    end = get_optional(params, "end")
+    end_timestamp = isoparse(end) if end else None
+
+    result = get_authentication_logs_paginate(
+        **filters,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        allowed_realms=get_authentication_log_allowed_realms(),
+        page=int(get_optional(params, "page", default=1)),
+        page_size=int(get_optional(params, "page_size", default=DEFAULT_PAGE_SIZE)),
+        sort_column=get_optional(params, "sort_column", default="id"),
+        sort_order=get_optional(params, "sort_order", default="desc"))
+
+    g.audit_object.log({"success": True})
+    return send_result(result.to_dict())
+
+
+@authentication_log_blueprint.route("/", methods=["DELETE"])
+@admin_required
+@prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_DELETE)
+@log_with(log)
+def delete_authentication_log():
+    """
+    Delete authentication-log entries matching the given filters and return the number deleted.
+
+    Requires admin authentication and the policy action :ref:`policy_authentication_log_delete`. If that policy is
+    scoped to realms, only entries of those realms are deleted. At least one filter must be given; an unfiltered
+    request is rejected so the whole log cannot be wiped by accident. To delete entries older than a point in time,
+    pass ``end`` (entries with a timestamp at or before it).
+
+    Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
+    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
+
+    :query start: only entries at/after this ISO 8601 timestamp.
+    :query end: only entries at/before this ISO 8601 timestamp (i.e. "older than").
+    :status 200: ``result.value`` is the number of deleted entries.
+    :status 400: no filter was given.
+    """
+    params = request.all_data
+    filters = {name: get_optional(params, name) for name in _FILTER_PARAMS}
+    start = get_optional(params, "start")
+    end = get_optional(params, "end")
+
+    count = delete_authentication_logs(
+        **filters,
+        start_timestamp=isoparse(start) if start else None,
+        end_timestamp=isoparse(end) if end else None,
+        allowed_realms=get_authentication_log_allowed_realms(PolicyAction.AUTHENTICATION_LOG_DELETE))
+
+    g.audit_object.log({"success": True})
+    return send_result(count)

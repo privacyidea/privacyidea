@@ -82,3 +82,8 @@ class AuthenticationLog(MethodsMixin, db.Model):
         UTC and re-attach the timezone on read.
         """
         return self.timestamp.replace(tzinfo=timezone.utc)
+
+    def to_dict(self):
+        auth_log_dict = {name: getattr(self, name) for name in self.__table__.columns.keys()}
+        auth_log_dict["timestamp"] = self.aware_timestamp.isoformat()
+        return auth_log_dict

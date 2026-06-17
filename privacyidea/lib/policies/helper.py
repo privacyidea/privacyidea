@@ -151,3 +151,24 @@ def get_admin_audit_params() -> dict:
                 admin_params["admin_realm"] = g.logged_in_user["realm"]
                 admin_params["allowed_audit_realms"] = list(set(allowed_audit_realms))
     return admin_params
+
+
+def get_authentication_log_allowed_realms(
+        action: str = PolicyAction.AUTHENTICATION_LOG_READ) -> list[str] | None:
+    """
+    Determine the realms an admin may act on in the authentication log for the given action, based on the realm
+    scoping of that action's policies. Returns ``None`` if access is not restricted to specific realms (the admin may
+    act on all entries); otherwise the list of allowed realms (entries without a realm are then not included).
+
+    :param action: the admin action whose realm scoping to read (``authentication_log_read`` or
+        ``authentication_log_delete``)
+    :return: the list of allowed realms, or ``None`` for unrestricted access
+    """
+    from privacyidea.lib.auth import ROLE
+    if g.logged_in_user["role"] != ROLE.ADMIN:
+        return None
+    allowed_realms = []
+    for policy in Match.admin(g, action=action).policies():
+        if policy.get("realm"):
+            allowed_realms += policy.get("realm")
+    return list(set(allowed_realms)) or None

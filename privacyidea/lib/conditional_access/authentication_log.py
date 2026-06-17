@@ -16,15 +16,50 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, func, select
+from sqlalchemy.orm import InstrumentedAttribute
 
 from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
 
 log = logging.getLogger(__name__)
+
+# Columns that may be used to sort a paginated authentication-log query, keyed by the name accepted from the API.
+SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
+    "id": AuthenticationLog.id,
+    "timestamp": AuthenticationLog.timestamp,
+    "event_type": AuthenticationLog.event_type,
+    "realm": AuthenticationLog.realm,
+    "username": AuthenticationLog.username,
+    "source_ip": AuthenticationLog.source_ip,
+    "serial": AuthenticationLog.serial,
+}
+DEFAULT_PAGE_SIZE = 15
+
+
+@dataclass
+class AuthenticationLogPage:
+    """One page of an authentication-log query plus its pagination metadata."""
+    auth_logs: list[AuthenticationLog]
+    count: int
+    current: int
+    prev: int | None
+    next: int | None
+
+    def to_dict(self) -> dict:
+        """Serialize the page (entries plus pagination metadata) for the API response."""
+        return {
+            "auth_logs": [entry.to_dict() for entry in self.auth_logs],
+            "count": self.count,
+            "current": self.current,
+            "prev": self.prev,
+            "next": self.next,
+        }
 
 
 def _naive_utc(value: datetime) -> datetime:
@@ -152,13 +187,50 @@ def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
     return db.session.get(AuthenticationLog, event_id)
 
 
+def _filter_conditions(resolver: str | None = None,
+                       uid: str | None = None,
+                       realm: str | None = None,
+                       username: str | None = None,
+                       event_type: str | None = None,
+                       source_ip: str | None = None,
+                       serial: str | None = None,
+                       transaction_id: str | None = None,
+                       previous_transaction_id: str | None = None,
+                       start_timestamp: datetime | None = None,
+                       end_timestamp: datetime | None = None) -> list:
+    """
+    Build the list of SQLAlchemy ``where`` conditions for the provided filters (``None`` means no filter on that
+    field). Returned as a list so it can be applied to both ``select`` and ``delete`` statements. timestamp filters
+    are inclusive on both ends.
+    """
+    exact_match_filters: dict[InstrumentedAttribute, str | None] = {
+        AuthenticationLog.resolver: resolver,
+        AuthenticationLog.uid: uid,
+        AuthenticationLog.realm: realm,
+        AuthenticationLog.username: username,
+        AuthenticationLog.event_type: event_type,
+        AuthenticationLog.source_ip: source_ip,
+        AuthenticationLog.serial: serial,
+        AuthenticationLog.transaction_id: transaction_id,
+        AuthenticationLog.previous_transaction_id: previous_transaction_id,
+    }
+    conditions = [column == value for column, value in exact_match_filters.items() if value is not None]
+    if start_timestamp is not None:
+        conditions.append(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
+    if end_timestamp is not None:
+        conditions.append(AuthenticationLog.timestamp <= _naive_utc(end_timestamp))
+    return conditions
+
+
 def get_authentication_logs(resolver: str | None = None,
                             uid: str | None = None,
                             realm: str | None = None,
+                            username: str | None = None,
                             event_type: str | None = None,
                             source_ip: str | None = None,
                             serial: str | None = None,
                             transaction_id: str | None = None,
+                            previous_transaction_id: str | None = None,
                             start_timestamp: datetime | None = None,
                             end_timestamp: datetime | None = None) -> list[AuthenticationLog]:
     """
@@ -166,27 +238,103 @@ def get_authentication_logs(resolver: str | None = None,
     All parameters are optional; omitting a parameter means no filtering on that field.
     timestamp filters are inclusive on both ends.
     """
-    stmt = select(AuthenticationLog)
-    if resolver is not None:
-        stmt = stmt.where(AuthenticationLog.resolver == resolver)
-    if uid is not None:
-        stmt = stmt.where(AuthenticationLog.uid == uid)
-    if realm is not None:
-        stmt = stmt.where(AuthenticationLog.realm == realm)
-    if event_type is not None:
-        stmt = stmt.where(AuthenticationLog.event_type == event_type)
-    if source_ip is not None:
-        stmt = stmt.where(AuthenticationLog.source_ip == source_ip)
-    if serial is not None:
-        stmt = stmt.where(AuthenticationLog.serial == serial)
-    if transaction_id is not None:
-        stmt = stmt.where(AuthenticationLog.transaction_id == transaction_id)
-    if start_timestamp is not None:
-        stmt = stmt.where(AuthenticationLog.timestamp >= _naive_utc(start_timestamp))
-    if end_timestamp is not None:
-        stmt = stmt.where(AuthenticationLog.timestamp <= _naive_utc(end_timestamp))
-    stmt = stmt.order_by(AuthenticationLog.id)
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+                                    source_ip=source_ip, serial=serial, transaction_id=transaction_id,
+                                    previous_transaction_id=previous_transaction_id, start_timestamp=start_timestamp,
+                                    end_timestamp=end_timestamp)
+    stmt = select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
     return db.session.scalars(stmt).all()
+
+
+def get_authentication_logs_paginate(resolver: str | None = None,
+                                     uid: str | None = None,
+                                     realm: str | None = None,
+                                     username: str | None = None,
+                                     event_type: str | None = None,
+                                     source_ip: str | None = None,
+                                     serial: str | None = None,
+                                     transaction_id: str | None = None,
+                                     previous_transaction_id: str | None = None,
+                                     start_timestamp: datetime | None = None,
+                                     end_timestamp: datetime | None = None,
+                                     allowed_realms: list[str] | None = None,
+                                     page: int = 1,
+                                     page_size: int = DEFAULT_PAGE_SIZE,
+                                     sort_column: str = "id",
+                                     sort_order: str = "desc") -> AuthenticationLogPage:
+    """
+    Return a single page of authentication log entries matching the given filters.
+
+    All filter parameters behave like :func:`get_authentication_logs`. ``allowed_realms`` restricts the result to
+    entries whose realm is in that list (entries without a realm are therefore excluded); ``None`` means no realm
+    restriction. ``sort_column`` is one of :data:`SORTABLE_COLUMNS` (falling back to ``id``) and is always
+    tie-broken by id so the order is stable across pages.
+
+    :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
+    """
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+                                    source_ip=source_ip, serial=serial, transaction_id=transaction_id,
+                                    previous_transaction_id=previous_transaction_id, start_timestamp=start_timestamp,
+                                    end_timestamp=end_timestamp)
+    if allowed_realms is not None:
+        conditions.append(AuthenticationLog.realm.in_(allowed_realms))
+    stmt = select(AuthenticationLog).where(*conditions)
+
+    count = db.session.scalar(select(func.count()).select_from(stmt.subquery()))
+
+    order_column = SORTABLE_COLUMNS.get(sort_column)
+    if order_column is None:
+        log.warning(f"Unknown sort column '{sort_column}'. Using 'id' instead.")
+        order_column = AuthenticationLog.id
+    if sort_order == "asc":
+        stmt = stmt.order_by(order_column.asc(), AuthenticationLog.id.asc())
+    else:
+        stmt = stmt.order_by(order_column.desc(), AuthenticationLog.id.desc())
+
+    offset = (page - 1) * page_size
+    auth_logs = db.session.scalars(stmt.limit(page_size).offset(offset)).all()
+    return AuthenticationLogPage(auth_logs=auth_logs,
+                                 count=count,
+                                 current=page,
+                                 prev=page - 1 if page > 1 else None,
+                                 next=page + 1 if offset + page_size < count else None)
+
+
+def delete_authentication_logs(resolver: str | None = None,
+                               uid: str | None = None,
+                               realm: str | None = None,
+                               username: str | None = None,
+                               event_type: str | None = None,
+                               source_ip: str | None = None,
+                               serial: str | None = None,
+                               transaction_id: str | None = None,
+                               previous_transaction_id: str | None = None,
+                               start_timestamp: datetime | None = None,
+                               end_timestamp: datetime | None = None,
+                               allowed_realms: list[str] | None = None,
+                               chunk_size: int | None = None) -> int:
+    """
+    Delete all authentication log entries matching the given filters and return the number deleted.
+
+    All filter parameters behave like :func:`get_authentication_logs` (to delete entries older than a point in time,
+    pass ``end_timestamp``). ``allowed_realms`` restricts the deletion to entries whose realm is in that list (entries
+    without a realm are therefore not deleted); ``None`` means no realm restriction. ``chunk_size`` deletes in chunks
+    to avoid long locks on large tables.
+
+    The caller must pass at least one filter: with no conditions this would delete the entire log, which this function
+    refuses.
+    """
+    conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
+                                    source_ip=source_ip, serial=serial, transaction_id=transaction_id,
+                                    previous_transaction_id=previous_transaction_id, start_timestamp=start_timestamp,
+                                    end_timestamp=end_timestamp)
+    # Guard on the caller's filters before adding the realm restriction, so a realm-scoped admin also cannot wipe a
+    # whole realm with an unfiltered request.
+    if not conditions:
+        raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
+    if allowed_realms is not None:
+        conditions.append(AuthenticationLog.realm.in_(allowed_realms))
+    return delete_matching_rows(db.session, AuthenticationLog.__table__, and_(*conditions), chunk_size)
 
 
 def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:

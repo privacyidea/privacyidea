@@ -20,7 +20,7 @@ import datetime
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens, get_one_token, revoke_token
 from privacyidea.lib.user import User
@@ -963,3 +963,151 @@ class PreviousTransactionIdAuthLogTestCase(AuthLogTestCase):
                                         previous_transaction_id=hotp_transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
                                         serials={enrolled_serial}, transaction_id=enrollment_transaction_id)
+
+
+class AuthenticationLogReadAPITestCase(AuthLogTestCase):
+    """GET /authenticationlog/ — pagination, filtering, realm restriction, and the admin policy gate."""
+
+    OTHER_REALM = "otherrealm"
+
+    def _seed_entries(self):
+        # 2 in realm1, 1 in another realm, 1 with no realm (e.g. USER_UNKNOWN)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2", realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.OTHER_REALM)
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)
+        db.session.commit()
+
+    def _get(self, query_string=None, status=200):
+        with self.app.test_request_context('/authenticationlog/', method='GET', query_string=query_string or {},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
+
+    def test_requires_admin(self):
+        with self.app.test_request_context('/authenticationlog/', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+    def test_returns_paginated_page(self):
+        self._seed_entries()
+        value = self._get({"page": 1, "page_size": 2})["result"]["value"]
+        self.assertEqual(4, value["count"])
+        self.assertEqual(2, len(value["auth_logs"]))
+        self.assertEqual(1, value["current"])
+        self.assertIsNone(value["prev"])
+        self.assertEqual(2, value["next"])
+
+        last = self._get({"page": 2, "page_size": 2})["result"]["value"]
+        self.assertEqual(1, last["prev"])
+        self.assertIsNone(last["next"])
+
+    def test_serialized_entry_shape(self):
+        self._seed_entries()
+        value = self._get({"page_size": 50})["result"]["value"]
+        entry = value["auth_logs"][0]
+        self.assertIn("event_type", entry)
+        self.assertIn("realm", entry)
+        # timestamp is serialized as an ISO 8601 string, not a datetime
+        self.assertIsInstance(entry["timestamp"], str)
+        datetime.datetime.fromisoformat(entry["timestamp"])
+
+    def test_filter_by_event_type(self):
+        self._seed_entries()
+        value = self._get({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual(AuthEventType.MFA_FAIL, value["auth_logs"][0]["event_type"])
+
+    def test_policy_gate_denies_without_action(self):
+        # Admin policies exist but none grant authentication_log_read -> the admin is denied.
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            body = self._get(status=403)
+            self.assertFalse(body["result"]["status"], body)
+        finally:
+            delete_policy("authlog_other")
+
+    def test_realm_scoped_policy_restricts_visible_entries(self):
+        self._seed_entries()
+        # Policy scoped to realm1: the admin sees only realm1 rows, not the other realm or the null-realm row.
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   realm=self.realm1)
+        try:
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual(2, value["count"])
+            self.assertTrue(all(entry["realm"] == self.realm1 for entry in value["auth_logs"]), value)
+        finally:
+            delete_policy("authlog_realm")
+
+
+class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
+    """DELETE /authenticationlog/ — filtered bulk delete, the require-filter guard, policy gate, realm restriction."""
+
+    OTHER_REALM = "otherrealm"
+
+    def _delete(self, query_string=None, status=200):
+        with self.app.test_request_context("/authenticationlog/", method="DELETE", query_string=query_string or {},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
+
+    def _seed(self):
+        # 1 LOGIN_SUCCESS + 1 MFA_FAIL in realm1, 1 LOGIN_SUCCESS in another realm
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2", realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.OTHER_REALM)
+        db.session.commit()
+
+    def test_delete_requires_admin(self):
+        with self.app.test_request_context("/authenticationlog/", method="DELETE",
+                                           query_string={"event_type": AuthEventType.MFA_FAIL}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+    def test_delete_without_filter_is_rejected(self):
+        self._seed()
+        self._delete(status=400)
+        self.assertEqual(3, len(get_authentication_logs()))
+
+    def test_delete_by_filter(self):
+        self._seed()
+        body = self._delete({"event_type": AuthEventType.MFA_FAIL})
+        self.assertEqual(1, body["result"]["value"])
+        remaining = get_authentication_logs()
+        self.assertEqual(2, len(remaining))
+        self.assertTrue(all(entry.event_type != AuthEventType.MFA_FAIL for entry in remaining))
+
+    def test_delete_older_than_end(self):
+        self._seed()
+        past = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1)).isoformat()
+        future = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=1)).isoformat()
+        # Nothing is older than a minute ago
+        self.assertEqual(0, self._delete({"end": past})["result"]["value"])
+        self.assertEqual(3, len(get_authentication_logs()))
+        # Everything is older than a minute from now
+        self.assertEqual(3, self._delete({"end": future})["result"]["value"])
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_delete_policy_gate_denies(self):
+        # Admin policies exist but none grant authentication_log_delete -> denied and nothing is deleted.
+        self._seed()
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            self._delete({"event_type": AuthEventType.MFA_FAIL}, status=403)
+        finally:
+            delete_policy("authlog_other")
+        self.assertEqual(3, len(get_authentication_logs()))
+
+    def test_delete_realm_restriction(self):
+        self._seed()
+        set_policy("authlog_delete_realm", scope=SCOPE.ADMIN,
+                   action=PolicyAction.AUTHENTICATION_LOG_DELETE, realm=self.realm1)
+        try:
+            # Deleting all LOGIN_SUCCESS only affects realm1; the other realm's entry survives.
+            count = self._delete({"event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]
+            self.assertEqual(1, count)
+            self.assertIn(self.OTHER_REALM, {entry.realm for entry in get_authentication_logs()})
+        finally:
+            delete_policy("authlog_delete_realm")

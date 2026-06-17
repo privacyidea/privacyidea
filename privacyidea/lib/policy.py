@@ -1936,6 +1936,13 @@ def get_static_policy_definitions(scope=None):
                                  "desc": _("Admin is allowed to view the Audit log."),
                                  "group": GROUP.SYSTEM,
                                  'mainmenu': [MAIN_MENU.AUDIT]},
+            PolicyAction.AUTHENTICATION_LOG_READ: {'type': 'bool',
+                                                   "desc": _("Admin is allowed to read the authentication log."),
+                                                   "group": GROUP.SYSTEM},
+            PolicyAction.AUTHENTICATION_LOG_DELETE: {'type': 'bool',
+                                                     "desc": _("Admin is allowed to delete entries from the "
+                                                               "authentication log."),
+                                                     "group": GROUP.SYSTEM},
             PolicyAction.AUDIT_AGE: {'type': 'str',
                                      "desc": _("The admin will only see audit "
                                                "entries of the last 10d, 3m or 2y."),
@@ -2198,14 +2205,7 @@ def get_static_policy_definitions(scope=None):
                                                'desc': _(
                                                    'A whitespace-separated list of container info keys that shall '
                                                    'not be displayed to the admin.'),
-                                               'group': GROUP.CONTAINER},
-            PolicyAction.AUTHENTICATION_LOG_READ: {'type': TYPE.BOOL,
-                                                   'desc': _('Admin is allowed to read the authentication log.'),
-                                                   'group': GROUP.SYSTEM},
-            PolicyAction.AUTHENTICATION_LOG_DELETE: {'type': TYPE.BOOL,
-                                                     'desc': _(
-                                                         'Admin is allowed to delete entries from the authentication log.'),
-                                                     'group': GROUP.SYSTEM}
+                                               'group': GROUP.CONTAINER}
         },
         SCOPE.USER: {
             PolicyAction.ASSIGN: {

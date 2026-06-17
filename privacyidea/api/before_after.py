@@ -56,6 +56,7 @@ from .realm import realm_blueprint
 from .realm import defaultrealm_blueprint
 from .user import user_blueprint
 from .audit import audit_blueprint
+from .authentication_log import authentication_log_blueprint
 from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
 from .application import application_blueprint
@@ -114,6 +115,7 @@ def teardown_request(exc):
 
 @token_blueprint.before_request
 @audit_blueprint.before_request
+@authentication_log_blueprint.before_request
 @system_blueprint.before_request
 @info_blueprint.before_request
 @user_required
@@ -447,6 +449,7 @@ def before_request():
 @user_blueprint.after_request
 @token_blueprint.after_request
 @audit_blueprint.after_request
+@authentication_log_blueprint.after_request
 @application_blueprint.after_request
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
