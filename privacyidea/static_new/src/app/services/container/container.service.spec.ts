@@ -955,15 +955,24 @@ describe("ContainerService", () => {
   });
 
   describe("containersForTokenTypeResource loading conditions", () => {
+    let mockableService: {
+      containerTypeOptions: WritableSignal<ContainerType[]>;
+      compatibleWithSelectedTokenType: WritableSignal<string>;
+    };
+
     beforeEach(() => {
+      mockableService = containerService as unknown as {
+        containerTypeOptions: WritableSignal<ContainerType[]>;
+        compatibleWithSelectedTokenType: WritableSignal<string>;
+      };
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       // Make sure compatibleTypes() is non-empty so the resource fires by default —
       // individual tests can override these signals as needed.
-      (containerService as any).containerTypeOptions = signal([
+      mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] },
         { containerType: "generic", description: "", token_types: ["push", "hotp"] }
       ]);
-      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      mockableService.compatibleWithSelectedTokenType = signal("push");
     });
 
     it("does not load on containers list route", () => {
@@ -1013,10 +1022,10 @@ describe("ContainerService", () => {
     });
 
     it("sends a single compatible type as the `type` param", async () => {
-      (containerService as any).containerTypeOptions = signal([
+      mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] }
       ]);
-      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      mockableService.compatibleWithSelectedTokenType = signal("push");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       const req = httpMock.expectOne(
@@ -1026,11 +1035,11 @@ describe("ContainerService", () => {
     });
 
     it("sends multiple compatible types as a comma-separated `type` param", async () => {
-      (containerService as any).containerTypeOptions = signal([
+      mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] },
         { containerType: "generic", description: "", token_types: ["push"] }
       ]);
-      (containerService as any).compatibleWithSelectedTokenType = signal("push");
+      mockableService.compatibleWithSelectedTokenType = signal("push");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       const req = httpMock.expectOne(
@@ -1040,10 +1049,10 @@ describe("ContainerService", () => {
     });
 
     it("does not fire the request when no compatible container type exists", () => {
-      (containerService as any).containerTypeOptions = signal([
+      mockableService.containerTypeOptions = signal([
         { containerType: "smartphone", description: "", token_types: ["push"] }
       ]);
-      (containerService as any).compatibleWithSelectedTokenType = signal("certificate");
+      mockableService.compatibleWithSelectedTokenType = signal("certificate");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
       TestBed.tick();
       httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
