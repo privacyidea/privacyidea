@@ -40,7 +40,7 @@ jobs:
       min: ${{ steps.load.outputs.min }}
       matrix: ${{ steps.load.outputs.matrix }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - id: load
@@ -86,7 +86,7 @@ jobs:
           --health-retries=10
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
@@ -142,3 +142,25 @@ jobs:
         files: ./coverage.xml
         flags: backend
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  notify-failure:
+    needs: test
+    # Surface nightly breakage as a GitHub issue. Scheduled runs only — PR
+    # failures already show up as PR checks. Runs when any matrix job failed.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly backend unit tests failed on master
+          body: |
+            The nightly MariaDB backend unit-test run failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}
