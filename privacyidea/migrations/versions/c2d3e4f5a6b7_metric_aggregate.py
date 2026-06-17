@@ -4,7 +4,7 @@ Used by the privacyidea.lib.metrics module to store rolling pre-aggregated
 counter and histogram values, partitioned by 5-minute window and node.
 
 Revision ID: c2d3e4f5a6b7
-Revises: b1a2c3d4e5f6
+Revises: 7d4e9b2c1a3f
 Create Date: 2026-04-29 00:00:00.000000
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 
 revision = 'c2d3e4f5a6b7'
-down_revision = 'b1a2c3d4e5f6'
+down_revision = '7d4e9b2c1a3f'
 branch_labels = None
 depends_on = None
 
