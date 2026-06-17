@@ -1,4 +1,4 @@
-"""Add internaluserattribute table and migrate internal entries out of customuserattribute
+"""v3.14: Add internaluserattribute table and migrate internal entries out of customuserattribute
 
 Revision ID: 7d4e9b2c1a3f
 Revises: b1a2c3d4e5f6
