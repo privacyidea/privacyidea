@@ -16,3 +16,11 @@ coverage:
 
     # do not run coverage on patch nor changes
     patch: off
+
+# Migration scripts are one-shot, version-pinned artifacts with many
+# dialect-specific branches (MariaDB/Postgres/Oracle). The coverage suite is run
+# with `-m "not migration"`, so their bodies are never executed in the uploaded
+# report and would otherwise count as pure misses. They are still exercised by
+# the migration test suite (test_migrations.py, test_sequence_ddl.py).
+ignore:
+  - "privacyidea/migrations/**"
