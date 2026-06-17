@@ -18,7 +18,7 @@ from privacyidea.models.db import build_restart_sequence_sql
 
 # revision identifiers, used by Alembic.
 revision = '7d4e9b2c1a3f'
-down_revision = 'b1a2c3d4e5f6'
+down_revision = '3cafe2771cdd'
 branch_labels = None
 depends_on = None
 

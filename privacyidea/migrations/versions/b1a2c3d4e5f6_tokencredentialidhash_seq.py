@@ -19,7 +19,7 @@ from sqlalchemy.schema import CreateSequence, DropSequence
 from privacyidea.models.db import build_restart_sequence_sql
 
 revision = 'b1a2c3d4e5f6'
-down_revision = '3cafe2771cdd'
+down_revision = '06b105a4f941'
 branch_labels = None
 depends_on = None
 
