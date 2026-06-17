@@ -59,8 +59,6 @@ describe("TokenDetailsComponent", () => {
   let component: TokenDetailsComponent;
 
   let tokenSvc: MockTokenService;
-  let containerSvc: MockContainerService;
-  let realmSvc: MockRealmService;
   let machineSvc: MockMachineService;
   let validateSvc: MockValidateService;
   let router: { navigateByUrl: jest.Mock };
@@ -107,17 +105,8 @@ describe("TokenDetailsComponent", () => {
     }).compileComponents();
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
-    containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
-    realmSvc = TestBed.inject(RealmService) as unknown as MockRealmService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
     validateSvc = TestBed.inject(ValidateService) as unknown as MockValidateService;
-
-    // Monkey-patch unimplemented service methods we’ll hit via the component.
-    tokenSvc.getTokengroups = jest
-      .fn()
-      .mockReturnValue(of({ result: { status: true, value: { groupA: {}, groupB: {} } } }));
-    tokenSvc.setTokengroup = jest.fn().mockReturnValue(of({}));
-    tokenSvc.setTokenRealm = jest.fn().mockReturnValue(of({}));
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -125,7 +114,6 @@ describe("TokenDetailsComponent", () => {
     component.tokenSerial = signal("Mock serial");
     component.tokenIsActive = signal(false);
     component.tokenIsRevoked = signal(false);
-    component.tokengroupOptions = signal(["group1", "group2"]);
     component.infoData = signal([
       { keyMap: { key: "info", label: "Info" }, value: { key1: "value1" }, isEditing: signal(false) }
     ]);
@@ -143,21 +131,6 @@ describe("TokenDetailsComponent", () => {
   it("renders the token serial in the header", () => {
     const header = fixture.nativeElement.querySelector(".details-header .serial");
     expect(header.textContent).toContain("Mock serial");
-  });
-
-  it("tokenDetailDataByGroup hides the counters group for webauthn, passkey and push", () => {
-    component.tokenDetailData.set([
-      { keyMap: { key: "maxfail", label: "Max Count", group: "counters" }, value: 10, isEditing: signal(false) },
-      { keyMap: { key: "tokentype", label: "Type", group: "identity" }, value: "hotp", isEditing: signal(false) }
-    ]);
-
-    for (const tokentype of ["webauthn", "passkey", "push"]) {
-      component.tokenDetails.set({ ...component.tokenDetails(), tokentype: tokentype as TokenTypeKey });
-      expect(component.tokenDetailDataByGroup().some((group) => group.id === "counters")).toBe(false);
-    }
-
-    component.tokenDetails.set({ ...component.tokenDetails(), tokentype: "hotp" });
-    expect(component.tokenDetailDataByGroup().find((group) => group.id === "counters")?.rows.length).toBe(1);
   });
 
   it("renders the description editor as a textarea with 7 rows", () => {
@@ -183,72 +156,6 @@ describe("TokenDetailsComponent", () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  it("saveContainer assigns when a container is selected", () => {
-    containerSvc.selectedContainerSerial.set("container1");
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.saveContainer();
-
-    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "container1");
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("saveContainer does nothing when no container selected", () => {
-    containerSvc.selectedContainerSerial.set("");
-    (containerSvc.addToken as jest.Mock).mockClear();
-
-    component.saveContainer();
-
-    expect(containerSvc.addToken).not.toHaveBeenCalled();
-  });
-
-  it("removeFromContainer removes token and reloads when selected", () => {
-    component.tokenDetails.set({
-      ...component.tokenDetails(),
-      serial: "Mock serial",
-      container_serial: "container1"
-    });
-
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.removeFromContainer();
-
-    expect(containerSvc.removeToken).toHaveBeenCalledWith("Mock serial", "container1");
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("removeFromContainer does nothing when no container selected", () => {
-    component.tokenDetails.set({
-      ...component.tokenDetails(),
-      serial: "Mock serial",
-      container_serial: ""
-    });
-
-    (containerSvc.removeToken as jest.Mock).mockClear();
-
-    component.removeFromContainer();
-
-    expect(containerSvc.removeToken).not.toHaveBeenCalled();
-  });
-
-  it("toggleTokenEdit('tokengroup') loads tokengroups once and toggles editing", () => {
-    const tgEl = {
-      keyMap: { key: "tokengroup", label: "Token Groups" },
-      value: [],
-      isEditing: signal(false)
-    } as unknown as EditableElement;
-
-    component.tokenDetailData.set([...component.tokenDetailData(), tgEl]);
-    component.tokengroupOptions.set([]);
-    component.toggleTokenEdit(tgEl);
-
-    expect(tokenSvc.getTokengroups).toHaveBeenCalled();
-    expect(component.tokengroupOptions()).toEqual(["groupA", "groupB"]);
-    expect(tgEl.isEditing()).toBe(true);
-  });
-
   it("saveTokenEdit('description') calls saveTokenDetail and toggles editing off", () => {
     const el: EditableElement = {
       keyMap: { key: "description" },
@@ -266,38 +173,6 @@ describe("TokenDetailsComponent", () => {
     expect(el.isEditing()).toBe(false);
   });
 
-  it("saveTokenEdit('tokengroup') uses setTokengroup and reloads", () => {
-    const el: EditableElement = {
-      keyMap: { key: "tokengroup" },
-      value: ["groupA"],
-      isEditing: signal(true)
-    };
-
-    component.selectedTokengroup.set(["groupB"]);
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.saveTokenEdit(el);
-
-    expect(tokenSvc.setTokengroup).toHaveBeenCalledWith("Mock serial", ["groupB"]);
-    expect(reloadSpy).toHaveBeenCalled();
-    expect(el.isEditing()).toBe(false);
-  });
-
-  it("cancelTokenEdit('container_serial') clears selection and toggles editing", () => {
-    const el: EditableElement = {
-      keyMap: { key: "container_serial" },
-      value: "",
-      isEditing: signal(true)
-    };
-
-    containerSvc.selectedContainerSerial.set("X");
-    component.cancelTokenEdit(el);
-
-    expect(containerSvc.selectedContainerSerial()).toBe("");
-    expect(el.isEditing()).toBe(false);
-  });
-
   it("isEditableElement defers to policy: true/false", () => {
     const spy = jest.spyOn(component["authService"], "actionAllowed");
     spy.mockReturnValueOnce(true);
@@ -305,13 +180,6 @@ describe("TokenDetailsComponent", () => {
 
     spy.mockReturnValueOnce(false);
     expect(component.isEditableElement("description")).toBe(false);
-  });
-
-  it("isNumberElement identifies numeric fields", () => {
-    expect(component.isNumberElement("maxfail")).toBe(true);
-    expect(component.isNumberElement("count_window")).toBe(true);
-    expect(component.isNumberElement("sync_window")).toBe(true);
-    expect(component.isNumberElement("description")).toBe(false);
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {
@@ -621,63 +489,6 @@ describe("TokenDetailsComponent", () => {
 
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
-  });
-
-  it("saveTokenEdit('container_serial') trims selection and calls saveContainer", () => {
-    containerSvc.selectedContainerSerial.set("  trimmed  ");
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.saveTokenEdit({
-      keyMap: { key: "container_serial" },
-      value: "",
-      isEditing: signal(true)
-    } as EditableElement);
-
-    expect(containerSvc.addToken).toHaveBeenCalledWith("Mock serial", "trimmed");
-  });
-
-  it("saveTokenEdit('realms') calls setTokenRealm and reloads", () => {
-    realmSvc.selectedRealms.set(["realmA"]);
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.saveTokenEdit({
-      keyMap: { key: "realms" },
-      value: [],
-      isEditing: signal(true)
-    } as EditableElement);
-
-    expect(tokenSvc.setTokenRealm).toHaveBeenCalledWith("Mock serial", ["realmA"]);
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("cancelTokenEdit('tokengroup') restores selection from token detail data", () => {
-    component.tokenDetailData.set([
-      { keyMap: { key: "tokengroup", label: "Token Groups" }, value: ["g1"], isEditing: signal(true) }
-    ] as unknown as EditableElement[]);
-
-    component.cancelTokenEdit({
-      keyMap: { key: "tokengroup" },
-      value: [],
-      isEditing: signal(true)
-    } as EditableElement);
-
-    expect(component.selectedTokengroup()).toEqual(["g1"]);
-  });
-
-  it("cancelTokenEdit('realms') restores selection from token detail data", () => {
-    component.tokenDetailData.set([
-      { keyMap: { key: "realms", label: "Realms" }, value: ["realmZ"], isEditing: signal(true) }
-    ] as unknown as EditableElement[]);
-
-    component.cancelTokenEdit({
-      keyMap: { key: "realms" },
-      value: [],
-      isEditing: signal(true)
-    } as EditableElement);
-
-    expect(realmSvc.selectedRealms()).toEqual(["realmZ"]);
   });
 
   it("cancelTokenEdit on a generic key reloads the resource", () => {

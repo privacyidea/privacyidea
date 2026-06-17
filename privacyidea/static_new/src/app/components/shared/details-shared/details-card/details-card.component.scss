@@ -82,13 +82,18 @@
   transform: rotate(180deg);
 }
 
-.details-card-collapse {
+.details-card-body--collapsible {
   display: grid;
   grid-template-rows: 1fr;
   margin-top: var(--quarter-global-padding);
+  transition: grid-template-rows 225ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  > .details-card-body-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
 }
 
-.details-card-collapse-inner {
-  overflow: hidden;
-  min-height: 0;
+.details-card-body--collapsed {
+  grid-template-rows: 0fr;
 }

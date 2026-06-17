@@ -71,7 +71,6 @@ export class TokenContainerFieldComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   protected readonly editable = computed(() => this.authService.actionAllowed("container_add_token"));
   protected readonly canRemove = computed(() => this.authService.actionAllowed("container_remove_token"));
-  protected readonly shouldHideEdit = computed(() => this.blockEditing() && !this.isEditing());
 
   protected readonly editButtonsElement: EditableElement<string> = {
     keyMap: { key: "" },

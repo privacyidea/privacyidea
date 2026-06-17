@@ -57,7 +57,6 @@ export class ContainerRealmsFieldComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly selectedRealms = signal<string[]>([]);
   protected readonly editable = computed(() => this.authService.actionAllowed("container_realms"));
-  protected readonly shouldHideEdit = computed(() => this.blockEditing() && !this.isEditing());
 
   protected readonly editButtonsElement: EditableElement<string[]> = {
     keyMap: { key: "" },

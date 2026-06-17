@@ -65,7 +65,6 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -141,7 +140,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly editRegistry = inject(DetailsEditRegistry);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -371,12 +369,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   cancelContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
-      case "realms":
-        this.selectedRealms.set([]);
-        break;
-      case "states":
-        this.selectedStates.set(this.containerDetails()?.states || []);
-        break;
       case "user_name":
         this.isEditingUser.update((b) => !b);
         break;
@@ -386,16 +378,8 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
-      case "realms":
-        this.saveRealms();
-        break;
       case "description":
         this.saveDescription();
-        break;
-      case "states":
-        if (!this.saveStates()) {
-          return;
-        }
         break;
       case "user_name":
         this.saveUser();
@@ -458,37 +442,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
       next: () => {
         this.containerDetailResource.reload();
         this.tokenService.tokenResource.reload();
-      }
-    });
-  }
-
-  onStatesChange(newStates: string[]) {
-    if (newStates.includes("active") && newStates.includes("disabled")) {
-      const prev = this.selectedStates();
-      const toRemove = prev.includes("active") ? "active" : "disabled";
-      this.selectedStates.set(newStates.filter((s) => s !== toRemove));
-    } else {
-      this.selectedStates.set(newStates);
-    }
-  }
-
-  saveStates(): boolean {
-    if (this.selectedStates().length === 0) {
-      this.notificationService.error("At least one state must be selected.");
-      return false;
-    }
-    this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({
-      next: () => {
-        this.containerDetailResource.reload();
-      }
-    });
-    return true;
-  }
-
-  saveRealms() {
-    this.containerService.setContainerRealm(this.containerSerial(), this.selectedRealms()).subscribe({
-      next: () => {
-        this.containerDetailResource.reload();
       }
     });
   }

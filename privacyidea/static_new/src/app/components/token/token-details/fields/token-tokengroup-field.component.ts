@@ -46,7 +46,6 @@ export class TokenTokengroupFieldComponent implements OnInit, OnDestroy {
   protected readonly selectedTokengroup = signal<string[]>([]);
   protected readonly tokengroupOptions = signal<string[]>([]);
   protected readonly editable = computed(() => this.authService.actionAllowed("tokengroups"));
-  protected readonly shouldHideEdit = computed(() => this.blockEditing() && !this.isEditing());
 
   protected readonly editButtonsElement: EditableElement<string[]> = {
     keyMap: { key: "" },

@@ -46,7 +46,6 @@ export class TokenRealmsFieldComponent implements OnInit, OnDestroy {
 
   readonly isEditing = signal(false);
   protected readonly editable = computed(() => this.authService.actionAllowed("tokenrealms"));
-  protected readonly shouldHideEdit = computed(() => this.blockEditing() && !this.isEditing());
 
   protected readonly editButtonsElement: EditableElement<string[]> = {
     keyMap: { key: "" },

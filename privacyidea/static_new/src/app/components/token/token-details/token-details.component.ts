@@ -40,7 +40,6 @@ import {
   HotpMachineAssignDialogData,
   TokenHotpMachineAssignDialogComponent
 } from "./token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
 import { tokenTypes } from "@utils/token.utils";
 import { lastValueFrom, switchMap } from "rxjs";
@@ -106,12 +105,6 @@ export const tokenDetailsKeyMap: { key: string; label: string; group: TokenDetai
   { key: "realms", label: "Token Realms", group: "assignment" },
   { key: "tokengroup", label: "Token Groups", group: "assignment" },
   { key: "container_serial", label: "Container Serial", group: "assignment" }
-];
-
-export const tokenDetailGroups: { id: TokenDetailGroup; label: string }[] = [
-  { id: "identity", label: "Status" },
-  { id: "counters", label: "Counters" },
-  { id: "assignment", label: "Assignments" }
 ];
 
 function formatTokenTimestamp(value: string | undefined): string | undefined {
@@ -184,7 +177,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly base64Service: Base64ServiceInterface = inject(Base64Service);
   private readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -313,20 +305,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
         .filter((detail) => detail.value !== undefined);
     }
   });
-  tokenDetailDataByGroup = computed(() => {
-    const data = this.tokenDetailData();
-    const type = this.tokenDetails()?.tokentype;
-    const hideCounters = type === "webauthn" || type === "passkey" || type === "push";
-    return tokenDetailGroups
-      .filter((g) => !(hideCounters && g.id === "counters"))
-      .map((g) => ({
-        id: g.id,
-        label: g.label,
-        rows: data.filter(
-          (r) => (r.keyMap as { group?: string }).group === g.id && r.keyMap.key !== "description"
-        )
-      }));
-  });
   showCounters = computed(() => {
     const type = this.tokenDetails()?.tokentype;
     return !(type === "webauthn" || type === "passkey" || type === "push");
@@ -342,8 +320,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   descriptionRow = computed(
     () => this.tokenDetailData().find((r) => r.keyMap.key === "description") as EditableElement<string> | undefined
   );
-  tokengroupOptions = signal<string[]>([]);
-  selectedTokengroup = signal<string[]>([]);
   tokenType = linkedSignal({
     source: this.tokenDetails,
     computation: () => this.tokenDetails()?.tokentype ?? ""
@@ -653,47 +629,16 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   cancelTokenEdit(element: EditableElement) {
-    this.resetEdit(element.keyMap.key);
+    this.resetEdit();
     element.isEditing.set(!element.isEditing());
   }
 
   saveTokenEdit(element: EditableElement) {
-    switch (element.keyMap.key) {
-      case "container_serial":
-        this.containerService.selectedContainerSerial.set(
-          this.containerService.selectedContainerSerial()?.trim() ?? null
-        );
-        this.saveContainer();
-        break;
-      case "tokengroup":
-        this.saveTokengroup(this.selectedTokengroup());
-        break;
-      case "realms":
-        this.saveRealms();
-        break;
-      default:
-        this.saveTokenDetail(element.keyMap.key, element.value);
-        break;
-    }
+    this.saveTokenDetail(element.keyMap.key, element.value);
     element.isEditing.set(!element.isEditing());
   }
 
   toggleTokenEdit(element: EditableElement): void {
-    switch (element.keyMap.key) {
-      case "tokengroup":
-        if (this.tokengroupOptions().length === 0) {
-          this.tokenService.getTokengroups().subscribe({
-            next: (response) => {
-              const tokengroups = response.result?.value || {};
-              this.tokengroupOptions.set(Object.keys(tokengroups));
-              this.selectedTokengroup.set(
-                (this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value as string[]) ?? []
-              );
-            }
-          });
-        }
-        break;
-    }
     element.isEditing.set(!element.isEditing());
   }
 
@@ -705,39 +650,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  saveContainer() {
-    const selectedContainer = this.containerService.selectedContainerSerial();
-    if (selectedContainer) {
-      this.containerService.addToken(this.tokenSerial(), selectedContainer).subscribe({
-        next: () => {
-          this.tokenDetailResource.reload();
-        }
-      });
-    }
-  }
-
-  removeFromContainer() {
-    const containerSerial = this.tokenDetails().container_serial;
-
-    if (!containerSerial) {
-      return;
-    }
-
-    this.containerService.removeToken(this.tokenSerial(), containerSerial).subscribe({
-      next: () => {
-        this.containerService.selectedContainerSerial.set("");
-        this.tokenDetailResource.reload();
-      }
-    });
-  }
-
   isEditableElement(key: string) {
     const rightEntry = tokenDetailsRightsMap.find((entry) => entry.key === key);
     return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
-  }
-
-  isNumberElement(key: string) {
-    return key === "maxfail" || key === "count_window" || key === "sync_window";
   }
 
   openSshMachineAssignDialog() {
@@ -754,40 +669,7 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.auditService.auditFilter.set(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
   }
 
-  private resetEdit(type: string): void {
-    switch (type) {
-      case "container_serial":
-        this.containerService.selectedContainerSerial.set("");
-        break;
-      case "tokengroup":
-        this.selectedTokengroup.set(
-          (this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value as string[]) ?? []
-        );
-        break;
-      case "realms":
-        this.realmService.selectedRealms.set(
-          (this.tokenDetailData().find((detail) => detail.keyMap.key === "realms")?.value as string[]) ?? []
-        );
-        break;
-      default:
-        this.tokenDetailResource.reload();
-        break;
-    }
-  }
-
-  private saveRealms() {
-    this.tokenService.setTokenRealm(this.tokenSerial(), this.realmService.selectedRealms()).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
-  }
-
-  private saveTokengroup(value: string[]) {
-    this.tokenService.setTokengroup(this.tokenSerial(), value).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
+  private resetEdit(): void {
+    this.tokenDetailResource.reload();
   }
 }

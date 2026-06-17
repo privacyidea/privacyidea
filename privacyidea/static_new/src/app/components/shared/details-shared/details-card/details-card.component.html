@@ -29,19 +29,14 @@
       >expand_more</mat-icon
     >
   </button>
-  @if (expanded()) {
-    <div
-      class="details-card-collapse"
-      animate.enter="detail-expand-enter"
-      animate.leave="detail-expand-leave">
-      <div class="details-card-collapse-inner">
-        <ng-content />
-      </div>
-    </div>
-  }
-} @else {
-  @if (title()) {
-    <h4 class="details-card-title">{{ title() }}</h4>
-  }
-  <ng-content />
+} @else if (title()) {
+  <h4 class="details-card-title">{{ title() }}</h4>
 }
+<div
+  class="details-card-body"
+  [class.details-card-body--collapsible]="collapsible()"
+  [class.details-card-body--collapsed]="collapsible() && !expanded()">
+  <div class="details-card-body-inner">
+    <ng-content />
+  </div>
+</div>

@@ -54,7 +54,6 @@ export class ContainerStatesFieldComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly selectedStates = signal<string[]>([]);
   protected readonly editable = computed(() => this.authService.actionAllowed("container_state"));
-  protected readonly shouldHideEdit = computed(() => this.blockEditing() && !this.isEditing());
 
   protected readonly editButtonsElement: EditableElement<string[]> = {
     keyMap: { key: "" },

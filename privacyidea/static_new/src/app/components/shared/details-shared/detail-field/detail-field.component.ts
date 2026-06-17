@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
+import { Component, inject, input, OnDestroy, OnInit, signal } from "@angular/core";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { DetailsDefaultValueCellComponent } from "@components/shared/details-shared/details-shared.components";
 import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
@@ -57,7 +57,6 @@ export class DetailFieldComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly draft = signal<string>("");
 
-  protected readonly shouldHideEdit = computed(() => this.blockEditing() && !this.isEditing());
 
   protected readonly editButtonsElement: EditableElement<string> = {
     keyMap: { key: "" },
