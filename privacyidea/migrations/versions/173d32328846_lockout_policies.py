@@ -1,9 +1,10 @@
 """Add conditional access lockout policy tables
 
-Create the three tables of the lockout policy framework:
-lockout_policies (the policy container), lockout_policy_stages (the
-failure thresholds within a policy) and lockout_stage_actions (the
-reactions when a stage is triggered).
+Create the four tables of the lockout policy framework:
+lockout_policies (the policy container), lockout_policy_counter_types (the
+failure counter types a policy tracks, normalized for an indexed per-request
+lookup), lockout_policy_stages (the failure thresholds within a policy) and
+lockout_stage_actions (the reactions when a stage is triggered).
 
 Revision ID: 173d32328846
 Revises: 7d4e9b2c1a3f
@@ -23,11 +24,15 @@ depends_on = None
 # The models declare Sequence('<name>_seq') on their id columns, so
 # SQLAlchemy emits SELECT nextval(...) on every ORM insert on backends
 # that support sequences (Postgres + MariaDB 10.3+).
-SEQUENCES = ['lockoutpolicy_seq', 'lockoutpolicystage_seq', 'lockoutstageaction_seq']
-TABLES = ['lockout_stage_actions', 'lockout_policy_stages', 'lockout_policies']
+SEQUENCES = ['lockoutpolicy_seq', 'lockoutpolicycountertype_seq',
+             'lockoutpolicystage_seq', 'lockoutstageaction_seq']
+# Drop order: children before parents (foreign keys).
+TABLES = ['lockout_stage_actions', 'lockout_policy_stages',
+          'lockout_policy_counter_types', 'lockout_policies']
 # Each table's id column is backed by the sequence its model declares.
 TABLE_SEQUENCES = {
     'lockout_policies': 'lockoutpolicy_seq',
+    'lockout_policy_counter_types': 'lockoutpolicycountertype_seq',
     'lockout_policy_stages': 'lockoutpolicystage_seq',
     'lockout_stage_actions': 'lockoutstageaction_seq',
 }
@@ -70,13 +75,22 @@ def upgrade():
         'lockout_policies',
         _id_column(is_postgres, 'lockoutpolicy_seq'),
         sa.Column('name', sa.Unicode(length=255), nullable=False),
-        sa.Column('counter_types_to_track', sa.JSON(), nullable=False),
         sa.Column('time_window_seconds', sa.Integer(), nullable=False),
         sa.Column('enabled', sa.Boolean(), nullable=False),
         sa.Column('dry_run', sa.Boolean(), nullable=False),
         sa.Column('priority', sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name'),
+    )
+    _create_table(
+        'lockout_policy_counter_types',
+        _id_column(is_postgres, 'lockoutpolicycountertype_seq'),
+        sa.Column('policy_id', sa.Integer(), nullable=False),
+        sa.Column('counter_type', sa.Unicode(length=100), nullable=False),
+        sa.ForeignKeyConstraint(['policy_id'], ['lockout_policies.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('policy_id', 'counter_type', name='uq_lockout_counter_type_policy'),
+        sa.Index('ix_lockout_counter_type_lookup', 'counter_type', 'policy_id'),
     )
     _create_table(
         'lockout_policy_stages',

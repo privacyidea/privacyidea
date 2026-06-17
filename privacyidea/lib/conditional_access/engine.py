@@ -27,8 +27,8 @@ from sqlalchemy import func, select
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import _naive_utc
-from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutStageAction,
-                                 UserLockoutState, db)
+from privacyidea.models import (AuthenticationLog, BlockList, LockoutPolicy, LockoutPolicyCounterType,
+                                 LockoutStageAction, UserLockoutState, db)
 from privacyidea.models.utils import utc_now
 
 if TYPE_CHECKING:
@@ -436,20 +436,20 @@ def evaluate_lockout_policies(user: "User", event_type, source_ip: str | None = 
         return []
     now = _naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
-    # counter_types_to_track is a JSON list and array-containment has no portable SQL
-    #  form across the supported backends (SQLite/MySQL/PostgreSQL/Oracle).
+    # Select only the enabled policies that track the current event type, via an
+    # indexed equality filter on the normalized lockout_policy_counter_types
+    # table (policy_id, counter_type) is unique, so a policy matches at
+    # most once. The combined count over *all* of a matched policy's tracked types
+    # is then computed in _evaluate_policy.
     policies = db.session.scalars(
         select(LockoutPolicy)
-        .where(LockoutPolicy.enabled.is_(True))
+        .join(LockoutPolicy.counter_types)
+        .where(LockoutPolicy.enabled.is_(True),
+               LockoutPolicyCounterType.counter_type == event_type)
         .order_by(LockoutPolicy.priority.desc())
     ).all()
     notices: list[str] = []
     for policy in policies:
-        # The policy reacts to this request only if the current event type is one
-        # of the types it tracks; the combined count over *all* of its tracked
-        # types is then computed in _evaluate_policy.
-        if event_type not in (policy.counter_types_to_track or []):
-            continue
         notices.extend(_evaluate_policy(policy, user, event_type, source_ip, now))
     # De-duplicate while preserving order: several policies tracking the same
     # user can emit the same notice in one request.

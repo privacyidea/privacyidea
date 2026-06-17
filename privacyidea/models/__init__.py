@@ -46,8 +46,8 @@ from .customuserattribute import CustomUserAttribute
 from .internaluserattribute import InternalUserAttribute
 from .event import EventHandler, EventHandlerOption, EventHandlerCondition
 from .eventcounter import EventCounter
-from .lockout_policy import (BlockList, LockoutPolicy, LockoutPolicyStage,
-                            LockoutStageAction, UserLockoutState)
+from .lockout_policy import (BlockList, LockoutPolicy, LockoutPolicyCounterType,
+                            LockoutPolicyStage, LockoutStageAction, UserLockoutState)
 from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
                       MachineTokenOptions, get_machineresolver_id,
                       get_machinetoken_ids)
@@ -75,8 +75,8 @@ __all__ = ["db", "Audit", "audit_column_length", "AuthenticationLog", "authentic
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
            "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
-           "BlockList", "LockoutPolicy", "LockoutPolicyStage", "LockoutStageAction",
-           "UserLockoutState",
+           "BlockList", "LockoutPolicy", "LockoutPolicyCounterType", "LockoutPolicyStage",
+           "LockoutStageAction", "UserLockoutState",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",
            "MonitoringStats",

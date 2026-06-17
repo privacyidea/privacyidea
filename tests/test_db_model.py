@@ -797,8 +797,9 @@ class LockoutPolicyTestCase(MyTestCase):
         self.assertEqual([], LockoutStageAction.query.all())
 
     def test_03_counter_types_to_track_is_a_list(self):
-        # A policy can track several counter types; the JSON column round-trips
-        # the list (order preserved).
+        # A policy can track several counter types; the counter_types_to_track
+        # association proxy over the normalized child table round-trips the list
+        # (order preserved).
         policy = LockoutPolicy(name="Multi counter policy",
                                counter_types_to_track=["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
                                time_window_seconds=900)

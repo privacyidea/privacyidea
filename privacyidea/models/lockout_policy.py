@@ -21,6 +21,7 @@ from typing import Any
 from sqlalchemy import (
     JSON,
     DateTime,
+    Index,
     Sequence,
     Unicode,
     Integer,
@@ -28,6 +29,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
 )
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
@@ -41,11 +43,13 @@ class LockoutPolicy(MethodsMixin, db.Model):
     Container for a set of conditional-access lockout rules.
 
     A policy defines which failure counter(s) to track (e.g. ``MFA_FAIL``,
-    ``PASSWORD_FAIL``) within a sliding time window. ``counter_types_to_track``
-    is a list of :class:`AuthEventType` values; their events are counted
-    **together** (a single combined count over all listed types) against the
-    stage thresholds. Admins can define multiple policies (e.g. "Admin Policy"
-    vs "Default User Policy"); policies are evaluated highest ``priority`` first.
+    ``PASSWORD_FAIL``) within a sliding time window. The tracked types live in
+    the related :class:`LockoutPolicyCounterType` rows; ``counter_types_to_track``
+    is the list-of-strings view over them used throughout the code and tests
+    (assignable as a plain list). Their events are counted **together** (a single
+    combined count over all listed types) against the stage thresholds. Admins
+    can define multiple policies (e.g. "Admin Policy" vs "Default User Policy");
+    policies are evaluated highest ``priority`` first.
 
     The actual thresholds and reactions live in the related
     :class:`LockoutPolicyStage` and :class:`LockoutStageAction` rows.
@@ -53,7 +57,6 @@ class LockoutPolicy(MethodsMixin, db.Model):
     __tablename__ = 'lockout_policies'
     id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicy_seq"), primary_key=True)
     name: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
-    counter_types_to_track: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     time_window_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # With dry_run the policy is evaluated and the decision is logged,
@@ -66,6 +69,48 @@ class LockoutPolicy(MethodsMixin, db.Model):
         back_populates="policy",
         cascade="all, delete-orphan",
         order_by="LockoutPolicyStage.priority.desc()")
+    # The failure counter type(s) this policy tracks, normalized into the
+    # lockout_policy_counter_types child table so the per-request lookup can be a
+    # single indexed equality filter (``counter_type = :event_type``) instead of
+    # loading every enabled policy and filtering a JSON list in Python.
+    counter_types: Mapped[list["LockoutPolicyCounterType"]] = relationship(
+        "LockoutPolicyCounterType",
+        back_populates="policy",
+        cascade="all, delete-orphan",
+        order_by="LockoutPolicyCounterType.id")
+    # List-of-strings view over ``counter_types``: read it like a list, and assign
+    # a list (e.g. ``LockoutPolicy(counter_types_to_track=["PIN_FAIL"])``) to
+    # create the child rows. Order of assignment is preserved.
+    counter_types_to_track: AssociationProxy[list[str]] = association_proxy(
+        "counter_types", "counter_type",
+        creator=lambda counter_type: LockoutPolicyCounterType(counter_type=counter_type))
+
+
+class LockoutPolicyCounterType(MethodsMixin, db.Model):
+    """
+    One failure counter type tracked by a :class:`LockoutPolicy`, normalized out
+    of the former ``counter_types_to_track`` JSON column.
+
+    A policy has one row here per tracked :class:`AuthEventType` value. Keeping
+    the types in their own indexed table lets the authentication hot path select
+    just the policies that track the current event type with a single equality
+    filter, instead of loading every enabled policy and filtering the JSON list
+    in Python (which grew the per-request DB work with the total policy count).
+    """
+    __tablename__ = 'lockout_policy_counter_types'
+    __table_args__ = (
+        UniqueConstraint('policy_id', 'counter_type',
+                         name='uq_lockout_counter_type_policy'),
+        # Leading column is counter_type: the per-request lookup filters by the
+        # current event type, then joins back to the small set of policy ids.
+        Index('ix_lockout_counter_type_lookup', 'counter_type', 'policy_id'),
+    )
+    id: Mapped[int] = mapped_column(Integer, Sequence("lockoutpolicycountertype_seq"), primary_key=True)
+    policy_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('lockout_policies.id', ondelete='CASCADE'), nullable=False)
+    counter_type: Mapped[str] = mapped_column(Unicode(100), nullable=False)
+
+    policy: Mapped["LockoutPolicy"] = relationship("LockoutPolicy", back_populates="counter_types")
 
 
 class LockoutPolicyStage(MethodsMixin, db.Model):

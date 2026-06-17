@@ -53,6 +53,7 @@ from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.lockout_policy import (
     BlockList,
     LockoutPolicy,
+    LockoutPolicyCounterType,
     LockoutPolicyStage,
     LockoutStageAction,
     UserLockoutState,
@@ -97,7 +98,7 @@ class _LockoutSnapshotBase(MyTestCase):
     @staticmethod
     def _clear():
         for model in (UserLockoutState, BlockList, LockoutStageAction, LockoutPolicyStage,
-                      LockoutPolicy, AuthenticationLog):
+                      LockoutPolicyCounterType, LockoutPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
 
