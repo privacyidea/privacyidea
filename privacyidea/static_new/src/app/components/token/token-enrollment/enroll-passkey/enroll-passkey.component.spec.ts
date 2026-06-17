@@ -20,7 +20,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { Base64Service } from "@services/base64/base64.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -36,14 +35,14 @@ describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;
   let fixture: ComponentFixture<EnrollPasskeyComponent>;
 
-  let tokenSvc: MockTokenService;
-  let dialogSvc: MockDialogService;
+  let tokenService: MockTokenService;
+  let dialogService: MockDialogService;
   let b64: MockBase64Service;
   let notif: MockNotificationService;
 
   const origCreds = navigator.credentials;
 
-  function setNavigatorCredentials(obj: any) {
+  function setNavigatorCredentials(obj: Partial<CredentialsContainer> | undefined) {
     Object.defineProperty(navigator, "credentials", {
       configurable: true,
       get: () => obj
@@ -54,7 +53,7 @@ describe("EnrollPasskeyComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [EnrollPasskeyComponent, NoopAnimationsModule],
+      imports: [EnrollPasskeyComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -68,10 +67,10 @@ describe("EnrollPasskeyComponent", () => {
     fixture = TestBed.createComponent(EnrollPasskeyComponent);
     component = fixture.componentInstance;
 
-    tokenSvc = TestBed.inject(TokenService) as any;
-    dialogSvc = TestBed.inject(DialogService) as any;
-    b64 = TestBed.inject(Base64Service) as any;
-    notif = TestBed.inject(NotificationService) as any;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
+    notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     fixture.detectChanges();
   });
@@ -89,7 +88,7 @@ describe("EnrollPasskeyComponent", () => {
 
   it("rejects and notifies when WebAuthn is unsupported", () => {
     setNavigatorCredentials(undefined);
-    expect(() => component.enrollmentArgsGetter({} as TokenEnrollmentData)).toThrow(
+    expect(() => component.buildEnrollmentArgs({} as TokenEnrollmentData)).toThrow(
       /Passkey\/WebAuthn is not supported/i
     );
     expect(notif.error).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
@@ -112,8 +111,6 @@ describe("EnrollPasskeyComponent", () => {
       create: jest.fn().mockResolvedValue(createdCred)
     });
 
-    const reopenSpy = jest.spyOn(component.reopenDialogChange, "emit");
-
     const initResp = {
       detail: {
         transaction_id: "tid-1",
@@ -134,18 +131,18 @@ describe("EnrollPasskeyComponent", () => {
     const initData = {
       description: "x",
       passkeyRegOptions: {}
-    } as any;
-    const args = component.enrollmentArgsGetter(initData);
+    } as unknown as TokenEnrollmentData;
+    const args = component.buildEnrollmentArgs(initData);
     expect(args).not.toBeNull();
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(true));
-    dialogSvc.openDialog.mockReturnValue(dialogRefMock);
-    tokenSvc.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
-    const initResponse = await tokenSvc.enrollToken(args);
+    dialogService.openDialog.mockReturnValue(dialogRefMock);
+    tokenService.enrollToken.mockReturnValueOnce(lastValueFrom(of(initResp)));
+    const initResponse = await tokenService.enrollToken(args);
     const res = await component.onEnrollmentResponse(initResponse, args!.data);
 
-    expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(2);
-    expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
+    expect(tokenService.enrollToken).toHaveBeenCalledTimes(2);
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
 
     expect(b64.base64URLToBytes).toHaveBeenCalled();
     expect(b64.bytesToBase64).toHaveBeenCalled();
@@ -153,24 +150,24 @@ describe("EnrollPasskeyComponent", () => {
     expect(res).toStrictEqual(finalResp);
     expect(res?.detail.serial).toBe("S-1");
 
-    const lastReopenArg = reopenSpy.mock.calls[reopenSpy.mock.calls.length - 1][0];
-    expect(lastReopenArg).toBeUndefined();
+    // After the happy path completes the strategy clears its reopenDialog signal back to undefined.
+    expect(component.reopenDialog()).toBeUndefined();
   });
 
   it("handles invalid server response (no passkey_registration)", async () => {
     const initResp = { detail: { transaction_id: "t", serial: "S-9" } };
-    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp));
+    tokenService.enrollToken.mockReturnValueOnce(of(initResp));
     setNavigatorCredentials({
       create: jest.fn()
     });
-    const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
     expect(notif.error).toHaveBeenCalledWith(
       "Failed to initiate Passkey registration: Invalid server response."
     );
-    expect(dialogSvc.openDialog).not.toHaveBeenCalled();
+    expect(dialogService.openDialog).not.toHaveBeenCalled();
   });
 
   it("finalize error: deletes token and notifies", async () => {
@@ -192,7 +189,7 @@ describe("EnrollPasskeyComponent", () => {
       }
     };
 
-    tokenSvc.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(throwError(() => new Error("fin")));
+    tokenService.enrollToken.mockReturnValueOnce(of(initResp)).mockReturnValueOnce(throwError(() => new Error("fin")));
 
     const createdCred = {
       id: "cred-2",
@@ -209,8 +206,8 @@ describe("EnrollPasskeyComponent", () => {
       create: jest.fn().mockResolvedValue(createdCred)
     });
 
-    const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
 
     await expect(finalResponse).rejects.toThrow();
@@ -218,7 +215,7 @@ describe("EnrollPasskeyComponent", () => {
     expect(notif.error).toHaveBeenCalledWith(
       "Error during final Passkey registration step. Attempting to clean up token."
     );
-    expect(tokenSvc.deleteToken).toHaveBeenCalledWith("S-2");
+    expect(tokenService.deleteToken).toHaveBeenCalledWith("S-2");
   });
 
   it("reopen dialog callback re-runs passkey init+finalize when dialog is closed", async () => {
@@ -258,21 +255,18 @@ describe("EnrollPasskeyComponent", () => {
 
     const finalize = (serial: string) => ({ detail: { serial } });
 
-    tokenSvc.enrollToken.mockReturnValueOnce(of(passkeyInit("S-1", "tx-1"))).mockReturnValueOnce(of(finalize("S-1")));
+    tokenService.enrollToken.mockReturnValueOnce(of(passkeyInit("S-1", "tx-1"))).mockReturnValueOnce(of(finalize("S-1")));
 
-    let reopenCb: (() => Promise<EnrollmentResponse | null>) | undefined;
-
-    component.reopenDialogChange.subscribe((fn) => (reopenCb = fn as any));
-
-    const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
+    const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,
       enrollmentArgs!.data
     );
     expect(finalResponse).toEqual(finalize("S-1"));
-    expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
+    expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
 
-    expect(reopenCb).toBeUndefined();
+    // strategy.reopenDialog is cleared once the flow finalizes successfully.
+    expect(component.reopenDialog()).toBeUndefined();
   });
 });

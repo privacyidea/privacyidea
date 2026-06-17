@@ -23,12 +23,10 @@ import {
   Component,
   computed,
   DestroyRef,
-  ElementRef,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
-  Renderer2,
   signal,
   ViewChild
 } from "@angular/core";
@@ -55,6 +53,7 @@ import {
   ApiKeyData,
   YubikeyConfigComponent
 } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -84,7 +83,8 @@ import { forkJoin, lastValueFrom } from "rxjs";
     QuestionnaireConfigComponent,
     YubicoConfigComponent,
     YubikeyConfigComponent,
-    DaypasswordConfigComponent
+    DaypasswordConfigComponent,
+    StickyHeaderDirective
   ],
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
@@ -98,14 +98,10 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
-  private readonly renderer = inject(Renderer2);
   private destroyRef = inject(DestroyRef);
   queryParams = toSignal(this.route.queryParams);
   expandEmail = computed(() => this.queryParams()?.["expanded"] === "email");
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef;
   @ViewChild(MatAccordion) accordion!: MatAccordion;
 
   allPanelsOpen = signal(false);
@@ -120,13 +116,20 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     }
   }
 
-  private observer!: IntersectionObserver;
-
-  formData = linkedSignal<any, Record<string, any>>({
+  formData = linkedSignal<Record<string, string>, Record<string, string>>({
     source: () => this.systemService.systemConfig(),
     computation: (config) => ({ ...config })
   });
-  nextQuestionIndex = linkedSignal<any, number>({
+
+  onFormDataChange(data: Record<string, string | number | boolean>): void {
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      normalized[key] = typeof value === "boolean" ? (value ? "True" : "False") : String(value);
+    }
+    this.formData.set(normalized);
+  }
+
+  nextQuestionIndex = linkedSignal<Record<string, string>, number>({
     source: () => this.systemService.systemConfig(),
     computation: (config) => {
       let max = -1;
@@ -141,7 +144,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
       return max + 1;
     }
   });
-  pendingDeletes = linkedSignal<any, Set<string>>({
+  pendingDeletes = linkedSignal<Record<string, string>, Set<string>>({
     source: () => this.systemService.systemConfig(),
     computation: () => new Set<string>()
   });
@@ -177,7 +180,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   hashLibs = computed<string[]>(() => this.systemConfigInit()?.hashlibs ?? ["sha1", "sha256", "sha512"]);
   totpSteps = computed<string[]>(() => {
     const steps = this.systemConfigInit()?.totpSteps ?? [30, 60];
-    return (Array.isArray(steps) ? steps : [steps]).map((s: any) => String(s));
+    return (Array.isArray(steps) ? steps : [steps]).map((s) => String(s));
   });
 
   expandedPanel: string | null = null;
@@ -210,29 +213,6 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         panel.scrollIntoView({ behavior: "smooth" });
       }
     }
-
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
   addQuestion(text: string) {
@@ -249,11 +229,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   deleteQuestion(key: string) {
-    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+    const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f };
       delete next[key];
       return next;
     });
@@ -269,11 +249,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   deleteSystemEntry(key: string) {
-    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+    const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
     this.formData.update((f) => {
-      const next = { ...f } as Record<string, any>;
+      const next = { ...f };
       delete next[key];
       return next;
     });
@@ -305,13 +285,14 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
             headers: this.authService.getHeaders()
           })
         );
-        if (response?.result?.value) {
+        const generatedKey = response?.result?.value;
+        if (generatedKey) {
           this.formData.update((f) => ({
             ...f,
-            [`yubikey.apiid.${apiId}`]: response.result?.value
+            [`yubikey.apiid.${apiId}`]: generatedKey
           }));
         }
-      } catch (e) {
+      } catch {
         this.notificationService.error($localize`Failed to generate API key.`);
       }
     } else {
@@ -345,7 +326,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         this.notificationService.error($localize`Failed to save token configuration.`);
         return false;
       }
-    } catch (e) {
+    } catch {
       this.notificationService.error($localize`Error saving token configuration.`);
       return false;
     }
@@ -353,12 +334,9 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   ngOnDestroy() {
     this.pendingChangesService.clearAllRegistrations();
-    if (this.observer) {
-      this.observer.disconnect();
-    }
   }
 
-  onCheckboxChange(key: string, event: any) {
+  onCheckboxChange(key: string, event: { checked: boolean }) {
     this.formData.update((f) => ({
       ...f,
       [key]: event.checked ? "True" : "False"

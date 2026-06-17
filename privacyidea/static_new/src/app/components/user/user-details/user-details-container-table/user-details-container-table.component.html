@@ -31,7 +31,7 @@
       class="user-details-container-table-filter">
       <mat-label i18n>Filter Containers...</mat-label>
       <app-clearable-input
-        (onClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
+        (clearButtonClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
         [showClearButton]="filterValue.length > 0">
         <input
           #filterInput
@@ -84,22 +84,25 @@
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="element.serial">
                     <a
                       (click)="contentService.navigateContainerDetails(element.serial)"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ element.serial }}
                     </a>
-                    @if (element.serial !== "") {
-                      <app-copy-button [copyText]="element.serial"></app-copy-button>
-                    }
-                  </div>
+                  </app-copyable>
                 }
                 @case ("states") {
                   <span
                     (click)="handleStateClick(element)"
+                    (keydown.enter)="handleStateClick(element)"
                     [matTooltip]="tableUtilsService.getTooltipForColumn('states', element)"
-                    [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], true)">
+                    [ngClass]="tableUtilsService.getSpanClassForState(element.states?.[0], true)"
+                    role="button"
+                    tabindex="0">
                     {{ tableUtilsService.getDisplayTextForState(element.states?.[0]) }}
                   </span>
                 }

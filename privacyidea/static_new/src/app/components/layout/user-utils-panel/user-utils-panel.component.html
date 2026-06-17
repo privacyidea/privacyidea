@@ -24,8 +24,7 @@
     [matTooltipDisabled]="isLargeScreen()">
     <mat-icon>account_circle</mat-icon>
   </span>
-  <div
-    class="profile-text-wrapper">
+  <div class="profile-text-wrapper">
     <span class="profile-text">
       {{ profileText() }}
     </span>
@@ -41,8 +40,13 @@
     <mat-icon>refresh</mat-icon>
   </button>
   <div
-    [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' : sessionTimerService.remainingTime()! <
-     60000 ? 'yellow-light' : 'surface-highest']"
+    [ngClass]="[
+      sessionTimerService.remainingTime()! < 31000
+        ? 'red-light'
+        : sessionTimerService.remainingTime()! < 60000
+          ? 'yellow-light'
+          : 'surface-highest'
+    ]"
     class="session-timer"
     matTooltip="Time until session expires">
     {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}

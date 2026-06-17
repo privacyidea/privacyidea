@@ -20,17 +20,16 @@
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
-import { AuditService } from "@services/audit/audit.service";
+import { AuditData, AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
-    MockAuditService,
-    MockContentService,
-    MockLocalService,
-    MockNotificationService
+  MockAuditService,
+  MockContentService,
+  MockLocalService,
+  MockNotificationService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
@@ -41,8 +40,6 @@ import { AuditSelfServiceComponent } from "./audit.self-service.component";
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
   let component: AuditComponent;
-  let selfFixture: ComponentFixture<AuditSelfServiceComponent>;
-  let selfComponent: AuditSelfServiceComponent;
   let mockAuditService: MockAuditService;
   let mockTableUtilsService: MockTableUtilsService;
 
@@ -67,12 +64,11 @@ describe("AuditComponent (unit)", () => {
       imports: [AuditComponent],
       providers: [
         provideHttpClient(),
-        provideNoopAnimations(),
         { provide: ActivatedRoute, useValue: { params: of({ id: "123" }) } },
-        { provide: MockAuditService as any, useClass: MockAuditService },
-        { provide: MockTableUtilsService as any, useClass: MockTableUtilsService },
-        { provide: MockContentService as any, useClass: MockContentService },
-        { provide: MockAuthService as any, useClass: MockAuthService },
+        { provide: MockAuditService, useClass: MockAuditService },
+        { provide: MockTableUtilsService, useClass: MockTableUtilsService },
+        { provide: MockContentService, useClass: MockContentService },
+        { provide: MockAuthService, useClass: MockAuthService },
         { provide: AuditService, useExisting: MockAuditService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
@@ -86,10 +82,8 @@ describe("AuditComponent (unit)", () => {
 
     fixture = TestBed.createComponent(AuditComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
-    mockAuditService = TestBed.inject(MockAuditService as any);
-    mockTableUtilsService = TestBed.inject(MockTableUtilsService as any);
+    mockAuditService = TestBed.inject(MockAuditService);
+    mockTableUtilsService = TestBed.inject(MockTableUtilsService);
     fixture.detectChanges();
   });
 
@@ -104,7 +98,8 @@ describe("AuditComponent (unit)", () => {
   });
 
   it("creates self service", () => {
-    expect(selfComponent).toBeTruthy();
+    const selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   describe("page‑related derived signals", () => {
@@ -161,7 +156,7 @@ describe("AuditComponent (unit)", () => {
   });
 
   it("auditDataSource updates when auditResource changes", () => {
-    const rows = [{ user: "alice" } as any];
+    const rows: AuditData[] = [{ user: "alice" } as AuditData];
     mockAuditService.auditResource.value.set({
       detail: undefined,
       id: 0,
@@ -173,7 +168,7 @@ describe("AuditComponent (unit)", () => {
       result: {
         value: {
           count: 1,
-          auditdata: rows as any,
+          auditdata: rows,
           auditcolumns: [],
           current: 0
         },

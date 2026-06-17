@@ -18,7 +18,6 @@
  **/
 import { HttpParams } from "@angular/common/http";
 import { Component, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -38,7 +37,6 @@ import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-d
 @Component({
   selector: "app-token-get-serial",
   imports: [
-    FormsModule,
     MatProgressBarModule,
     MatFormField,
     MatInput,

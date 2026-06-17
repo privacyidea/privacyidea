@@ -49,25 +49,33 @@ export interface SmsGateway {
   headers: Record<string, string>;
 }
 
+export interface SmsGatewayPayload {
+  name: string;
+  module: string;
+  description?: string;
+  id?: number;
+  [key: `option.${string}`]: string | number | undefined;
+  [key: `header.${string}`]: string | number | undefined;
+}
+
 export interface SmsGatewayServiceInterface {
   smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined>;
   smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined>;
   readonly smsGateways: Signal<SmsGateway[]>;
 
-  postSmsGateway(gateway: any): Promise<void>;
+  postSmsGateway(gateway: SmsGatewayPayload): Promise<void>;
 
   deleteSmsGateway(name: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SmsGatewayService implements SmsGatewayServiceInterface {
-  private readonly baseUrl = environment.proxyUrl + "/smsgateway";
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
+
+  private readonly baseUrl = environment.proxyUrl + "/smsgateway";
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
     if (!this.contentService.onExternalSms() && !this.contentService.onConfigurationTokenTypes()) {
@@ -96,8 +104,10 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
     return this.smsGatewayResource.value()?.result?.value ?? [];
   });
 
-  async postSmsGateway(gateway: any): Promise<void> {
-    const request = this.http.post<PiResponse<any>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
+  async postSmsGateway(gateway: SmsGatewayPayload): Promise<void> {
+    const request = this.http.post<PiResponse<number>>(this.baseUrl, gateway, {
+      headers: this.authService.getHeaders()
+    });
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.success($localize`Successfully saved SMS gateway.`);
@@ -111,7 +121,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   }
 
   async deleteSmsGateway(name: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${encodeURIComponent(name)}`, {
+    const request = this.http.delete<PiResponse<number>>(`${this.baseUrl}/${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

@@ -17,19 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild
-} from "@angular/core";
+import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -41,6 +31,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -50,11 +41,29 @@ import {
   PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
 
+interface PrivacyideaFormModel {
+  identifier: string;
+  url: string;
+  tls: boolean;
+  description: string;
+  username: string;
+  password: string;
+}
+
+const EMPTY_PRIVACYIDEA_FORM: PrivacyideaFormModel = {
+  identifier: "",
+  url: "",
+  tls: true,
+  description: "",
+  username: "",
+  password: ""
+};
+
 @Component({
   selector: "app-privacyidea-edit-dialog",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
@@ -62,31 +71,32 @@ import {
     MatIconModule,
     MatProgressSpinnerModule,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-privacyidea-server.component.html",
   styleUrl: "./new-privacyidea-server.component.scss"
 })
-export class NewPrivacyideaServerComponent implements AfterViewInit, OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
+export class NewPrivacyideaServerComponent implements OnDestroy {
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
 
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-
-  private observer!: IntersectionObserver;
-
-  privacyideaForm!: FormGroup;
-  isEditMode = false;
+  isEditMode = signal(false);
   isTesting = signal(false);
   private editIdentifier: string | null = null;
+
+  privacyideaModel = signal<PrivacyideaFormModel>({ ...EMPTY_PRIVACYIDEA_FORM });
+
+  privacyideaForm = form(this.privacyideaModel, (f) => {
+    required(f.identifier);
+    pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    required(f.url);
+    disabled(f.identifier, () => this.isEditMode());
+  });
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -96,100 +106,73 @@ export class NewPrivacyideaServerComponent implements AfterViewInit, OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const identifier = params.get("identifier");
       if (identifier) {
-        this.isEditMode = true;
+        this.isEditMode.set(true);
         this.editIdentifier = identifier;
         const server = this.privacyideaServerService.remoteServerOptions().find((s) => s.identifier === identifier);
-        this.initForm(server ?? null);
+        this.loadData(server ?? null);
       } else {
-        this.isEditMode = false;
+        this.isEditMode.set(false);
         this.editIdentifier = null;
-        this.initForm(null);
+        this.loadData(null);
       }
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const servers = this.privacyideaServerService.remoteServerOptions();
-      if (this.isEditMode && this.editIdentifier && this.privacyideaForm?.pristine) {
+      if (this.isEditMode() && this.editIdentifier && untracked(() => !this.privacyideaForm().dirty())) {
         const found = servers.find((s) => s.identifier === this.editIdentifier);
         if (found) {
-          this.initForm(found);
+          this.loadData(found);
         }
       }
     });
   }
 
   get hasChanges(): boolean {
-    return !this.privacyideaForm.pristine;
+    return this.privacyideaForm().dirty();
   }
 
   get canSave(): boolean {
-    return this.authService.actionAllowed("privacyideaserver_write") && this.privacyideaForm.valid;
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-      if (shouldFloat) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
+    return this.authService.actionAllowed("privacyideaserver_write") && this.privacyideaForm().valid();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.observer?.disconnect();
   }
 
-  private initForm(server: PrivacyideaServer | null): void {
-    this.privacyideaForm = this.formBuilder.group({
-      identifier: [server?.identifier || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-      url: [server?.url || "", [Validators.required]],
-      tls: [server?.tls ?? true],
-      description: [server?.description || ""],
-      username: [server?.username || ""],
-      password: [server?.password || ""]
+  private loadData(server: PrivacyideaServer | null): void {
+    this.privacyideaModel.set({
+      identifier: server?.identifier || "",
+      url: server?.url || "",
+      tls: server?.tls ?? true,
+      description: server?.description || "",
+      username: server?.username || "",
+      password: server?.password || ""
     });
-
-    if (this.isEditMode) {
-      this.privacyideaForm.get("identifier")?.disable();
-    }
+    this.privacyideaForm().reset();
   }
 
   async save(): Promise<boolean> {
-    if (this.privacyideaForm.invalid) {
+    if (!this.privacyideaForm().valid()) {
       return false;
     }
 
-    const server: PrivacyideaServer = {
-      ...this.privacyideaForm.getRawValue()
-    };
+    const server = this.privacyideaModel() as unknown as PrivacyideaServer;
     try {
       await this.privacyideaServerService.postPrivacyideaServer(server);
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   test(): void {
-    if (this.privacyideaForm.valid) {
+    if (this.privacyideaForm().valid()) {
       this.isTesting.set(true);
-      const params = this.privacyideaForm.getRawValue();
+      const params = this.privacyideaModel() as unknown as PrivacyideaServer;
       this.privacyideaServerService.testPrivacyideaServer(params).then(() => {
         this.isTesting.set(false);
       });

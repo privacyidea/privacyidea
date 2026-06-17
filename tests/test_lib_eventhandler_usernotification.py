@@ -27,7 +27,7 @@ from privacyidea.lib.user import User, create_user
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import TokenOwner
 from . import smtpmock
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from .base import MyTestCase, FakeFlaskG, FakeAudit, PristineSqliteFixtures
 
 PNG_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeoAAAHqAQAAAADjFj" \
             "CXAAAD+UlEQVR4nO2dTYrkSAxGn8aGWtowB6ij2Dcb5khzA/soeYABe9lgo1mE4q" \
@@ -57,7 +57,9 @@ OAUTH_URL = "otpauth://hotp/OATH0001D8B6?secret=GQROHTUPBAK5N6T2HBUK4IP42R56E" \
             "MV3&counter=1&digits=6&issuer=privacyIDEA"
 
 
-class UserNotificationTestCase(MyTestCase):
+class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
+
+    pristine_fixtures = ["tests/testdata/testuser.sqlite"]
 
     def test_01_basefunctions(self):
         actions = UserNotificationEventHandler().actions

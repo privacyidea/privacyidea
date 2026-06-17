@@ -52,7 +52,7 @@ export class TanApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     return payload;
   }
 
-  override fromApiPayload(payload: any): TanEnrollmentData {
+  override fromApiPayload(payload: TanEnrollmentPayload): TanEnrollmentData {
     return {
       ...payload,
       tanCount: payload.tancount,
@@ -64,7 +64,7 @@ export class TanApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     return {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "tan",
-      tanCount: details.info?.["tan.count"] ?? undefined
+      tanCount: details.info?.["tan.count"] != null ? Number(details.info["tan.count"]) : undefined
     };
   }
 }

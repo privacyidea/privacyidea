@@ -26,7 +26,7 @@
       subscriptSizing="dynamic">
       <mat-label i18n>Filter Tokengroups...</mat-label>
       <app-clearable-input
-        (onClick)="resetFilter()"
+        (clearButtonClick)="resetFilter()"
         [showClearButton]="filterString().length > 0">
         <input
           #filterHTMLInputElement
@@ -60,13 +60,13 @@
     class="tokengroups-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="id">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Id
+        mat-sort-header>
+        Id
       </th>
       <td
         *matCellDef="let group"
@@ -80,19 +80,22 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Name
+        mat-sort-header>
+        Name
       </th>
       <td
         *matCellDef="let group"
         mat-cell>
-        <div class="flex-row flex-nowrap ali-center">
+        <app-copyable [copyText]="group.groupname">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditTokengroup(group)"
+            (keydown.enter)="onEditTokengroup(group)"
             class="flex ali-center">
             {{ group.groupname }}
           </a>
-          <app-copy-button [copyText]="group.groupname" />
-        </div>
+        </app-copyable>
       </td>
     </ng-container>
 
@@ -101,11 +104,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Description
+        mat-sort-header>
+        Description
       </th>
       <td
         *matCellDef="let group"
-        mat-cell> {{ group.description }}
+        mat-cell>
+        {{ group.description }}
       </td>
     </ng-container>
 
@@ -113,7 +118,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let group"
@@ -135,7 +141,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -144,7 +150,8 @@
       <td
         class="mat-cell"
         colspan="4"
-        i18n>No tokengroups found.
+        i18n>
+        No tokengroups found.
       </td>
     </tr>
   </table>

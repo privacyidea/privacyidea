@@ -29,7 +29,7 @@ export interface U2fEnrollmentData extends TokenEnrollmentData {
   type: "u2f";
 }
 
-export interface U2fEnrollmentPayload extends TokenEnrollmentPayload {}
+export type U2fEnrollmentPayload = TokenEnrollmentPayload;
 
 @Injectable({ providedIn: "root" })
 export class U2fApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<U2fEnrollmentData> {
@@ -43,7 +43,7 @@ export class U2fApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     return payload;
   }
 
-  override fromApiPayload(payload: any): U2fEnrollmentData {
+  override fromApiPayload(payload: U2fEnrollmentPayload): U2fEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as U2fEnrollmentData;
   }

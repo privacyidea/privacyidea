@@ -18,15 +18,16 @@
 -->
 <div class="flex-column expansion-well margin-bottom-16">
   <mat-checkbox
-    (change)="onUserStorePassphraseChange()"
-    [(ngModel)]="userStorePassphrase"
-    [disabled]="!containerHasOwner">
+    [checked]="userStorePassphrase()"
+    (change)="userStorePassphrase.set($event.checked); onUserStorePassphraseChange()"
+    [disabled]="!containerHasOwner()">
     <span>Validate the passphrase against the user store.</span>
   </mat-checkbox>
   <mat-form-field class="input-width-xl">
     <mat-label i18n>Passphrase Prompt</mat-label>
     <textarea
-      [(ngModel)]="passphrasePrompt"
+      [value]="passphrasePrompt()"
+      (input)="passphrasePrompt.set($any($event.target).value)"
       matInput
       rows="2"></textarea>
     <mat-hint
@@ -40,10 +41,11 @@
   <mat-form-field class="input-width-xl margin-top-32 margin-bottom-32">
     <mat-label i18n> Passphrase Response</mat-label>
     <input
-      [(ngModel)]="passphraseResponse"
+      [value]="passphraseResponse()"
+      (input)="passphraseResponse.set($any($event.target).value)"
       [disabled]="userStorePassphrase()"
       [type]="showPassphrase ? 'text' : 'password'"
-      matInput>
+      matInput />
     <button
       (click)="toggleShowPassphrase()"
       [attr.aria-label]="'Toggle passphrase visibility'"
@@ -51,20 +53,20 @@
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ showPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
+      <mat-icon>{{ showPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
-    <mat-hint
-      i18n>
+    <mat-hint i18n>
       This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
     </mat-hint>
   </mat-form-field>
   <mat-form-field class="input-width-xl">
     <mat-label i18n> Repeat Passphrase Response</mat-label>
     <input
-      [(ngModel)]="repeatPassphraseResponse"
+      [value]="repeatPassphraseResponse()"
+      (input)="repeatPassphraseResponse.set($any($event.target).value)"
       [disabled]="userStorePassphrase()"
       [type]="showRepeatPassphrase ? 'text' : 'password'"
-      matInput>
+      matInput />
     <button
       (click)="showRepeatPassphrase = !showRepeatPassphrase"
       [attr.aria-label]="'Toggle passphrase visibility'"
@@ -72,7 +74,7 @@
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ showRepeatPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
+      <mat-icon>{{ showRepeatPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
     @if (passphraseMismatch) {
       <mat-hint

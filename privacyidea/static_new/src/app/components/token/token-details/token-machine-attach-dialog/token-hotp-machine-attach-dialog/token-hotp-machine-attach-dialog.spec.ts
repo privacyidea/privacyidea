@@ -20,20 +20,25 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { Observable } from "rxjs";
 
 import { TokenHotpMachineAssignDialogComponent } from "./token-hotp-machine-attach-dialog";
 
+import { PiResponse } from "@app/app.component";
+import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
+
+type PostAssignArgs = Parameters<MachineServiceInterface["postAssignMachineToToken"]>[0];
+
 class MockMachineService {
   subscribed = false;
-  lastArgs: any = null;
+  lastArgs: PostAssignArgs | null = null;
 
-  postAssignMachineToToken = jest.fn().mockImplementation((args: any) => {
+  postAssignMachineToToken = jest.fn().mockImplementation((args: PostAssignArgs) => {
     this.lastArgs = args;
-    return new Observable((observer) => {
+    return new Observable<PiResponse<number>>((observer) => {
       this.subscribed = true;
-      observer.next({ ok: true });
+      observer.next(MockPiResponse.fromValue<number>(0) as unknown as PiResponse<number>);
       observer.complete();
     });
   });
@@ -51,16 +56,13 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
     machineService = new MockMachineService();
 
     await TestBed.configureTestingModule({
-      imports: [TokenHotpMachineAssignDialogComponent, BrowserAnimationsModule, MatDialogModule],
+      imports: [TokenHotpMachineAssignDialogComponent, MatDialogModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: { tokenSerial: "SERIAL-1" } },
         { provide: MatDialogRef, useValue: dialogRef },
-        {
-          provide: (await import("@services/machine/machine.service")).MachineService,
-          useValue: machineService
-        }
+        { provide: MachineService, useValue: machineService }
       ]
     }).compileComponents();
 
@@ -82,32 +84,42 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
   });
 
   it("form defaults are valid (count=100, rounds=10000)", () => {
-    expect(component.countControl.value).toBe(100);
-    expect(component.roundsControl.value).toBe(10000);
-    expect(component.formGroup.valid).toBe(true);
+    expect(component.countValue()).toBe("100");
+    expect(component.roundsValue()).toBe("10000");
+    expect(component.isFormValid()).toBe(true);
   });
 
-  it("countControl: min(10) validator works", () => {
-    component.countControl.setValue(9);
-    expect(component.countControl.invalid).toBe(true);
-    expect(component.countControl.hasError("min")).toBe(true);
+  it("countForm: min(10) validator works", () => {
+    component.countValue.set("9");
+    expect(component.countForm().valid()).toBe(false);
+    expect(
+      component
+        .countForm()
+        .errors()
+        .some((e) => e.kind === "min")
+    ).toBe(true);
 
-    component.countControl.setValue(10);
-    expect(component.countControl.valid).toBe(true);
+    component.countValue.set("10");
+    expect(component.countForm().valid()).toBe(true);
   });
 
-  it("roundsControl: min(1000) validator works", () => {
-    component.roundsControl.setValue(999);
-    expect(component.roundsControl.invalid).toBe(true);
-    expect(component.roundsControl.hasError("min")).toBe(true);
+  it("roundsForm: min(1000) validator works", () => {
+    component.roundsValue.set("999");
+    expect(component.roundsForm().valid()).toBe(false);
+    expect(
+      component
+        .roundsForm()
+        .errors()
+        .some((e) => e.kind === "min")
+    ).toBe(true);
 
-    component.roundsControl.setValue(1000);
-    expect(component.roundsControl.valid).toBe(true);
+    component.roundsValue.set("1000");
+    expect(component.roundsForm().valid()).toBe(true);
   });
 
   it("onAssign: does nothing when form invalid", () => {
-    component.countControl.setValue(0);
-    component.roundsControl.setValue(100);
+    component.countValue.set("0");
+    component.roundsValue.set("100");
 
     component.onAssign();
 
@@ -116,8 +128,8 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
   });
 
   it("onAssign: posts payload, subscribes to request, and closes dialog with the same Observable", () => {
-    component.countControl.setValue(123);
-    component.roundsControl.setValue(4567);
+    component.countValue.set("123");
+    component.roundsValue.set("4567");
 
     component.onAssign();
 
@@ -133,41 +145,18 @@ describe("TokenHotpMachineAssignDialogComponent", () => {
 
     expect(machineService.subscribed).toBe(true);
 
-    const returned$ = (machineService.postAssignMachineToToken as jest.Mock).mock.results[0].value as Observable<any>;
+    const returned$ = (machineService.postAssignMachineToToken as jest.Mock).mock.results[0]
+      .value as Observable<PiResponse<number>>;
     expect(dialogRef.close).toHaveBeenCalledWith(returned$);
   });
 
   it("close: closes with undefined", () => {
-    (component as any).close();
+    (component as unknown as { close: (value?: unknown) => void }).close();
     expect(dialogRef.close).toHaveBeenCalledWith(undefined);
   });
 
   it("close: closes with given value", () => {
-    (component as any).close("test-value");
+    (component as unknown as { close: (value?: unknown) => void }).close("test-value");
     expect(dialogRef.close).toHaveBeenCalledWith("test-value");
-  });
-
-  describe("machineValidator", () => {
-    it("returns {required:true} when value is falsy or string", () => {
-      const ctrl1 = { value: null } as any;
-      const ctrl2 = { value: "" } as any;
-      const ctrl3 = { value: "just-a-string" } as any;
-
-      expect(component.machineValidator(ctrl1)).toEqual({ required: true });
-      expect(component.machineValidator(ctrl2)).toEqual({ required: true });
-      expect(component.machineValidator(ctrl3)).toEqual({ required: true });
-    });
-
-    it("returns {invalidMachine:true} when object is missing required fields", () => {
-      const ctrl = { value: { id: 1, hostname: "h", ip: "1.2.3.4" } } as any;
-      expect(component.machineValidator(ctrl)).toEqual({ invalidMachine: true });
-    });
-
-    it("returns null for a valid machine object", () => {
-      const ctrl = {
-        value: { id: 42, hostname: "host", ip: "10.0.0.1", resolver_name: "resolverA" }
-      } as any;
-      expect(component.machineValidator(ctrl)).toBeNull();
-    });
   });
 });

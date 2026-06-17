@@ -20,6 +20,7 @@ import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
+import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
 
@@ -68,20 +69,16 @@ describe("ContainerRegistrationInitDialogComponent", () => {
         userStorePassphrase: signal(true),
         passphrasePrompt: signal("prompt"),
         passphraseResponse: signal("response")
-      } as any;
+      } as ContainerRegistrationConfigComponent;
 
       component.onRegister();
       expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "response", component.data.rollover);
     });
 
     it("should disable Register button when validInput is false", () => {
-      // Simulate invalid input by mocking the getter
-      Object.defineProperty(component, "validInput", { get: () => false });
+      component.onValidInputChange(false);
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
-        ?.nativeElement as HTMLButtonElement;
-      expect(button).toBeDefined();
-      expect(button.disabled).toBe(true);
+      expect(component.getAction().disabled).toBe(true);
     });
   });
 
@@ -130,20 +127,16 @@ describe("ContainerRegistrationInitDialogComponent", () => {
         userStorePassphrase: signal(true),
         passphrasePrompt: signal("prompt"),
         passphraseResponse: signal("response")
-      } as any;
+      } as ContainerRegistrationConfigComponent;
 
       component.onRegister();
       expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "response", true);
     });
 
     it("should disable Rollover button when validInput is false", () => {
-      // Simulate invalid input by mocking the getter
-      Object.defineProperty(component, "validInput", { get: () => false });
+      component.onValidInputChange(false);
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
-        ?.nativeElement as HTMLButtonElement;
-      expect(button).toBeDefined();
-      expect(button.disabled).toBe(true);
+      expect(component.getAction().disabled).toBe(true);
     });
   });
 });

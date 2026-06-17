@@ -16,21 +16,25 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   RadiusApiPayloadMapper,
   RadiusEnrollmentData
 } from "@app/mappers/token-api-payload/radius-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RADIUS_SERVER } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -53,15 +57,17 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
     MatLabel,
     MatOption,
     MatSelect,
-    ReactiveFormsModule,
-    FormsModule,
     MatHint,
-    MatError
+    MatError,
+    FormField
   ],
   templateUrl: "./enroll-radius.component.html",
-  styleUrl: "./enroll-radius.component.scss"
+  styleUrl: "./enroll-radius.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRadiusComponent) }
+  ]
 })
-export class EnrollRadiusComponent implements OnInit {
+export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: RadiusApiPayloadMapper = inject(RadiusApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -69,26 +75,19 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   enrollmentData = input<RadiusEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: RadiusEnrollmentData;
-      mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
-    } | null
-  >();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
-  radiusUserControl = new FormControl<string>("");
-  radiusServerConfigurationControl = new FormControl<string>("", [Validators.required]);
-  checkPinLocallyControl = new FormControl<boolean>(false, [Validators.required]);
+  radiusUser = signal<string>("");
+  radiusServerConfiguration = signal<string>("");
+  checkPinLocally = signal<boolean>(false);
 
-  radiusForm = new FormGroup({
-    radiusUser: this.radiusUserControl,
-    radiusServerConfiguration: this.radiusServerConfigurationControl,
-    checkPinLocally: this.checkPinLocallyControl
+  radiusServerConfigurationForm = form(this.radiusServerConfiguration, (f) => {
+    required(f);
+    disabled(f, () => this.disabled());
+  });
+  radiusUserForm = form(this.radiusUser, (f) => {
+    disabled(f, () => this.disabled());
   });
 
   radiusServerConfigurationOptions = computed(() => this.systemService.radiusServers());
@@ -99,66 +98,48 @@ export class EnrollRadiusComponent implements OnInit {
     return !!cfg?.[RADIUS_SERVER];
   });
 
+  private radiusServerConfigInitialized = false;
+
   constructor() {
-    effect(() =>
-      this.disabled() ? this.radiusForm.disable({ emitEvent: false }) : this.radiusForm.enable({ emitEvent: false })
-    );
+    super();
+
     effect(() => {
       if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[RADIUS_SERVER];
-      if (id && this.radiusServerConfigurationControl.pristine) {
-        this.radiusServerConfigurationControl.setValue(id);
+      if (id && !this.radiusServerConfigInitialized) {
+        this.radiusServerConfiguration.set(id);
+        this.radiusServerConfigInitialized = true;
       }
     });
   }
 
   ngOnInit(): void {
-    this._setInitialFormValues();
-    this.additionalFormFieldsChange.emit({
-      radiusUser: this.radiusUserControl,
-      radiusServerConfiguration: this.radiusServerConfigurationControl,
-      checkPinLocally: this.checkPinLocallyControl
-    });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
-      this.radiusUserControl.setValue(this.enrollmentData()?.radiusUser ?? "", { emitEvent: false });
-      this.radiusServerConfigurationControl.setValue(this.enrollmentData()?.radiusServerConfiguration ?? "", {
-        emitEvent: false
-      });
+    if (this.enrollmentData()) {
+      this.radiusUser.set(this.enrollmentData()?.radiusUser ?? "");
+      this.radiusServerConfiguration.set(this.enrollmentData()?.radiusServerConfiguration ?? "");
+      this.radiusServerConfigInitialized = true;
     }
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: RadiusEnrollmentData;
-    mapper: TokenApiPayloadMapper<RadiusEnrollmentData>;
-  } | null => {
-    if (
-      this.radiusUserControl.invalid ||
-      this.radiusServerConfigurationControl.invalid ||
-      this.checkPinLocallyControl.invalid
-    ) {
-      this.radiusForm.markAllAsTouched();
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<RadiusEnrollmentData> | null {
+    if (!this.radiusServerConfigurationForm().valid()) {
+      this.radiusServerConfigurationForm().markAsTouched();
       return null;
     }
 
     const enrollmentData: RadiusEnrollmentOptions = {
       ...basicOptions,
       type: "radius",
-      radiusUser: this.radiusUserControl.value ?? "",
-      radiusServerConfiguration: this.radiusServerConfigurationControl.value ?? "",
-      checkPinLocally: !!this.checkPinLocallyControl.value
+      radiusUser: this.radiusUser(),
+      radiusServerConfiguration: this.radiusServerConfiguration(),
+      checkPinLocally: this.checkPinLocally()
     };
 
     return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
   goToRadiusConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "radius" });

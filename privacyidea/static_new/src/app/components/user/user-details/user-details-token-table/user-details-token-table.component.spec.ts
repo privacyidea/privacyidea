@@ -17,15 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import {
-    MockContentService,
-    MockLocalService,
-    MockNotificationService,
-    MockTableUtilsService,
-    MockTokenService,
-    MockUserService
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockTableUtilsService,
+  MockTokenService,
+  MockUserService
 } from "@testing/mock-services";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table.component";
 
@@ -35,23 +34,24 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenService } from "@services/token/token.service";
+import { ContainerDetailToken } from "@services/container/container.service";
+import { TokenDetails, TokenService, Tokens } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 
 describe("UserDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsTokenTableComponent>;
   let component: UserDetailsTokenTableComponent;
 
   let tokenServiceMock: MockTokenService;
-  let userServiceMock: MockUserService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [UserDetailsTokenTableComponent, BrowserAnimationsModule],
+      imports: [UserDetailsTokenTableComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -66,7 +66,6 @@ describe("UserDetailsTokenTableComponent", () => {
     }).compileComponents();
 
     tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
-    userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
 
     fixture = TestBed.createComponent(UserDetailsTokenTableComponent);
     component = fixture.componentInstance;
@@ -101,98 +100,78 @@ describe("UserDetailsTokenTableComponent", () => {
   });
 
   it("populates dataSource from userTokenResource via linkedSignal", () => {
-    tokenServiceMock.userTokenResource.value.set({
-      detail: {},
-      id: 0,
-      jsonrpc: "2.0",
-      signature: "",
-      time: Date.now(),
-      version: "1.0",
-      versionnumber: "1.0",
-      result: {
-        status: true,
-        value: {
-          count: 2,
-          current: 2,
-          tokens: [
-            {
-              serial: "T-1",
-              tokentype: "hotp",
-              active: true,
-              revoked: false,
-              locked: false,
-              description: "alpha",
-              failcount: 0,
-              maxfail: 10,
-              container_serial: "C-1",
-              user_realm: "r1",
-              username: "alice",
-              resolver: ""
-            },
-            {
-              serial: "T-2",
-              tokentype: "totp",
-              active: false,
-              revoked: false,
-              locked: false,
-              description: "beta",
-              failcount: 2,
-              maxfail: 10,
-              container_serial: "C-2",
-              user_realm: "r1",
-              username: "alice",
-              resolver: ""
-            }
-          ]
-        }
-      }
-    } as any);
+    tokenServiceMock.userTokenResource.value.set(
+      MockPiResponse.fromValue<Tokens>({
+        count: 2,
+        current: 2,
+        tokens: [
+          {
+            serial: "T-1",
+            tokentype: "hotp",
+            active: true,
+            revoked: false,
+            locked: false,
+            description: "alpha",
+            failcount: 0,
+            maxfail: 10,
+            container_serial: "C-1",
+            user_realm: "r1",
+            username: "alice",
+            resolver: ""
+          },
+          {
+            serial: "T-2",
+            tokentype: "totp",
+            active: false,
+            revoked: false,
+            locked: false,
+            description: "beta",
+            failcount: 2,
+            maxfail: 10,
+            container_serial: "C-2",
+            user_realm: "r1",
+            username: "alice",
+            resolver: ""
+          }
+        ] as TokenDetails[]
+      })
+    );
 
     fixture.detectChanges();
 
-    expect(component.dataSource.data.map((t: any) => t.serial)).toEqual(["T-1", "T-2"]);
+    expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["T-1", "T-2"]);
   });
 
   it("keeps previous list when userTokenResource is missing (linkedSignal fallback)", () => {
-    tokenServiceMock.userTokenResource.value.set({
-      detail: {},
-      id: 0,
-      jsonrpc: "2.0",
-      signature: "",
-      time: Date.now(),
-      version: "1.0",
-      versionnumber: "1.0",
-      result: {
-        status: true,
-        value: {
-          count: 1,
-          current: 1,
-          tokens: [
-            {
-              serial: "KEEP-ME",
-              tokentype: "hotp",
-              active: true,
-              revoked: false,
-              locked: false,
-              description: "",
-              failcount: 0,
-              maxfail: 10,
-              container_serial: "C-X",
-              user_realm: "r1",
-              username: "alice",
-              resolver: ""
-            }
-          ]
-        }
-      }
-    } as any);
+    tokenServiceMock.userTokenResource.value.set(
+      MockPiResponse.fromValue<Tokens>({
+        count: 1,
+        current: 1,
+        tokens: [
+          {
+            serial: "KEEP-ME",
+            tokentype: "hotp",
+            active: true,
+            revoked: false,
+            locked: false,
+            description: "",
+            failcount: 0,
+            maxfail: 10,
+            container_serial: "C-X",
+            user_realm: "r1",
+            username: "alice",
+            resolver: ""
+          }
+        ] as TokenDetails[]
+      })
+    );
     fixture.detectChanges();
-    expect(component.dataSource.data.map((t: any) => t.serial)).toEqual(["KEEP-ME"]);
+    expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
 
-    tokenServiceMock.userTokenResource.value.set(undefined as any);
+    tokenServiceMock.userTokenResource.value.set(undefined);
     fixture.detectChanges();
 
-    expect(component.dataSource.data.map((t: any) => t.serial)).toEqual(["KEEP-ME"]);
+    expect(component.dataSource.data.map((t: ContainerDetailToken) => t.serial)).toEqual(["KEEP-ME"]);
   });
 
   it("handleFilterInput normalises and applies to dataSource and userTokenData", () => {
@@ -205,12 +184,12 @@ describe("UserDetailsTokenTableComponent", () => {
   });
 
   it("toggleActive calls service and triggers user reload", () => {
-    const token = {
+    const token: Partial<TokenDetails> = {
       serial: "S-123",
       active: true
-    } as any;
+    };
 
-    component.toggleActive(token);
+    component.toggleActive(token as TokenDetails);
 
     expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("S-123", true);
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
@@ -218,15 +197,15 @@ describe("UserDetailsTokenTableComponent", () => {
 
   it("resetFailCount calls service only when allowed", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    (auth as any).actionAllowed = jest.fn().mockReturnValue(true);
+    auth.actionAllowed = jest.fn().mockReturnValue(true);
 
-    const token = {
+    const token: Partial<TokenDetails> = {
       serial: "X",
       revoked: false,
       locked: false
-    } as any;
+    };
 
-    component.resetFailCount(token);
+    component.resetFailCount(token as TokenDetails);
 
     expect(tokenServiceMock.resetFailCount).toHaveBeenCalledWith("X");
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);

@@ -18,31 +18,31 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { PolicyDetail } from "@services/policies/policies.service";
 import { KeywordFilterGenericComponent } from "./keyword-filter-generic.component";
 
 describe("KeywordFilterGenericComponent", () => {
-  let component: KeywordFilterGenericComponent<any>;
-  let fixture: ComponentFixture<KeywordFilterGenericComponent<any>>;
+  let component: KeywordFilterGenericComponent<PolicyDetail>;
+  let fixture: ComponentFixture<KeywordFilterGenericComponent<PolicyDetail>>;
   let mockInput: HTMLInputElement;
 
   /**
    * Helper to create valid FilterOptions that satisfy the TypeScript interface.
    */
   const createOption = (key: string, label: string) =>
-    new FilterOption<any>({
+    new FilterOption<PolicyDetail>({
       key,
       label,
       matches: () => true // Default mock logic for UI-focused tests
     });
 
-  const mockOptions: FilterOption<any>[] = [createOption("name", "Name"), createOption("active", "Active")];
+  const mockOptions: FilterOption<PolicyDetail>[] = [createOption("name", "Name"), createOption("active", "Active")];
 
-  const advancedOptions: FilterOption<any>[] = [createOption("priority", "Priority")];
+  const advancedOptions: FilterOption<PolicyDetail>[] = [createOption("priority", "Priority")];
 
-  const mockFilterModel = new FilterValueGeneric<any>({
+  const mockFilterModel = new FilterValueGeneric<PolicyDetail>({
     availableFilters: [...mockOptions, ...advancedOptions]
   });
 
@@ -50,10 +50,10 @@ describe("KeywordFilterGenericComponent", () => {
     mockInput = document.createElement("input");
 
     await TestBed.configureTestingModule({
-      imports: [KeywordFilterGenericComponent, NoopAnimationsModule]
+      imports: [KeywordFilterGenericComponent]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(KeywordFilterGenericComponent);
+    fixture = TestBed.createComponent(KeywordFilterGenericComponent) as ComponentFixture<KeywordFilterGenericComponent<PolicyDetail>>;
     component = fixture.componentInstance;
 
     /**
@@ -93,7 +93,7 @@ describe("KeywordFilterGenericComponent", () => {
       fixture.detectChanges();
 
       expect(outputSpy).toHaveBeenCalled();
-      const emittedValue = outputSpy.mock.calls[0][0] as FilterValueGeneric<any>;
+      const emittedValue = outputSpy.mock.calls[0][0] as FilterValueGeneric<PolicyDetail>;
       expect(emittedValue.hasKey("name")).toBe(true);
     });
 

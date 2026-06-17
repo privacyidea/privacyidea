@@ -30,15 +30,16 @@
               type="text"
               class="machine-resolver-name-input"
               placeholder="Name"
-              [ngModel]="newMachineResolver().resolvername"
-              (ngModelChange)="onResolvernameChange($event)"
+              [value]="newMachineResolver().resolvername"
+              (input)="onResolvernameChange($event.target['value'])"
               (click)="$event.stopPropagation(); panel.expanded = true"
-              (keydown)="$event.stopPropagation()"
-              #nameInput="ngModel"
-              pattern="^[a-zA-Z0-9._-]*$"
-              required />
-            @if (nameInput.errors?.['pattern']) {
-              <mat-error i18n style="font-size: 10px;">Invalid characters.</mat-error>
+              (keydown)="$event.stopPropagation()" />
+            @if (nameHasPatternError()) {
+              <mat-error
+                i18n
+                style="font-size: 10px"
+                >Invalid characters.</mat-error
+              >
             }
           </div>
         } @else {
@@ -85,15 +86,15 @@
         <app-machine-resolver-hosts-tab
           [isEditMode]="true"
           [machineResolverData]="newMachineResolver().data"
-          (onNewData)="onNewData($event)"
-          (onNewValidator)="onNewValidator($event)" />
+          (newData)="onNewData($event)"
+          (newValidator)="onNewValidator($event)" />
       }
       @case ("ldap") {
         <app-machine-resolver-ldap-tab
           [isEditMode]="true"
           [machineResolverData]="newMachineResolver().data"
-          (onNewData)="onNewData($event)"
-          (onNewValidator)="onNewValidator($event)" />
+          (newData)="onNewData($event)"
+          (newValidator)="onNewValidator($event)" />
       }
       @default {
         <!-- Fallback for unknown types -->

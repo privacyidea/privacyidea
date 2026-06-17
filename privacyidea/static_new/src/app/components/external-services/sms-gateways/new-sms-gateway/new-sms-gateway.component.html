@@ -20,7 +20,7 @@
   <div
     #scrollContainer
     class="sms-gateway-page-container">
-    @if (isEditMode) {
+    @if (isEditMode()) {
       <h3
         class="margin-8"
         i18n>
@@ -35,12 +35,8 @@
     }
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="sticky-header">
+      class="sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="sticky-controls ali-center">
         <button
           (click)="onCancel()"
@@ -50,7 +46,7 @@
         </button>
         <button
           (click)="save()"
-          [disabled]="smsForm.invalid || parametersForm.invalid"
+          [disabled]="!smsForm().valid() || !parametersValid()"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
@@ -60,29 +56,28 @@
     </div>
 
     <div class="sms-gateway-content">
-      <form
-        [formGroup]="smsForm"
-        class="sms-gateway-form">
-
+      <div class="sms-gateway-form">
         <div class="flex-row gap-16 margin-bottom-16">
           <mat-form-field
             appearance="fill"
             class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <app-clearable-input
-              (onClick)="smsForm.get('name')?.setValue('')"
-              [showClearButton]="!isEditMode && !!smsForm.get('name')?.value">
+              (clearButtonClick)="smsModel.update(m => ({...m, name: ''}))"
+              [showClearButton]="!isEditMode() && !!smsModel().name">
               <input
-                formControlName="name"
+                [formField]="smsForm.name"
                 matInput
-                placeholder="mySmsGateway"
-                required />
+                placeholder="mySmsGateway" />
             </app-clearable-input>
-            @if (smsForm.get('name')?.hasError('required')) {
+            @if (smsForm.name().errors().some(e => e.kind === 'required')) {
               <mat-error i18n>Name is <strong>required</strong></mat-error>
             }
-            @if (smsForm.get('name')?.hasError('pattern')) {
-              <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+            @if (smsForm.name().errors().some(e => e.kind === 'pattern')) {
+              <mat-error i18n
+                >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
+                hyphens are allowed.
+              </mat-error>
             }
           </mat-form-field>
 
@@ -91,15 +86,16 @@
             class="input-width-l">
             <mat-label i18n>Provider Module</mat-label>
             <mat-select
-              formControlName="providermodule"
+              [value]="smsModel().providermodule"
+              (selectionChange)="smsModel.update(m => ({...m, providermodule: $event.value}))"
               required>
               @for (provider of providerEntries(); track provider.key) {
                 <mat-option [value]="provider.key">
-                  {{ provider.key.split('.').pop() }}
+                  {{ provider.key.split(".").pop() }}
                 </mat-option>
               }
             </mat-select>
-            @if (smsForm.get('providermodule')?.hasError('required')) {
+            @if (smsForm.providermodule().errors().some(e => e.kind === 'required')) {
               <mat-error i18n>Provider Module is <strong>required</strong></mat-error>
             }
           </mat-form-field>
@@ -110,34 +106,35 @@
           class="input-width-xl">
           <mat-label i18n>Description</mat-label>
           <app-clearable-input
-            (onClick)="smsForm.get('description')?.setValue('')"
-            [showClearButton]="!!smsForm.get('description')?.value">
+            (clearButtonClick)="smsModel.update(m => ({...m, description: ''}))"
+            [showClearButton]="!!smsModel().description">
             <input
-              formControlName="description"
+              [formField]="smsForm.description"
               matInput
               placeholder="some wise words" />
           </app-clearable-input>
         </mat-form-field>
-      </form>
+      </div>
 
       @if (selectedProvider()) {
         <h3 i18n>Parameters</h3>
-        <form
-          [formGroup]="parametersForm"
-          class="parameters-form">
+        <div class="parameters-form">
           @for (param of parameterEntries(); track param.key) {
             <mat-form-field
               [class.input-width-l]="param.key !== 'REGEXP' && param.value.type !== 'text'"
               [class.input-width-xl]="param.key === 'REGEXP' || param.value.type === 'text'"
-              [class.margin-bottom-64]="param.key === 'PROXY' && providermoduleSignal()
-            === 'privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider'"
+              [class.margin-bottom-64]="
+                param.key === 'PROXY' &&
+                smsModel().providermodule === 'privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider'
+              "
               appearance="fill"
               class="margin-bottom-16">
               <mat-label>{{ param.key }}</mat-label>
 
               @if (param.value.values) {
                 <mat-select
-                  [formControlName]="param.key"
+                  [value]="parametersModel()[param.key]"
+                  (selectionChange)="updateParameter(param.key, $event.value)"
                   [required]="param.value.required">
                   @for (val of param.value.values; track val) {
                     <mat-option [value]="val">
@@ -147,20 +144,22 @@
                 </mat-select>
               }
 
-              @if (!param.value.values && param.value.type === 'text') {
+              @if (!param.value.values && param.value.type === "text") {
                 <textarea
-                  [formControlName]="param.key"
+                  [value]="parametersModel()[param.key]"
+                  (input)="updateParameter(param.key, $any($event.target).value)"
                   [required]="param.value.required"
                   matInput
                   rows="2"></textarea>
               }
 
-              @if (!param.value.values && param.value.type !== 'text') {
+              @if (!param.value.values && param.value.type !== "text") {
                 <app-clearable-input
-                  (onClick)="parametersForm.get(param.key)?.setValue('')"
-                  [showClearButton]="!!parametersForm.get(param.key)?.value">
+                  (clearButtonClick)="clearParameter(param.key)"
+                  [showClearButton]="!!parametersModel()[param.key]">
                   <input
-                    [formControlName]="param.key"
+                    [value]="parametersModel()[param.key]"
+                    (input)="updateParameter(param.key, $any($event.target).value)"
                     [required]="param.value.required"
                     matInput />
                 </app-clearable-input>
@@ -168,12 +167,12 @@
 
               <mat-hint>{{ param.value.description }}</mat-hint>
 
-              @if (parametersForm.get(param.key)?.hasError('required')) {
+              @if (param.value.required && !parametersModel()[param.key]) {
                 <mat-error i18n>{{ param.key }} is <strong>required</strong></mat-error>
               }
             </mat-form-field>
           }
-        </form>
+        </div>
       }
 
       @if (selectedProvider()?.options_allowed) {
@@ -248,10 +247,11 @@
                   class="input-width-m">
                   <mat-label i18n>Option Name</mat-label>
                   <app-clearable-input
-                    (onClick)="newOptionKey = ''"
-                    [showClearButton]="!!newOptionKey">
+                    (clearButtonClick)="newOptionKey.set('')"
+                    [showClearButton]="!!newOptionKey()">
                     <input
-                      [(ngModel)]="newOptionKey"
+                      [value]="newOptionKey()"
+                      (input)="newOptionKey.set($any($event.target).value)"
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
@@ -267,10 +267,11 @@
                   class="input-width-m">
                   <mat-label i18n>Value</mat-label>
                   <app-clearable-input
-                    (onClick)="newOptionValue = ''"
-                    [showClearButton]="!!newOptionValue">
+                    (clearButtonClick)="newOptionValue.set('')"
+                    [showClearButton]="!!newOptionValue()">
                     <input
-                      [(ngModel)]="newOptionValue"
+                      [value]="newOptionValue()"
+                      (input)="newOptionValue.set($any($event.target).value)"
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
@@ -284,7 +285,7 @@
                 <div class="add-button">
                   <button
                     (click)="addOption()"
-                    [disabled]="!newOptionKey"
+                    [disabled]="!newOptionKey()"
                     color="primary"
                     mat-icon-button>
                     <mat-icon>add</mat-icon>
@@ -373,10 +374,11 @@
                   class="input-width-m">
                   <mat-label i18n>Header Name</mat-label>
                   <app-clearable-input
-                    (onClick)="newHeaderKey = ''"
-                    [showClearButton]="!!newHeaderKey">
+                    (clearButtonClick)="newHeaderKey.set('')"
+                    [showClearButton]="!!newHeaderKey()">
                     <input
-                      [(ngModel)]="newHeaderKey"
+                      [value]="newHeaderKey()"
+                      (input)="newHeaderKey.set($any($event.target).value)"
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
@@ -392,10 +394,11 @@
                   class="input-width-m">
                   <mat-label i18n>Value</mat-label>
                   <app-clearable-input
-                    (onClick)="newHeaderValue = ''"
-                    [showClearButton]="!!newHeaderValue">
+                    (clearButtonClick)="newHeaderValue.set('')"
+                    [showClearButton]="!!newHeaderValue()">
                     <input
-                      [(ngModel)]="newHeaderValue"
+                      [value]="newHeaderValue()"
+                      (input)="newHeaderValue.set($any($event.target).value)"
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
@@ -409,7 +412,7 @@
                 <div class="flex ali-center just-center">
                   <button
                     (click)="addHeader()"
-                    [disabled]="!newHeaderKey"
+                    [disabled]="!newHeaderKey()"
                     color="primary"
                     mat-icon-button>
                     <mat-icon>add</mat-icon>
@@ -428,5 +431,3 @@
     </div>
   </div>
 </div>
-
-

@@ -29,7 +29,7 @@ describe("ContentService", () => {
   let events$: Subject<NavigationEnd>;
   let mockRouter: {
     url: string;
-    events: any;
+    events: Subject<NavigationEnd>;
     navigateByUrl: jest.Mock<Promise<boolean>, [string]>;
   };
 
@@ -42,7 +42,7 @@ describe("ContentService", () => {
     events$ = new Subject<NavigationEnd>();
     mockRouter = {
       url: "/start",
-      events: events$.asObservable(),
+      events: events$,
       navigateByUrl: jest.fn(async (url: string) => {
         emitNav(url);
         return true;
@@ -50,7 +50,7 @@ describe("ContentService", () => {
     };
 
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), { provide: Router, useValue: mockRouter }]
+      providers: [provideHttpClient(), ContentService, { provide: Router, useValue: mockRouter }]
     });
 
     service = TestBed.inject(ContentService);

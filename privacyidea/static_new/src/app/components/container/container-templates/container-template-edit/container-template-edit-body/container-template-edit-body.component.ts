@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, model } from "@angular/core";
+import { Component, computed, model, viewChildren } from "@angular/core";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatIcon } from "@angular/material/icon";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { TemplateAddedTokenRowComponent } from "@components/container/container-templates/dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
+import { TemplateAddedTokenRowComponent } from "@components/container/container-templates/container-template-edit-page/template-added-token-row/template-added-token-row.component";
 import { ContainerTemplate } from "@services/container/container.service";
 import { TokenTypeKey } from "@services/token/token.service";
 
@@ -37,19 +37,28 @@ export class ContainerTemplateEditBodyComponent {
   readonly availableTokenTypes = model.required<string[]>();
 
   protected readonly tokens = computed(() => this.template().template_options?.tokens || []);
+  protected readonly tokenRows = viewChildren(TemplateAddedTokenRowComponent);
 
-  protected onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
-    const updatedTokens = this.tokens().map((token, i) => {
-      if (i !== index) return token;
-      const updatedToken = { ...token, ...patch };
-      Object.keys(updatedToken).forEach((key) => {
-        if (updatedToken[key] === undefined) {
-          delete updatedToken[key];
-        }
-      });
-      return updatedToken;
-    });
-    this._updateTokens(updatedTokens);
+  // Pull each row's current payload at save time.
+  private _firstInvalidRow: TemplateAddedTokenRowComponent | null = null;
+  collectTokens(): TokenEnrollmentPayload[] | null {
+    this._firstInvalidRow = null;
+    const payloads: TokenEnrollmentPayload[] = [];
+    let hasInvalid = false;
+    for (const row of this.tokenRows()) {
+      const payload = row.getCurrentPayload();
+      if (payload === null) {
+        hasInvalid = true;
+        if (!this._firstInvalidRow) this._firstInvalidRow = row;
+      } else if (!hasInvalid) {
+        payloads.push(payload);
+      }
+    }
+    return hasInvalid ? null : payloads;
+  }
+
+  scrollToFirstInvalid(): void {
+    this._firstInvalidRow?.scrollIntoView();
   }
 
   protected onDeleteToken(index: number) {
@@ -57,19 +66,17 @@ export class ContainerTemplateEditBodyComponent {
   }
 
   protected onAddToken(tokenType: string) {
-    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
-    this._updateTokens(updatedTokens);
+    this._updateTokens([...this.tokens(), { type: tokenType as TokenTypeKey }]);
   }
 
   private _updateTokens(tokens: TokenEnrollmentPayload[]) {
-    const editedTemplate: ContainerTemplate = {
+    this.template.set({
       ...this.template(),
       template_options: {
         ...this.template().template_options,
         tokens
       }
-    };
-    this.template.set(editedTemplate);
+    });
   }
 
   protected _toTitleCase(str: string): string {

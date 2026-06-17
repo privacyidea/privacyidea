@@ -16,18 +16,22 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (!wizard) {
+@if (!wizard()) {
   <div class="flex-column">
     @if (twoStep() !== "disabled") {
       <mat-checkbox
-        [formControl]="twoStepControl"
+        [checked]="twoStepEnabled()"
+        [disabled]="twoStepDisabled()"
+        (change)="twoStepEnabled.set($event.checked)"
         class="margin-bottom-16"
         i18n>
         Use two-step enrollment with the privacyIDEA Authenticator App.
       </mat-checkbox>
     }
     <mat-checkbox
-      [formControl]="generateOnServerFormControl"
+      [checked]="generateOnServer()"
+      [disabled]="generateOnServerDisabled()"
+      (change)="generateOnServer.set($event.checked)"
       class="margin-bottom-16"
       i18n>
       Generate the OTP key on the server and show a QR code to scan.
@@ -37,24 +41,24 @@
         <mat-form-field class="input-width-l">
           <mat-label>OTP Key</mat-label>
           <input
-            [formControl]="otpKeyFormControl"
+            [formField]="otpKeyForm"
             matInput
             placeholder="Enter OTP key" />
-          @if (otpKeyFormControl.hasError("required")) {
+          @if (otpKeyForm().errors().some(e => e.kind === 'required') && otpKeyForm().touched()) {
             <mat-error>OTP key is <strong>required</strong></mat-error>
           }
-          @if (otpKeyFormControl.hasError("minlength")) {
+          @if (otpKeyForm().errors().some(e => e.kind === 'minlength') && otpKeyForm().touched()) {
             <mat-error>OTP key must be at least 16 characters</mat-error>
           }
         </mat-form-field>
       }
 
-      <mat-form-field
-        class="input-width-l">
+      <mat-form-field class="input-width-l">
         <mat-label>OTP length</mat-label>
         <mat-select
-          [formControl]="otpLengthFormControl"
-          [value]="otpLengthFormControl.value"
+          [value]="otpLength()"
+          [disabled]="otpLengthForm().disabled()"
+          (selectionChange)="otpLength.set($event.value)"
           required>
           @for (len of otpLengthOptions; track len) {
             <mat-option [value]="len">{{ len }}</mat-option>
@@ -64,12 +68,12 @@
         <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field
-        class="input-width-l">
+      <mat-form-field class="input-width-l">
         <mat-label>Hash algorithm</mat-label>
         <mat-select
-          [formControl]="hashAlgorithmControl"
-          [value]="hashAlgorithmControl.value"
+          [value]="hashAlgorithm()"
+          [disabled]="hashAlgorithmForm().disabled()"
+          (selectionChange)="hashAlgorithm.set($event.value)"
           required>
           @for (alg of hashAlgorithmOptions; track alg.value) {
             <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
@@ -80,12 +84,12 @@
       </mat-form-field>
     </div>
     <div class="flex-row gap-16">
-      <mat-form-field
-        class="input-width-l margin-top-16">
+      <mat-form-field class="input-width-l margin-top-16">
         <mat-label>Timestep</mat-label>
         <mat-select
-          [formControl]="timeStepControl"
-          [value]="timeStepControl.value"
+          [value]="timeStep()"
+          [disabled]="timeStepForm().disabled()"
+          (selectionChange)="timeStep.set($event.value)"
           required>
           @for (step of timeStepOptions; track step) {
             <mat-option [value]="step">{{ step }}</mat-option>

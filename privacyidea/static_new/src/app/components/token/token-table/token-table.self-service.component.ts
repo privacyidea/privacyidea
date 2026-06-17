@@ -18,7 +18,6 @@
  **/
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
@@ -28,9 +27,10 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { TokenTableComponent } from "./token-table.component";
 
@@ -43,13 +43,13 @@ import { TokenTableComponent } from "./token-table.component";
     MatInputModule,
     MatPaginatorModule,
     NgClass,
-    CopyButtonComponent,
+    CopyableComponent,
     MatCheckboxModule,
-    FormsModule,
     MatIconButton,
     MatIcon,
     MatTooltip,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    StickyHeaderDirective
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"

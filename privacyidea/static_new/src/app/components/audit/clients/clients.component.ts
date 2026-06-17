@@ -137,8 +137,8 @@ export class ClientsComponent {
       clientDataArr.forEach((client, idx) => {
         rows.push({
           application,
-          hostname: client.hostname,
-          ip: client.ip,
+          hostname: client.hostname ?? undefined,
+          ip: client.ip ?? undefined,
           lastseen: client.lastseen ? new Date(client.lastseen) : undefined,
           isFirst: idx === 0,
           rowspan: idx === 0 ? len : 1
@@ -160,7 +160,7 @@ export class ClientsComponent {
           if (property === "lastseen") {
             return item.lastseen ? item.lastseen.getTime() : 0;
           }
-          return (item as any)[property];
+          return item[property as keyof FlattenedClientRow] as string | number;
         };
         return dataSource;
       }
@@ -168,7 +168,7 @@ export class ClientsComponent {
     }
   });
 
-  filterValue: string = "";
+  filterValue = "";
 
   clearFilter(): void {
     this.filterValue = "";
@@ -180,7 +180,7 @@ export class ClientsComponent {
     this.clientDataSource().filter = this.filterValue.toLowerCase();
   }
 
-  protected showInAuditLog(column: string, value: string) {
+  showInAuditLog(column: string, value: string) {
     if (column === "application") {
       const userAgent = this._split_user_agent(value);
       this.auditService.auditFilter.set(

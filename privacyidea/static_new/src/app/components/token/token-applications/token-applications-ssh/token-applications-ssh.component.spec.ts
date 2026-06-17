@@ -25,14 +25,22 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { TokenApplicationsComponent } from "@components/token/token-applications/token-applications.component";
 import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { TokenService } from "@services/token/token.service";
-import { MockLocalService, MockMachineService, MockNotificationService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockLocalService,
+  MockMachineService,
+  MockNotificationService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { TokenApplicationsSshComponent } from "./token-applications-ssh.component";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { ContentService } from "@services/content/content.service";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
   let fixture: ComponentFixture<TokenApplicationsSshComponent>;
   let component: TokenApplicationsSshComponent;
 
-  let mockTokenService: Partial<TokenService> = {};
+  const mockTokenService: Partial<TokenService> = {};
   let machineServiceMock: MockMachineService;
 
   beforeEach(async () => {
@@ -45,6 +53,8 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
         { provide: MachineService, useClass: MockMachineService },
         { provide: TokenService, useValue: mockTokenService },
         { provide: TokenApplicationsComponent, useValue: TokenApplicationsComponent },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: ContentService, useClass: MockContentService },
         MockLocalService,
         MockNotificationService
       ]
@@ -52,7 +62,7 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
 
     fixture = TestBed.createComponent(TokenApplicationsSshComponent);
     component = fixture.componentInstance;
-    machineServiceMock = TestBed.inject(MachineService) as any;
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     fixture.detectChanges();
   });
 

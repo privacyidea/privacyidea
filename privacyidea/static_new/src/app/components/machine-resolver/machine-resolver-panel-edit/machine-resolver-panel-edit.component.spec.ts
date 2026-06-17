@@ -21,13 +21,13 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { MatExpansionPanel } from "@angular/material/expansion";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import {
-    HostsMachineResolver,
-    HostsMachineResolverData,
-    MachineResolverService
+  HostsMachineResolver,
+  HostsMachineResolverData,
+  MachineResolverService
 } from "@services/machine-resolver/machine-resolver.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -58,7 +58,6 @@ describe("MachineResolverPanelEditComponent", () => {
   let fixture: ComponentFixture<MachineResolverPanelEditComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let dialogServiceMock: MockDialogService;
-  let notificationServiceMock: MockNotificationService;
   let contentServiceMock: MockContentService;
   let pendingChangesService: MockPendingChangesService;
 
@@ -74,7 +73,7 @@ describe("MachineResolverPanelEditComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MachineResolverPanelEditComponent, NoopAnimationsModule],
+      imports: [MachineResolverPanelEditComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -96,7 +95,6 @@ describe("MachineResolverPanelEditComponent", () => {
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
@@ -278,7 +276,7 @@ describe("MachineResolverPanelEditComponent", () => {
   describe("handleCollapse", () => {
     it("just closes when not edited", () => {
       component.isEditMode.set(true);
-      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
       component.handleCollapse(panel);
       expect(component.isEditMode()).toBeFalsy();
       expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
@@ -288,7 +286,7 @@ describe("MachineResolverPanelEditComponent", () => {
       component.isEditMode.set(true);
       component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
       TestBed.tick();
-      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
       const dialogRefMock = new MockMatDialogRef();
       dialogRefMock.afterClosed.mockReturnValue(of(null));
       dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
@@ -303,7 +301,7 @@ describe("MachineResolverPanelEditComponent", () => {
       component.isEditMode.set(true);
       component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
       TestBed.tick();
-      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
       const dialogRefMock = new MockMatDialogRef();
       dialogRefMock.afterClosed.mockReturnValue(of("discard"));
       dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
@@ -318,7 +316,7 @@ describe("MachineResolverPanelEditComponent", () => {
       component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
       component.dataValidatorSignal.set(() => true);
       TestBed.tick();
-      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
       const dialogRefMock = new MockMatDialogRef();
       dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
       dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
@@ -335,7 +333,7 @@ describe("MachineResolverPanelEditComponent", () => {
       component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
       component.dataValidatorSignal.set(() => false);
       TestBed.tick();
-      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
       const dialogRefMock = new MockMatDialogRef();
       dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
       dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
@@ -351,7 +349,7 @@ describe("MachineResolverPanelEditComponent", () => {
       component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
       component.dataValidatorSignal.set(() => true);
       TestBed.tick();
-      const panel = { close: jest.fn(), open: jest.fn() } as any;
+      const panel = { close: jest.fn(), open: jest.fn() } as unknown as MatExpansionPanel;
       const dialogRefMock = new MockMatDialogRef();
       dialogRefMock.afterClosed.mockReturnValue(of("save-exit"));
       dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
@@ -408,7 +406,7 @@ describe("MachineResolverPanelEditComponent", () => {
 
     it("should clear signal when collapsed", () => {
       contentServiceMock.machineResolver.set("test");
-      component.handleCollapse({} as any);
+      component.handleCollapse({} as unknown as MatExpansionPanel);
       expect(contentServiceMock.machineResolver()).toBe("");
     });
   });
@@ -429,8 +427,8 @@ describe("MachineResolverPanelEditComponent", () => {
     });
 
     it("saveMachineResolver resolves true on successful post", async () => {
-      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockResolvedValue(undefined as any);
-      jest.spyOn(machineResolverServiceMock, "postMachineResolver").mockResolvedValue(undefined as any);
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockResolvedValue(undefined);
+      jest.spyOn(machineResolverServiceMock, "postMachineResolver").mockResolvedValue(undefined);
       component.isEditMode.set(true);
       const result = await component.saveMachineResolver();
       expect(result).toBe(true);
@@ -438,9 +436,7 @@ describe("MachineResolverPanelEditComponent", () => {
     });
 
     it("saveMachineResolver resolves false when test fails and user does not confirm", async () => {
-      jest
-        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
-        .mockRejectedValue(new Error("post-failed"));
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockRejectedValue(new Error("post-failed"));
       const dialogRef = new MockMatDialogRef();
       jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of(false));
       dialogServiceMock.openDialog = jest.fn().mockReturnValue(dialogRef);
@@ -449,9 +445,7 @@ describe("MachineResolverPanelEditComponent", () => {
     });
 
     it("saveMachineResolver resolves false when test fails with non post-failed error", async () => {
-      jest
-        .spyOn(machineResolverServiceMock, "postTestMachineResolver")
-        .mockRejectedValue(new Error("other-error"));
+      jest.spyOn(machineResolverServiceMock, "postTestMachineResolver").mockRejectedValue(new Error("other-error"));
       const result = await component.saveMachineResolver();
       expect(result).toBe(false);
     });

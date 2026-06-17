@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, EventEmitter, Input, Output, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, input, model, output } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -28,12 +27,12 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { AuthServiceInterface } from "@services/auth/auth.service";
+import { TokenDetails } from "@services/token/token.service";
 
 @Component({
   selector: "app-container-add-token",
   standalone: true,
   imports: [
-    FormsModule,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatCheckbox,
@@ -50,18 +49,18 @@ import { AuthServiceInterface } from "@services/auth/auth.service";
   templateUrl: "./container-add-token.component.html"
 })
 export class ContainerAddTokenComponent {
-  @Input({ required: true }) authService!: AuthServiceInterface;
-  @Input({ required: true }) showOnlyTokenNotInContainer!: WritableSignal<boolean>;
-  @Input({ required: true }) total!: number;
-  @Input({ required: true }) pageIndex!: number;
-  @Input({ required: true }) pageSize!: number;
-  @Input({ required: true }) filterValue!: string;
-  @Input({ required: true }) filterIsNotEmpty!: boolean;
-  @Input({ required: true }) tokenOptions!: any[];
-  @Input() inputClass = "margin-bottom-16 input-width-xl";
+  authService = input.required<AuthServiceInterface>();
+  showOnlyTokenNotInContainer = model.required<boolean>();
+  total = input.required<number>();
+  pageIndex = input.required<number>();
+  pageSize = input.required<number>();
+  filterValue = input.required<string>();
+  filterIsNotEmpty = input.required<boolean>();
+  tokenOptions = input.required<TokenDetails[]>();
+  inputClass = input("margin-bottom-16 input-width-xl");
 
-  @Output() pageEvent = new EventEmitter<PageEvent>();
-  @Output() filterInput = new EventEmitter<Event>();
-  @Output() clearFilter = new EventEmitter<void>();
-  @Output() addToken = new EventEmitter<any>();
+  pageEvent = output<PageEvent>();
+  filterInput = output<Event>();
+  clearFilter = output<void>();
+  addToken = output<TokenDetails>();
 }

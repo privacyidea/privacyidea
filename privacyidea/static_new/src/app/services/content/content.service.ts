@@ -39,6 +39,7 @@ export interface ContentServiceInterface {
   onPolicies: Signal<boolean>;
   onTokenDetails: Signal<boolean>;
   onUserDetails: Signal<boolean>;
+  onUserDetailsSelfService: Signal<boolean>;
   onUserRealms: Signal<boolean>;
   onTokensEnrollment: Signal<boolean>;
   onTokenEnrollmentLikely: Signal<boolean>;
@@ -57,6 +58,7 @@ export interface ContentServiceInterface {
   onContainersTemplates: Signal<boolean>;
   onContainersTemplatesCreate: Signal<boolean>;
   onContainersTemplatesDetails: Signal<boolean>;
+  onAnyContainerTemplatesRoute: Signal<boolean>;
   onEvents: Signal<boolean>;
   onConfigurationSystem: Signal<boolean>;
   onConfigurationTokenTypes: Signal<boolean>;
@@ -80,7 +82,7 @@ export interface ContentServiceInterface {
   machineResolverSelected: (resolverName: string) => void;
 }
 
-@Injectable({ providedIn: "root" })
+@Injectable()
 export class ContentService implements ContentServiceInterface {
   detailsUsername = signal("");
   router = inject(Router);
@@ -120,7 +122,7 @@ export class ContentService implements ContentServiceInterface {
   onTokenEnrollmentLikely = computed(
     () =>
       // allow token details for rollover
-      this.onTokensEnrollment() || this.onTokenDetails() || this.onTokensWizard() || this.onContainersTemplates()
+      this.onTokensEnrollment() || this.onTokenDetails() || this.onTokensWizard() || this.onAnyContainerTemplatesRoute()
   );
   onTokensChallenges = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
   onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
@@ -138,16 +140,13 @@ export class ContentService implements ContentServiceInterface {
     () => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
   );
   onAnyUsersRoute = computed(
-    () =>
-      this.routeUrl() === ROUTE_PATHS.USERS ||
-      this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+    () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
   onContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES);
-  onContainersTemplatesCreate = computed(
-    () => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE
-  );
-  onContainersTemplatesDetails = computed(() =>
-    this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)
+  onContainersTemplatesCreate = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE);
+  onContainersTemplatesDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS));
+  onAnyContainerTemplatesRoute = computed(
+    () => this.onContainersTemplates() || this.onContainersTemplatesCreate() || this.onContainersTemplatesDetails()
   );
   onEvents = computed(
     () =>
@@ -206,7 +205,12 @@ export class ContentService implements ContentServiceInterface {
       this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
   );
   onUsersResolvers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS);
-  onConfigurationPeriodicTasks = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+  onConfigurationPeriodicTasks = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ||
+      this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS)
+  );
   onSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
   onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
 

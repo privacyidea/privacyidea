@@ -1,8 +1,17 @@
 @use "styles";
 @use "table";
 
+:host {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: fit-content;
+}
+
 .actions-otp-pin-input {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .actions-visibility-button {
@@ -11,8 +20,7 @@
 
 .actions-pin-button {
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
-

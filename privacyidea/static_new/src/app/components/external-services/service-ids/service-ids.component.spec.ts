@@ -19,52 +19,57 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ServiceIdsComponent } from "@components/external-services/service-ids/service-ids.component";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockServiceIdService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
   let fixture: ComponentFixture<ServiceIdsComponent>;
-  let serviceIdServiceMock: any;
+  let serviceIdServiceMock: MockServiceIdService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
   let router: Router;
 
   beforeEach(async () => {
-    serviceIdServiceMock = {
-      serviceIds: signal([
-        { servicename: "service1", description: "desc1", id: 1 },
-        { servicename: "service2", description: "desc2", id: 2 }
-      ]),
-      deleteServiceId: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
-      imports: [ServiceIdsComponent, NoopAnimationsModule],
+      imports: [ServiceIdsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: ServiceIdService, useValue: serviceIdServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
+
+    serviceIdServiceMock = TestBed.inject(ServiceIdService) as unknown as MockServiceIdService;
+    serviceIdServiceMock.serviceIds.set([
+      { servicename: "service1", description: "desc1", id: 1 },
+      { servicename: "service2", description: "desc2", id: 2 }
+    ]);
 
     fixture = TestBed.createComponent(ServiceIdsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;

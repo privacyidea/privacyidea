@@ -28,8 +28,8 @@
           placeholder="Template Name"
           i18n-placeholder
           aria-label="Template Name"
-          [ngModel]="template().name"
-          (ngModelChange)="editTemplate({ name: $event })"
+          [value]="template().name"
+          (input)="editTemplate({ name: $any($event.target).value })"
           (keydown)="$event.stopPropagation()"
           [errorStateMatcher]="nameErrorMatcher" />
         @if (nameConflict()) {
@@ -56,7 +56,7 @@
         [labels]="containerTypesTitleCase()"
         [initialValue]="template().container_type"
         [allowDeselect]="true"
-        (onSelect)="editTemplate({ container_type: $event })"
+        (selected)="editTemplate({ container_type: $event })"
         [disabled]="hasToken()" />
     </div>
   </div>

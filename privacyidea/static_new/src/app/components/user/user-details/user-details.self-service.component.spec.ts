@@ -20,9 +20,8 @@ import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute } from "@angular/router";
-import { UserService } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import { MockUserService } from "@testing/mock-services";
 import { BehaviorSubject, map, of } from "rxjs";
 import { UserDetailsSelfServiceComponent } from "./user-details.self-service.component";
@@ -40,7 +39,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     });
 
     await TestBed.configureTestingModule({
-      imports: [UserDetailsSelfServiceComponent, BrowserAnimationsModule],
+      imports: [UserDetailsSelfServiceComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -88,7 +87,7 @@ describe("UserDetailsSelfServiceComponent", () => {
       userid: "u1",
       resolver: "res1",
       editable: true
-    } as any);
+    });
 
     const entries = component.detailsEntries();
     const keys = entries.map((e) => e.key);
@@ -110,11 +109,11 @@ describe("UserDetailsSelfServiceComponent", () => {
   it("detailsEntries normalizes null/empty values to '-'", () => {
     userServiceMock.user.set({
       username: "alice",
-      givenname: null as any,
+      givenname: null,
       surname: "  ",
       email: "",
       resolver: "res1"
-    } as any);
+    } as unknown as UserData);
 
     const map = new Map(component.detailsEntries().map((e) => [e.key, e.value]));
     expect(map.get("givenname")).toBe("-");
@@ -130,7 +129,7 @@ describe("UserDetailsSelfServiceComponent", () => {
       resolver: "res1",
       foo: "bar",
       editable: false
-    } as any);
+    } as unknown as UserData);
 
     const keys = component.detailsEntries().map((e) => e.key);
     expect(keys[0]).toBe("username");
@@ -139,7 +138,7 @@ describe("UserDetailsSelfServiceComponent", () => {
   });
 
   it("uses the localized label when available, falls back to the key otherwise", () => {
-    userServiceMock.user.set({ username: "alice", foo: "bar" } as any);
+    userServiceMock.user.set({ username: "alice", foo: "bar" } as unknown as UserData);
     const entries = component.detailsEntries();
     const usernameEntry = entries.find((e) => e.key === "username");
     const fooEntry = entries.find((e) => e.key === "foo");
@@ -150,9 +149,9 @@ describe("UserDetailsSelfServiceComponent", () => {
   it("normalizes undefined values to '-' and preserves array values as-is", () => {
     userServiceMock.user.set({
       username: "alice",
-      givenname: undefined as any,
-      email: ["a@example.com", "b@example.com"] as any
-    } as any);
+      givenname: undefined,
+      email: ["a@example.com", "b@example.com"]
+    } as unknown as UserData);
 
     const map = new Map(component.detailsEntries().map((e) => [e.key, e.value]));
     expect(map.get("givenname")).toBe("-");
@@ -161,7 +160,7 @@ describe("UserDetailsSelfServiceComponent", () => {
   });
 
   it("returns no entries when user data is empty/null", () => {
-    userServiceMock.user.set(null as any);
+    userServiceMock.user.set(null as unknown as UserData);
     expect(component.detailsEntries()).toEqual([]);
     const cols = component.detailsColumns();
     expect(cols.length).toBe(component.colCount());
@@ -182,7 +181,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     userServiceMock.user.set({
       username: "alice",
       email: "a@example.com"
-    } as any);
+    } as unknown as UserData);
     fixture.detectChanges();
 
     const host: HTMLElement = fixture.nativeElement;
@@ -195,16 +194,27 @@ describe("UserDetailsSelfServiceComponent", () => {
     expect(host.textContent).toContain("a@example.com");
   });
 
-  it("renders array values as a <ul> list when length > 1", () => {
+  it("renders array values collapsed by default and expands on toggle", () => {
     userServiceMock.user.set({
       username: "alice",
-      email: ["a@example.com", "b@example.com"] as any
-    } as any);
+      email: ["a@example.com", "b@example.com"]
+    } as unknown as UserData);
     fixture.detectChanges();
 
-    const ul = fixture.nativeElement.querySelector(".value ul");
+    const host: HTMLElement = fixture.nativeElement;
+    const ul = host.querySelector(".value ul");
     expect(ul).toBeTruthy();
-    expect(ul.querySelectorAll("li").length).toBe(2);
+    expect(ul!.querySelectorAll("li").length).toBe(1);
+
+    const toggle = host.querySelector(".value-toggle") as HTMLButtonElement;
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(host.querySelector(".value ul")!.querySelectorAll("li").length).toBe(2);
+    expect(host.querySelector(".value-toggle")!.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("detailsColumns splits entries according to colCount", () => {
@@ -215,7 +225,7 @@ describe("UserDetailsSelfServiceComponent", () => {
       email: "d",
       phone: "e",
       mobile: "f"
-    } as any);
+    } as unknown as UserData);
 
     expect(component.colCount()).toBe(3);
     let columns = component.detailsColumns();

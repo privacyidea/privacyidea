@@ -27,7 +27,6 @@ import {
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
 
-import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
@@ -54,7 +53,6 @@ import { lastValueFrom } from "rxjs";
     MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    FormsModule,
     MatButtonModule,
     MatIcon,
     MachineResolverHostsTabComponent,
@@ -169,7 +167,7 @@ export class MachineResolverPanelEditComponent {
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
-    } catch (error) {
+    } catch {
       return false;
     }
     this.isEditMode.set(false);
@@ -193,7 +191,7 @@ export class MachineResolverPanelEditComponent {
           if (result) {
             try {
               await this.machineResolverService.deleteMachineResolver(this.currentMachineResolver().resolvername);
-            } catch (error) {
+            } catch {
               return;
             }
           }

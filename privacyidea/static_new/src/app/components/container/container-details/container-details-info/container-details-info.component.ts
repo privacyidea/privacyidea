@@ -17,8 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, Input, linkedSignal, Signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, inject, input, linkedSignal, model, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -31,7 +30,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { forkJoin, Observable, switchMap } from "rxjs";
 
-export interface ContainerInfoDetail<T = any> {
+export interface ContainerInfoDetail<T = unknown> {
   value: T;
   keyMap: { label: string; key: string };
   isEditing: WritableSignal<boolean>;
@@ -48,7 +47,6 @@ export interface ContainerInfoDetail<T = any> {
     MatListItem,
     MatFormField,
     MatInput,
-    FormsModule,
     MatIconButton,
     MatLabel,
     MatIcon,
@@ -66,11 +64,11 @@ export class ContainerDetailsInfoComponent {
 
   protected readonly Object = Object;
   containerSerial = this.containerService.containerSerial;
-  @Input() infoData!: WritableSignal<ContainerInfoDetail[]>;
-  @Input() detailData!: WritableSignal<ContainerInfoDetail[]>;
-  @Input() isAnyEditingOrRevoked!: Signal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
+  infoData = input.required<ContainerInfoDetail[]>();
+  detailData = input.required<ContainerInfoDetail[]>();
+  isAnyEditingOrRevoked = input.required<boolean>();
+  isEditingInfo = model.required<boolean>();
+  isEditingUser = input.required<boolean>();
   newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
     source: this.isEditingInfo,
     computation: () => {
@@ -83,7 +81,7 @@ export class ContainerDetailsInfoComponent {
     this.newInfo.set({ key: "", value: "" });
   }
 
-  saveInfo(element: ContainerInfoDetail): void {
+  saveInfo(element: ContainerInfoDetail<Record<string, string>>): void {
     if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
       element.value[this.newInfo().key] = this.newInfo().value;
     }

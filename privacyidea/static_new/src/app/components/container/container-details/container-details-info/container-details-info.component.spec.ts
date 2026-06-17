@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
@@ -31,7 +31,7 @@ import { ContainerDetailsInfoComponent, ContainerInfoDetail } from "./container-
 describe("ContainerDetailsInfoComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsInfoComponent>;
   let component: ContainerDetailsInfoComponent;
-  let containerSvc: MockContainerService;
+  let containerService: MockContainerService;
 
   const makeInfoEl = (value: Record<string, string>): ContainerInfoDetail<Record<string, string>> => ({
     keyMap: { label: "Info", key: "info" },
@@ -60,7 +60,7 @@ describe("ContainerDetailsInfoComponent", () => {
       ]
     }).compileComponents();
 
-    containerSvc = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
 
     fixture = TestBed.createComponent(ContainerDetailsInfoComponent);
     component = fixture.componentInstance;
@@ -68,15 +68,13 @@ describe("ContainerDetailsInfoComponent", () => {
     const infoArr: ContainerInfoDetail<Record<string, string>>[] = [makeInfoEl({ a: "1" })];
     const detailArr: ContainerInfoDetail[] = [makeOtherEl("info", {})];
 
-    component.infoData = signal(infoArr as unknown as ContainerInfoDetail[]) as WritableSignal<ContainerInfoDetail[]>;
-    component.detailData = signal(detailArr as unknown as ContainerInfoDetail[]) as WritableSignal<
-      ContainerInfoDetail[]
-    >;
-    component.isAnyEditingOrRevoked = signal(false);
-    component.isEditingInfo = signal(false);
-    component.isEditingUser = signal(false);
+    fixture.componentRef.setInput("infoData", infoArr as unknown as ContainerInfoDetail[]);
+    fixture.componentRef.setInput("detailData", detailArr as unknown as ContainerInfoDetail[]);
+    fixture.componentRef.setInput("isAnyEditingOrRevoked", false);
+    fixture.componentRef.setInput("isEditingInfo", false);
+    fixture.componentRef.setInput("isEditingUser", false);
 
-    containerSvc.containerSerial.set("CONT-7");
+    containerService.containerSerial.set("CONT-7");
 
     fixture.detectChanges();
   });
@@ -92,15 +90,15 @@ describe("ContainerDetailsInfoComponent", () => {
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "b", value: "2" });
 
-    (containerSvc.setContainerInfos as jest.Mock).mockReturnValue(of({}));
+    (containerService.setContainerInfos as jest.Mock).mockReturnValue(of({}));
 
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1", b: "2" });
-    expect(containerSvc.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1", b: "2" });
+    expect(containerService.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1", b: "2" });
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerService.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("saveInfo without new pair still calls setContainerInfos and reloads", () => {
@@ -108,14 +106,14 @@ describe("ContainerDetailsInfoComponent", () => {
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "", value: "" });
 
-    (containerSvc.setContainerInfos as jest.Mock).mockReturnValue(of({}));
+    (containerService.setContainerInfos as jest.Mock).mockReturnValue(of({}));
 
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1" });
-    expect(containerSvc.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1" });
+    expect(containerService.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerService.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("deleteInfo calls service, marks info section as editing, and reloads", () => {
@@ -123,8 +121,8 @@ describe("ContainerDetailsInfoComponent", () => {
 
     component.deleteInfo("a");
 
-    expect(containerSvc.deleteInfo).toHaveBeenCalledWith("CONT-7", "a");
+    expect(containerService.deleteInfo).toHaveBeenCalledWith("CONT-7", "a");
     expect(component.isEditingInfo()).toBe(true);
-    expect(containerSvc.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
+    expect(containerService.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 });

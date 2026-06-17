@@ -19,7 +19,6 @@
 
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatFormField } from "@angular/material/form-field";
@@ -28,6 +27,7 @@ import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { assert } from "@utils/assert";
 import { ContainerCreateComponent } from "./container-create.component";
@@ -40,10 +40,10 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatIcon,
     MatOption,
     MatSelect,
-    FormsModule,
     MatIconButton,
     MatTooltip,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     NgClass,
     ContainerCreateFormComponent
   ],

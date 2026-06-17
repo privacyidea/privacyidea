@@ -21,9 +21,8 @@ from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_type,
                                          get_caconnector_types,
                                          save_caconnector, delete_caconnector)
-from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.localca import LocalCAConnector, ATTR
-from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR
+from privacyidea.lib.caconnectors.msca import MSCAConnector, ATTR as MS_ATTR, _grpc_available
 from privacyidea.lib.error import CAError, CSRError, CSRPending
 from privacyidea.lib.utils import int_to_hex
 from privacyidea.models import db, CAConnectorConfig
@@ -431,7 +430,7 @@ CONF_LAB = {MS_ATTR.HOSTNAME: "10.0.5.100",
             MS_ATTR.CA: "CA03.nilsca.com\\nilsca-CA03-CA"}
 
 
-@unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
+@unittest.skipUnless(_grpc_available,
                      "Can not test MSCA. grpc module seems not available.")
 class MSCATestCase(MyTestCase):
     """

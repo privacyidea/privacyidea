@@ -30,33 +30,38 @@
         class="input-width-l">
         <mat-label i18n>AppID</mat-label>
         <input
-          [(ngModel)]="formData()['u2f.appId']"
-          #appIdInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #appIdInput
+          (input)="updateFormData('u2f.appId', $any($event.target).value)"
+          [value]="formData()['u2f.appId']"
           matInput
           placeholder="https://pi.server.com"
           required
-          type="url">
-        @if (appIdInput.errors?.['required']) {
+          type="url" />
+        @if (appIdInput.validity.valueMissing) {
           <mat-error i18n>AppID is <strong>required</strong></mat-error>
         }
       </mat-form-field>
     </div>
     <span
       class="checkbox-hint"
-      i18n>The URL of your privacyIDEA installation.<br> This must be a valid FQDN with also a valid top level
-                     domain - otherwise you might receive a U2F Error 2 (Bad Request).<br></span>
+      i18n
+      >The URL of your privacyIDEA installation.<br />
+      This must be a valid FQDN with also a valid top level domain - otherwise you might receive a U2F Error 2 (Bad
+      Request).<br
+    /></span>
 
-    @if (formData()['u2f.appId'] && !formData()['u2f.appId'].startsWith('https:')) {
+    @if (formData()["u2f.appId"] && !formData()["u2f.appId"].startsWith("https:")) {
       <div
         class="alert alert-warning"
-        i18n>The AppID needs to start with "https".
+        i18n>
+        The AppID needs to start with "https".
       </div>
     }
-    @if (formData()['u2f.appId'] && formData()['u2f.appId'].endsWith('/')) {
+    @if (formData()["u2f.appId"] && formData()["u2f.appId"].endsWith("/")) {
       <div
         class="alert alert-warning"
-        i18n>The AppID must not end with a "/".
+        i18n>
+        The AppID must not end with a "/".
       </div>
     }
   </div>

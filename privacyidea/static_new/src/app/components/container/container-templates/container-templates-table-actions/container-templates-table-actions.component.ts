@@ -30,13 +30,14 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 
 @Component({
   selector: "app-container-templates-table-actions",
   standalone: true,
   templateUrl: "./container-templates-table-actions.component.html",
   styleUrl: "./container-templates-table-actions.component.scss",
-  imports: [MatButtonModule, MatIconModule]
+  imports: [MatButtonModule, MatIconModule, OverflowNavDirective]
 })
 export class ContainerTemplatesTableActionsComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);

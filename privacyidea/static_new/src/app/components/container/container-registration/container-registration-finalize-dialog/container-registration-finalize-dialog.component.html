@@ -19,7 +19,7 @@
 <app-dialog-wrapper
   [title]="dialogTitle"
   [showCancelButton]="true"
-  (close)="close()">
+  (wrapperClose)="close()">
   <mat-dialog-content>
     <div class="flex-row gap-16">
       @if (data()?.response?.result?.value?.container_url?.img) {

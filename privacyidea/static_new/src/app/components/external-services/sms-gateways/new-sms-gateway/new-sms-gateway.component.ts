@@ -16,22 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { CommonModule } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
-} from "@angular/core";
-import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, OnDestroy, computed, effect, inject, input, signal, untracked } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { FormField, disabled, form, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatOptionModule } from "@angular/material/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -43,23 +32,40 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   SmsGateway,
+  SmsGatewayPayload,
   SmsGatewayService,
   SmsGatewayServiceInterface,
-  SmsProvider
+  SmsProvider,
+  SmsProviderParameter
 } from "@services/sms-gateway/sms-gateway.service";
 
-type KeyValueRow = { key: string; value: string };
+interface KeyValueRow {
+  key: string;
+  value: string;
+}
+
+interface SmsFormModel {
+  name: string;
+  providermodule: string;
+  description: string;
+}
+
+const EMPTY_SMS_FORM: SmsFormModel = {
+  name: "",
+  providermodule: "",
+  description: ""
+};
 
 @Component({
   selector: "app-sms-edit-dialog",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
-    FormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -68,38 +74,65 @@ type KeyValueRow = { key: string; value: string };
     MatOptionModule,
     MatTableModule,
     ClearableInputComponent,
-    CommonModule
+    CommonModule,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-sms-gateway.component.html",
   styleUrl: "./new-sms-gateway.component.scss"
 })
-export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
+export class NewSmsGatewayComponent implements OnDestroy {
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly renderer = inject(Renderer2);
 
   protected data: SmsGateway | null = null;
   private gatewayName: string | null = null;
 
-  smsForm: FormGroup = this.formBuilder.group({
-    name: ["", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-    providermodule: ["", [Validators.required]],
-    description: [""]
+  isEditMode = signal(false);
+
+  smsModel = signal<SmsFormModel>({ ...EMPTY_SMS_FORM });
+
+  smsForm = form(this.smsModel, (f) => {
+    required(f.name);
+    pattern(f.name, /^[a-zA-Z0-9._-]*$/);
+    required(f.providermodule);
+    disabled(f.name, () => this.isEditMode());
   });
-  parametersForm: FormGroup = this.formBuilder.group({});
-  isEditMode = false;
+
+  /** Parameters for the selected provider: signal<Record<string, string>> */
+  parametersModel = signal<Record<string, string>>({});
+  /** Tracks which parameter keys are required */
+  private requiredParams = signal<Set<string>>(new Set());
+  /** Whether all required params are filled */
+  parametersValid = computed(() => {
+    const model = this.parametersModel();
+    for (const key of this.requiredParams()) {
+      if (!model[key]) return false;
+    }
+    return true;
+  });
+  /** Whether the parameters have been touched/dirtied */
+  parametersDirty = signal(false);
+
+  updateParameter(key: string, value: string): void {
+    this.parametersModel.update((m) => ({ ...m, [key]: value }));
+    this.parametersDirty.set(true);
+  }
+
+  clearParameter(key: string): void {
+    this.parametersModel.update((m) => ({ ...m, [key]: "" }));
+    this.parametersDirty.set(true);
+  }
 
   customOptions: Record<string, string> = {};
   customHeaders: Record<string, string> = {};
 
-  newOptionKey = "";
-  newOptionValue = "";
-  newHeaderKey = "";
-  newHeaderValue = "";
+  newOptionKey = signal("");
+  newOptionValue = signal("");
+  newHeaderKey = signal("");
+  newHeaderValue = signal("");
 
   optionDisplayedColumns: string[] = ["key", "value", "actions"];
   optionFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
@@ -114,16 +147,6 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
   selectedProvider = signal<SmsProvider | undefined>(undefined);
 
-  providermoduleSignal = toSignal(this.smsForm.get("providermodule")!.valueChanges, {
-    initialValue: this.data?.providermodule || ""
-  });
-
-  private _observer!: IntersectionObserver;
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
@@ -131,10 +154,10 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       this.gatewayName = params.get("name");
-      this.isEditMode = !!this.gatewayName;
+      this.isEditMode.set(!!this.gatewayName);
 
       // Load data for editing existing gateway
-      if (this.isEditMode && this.gatewayName) {
+      if (this.isEditMode() && this.gatewayName) {
         const gateways = this.smsGatewayService.smsGateways();
         const gatewayData = gateways.find((g) => g.name === this.gatewayName);
         if (gatewayData) {
@@ -146,7 +169,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
     effect(() => {
       const providers = this.providers();
-      const module = this.providermoduleSignal();
+      const module = this.smsModel().providermodule;
       if (providers && module) {
         untracked(() => this.onProviderChange(module));
       }
@@ -155,7 +178,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const gateways = this.smsGatewayService.smsGateways();
-      if (this.isEditMode && this.gatewayName && this.smsForm?.pristine) {
+      if (this.isEditMode() && this.gatewayName && untracked(() => !this.smsForm().dirty())) {
         const found = gateways.find((g) => g.name === this.gatewayName);
         if (found) {
           this.data = found;
@@ -166,17 +189,12 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   private initForm(): void {
-    this.smsForm.patchValue({
+    this.smsModel.set({
       name: this.data?.name || "",
       providermodule: this.data?.providermodule || "",
       description: this.data?.description || ""
     });
-    if (this.isEditMode) {
-      this.smsForm.get("name")?.disable();
-    } else {
-      this.smsForm.get("name")?.enable();
-    }
-    this.smsForm.markAsPristine();
+    this.smsForm().reset();
   }
 
   get optionRows(): KeyValueRow[] {
@@ -193,25 +211,25 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
 
   get hasChanges(): boolean {
     return (
-      !this.smsForm.pristine ||
-      !this.parametersForm?.pristine ||
+      this.smsForm().dirty() ||
+      this.parametersDirty() ||
       Object.keys(this.customOptions).length > 0 ||
       Object.keys(this.customHeaders).length > 0
     );
   }
 
-  providerEntries(): Array<{ key: string; value: SmsProvider }> {
+  providerEntries(): { key: string; value: SmsProvider }[] {
     const providersObj = this.providers() ?? {};
     return Object.entries(providersObj).map(([key, value]) => ({ key, value }));
   }
 
-  parameterEntries(): Array<{ key: string; value: any }> {
+  parameterEntries(): { key: string; value: SmsProviderParameter }[] {
     const paramsObj = this.selectedProvider()?.parameters ?? {};
     return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
   }
 
   get canSave(): boolean {
-    return this.smsForm.valid;
+    return this.smsForm().valid() && this.parametersValid();
   }
 
   onProviderChange(module: string): void {
@@ -221,27 +239,29 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     const provider = providers[module];
     this.selectedProvider.set(provider);
 
-    const group: Record<string, any> = {};
+    const newParams: Record<string, string> = {};
+    const newRequired = new Set<string>();
 
     if (provider && provider.parameters) {
       Object.entries(provider.parameters).forEach(([name, param]) => {
-        const validators = [];
-        if ((param as any).required) {
-          validators.push(Validators.required);
+        if (param.required) {
+          newRequired.add(name);
         }
 
         let initialValue = "";
-        if (this.isEditMode && this.data?.options) {
+        if (this.isEditMode() && this.data?.options) {
           initialValue = this.data.options[name] || "";
         }
 
-        group[name] = [initialValue, validators];
+        newParams[name] = initialValue;
       });
     }
 
-    this.parametersForm = this.formBuilder.group(group);
+    this.parametersModel.set(newParams);
+    this.requiredParams.set(newRequired);
+    this.parametersDirty.set(false);
 
-    if (this.isEditMode && this.data) {
+    if (this.isEditMode() && this.data) {
       const paramKeys = provider ? Object.keys(provider.parameters) : [];
 
       const nextCustomOptions: Record<string, string> = {};
@@ -256,43 +276,25 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   async save(): Promise<boolean> {
-    if (this.smsForm.invalid || this.parametersForm.invalid) {
+    if (!this.smsForm().valid() || !this.parametersValid()) {
       return false;
     }
-    const formValue = this.smsForm.getRawValue();
-    const paramValue = this.parametersForm.getRawValue();
+    const formValue = this.smsModel();
+    const paramValue = this.parametersModel();
 
-    const payload: any = {
+    const payload: SmsGatewayPayload = {
       name: formValue.name,
       description: formValue.description,
       module: formValue.providermodule
     };
 
-    if (this.isEditMode) {
-      payload.id = this.data?.id;
+    if (this.isEditMode()) {
+      payload["id"] = this.data?.id;
     }
 
     Object.entries(paramValue).forEach(([key, value]) => {
@@ -312,7 +314,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -347,36 +349,40 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   }
 
   addOption(): void {
-    if (this.newOptionKey) {
+    if (this.newOptionKey()) {
       this.customOptions = {
         ...this.customOptions,
-        [this.newOptionKey]: this.newOptionValue
+        [this.newOptionKey()]: this.newOptionValue()
       };
 
-      this.newOptionKey = "";
-      this.newOptionValue = "";
+      this.newOptionKey.set("");
+      this.newOptionValue.set("");
     }
   }
 
   deleteOption(key: string): void {
-    const { [key]: _, ...rest } = this.customOptions;
+    const rest = { ...this.customOptions };
+    delete rest[key];
     this.customOptions = rest;
   }
 
   addHeader(): void {
-    if (this.newHeaderKey) {
+    if (this.newHeaderKey()) {
       this.customHeaders = {
         ...this.customHeaders,
-        [this.newHeaderKey]: this.newHeaderValue
+        [this.newHeaderKey()]: this.newHeaderValue()
       };
 
-      this.newHeaderKey = "";
-      this.newHeaderValue = "";
+      this.newHeaderKey.set("");
+      this.newHeaderValue.set("");
     }
   }
 
   deleteHeader(key: string): void {
-    const { [key]: _, ...rest } = this.customHeaders;
+    const rest = { ...this.customHeaders };
+    delete rest[key];
     this.customHeaders = rest;
   }
+
+  protected readonly input = input;
 }

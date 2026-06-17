@@ -33,7 +33,7 @@
           subscriptSizing="dynamic">
           <mat-label i18n>Filter Token...</mat-label>
           <app-clearable-input
-            (onClick)="clearFilter()"
+            (clearButtonClick)="clearFilter()"
             [showClearButton]="filterInput.value !== ''">
             <input
               #filterInput
@@ -88,31 +88,34 @@
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
                     @if (
                       element.status !== "missing" &&
                       (element.token.username === authService.username() || authService.role() === "admin")
                     ) {
                       <a
                         (click)="contentService.tokenSelected(element.token.serial)"
+                        (keydown.enter)="contentService.tokenSelected(element.token.serial)"
                         attr.aria-label="{{ column.label }} Link"
-                        class="cursor-pointer">
+                        class="cursor-pointer"
+                        role="button"
+                        tabindex="0">
                         {{ element.token[column.key] }}
                       </a>
                     } @else {
                       <span> {{ element.token[column.key] }} </span>
                     }
-                    @if (element.status !== "missing") {
-                      <app-copy-button [copyText]="element.token.serial"></app-copy-button>
-                    }
-                  </div>
+                  </app-copyable>
                 }
                 @case ("active") {
                   @if (element.status !== "missing") {
                     <span
                       (click)="toggleActive(element.token)"
+                      (keydown.enter)="toggleActive(element.token)"
                       [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)">
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)"
+                      role="button"
+                      tabindex="0">
                       {{ tableUtilsService.getDisplayText(column.key, element.token) }}
                     </span>
                   }
@@ -123,11 +126,16 @@
                       @if (element.token[column.key]) {
                         <a
                           (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          (keydown.enter)="
+                            contentService.userSelected(element.token[column.key], element.token['user_realm'])
+                          "
                           attr.aria-label="{{ column.label }} Link"
-                          class="cursor-pointer">
+                          class="cursor-pointer"
+                          role="button"
+                          tabindex="0">
                           {{ element.token[column.key] }}
                         </a>
-                      } @else if (containerService.containerDetails().containers[0]?.users?.length === 1) {
+                      } @else if (containerHasSingleUser()) {
                         <button
                           mat-icon-button
                           color="primary"

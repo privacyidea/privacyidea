@@ -17,6 +17,7 @@
 @include meta.load-css("actions.scss");
 @include meta.load-css("overflow.scss");
 @include meta.load-css("snackbar.scss");
+@include meta.load-css("animations.scss");
 
 html,
 body {
@@ -69,6 +70,7 @@ body {
 
   --global-gap: 16px;
   --half-global-gap: calc(var(--global-gap) / 2);
+  --quarter-global-gap: calc(var(--global-gap) / 4);
 
   --light: #f3f3f3;
 
@@ -357,6 +359,18 @@ body.self-service-layout {
 
 .margin-right-4 {
   margin-right: 4px;
+}
+
+.margin-right-5 {
+  margin-right: 5px;
+}
+
+.margin-right-3 {
+  margin-right: 3px;
+}
+
+.margin-right-2 {
+  margin-right: 2px;
 }
 
 .margin-top-0 {

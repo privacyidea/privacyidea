@@ -1,0 +1,123 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { TitleCasePipe } from "@angular/common";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal
+} from "@angular/core";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormField } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { EventService } from "@services/event/event.service";
+import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
+
+@Component({
+  selector: "app-event-conditions-tab",
+  imports: [
+    ClearableInputComponent,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    TitleCasePipe,
+    MatTabGroup,
+    MatTab,
+    MatTabLabel,
+    EventConditionListComponent,
+    MatCardModule,
+    MatIcon
+  ],
+  templateUrl: "./event-conditions-tab.component.html",
+  styleUrl: "./event-conditions-tab.component.scss",
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class EventConditionsTabComponent {
+  protected readonly eventService = inject(EventService);
+  conditions = input.required<Record<string, string>>();
+  newConditions = output<Record<string, string>>();
+
+  selectedConditions = linkedSignal(() => this.conditions());
+  conditionsToBeAdded: Record<string, string> = {};
+  selectedGroupIndex = 0;
+  protected readonly Object = Object;
+
+  addToolTip = $localize`Add Condition`;
+  removeToolTip = $localize`Remove Condition`;
+
+  addedCondition = signal("");
+  searchTerm = signal("");
+
+  availableGroups = computed(() => Object.keys(this.eventService.moduleConditionsByGroup()));
+
+  remainingConditionsByGroup = linkedSignal({
+    source: () => ({
+      available: this.eventService.moduleConditionsByGroup(),
+      selected: this.selectedConditions(),
+      search: this.searchTerm()
+    }),
+    computation: ({ available, selected, search }) => {
+      // TODO: Can we simplify this logic?
+      // let remaining = deepCopy(available);
+      const remaining: Record<string, Record<string, string>> = {};
+      for (const [groupName, condition] of Object.entries(available)) {
+        remaining[groupName] = {};
+        for (const conditionName of Object.keys(condition)) {
+          if (conditionName in selected || !conditionName.toLowerCase().includes(search.toLowerCase())) {
+            // delete remaining[groupName][conditionName];
+          } else {
+            remaining[groupName][conditionName] = this.conditionsToBeAdded[conditionName] || "";
+          }
+        }
+      }
+      return remaining;
+    }
+  });
+
+  onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
+    this.conditionsToBeAdded[conditionName] = Array.isArray(value) ? value.join(",") : value;
+  }
+
+  onConditionValueChange(conditionName: string, value: string | string[]) {
+    const stringValue = Array.isArray(value) ? value.join(",") : value;
+    this.selectedConditions.set({
+      ...this.selectedConditions(),
+      [conditionName]: stringValue
+    });
+    this.newConditions.emit(this.selectedConditions());
+    if (stringValue === "") {
+      // notify selected condition list to focus the new empty input
+      this.addedCondition.set(conditionName);
+    }
+  }
+
+  removeCondition(conditionName: string) {
+    delete this.selectedConditions()[conditionName];
+    this.selectedConditions.set({ ...this.selectedConditions() }); // Trigger change detection
+    this.newConditions.emit(this.selectedConditions());
+  }
+}

@@ -6,7 +6,6 @@
   @include table.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
 }
 
-
 tr.example-detail-row {
   background: var(--mat-sys-surface-container-lowest);
   height: 0;
@@ -29,9 +28,13 @@ tr.example-detail-row td {
 }
 
 .expanded-detail {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.expanded-detail-content {
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  min-height: 0;
 }
 
 .expanded-token-list {
@@ -60,7 +63,6 @@ tr.example-detail-row td {
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
 }
-
 
 .realm-break {
   margin-top: 3px;

@@ -81,21 +81,26 @@
                 <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                   @switch (column.key) {
                     @case ("serial") {
-                      <div class="flex-row flex-nowrap ali-center">
+                      <app-copyable [copyText]="element.serial">
                         <a
                           (click)="contentService.tokenSelected(element.serial)"
-                          attr.aria-label="{{ column.label }} Link">
+                          (keydown.enter)="contentService.tokenSelected(element.serial)"
+                          attr.aria-label="{{ column.label }} Link"
+                          role="button"
+                          tabindex="0">
                           {{ element[column.key] }}
                         </a>
-                        <app-copy-button [copyText]="element.serial"></app-copy-button>
-                      </div>
+                      </app-copyable>
                     }
                     @case ("active") {
                       @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                         <span
                           (click)="toggleActive(element)"
+                          (keydown.enter)="toggleActive(element)"
                           [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                          role="button"
+                          tabindex="0">
                           {{ tableUtilsService.getDisplayText(column.key, element) }}
                         </span>
                       } @else {
@@ -108,7 +113,10 @@
                       @if (authService.actionAllowed("reset")) {
                         <span
                           (click)="resetFailCount(element)"
-                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                          (keydown.enter)="resetFailCount(element)"
+                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                          role="button"
+                          tabindex="0">
                           {{ tableUtilsService.getDisplayText(column.key, element) }}
                         </span>
                       } @else {
@@ -119,16 +127,16 @@
                     }
                     @case ("container_serial") {
                       @if (authService.actionAllowed("container_list")) {
-                        <div class="flex-row flex-nowrap ali-center">
+                        <app-copyable [copyText]="element[column.key]">
                           <a
                             (click)="contentService.navigateContainerDetails(element[column.key])"
-                            attr.aria-label="{{ column.label }} Link">
+                            (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
+                            attr.aria-label="{{ column.label }} Link"
+                            role="button"
+                            tabindex="0">
                             {{ element[column.key] }}
                           </a>
-                          @if (element.container_serial !== "") {
-                            <app-copy-button [copyText]="element[column.key]" />
-                          }
-                        </div>
+                        </app-copyable>
                       }
                     }
                     @default {

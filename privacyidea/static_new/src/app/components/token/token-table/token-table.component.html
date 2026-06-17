@@ -29,7 +29,7 @@
         class="token-table-filter">
         <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
-          (onClick)="tokenService.clearFilter()"
+          (clearButtonClick)="tokenService.clearFilter()"
           [showClearButton]="tokenService.tokenFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
@@ -152,21 +152,28 @@
                     [disabled]="totalLength() === 0" />
                 }
                 @case ("serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="tokenDetails.serial">
                     <a
                       (click)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
+                      (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
                       attr.aria-label="{{ column.label }} Link"
-                      class="flex ali-center">
+                      class="flex ali-center"
+                      role="button"
+                      tabindex="0">
                       {{ tokenDetails[column.key] }}
                     </a>
-                    <app-copy-button [copyText]="tokenDetails.serial" />
-                  </div>
+                  </app-copyable>
                 }
                 @case ("active") {
                   @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                     <span
                       (click)="toggleActive(tokenDetails)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
+                      (keydown.enter)="toggleActive(tokenDetails)"
+                      (keydown.space)="$event.preventDefault(); toggleActive(tokenDetails)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      role="button"
+                      tabindex="0">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
                   }
@@ -175,7 +182,11 @@
                   @if (authService.actionAllowed("reset")) {
                     <span
                       (click)="resetFailCount(tokenDetails)"
-                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
+                      (keydown.enter)="resetFailCount(tokenDetails)"
+                      (keydown.space)="$event.preventDefault(); resetFailCount(tokenDetails)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
+                      role="button"
+                      tabindex="0">
                       {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                     </span>
                   }
@@ -183,31 +194,46 @@
                 @case ("realms") {
                   <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
                     @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
-                      <span attr.aria-label="{{ column.label }} Link">
-                        {{ realm }}
-                      </span>
-                      <br class="realm-break" />
+                      <app-copyable [copyText]="realm">
+                        <span attr.aria-label="{{ column.label }} Link">
+                          {{ realm }}
+                        </span>
+                      </app-copyable>
                     }
                   </div>
                 }
                 @case ("container_serial") {
-                  <div class="flex-row flex-nowrap ali-center">
+                  <app-copyable [copyText]="tokenDetails.container_serial">
                     <a
                       (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                      attr.aria-label="{{ column.label }} Link">
+                      (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.navigateContainerDetails(tokenDetails.container_serial)
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
                       {{ tokenDetails[column.key] }}
                     </a>
-                    @if (tokenDetails.container_serial !== "") {
-                      <app-copy-button [copyText]="tokenDetails.container_serial" />
-                    }
-                  </div>
+                  </app-copyable>
                 }
                 @case ("username") {
-                  <a
-                    (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
-                    attr.aria-label="{{ column.label }} Link">
-                    {{ tokenDetails[column.key] }}
-                  </a>
+                  <app-copyable [copyText]="tokenDetails[column.key]">
+                    <a
+                      (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
+                      (keydown.enter)="
+                        contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                      "
+                      (keydown.space)="
+                        $event.preventDefault();
+                        contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                      "
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ tokenDetails[column.key] }}
+                    </a>
+                  </app-copyable>
                 }
                 @default {
                   @if (tableUtilsService.isLink(column.key)) {

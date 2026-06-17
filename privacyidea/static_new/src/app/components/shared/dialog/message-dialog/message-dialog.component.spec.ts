@@ -18,7 +18,6 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { MessageDialogComponent, MessageDialogData } from "./message-dialog.component";
 
@@ -28,7 +27,7 @@ describe("MessageDialogComponent", () => {
   let dialogRef: MatDialogRef<MessageDialogComponent>;
 
   const mockDialogRef = {
-    close: () => {}
+    close: jest.fn()
   };
 
   const dialogData: MessageDialogData = {
@@ -38,7 +37,7 @@ describe("MessageDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, MessageDialogComponent, DialogWrapperComponent],
+      imports: [MessageDialogComponent, DialogWrapperComponent],
       providers: [
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: dialogData }
@@ -69,7 +68,7 @@ describe("MessageDialogComponent", () => {
   it("should display the icon", () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, MessageDialogComponent],
+      imports: [MessageDialogComponent],
       providers: [
         { provide: MatDialogRef, useValue: mockDialogRef },
         {
@@ -96,7 +95,7 @@ describe("MessageDialogComponent", () => {
   it('should display "Information" as default title', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, MessageDialogComponent],
+      imports: [MessageDialogComponent],
       providers: [
         { provide: MatDialogRef, useValue: mockDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: {} }
@@ -111,14 +110,14 @@ describe("MessageDialogComponent", () => {
   });
 
   it("should close the dialog", () => {
-    (component as any).close();
+    (component as unknown as { close: () => void }).close();
     expect(dialogRef.close).toHaveBeenCalled();
   });
 
   it("should work with empty texts", () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, MessageDialogComponent],
+      imports: [MessageDialogComponent],
       providers: [
         { provide: MatDialogRef, useValue: mockDialogRef },
         {

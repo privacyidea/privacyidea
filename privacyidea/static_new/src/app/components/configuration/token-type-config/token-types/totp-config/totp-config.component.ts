@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -29,7 +28,7 @@ import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from 
 @Component({
   selector: "app-totp-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
   templateUrl: "./totp-config.component.html",
   styleUrl: "./totp-config.component.scss"
 })
@@ -39,12 +38,12 @@ export class TotpConfigComponent {
   protected readonly TOTP_TIME_SHIFT = TOTP_TIME_SHIFT;
   protected readonly TOTP_HASHLIB = TOTP_HASHLIB;
 
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string | number>>();
   totpSteps = input.required<string[]>();
   hashLibs = input.required<string[]>();
-  formDataChange = output<Record<string, any>>();
+  formDataChange = output<Record<string, string | number>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string | number): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

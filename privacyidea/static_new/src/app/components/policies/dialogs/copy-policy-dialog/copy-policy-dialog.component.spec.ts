@@ -19,9 +19,8 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ReactiveFormsModule } from "@angular/forms";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DialogAction } from "@models/dialog";
 import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
 
 class MockMatDialogRef {
@@ -35,9 +34,9 @@ class MockMatDialogRef {
 })
 class MockDialogWrapperComponent {
   title = input.required<string>();
-  actions = input.required<any[]>();
-  close = output<void>();
-  onAction = output<any>();
+  actions = input.required<DialogAction<"submit" | null>[]>();
+  closeDialog = output<void>();
+  actionEvent = output<"submit" | null>();
 }
 
 describe("CopyPolicyDialogComponent", () => {
@@ -48,7 +47,7 @@ describe("CopyPolicyDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CopyPolicyDialogComponent, NoopAnimationsModule, ReactiveFormsModule],
+      imports: [CopyPolicyDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: initialPolicyName }
@@ -56,7 +55,7 @@ describe("CopyPolicyDialogComponent", () => {
     })
       .overrideComponent(CopyPolicyDialogComponent, {
         set: {
-          imports: [MockDialogWrapperComponent, ReactiveFormsModule]
+          imports: [MockDialogWrapperComponent]
         }
       })
       .compileComponents();
@@ -69,28 +68,41 @@ describe("CopyPolicyDialogComponent", () => {
 
   describe("1. Validator Logic", () => {
     it("should reject unchanged names with 'notChanged' error", () => {
-      component.nameControl.setValue(initialPolicyName);
-      expect(component.nameControl.hasError("notChanged")).toBe(true);
-      expect(component.nameControl.valid).toBe(false);
+      component.nameSignal.set(initialPolicyName);
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "notChanged")
+      ).toBe(true);
+      expect(component.nameField().valid()).toBe(false);
     });
 
     it("should be valid when the name is changed", () => {
-      component.nameControl.setValue("Modified_Policy_Name");
-      expect(component.nameControl.hasError("notChanged")).toBe(false);
-      expect(component.nameControl.valid).toBe(true);
+      component.nameSignal.set("Modified_Policy_Name");
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "notChanged")
+      ).toBe(false);
+      expect(component.nameField().valid()).toBe(true);
     });
 
     it("should reject empty names (required)", () => {
-      component.nameControl.setValue("");
-      expect(component.nameControl.hasError("required")).toBe(true);
+      component.nameSignal.set("");
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "required")
+      ).toBe(true);
     });
   });
 
   describe("2. UI Actions State", () => {
     it("should disable confirm/submit action when the form is invalid", () => {
-      component.nameControl.setValue(initialPolicyName);
-      // Trigger statusChanges for the signal
-      component.nameControl.updateValueAndValidity();
+      component.nameSignal.set(initialPolicyName);
       fixture.detectChanges();
 
       const submitAction = component.actions().find((a) => a.value === "submit");
@@ -98,8 +110,7 @@ describe("CopyPolicyDialogComponent", () => {
     });
 
     it("should enable confirm/submit action when the form is valid", () => {
-      component.nameControl.setValue("New_Unique_Name");
-      component.nameControl.updateValueAndValidity();
+      component.nameSignal.set("New_Unique_Name");
       fixture.detectChanges();
 
       const submitAction = component.actions().find((a) => a.value === "submit");
@@ -110,14 +121,14 @@ describe("CopyPolicyDialogComponent", () => {
   describe("3. onAction Flow", () => {
     it("should return the new name only when valid on submit", () => {
       const newName = "Valid_New_Name";
-      component.nameControl.setValue(newName);
+      component.nameSignal.set(newName);
 
       component.onAction("submit");
       expect(dialogRef.close).toHaveBeenCalledWith(newName);
     });
 
     it("should return null on submit if the form is invalid", () => {
-      component.nameControl.setValue(initialPolicyName);
+      component.nameSignal.set(initialPolicyName);
 
       component.onAction("submit");
       expect(dialogRef.close).toHaveBeenCalledWith(null);

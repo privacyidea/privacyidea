@@ -47,7 +47,7 @@ describe("CopyButtonComponent", () => {
 
     fixture = TestBed.createComponent(CopyButtonComponent);
     component = fixture.componentInstance;
-    component.copyText = "hello";
+    fixture.componentRef.setInput("copyText", "hello");
     fixture.detectChanges();
   });
 

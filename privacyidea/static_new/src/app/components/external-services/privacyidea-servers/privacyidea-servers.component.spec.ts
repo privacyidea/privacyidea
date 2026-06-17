@@ -19,55 +19,58 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
-import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockPrivacyideaServerService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { PrivacyideaServersComponent } from "./privacyidea-servers.component";
 
 describe("PrivacyideaServersComponent", () => {
   let component: PrivacyideaServersComponent;
   let fixture: ComponentFixture<PrivacyideaServersComponent>;
-  let privacyideaServerServiceMock: any;
+  let privacyideaServerServiceMock: MockPrivacyideaServerService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
   let router: Router;
 
   beforeEach(async () => {
-    privacyideaServerServiceMock = {
-      privacyideaServers: signal([
-        { identifier: "server1", url: "http://s1", tls: true, description: "desc1" },
-        { identifier: "server2", url: "http://s2", tls: false, description: "desc2" }
-      ]),
-      remoteServerOptions: signal([
-        { identifier: "server1", url: "http://s1", tls: true, description: "desc1" },
-        { identifier: "server2", url: "http://s2", tls: false, description: "desc2" }
-      ]),
-      deletePrivacyideaServer: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
-      imports: [PrivacyideaServersComponent, NoopAnimationsModule],
+      imports: [PrivacyideaServersComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
+
+    privacyideaServerServiceMock = TestBed.inject(
+      PrivacyideaServerService
+    ) as unknown as MockPrivacyideaServerService;
+    privacyideaServerServiceMock.remoteServerOptions.set([
+      { identifier: "server1", url: "http://s1", tls: true, description: "desc1" },
+      { identifier: "server2", url: "http://s2", tls: false, description: "desc2" }
+    ] as unknown as PrivacyideaServer[]);
 
     fixture = TestBed.createComponent(PrivacyideaServersComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
@@ -109,7 +112,7 @@ describe("PrivacyideaServersComponent", () => {
   });
 
   it("should delete server after confirmation", () => {
-    const server = privacyideaServerServiceMock.privacyideaServers()[0];
+    const server = privacyideaServerServiceMock.remoteServerOptions()[0];
     component.deleteServer(server);
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     confirmClosed.next(true);

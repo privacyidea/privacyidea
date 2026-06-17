@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpHeaders, HttpParams, provideHttpClient } from "@angular/common/http";
-import { MockContentService, MockLocalService, MockPiResponse, MockTableUtilsService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockLocalService,
+  MockPiResponse,
+  MockTableUtilsService,
+  MockTokenService
+} from "@testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -31,6 +37,9 @@ import { LocalService } from "@services/local/local.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MachineService } from "./machine.service";
+import { PageEvent } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
+import { TokenService } from "@services/token/token.service";
 
 environment.proxyUrl = "/api";
 
@@ -51,6 +60,7 @@ describe("MachineService (with mock classes)", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: TokenService, useClass: MockTokenService },
         MachineService
       ]
     });
@@ -125,7 +135,10 @@ describe("MachineService (with mock classes)", () => {
 
     machineService.getAuthItem("ch", "h", "ssh/1").subscribe();
     const [, optsA] = httpStub.get.mock.calls.at(-1);
-    expect(httpStub.get).toHaveBeenLastCalledWith(`/api/machine/authitem/${encodeURIComponent("ssh/1")}`, expect.any(Object));
+    expect(httpStub.get).toHaveBeenLastCalledWith(
+      `/api/machine/authitem/${encodeURIComponent("ssh/1")}`,
+      expect.any(Object)
+    );
     expect(optsA.params.get("challenge")).toBe("ch");
     expect(optsA.params.get("hostname")).toBe("h");
 
@@ -161,10 +174,14 @@ describe("MachineService (with mock classes)", () => {
     httpStub.delete.mockReturnValue(of({}));
     await lastValueFrom(machineService.deleteToken("S/1", "M/1", "R/1", "ssh/1"));
     const [url] = (httpStub.delete as jest.Mock).mock.calls[0];
-    expect(url).toBe(`/api/machine/token/${encodeURIComponent("S/1")}/${encodeURIComponent("M/1")}/${encodeURIComponent("R/1")}/${encodeURIComponent("ssh/1")}`);
+    expect(url).toBe(
+      `/api/machine/token/${encodeURIComponent("S/1")}/${encodeURIComponent("M/1")}/${encodeURIComponent("R/1")}/${encodeURIComponent("ssh/1")}`
+    );
     await lastValueFrom(machineService.deleteTokenById("S2/1", "offline/1", "MT/1"));
     const [url2] = (httpStub.delete as jest.Mock).mock.calls[1];
-    expect(url2).toBe(`/api/machine/token/${encodeURIComponent("S2/1")}/${encodeURIComponent("offline/1")}/${encodeURIComponent("MT/1")}`);
+    expect(url2).toBe(
+      `/api/machine/token/${encodeURIComponent("S2/1")}/${encodeURIComponent("offline/1")}/${encodeURIComponent("MT/1")}`
+    );
   });
 
   it("getMachineTokens calls /machine/token with machineid and resolver", async () => {
@@ -199,14 +216,14 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("onPageEvent & onSortEvent update linked signals", () => {
-    machineService.onPageEvent({ pageSize: 25, pageIndex: 3 } as any);
+    machineService.onPageEvent({ pageSize: 25, pageIndex: 3 } as PageEvent);
     expect(machineService.pageSize()).toBe(25);
     expect(machineService.pageIndex()).toBe(3);
 
     machineService.onSortEvent({
       active: "hostname",
       direction: "desc"
-    } as any);
+    } as Sort);
     expect(machineService.sort()).toEqual({
       active: "hostname",
       direction: "desc"
@@ -214,6 +231,7 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("should not include empty filter values in filterParams", () => {
+    machineService.selectedApplicationType.set("ssh");
     machineService.machineFilter.set({
       filterMap: new Map([
         ["serial", ""],
@@ -221,7 +239,7 @@ describe("MachineService (with mock classes)", () => {
         ["hostname", "   "],
         ["machineid", "*"]
       ])
-    } as any);
+    } as unknown as FilterValue);
 
     const params = machineService.filterParams();
     expect(params).not.toHaveProperty("serial");
@@ -247,6 +265,7 @@ describe("MachineService resources and signals", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
+        { provide: TokenService, useClass: MockTokenService },
         MachineService
       ]
     });

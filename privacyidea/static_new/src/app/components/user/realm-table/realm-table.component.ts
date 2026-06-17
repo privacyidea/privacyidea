@@ -26,11 +26,11 @@ import {
   inject,
   linkedSignal,
   OnDestroy,
+  OnInit,
   signal,
   ViewChild,
   WritableSignal
 } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
@@ -59,6 +59,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -72,8 +73,11 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "@services/syste
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, lastValueFrom, take } from "rxjs";
 
-type ResolverWithPriority = { name: string; priority: number | null };
-type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
+interface ResolverWithPriority {
+  name: string;
+  priority: number | null;
+}
+type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
@@ -90,7 +94,7 @@ const columnKeysMap = [
   standalone: true,
   imports: [
     ClearableInputComponent,
-    FormsModule,
+    CopyableComponent,
     MatButtonModule,
     MatCell,
     MatCellDef,
@@ -119,7 +123,7 @@ const columnKeysMap = [
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
 })
-export class RealmTableComponent implements OnDestroy {
+export class RealmTableComponent implements OnDestroy, OnInit {
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -149,6 +153,9 @@ export class RealmTableComponent implements OnDestroy {
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
   isCreatingRealm = signal<boolean>(false);
+  newRealmNameHasPatternError = computed(
+    () => this.newRealmName().length > 0 && !/^[a-zA-Z0-9._-]*$/.test(this.newRealmName())
+  );
 
   // Edit Form State
   editingRealmName = signal<string | null>(null);
@@ -196,7 +203,7 @@ export class RealmTableComponent implements OnDestroy {
     const nodes = this.systemService.nodes();
     const selectedNodeUuid = this.selectedNode();
 
-    return Object.entries(realms as any).flatMap(([realmName, realm]: [string, any]) => {
+    return Object.entries(realms).flatMap(([realmName, realm]) => {
       const resolvers = realm.resolver ?? [];
 
       if (selectedNodeUuid !== ALL_NODES_VALUE) {
@@ -271,15 +278,13 @@ export class RealmTableComponent implements OnDestroy {
     }
   });
 
-  constructor() {}
-
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
         this.newRealmName() !== "" ||
         Object.keys(this.newRealmNodeResolvers()).length > 0 ||
         (this.editingRealmName() !== null &&
-          JSON.stringify(this.editNodeResolvers()) !== JSON.stringify(this.editOriginalNodeResolvers())),
+          JSON.stringify(this.editNodeResolvers()) !== JSON.stringify(this.editOriginalNodeResolvers()))
     );
     this.pendingChangesService.registerValidChanges(() => this.canSubmitNewRealm());
     this.pendingChangesService.registerSave(() => this.onCreateRealm());
@@ -336,7 +341,8 @@ export class RealmTableComponent implements OnDestroy {
     this.newRealmName.set(input.value);
   }
 
-  setNewRealmResolverPriority(nodeId: string, resolverName: string, priority: any): void {
+  setNewRealmResolverPriority(args: { nodeId: string; resolverName: string; priority?: string }): void {
+    const { nodeId, resolverName, priority } = args;
     const current = { ...this.newRealmNodeResolvers() };
     const list = current[nodeId] ?? [];
     const entry = list.find((r) => r.name === resolverName);
@@ -344,7 +350,7 @@ export class RealmTableComponent implements OnDestroy {
     const num = Number(priority);
     let value: number | null;
 
-    if (priority === null || priority === undefined || priority === "" || Number.isNaN(num)) {
+    if (priority === "" || Number.isNaN(num)) {
       value = null;
     } else {
       value = Math.min(999, Math.max(1, num));
@@ -464,7 +470,7 @@ export class RealmTableComponent implements OnDestroy {
     this.editNodeResolvers.set({ ...current, [nodeId]: updated });
   }
 
-  setEditResolverPriority(nodeId: string, resolverName: string, priority: any): void {
+  setEditResolverPriority(nodeId: string, resolverName: string, priority: string | null | undefined): void {
     const current = this.editNodeResolvers();
     const list = [...(current[nodeId] ?? [])];
     const entry = list.find((r) => r.name === resolverName);
@@ -588,9 +594,9 @@ export class RealmTableComponent implements OnDestroy {
     const dir = s.direction === "desc" ? -1 : 1;
     const key = s.active as keyof RealmRow;
 
-    return data.sort((a: any, b: any) => {
-      let va: any;
-      let vb: any;
+    return data.sort((a: RealmRow, b: RealmRow) => {
+      let va: number | string;
+      let vb: number | string;
       if (key === "isDefault") {
         va = a.isDefault ? 1 : 0;
         vb = b.isDefault ? 1 : 0;

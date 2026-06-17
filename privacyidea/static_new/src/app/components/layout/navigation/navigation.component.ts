@@ -18,7 +18,6 @@
  **/
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { AfterViewInit, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
@@ -41,7 +40,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 
 import { ROUTE_PATHS } from "@app/route_paths";
-import { OverflowNavDirective } from "./overflow-nav.directive";
+import { OverflowNavDirective } from "../../shared/directives/overflow-nav/overflow-nav.directive";
 
 export interface NavItem {
   icon: string;
@@ -73,7 +72,6 @@ export interface SubNavSection {
     RouterLink,
     NgClass,
     MatTooltipModule,
-    FormsModule,
     UserUtilsPanelComponent,
     NgTemplateOutlet,
     MatMenuModule,
@@ -95,7 +93,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly configService: ConfigServiceInterface = inject(ConfigService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
@@ -187,7 +185,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();
-    (event as any).stopImmediatePropagation?.();
+    event.stopImmediatePropagation?.();
     event.stopPropagation();
 
     this.router.navigate([route_path]);

@@ -689,11 +689,8 @@ class HttpSMSTestCase(MyTestCase):
             for x in mock_log.call_args_list:
                 print(x[0][0])
             call = [x[0][0] for x in mock_log.call_args_list if x[0][0].startswith('passing JSON data')][0]
-            # "passing JSON data: {'text': 'Hello: 7', 'phone': 123456,
-            #                      'receiverlist': [{'phone': 'one'}, {'phone': 'two'}]}"
-            self.assertIn('passing JSON data: {', call)
-            self.assertIn("'text': 'Hello: 7'", call)
-            self.assertRegex(call, r"passing JSON data: {.*'receiverlist': \[{.*'phone': '123456'.*}\].*}")
+            # JSON data content is hidden for security
+            self.assertIn('passing JSON data (content hidden for security)', call)
         delete_smsgateway(identifier)
 
 

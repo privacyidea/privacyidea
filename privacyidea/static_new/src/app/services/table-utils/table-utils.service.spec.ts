@@ -22,7 +22,10 @@ import { TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, JwtData } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
 import { TableUtilsService } from "./table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
 
 describe("TableUtilsService", () => {
   let service: TableUtilsService;
@@ -31,7 +34,12 @@ describe("TableUtilsService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [TableUtilsService, provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        TableUtilsService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     });
     service = TestBed.inject(TableUtilsService);
     authService = TestBed.inject(AuthService);
@@ -130,7 +138,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("active", { active: true })).toBe("highlight-true");
       expect(service.getClassForColumn("active", { active: false })).toBe("highlight-false");
       // Allow enable / disable
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -150,7 +158,7 @@ describe("TableUtilsService", () => {
       expect(service.getClassForColumn("failcount", { failcount: 2, maxfail: 5 })).toBe("highlight-warning");
       expect(service.getClassForColumn("failcount", { failcount: 5, maxfail: 5 })).toBe("highlight-false");
       // Allow reset failcount
-      let jwtData = {
+      const jwtData = {
         username: "",
         realm: "",
         nonce: "",
@@ -276,9 +284,13 @@ describe("TableUtilsService", () => {
   it.each([
     ["active", false, "highlight-true"],
     ["disabled", false, "highlight-false"],
+    ["damaged", false, "highlight-false"],
+    ["lost", false, "highlight-false"],
     ["other", false, ""],
     ["active", true, "highlight-true-clickable"],
     ["disabled", true, "highlight-false-clickable"],
+    ["damaged", true, "highlight-false-clickable"],
+    ["lost", true, "highlight-false-clickable"],
     ["other", true, ""]
   ])('getSpanClassForState("%s", %s) → %s', (state, clickable, expected) => {
     expect(service.getSpanClassForState(state, clickable)).toBe(expected);
@@ -290,5 +302,73 @@ describe("TableUtilsService", () => {
     ["mystery", "mystery"]
   ])('getDisplayTextForState("%s") → %s', (state, expected) => {
     expect(service.getDisplayTextForState(state)).toBe(expected);
+  });
+
+  describe("clientsideSortTokenData", () => {
+    const makeToken = (overrides: Partial<ContainerDetailToken> & Record<string, unknown> = {}) =>
+      ({
+        active: true,
+        container_serial: "C1",
+        count: 0,
+        count_window: 0,
+        description: "",
+        failcount: 0,
+        id: 0,
+        revoked: false,
+        serial: "",
+        sync_window: 0,
+        tokengroup: [],
+        tokentype: "hotp",
+        user_editable: false,
+        user_id: "",
+        user_realm: "",
+        username: "",
+        ...overrides
+      }) as unknown as ContainerDetailToken;
+
+    it("returns the input untouched when direction is empty", () => {
+      const data = [makeToken({ serial: "B" }), makeToken({ serial: "A" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "" });
+      expect(result).toBe(data);
+      expect(result.map((t) => t.serial)).toEqual(["B", "A"]);
+    });
+
+    it("sorts ascending by the chosen key (case-insensitive)", () => {
+      const data = [makeToken({ serial: "beta" }), makeToken({ serial: "Alpha" }), makeToken({ serial: "gamma" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
+      expect(result.map((t) => t.serial)).toEqual(["Alpha", "beta", "gamma"]);
+    });
+
+    it("sorts descending by the chosen key", () => {
+      const data = [
+        makeToken({ description: "banana" }),
+        makeToken({ description: "apple" }),
+        makeToken({ description: "cherry" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "description", direction: "desc" });
+      expect(result.map((t) => t.description)).toEqual(["cherry", "banana", "apple"]);
+    });
+
+    it("treats undefined / null values as empty strings (sorted first ascending)", () => {
+      const data = [
+        makeToken({ serial: "x", resolver: "zeta" }),
+        makeToken({ serial: "y", resolver: undefined }),
+        makeToken({ serial: "z", resolver: "alpha" })
+      ];
+      const result = service.clientsideSortTokenData(data, { active: "resolver", direction: "asc" });
+      expect(result.map((t) => t.serial)).toEqual(["y", "z", "x"]);
+    });
+
+    it("sorts numeric fields by their stringified value", () => {
+      const data = [makeToken({ failcount: 2 }), makeToken({ failcount: 10 }), makeToken({ failcount: 1 })];
+      const result = service.clientsideSortTokenData(data, { active: "failcount", direction: "asc" });
+      expect(result.map((t) => t.failcount)).toEqual([1, 10, 2]);
+    });
+
+    it("mutates and returns the same array reference", () => {
+      const data = [makeToken({ serial: "b" }), makeToken({ serial: "a" })];
+      const result = service.clientsideSortTokenData(data, { active: "serial", direction: "asc" });
+      expect(result).toBe(data);
+    });
   });
 });

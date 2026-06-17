@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { HOTP_HASHLIB, HOTP_OTP_LENGTH, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
@@ -31,13 +31,11 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
   let fixture: ComponentFixture<EnrollHotpComponent>;
-  let tokenService: MockTokenService;
   let authService: MockAuthService;
-  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollHotpComponent, BrowserAnimationsModule],
+      imports: [EnrollHotpComponent],
       providers: [
         { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService },
@@ -51,12 +49,8 @@ describe("EnrollHotpComponent", () => {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
 
-    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
-    jest.spyOn(component.additionalFormFieldsChange, "emit");
-    jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
   }
 
@@ -65,86 +59,35 @@ describe("EnrollHotpComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("emits additional fields and click handler on init", () => {
-    createAndInit();
-
-    expect(component.additionalFormFieldsChange.emit).toHaveBeenCalledTimes(1);
-    const fieldsArg = (component.additionalFormFieldsChange.emit as jest.Mock).mock.calls[0][0];
-    expect(Object.keys(fieldsArg)).toEqual(["twoStep", "generateOnServer", "otpLength", "otpKey", "hashAlgorithm"]);
-
-    expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
-  });
-
   it("Check default values are set correctly on init", () => {
     createAndInit();
 
-    expect(component.generateOnServerFormControl.value).toBe(true);
-    expect(component.generateOnServerFormControl.disabled).toBe(false);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
-    expect(component.otpLengthFormControl.value).toBe(6);
-    expect(component.otpLengthFormControl.disabled).toBe(false);
-    expect(component.hashAlgorithmFormControl.value).toBe("sha1");
-    expect(component.hashAlgorithmFormControl.disabled).toBe(false);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(false);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpKeyForm().disabled()).toBe(true);
+    expect(component.otpLength()).toBe(6);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha1");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
   });
 
-  it("Default values are also set correctly if config contains empty strings", () => {
+  it("Uses policy values for hashlib and otplen", () => {
     createAndInit();
-    const mockConfig = { [HOTP_HASHLIB]: "" };
-    systemService.systemConfig.set(mockConfig);
-
-    fixture = TestBed.createComponent(EnrollHotpComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-
-    expect(component.generateOnServerFormControl.value).toBe(true);
-    expect(component.generateOnServerFormControl.disabled).toBe(false);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
-    expect(component.otpLengthFormControl.value).toBe(6);
-    expect(component.otpLengthFormControl.disabled).toBe(false);
-    expect(component.hashAlgorithmFormControl.value).toBe("sha1");
-    expect(component.hashAlgorithmFormControl.disabled).toBe(false);
-  });
-
-  it("Default values from system config are used", () => {
-    createAndInit();
-    const mockConfig = {
-      [TOTP_HASHLIB]: "sha256",
-      [TOTP_TIME_STEP]: "60",
-      [HOTP_HASHLIB]: "sha512"
-    };
-    systemService.systemConfig.set(mockConfig);
-
-    fixture = TestBed.createComponent(EnrollHotpComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-
-    expect(component.hashAlgorithmFormControl.value).toBe("sha512");
-    expect(component.hashAlgorithmFormControl.disabled).toBe(false);
-  });
-
-  it("Uses policy values for hashlib and otplen over system config defaults", () => {
-    createAndInit();
-    const mockConfig = {
-      "hotp.hashlib": "sha512"
-    };
-    systemService.systemConfig.set(mockConfig);
     authService.rightsWithValues.set({ [HOTP_HASHLIB]: "sha256", [HOTP_OTP_LENGTH]: "8" });
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
 
     function checkPolicyEnforcedValues() {
-      expect(component.hashAlgorithmFormControl.value).toBe("sha256");
-      expect(component.hashAlgorithmFormControl.disabled).toBe(true);
-      expect(component.otpLengthFormControl.value).toBe(8);
-      expect(component.otpLengthFormControl.disabled).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha256");
+      expect(component.hashAlgorithmForm().disabled()).toBe(true);
+      expect(component.otpLength()).toBe(8);
+      expect(component.otpLengthForm().disabled()).toBe(true);
     }
 
     checkPolicyEnforcedValues();
 
-    // disable - enable all controls should not change policy-enforced values
     fixture.componentRef.setInput("disabled", true);
     fixture.detectChanges();
     checkPolicyEnforcedValues();
@@ -161,27 +104,29 @@ describe("EnrollHotpComponent", () => {
     TestBed.tick();
     fixture.detectChanges();
 
-    expect(component.generateOnServerFormControl.disabled).toBe(true);
-
-    component.generateOnServerFormControl.setValue(false);
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(true);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 
   it("toggles otpKey enablement & validators when generateOnServer changes", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(true);
 
-    component.generateOnServerFormControl.setValue(false);
-    expect(component.otpKeyFormControl.enabled).toBe(true);
+    component.generateOnServer.set(false);
+    fixture.detectChanges();
+    expect(component.otpKeyForm().disabled()).toBe(false);
 
-    component.otpKeyFormControl.setValue("");
-    component.otpKeyFormControl.markAsTouched();
-    expect(component.otpKeyFormControl.invalid).toBe(true);
+    component.otpKey.set("");
+    component.otpKeyForm().markAsTouched();
+    fixture.detectChanges();
+    expect(component.otpKeyForm().valid()).toBe(false);
 
-    component.generateOnServerFormControl.setValue(true);
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    component.generateOnServer.set(true);
+    fixture.detectChanges();
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 
   it("disables 2step control if policy hotp_2step is set to force", () => {
@@ -191,18 +136,12 @@ describe("EnrollHotpComponent", () => {
     TestBed.tick();
     fixture.detectChanges();
 
-    // 2-step checkbox should be present
-    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector(
-      'mat-checkbox[formcontrolname="twoStepControl"]'
-    );
-    expect(twoStepCheckbox).toBeDefined();
-
-    expect(component.twoStepControl.value).toBe(true);
-    expect(component.twoStepControl.disabled).toBe(true);
-    expect(component.generateOnServerFormControl.value).toBe(true);
-    expect(component.generateOnServerFormControl.disabled).toBe(true);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.twoStepEnabled()).toBe(true);
+    expect(component.twoStepDisabled()).toBe(true);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(true);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 
   it("enable 2step control if policy hotp_2step is set to allow", () => {
@@ -212,18 +151,12 @@ describe("EnrollHotpComponent", () => {
     TestBed.tick();
     fixture.detectChanges();
 
-    // 2-step checkbox should be present
-    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector(
-      'mat-checkbox[formcontrolname="twoStepControl"]'
-    );
-    expect(twoStepCheckbox).toBeDefined();
-
-    expect(component.twoStepControl.value).toBe(false);
-    expect(component.twoStepControl.enabled).toBe(true);
-    expect(component.generateOnServerFormControl.value).toBe(true);
-    expect(component.generateOnServerFormControl.enabled).toBe(true);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.twoStepEnabled()).toBe(false);
+    expect(component.twoStepDisabled()).toBe(false);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(false);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 
   it("selecting 2 step should select and disable generate on server input", () => {
@@ -233,26 +166,27 @@ describe("EnrollHotpComponent", () => {
     TestBed.tick();
     fixture.detectChanges();
 
-    // Set OTP Key
-    component.generateOnServerFormControl.setValue(false);
-    component.otpKeyFormControl.setValue("ABC123");
+    component.generateOnServer.set(false);
+    component.otpKey.set("ABC123");
+    fixture.detectChanges();
 
-    expect(component.twoStepControl.value).toBe(false);
-    expect(component.twoStepControl.enabled).toBe(true);
-    expect(component.generateOnServerFormControl.value).toBe(false);
-    expect(component.generateOnServerFormControl.enabled).toBe(true);
-    expect(component.otpKeyFormControl.value).toEqual("ABC123");
-    expect(component.otpKeyFormControl.disabled).toBe(false);
+    expect(component.twoStepEnabled()).toBe(false);
+    expect(component.twoStepDisabled()).toBe(false);
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.generateOnServerDisabled()).toBe(false);
+    expect(component.otpKey()).toEqual("ABC123");
+    expect(component.otpKeyForm().disabled()).toBe(false);
 
-    // Select 2-step should clear otp key and select generate on server
-    component.twoStepControl.setValue(true);
+    // Select 2-step should select generate on server (effect kicks in)
+    component.twoStepEnabled.set(true);
+    fixture.detectChanges();
+    TestBed.tick();
+    fixture.detectChanges();
 
-    expect(component.twoStepControl.value).toBe(true);
-    expect(component.twoStepControl.enabled).toBe(true);
-    expect(component.generateOnServerFormControl.value).toBe(true);
-    expect(component.generateOnServerFormControl.enabled).toBe(false);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.twoStepEnabled()).toBe(true);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 
   it("hide 2step input if policy hotp_2step is disabled", () => {
@@ -262,30 +196,24 @@ describe("EnrollHotpComponent", () => {
     TestBed.tick();
     fixture.detectChanges();
 
-    // 2-step checkbox should NOT be present
-    const twoStepCheckbox = fixture.debugElement.nativeElement.querySelector(
-      'mat-checkbox[formcontrolname="twoStepControl"]'
-    );
-    expect(twoStepCheckbox).toBeNull();
-
-    expect(component.twoStepControl.value).toBe(false);
-    expect(component.twoStepControl.enabled).toBe(true);
-    expect(component.generateOnServerFormControl.value).toBe(true);
-    expect(component.generateOnServerFormControl.enabled).toBe(true);
-    expect(component.otpKeyFormControl.value).toEqual("");
-    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.twoStepEnabled()).toBe(false);
+    expect(component.twoStepDisabled()).toBe(false);
+    expect(component.generateOnServer()).toBe(true);
+    expect(component.generateOnServerDisabled()).toBe(false);
+    expect(component.otpKey()).toEqual("");
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 
   it("calls enrollToken with server-generated key (default values respected)", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
-    component.generateOnServerFormControl.setValue(true);
-    component.otpLengthFormControl.setValue(8);
-    component.hashAlgorithmFormControl.setValue("sha256");
+    component.generateOnServer.set(true);
+    component.otpLength.set(8);
+    component.hashAlgorithm.set("sha256");
 
-    const basic = { realm: "r", username: "u" } as any;
-    const args = component.enrollmentArgsGetter(basic);
+    const basic = { realm: "r", username: "u" } as TokenEnrollmentData;
+    const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({
@@ -303,17 +231,18 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(false);
     createAndInit();
 
-    component.generateOnServerFormControl.setValue(false);
-    component.otpKeyFormControl.setValue("  ABC123  ");
+    component.generateOnServer.set(false);
+    component.otpKey.set("  ABCDEFGHIJKLMNOP  ");
+    fixture.detectChanges();
 
-    const basic = { foo: "bar" } as any;
-    const args = component.enrollmentArgsGetter(basic);
+    const basic = { foo: "bar" } as TokenEnrollmentData;
+    const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
       expect.objectContaining({
         type: "hotp",
         generateOnServer: false,
-        otpKey: "ABC123"
+        otpKey: "ABCDEFGHIJKLMNOP"
       })
     );
   });
@@ -327,10 +256,10 @@ describe("EnrollHotpComponent", () => {
         otpLength: 8,
         hashAlgorithm: "sha512"
       });
-      component.ngOnInit();
-      expect(component.generateOnServerFormControl.value).toBe(false);
-      expect(component.otpLengthFormControl.value).toBe(8);
-      expect(component.hashAlgorithmFormControl.value).toBe("sha512");
+      fixture.detectChanges();
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("sha512");
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -341,10 +270,10 @@ describe("EnrollHotpComponent", () => {
         otpLength: undefined,
         hashAlgorithm: undefined
       });
-      component.ngOnInit();
-      expect(component.generateOnServerFormControl.value).toBe(true);
-      expect(component.otpLengthFormControl.value).toBe(6);
-      expect(component.hashAlgorithmFormControl.value).toBe("sha1");
+      fixture.detectChanges();
+      expect(component.generateOnServer()).toBe(true);
+      expect(component.otpLength()).toBe(6);
+      expect(component.hashAlgorithm()).toBe("sha1");
     });
   });
 });

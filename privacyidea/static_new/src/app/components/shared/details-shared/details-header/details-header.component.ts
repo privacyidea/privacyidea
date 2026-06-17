@@ -16,25 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 
 @Component({
   selector: "app-details-header",
   standalone: true,
-  imports: [CopyButtonComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
-  templateUrl: "./details-header.component.html"
+  imports: [CopyableComponent, MatIcon, MatIconButton, MatTooltip, RouterLink],
+  templateUrl: "./details-header.component.html",
+  styleUrl: "./details-header.component.scss"
 })
 export class DetailsHeaderComponent {
-  @Input({ required: true }) serial!: string;
-  @Input() entityLabel = "Token";
-  @Input() showAuditButton = false;
-  @Input() auditRoute = "/audit";
-  @Input() auditTooltip = "Show in audit log";
+  serial = input.required<string>();
+  entityLabel = input("Token");
+  showAuditButton = input(false);
+  auditRoute = input("/audit");
+  auditTooltip = input("Show in audit log");
 
-  @Output() auditClick = new EventEmitter<void>();
+  auditClick = output<void>();
 }

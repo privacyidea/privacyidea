@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-export type DialogAction<R = any> = {
+export interface DialogAction<R = unknown> {
   type:
     | "confirm" // Confirmation/Save/Submit
     | "cancel" // Rejection/Discard/Return
@@ -29,4 +29,4 @@ export type DialogAction<R = any> = {
   icon?: string;
   primary?: boolean;
   className?: string;
-};
+}

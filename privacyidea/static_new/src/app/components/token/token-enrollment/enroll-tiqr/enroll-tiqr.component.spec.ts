@@ -20,8 +20,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { EnrollTiqrComponent } from "./enroll-tiqr.component";
+import { SystemService } from "@services/system/system.service";
+import { MockSystemService, MockTokenService } from "@testing/mock-services";
+import { TokenService } from "@services/token/token.service";
 
 describe("EnrollTiqrComponent", () => {
   let component: EnrollTiqrComponent;
@@ -29,8 +31,13 @@ describe("EnrollTiqrComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollTiqrComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollTiqrComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollTiqrComponent);

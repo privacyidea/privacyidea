@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { BreakpointObserver } from "@angular/cdk/layout";
-import { Component, computed, inject, Signal } from "@angular/core";
+import { Component, computed, inject, signal, Signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { MatIcon } from "@angular/material/icon";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { map } from "rxjs";
@@ -26,13 +27,29 @@ import { map } from "rxjs";
 @Component({
   selector: "app-user-details-self-service",
   standalone: true,
-  imports: [ScrollToTopDirective],
+  imports: [ScrollToTopDirective, MatIcon],
   templateUrl: "./user-details.self-service.component.html",
   styleUrl: "./user-details.component.scss"
 })
 export class UserDetailsSelfServiceComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   private breakpointObserver = inject(BreakpointObserver);
+
+  expandedKeys = signal<Set<string>>(new Set<string>());
+
+  isExpanded(key: string): boolean {
+    return this.expandedKeys().has(key);
+  }
+
+  toggleExpanded(key: string): void {
+    const next = new Set(this.expandedKeys());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedKeys.set(next);
+  }
 
   private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
   private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
@@ -71,7 +88,7 @@ export class UserDetailsSelfServiceComponent {
   userData = this.userService.user;
 
   detailsEntries = computed(() => {
-    const data = this.userData() ?? {};
+    const data: Record<string, unknown> = this.userData() ?? {};
     const result: { key: string; label: string; value: unknown }[] = [];
 
     for (const key of this.detailOrder) {
@@ -80,7 +97,7 @@ export class UserDetailsSelfServiceComponent {
       result.push({
         key,
         label: this.labels[key] ?? key,
-        value: this.normalizeValue((data as any)[key])
+        value: this.normalizeValue(data[key])
       });
     }
 

@@ -49,14 +49,12 @@ export interface Subscription {
   by_phone: string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class SubscriptionService {
-  private http = inject(HttpClient);
-  private authService = inject(AuthService);
-  private contentService = inject(ContentService);
-  private notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
+  private readonly contentService = inject(ContentService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
 
@@ -98,12 +96,12 @@ export class SubscriptionService {
       );
   }
 
-  uploadSubscriptionFile(file: File): Observable<PiResponse<any>> {
+  uploadSubscriptionFile(file: File): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     const formData = new FormData();
     formData.append("file", file);
 
-    return this.http.post<PiResponse<any>>(`${this.baseUrl}/`, formData, { headers }).pipe(
+    return this.http.post<PiResponse<boolean>>(`${this.baseUrl}/`, formData, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";

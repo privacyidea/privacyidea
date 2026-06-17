@@ -50,10 +50,8 @@ The endpoints fall in five groups:
 
 * :http:post:`/validate/check` — verify a user/serial + password and,
   for challenge-response tokens, trigger or complete the challenge.
-  Two URL aliases exist for protocol adapters: ``/validate/radiuscheck``
-  shapes the response into RADIUS-friendly status codes (204 / 400),
-  and ``/validate/samlcheck`` returns user attributes alongside the
-  auth result.
+  The ``/validate/radiuscheck`` URL alias shapes the response into
+  RADIUS-friendly status codes (204 / 400) for protocol adapters.
 * :http:post:`/validate/triggerchallenge` — admin-only, requires the
   ``triggerchallenge`` policy. Forces a challenge for every matching
   challenge-response token of a user.
@@ -115,14 +113,13 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
-from privacyidea.lib.config import (return_saml_attributes, get_from_config,
-                                    return_saml_attributes_on_fail,
+from privacyidea.lib.config import (get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error
@@ -148,7 +145,7 @@ from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_b
 from ..lib.framework import get_app_config_value
 from ..lib.policies.actions import PolicyAction
 from ..lib.realm import get_default_realm
-from ..lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from ..lib.users.internal_user_attributes import InternalUserAttributes
 
 log = logging.getLogger(__name__)
 
@@ -235,12 +232,13 @@ def offlinerefill():
     and the OTP material under
     ``response.auth_items.offline``. Failures may be masked into a
     generic error by the
-    ``hide_specific_error_message_for_offline_refill`` user-scope
+    ``hide_specific_error_message_for_offline_refill`` token-scope
     policy.
 
     :jsonparam serial: token serial number (required).
     :jsonparam refilltoken: the refill authorization token issued on
-        the previous refill or at offline attachment time (required).
+        the previous refill (or, for HOTP tokens, by the first online
+        ``/validate/check`` that returned the offline bag) (required).
     :jsonparam pass: the last PIN+OTP the user entered (required;
         empty string for WebAuthn / Passkey).
     :status 200: refill payload in the response body, with the new
@@ -306,7 +304,6 @@ def offlinerefill():
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
-@validate_blueprint.route('/samlcheck', methods=['POST', 'GET'])
 @postpolicy(hide_specific_error_message)
 @postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
@@ -341,7 +338,7 @@ def check():
     """
     Verify an authentication attempt.
 
-    The endpoint is bound to three URL paths that share the same
+    The endpoint is bound to two URL paths that share the same
     request shape but produce different response shapes for protocol
     adapters:
 
@@ -351,10 +348,12 @@ def check():
       authentication returns an empty ``204``, a failed
       authentication an empty ``400``. Error responses (server-side
       faults) are the same as for ``/validate/check``.
-    * ``/validate/samlcheck`` — SAML adapter shape: ``result.value``
-      is a dictionary with ``auth`` (bool) and ``attributes`` (the
-      user's resolver attributes, optionally extended via the
-      resolver's attribute map and ``MULTIVALUEATTRIBUTES``).
+
+    To return user attributes alongside the authentication result
+    (the former ``/validate/samlcheck`` use case), enable the AUTHZ
+    policies :ref:`policy_add_user_in_response` and/or
+    :ref:`policy_add_resolver_in_response` on ``/validate/check``;
+    the user info is then included under ``detail.user``.
 
     Either ``user`` (with optional ``realm``) or ``serial`` is
     required. The PIN+OTP is sent in ``pass``. Subsequent legs of a
@@ -468,41 +467,6 @@ def check():
        this case.
 
 
-    **Example response** for a successful authentication with ``/samlcheck``:
-
-       .. sourcecode:: http
-
-           HTTP/1.1 200 OK
-           Content-Type: application/json
-
-            {
-              "detail": {
-                "message": "matching 1 tokens",
-                "serial": "PISP0000AB00",
-                "type": "spass"
-              },
-              "id": 1,
-              "jsonrpc": "2.0",
-              "result": {
-                "status": true,
-                "value": {"attributes": {
-                            "username": "koelbel",
-                            "realm": "themis",
-                            "mobile": null,
-                            "phone": null,
-                            "myOwn": "/data/file/home/koelbel",
-                            "resolver": "themis",
-                            "surname": "Kölbel",
-                            "givenname": "Cornelius",
-                            "email": null},
-                          "auth": true}
-              },
-              "version": "privacyIDEA unknown"
-            }
-
-    The response in ``value->attributes`` can contain additional attributes
-    (like "myOwn") which you can define in the LDAP resolver in the attribute
-    mapping.
     """
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
@@ -517,7 +481,8 @@ def check():
         "response_params": {},
         "serial_list": [],
         "is_container_challenge": False,
-        "options": request.all_data.copy()
+        # Build the token options from the request, but strip the internal keys
+        "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
     # Add standard context to options and the user object again, because options is passed down to every function
     context["options"].update({"g": g, "clientip": g.client_ip})
@@ -695,7 +660,6 @@ def _handle_serial_auth(context: dict, serial: str):
 def _handle_standard_auth(context: dict):
     """
     Handles username+otp/password authentication, or container challenges.
-    Also handles SAML attribute population.
     """
     transaction_id = request.all_data.get("transaction_id")
     container_result = check_container_challenge(transaction_id)
@@ -712,30 +676,7 @@ def _handle_standard_auth(context: dict):
         success, details = check_user_pass(context["user"], get_optional(request.all_data, "pass"),
                                            options=context["options"])
 
-        # SAML Check Special Case
-        if request.path.endswith("samlcheck"):
-            context["result"] = {"auth": success, "attributes": {}}
-            if return_saml_attributes():
-                if success or return_saml_attributes_on_fail():
-                    user_info = context["user"].info
-                    # privacyIDEA's own attribute map
-                    attributes = {
-                        "username": user_info.get("username"),
-                        "realm": context["user"].realm,
-                        "resolver": context["user"].resolver,
-                        "email": user_info.get("email"),
-                        "surname": user_info.get("surname"),
-                        "givenname": user_info.get("givenname"),
-                        "mobile": user_info.get("mobile"),
-                        "phone": user_info.get("phone")
-                    }
-                    attributes.update(user_info)
-                    context["result"]["attributes"] = attributes
-        else:
-            context["result"] = success
-    else:
-        context["result"] = success
-
+    context["result"] = success
     context["details"] = details
 
     # Extract serials for logging
@@ -751,7 +692,7 @@ def _finalize_auth_response(context):
     """
     user = context["user"]
     details = context["details"]
-    success = context["result"] if not isinstance(context["result"], dict) else context["result"].get("auth", False)
+    success = context["result"]
 
     # Update Last Authentication
     # FIDO2 tokens update this internally during verify, so we skip them here mostly,
@@ -773,8 +714,14 @@ def _finalize_auth_response(context):
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
                     if user.exist():
-                        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
-                                           token.get_tokentype(), INTERNAL_USAGE)
+                        # Read-modify-write on a per-user dict. Concurrent auths from
+                        # different user-agents can race here and lose one update.
+                        # Accepted: the value is a UX hint (preferred client mode) —
+                        # at worst the user sees their second-most-recent choice.
+                        last_used = dict(user.internal_attributes.get(
+                            InternalUserAttributes.LAST_USED_TOKEN) or {})
+                        last_used[user_agent] = token.get_tokentype()
+                        user.set_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN, last_used)
 
     # Audit Logging
     # Ensure user is logged even if we switched users (e.g. FIDO2)
@@ -929,9 +876,8 @@ def trigger_challenge():
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
 
-    # Add all params to the options
-    options: dict = {}
-    options.update(request.all_data)
+    # Add request params to the options, minus the internal token-engine state keys
+    options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)

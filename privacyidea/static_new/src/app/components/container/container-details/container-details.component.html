@@ -30,8 +30,7 @@
       auditTooltip="Show container in audit log"
       (auditClick)="showContainerAuditLog()">
     </app-details-header>
-    <div
-      class="details-flex-layout responsive-flex-row-1310">
+    <div class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="containerDetailData()"
@@ -56,12 +55,30 @@
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("states") {
-                  @for (state of element.value; track state; let idx = $index) {
-                    <span
-                      [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
-                      class="font-14">
-                      {{ tableUtilsService.getDisplayTextForState(state) }}
-                    </span>
+                  @if (element.isEditing()) {
+                    <mat-form-field
+                      class="input-width-m"
+                      subscriptSizing="dynamic">
+                      <mat-label i18n>Select States</mat-label>
+                      <mat-select
+                        [value]="selectedStates()"
+                        (selectionChange)="onStatesChange($event.value)"
+                        multiple>
+                        @for (option of containerStateOptions; track option.value) {
+                          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                  } @else {
+                    <div class="flex-row gap-8 flex-wrap">
+                      @for (state of element.value; track state; let idx = $index) {
+                        <span
+                          [ngClass]="[tableUtilsService.getSpanClassForState(state, false)]"
+                          class="font-14">
+                          {{ tableUtilsService.getDisplayTextForState(state) }}
+                        </span>
+                      }
+                    </div>
                   }
                 }
                 @case ("realms") {
@@ -71,7 +88,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Realms</mat-label>
                       <mat-select
-                        [(ngModel)]="selectedRealms"
+                        (selectionChange)="selectedRealms.set($event.value)"
                         [value]="selectedRealms()"
                         multiple>
                         @for (option of realmService.realmOptions(); track option) {
@@ -93,7 +110,9 @@
                       class="details-scrollable-container">
                       @for (realm of element.value; track realm; let idx = $index) {
                         <mat-list-item class="height-auto pad-0">
-                          <span class="font-14">• {{ realm }}</span>
+                          <app-copyable [copyText]="realm">
+                            <span class="font-14">• {{ realm }}</span>
+                          </app-copyable>
                         </mat-list-item>
                       }
                     </div>
@@ -105,7 +124,8 @@
                       class="input-width-m description height-115"
                       subscriptSizing="dynamic">
                       <textarea
-                        [(ngModel)]="element.value"
+                        [value]="element.value"
+                        (input)="element.value = $any($event.target).value"
                         i18n-placeholder
                         matInput
                         placeholder="Enter description"
@@ -134,10 +154,10 @@
                 <app-edit-buttons
                   [cancelEdit]="cancelContainerEdit.bind(this)"
                   [element]="element"
-                  [isEditingInfo]="isEditingInfo"
-                  [isEditingUser]="isEditingUser"
+                  [isEditingInfo]="isEditingInfo()"
+                  [isEditingUser]="isEditingUser()"
                   [saveEdit]="saveContainerEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditing"
+                  [shouldHideEdit]="isAnyEditing()"
                   [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
               }
             </td>
@@ -176,14 +196,16 @@
                       subscriptSizing="dynamic">
                       <mat-label>Enter User</mat-label>
                       <app-clearable-input
-                        (onClick)="userService.selectionFilter.set('')"
+                        (clearButtonClick)="userService.selectionFilter.set('')"
                         [showClearButton]="userService.selectionFilter() !== ''">
                         <input
-                          [(ngModel)]="userService.selectionFilter"
+                          [value]="userService.selectionFilter()"
+                          (input)="userService.selectionFilter.set($any($event.target).value)"
                           [matAutocomplete]="userAuto"
                           matInput />
                         <mat-autocomplete
                           #userAuto="matAutocomplete"
+                          (optionSelected)="userService.selectionFilter.set($event.option.value)"
                           class="user-selection-autocomplete">
                           @for (option of userService.selectionFilteredUsernames(); track option) {
                             <mat-option [value]="option">{{ option }}</mat-option>
@@ -192,11 +214,19 @@
                       </app-clearable-input>
                     </mat-form-field>
                   } @else {
-                    <a
-                      (click)="contentService.userSelected(element.value, element['user_realm'])"
-                      i18n-aria-label="{{ element.keyMap.label }} Link">
-                      {{ element.value }}
-                    </a>
+                    <app-copyable [copyText]="element.value">
+                      <a
+                        (click)="contentService.userSelected(element.value, element['user_realm'])"
+                        (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
+                        "
+                        i18n-aria-label="{{ element.keyMap.label }} Link"
+                        role="button"
+                        tabindex="0">
+                        {{ element.value }}
+                      </a>
+                    </app-copyable>
                   }
                 }
                 @case ("user_realm") {
@@ -206,7 +236,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Select Realm of User</mat-label>
                       <mat-select
-                        [(ngModel)]="userService.selectedUserRealm"
+                        (selectionChange)="userService.selectedUserRealm.set($event.value)"
                         [value]="userService.selectedUserRealm()">
                         @for (option of realmService.realmOptions(); track option) {
                           <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -214,7 +244,9 @@
                       </mat-select>
                     </mat-form-field>
                   } @else {
-                    <span>{{ element.value }}</span>
+                    <app-copyable [copyText]="element.value">
+                      <span>{{ element.value }}</span>
+                    </app-copyable>
                   }
                 }
                 @default {
@@ -245,10 +277,10 @@
                     <app-edit-buttons
                       [cancelEdit]="cancelContainerEdit.bind(this)"
                       [element]="element"
-                      [isEditingInfo]="isEditingInfo"
-                      [isEditingUser]="isEditingUser"
+                      [isEditingInfo]="isEditingInfo()"
+                      [isEditingUser]="isEditingUser()"
                       [saveEdit]="saveContainerEdit.bind(this)"
-                      [shouldHideEdit]="isAnyEditing"
+                      [shouldHideEdit]="isAnyEditing()"
                       [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
                   }
                 }
@@ -261,19 +293,19 @@
             mat-row></tr>
         </table>
         <app-container-details-info
-          [detailData]="containerDetailData"
-          [infoData]="infoData"
-          [isAnyEditingOrRevoked]="isAnyEditing"
-          [isEditingInfo]="isEditingInfo"
-          [isEditingUser]="isEditingUser" />
+          [detailData]="containerDetailData()"
+          [infoData]="infoData()"
+          [isAnyEditingOrRevoked]="isAnyEditing()"
+          [(isEditingInfo)]="isEditingInfo"
+          [isEditingUser]="isEditingUser()" />
         <mat-divider class="responsive-divider-1310" />
       </div>
       <div class="flex-column responsive-margin-left-1310">
-        <app-container-details-token-table [containerTokenData]="containerTokenData" />
+        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
         <div class="flex-row gap-32">
           <app-container-add-token
             [authService]="authService"
-            [showOnlyTokenNotInContainer]="showOnlyTokenNotInContainer"
+            [(showOnlyTokenNotInContainer)]="showOnlyTokenNotInContainer"
             [total]="total()"
             [pageIndex]="pageIndex()"
             [pageSize]="pageSize()"
@@ -293,8 +325,8 @@
           [containerType]="containerType()"></app-container-details-actions>
         <app-container-details-token-actions
           [containerSerial]="containerSerial()"
-          [tokenData]="containerTokenData"
-          [user]="rawUserData"></app-container-details-token-actions>
+          [tokenData]="containerTokenData()"
+          [user]="rawUserData()"></app-container-details-token-actions>
       </div>
     </div>
   </div>

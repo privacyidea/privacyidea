@@ -50,10 +50,12 @@ import hashlib
 import logging
 import traceback
 
+from typing import Any
+
 from sqlalchemy import select, delete
 
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
-from privacyidea.models import CustomUserAttribute, db
+from privacyidea.models import CustomUserAttribute, InternalUserAttribute, db
 from .config import get_from_config, SYSCONF
 from .log import log_with
 from .realm import (get_realms, realm_is_defined,
@@ -379,6 +381,92 @@ class User:
                                                      realm_id=self.realm_id)
         if attribute_key:
             stmt = stmt.filter_by(Key=attribute_key)
+        result = db.session.execute(stmt)
+        db.session.commit()
+        return result.rowcount
+
+    def _require_resolved_for_write(self) -> None:
+        """
+        Writes/deletes on internal attributes key on (uid, resolver, realm_id).
+        An unresolved user has ``uid=''``, so writing under it would create
+        rows shared by every unresolved user — i.e. cross-user data leak.
+
+        We also require ``realm_id``: it is part of the unique constraint, but
+        SQL treats NULLs as distinct, so a NULL realm_id would silently bypass
+        the per-user-key dedup backstop. Requiring it here (matching the
+        ``uid and realm_id`` notion of an existing user, see :meth:`exist`)
+        guarantees every written row has a concrete identity.
+        Reads are tolerated and return an empty dict (see ``internal_attributes``).
+        """
+        if not self.uid or not self.realm_id:
+            raise UserError(f"Cannot modify internal attributes for unresolved user "
+                            f"(login={self.login!r}, realm={self.realm!r}).")
+
+    @property
+    def internal_attributes(self) -> dict:
+        """
+        Returns all internal user attributes for this user as a dict.
+        Internal attributes are written by privacyIDEA itself (e.g. cached
+        FIDO2 user IDs, last-used token per client) and are NOT meant to be
+        used in policy conditions. Use :meth:`attributes` for admin-facing data.
+
+        For an unresolved user (empty uid) this returns ``{}`` rather than
+        raising — callers like ``preferred_client_mode`` run for every auth
+        response, including serial-only flows that legitimately have no user.
+        """
+        if not self.uid:
+            return {}
+        return get_internal_attributes(self.uid, self.resolver, self.realm_id)
+
+    @log_with(log)
+    def set_internal_attribute(self, key: str, value: Any) -> int:
+        """
+        Set an internal attribute for this user. ``value`` may be any
+        JSON-serializable Python object.
+
+        The model's ``node`` column is reserved for future node-local state
+        and is intentionally not exposed here: it is part of neither the
+        lookup nor the unique constraint yet, so writing it would create
+        inconsistent rows. When node-awareness is implemented, ``node`` must
+        be added to the unique constraint and to the SELECT below before it
+        can be written here.
+
+        Not safe against concurrent writes on the same ``key`` for the same
+        user: two callers can both miss the SELECT and race on the INSERT,
+        with one hitting the UNIQUE constraint. Acceptable for the current
+        callers (hint-style values, low contention).
+        """
+        self._require_resolved_for_write()
+        stmt = select(InternalUserAttribute).filter_by(
+            user_id=self.uid,
+            resolver=self.resolver,
+            realm_id=self.realm_id,
+            Key=key,
+        )
+        existing = db.session.execute(stmt).scalar_one_or_none()
+        if existing:
+            existing.Value = value
+            attribute_id = existing.id
+        else:
+            new_attribute = InternalUserAttribute(user_id=self.uid, resolver=self.resolver,
+                                                  realm_id=self.realm_id, Key=key, Value=value)
+            db.session.add(new_attribute)
+            db.session.flush()
+            attribute_id = new_attribute.id
+        db.session.commit()
+        return attribute_id
+
+    @log_with(log)
+    def delete_internal_attribute(self, key: str | None = None) -> int:
+        """
+        Delete an internal attribute. If ``key`` is None, all internal
+        attributes for this user are deleted.
+        """
+        self._require_resolved_for_write()
+        stmt = delete(InternalUserAttribute).filter_by(user_id=self.uid, resolver=self.resolver,
+                                                       realm_id=self.realm_id)
+        if key:
+            stmt = stmt.filter_by(Key=key)
         result = db.session.execute(stmt)
         db.session.commit()
         return result.rowcount
@@ -911,6 +999,89 @@ def get_attributes(uid: str, resolver: str, realm_id: int, requested_attributes:
     attributes = db.session.scalars(stmt).all()
     custom_attributes = {attribute.Key: attribute.Value for attribute in attributes}
     return custom_attributes
+
+
+def get_internal_attributes(uid: str, resolver: str, realm_id: int) -> dict:
+    """
+    Returns all internal attributes for the given user as a single dict.
+    """
+    stmt = select(InternalUserAttribute).filter_by(user_id=uid, resolver=resolver, realm_id=realm_id)
+    rows = db.session.scalars(stmt).all()
+    return {row.Key: row.Value for row in rows}
+
+
+def find_orphaned_internal_attributes(orphaned_on_error: bool = False) -> list[tuple[str, str, int | None]]:
+    """
+    Return the list of ``(user_id, resolver, realm_id)`` tuples in
+    ``internaluserattribute`` whose user is no longer in the resolver.
+
+    privacyIDEA does not own the user store, so deleting a user upstream
+    leaves behind ``internaluserattribute`` rows that can never be reached
+    again through the normal :class:`User` API. The token janitor exposes a
+    CLI command that calls this helper to find and prune them.
+
+    :param orphaned_on_error: If the resolver raises while looking up the
+        user, treat that row as orphaned. Mirrors the semantics of
+        :meth:`TokenClass.is_orphaned`.
+
+    The returned tuples may contain empty strings for ``user_id`` or
+    ``resolver`` for legacy rows that predate the write-side guard against
+    empty identifiers — those rows are also reported as orphaned so the
+    janitor can prune them.
+    """
+    from privacyidea.lib.resolver import get_resolver_object
+
+    stmt = select(InternalUserAttribute.user_id, InternalUserAttribute.resolver,
+                  InternalUserAttribute.realm_id).distinct()
+    rows = db.session.execute(stmt).all()
+
+    orphans: list[tuple[str, str, int | None]] = []
+    resolver_cache: dict[str, Any] = {}
+    for user_id, resolver_name, realm_id in rows:
+        if not user_id or not resolver_name:
+            # Rows with empty identifiers can never be reached through the
+            # User API, so we treat them as orphaned and let the janitor
+            # delete them.
+            orphans.append((user_id, resolver_name, realm_id))
+            continue
+        if resolver_name not in resolver_cache:
+            resolver_cache[resolver_name] = get_resolver_object(resolver_name)
+        resolver = resolver_cache[resolver_name]
+        if resolver is None:
+            # Resolver was deleted — everything under it is orphaned.
+            orphans.append((user_id, resolver_name, realm_id))
+            continue
+        try:
+            login = resolver.getUsername(user_id)
+        except Exception:
+            if orphaned_on_error:
+                orphans.append((user_id, resolver_name, realm_id))
+            continue
+        if not login:
+            # An empty username (without an exception) is the resolver's
+            # "this uid no longer exists" answer — the primary orphan signal,
+            # matching TokenClass.is_orphaned. Transient backend failures raise
+            # instead and are handled above via orphaned_on_error.
+            orphans.append((user_id, resolver_name, realm_id))
+    return orphans
+
+
+def delete_orphaned_internal_attributes(orphans: list[tuple[str, str, int | None]]) -> int:
+    """
+    Delete every ``internaluserattribute`` row whose ``(user_id, resolver,
+    realm_id)`` matches one of *orphans*. Returns the total number of rows
+    deleted.
+
+    Bypasses the :class:`User` API on purpose — orphans are by definition
+    users that cannot be constructed.
+    """
+    total = 0
+    for user_id, resolver_name, realm_id in orphans:
+        stmt = delete(InternalUserAttribute).filter_by(
+            user_id=user_id, resolver=resolver_name, realm_id=realm_id)
+        total += db.session.execute(stmt).rowcount
+    db.session.commit()
+    return total
 
 
 def is_attribute_at_all() -> bool:

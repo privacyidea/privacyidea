@@ -322,6 +322,13 @@ class IdResolver(UserIdResolver):
         - returns true in case of success or false if the password does not match
 
         """
+        # An empty password must never authenticate. A simple LDAP bind with an empty
+        # password is an "unauthenticated bind" that some directories answer with success;
+        # reject it here so the result never depends on the directory's behaviour (and an
+        # empty secret is never valid on the Kerberos/NTLM paths either).
+        if not password:
+            log.info(f"Rejecting empty password for {uid!r} (would be an unauthenticated bind).")
+            return False
         if self.authtype == AUTHTYPE.SASL_KERBEROS:
             try:
                 import gssapi
@@ -524,6 +531,12 @@ class IdResolver(UserIdResolver):
         else:
             # get the DN for the Object
             search_userid = self._trim_user_id(user_id)
+            # RFC4515-escape the user id before it goes into the filter so metacharacters
+            # cannot inject additional filter clauses. objectGUID is exempt: _trim_user_id
+            # parses it as a UUID and renders it as the backslash-escaped byte form the
+            # filter expects, which must not be escaped again.
+            if self.uidtype != "objectGUID":
+                search_userid = self._escape_filter_value(search_userid)
             search_filter = f"(&{self.searchfilter}({self.uidtype}={search_userid}))"
             result = self._search(search_base=self.basedn, search_filter=search_filter,
                                   attributes=list(self.userinfo.values()))
@@ -635,6 +648,9 @@ class IdResolver(UserIdResolver):
             search_base = user_id
         else:
             search_uid = to_unicode(self._trim_user_id(user_id))
+            # RFC4515-escape the user id (see _getDN); objectGUID is already byte-escaped.
+            if self.uidtype != "objectGUID":
+                search_uid = self._escape_filter_value(search_uid)
             search_filter = f"(&{self.searchfilter}({self.uidtype}={search_uid}))"
             search_base = self.basedn
 
@@ -683,7 +699,9 @@ class IdResolver(UserIdResolver):
         search_filter = search_filter.replace("{base_dn}", self.basedn)
         for key, value in user_info.items():
             if isinstance(value, str):
-                search_filter = search_filter.replace(f"{{{key}}}", value)
+                # Escape the attribute value: it is substituted into the configured group
+                # filter and must not be able to inject filter clauses of its own.
+                search_filter = search_filter.replace(f"{{{key}}}", self._escape_filter_value(value))
         log.debug(f"Searching for groups with filter: {search_filter}")
 
         try:

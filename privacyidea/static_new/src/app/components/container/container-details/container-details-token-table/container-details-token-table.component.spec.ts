@@ -19,14 +19,12 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { NavigationEnd, Router } from "@angular/router";
+import { Router } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService } from "@services/container/container.service";
+import { ContainerDetailToken, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -40,20 +38,14 @@ import {
   MockDialogService,
   MockLocalService,
   MockNotificationService,
+  MockRouter,
   MockTableUtilsService,
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Subject, of } from "rxjs";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
-
-const routerEvents$ = new Subject<NavigationEnd>();
-routerEvents$.next(new NavigationEnd(1, "/", "/"));
-const routerMock = {
-  navigate: jest.fn().mockResolvedValue(true),
-  url: "/",
-  events: routerEvents$
-} as unknown as jest.Mocked<Router>;
 
 describe("ContainerDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<ContainerDetailsTokenTableComponent>;
@@ -61,29 +53,26 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   let containerServiceMock: MockContainerService;
   let tokenServiceMock: MockTokenService;
-  const tableUtilsMock = new MockTableUtilsService();
-  const notificationServiceMock = new MockNotificationService();
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [ContainerDetailsTokenTableComponent, BrowserAnimationsModule],
+      imports: [ContainerDetailsTokenTableComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: TokenService, useClass: MockTokenService },
-        { provide: TableUtilsService, useValue: tableUtilsMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
-        { provide: Router, useValue: routerMock },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: Router, useClass: MockRouter },
         { provide: UserService, useClass: class {} },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
-        MockLocalService,
-        MockNotificationService
+        MockLocalService
       ]
     }).compileComponents();
 
@@ -95,12 +84,13 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 
-    component.containerTokenData = signal(
-      new MatTableDataSource<any>([
+    fixture.componentRef.setInput(
+      "containerTokenData",
+      new MatTableDataSource<ContainerDetailToken>([
         {
           serial: "Mock serial",
           tokentype: "hotp",
@@ -113,7 +103,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
           active: false,
           username: "userB"
         }
-      ])
+      ] as ContainerDetailToken[])
     );
 
     fixture.detectChanges();
@@ -126,7 +116,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   });
 
   it("adds remove/delete columns when actionAllowed is true (constructor logic)", () => {
-    const auth = TestBed.inject(AuthService) as any;
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
     jest.spyOn(auth, "actionAllowed").mockReturnValue(true);
 
     const fx = TestBed.createComponent(ContainerDetailsTokenTableComponent);
@@ -152,14 +142,14 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   it("delegates to toggleActive when columnKey === 'active'", () => {
     const toggleSpy = jest.spyOn(component, "toggleActive");
-    const row = { serial: "Mock serial", active: true };
-    component.handleColumnClick("active", row as any);
+    const row: Partial<ContainerDetailToken> = { serial: "Mock serial", active: true };
+    component.handleColumnClick("active", row as ContainerDetailToken);
     expect(toggleSpy).toHaveBeenCalledWith(row);
   });
 
   it("does nothing when columnKey !== 'active'", () => {
     const toggleSpy = jest.spyOn(component, "toggleActive");
-    component.handleColumnClick("username", {} as any);
+    component.handleColumnClick("username", {} as ContainerDetailToken);
     expect(toggleSpy).not.toHaveBeenCalled();
   });
 
@@ -184,7 +174,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     ds.data = [
       { serial: "S1", username: "bob", active: true },
       { serial: "S2", username: "", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     fixture.detectChanges();
 
     expect(component.isAssignableToAllToken()).toBe(true);
@@ -195,7 +185,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     ds.data = [
       { serial: "S1", username: "", active: true },
       { serial: "S2", username: "bob", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     fixture.detectChanges();
 
     expect(component.isUnassignableFromAllToken()).toBe(true);
@@ -206,14 +196,14 @@ describe("ContainerDetailsTokenTableComponent", () => {
     ds.data = [
       { serial: "S1", username: "", active: true },
       { serial: "S2", username: "", active: true }
-    ] as any;
+    ] as ContainerDetailToken[];
     fixture.detectChanges();
 
     expect(component.isUnassignableFromAllToken()).toBe(false);
   });
 
   it("toggleActive calls service then reloads container details", () => {
-    const t = { serial: "Mock serial", active: true } as any;
+    const t = { serial: "Mock serial", active: true } as ContainerDetailToken;
     jest.spyOn(tokenServiceMock, "toggleActive");
 
     component.toggleActive(t);
@@ -224,7 +214,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
     jest
       .spyOn(containerServiceMock, "removeTokenFromContainer")
-      .mockReturnValue(of({ result: { value: true } } as any));
+      .mockReturnValue(of(MockPiResponse.fromValue<boolean>(true)));
     component.removeTokenFromContainer("CONT-1", "Mock serial");
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
       component: SimpleConfirmationDialogComponent,
@@ -261,7 +251,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     });
     confirmClosed.next(true);
     confirmClosed.complete();
-    expect(tokenServiceMock.deleteToken as any).toHaveBeenCalledWith("Another serial");
+    expect(tokenServiceMock.deleteToken).toHaveBeenCalledWith("Another serial");
     expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalled();
   });
 });

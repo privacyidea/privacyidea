@@ -18,18 +18,17 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { SearchTokenDialogComponent } from "./search-token-dialog";
 
 describe("SearchTokenDialogComponent", () => {
   let component: SearchTokenDialogComponent;
   let fixture: ComponentFixture<SearchTokenDialogComponent>;
-  let mockDialogRef: MockMatDialogRef<SearchTokenDialogComponent, any>;
+  let mockDialogRef: MockMatDialogRef<SearchTokenDialogComponent, boolean>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, SearchTokenDialogComponent],
+      imports: [SearchTokenDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: 100 }
@@ -37,7 +36,7 @@ describe("SearchTokenDialogComponent", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(SearchTokenDialogComponent);
-    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<SearchTokenDialogComponent, any>;
+    mockDialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<SearchTokenDialogComponent, boolean>;
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

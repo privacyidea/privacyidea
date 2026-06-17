@@ -16,13 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { Component, forwardRef, inject } from "@angular/core";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   PaperApiPayloadMapper,
   PaperEnrollmentData
 } from "@app/mappers/token-api-payload/paper-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface PaperEnrollmentOptions extends TokenEnrollmentData {
@@ -32,36 +35,18 @@ export interface PaperEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-paper",
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [],
   templateUrl: "./enroll-paper.component.html",
-  styleUrl: "./enroll-paper.component.scss"
+  styleUrl: "./enroll-paper.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPaperComponent) }
+  ]
 })
-export class EnrollPaperComponent implements OnInit {
+export class EnrollPaperComponent extends EnrollTokenBase<PaperEnrollmentData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: PaperApiPayloadMapper = inject(PaperApiPayloadMapper);
 
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: PaperEnrollmentData;
-      mapper: TokenApiPayloadMapper<PaperEnrollmentData>;
-    } | null
-  >();
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
-
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: PaperEnrollmentData;
-    mapper: TokenApiPayloadMapper<PaperEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<PaperEnrollmentData> | null {
     const enrollmentData: PaperEnrollmentOptions = {
       ...basicOptions,
       type: "paper"
@@ -70,5 +55,5 @@ export class EnrollPaperComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

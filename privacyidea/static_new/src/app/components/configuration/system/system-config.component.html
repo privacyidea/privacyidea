@@ -22,11 +22,8 @@
   aria-label="System Configuration"
   class="system-config-container"
   i18n-aria-label>
-
   <div class="system-config-scroll-container">
-    <form
-      #systemConfigForm="ngForm"
-      class="system-config-form">
+    <div class="system-config-form">
       <h3
         class="margin-8"
         i18n>
@@ -43,10 +40,10 @@
           </button>
           @if (hasConfigWritePermission()) {
             <button
-              [disabled]="!systemConfigForm.form.valid || !authService.actionAllowed('configwrite')"
+              [disabled]="!authService.actionAllowed('configwrite')"
               class="action-button-primary button-width-l"
               mat-stroked-button
-              type="submit">
+              (click)="saveSystemConfig()">
               <mat-icon>save</mat-icon>
               <span i18n>Save System Config</span>
             </button>
@@ -56,8 +53,8 @@
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
-          [(ngModel)]="params.splitAtSign"
-          name="splitAtSign">
+          [checked]="params().splitAtSign"
+          (change)="updateParam('splitAtSign', $event.checked)">
           Use &#64; sign to split the username and the realm
         </mat-checkbox>
       </div>
@@ -65,21 +62,20 @@
       <div class="flex-row full-width-grid-column gap-16 ali-center">
         <div class="form-group">
           <mat-checkbox
-            [(ngModel)]="params.IncFailCountOnFalsePin"
-            name="IncFailCountOnFalsePin">
+            [checked]="params().IncFailCountOnFalsePin"
+            (change)="updateParam('IncFailCountOnFalsePin', $event.checked)">
             Increase the failcounter
             <br />
             if the wrong PIN was entered
           </mat-checkbox>
         </div>
 
-        <mat-form-field
-          class="margin-left-auto input-width-s">
+        <mat-form-field class="margin-left-auto input-width-s">
           <mat-label i18n>Clear Failcounter</mat-label>
           <input
-            [(ngModel)]="params.failcounter_clear_timeout"
+            [value]="params().failcounter_clear_timeout ?? ''"
+            (input)="updateParam('failcounter_clear_timeout', $any($event.target).value)"
             matInput
-            name="failcounter_clear_timeout"
             placeholder="0" />
           <mat-hint i18n>Time in minutes.</mat-hint>
         </mat-form-field>
@@ -87,54 +83,36 @@
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
-          [(ngModel)]="params.no_auth_counter"
-          name="no_auth_counter">
+          [checked]="params().no_auth_counter"
+          (change)="updateParam('no_auth_counter', $event.checked)">
           Do not use an authentication counter per token
         </mat-checkbox>
       </div>
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
-          [(ngModel)]="params.PrependPin"
-          name="PrependPin">
+          [checked]="params().PrependPin"
+          (change)="updateParam('PrependPin', $event.checked)">
           Prepend the PIN in front of the OTP value. Otherwise it will be post pended
-        </mat-checkbox>
-      </div>
-
-      <div class="form-group margin-bottom-16">
-        <mat-checkbox
-          [(ngModel)]="params.ReturnSamlAttributes"
-          name="ReturnSamlAttributes">
-          Include SAML attributes in the authentication response
-        </mat-checkbox>
-      </div>
-
-      <div class="form-group margin-bottom-16">
-        <mat-checkbox
-          [(ngModel)]="params.ReturnSamlAttributesOnFail"
-          [disabled]="!params.ReturnSamlAttributes"
-          name="ReturnSamlAttributesOnFail">
-          Include SAML attributes even if the user failed to authenticate
         </mat-checkbox>
       </div>
 
       <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-16">
         <div class="form-group">
           <mat-checkbox
-            [(ngModel)]="params.AutoResync"
-            name="AutoResync">
+            [checked]="params().AutoResync"
+            (change)="updateParam('AutoResync', $event.checked)">
             Automatic resync during authentication
           </mat-checkbox>
         </div>
 
-        <mat-form-field
-          class="margin-left-auto input-width-s">
+        <mat-form-field class="margin-left-auto input-width-s">
           <mat-label i18n>Auto Resync</mat-label>
           <input
-            [(ngModel)]="params.AutoResyncTimeout"
-            [disabled]="!params.AutoResync"
+            [value]="params().AutoResyncTimeout ?? ''"
+            [disabled]="!params().AutoResync"
+            (input)="updateParam('AutoResyncTimeout', $any($event.target).value)"
             matInput
-            name="AutoResyncTimeout"
             placeholder="300" />
           <mat-hint i18n>Timeout in seconds.</mat-hint>
         </mat-form-field>
@@ -142,17 +120,14 @@
 
       <div class="flex-column gap-16">
         <div class="flex-row just-space-between ali-center">
-          <mat-form-field
-            class="input-width-l">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>User Cache Expiration</mat-label>
             <input
-              [(ngModel)]="params.UserCacheExpiration"
+              [value]="params().UserCacheExpiration ?? ''"
+              (input)="updateParam('UserCacheExpiration', $any($event.target).value)"
               matInput
-              name="UserCacheExpiration"
               placeholder="0" />
-            <mat-hint i18n>
-              Time in seconds.
-            </mat-hint>
+            <mat-hint i18n> Time in seconds. </mat-hint>
           </mat-form-field>
 
           <button
@@ -166,28 +141,30 @@
         </div>
 
         <div class="flex-row gap-16">
-          <mat-form-field
-            class="input-width-l">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>Override Authorization Clients</mat-label>
-            <input
-              [(ngModel)]="params.OverrideAuthorizationClient"
-              matInput
-              name="OverrideAuthorizationClient"
-              placeholder="127.0.0.1, 10.0.0.8" />
-            <mat-hint i18n>
-              These client IP addresses or subnets are allowed to masquerade as another client
-            </mat-hint>
+            <app-clearable-input
+              (clearButtonClick)="updateParam('OverrideAuthorizationClient', '')"
+              [showClearButton]="!!params().OverrideAuthorizationClient">
+              <input
+                [value]="params().OverrideAuthorizationClient ?? ''"
+                (input)="updateParam('OverrideAuthorizationClient', $any($event.target).value)"
+                matInput
+                name="OverrideAuthorizationClient"
+                placeholder="127.0.0.1, 10.0.0.8" />
+            </app-clearable-input>
+            <mat-hint i18n> These client IP addresses or subnets are allowed to masquerade as another client </mat-hint>
           </mat-form-field>
 
-          <mat-form-field
-            class="input-width-l">
+          <mat-form-field class="input-width-l">
             <mat-label i18n>SMTP Server for Password Recovery</mat-label>
             <mat-select
-              [(ngModel)]="params['recovery.identifier']"
-              name="recovery.identifier">
+              [value]="params()['recovery.identifier']"
+              (selectionChange)="updateParam('recovery.identifier', $event.value)">
               <mat-option
                 [value]="''"
-                i18n>None
+                i18n
+                >None
               </mat-option>
               @for (identifier of smtpIdentifiers; track identifier) {
                 <mat-option [value]="identifier">{{ identifier }}</mat-option>
@@ -205,34 +182,35 @@
         <div class="flex-column">
           <h4
             class="margin-bottom-16"
-            i18n>Default Settings for New Enrolled Tokens
+            i18n>
+            Default Settings for New Enrolled Tokens
           </h4>
 
           <div class="flex-row gap-16">
             <mat-form-field class="input-width-s">
               <mat-label i18n>OTP Length</mat-label>
               <input
-                [(ngModel)]="params.DefaultOtpLen"
+                [value]="params()['DefaultOtpLen']"
+                (input)="updateParam('DefaultOtpLen', $any($event.target).value)"
                 matInput
-                name="DefaultOtpLen"
                 placeholder="6" />
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
               <mat-label i18n>Count Window</mat-label>
               <input
-                [(ngModel)]="params.DefaultCountWindow"
+                [value]="params()['DefaultCountWindow']"
+                (input)="updateParam('DefaultCountWindow', $any($event.target).value)"
                 matInput
-                name="DefaultCountWindow"
                 placeholder="10" />
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
               <mat-label i18n>Max Failcount</mat-label>
               <input
-                [(ngModel)]="params.DefaultMaxFailCount"
+                [value]="params()['DefaultMaxFailCount']"
+                (input)="updateParam('DefaultMaxFailCount', $any($event.target).value)"
                 matInput
-                name="DefaultMaxFailCount"
                 placeholder="10" />
             </mat-form-field>
           </div>
@@ -241,24 +219,24 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n>Sync Window</mat-label>
               <input
-                [(ngModel)]="params.DefaultSyncWindow"
+                [value]="params()['DefaultSyncWindow']"
+                (input)="updateParam('DefaultSyncWindow', $any($event.target).value)"
                 matInput
-                name="DefaultSyncWindow"
                 placeholder="1000" />
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
               <mat-label i18n>Challenge Validity</mat-label>
               <input
-                [(ngModel)]="params.DefaultChallengeValidityTime"
+                [value]="params()['DefaultChallengeValidityTime']"
+                (input)="updateParam('DefaultChallengeValidityTime', $any($event.target).value)"
                 matInput
-                name="DefaultChallengeValidityTime"
                 placeholder="120" />
               <mat-hint i18n>Time in seconds.</mat-hint>
             </mat-form-field>
           </div>
         </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>

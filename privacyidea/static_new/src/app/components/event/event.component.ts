@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { animate, state, style, transition, trigger } from "@angular/animations";
 import { CommonModule } from "@angular/common";
 import {
   Component,
@@ -68,14 +67,7 @@ import { of } from "rxjs";
   ],
   standalone: true,
   templateUrl: "./event.component.html",
-  styleUrl: "./event.component.scss",
-  animations: [
-    trigger("detailExpand", [
-      state("collapsed", style({ height: "0px", minHeight: "0" })),
-      state("expanded", style({ height: "*" })),
-      transition("expanded <=> collapsed", animate("225ms cubic-bezier(0.4, 0.0, 0.2, 1)"))
-    ])
-  ]
+  styleUrl: "./event.component.scss"
 })
 export class EventComponent {
   protected readonly authService = inject(AuthService);
@@ -182,10 +174,10 @@ export class EventComponent {
     return false;
   }
 
-  formatConditions(conditions: any): string {
+  formatConditions(conditions: unknown): string {
     if (!conditions || typeof conditions !== "object") return "";
-    return Object.entries(conditions)
-      .map(([key, value]) => `${key}: ${value}`)
+    return Object.entries(conditions as Record<string, unknown>)
+      .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
   }
 
@@ -193,7 +185,7 @@ export class EventComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof EventHandler;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: EventHandler, b: EventHandler) => {
       const va = (a?.[key] ?? "").toString().toLowerCase();
       const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;

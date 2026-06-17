@@ -24,7 +24,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { DialogWrapperComponent } from "./dialog-wrapper.component";
 
 describe("DialogWrapperComponent", () => {
-  let component: DialogWrapperComponent;
+  let component: DialogWrapperComponent<DialogAction[]>;
   let fixture: ComponentFixture<DialogWrapperComponent<DialogAction[]>>;
   let nativeElement: HTMLElement;
 

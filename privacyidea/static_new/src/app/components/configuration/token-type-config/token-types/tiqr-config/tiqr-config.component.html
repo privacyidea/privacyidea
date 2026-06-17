@@ -21,8 +21,8 @@
     <mat-panel-title i18n>TiQR</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
-    <p i18n>The TiQR Token is an OCRA based Smartphone Token, that can be used to authenticate by just scanning a QR
-            code.
+    <p i18n>
+      The TiQR Token is an OCRA based Smartphone Token, that can be used to authenticate by just scanning a QR code.
     </p>
 
     <div class="flex-row margin-bottom-32">
@@ -31,20 +31,20 @@
         class="input-width-xl">
         <mat-label i18n>TiQR Registration Server</mat-label>
         <input
-          #regServerInput="ngModel"
-          [ngModel]="formData()[TIQR_REG_SERVER]"
-          (ngModelChange)="updateFormData(TIQR_REG_SERVER, $event)"
-          [ngModelOptions]="{ standalone: true }"
+          #regServerInput
+          [value]="formData()[TIQR_REG_SERVER]"
+          (input)="updateFormData(TIQR_REG_SERVER, $any($event.target).value)"
           matInput
           placeholder="http://pi.server/ttype/tiqr"
           required
-          type="url">
-        @if (regServerInput.errors?.['required']) {
+          type="url" />
+        @if (regServerInput.validity.valueMissing) {
           <mat-error i18n>TiQR Registration Server is <strong>required</strong></mat-error>
         }
-        <mat-hint i18n>The Registration Server is this privacyIDEA server.
-          <br>
-                       Note that the privacyIDEA server needs to be accessible from the users smartphone.
+        <mat-hint i18n
+          >The Registration Server is this privacyIDEA server.
+          <br />
+          Note that the privacyIDEA server needs to be accessible from the users smartphone.
         </mat-hint>
       </mat-form-field>
     </div>
@@ -55,13 +55,14 @@
         class="input-width-xl">
         <mat-label i18n>TiQR Authentication Server</mat-label>
         <input
-          [ngModel]="formData()[TIQR_AUTH_SERVER]"
-          (ngModelChange)="updateFormData(TIQR_AUTH_SERVER, $event)"
+          [value]="formData()[TIQR_AUTH_SERVER]"
+          (input)="updateFormData(TIQR_AUTH_SERVER, $any($event.target).value)"
           matInput
-          type="url">
-        <mat-hint i18n>The Authentication Server is this privacyIDEA server.
-          <br>
-                       Note that the privacyIDEA server needs to be accessible from the users smartphone.
+          type="url" />
+        <mat-hint i18n
+          >The Authentication Server is this privacyIDEA server.
+          <br />
+          Note that the privacyIDEA server needs to be accessible from the users smartphone.
         </mat-hint>
       </mat-form-field>
 
@@ -70,9 +71,9 @@
         class="input-width-xl">
         <mat-label i18n>TiQR Service Displayname</mat-label>
         <input
-          [ngModel]="formData()[TIQR_SERVICE_DISPLAYNAME]"
-          (ngModelChange)="updateFormData(TIQR_SERVICE_DISPLAYNAME, $event)"
-          matInput>
+          [value]="formData()[TIQR_SERVICE_DISPLAYNAME]"
+          (input)="updateFormData(TIQR_SERVICE_DISPLAYNAME, $any($event.target).value)"
+          matInput />
         <mat-hint i18n>This is the display name of your service in the TiQR app.</mat-hint>
       </mat-form-field>
     </div>
@@ -83,12 +84,13 @@
         class="input-width-xl">
         <mat-label i18n>TiQR Service Identifier</mat-label>
         <input
-          [ngModel]="formData()[TIQR_SERVICE_IDENTIFIER]"
-          (ngModelChange)="updateFormData(TIQR_SERVICE_IDENTIFIER, $event)"
-          matInput>
-        <mat-hint i18n>This is the service identifier that will be passed to the TiQR app.
-          <br>
-                       This should contain a reverse FQDN (defaults to org.privacyidea).
+          [value]="formData()[TIQR_SERVICE_IDENTIFIER]"
+          (input)="updateFormData(TIQR_SERVICE_IDENTIFIER, $any($event.target).value)"
+          matInput />
+        <mat-hint i18n
+          >This is the service identifier that will be passed to the TiQR app.
+          <br />
+          This should contain a reverse FQDN (defaults to org.privacyidea).
         </mat-hint>
       </mat-form-field>
 
@@ -97,15 +99,14 @@
         class="input-width-xl">
         <mat-label i18n>TiQR Logo URL</mat-label>
         <input
-          #logoUrlInput="ngModel"
-          [ngModel]="formData()[TIQR_LOGO_URL]"
-          (ngModelChange)="updateFormData(TIQR_LOGO_URL, $event)"
-          [ngModelOptions]="{ standalone: true }"
+          #logoUrlInput
+          [value]="formData()[TIQR_LOGO_URL]"
+          (input)="updateFormData(TIQR_LOGO_URL, $any($event.target).value)"
           matInput
           placeholder="https://pi.server/static/css/privacyIDEA1.png"
           required
-          type="url">
-        @if (logoUrlInput.errors?.['required']) {
+          type="url" />
+        @if (logoUrlInput.validity.valueMissing) {
           <mat-error i18n>TiQR Logo URL is <strong>required</strong></mat-error>
         }
         <mat-hint i18n>The URL that contains the logo of the service.</mat-hint>
@@ -118,14 +119,16 @@
         class="input-width-xl">
         <mat-label i18n>OCRA Suite</mat-label>
         <input
-          [ngModel]="formData()[TIQR_OCRASUITE]"
-          (ngModelChange)="updateFormData(TIQR_OCRASUITE, $event)"
-          matInput>
-        <mat-hint i18n>This is the OCRA suite used by the TiQR App. The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.
-                       For more details see the
+          [value]="formData()[TIQR_OCRASUITE]"
+          (input)="updateFormData(TIQR_OCRASUITE, $any($event.target).value)"
+          matInput />
+        <mat-hint i18n
+          >This is the OCRA suite used by the TiQR App. The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10. For more
+          details see the
           <a
             href="https://tools.ietf.org/html/rfc6287#page-8"
-            target="_blank"><strong>RFC 6287</strong>.
+            target="_blank"
+            ><strong>RFC 6287</strong>.
           </a>
         </mat-hint>
       </mat-form-field>
@@ -135,15 +138,14 @@
         class="input-width-xl">
         <mat-label i18n>TiQR Info URL</mat-label>
         <input
-          #infoUrlInput="ngModel"
-          [ngModel]="formData()[TIQR_INFO_URL]"
-          (ngModelChange)="updateFormData(TIQR_INFO_URL, $event)"
-          [ngModelOptions]="{ standalone: true }"
+          #infoUrlInput
+          [value]="formData()[TIQR_INFO_URL]"
+          (input)="updateFormData(TIQR_INFO_URL, $any($event.target).value)"
           matInput
           placeholder="https://www.privacyidea.org"
           required
-          type="url">
-        @if (infoUrlInput.errors?.['required']) {
+          type="url" />
+        @if (infoUrlInput.validity.valueMissing) {
           <mat-error i18n>TiQR Info URL is <strong>required</strong></mat-error>
         }
         <mat-hint i18n>The website of the identity provider</mat-hint>

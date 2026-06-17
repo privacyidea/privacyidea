@@ -18,19 +18,18 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MultiSelectOnlyComponent } from "./multi-select-only.component";
 
 describe("MultiSelectOnlyComponent", () => {
-  let component: MultiSelectOnlyComponent;
-  let fixture: ComponentFixture<MultiSelectOnlyComponent>;
+  let component: MultiSelectOnlyComponent<string | number>;
+  let fixture: ComponentFixture<MultiSelectOnlyComponent<string | number>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MultiSelectOnlyComponent, NoopAnimationsModule]
+      imports: [MultiSelectOnlyComponent]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MultiSelectOnlyComponent);
+    fixture = TestBed.createComponent(MultiSelectOnlyComponent<string | number>);
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput("items", []);

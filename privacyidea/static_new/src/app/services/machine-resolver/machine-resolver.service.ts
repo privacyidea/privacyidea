@@ -26,9 +26,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-export type MachineResolvers = {
-  [key: string]: MachineResolver;
-};
+export type MachineResolvers = Record<string, MachineResolver>;
 
 export interface MachineResolverData {
   resolver: string;
@@ -87,17 +85,15 @@ export interface MachineResolverServiceInterface {
   deleteMachineResolver(name: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class MachineResolverService implements MachineResolverServiceInterface {
   readonly allMachineResolverTypes: string[] = ["hosts", "ldap"];
-  readonly machineResolverBaseUrl = environment.proxyUrl + "/machineresolver/";
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
-  readonly authService: AuthServiceInterface = inject(AuthService);
-  readonly contentService: ContentServiceInterface = inject(ContentService);
-  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  readonly http: HttpClient = inject(HttpClient);
+  readonly machineResolverBaseUrl = environment.proxyUrl + "/machineresolver/";
 
   constructor() {
     effect(() => {
@@ -134,7 +130,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}${encodeURIComponent(resolver.resolvername)}`;
-    const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(url, resolver.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
@@ -155,9 +151,9 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}test`;
-    const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<boolean>>(url, resolver.data, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
-      .then(() => {})
+      .then(() => undefined)
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
         this.notificationService.error("Failed to update machineResolver. " + message);
@@ -170,7 +166,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       this.notificationService.error("You are not allowed to delete Machine Resolvers.");
       throw new Error("not-allowed");
     }
-    const request = this.http.delete<PiResponse<any>>(`${this.machineResolverBaseUrl}${encodeURIComponent(name)}`, {
+    const request = this.http.delete<PiResponse<number>>(`${this.machineResolverBaseUrl}${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

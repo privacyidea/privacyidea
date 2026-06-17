@@ -19,8 +19,8 @@
 
 import { Component, Input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
@@ -36,9 +36,9 @@ import { of } from "rxjs";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
-  @Input() initialFilter!: FilterValueGeneric<any>;
-  @Input() unfilteredPolicies!: any[];
-  filterChange = output<FilterValueGeneric<any>>();
+  @Input() initialFilter!: FilterValueGeneric<PolicyDetail>;
+  @Input() unfilteredPolicies!: PolicyDetail[];
+  filterChange = output<FilterValueGeneric<PolicyDetail>>();
   updateFilterManually = jest.fn();
   focusInput = jest.fn();
 }
@@ -58,7 +58,7 @@ describe("PoliciesTableComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PoliciesTableComponent, NoopAnimationsModule],
+      imports: [PoliciesTableComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: DialogService, useClass: MockDialogService },
@@ -126,9 +126,9 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {
-    const dialogSpy = jest.spyOn(mockDialogService, "openDialog").mockReturnValue({
+    jest.spyOn(mockDialogService, "openDialog").mockReturnValue({
       afterClosed: () => of(null)
-    } as any);
+    } as unknown as MatDialogRef<never, never>);
 
     component.editPolicy(mockPolicies[0]);
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_DETAILS + mockPolicies[0].name);

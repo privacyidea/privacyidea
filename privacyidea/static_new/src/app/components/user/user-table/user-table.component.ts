@@ -45,7 +45,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
@@ -55,6 +54,7 @@ import { Sort } from "@angular/material/sort";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -75,7 +75,6 @@ const columnKeysMap = [
 @Component({
   selector: "app-user-table",
   imports: [
-    FormsModule,
     MatCell,
     MatCellDef,
     MatFormField,
@@ -94,8 +93,8 @@ const columnKeysMap = [
     MatHeaderCellDef,
     ScrollToTopDirective,
     ClearableInputComponent,
+    CopyableComponent,
     UserTableActionsComponent,
-    ClearableInputComponent,
     RouterLink,
     MatIcon,
     MatIconButton,
@@ -160,7 +159,7 @@ export class UserTableComponent {
     if (!s.direction) return data;
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof UserData;
-    return data.sort((a: any, b: any) => {
+    return data.sort((a: UserData, b: UserData) => {
       const va = (a?.[key] ?? "").toString().toLowerCase();
       const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
@@ -194,7 +193,7 @@ export class UserTableComponent {
     this.userService.detailsUsername.set(user.username);
   }
 
-  onClickResolver(resolverName: unknown): void {
+  onClickResolver(resolverName: string): void {
     const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
     if (resolver) {
       this.dialog.open(UserNewResolverComponent, {

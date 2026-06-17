@@ -19,19 +19,15 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
-import {
-    MockNotificationService,
-    MockRealmService,
-    MockTokenService,
-    MockUserService
-} from "@testing/mock-services";
+import { MockNotificationService, MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TokenImportResult } from "@services/token/token.service";
 import { of } from "rxjs";
 import { TokenImportComponent } from "./token-import.component";
 
@@ -60,11 +56,9 @@ describe("TokenImportComponent", () => {
     class IO {
       observe = jest.fn();
       disconnect = jest.fn();
-
-      constructor(_: any, __?: any) {}
     }
 
-    (global as any).IntersectionObserver = IO;
+    (globalThis as unknown as { IntersectionObserver: typeof IO }).IntersectionObserver = IO;
   });
 
   beforeEach(async () => {
@@ -72,7 +66,7 @@ describe("TokenImportComponent", () => {
     TestBed.resetTestingModule();
 
     await TestBed.configureTestingModule({
-      imports: [TokenImportComponent, FormsModule, ReactiveFormsModule],
+      imports: [TokenImportComponent],
       providers: [
         provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },
@@ -97,29 +91,25 @@ describe("TokenImportComponent", () => {
 
   it("should update fileName and file on file selection", () => {
     const file = new File(["dummy content"], "test.csv", { type: "text/csv" });
-    const event = { target: { files: [file] } } as any;
+    const event = { target: { files: [file] } } as unknown as Event;
     component.onFileSelected(event);
     expect(component.fileName()).toBe("test.csv");
-    expect(component.file.value).toBe(file);
+    expect(component.file()).toBe(file);
   });
 
   it("should clear file selection", () => {
-    component.file.setValue("dummy");
+    component.file.set("dummy");
     component.fileName.set("dummy.csv");
     component.clearFileSelection();
-    expect(component.file.value).toBe("");
+    expect(component.file()).toBe("");
     expect(component.fileName()).toBe("");
   });
 
   it("should call importTokens and show notification on success", () => {
-    component.file.setValue(new Blob(["data"]));
+    component.file.set(new File(["data"], "import.csv"));
     component.fileName.set("import.csv");
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
     jest.spyOn(tokenService, "importTokens").mockReturnValue(
-      of({
-        result: { value: { n_imported: 2, n_not_imported: 1 } }
-      } as any)
+      of(MockPiResponse.fromValue<TokenImportResult>({ n_imported: 2, n_not_imported: 1 }))
     );
     component.importTokens();
     expect(tokenService.importTokens).toHaveBeenCalled();
@@ -127,10 +117,8 @@ describe("TokenImportComponent", () => {
   });
 
   it("should not call importTokens if form is invalid", () => {
-    component.file.setValue("");
+    component.file.set("");
     component.fileName.set("");
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
     const spy = jest.spyOn(tokenService, "importTokens");
     component.importTokens();
     expect(spy).not.toHaveBeenCalled();
@@ -138,10 +126,10 @@ describe("TokenImportComponent", () => {
 
   it("should validate preSharedKey length for PSKC", () => {
     component.fileType.set("pskc");
-    component.preSharedKey.setValue("12345678901234567890123456789012");
-    expect(component.preSharedKey.valid).toBe(true);
-    component.preSharedKey.setValue("short");
-    expect(component.preSharedKey.valid).toBe(false);
+    component.preSharedKey.set("12345678901234567890123456789012");
+    expect(component.preSharedKeyValid()).toBe(true);
+    component.preSharedKey.set("short");
+    expect(component.preSharedKeyValid()).toBe(false);
   });
 
   it("should update selectedRealms", () => {
@@ -160,19 +148,15 @@ describe("TokenImportComponent", () => {
   it("should call importTokens with correct parameters for PSKC file", () => {
     const file = new File(["pskc content"], "pskcfile.pskc", { type: "application/xml" });
     component.fileType.set("pskc");
-    component.file.setValue(file);
+    component.file.set(file);
     component.fileName.set("pskcfile.pskc");
-    component.preSharedKey.setValue("12345678901234567890123456789012");
+    component.preSharedKey.set("12345678901234567890123456789012");
     component.pskPassword.set("testpassword");
     component.pskValidation.set("check_fail_soft");
     component.selectedRealms.set(["realm1", "realm2"]);
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
 
     const importTokensSpy = jest.spyOn(tokenService, "importTokens").mockReturnValue(
-      of({
-        result: { value: { n_imported: 1, n_not_imported: 0 } }
-      } as any)
+      of(MockPiResponse.fromValue<TokenImportResult>({ n_imported: 1, n_not_imported: 0 }))
     );
 
     component.importTokens();
@@ -191,19 +175,15 @@ describe("TokenImportComponent", () => {
   it("should not include psk and password parameters if they are empty for PSKC file", () => {
     const file = new File(["pskc content"], "pskcfile.pskc", { type: "application/xml" });
     component.fileType.set("pskc");
-    component.file.setValue(file);
+    component.file.set(file);
     component.fileName.set("pskcfile.pskc");
-    component.preSharedKey.setValue(""); // empty
+    component.preSharedKey.set(""); // empty
     component.pskPassword.set(""); // empty
     component.pskValidation.set("check_fail_hard");
     component.selectedRealms.set(["realm1"]);
-    component.inputForm.markAsDirty();
-    component.inputForm.markAsTouched();
 
     const importTokensSpy = jest.spyOn(tokenService, "importTokens").mockReturnValue(
-      of({
-        result: { value: { n_imported: 1, n_not_imported: 0 } }
-      } as any)
+      of(MockPiResponse.fromValue<TokenImportResult>({ n_imported: 1, n_not_imported: 0 }))
     );
 
     component.importTokens();

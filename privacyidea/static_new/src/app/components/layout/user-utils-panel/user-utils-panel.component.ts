@@ -109,7 +109,7 @@ export class UserUtilsPanelComponent {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   isLargeScreen = signal(window.innerWidth > 1630);
 
@@ -185,7 +185,7 @@ export class UserUtilsPanelComponent {
   refreshPage() {
     if (this.contentService.onTokenDetails()) {
       this.tokenService.tokenDetailResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.containersForTokenTypeResource.reload();
       return;
     } else if (this.contentService.onContainersDetails()) {
       this.containerService.containerDetailsResource.reload();
@@ -196,7 +196,7 @@ export class UserUtilsPanelComponent {
       this.userService.usersResource.reload();
       this.tokenService.tokenResource.reload();
       this.tokenService.userTokenResource.reload();
-      this.containerService.containerResource.reload();
+      this.containerService.userContainersResource.reload();
       return;
     }
 
@@ -214,7 +214,7 @@ export class UserUtilsPanelComponent {
         this.machineService.tokenApplicationResource.reload();
         break;
       case ROUTE_PATHS.TOKENS_ENROLLMENT:
-        this.containerService.containerResource.reload();
+        this.containerService.containersForTokenTypeResource.reload();
         this.userService.usersResource.reload();
         break;
       case ROUTE_PATHS.AUDIT:

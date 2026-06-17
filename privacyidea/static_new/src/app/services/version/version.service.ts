@@ -24,9 +24,7 @@ export interface VersioningServiceInterface {
   getVersion(): string;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class VersioningService implements VersioningServiceInterface {
   rawVersion = signal("");
   version = computed(() => {

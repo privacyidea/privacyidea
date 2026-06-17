@@ -387,6 +387,7 @@ $button-low-contrast-variant: linear-gradient(
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  vertical-align: middle;
 
   .icon-badge-overlay {
     position: absolute;
@@ -576,6 +577,14 @@ $button-low-contrast-variant: linear-gradient(
     $border: false,
     $primary: true
   );
+
+  .icon-badge-overlay {
+    background-color: var(--mat-sys-primary);
+  }
+
+  &:hover .icon-badge-overlay {
+    background-color: var(--mat-sys-primary-base-active);
+  }
 }
 
 .action-button-secondary {
@@ -692,6 +701,7 @@ $button-low-contrast-variant: linear-gradient(
     height: 36px !important;
   }
 }
+
 .text-button {
   background: none !important;
   border: none !important;
@@ -712,6 +722,7 @@ $button-low-contrast-variant: linear-gradient(
     cursor: default;
   }
 }
+
 // .add-action-button {
 //   align-self: flex-end;
 //   color: var(--mat-sys-primary);

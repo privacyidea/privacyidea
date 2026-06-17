@@ -16,18 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  linkedSignal,
-  OnDestroy,
-  Renderer2,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
+import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -41,14 +30,13 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -79,11 +67,10 @@ const columnKeysMap = [
     MatSortModule,
     NgClass,
     MatCheckboxModule,
-    FormsModule,
     MatIconModule,
     ScrollToTopDirective,
     ClearableInputComponent,
-    CopyButtonComponent,
+    CopyableComponent,
     TokenTableActionsComponent,
     MatIconButton,
     MatMenuModule,
@@ -93,26 +80,21 @@ const columnKeysMap = [
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
-export class TokenTableComponent implements AfterViewInit, OnDestroy {
+export class TokenTableComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
-  private observer!: IntersectionObserver;
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   tokenSelection = this.tokenService.tokenSelection;
   tokenResource = this.tokenService.tokenResource;
   tokenFilter = this.tokenService.tokenFilter;
@@ -141,11 +123,11 @@ export class TokenTableComponent implements AfterViewInit, OnDestroy {
     source: this.pageSize,
     computation: (pageSize: number) =>
       Array.from({ length: pageSize }, () => {
-        const emptyRow: any = {};
+        const emptyRow: Record<string, string> = {};
         columnKeysMap.forEach((column) => {
           emptyRow[column.key] = "";
         });
-        return emptyRow;
+        return emptyRow as unknown as TokenDetails;
       })
   });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
@@ -236,7 +218,7 @@ export class TokenTableComponent implements AfterViewInit, OnDestroy {
 
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
-    this.tokenService.eventPageSize = event.pageSize;
+    this.tokenService.eventPageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
   }
 
@@ -320,36 +302,5 @@ export class TokenTableComponent implements AfterViewInit, OnDestroy {
     }
     this.tokenService.tokenFilter.set(newValue);
     this.filterInput?.nativeElement.focus();
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
-  }
-
-  ngOnDestroy(): void {
-    if (this.observer) {
-      this.observer.disconnect();
-    }
   }
 }

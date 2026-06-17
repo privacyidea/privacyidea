@@ -18,23 +18,51 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { provideHttpClient } from "@angular/common/http";
+import { HttpResourceRef, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { signal, WritableSignal } from "@angular/core";
+import { ValidationError } from "@angular/forms/signals";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
+import { AuthData, AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { SmsGateway, SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { SystemConfigResponse, SystemService } from "@services/system/system.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService, MockSmsGatewayService, MockSystemService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollSmsComponent } from "./enroll-sms.component";
+
+type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
 describe("EnrollSmsComponent", () => {
   let component: EnrollSmsComponent;
   let fixture: ComponentFixture<EnrollSmsComponent>;
+  let authServiceMock: MockAuthService;
+  let smsGatewayServiceMock: MockSmsGatewayService;
+  let systemServiceMock: MockSystemService;
+
+  const basicOptions: TokenEnrollmentData = { type: "sms" } as TokenEnrollmentData;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EnrollSmsComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      imports: [EnrollSmsComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollSmsComponent);
     component = fixture.componentInstance;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    smsGatewayServiceMock = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
+    systemServiceMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     fixture.detectChanges();
   });
 
@@ -52,9 +80,9 @@ describe("EnrollSmsComponent", () => {
       });
       fixture.detectChanges();
       component.ngOnInit();
-      expect(component.smsGatewayControl.value).toBe("TestGateway");
-      expect(component.readNumberDynamicallyControl.value).toBe(true);
-      expect(component.phoneNumberControl.value).toBe("+1234567890");
+      expect(component.smsGateway()).toBe("TestGateway");
+      expect(component.readNumberDynamically()).toBe(true);
+      expect(component.phoneNumber()).toBe("+1234567890");
     });
 
     it("should ignore values from enrollmentData if they are undefined", () => {
@@ -65,9 +93,135 @@ describe("EnrollSmsComponent", () => {
         phoneNumber: undefined
       });
       component.ngOnInit();
-      expect(component.smsGatewayControl.value).toBe("");
-      expect(component.readNumberDynamicallyControl.value).toBe(false);
-      expect(component.phoneNumberControl.value).toBe("");
+      expect(component.smsGateway()).toBe("");
+      expect(component.readNumberDynamically()).toBe(false);
+      expect(component.phoneNumber()).toBe("");
+    });
+  });
+
+  describe("smsGatewayOptions computed", () => {
+    it("should parse gateways from the sms_gateways right when available", () => {
+      authServiceMock.authData.set({ rights: ["sms_gateways=gw1 gw2 gw3"] } as Partial<AuthData> as AuthData);
+      const opts = component.smsGatewayOptions();
+      expect(opts).toEqual(["gw1", "gw2", "gw3"]);
+    });
+
+    it("should fall back to smsGateways service when no right exists", () => {
+      authServiceMock.authData.set({ rights: [] } as Partial<AuthData> as AuthData);
+      (smsGatewayServiceMock as unknown as { smsGateways: WritableSignal<SmsGateway[]> }).smsGateways = signal<
+        SmsGateway[]
+      >([
+        { name: "service-gw1", providermodule: "m", options: {}, headers: {} },
+        { name: "service-gw2", providermodule: "m", options: {}, headers: {} }
+      ]);
+      const opts = component.smsGatewayOptions();
+      expect(opts).toEqual(["service-gw1", "service-gw2"]);
+    });
+
+    it("should append the default identifier when not already present", () => {
+      authServiceMock.authData.set({ rights: ["sms_gateways=gw1"] } as Partial<AuthData> as AuthData);
+      (
+        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
+      ).value.set(MockPiResponse.fromValue({ "sms.identifier": "default-gw" }));
+      const opts = component.smsGatewayOptions();
+      expect(opts).toContain("default-gw");
+      expect(opts).toContain("gw1");
+    });
+  });
+
+  describe("defaultSMSGatewayIsSet", () => {
+    it("should be false when no sms gateway is configured", () => {
+      (
+        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
+      ).value.set(MockPiResponse.fromValue({}));
+      expect(component.defaultSMSGatewayIsSet()).toBe(false);
+    });
+
+    it("should be true when sms.identifier is configured", () => {
+      (
+        systemServiceMock.systemConfigResource as HttpResourceRef<SystemConfigResourceValue>
+      ).value.set(MockPiResponse.fromValue({ "sms.identifier": "main-gw" }));
+      expect(component.defaultSMSGatewayIsSet()).toBe(true);
+    });
+  });
+
+  describe("buildEnrollmentArgs", () => {
+    it("should return null and mark smsGateway form touched when no gateway selected", () => {
+      component.smsGateway.set("");
+      const result = component.buildEnrollmentArgs(basicOptions);
+      expect(result).toBeNull();
+      expect(component.smsGatewayForm().touched()).toBe(true);
+    });
+
+    it("should return null and mark phoneNumber form touched when phone number is invalid", () => {
+      component.smsGateway.set("gw1");
+      component.readNumberDynamically.set(false);
+      component.phoneNumber.set("not-a-number");
+      const result = component.buildEnrollmentArgs(basicOptions);
+      expect(result).toBeNull();
+      expect(component.phoneNumberForm().touched()).toBe(true);
+    });
+
+    it("should skip phoneNumber validation when readNumberDynamically is true", () => {
+      component.smsGateway.set("gw1");
+      component.readNumberDynamically.set(true);
+      component.phoneNumber.set("");
+      const result = component.buildEnrollmentArgs(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.readNumberDynamically).toBe(true);
+      expect((result!.data as SmsEnrollmentData).phoneNumber).toBeUndefined();
+    });
+
+    it("should include phoneNumber when readNumberDynamically is false", () => {
+      component.smsGateway.set("gw1");
+      component.readNumberDynamically.set(false);
+      component.phoneNumber.set("+12345678");
+      const result = component.buildEnrollmentArgs(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.smsGateway).toBe("gw1");
+      expect((result!.data as SmsEnrollmentData).phoneNumber).toBe("+12345678");
+    });
+  });
+
+  describe("phoneNumberForm validation", () => {
+    it("should reject malformed numbers", () => {
+      component.phoneNumber.set("abc");
+      expect(
+        component
+          .phoneNumberForm()
+          .errors()
+          .some((e: ValidationError) => e.kind === "invalidPhoneNumber")
+      ).toBe(true);
+    });
+
+    it("should accept E.164-style numbers", () => {
+      component.phoneNumber.set("+4915112345678");
+      expect(
+        component
+          .phoneNumberForm()
+          .errors()
+          .some((e: ValidationError) => e.kind === "invalidPhoneNumber")
+      ).toBe(false);
+    });
+  });
+
+  describe("onSmsConfigKeydown", () => {
+    it("should navigate when Enter pressed", () => {
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
+      component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "Enter" }));
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it("should navigate when Space pressed", () => {
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
+      component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: " " }));
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it("should ignore other keys", () => {
+      const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
+      component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "a" }));
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 });

@@ -51,6 +51,8 @@ export const ROUTE_PATHS = {
   CONFIGURATION_MACHINES: "/configuration/machines",
   CONFIGURATION_MACHINES_DETAILS: "/configuration/machines/details/",
   CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
+  CONFIGURATION_PERIODIC_TASKS_NEW: "/configuration/periodic-tasks/new",
+  CONFIGURATION_PERIODIC_TASKS_DETAILS: "/configuration/periodic-tasks/details/",
   CONFIGURATION_SYSTEM: "/configuration/system",
   CONFIGURATION_TOKENTYPES: "/configuration/tokens",
   SUBSCRIPTION: "/configuration/subscription",

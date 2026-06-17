@@ -30,7 +30,7 @@ from flask import current_app
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
+                                    FAILED_TO_DECRYPT_PASSWORD, is_censored)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
@@ -320,7 +320,7 @@ def get_smtpservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 def list_smtpservers(identifier=None, server=None):
     """
     This returns a list of all smtpservers matching the criterion.
@@ -352,7 +352,7 @@ def list_smtpservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, hide_kwargs=["password", "private_key_password"])
 def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",
                    sender: str = "", description: str = "", tls: bool = False, timeout: int = TIMEOUT,
                    enqueue_job: bool = False, smime: bool = False, dont_send_on_error: bool = False,
@@ -370,7 +370,18 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     :type server: basestring
     :return: The Id of the database object
     """
-    encrypted_password = encryptPassword(password)
+
+    # The CENSORED placeholder (what the API returned for the password) means
+    # "keep the stored password unchanged" -> leave encrypted_password = None so
+    # the update below skips the column. An empty string clears the password, any
+    # other value sets it.
+    if is_censored(password):
+        encrypted_password = None
+    else:
+        encrypted_password = encryptPassword(password)
+    if is_censored(private_key_password):
+        private_key_password = None
+
     # private_key_password could be empty string or None, which have a different effect later.
     # here we only care if it has an actual value that we should encrypt, otherwise leave it at empty string or None
     encrypted_private_key_password = private_key_password

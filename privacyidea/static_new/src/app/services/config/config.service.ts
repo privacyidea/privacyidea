@@ -46,12 +46,10 @@ export interface ConfigServiceInterface {
   loadConfig(): void;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class ConfigService implements ConfigServiceInterface {
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
   config = signal({
     remote_user: "",
     force_remote_user: false,
@@ -71,7 +69,7 @@ export class ConfigService implements ConfigServiceInterface {
 
   loadConfig() {
     this.http
-      .get<PiResponse<Record<any, any>>>(environment.proxyUrl + "/config")
+      .get<PiResponse<AppConfig>>(`${environment.proxyUrl}/config`)
       .pipe(
         catchError((error) => {
           console.error("Failed to load config:", error);
@@ -84,12 +82,18 @@ export class ConfigService implements ConfigServiceInterface {
             time: 0,
             version: "",
             versionnumber: ""
-          } as PiResponse<Record<any, any>>);
+          });
         })
       )
       .subscribe((data) => {
-        this.config.set(data.result?.value as AppConfig);
-        this.versioningService.rawVersion.set(data.versionnumber);
+        const configValue = data.result?.value;
+
+        if (data.result?.status && configValue) {
+          this.config.set(configValue);
+          this.versioningService.rawVersion.set(data.versionnumber);
+        } else {
+          console.error("Failed to load config: Invalid response", data);
+        }
       });
   }
 }

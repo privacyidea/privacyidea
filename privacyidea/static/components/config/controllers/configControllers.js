@@ -788,8 +788,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
                 $scope.params['PrependPin.type'] = "public";
                 $scope.params.splitAtSign = $scope.isChecked($scope.params.splitAtSign);
                 $scope.params.IncFailCountOnFalsePin = $scope.isChecked($scope.params.IncFailCountOnFalsePin);
-                $scope.params.ReturnSamlAttributes = $scope.isChecked($scope.params.ReturnSamlAttributes);
-                $scope.params.ReturnSamlAttributesOnFail = $scope.isChecked($scope.params.ReturnSamlAttributesOnFail);
                 $scope.params.AutoResync = $scope.isChecked($scope.params.AutoResync);
                 $scope.params.UiLoginDisplayHelpButton = $scope.isChecked($scope.params.UiLoginDisplayHelpButton);
                 $scope.params.UiLoginDisplayRealmBox = $scope.isChecked($scope.params.UiLoginDisplayRealmBox);
