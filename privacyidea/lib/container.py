@@ -224,7 +224,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str | 
             stmt = stmt.where(func.upper(TokenContainer.serial) == serial.upper())
 
     if isinstance(ctype, list):
-        type_values = [t.strip() for t in ctype if t and str(t).strip()]
+        type_values = [str(t).strip() for t in ctype if t and str(t).strip()]
         if not type_values:
             # Caller asked for an empty subset of types — return no rows.
             stmt = stmt.where(false())

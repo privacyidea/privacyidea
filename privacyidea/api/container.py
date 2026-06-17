@@ -173,10 +173,9 @@ def list_containers():
         ctype = None
     elif isinstance(ctype_raw, list):
         ctype = _split_csv_or_list(ctype_raw)
-    elif "," in ctype_raw:
-        ctype = _split_csv_or_list(ctype_raw)
     else:
-        ctype = ctype_raw
+        ctype_raw = str(ctype_raw)
+        ctype = _split_csv_or_list(ctype_raw) if "," in ctype_raw else ctype_raw
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")
