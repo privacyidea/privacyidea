@@ -139,7 +139,8 @@ from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent,
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
-from ..lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from ..lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -706,6 +707,7 @@ def _handle_serial_auth(context: dict, serial: str):
     if not otp_only:
         success, details = check_serial_pass(serial, password, options=context["options"])
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
+        context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
@@ -754,6 +756,8 @@ def _handle_standard_auth(context: dict):
 
     event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
     context[AUTH_EVENT_TYPE_KEY] = event_type
+    # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
+    context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -827,7 +831,8 @@ def _log_authentication_event(context):
     """
     # Stash the written row id so a later post-policy (enroll_via_multichallenge) can reclassify this same row
     request_txn = request.all_data.get("transaction_id") or request.all_data.get("state")
-    details_txn = context["details"].get("transaction_id")
+    # The log-only TXN (push_wait success) stands in for the challenge TXN that the response does not carry.
+    details_txn = context["details"].get("transaction_id") or context.get(LOG_TRANSACTION_ID_KEY)
     # Prefer the newly-created challenge TXN (details) over the answered-challenge TXN (request). When both exist
     # and differ, the request TXN is the "previous" — the challenge that was just answered.
     logged_txn = details_txn or request_txn

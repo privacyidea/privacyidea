@@ -26,6 +26,15 @@ AUTH_EVENT_TYPE_KEY = "authentication_event_type"
 # Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
 NO_FIRST_FACTOR_KEY = "no_first_factor"
 
+# Key set on token.auth_details when the token logged its own outcome and no terminal event should be added on top.
+# A push_wait timeout sets this: the unanswered challenge is recorded only as CHALLENGE_TRIGGERED, not an MFA_FAIL.
+SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
+
+# Key a token sets in its reply to carry the challenge transaction_id to the terminal authentication-log row without
+# exposing it in the response. push_wait uses it so its LOGIN_SUCCESS row correlates with the trigger and out-of-band
+# answer; the API layer pops it from the response details before sending.
+LOG_TRANSACTION_ID_KEY = "log_transaction_id"
+
 
 class AuthEventType(str, Enum):
     """

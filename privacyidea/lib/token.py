@@ -83,7 +83,8 @@ from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
 from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
-                                                                           NO_FIRST_FACTOR_KEY, reduce_request_events)
+                                                                           NO_FIRST_FACTOR_KEY, reduce_request_events,
+                                                                           SUPPRESS_TERMINAL_EVENT_KEY)
 from privacyidea.lib.config import (get_token_class, get_token_prefix,
                                     get_token_types, get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF,
@@ -2531,6 +2532,8 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     messages = []
     # Per-token outcomes for the authentication log
     request_events: list[AuthEventType] = []
+    # Set when a token logged its own outcome and no terminal event should be added (push_wait timeout).
+    terminal_event_suppressed = False
     num_all_tokens = len(token_object_list)
 
     # Remove locked tokens from token_object_list
@@ -2597,10 +2600,14 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     # The PIN (first factor) of the token matches, but the OTP did not. For logging check if a pin was
                     # required / checked at all.
                     pin_matching_token_list.append(token_object)
-                    default_event = (AuthEventType.TOKEN_ONLY_FAIL
-                                     if token_object.auth_details.get(NO_FIRST_FACTOR_KEY)
-                                     else AuthEventType.MFA_FAIL)
-                    request_events.append(_token_event(token_object, default_event))
+                    if token_object.auth_details.get(SUPPRESS_TERMINAL_EVENT_KEY):
+                        # The token logged its own outcome (push_wait timeout); do not add a terminal event on top.
+                        terminal_event_suppressed = True
+                    else:
+                        default_event = (AuthEventType.TOKEN_ONLY_FAIL
+                                         if token_object.auth_details.get(NO_FIRST_FACTOR_KEY)
+                                         else AuthEventType.MFA_FAIL)
+                        request_events.append(_token_event(token_object, default_event))
                 else:
                     # Nothing matches at all: a wrong first factor (PIN_FAIL, or PASSWORD_FAIL with otppin=userstore).
                     # This stays PIN_FAIL even with otppin=none, if a pin was given unexpectedly
@@ -2812,7 +2819,9 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
     # were all unusable (revoked, disabled, disabled type, max-fail exceeded, out of validity) -> NO_USABLE_TOKEN, or
     # owns no token at all -> NO_TOKEN.
     reduced_event = reduce_request_events(request_events)
-    if reduced_event is None:
+    # When a token suppressed its terminal event (push_wait timeout), leave the classification empty instead of
+    # falling back, so no terminal row is logged on top of the one the token logged itself.
+    if reduced_event is None and not terminal_event_suppressed:
         reduced_event = AuthEventType.NO_USABLE_TOKEN if num_all_tokens else AuthEventType.NO_TOKEN
     reply_dict[AUTH_EVENT_TYPE_KEY] = reduced_event
 

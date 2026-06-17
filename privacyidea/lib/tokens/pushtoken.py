@@ -45,12 +45,15 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
+from flask import request as flask_request
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType,
+                                                                           SUPPRESS_TERMINAL_EVENT_KEY,
+                                                                           LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.decorators import check_token_locked
@@ -1308,6 +1311,13 @@ class PushTokenClass(TokenClass):
                     # The user will enter the display_code after the smartphone confirms.
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
+                # push_wait resolves the challenge inside this one blocking request, so log the trigger here (before
+                # the wait) — it has no other request to be recorded on and must be ordered ahead of the smartphone's
+                # out-of-band answer that arrives during the wait.
+                from privacyidea.api.lib.utils import log_authentication
+                log_authentication(AuthEventType.CHALLENGE_TRIGGERED, flask_request, user=user or self.user,
+                                   serial=self.token.serial, transaction_id=transaction_id)
+
                 # Standard / require_presence: wait for the challenge to be answered
                 start_time = time.time()
                 while True:
@@ -1317,6 +1327,15 @@ class PushTokenClass(TokenClass):
                     if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
+
+                if otp_counter < 0:
+                    # Timed out: CHALLENGE_TRIGGERED above is the only row. Suppress the default MFA_FAIL — a
+                    # non-response is not a wrong second factor.
+                    self.auth_details[SUPPRESS_TERMINAL_EVENT_KEY] = True
+                else:
+                    # Success: correlate the terminal LOGIN_SUCCESS row with the trigger and out-of-band answer via the
+                    # challenge transaction_id.
+                    reply = {LOG_TRANSACTION_ID_KEY: transaction_id}
 
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after

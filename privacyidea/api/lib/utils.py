@@ -32,7 +32,7 @@ from copy import copy
 from urllib.parse import unquote
 
 import jwt
-from flask import jsonify, current_app, Response, Request, g
+from flask import jsonify, current_app, Response, Request, g, has_request_context
 from flask_babel import _
 
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
@@ -218,7 +218,7 @@ def getLowerParams(param):
     return ret
 
 
-def log_authentication(event_type: AuthEventType | None, request: Request, user: User | None = None,
+def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
                        previous_transaction_id: str | None = None) -> int | None:
     """
@@ -236,11 +236,20 @@ def log_authentication(event_type: AuthEventType | None, request: Request, user:
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
     records that token's user, keeping the log symmetric.
+
+    ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
+    lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
+    event itself is never lost.
     """
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
         return
-    client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+    client_label = None
+    source_ip = None
+    if has_request_context():
+        source_ip = g.client_ip
+        if request is not None:
+            client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
     if not resolved and serial and "," not in serial:
@@ -262,7 +271,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request, user:
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
         username=(user.login or None) if user else None,
-        source_ip=g.client_ip,
+        source_ip=source_ip,
         client_label=client_label,
         serial=serial,
     )
