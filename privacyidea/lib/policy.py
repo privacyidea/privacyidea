@@ -2198,7 +2198,14 @@ def get_static_policy_definitions(scope=None):
                                                'desc': _(
                                                    'A whitespace-separated list of container info keys that shall '
                                                    'not be displayed to the admin.'),
-                                               'group': GROUP.CONTAINER}
+                                               'group': GROUP.CONTAINER},
+            PolicyAction.AUTHENTICATION_LOG_READ: {'type': TYPE.BOOL,
+                                                   'desc': _('Admin is allowed to read the authentication log.'),
+                                                   'group': GROUP.SYSTEM},
+            PolicyAction.AUTHENTICATION_LOG_DELETE: {'type': TYPE.BOOL,
+                                                     'desc': _(
+                                                         'Admin is allowed to delete entries from the authentication log.'),
+                                                     'group': GROUP.SYSTEM}
         },
         SCOPE.USER: {
             PolicyAction.ASSIGN: {
