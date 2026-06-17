@@ -4,6 +4,7 @@ to create, update, delete CA connectors.
 """
 from .base import MyApiTestCase
 from privacyidea.lib.caconnector import get_caconnector_list
+from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.policy import set_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.error import Error
@@ -192,3 +193,85 @@ class CAConnectorTestCase(MyApiTestCase):
             # TODO: Add test for MSCA connector
             # The localca CA connector does return only an empty dictionary
             self.assertEqual(result['value'], {}, result)
+
+    def test_09_password_censored_in_api_response(self):
+        """GET /caconnector/ must censor password-type config values."""
+        # Create a CA connector with a password-type config via the API
+        with self.app.test_request_context('/caconnector/con_secret',
+                                           data={
+                                               'type': 'microsoft',
+                                               'hostname': 'ca.example.com',
+                                               'port': '443',
+                                               'ssl_client_key_password': 'my_secret_key_pw',
+                                           },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # Now GET /caconnector/con_secret should censor the password
+        with self.app.test_request_context('/caconnector/con_secret',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            value = result["value"]
+            self.assertEqual(len(value), 1)
+            connector = value[0]
+            # The password config must be censored
+            self.assertEqual(
+                connector["data"]["ssl_client_key_password"],
+                CENSORED,
+                "Password-type CA connector config must be censored in the API response"
+            )
+            # Non-password config must NOT be censored
+            self.assertEqual(connector["data"]["hostname"], "ca.example.com")
+
+    def test_10_caconnector_password_not_overwritten_by_censored(self):
+        """Saving a CA connector with __CENSORED__ must preserve the original password."""
+        from privacyidea.models import db
+        from privacyidea.models.caconnector import CAConnectorConfig
+        from privacyidea.lib.crypto import decryptPassword
+        from sqlalchemy import select
+
+        # Create a CA connector with a password via the API
+        with self.app.test_request_context('/caconnector/con_preserve',
+                                           data={
+                                               'type': 'microsoft',
+                                               'hostname': 'ca.example.com',
+                                               'port': '443',
+                                               'ssl_client_key_password': 'original_ca_password',
+                                           },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            ca_id = res.json["result"]["value"]
+
+        # Now update the connector via the API, sending CENSORED for the password
+        with self.app.test_request_context('/caconnector/con_preserve',
+                                           data={
+                                               'type': 'microsoft',
+                                               'ssl_client_key_password': CENSORED,
+                                               'hostname': 'new-ca.example.com',
+                                               'port': '8443',
+                                           },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # Verify the password was preserved (not overwritten with CENSORED)
+        stmt = select(CAConnectorConfig).filter_by(
+            caconnector_id=ca_id, Key="ssl_client_key_password"
+        )
+        db_config = db.session.execute(stmt).scalar_one()
+        # The encrypted value should still be valid and decrypt to the original
+        self.assertEqual(decryptPassword(db_config.Value), "original_ca_password")
+        # Other fields should be updated
+        stmt2 = select(CAConnectorConfig).filter_by(
+            caconnector_id=ca_id, Key="hostname"
+        )
+        db_host = db.session.execute(stmt2).scalar_one()
+        self.assertEqual(db_host.Value, "new-ca.example.com")

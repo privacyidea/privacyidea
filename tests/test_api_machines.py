@@ -5,6 +5,7 @@ to fetch machine information and to attach token to machines
 import passlib
 
 from privacyidea.lib.user import User
+from privacyidea.lib.crypto import CENSORED
 from .base import MyApiTestCase
 from privacyidea.lib.token import init_token, get_tokens, remove_token
 from privacyidea.lib.machine import attach_token, detach_token, ANY_MACHINE, NO_RESOLVER
@@ -34,7 +35,6 @@ OTPKEY = "3132333435363738393031323334353637383930"
 
 
 class APIMachinesTestCase(MyApiTestCase):
-
     serial2 = "ser1"
     serial3 = "UBOM12345"
     serial4 = "OATH1234"
@@ -810,3 +810,83 @@ class APIMachinesTestCase(MyApiTestCase):
 
         # Check that the token was deleted
         self.assertFalse(get_tokens(serial=serial))
+
+    def test_40_machineresolver_password_censored(self):
+        """GET /machineresolver/ must censor password-type config values (e.g. BINDPW)."""
+        # Create an LDAP machine resolver with a BINDPW (password-type field)
+        with self.app.test_request_context('/machineresolver/ldap_mr',
+                                           data={
+                                               'type': 'ldap',
+                                               'LDAPURI': 'ldap://ldap.example.com',
+                                               'LDAPBASE': 'dc=example,dc=com',
+                                               'BINDDN': 'cn=admin,dc=example,dc=com',
+                                               'BINDPW': 'ldap_secret_pw',
+                                               'HOSTNAMEATTRIBUTE': 'cn',
+                                               'IDATTRIBUTE': 'cn',
+                                           },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            self.assertTrue(result["status"])
+
+        # Now GET the machine resolver - BINDPW must be censored
+        with self.app.test_request_context('/machineresolver/ldap_mr',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+            result = res.json.get("result")
+            value = result["value"]
+            resolver = value.get("ldap_mr")
+            self.assertIsNotNone(resolver, "Resolver 'ldap_mr' must be in the response")
+            # BINDPW must be censored
+            self.assertEqual(resolver["data"]["BINDPW"], CENSORED,
+                             "BINDPW must be censored in the API response")
+            # Non-password fields must NOT be censored
+            self.assertEqual(resolver["data"]["LDAPURI"], "ldap://ldap.example.com")
+            self.assertEqual(resolver["data"]["BINDDN"], "cn=admin,dc=example,dc=com")
+
+    def test_41_machineresolver_password_not_overwritten_by_censored(self):
+        """Updating a machine resolver with __CENSORED__ BINDPW must preserve the original."""
+        # Create an LDAP machine resolver with a BINDPW
+        with self.app.test_request_context('/machineresolver/ldap_mr2',
+                                           data={
+                                               'type': 'ldap',
+                                               'LDAPURI': 'ldap://ldap.example.com',
+                                               'LDAPBASE': 'dc=example,dc=com',
+                                               'BINDDN': 'cn=admin,dc=example,dc=com',
+                                               'BINDPW': 'original_ldap_pass',
+                                               'HOSTNAMEATTRIBUTE': 'cn',
+                                               'IDATTRIBUTE': 'cn',
+                                           },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # Update the resolver with CENSORED as the password (simulating UI re-save)
+        with self.app.test_request_context('/machineresolver/ldap_mr2',
+                                           data={
+                                               'type': 'ldap',
+                                               'LDAPURI': 'ldap://new-ldap.example.com',
+                                               'LDAPBASE': 'dc=example,dc=com',
+                                               'BINDDN': 'cn=admin,dc=example,dc=com',
+                                               'BINDPW': CENSORED,
+                                               'HOSTNAMEATTRIBUTE': 'cn',
+                                               'IDATTRIBUTE': 'cn',
+                                           },
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200)
+
+        # Verify the password was preserved by checking the DB directly
+        from privacyidea.lib.machineresolver import get_resolver_list
+        resolvers = get_resolver_list(filter_resolver_name="ldap_mr2")
+        resolver = resolvers.get("ldap_mr2")
+        # The decrypted password should still be "original_ldap_pass"
+        self.assertEqual(resolver["data"]["BINDPW"], "original_ldap_pass")
+        # Other fields should be updated
+        self.assertEqual(resolver["data"]["LDAPURI"], "ldap://new-ldap.example.com")

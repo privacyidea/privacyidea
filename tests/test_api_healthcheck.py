@@ -186,6 +186,50 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 check_resolvers(200, "OK", ldap_expected_status="OK", sql_expected_status="OK", auth_token=self.at)
                 check_resolvers(401, auth_token="")  # present but invalid token -> rejected
 
+    def test_resolversz_without_before_request_context(self):
+        # /healthz has no before_request hook, so resolversz must build the policy
+        # context (g.policy_object, g.client_ip) it needs to evaluate the
+        # require_auth_for_resolver_details policy by itself. The test base keeps a
+        # shared app context across requests, so leftovers from earlier requests
+        # (e.g. /auth) pre-seed g.audit_object and friends and would mask missing
+        # setup. We therefore clear every request-scoped field a prior request might
+        # have left behind to mirror a truly fresh request, and restore them in a
+        # finally so the deletions do not leak into later tests sharing the context.
+        from flask import g
+        cleared_attrs = ("client_ip", "policy_object", "policies", "audit_object",
+                         "request_headers", "request_data", "user_agent", "logged_in_user")
+        with setup_policy("auth_for_resolvers", scope=SCOPE.AUTHZ,
+                          action=f"{PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS}=true"):
+            with self.app.test_request_context('/healthz/resolversz', method='GET'):
+                saved = {attr: getattr(g, attr) for attr in cleared_attrs if hasattr(g, attr)}
+                for attr in cleared_attrs:
+                    if hasattr(g, attr):
+                        delattr(g, attr)
+                try:
+                    res = self.app.full_dispatch_request()
+                finally:
+                    for attr, value in saved.items():
+                        setattr(g, attr, value)
+                self.assertEqual(res.status_code, 200, res.data)
+                value = res.json["result"]["value"]
+                self.assertIn("status", value)
+                # Anonymous probe (no Authorization header) with the policy on must
+                # not disclose per-resolver names.
+                self.assertNotIn("ldapresolver", value)
+                self.assertNotIn("sqlresolver", value)
+
+    def test_resolversz_returns_503_when_config_unavailable(self):
+        # Building the policy context reads config/policies from the DB. If that
+        # fails (e.g. DB outage), resolversz must degrade to its documented 503
+        # status response, not raise an unhandled exception that becomes a 500.
+        from unittest.mock import patch
+        with patch("privacyidea.api.healthcheck.get_from_config",
+                   side_effect=Exception("DB down")):
+            with self.app.test_request_context('/healthz/resolversz', method='GET'):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(503, res.status_code, res.data)
+                self.assertEqual("error", res.json["result"]["value"]["status"])
+
     def test_resolversz_rejects_crafted_jwt_alg(self):
         # A token whose header alg is a trusted-JWT algorithm (e.g. RS256) but matches no
         # PI_TRUSTED_JWT entry decodes against HS256 and would raise jwt.InvalidAlgorithmError.
