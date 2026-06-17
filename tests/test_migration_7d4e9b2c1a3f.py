@@ -46,7 +46,7 @@ PI_INTERNAL = "pi_internal"  # value the pre-migration code wrote into customuse
 
 class TestMigration7d4e9b2c1a3f(MigrationTestBase):
     REVISION = "7d4e9b2c1a3f"
-    PARENT_REVISION = "b1a2c3d4e5f6"
+    PARENT_REVISION = "3cafe2771cdd"
 
     def _insert_custom(self, engine, rows: list[dict]) -> None:
         """Insert rows into customuserattribute. Each row needs at least

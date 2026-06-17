@@ -1,4 +1,4 @@
-"""Set empty rollout_state to 'enrolled' in token table
+"""v3.14: Set empty rollout_state to 'enrolled' in token table
 
 Revision ID: 3cafe2771cdd
 Revises: a1e0ba6ad9dc
