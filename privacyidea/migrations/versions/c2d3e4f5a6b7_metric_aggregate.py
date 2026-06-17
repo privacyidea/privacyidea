@@ -1,4 +1,4 @@
-"""Add metric_aggregate table
+"""v3.14: Add metric_aggregate table
 
 Used by the privacyidea.lib.metrics module to store rolling pre-aggregated
 counter and histogram values, partitioned by 5-minute window and node.
