@@ -4,6 +4,7 @@ Version 3.13.3
   * Fixed migration scripts to be compatible with Oracle (tested with 21c).
   * Fixed interaction of reset_all_user_tokens with FIDO2 token. (#5340)
   * Fixed an issue that would cause /healthz/resolversz to return HTTP error 500. (#5459)
+  * Fixed encoding of parameters in the HTTP resolvers. (#5455)
 
 Version 3.13.2, 2026-06-10
 
