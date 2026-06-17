@@ -51,7 +51,11 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11
+        # MariaDB 10.11 is the LTS most installations run (the Ubuntu 24.04
+        # default). Kept as a literal tag: a ${{ }} expression in image: is
+        # flagged by zizmor as an unpinned reference. Both 10.11 and 11 are
+        # covered for version-specific DDL by migration-tests.yml.
+        image: mariadb:10.11
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: privacyidea_test

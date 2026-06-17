@@ -105,13 +105,28 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         database = parsed_sqluri.path[1:]
         defaults_file = conf_dir.joinpath("mysql.cnf")
         _write_mysql_defaults(defaults_file, parsed_sqluri)
-        # call mysqldump to get a copy of the database
-        cmd = ['mysqldump', '--defaults-file={!s}'.format(defaults_file), '-h',
+        # call mysqldump to get a copy of the database.
+        # --single-transaction dumps a consistent InnoDB snapshot without taking
+        # table locks. The default (LOCK TABLES) path fails on a MariaDB Galera
+        # cluster, which rejects locking the SEQUENCE objects privacyIDEA creates
+        # ("This version of MariaDB doesn't yet support 'LOCK TABLE on SEQUENCES
+        # in Galera cluster'"). --skip-lock-tables is already implied by
+        # --single-transaction and is passed only as an explicit safeguard.
+        cmd = ['mysqldump', '--defaults-file={!s}'.format(defaults_file),
+               '--single-transaction', '--skip-lock-tables', '-h',
                shlex.quote(parsed_sqluri.hostname)]
         if parsed_sqluri.port:
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database), '-r', sqlfile])
-        subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603 - fixed argv, no shell
+        if result.returncode != 0:
+            # Never package a partial or empty dump as a successful backup.
+            if sqlfile.exists():
+                sqlfile.unlink()
+            click.secho(
+                f"Database dump failed (mysqldump exit code {result.returncode}); "
+                "no backup file was written.", fg="red")
+            sys.exit(2)
     else:
         click.echo(f"unsupported SQL syntax: {sqltype}")
         sys.exit(2)
@@ -157,7 +172,7 @@ def backup_restore(backup_file, keep_db_uri):
     sqlfile = None
     enckey_contained = False
 
-    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,
+    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,  # nosec B607 B603 - fixed argv, no shell
                        text=True)
     if p.returncode != 0:
         click.secho(f"Unable to open backup file {backup_file}", fg="red")
@@ -207,7 +222,7 @@ def backup_restore(backup_file, keep_db_uri):
                     fg="yellow",
                 )
 
-    subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
+    subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])  # nosec B607 B603 - fixed argv, no shell
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
@@ -258,9 +273,14 @@ def backup_restore(backup_file, keep_db_uri):
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database)])
         with open(sqlfile, "r") as sql_file:
-            p = subprocess.run(cmd, input=sql_file.read(), text=True)
-            if p.returncode == 0:
-                os.unlink(sqlfile)
+            p = subprocess.run(cmd, input=sql_file.read(), text=True)  # nosec B603 - fixed argv, no shell
+        if p.returncode != 0:
+            click.secho(
+                f"Database restore failed (mysql exit code {p.returncode}). "
+                f"The dump file was kept at {sqlfile} for inspection/retry.",
+                fg="red")
+            sys.exit(2)
+        os.unlink(sqlfile)
     else:
         print("unsupported SQL syntax: %s" % sqltype)
         sys.exit(2)
