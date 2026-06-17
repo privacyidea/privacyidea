@@ -164,7 +164,7 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

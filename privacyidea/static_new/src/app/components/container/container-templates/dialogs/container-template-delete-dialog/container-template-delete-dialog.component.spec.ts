@@ -28,7 +28,7 @@ import { ContainerTemplateDeleteDialogComponent } from "./container-template-del
 describe("ContainerTemplateDeleteDialogComponent", () => {
   let component: ContainerTemplateDeleteDialogComponent;
   let fixture: ComponentFixture<ContainerTemplateDeleteDialogComponent>;
-  let dialogRefMock: MockMatDialogRef<any, boolean>;
+  let dialogRefMock: MockMatDialogRef<ContainerTemplateDeleteDialogComponent, boolean>;
 
   const mockData: ContainerTemplate[] = [
     {
@@ -56,7 +56,10 @@ describe("ContainerTemplateDeleteDialogComponent", () => {
 
     fixture = TestBed.createComponent(ContainerTemplateDeleteDialogComponent);
     component = fixture.componentInstance;
-    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, boolean>;
+    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<
+      ContainerTemplateDeleteDialogComponent,
+      boolean
+    >;
     fixture.detectChanges();
   }
 

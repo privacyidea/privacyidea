@@ -160,7 +160,7 @@ export class ClientsComponent {
           if (property === "lastseen") {
             return item.lastseen ? item.lastseen.getTime() : 0;
           }
-          return (item as any)[property];
+          return item[property as keyof FlattenedClientRow] as string | number;
         };
         return dataSource;
       }
@@ -180,7 +180,7 @@ export class ClientsComponent {
     this.clientDataSource().filter = this.filterValue.toLowerCase();
   }
 
-  protected showInAuditLog(column: string, value: string) {
+  showInAuditLog(column: string, value: string) {
     if (column === "application") {
       const userAgent = this._split_user_agent(value);
       this.auditService.auditFilter.set(

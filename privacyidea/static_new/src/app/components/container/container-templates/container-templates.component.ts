@@ -244,7 +244,11 @@ export class ContainerTemplatesComponent {
   updateSelection(event: MatCheckboxChange, template: ContainerTemplate): void {
     if (!template.name) return;
     const selected = new Set(this.selectedTemplateNames());
-    event.checked ? selected.add(template.name) : selected.delete(template.name);
+    if (event.checked) {
+      selected.add(template.name);
+    } else {
+      selected.delete(template.name);
+    }
     this.selectedTemplateNames.set(selected);
   }
 

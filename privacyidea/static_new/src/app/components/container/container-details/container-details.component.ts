@@ -43,7 +43,10 @@ import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angu
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerDetailsActionsComponent } from "@components/container/container-details/container-details-actions/container-details-actions.component";
-import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
+import {
+  ContainerDetailsInfoComponent,
+  ContainerInfoDetail
+} from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -457,7 +460,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveDescription() {
     const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
-    this.containerService.setContainerDescription(this.containerSerial(), description).subscribe({
+    this.containerService.setContainerDescription(this.containerSerial(), typeof description === "string" ? description : "").subscribe({
       next: () => {
         this.containerDetailResource.reload();
       }
@@ -484,7 +487,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     if (this.isEditingInfo()) {
       const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
       if (infoElement) {
-        this.infoChild?.saveInfo(infoElement);
+        this.infoChild?.saveInfo(infoElement as unknown as ContainerInfoDetail<Record<string, string>>);
       } else {
         this.isEditingInfo.set(false);
       }

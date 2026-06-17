@@ -2,7 +2,7 @@ from .base import MyApiTestCase
 from . import radiusmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.radiusserver import delete_radius
-from privacyidea.lib.resolver import CENSORED
+from privacyidea.lib.crypto import CENSORED
 
 DICT_FILE = "tests/testdata/dictionary"
 

@@ -16,8 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-form-field
-  class="input-width-l margin-bottom-32">
+<mat-form-field class="input-width-l margin-bottom-32">
   <mat-label i18n>Action</mat-label>
   <mat-select
     (selectionChange)="onActionSelectionChange($event.value)"
@@ -33,9 +32,7 @@
   </mat-select>
   <mat-hint i18n>Select an action to be executed on the specified events.</mat-hint>
   @if (selectedActionForm().errors().some(e => e.kind === "required") && selectedActionForm().touched()) {
-    <mat-error i18n>
-      Selecting an action is <strong>required</strong>.
-    </mat-error>
+    <mat-error i18n> Selecting an action is <strong>required</strong>. </mat-error>
   }
 </mat-form-field>
 
@@ -43,7 +40,7 @@
   @for (optionName of Object.keys(actionOptions()); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0">
-        @if (actionOptions()[optionName].type == "bool") {
+        @if (actionOptions()[optionName].type === "bool") {
           <mat-checkbox
             class="margin-0"
             [checked]="!!selectedOptions()[optionName]"
@@ -107,9 +104,7 @@
               }
             }
             @if (showOptionError(optionName)) {
-              <mat-error>
-                {{ optionName }} is <strong>required</strong>.
-              </mat-error>
+              <mat-error> {{ optionName }} is <strong>required</strong>. </mat-error>
             }
           </mat-form-field>
         }
@@ -117,8 +112,7 @@
           <div
             class="checkbox-hint input-width-xl"
             [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"
-            [ngClass]="{'margin-top--16': actionOptions()[optionName].type !== 'bool'}">
-          </div>
+            [ngClass]="{ 'margin-top--16': actionOptions()[optionName].type !== 'bool' }"></div>
         }
       </div>
     }

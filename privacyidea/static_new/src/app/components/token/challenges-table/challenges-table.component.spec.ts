@@ -37,9 +37,6 @@ import { ContentService } from "@services/content/content.service";
 describe("ChallengesTableComponent", () => {
   let component: ChallengesTableComponent;
   let fixture: ComponentFixture<ChallengesTableComponent>;
-  let challengesService: ChallengesService;
-  let mockNotificationService: MockNotificationService;
-
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ChallengesTableComponent],
@@ -56,8 +53,6 @@ describe("ChallengesTableComponent", () => {
 
     fixture = TestBed.createComponent(ChallengesTableComponent);
     component = fixture.componentInstance;
-    challengesService = TestBed.inject(ChallengesService);
-    mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     fixture.detectChanges();
   });
 

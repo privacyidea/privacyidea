@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { Type } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { SelectorButtonsComponent } from "./selector-buttons.component";
@@ -30,7 +31,9 @@ describe("SelectorButtonsComponent", () => {
       imports: [SelectorButtonsComponent]
     }).compileComponents();
 
-    fixture = TestBed.createComponent<SelectorButtonsComponent<string>>(SelectorButtonsComponent as any);
+    fixture = TestBed.createComponent<SelectorButtonsComponent<string>>(
+      SelectorButtonsComponent as unknown as Type<SelectorButtonsComponent<string>>
+    );
     component = fixture.componentInstance;
 
     fixture.componentRef.setInput("values", ["A", "B", "C"]);

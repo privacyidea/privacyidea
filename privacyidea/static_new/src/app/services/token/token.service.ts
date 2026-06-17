@@ -175,19 +175,14 @@ export interface TokenType {
 
 export interface WebAuthnRegisterRequest {
   attestation: string;
-  authenticatorSelection: {
-    userVerification: string;
-  };
+  authenticatorSelection: AuthenticatorSelectionCriteria;
   displayName: string;
   message: string;
   name: string;
   nonce: string;
   excludeCredentials?: { id: string; type: string; transports?: string[] }[];
   extensions?: Record<string, unknown>;
-  pubKeyCredAlgorithms: {
-    alg: number;
-    type: string;
-  }[];
+  pubKeyCredAlgorithms: PublicKeyCredentialParameters[];
   relyingParty: {
     id: string;
     name: string;
@@ -346,18 +341,17 @@ export interface TokenServiceInterface {
 
 @Injectable()
 export class TokenService implements TokenServiceInterface {
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
+  private readonly http = inject(HttpClient);
 
+  readonly tokenBaseUrl = environment.proxyUrl + "/token/";
   private readonly _filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
-
     const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
-
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
       ...Array.from(this.tokenFilter().hiddenFilterMap.entries())
@@ -370,7 +364,6 @@ export class TokenService implements TokenServiceInterface {
   });
   readonly hiddenApiFilter = hiddenApiFilter;
   readonly apiFilterKeyMap = apiFilterKeyMap;
-  readonly tokenBaseUrl = environment.proxyUrl + "/token/";
   readonly maxDescriptionLength = 80;
   readonly userRealm = signal("");
   readonly tokenSerial = this.contentService.tokenSerial;
@@ -627,7 +620,7 @@ export class TokenService implements TokenServiceInterface {
     computation: () => []
   });
 
-  selectedToken: WritableSignal<string | null> = signal(null);
+  selectedToken = signal<string | null>(null);
 
   tokenOptions: WritableSignal<string[]> = linkedSignal({
     source: () => ({
@@ -1110,7 +1103,10 @@ export class TokenService implements TokenServiceInterface {
       switchMap(() => {
         return this.getTokenDetails(this.tokenSerial());
       }),
-      takeWhile((response: any) => response.result?.value.tokens[0].rollout_state === "clientwait", true),
+      takeWhile(
+        (response: PiResponse<Tokens>) => response.result?.value?.tokens[0].rollout_state === "clientwait",
+        true
+      ),
       catchError((error) => {
         console.error("Failed to poll token state.", error);
         const message = error.error?.result?.error?.message || "";

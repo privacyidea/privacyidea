@@ -36,7 +36,7 @@ from sqlalchemy import func, select
 from privacyidea.lib.config import get_machine_resolver_class_dict
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
 from privacyidea.lib.utils.export import (register_import, register_export)
-from .crypto import encryptPassword, decryptPassword
+from .crypto import encryptPassword, decryptPassword, CENSORED, is_censored
 from .log import log_with
 from privacyidea.lib.params import get_required
 from ..models import (MachineResolver,
@@ -111,6 +111,9 @@ def save_resolver(params):
     # create the config
     for key, value in data.items():
         if types.get(key) == "password":
+            if is_censored(value):
+                # Keep the existing value, do not overwrite with CENSORED
+                continue
             value = encryptPassword(value)
 
         stmt = select(MachineResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
@@ -131,10 +134,11 @@ def save_resolver(params):
     return resolver_id
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 # @cache.memoize(10)
 def get_resolver_list(filter_resolver_type=None,
-                      filter_resolver_name=None):
+                      filter_resolver_name=None,
+                      censor=False):
     """
     Gets the list of configured machine resolvers from the database
 
@@ -142,6 +146,9 @@ def get_resolver_list(filter_resolver_type=None,
     :type filter_resolver_type: string
     :param filter_resolver_name: Only the resolver with the given name is returned
     :type filter_resolver_name: string
+    :param censor: If True, password-type config values are replaced with
+        CENSORED instead of being decrypted.
+    :type censor: bool
     :rtype: Dictionary of the resolvers and their configuration
     """
     ret = {}
@@ -160,7 +167,10 @@ def get_resolver_list(filter_resolver_type=None,
         for conf in reso.rconfig:
             value = conf.Value
             if conf.Type == "password":
-                value = decryptPassword(value)
+                if censor:
+                    value = CENSORED
+                else:
+                    value = decryptPassword(value)
             data[conf.Key] = value
         r["data"] = data
         ret[reso.name] = r

@@ -28,6 +28,7 @@ import {
   CertificateApiPayloadMapper,
   CertificateEnrollmentData
 } from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
+import { CaConnector } from "@services/ca-connector/ca-connector.service";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import {
   EnrollmentArgs,
@@ -86,7 +87,7 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   caConnectorOptions = computed(
     () =>
       (this.systemService.caConnectorResource?.hasValue()
-        ? this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname)
+        ? this.systemService.caConnectorResource?.value()?.result?.value?.map((config: CaConnector) => config.connectorname)
         : []) || []
   );
 

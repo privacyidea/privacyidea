@@ -16,7 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div appOverflowNav class="flex-row gap-8 margin-bottom-16">
+<div
+  appOverflowNav
+  class="flex-row gap-8 margin-bottom-16">
   @if (authService.actionAllowed("resolverwrite")) {
     <button
       (click)="onNewResolver()"

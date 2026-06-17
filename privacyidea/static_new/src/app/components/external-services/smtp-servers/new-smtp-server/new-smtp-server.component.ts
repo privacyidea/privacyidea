@@ -193,7 +193,11 @@ export class NewSmtpServerComponent implements OnDestroy {
     if (!this.smtpForm().valid()) {
       return false;
     }
-    const { recipient: _recipient, ...server } = this.smtpModel();
+    const model = this.smtpModel();
+    const server = Object.fromEntries(Object.entries(model).filter(([k]) => k !== "recipient")) as Omit<
+      typeof model,
+      "recipient"
+    >;
 
     if (server.private_key_password === this.initialPrivateKeyPassword) {
       delete (server as Partial<SmtpServer>).private_key_password;
@@ -204,7 +208,7 @@ export class NewSmtpServerComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

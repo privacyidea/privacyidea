@@ -60,20 +60,23 @@
     class="ca-connectors-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="connectorname">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> CA Connector Name
+        mat-sort-header>
+        CA Connector Name
       </th>
       <td
         *matCellDef="let connector"
         mat-cell>
         <app-copyable [copyText]="connector.connectorname">
           <a
+            role="button"
+            tabindex="0"
             (click)="openEditDialog(connector)"
+            (keydown.enter)="openEditDialog(connector)"
             class="flex ali-center">
             {{ connector.connectorname }}
           </a>
@@ -86,11 +89,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Type
+        mat-sort-header>
+        Type
       </th>
       <td
         *matCellDef="let connector"
-        mat-cell> {{ connector.type }}
+        mat-cell>
+        {{ connector.type }}
       </td>
     </ng-container>
 
@@ -98,7 +103,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let connector"
@@ -120,7 +126,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -129,7 +135,8 @@
       <td
         class="mat-cell"
         colspan="3"
-        i18n>No CA connectors found.
+        i18n>
+        No CA connectors found.
       </td>
     </tr>
   </table>

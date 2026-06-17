@@ -26,7 +26,43 @@ export interface EnrollmentResponse<D extends EnrollmentResponseDetail = Enrollm
   detail: D;
   result: { status: boolean };
 
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+/**
+ * JSON-serialized form of a WebAuthn `PublicKeyCredentialCreationOptions`
+ * as produced by py_webauthn's `options_to_json` (see
+ * `privacyidea/lib/tokens/passkeytoken.py` `_enroll_passkey`).
+ * Binary fields (challenge, user.id, excludeCredentials[].id) are encoded
+ * as base64url strings; the client decodes them before calling
+ * `navigator.credentials.create`.
+ */
+export interface PasskeyRegistrationOptions {
+  rp: PublicKeyCredentialRpEntity;
+  user: {
+    id: string;
+    name: string;
+    displayName: string;
+  };
+  challenge: string;
+  pubKeyCredParams: PublicKeyCredentialParameters[];
+  timeout?: number;
+  excludeCredentials: { id: string; type: PublicKeyCredentialType; transports?: AuthenticatorTransport[] }[];
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  attestation?: AttestationConveyancePreference;
+  extensions?: AuthenticationExtensionsClientInputs;
+}
+
+/**
+ * Legacy FIDO U2F register request payload returned by the backend during
+ * the first enrollment step. The new UI does not parse it; the field is only
+ * present so the HTML template can detect its existence.
+ */
+export interface U2fRegisterRequest {
+  appId: string;
+  version: string;
+  challenge: string;
+  [key: string]: unknown;
 }
 
 export interface EnrollmentResponseDetail {
@@ -34,16 +70,18 @@ export interface EnrollmentResponseDetail {
   serial: string;
   rollout_state?: string;
   threadid?: number;
-  passkey_registration?: any;
-  u2fRegisterRequest?: any;
+  passkey_registration?: PasskeyRegistrationOptions;
+  u2fRegisterRequest?: U2fRegisterRequest;
   pushurl?: EnrollmentUrl;
   googleurl?: EnrollmentUrl;
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
   verify?: { message: string };
+  registrationcode?: string;
+  otps?: string[];
 
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface EnrollmentUrl {
@@ -53,7 +91,7 @@ export interface EnrollmentUrl {
   value_b32?: string;
 }
 
-export type TokenEnrollmentData = {
+export interface TokenEnrollmentData {
   type: TokenTypeKey;
   description?: string;
   containerSerial?: string;
@@ -66,8 +104,8 @@ export type TokenEnrollmentData = {
   serial?: string | null;
   rollover?: boolean | null;
   verify?: string;
-  [key: string]: any; // TODO: remove this when all types are defined
-};
+  [key: string]: unknown; // TODO: remove this when all types are defined
+}
 
 export interface TokenEnrollmentPayload {
   type: TokenTypeKey;
@@ -84,12 +122,12 @@ export interface TokenEnrollmentPayload {
   otplen?: number;
   timeStep?: string | number;
   genkey?: boolean | number;
-  [key: string]: any; // TODO: remove this when all types are defined
+  [key: string]: unknown; // TODO: remove this when all types are defined
 }
 
 export interface TokenApiPayloadMapper<T> {
-  toApiPayload(data: T): any;
-  fromApiPayload(data: any): T;
+  toApiPayload(data: T): TokenEnrollmentPayload;
+  fromApiPayload(data: TokenEnrollmentPayload): T;
   fromTokenDetailsToEnrollmentData(details: TokenDetails): T;
 }
 

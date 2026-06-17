@@ -55,6 +55,11 @@ def get_resolvers():
     dictionary keyed by resolver name; each value contains the resolver
     type and its configuration.
 
+    Password-type configuration values are not returned in clear text: they
+    are replaced by the placeholder ``__CENSORED__``. When updating a resolver,
+    submit ``__CENSORED__`` for such a value to keep its stored secret unchanged,
+    or an empty string to clear it.
+
     Requires admin authentication and the policy action :ref:`mresolverread`.
 
     :query type: optional filter — return only resolvers of the given type
@@ -62,7 +67,7 @@ def get_resolvers():
     :status 200: dict of resolver definitions in ``result.value``.
     """
     typ = get_optional(request.all_data, "type")
-    res = get_resolver_list(filter_resolver_type=typ)
+    res = get_resolver_list(filter_resolver_type=typ, censor=True)
     g.audit_object.log({"success": True})
     return send_result(res)
 
@@ -122,14 +127,16 @@ def get_resolver(resolver=None):
     Return the configuration of a single machine resolver.
 
     The result is a dictionary keyed by resolver name (single entry), with
-    the resolver's type and configuration.
+    the resolver's type and configuration. Password-type values are replaced
+    by the placeholder ``__CENSORED__`` (submit ``__CENSORED__`` on update to
+    keep the stored secret unchanged).
 
     Requires admin authentication and the policy action :ref:`mresolverread`.
 
     :param resolver: path component, the name of the resolver.
     :status 200: dict containing the resolver's configuration in ``result.value``.
     """
-    res = get_resolver_list(filter_resolver_name=resolver)
+    res = get_resolver_list(filter_resolver_name=resolver, censor=True)
 
     g.audit_object.log({"success": True,
                         "info": resolver})

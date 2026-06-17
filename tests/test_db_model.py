@@ -42,7 +42,8 @@ from privacyidea.models import (Token,
                                 Policy,
                                 Challenge, PasswordReset, ClientApplication, UserCache,
                                 EventCounter, MonitoringStats, PolicyCondition, db,
-                                Tokengroup, TokenTokengroup, Serviceid, TokenInfo)
+                                Tokengroup, TokenTokengroup, Serviceid, TokenInfo,
+                                LockoutPolicy, LockoutPolicyStage, LockoutStageAction)
 from .base import MyTestCase
 
 
@@ -744,3 +745,67 @@ class ResolverRealmTestCase(MyTestCase):
 
     # TODO: add resolver realm config with ids and different nodes
     # TODO: same nodes with different timestamps
+
+
+class LockoutPolicyTestCase(MyTestCase):
+
+    def test_01_create_policy_with_stages_and_actions(self):
+        policy = LockoutPolicy(name="Default MFA Lockout Policy",
+                               counter_types_to_track=["MFA_FAIL"],
+                               time_window_seconds=3600)
+        policy_id = policy.save()
+        self.assertGreaterEqual(policy_id, 1)
+
+        # Check the defaults
+        policy = LockoutPolicy.query.filter_by(name="Default MFA Lockout Policy").one()
+        self.assertTrue(policy.enabled)
+        self.assertFalse(policy.dry_run)
+        self.assertEqual(1, policy.priority)
+        self.assertEqual(["MFA_FAIL"], policy.counter_types_to_track)
+        self.assertEqual(3600, policy.time_window_seconds)
+
+        # Add two stages with different thresholds
+        stage5 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=5)
+        stage5.save()
+        stage15 = LockoutPolicyStage(policy_id=policy_id, failure_threshold=15,
+                                     priority=10)
+        stage15.save()
+
+        # Stages are ordered by descending priority, so the most severe
+        # stage comes first
+        self.assertEqual([15, 5], [s.failure_threshold for s in policy.stages])
+        self.assertEqual(policy_id, stage5.policy.id)
+
+        # Add actions to a stage
+        LockoutStageAction(stage_id=stage15.id, action_type="LOCK_USER",
+                           action_value=600).save()
+        LockoutStageAction(stage_id=stage15.id, action_type="EMAIL_ADMIN",
+                           action_value={"template_id": 4}).save()
+        self.assertEqual(2, len(stage15.actions))
+        action = LockoutStageAction.query.filter_by(stage_id=stage15.id,
+                                                    action_type="EMAIL_ADMIN").one()
+        self.assertEqual({"template_id": 4}, action.action_value)
+        self.assertEqual(stage15.id, action.stage.id)
+
+    def test_02_delete_policy_cascades(self):
+        policy = LockoutPolicy.query.filter_by(name="Default MFA Lockout Policy").one()
+        policy_id = policy.delete()
+
+        # The stages and actions are deleted along with the policy
+        self.assertEqual([], LockoutPolicy.query.filter_by(id=policy_id).all())
+        self.assertEqual([], LockoutPolicyStage.query.filter_by(policy_id=policy_id).all())
+        self.assertEqual([], LockoutStageAction.query.all())
+
+    def test_03_counter_types_to_track_is_a_list(self):
+        # A policy can track several counter types; the counter_types_to_track
+        # association proxy over the normalized child table round-trips the list
+        # (order preserved).
+        policy = LockoutPolicy(name="Multi counter policy",
+                               counter_types_to_track=["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
+                               time_window_seconds=900)
+        policy.save()
+
+        reloaded = LockoutPolicy.query.filter_by(name="Multi counter policy").one()
+        self.assertEqual(["PASSWORD_FAIL", "OTP_FAIL", "MFA_FAIL"],
+                         reloaded.counter_types_to_track)
+        reloaded.delete()

@@ -47,8 +47,8 @@ describe("ClientsService", () => {
       ]
     });
     clientService = TestBed.inject(ClientsService);
-    contentService = TestBed.inject(ContentService) as any;
-    mockAuthService = TestBed.inject(AuthService) as any;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
     mockAuthService.actionAllowed.mockImplementation((action: string) => action === "clienttype");
   });
 

@@ -22,25 +22,27 @@
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.</p>
-    <p i18n>The Yubikey emits a 44 character on time password.
-    </p>
-    <p i18n>The authentication request can be handled by the default privacyIDEA
+    <p i18n>The Yubikey emits a 44 character on time password.</p>
+    <p i18n>
+      The authentication request can be handled by the default privacyIDEA
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
-        target="_blank">validate API
+        target="_blank"
+        >validate API
       </a>
-            but can also be handled by the
+      but can also be handled by the
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
-        target="_blank">Yubico Validation Protocol.
+        target="_blank"
+        >Yubico Validation Protocol.
       </a>
     </p>
 
     <table class="table margin-bottom-16">
       <thead>
-      <tr>
-        <th i18n>Client ID API Key</th>
-      </tr>
+        <tr>
+          <th i18n>Client ID API Key</th>
+        </tr>
       </thead>
       <tbody>
         @for (key of yubikeyApiIds(); track key) {
@@ -76,7 +78,7 @@
           matInput
           pattern="^[a-zA-Z0-9._-]*$"
           placeholder="Client ID"
-          required>
+          required />
         @if (apiIdInput.validity.valueMissing) {
           <mat-error i18n>Client ID is <strong>required</strong></mat-error>
         }
@@ -94,7 +96,7 @@
           [value]="newYubikeyApiKey()"
           [disabled]="newYubikeyGenKey()"
           matInput
-          placeholder="API Key">
+          placeholder="API Key" />
       </mat-form-field>
 
       <mat-checkbox

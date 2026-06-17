@@ -20,7 +20,7 @@
 import { Component, computed, signal } from "@angular/core";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-import { form, FormField, required, validate } from "@angular/forms/signals";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -40,8 +40,8 @@ import { DialogAction } from "@models/dialog";
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
   readonly nameSignal = signal(this.data ?? "");
   readonly nameField = form(this.nameSignal, (f) => {
-    validate(f, (ctx) => !ctx.value() ? [{ kind: "required" }] : []);
-    validate(f, (ctx) => ctx.value() === this.data ? [{ kind: "notChanged" }] : []);
+    validate(f, (ctx) => (!ctx.value() ? [{ kind: "required" }] : []));
+    validate(f, (ctx) => (ctx.value() === this.data ? [{ kind: "notChanged" }] : []));
   });
 
   readonly isInvalid = computed(() => this.nameField().errors().length > 0);

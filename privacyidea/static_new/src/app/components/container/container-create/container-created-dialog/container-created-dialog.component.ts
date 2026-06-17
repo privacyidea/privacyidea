@@ -29,11 +29,11 @@ import {
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 
-export type ContainerCreationDialogData = {
+export interface ContainerCreationDialogData {
   response: PiResponse<ContainerRegisterData>;
   containerSerial: WritableSignal<string>;
   registerContainer: (containerSerial: string, regenerate: boolean) => void;
-};
+}
 
 @Component({
   selector: "app-container-created-dialog",

@@ -18,7 +18,11 @@
 -->
 <details class="token-info-panel">
   <summary class="token-info-summary">
-    <span class="token-info-title" i18n>Token Information</span>
+    <span
+      class="token-info-title"
+      i18n
+      >Token Information</span
+    >
     <mat-icon class="token-info-chevron">expand_more</mat-icon>
   </summary>
   <div class="token-info-body">
@@ -29,10 +33,10 @@
           <app-edit-buttons
             [cancelEdit]="toggleInfoEdit.bind(this)"
             [element]="asInfoElement(element)"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
+            [isEditingInfo]="isEditingInfo()"
+            [isEditingUser]="isEditingUser()"
             [saveEdit]="saveInfo.bind(this)"
-            [shouldHideEdit]="isAnyEditingOrRevoked"
+            [shouldHideEdit]="isAnyEditingOrRevoked()"
             [toggleEdit]="toggleInfoEdit.bind(this)"></app-edit-buttons>
         </div>
       }

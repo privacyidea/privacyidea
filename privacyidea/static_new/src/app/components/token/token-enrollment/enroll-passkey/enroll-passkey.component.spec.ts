@@ -42,7 +42,7 @@ describe("EnrollPasskeyComponent", () => {
 
   const origCreds = navigator.credentials;
 
-  function setNavigatorCredentials(obj: any) {
+  function setNavigatorCredentials(obj: Partial<CredentialsContainer> | undefined) {
     Object.defineProperty(navigator, "credentials", {
       configurable: true,
       get: () => obj
@@ -67,10 +67,10 @@ describe("EnrollPasskeyComponent", () => {
     fixture = TestBed.createComponent(EnrollPasskeyComponent);
     component = fixture.componentInstance;
 
-    tokenService = TestBed.inject(TokenService) as any;
-    dialogService = TestBed.inject(DialogService) as any;
-    b64 = TestBed.inject(Base64Service) as any;
-    notif = TestBed.inject(NotificationService) as any;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    b64 = TestBed.inject(Base64Service) as unknown as MockBase64Service;
+    notif = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     fixture.detectChanges();
   });
@@ -131,7 +131,7 @@ describe("EnrollPasskeyComponent", () => {
     const initData = {
       description: "x",
       passkeyRegOptions: {}
-    } as any;
+    } as unknown as TokenEnrollmentData;
     const args = component.buildEnrollmentArgs(initData);
     expect(args).not.toBeNull();
     const dialogRefMock = new MockMatDialogRef();
@@ -160,7 +160,7 @@ describe("EnrollPasskeyComponent", () => {
     setNavigatorCredentials({
       create: jest.fn()
     });
-    const enrollmentArgs = component.buildEnrollmentArgs({} as any);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
@@ -206,7 +206,7 @@ describe("EnrollPasskeyComponent", () => {
       create: jest.fn().mockResolvedValue(createdCred)
     });
 
-    const enrollmentArgs = component.buildEnrollmentArgs({} as any);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
 
@@ -257,7 +257,7 @@ describe("EnrollPasskeyComponent", () => {
 
     tokenService.enrollToken.mockReturnValueOnce(of(passkeyInit("S-1", "tx-1"))).mockReturnValueOnce(of(finalize("S-1")));
 
-    const enrollmentArgs = component.buildEnrollmentArgs({} as any);
+    const enrollmentArgs = component.buildEnrollmentArgs({} as TokenEnrollmentData);
     const initResponse = await lastValueFrom(tokenService.enrollToken(enrollmentArgs));
     const finalResponse = await component.onEnrollmentResponse(
       initResponse as EnrollmentResponse,

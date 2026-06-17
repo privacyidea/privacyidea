@@ -88,5 +88,4 @@ describe("RadiusConfigComponent", () => {
     fixture.detectChanges();
     expect(component.expanded()).toBe(false);
   });
-
 });

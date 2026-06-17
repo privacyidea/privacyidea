@@ -24,10 +24,14 @@ import { Subject } from "rxjs";
 import { DialogService } from "./dialog.service";
 
 @Component({ template: "" })
-class TestDialogComponent extends AbstractDialogComponent<any, any> {}
+class TestDialogComponent extends AbstractDialogComponent {}
 
-const matDialogMock = {
-  openDialogs: [] as MatDialogRef<any>[],
+const matDialogMock: Partial<MatDialog> & {
+  openDialogs: MatDialogRef<AbstractDialogComponent>[];
+  open: jest.Mock;
+  closeAll: jest.Mock;
+} = {
+  openDialogs: [],
   open: jest.fn(),
   closeAll: jest.fn()
 };
@@ -58,7 +62,7 @@ describe("DialogService", () => {
       const afterClosed$ = new Subject<void>();
       const mockDialogRef = {
         afterClosed: () => afterClosed$.asObservable()
-      } as MatDialogRef<any>;
+      } as MatDialogRef<AbstractDialogComponent>;
       matDialogMock.open.mockReturnValue(mockDialogRef);
 
       const dialogRef = service.openDialog({ component: TestDialogComponent });
@@ -79,7 +83,7 @@ describe("DialogService", () => {
       const afterClosed$ = new Subject<void>();
       const mockDialogRef = {
         afterClosed: () => afterClosed$.asObservable()
-      } as MatDialogRef<any>;
+      } as MatDialogRef<AbstractDialogComponent>;
       matDialogMock.open.mockReturnValue(mockDialogRef);
 
       service.openDialog({ component: TestDialogComponent });
@@ -95,7 +99,7 @@ describe("DialogService", () => {
       const afterClosed$ = new Subject<void>();
       const mockDialogRef = {
         afterClosed: () => afterClosed$.asObservable()
-      } as MatDialogRef<any>;
+      } as MatDialogRef<AbstractDialogComponent>;
       matDialogMock.open.mockReturnValue(mockDialogRef);
 
       service.openDialog({
@@ -119,7 +123,7 @@ describe("DialogService", () => {
     it("should close the dialog if it is open", () => {
       const mockDialogRef = {
         close: jest.fn()
-      } as unknown as MatDialogRef<any>;
+      } as unknown as MatDialogRef<AbstractDialogComponent>;
       service.openDialogs.add(mockDialogRef);
 
       const result = service.closeDialog(mockDialogRef, "test");
@@ -131,7 +135,7 @@ describe("DialogService", () => {
     it("should not close the dialog if it is not open", () => {
       const mockDialogRef = {
         close: jest.fn()
-      } as unknown as MatDialogRef<any>;
+      } as unknown as MatDialogRef<AbstractDialogComponent>;
 
       const result = service.closeDialog(mockDialogRef);
 
@@ -142,8 +146,8 @@ describe("DialogService", () => {
 
   describe("closeLatestDialog", () => {
     it("should close the most recently opened dialog", () => {
-      const firstDialogRef = { close: jest.fn() } as unknown as MatDialogRef<any>;
-      const secondDialogRef = { close: jest.fn() } as unknown as MatDialogRef<any>;
+      const firstDialogRef = { close: jest.fn() } as unknown as MatDialogRef<AbstractDialogComponent>;
+      const secondDialogRef = { close: jest.fn() } as unknown as MatDialogRef<AbstractDialogComponent>;
       service.openDialogs.add(firstDialogRef);
       service.openDialogs.add(secondDialogRef);
 
@@ -162,7 +166,7 @@ describe("DialogService", () => {
 
   describe("closeAllDialogs", () => {
     it("should call MatDialog.closeAll and clear the openDialogs set", () => {
-      service.openDialogs.add({} as MatDialogRef<any>);
+      service.openDialogs.add({} as MatDialogRef<AbstractDialogComponent>);
       expect(service.openDialogs.size).toBe(1);
 
       service.closeAllDialogs();
@@ -174,20 +178,20 @@ describe("DialogService", () => {
 
   describe("isDialogOpen", () => {
     it("should return true if the dialog is in the openDialogs set", () => {
-      const mockDialogRef = {} as MatDialogRef<any>;
+      const mockDialogRef = {} as MatDialogRef<AbstractDialogComponent>;
       service.openDialogs.add(mockDialogRef);
       expect(service.isDialogOpen(mockDialogRef)).toBe(true);
     });
 
     it("should return false if the dialog is not in the openDialogs set", () => {
-      const mockDialogRef = {} as MatDialogRef<any>;
+      const mockDialogRef = {} as MatDialogRef<AbstractDialogComponent>;
       expect(service.isDialogOpen(mockDialogRef)).toBe(false);
     });
   });
 
   describe("isAnyDialogOpen", () => {
     it("should return true if MatDialog.openDialogs has open dialogs", () => {
-      matDialogMock.openDialogs = [{} as MatDialogRef<any>];
+      matDialogMock.openDialogs = [{} as MatDialogRef<AbstractDialogComponent>];
       expect(service.isAnyDialogOpen()).toBe(true);
     });
 

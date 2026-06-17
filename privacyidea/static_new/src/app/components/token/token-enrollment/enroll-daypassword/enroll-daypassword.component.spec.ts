@@ -21,11 +21,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import {
-    DAYPASSWORD_HASHLIB,
-    DAYPASSWORD_OTP_LENGTH,
-    DAYPASSWORD_TIME_STEP,
-    TOTP_HASHLIB,
-    TOTP_TIME_STEP
+  DAYPASSWORD_HASHLIB,
+  DAYPASSWORD_OTP_LENGTH,
+  DAYPASSWORD_TIME_STEP,
+  TOTP_HASHLIB,
+  TOTP_TIME_STEP
 } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
@@ -100,7 +100,7 @@ describe("EnrollDaypasswordComponent", () => {
   it("Default values from system config are used", () => {
     const mockConfig = {
       [TOTP_HASHLIB]: "sha256",
-      [TOTP_TIME_STEP]: 60,
+      [TOTP_TIME_STEP]: "60",
       [DAYPASSWORD_HASHLIB]: "sha512",
       [DAYPASSWORD_TIME_STEP]: "12h"
     };

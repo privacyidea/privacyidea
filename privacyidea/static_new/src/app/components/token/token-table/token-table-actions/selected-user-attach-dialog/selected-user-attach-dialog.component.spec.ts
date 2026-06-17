@@ -21,15 +21,16 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { UserData, UserService } from "@services/user/user.service";
-import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
-import { MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
-import { TokenService } from "@services/token/token.service";
 import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserData, UserService } from "@services/user/user.service";
+import { MockRealmService, MockTokenService, MockUserService } from "@testing/mock-services";
+import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;
   let fixture: ComponentFixture<SelectedUserAssignDialogComponent>;
+  let userService: MockUserService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -47,6 +48,7 @@ describe("SelectedUserAssignDialogComponent", () => {
 
     fixture = TestBed.createComponent(SelectedUserAssignDialogComponent);
     component = fixture.componentInstance;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     fixture.detectChanges();
   });
 
@@ -56,7 +58,7 @@ describe("SelectedUserAssignDialogComponent", () => {
 
   it("should close the dialog with null on cancel", () => {
     component.onCancel();
-    expect((component as any).dialogRef.close).toHaveBeenCalledWith(null);
+    expect(component.dialogRef.close).toHaveBeenCalledWith(null);
   });
 
   it("should toggle pin visibility", () => {
@@ -100,7 +102,7 @@ describe("SelectedUserAssignDialogComponent", () => {
 
     component.onConfirm();
 
-    expect((component as any).dialogRef.close).toHaveBeenCalledWith({
+    expect(component.dialogRef.close).toHaveBeenCalledWith({
       username: testUser.username,
       realm: testRealm,
       pin: testPin
@@ -131,13 +133,13 @@ describe("SelectedUserAssignDialogComponent", () => {
     component.pin.set(testPin);
     component.pinRepeat.set(testPin);
     component.onConfirm();
-    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+    expect(component.dialogRef.close).not.toHaveBeenCalled();
 
     // No realm selected
     component.selectedUser.set(testUser);
     component.selectedRealm.set("");
     component.onConfirm();
-    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+    expect(component.dialogRef.close).not.toHaveBeenCalled();
 
     // Pins do not match
     component.selectedUser.set(testUser);
@@ -145,7 +147,7 @@ describe("SelectedUserAssignDialogComponent", () => {
     component.pin.set(testPin);
     component.pinRepeat.set("654321");
     component.onConfirm();
-    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+    expect(component.dialogRef.close).not.toHaveBeenCalled();
   });
 
   describe("realm and user filter interactions", () => {
@@ -159,7 +161,7 @@ describe("SelectedUserAssignDialogComponent", () => {
       expect(component.selectedRealm()).toBe("newRealm");
       expect(component.selectedUser()).toBeNull();
       expect(component.userFilter()).toBe("");
-      expect(component.userService.selectedUserRealm()).toBe("newRealm");
+      expect(userService.selectedUserRealm()).toBe("newRealm");
     });
 
     it("onUserFilterInput should clear selectedUser when filter is empty", () => {
@@ -201,13 +203,13 @@ describe("SelectedUserAssignDialogComponent", () => {
 
   describe("onAction", () => {
     it("should call onConfirm when value is 'submit'", () => {
-      const spy = jest.spyOn(component, "onConfirm").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "onConfirm").mockReturnValue();
       component.onAction("submit");
       expect(spy).toHaveBeenCalled();
     });
 
     it("should call onCancel when value is null", () => {
-      const spy = jest.spyOn(component, "onCancel").mockImplementation(() => {});
+      const spy = jest.spyOn(component, "onCancel").mockReturnValue();
       component.onAction(null);
       expect(spy).toHaveBeenCalled();
     });

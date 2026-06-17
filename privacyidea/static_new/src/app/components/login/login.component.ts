@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { NgOptimizedImage } from "@angular/common";
 import {
   AfterViewInit,
@@ -40,12 +41,12 @@ import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.compon
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
-import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
-import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
+import { ValidateService, ValidateServiceInterface, WebAuthnSignRequest } from "@services/validate/validate.service";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
@@ -72,7 +73,7 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 })
 export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly router: Router = inject(Router);
+  private readonly router = inject(Router);
   private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
@@ -87,15 +88,23 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   hidePassword = signal<boolean>(true);
   otp = signal<string>("");
 
-  usernameField = form(this.username, (f) => { required(f); });
-  passwordField = form(this.password, (f) => { required(f); });
-  otpField = form(this.otp, (f) => { required(f); });
+  usernameField = form(this.username, (f) => {
+    required(f);
+  });
+  passwordField = form(this.password, (f) => {
+    required(f);
+  });
+  otpField = form(this.otp, (f) => {
+    required(f);
+  });
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
+  // Conditional-access restriction kind used to color the message. Empty for ordinary errors.
+  errorRestriction = signal<"temporary" | "permanent" | "">("");
 
   showOtpField = signal<boolean>(false);
   pushTriggered = signal<boolean>(false);
-  webAuthnTriggered = signal<any | null>(null);
+  webAuthnTriggered = signal<WebAuthnSignRequest | null>(null);
 
   isLoginButtonDisabled = computed(() => {
     if (this.showOtpField()) {
@@ -166,7 +175,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     const isChallengeResponse = this.showOtpField();
     const password = isChallengeResponse ? this.otp() : this.password();
 
-    let params: any = { username, password };
+    const params: PasswordLoginParams = { username, password };
     if (this.realm()) {
       params.realm = this.realm();
     }
@@ -175,6 +184,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       this.stopPushPolling();
       this.authMessage.set([]);
       this.errorMessage.set("");
+      this.errorRestriction.set("");
       params.transaction_id = this.transactionId;
     } else {
       this.resetChallengeState();
@@ -191,7 +201,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
       return;
     }
-    const params: any = { username: this.remoteUser() };
+    const params = { username: this.remoteUser() };
     this.authService.authenticate(params).subscribe({
       next: (response) => this.evaluateResponse(response, "password"),
       error: (err) => this.handleError(err, "password")
@@ -213,14 +223,14 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       })
       .subscribe({
         next: (response: AuthResponse) => this.evaluateResponse(response, "webauthn"),
-        error: (err: any) => this.handleError(err, "webauthn")
+        error: (err: HttpErrorResponse) => this.handleError(err, "webauthn")
       });
   }
 
   passkeyLogin(): void {
     this.validateService.authenticatePasskey().subscribe({
       next: (response) => this.evaluateResponse(response, "passkey"),
-      error: (err: any) => this.handleError(err, "passkey")
+      error: (err: HttpErrorResponse) => this.handleError(err, "passkey")
     });
   }
 
@@ -257,6 +267,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       catchError((err) => {
         if (err.name === "TimeoutError") {
           this.errorMessage.set("Polling for push notification timed out. Please try again.");
+          this.errorRestriction.set("");
         } else {
           // The error is already handled by the service, just log it here.
           console.error("Error during push polling:", err);
@@ -294,6 +305,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     this.stopPushPolling();
     this.authMessage.set([]);
     this.errorMessage.set("");
+    this.errorRestriction.set("");
     this.pushTriggered.set(false);
     this.webAuthnTriggered.set(null);
     this.transactionId = "";
@@ -360,10 +372,11 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
         )?.message ||
         defaultMessages[context];
       this.errorMessage.set(message);
+      this.errorRestriction.set("");
     }
   }
 
-  private handleError(err: any, context: "password" | "passkey" | "webauthn"): void {
+  private handleError(err: HttpErrorResponse, context: "password" | "passkey" | "webauthn"): void {
     const defaultMessages = {
       password: "Authentication failed.",
       passkey: "Error during Passkey login",
@@ -371,6 +384,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     };
     const message = err.error?.result?.error?.message || err?.message || defaultMessages[context];
     this.errorMessage.set(message);
+    const restriction = err.error?.detail?.restriction;
+    this.errorRestriction.set(restriction === "permanent" || restriction === "temporary" ? restriction : "");
 
     if (context === "password") {
       this.password.set("");

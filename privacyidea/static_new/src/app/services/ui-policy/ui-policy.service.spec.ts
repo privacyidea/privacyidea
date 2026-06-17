@@ -16,16 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { UiPolicyService } from "./ui-policy.service";
+import { AppConfig, UiPolicyService } from "./ui-policy.service";
 
 describe("UiPolicyService", () => {
+  const configurableWindow = window as Window & { appConfig?: AppConfig };
+
   afterEach(() => {
-    delete (window as any).appConfig;
+    delete configurableWindow.appConfig;
     jest.restoreAllMocks();
   });
 
   it("uses window.appConfig when present", () => {
-    (window as any).appConfig = {
+    configurableWindow.appConfig = {
       remoteUser: "bob",
       forceRemoteUser: "bob",
       passwordReset: true,
@@ -62,7 +64,7 @@ describe("UiPolicyService", () => {
   });
 
   it("falls back to defaults and warns when appConfig is missing", () => {
-    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const warn = jest.spyOn(console, "warn").mockReturnValue();
 
     const srv = new UiPolicyService();
 

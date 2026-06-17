@@ -172,9 +172,11 @@
                                 <li class="resolver-item">
                                   <a
                                     (click)="onClickResolver(res.name); $event.preventDefault()"
+                                    (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
                                     attr.aria-label="{{ column.label }} Link"
                                     class="resolver-name"
-                                    role="button">
+                                    role="button"
+                                    tabindex="0">
                                     {{ res.name }}
                                   </a>
                                   @if (res.priority !== null && res.priority !== undefined) {
@@ -293,7 +295,13 @@
                             <div class="resolver-priority-item">
                               <span class="priority-label">{{ r.name }}</span>
                               <input
-                                (input)="setNewRealmResolverPriority(group.id, r.name, $event.target['value'])"
+                                (input)="
+                                  setNewRealmResolverPriority({
+                                    nodeId: group.id,
+                                    resolverName: r.name,
+                                    priority: $any($event.target).value
+                                  })
+                                "
                                 [value]="r.priority"
                                 class="resolver-priority-input"
                                 max="999"

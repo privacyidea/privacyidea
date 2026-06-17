@@ -34,6 +34,17 @@ $border-radius: var(--border-radius);
     height: auto;
   }
 
+  @media (min-resolution: 1.5dppx) {
+    .logo {
+      display: none;
+    }
+
+    .logo-text {
+      margin-top: 86px;
+      width: 20%;
+    }
+  }
+
   .custom-logo {
     max-width: 307px;
     max-height: 307px;
@@ -46,6 +57,42 @@ $border-radius: var(--border-radius);
     flex-direction: column;
     margin-top: 32px;
     width: 300px;
+  }
+
+  .login-message-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+    height: 73px;
+    overflow-y: auto;
+    width: 100%;
+  }
+
+  .login-message,
+  .error-message {
+    text-align: center;
+
+    p {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.3;
+    }
+  }
+
+  .login-message {
+    color: var(--mat-sys-primary);
+  }
+
+  .error-message {
+    color: var(--red-base);
+  }
+
+  .error-message-temporary {
+    color: var(--yellow-base);
+  }
+
+  .error-message-permanent {
+    color: var(--red-base);
   }
 
   .passkey-form {

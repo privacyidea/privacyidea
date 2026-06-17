@@ -108,7 +108,7 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   protected readonly parseBooleanValue = parseBooleanValue;
 
   isNewTask = signal<boolean>(false);
-  editTask: WritableSignal<PeriodicTask> = signal<PeriodicTask>({ ...EMPTY_PERIODIC_TASK });
+  editTask = signal<PeriodicTask>({ ...EMPTY_PERIODIC_TASK });
 
   readonly title = computed(() => (this.isNewTask() ? $localize`Create Periodic Task` : $localize`Edit Periodic Task`));
 
@@ -141,8 +141,8 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     return Object.prototype.hasOwnProperty.call(this.editTask().options, key);
   }
 
-  isDateValue(value: unknown): boolean {
-    if (typeof value !== "string" || value === "") return false;
+  isDateValue(value: string): boolean {
+    if (value === "") return false;
     return !Number.isNaN(Date.parse(value));
   }
 

@@ -17,32 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute.component";
 
 describe("HttpGroupsAttributeComponent", () => {
   let component: HttpGroupsAttributeComponent;
   let fixture: ComponentFixture<HttpGroupsAttributeComponent>;
-  let modelSignal: ReturnType<typeof signal<UserGroupsModel>>;
+
+  const initialModel: UserGroupsModel = {
+    active: false,
+    pi_user_groups_key: "groups",
+    user_groups_attribute: "",
+    method: "GET",
+    endpoint: ""
+  };
 
   beforeEach(async () => {
-    modelSignal = signal<UserGroupsModel>({
-      active: false,
-      pi_user_groups_key: "groups",
-      user_groups_attribute: "",
-      method: "GET",
-      endpoint: ""
-    });
-
     await TestBed.configureTestingModule({
       imports: [HttpGroupsAttributeComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(HttpGroupsAttributeComponent);
     component = fixture.componentInstance;
-    component.model = modelSignal;
-    component.resolverType = "default";
+    fixture.componentRef.setInput("model", { ...initialModel });
+    fixture.componentRef.setInput("resolverType", "default");
     fixture.detectChanges();
   });
 
@@ -53,18 +51,18 @@ describe("HttpGroupsAttributeComponent", () => {
   it("should reflect active state from model", () => {
     expect(component.model().active).toBe(false);
 
-    modelSignal.update(m => ({ ...m, active: true }));
+    component.model.update((m) => ({ ...m, active: true }));
     fixture.detectChanges();
 
     expect(component.model().active).toBe(true);
   });
 
   it("should update model when active changes", () => {
-    modelSignal.update(m => ({ ...m, active: true }));
+    component.model.update((m) => ({ ...m, active: true }));
     fixture.detectChanges();
     expect(component.model().active).toBe(true);
 
-    modelSignal.update(m => ({ ...m, active: false }));
+    component.model.update((m) => ({ ...m, active: false }));
     fixture.detectChanges();
     expect(component.model().active).toBe(false);
   });
@@ -72,7 +70,7 @@ describe("HttpGroupsAttributeComponent", () => {
   it("should show correct tooltip based on active state", () => {
     expect(component.slideToggleTooltipSignal()).toContain("Enable");
 
-    modelSignal.update(m => ({ ...m, active: true }));
+    component.model.update((m) => ({ ...m, active: true }));
     fixture.detectChanges();
     expect(component.slideToggleTooltipSignal()).toContain("Disable");
   });

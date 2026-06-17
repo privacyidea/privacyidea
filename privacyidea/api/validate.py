@@ -113,7 +113,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional
+from privacyidea.api.lib.utils import get_all_params, get_optional_one_of, get_optional, INTERNAL_OPTION_KEYS
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
@@ -141,7 +141,10 @@ from .lib.policyhelper import check_last_auth_policy, get_realm_for_authenticati
 from .lib.utils import get_required, map_error_to_code, send_error, send_result, log_authentication
 from ..lib.conditional_access.authentication_error_codes import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                  LOG_TRANSACTION_ID_KEY)
+from ..lib.conditional_access.engine import (is_user_locked, is_ip_blocked, evaluate_lockout_policies,
+                                              evaluate_access_decision, AccessDecision)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
+from ..models import db
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
@@ -471,6 +474,13 @@ def check():
 
 
     """
+    # Conditional-access pre-check: reject a locked user, a blocked source IP, or a
+    # policy DENY decision before any token logic (generic failure response, reason
+    # recorded only in the audit log; see the helper for details).
+    rejection = _conditional_access_precheck(request.User)
+    if rejection is not None:
+        return rejection
+
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
         return _handle_enrollment_cancellation(request.all_data)
@@ -485,7 +495,8 @@ def check():
         "serial_list": [],
         "is_container_challenge": False,
         AUTH_EVENT_TYPE_KEY: None,
-        "options": request.all_data.copy()
+        # Build the token options from the request, but strip the internal keys
+        "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
     # Add standard context to options and the user object again, because options is passed down to every function
     context["options"].update({"g": g, "clientip": g.client_ip})
@@ -509,9 +520,47 @@ def check():
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
         raise
     finally:
-        # Write the single authentication-log row for this request
+        # Write the single authentication-log row for this request, then let the
+        # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
+        _evaluate_lockout_policies(context)
     return response
+
+
+def _conditional_access_precheck(user) -> Response | None:
+    """
+    Reject a /validate request pre-auth (before any token logic and before the
+    failcounter / max_auth checks) when conditional-access policies forbid it.
+    Returns a generic failure ``Response`` to be returned to the client, or
+    ``None`` to continue with the normal flow.
+
+    The rejection is deliberately generic and leaks no reason: unlike the WebUI
+    login, the machine-facing /validate response never reveals that the user is
+    locked, the source IP is blocked, or a policy denied access — the real reason
+    is recorded only in the audit log.
+
+    A currently-locked user is rejected first, then a source IP blocked by a
+    BLOCK_IP action. The pre-auth conditional-access DENY decision is evaluated
+    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
+    DENY rejects this single request without persisting state, while
+    ALLOW / CONTINUE fall through.
+    """
+    if is_user_locked(user):
+        log.info(f"Rejecting authentication for locked user {user!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: account is temporarily locked"})
+        return send_result(False, rid=2, details={})
+    if is_ip_blocked(g.client_ip):
+        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: source IP is blocked"})
+        return send_result(False, rid=2, details={})
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying authentication for {user!r} by conditional-access policy.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: denied by conditional-access policy"})
+        return send_result(False, rid=2, details={})
+    return None
 
 
 def _handle_enrollment_cancellation(data: dict) -> Response:
@@ -847,6 +896,37 @@ def _log_authentication_event(context):
     )
 
 
+def _evaluate_lockout_policies(context):
+    """
+    Run the conditional-access policy engine for this request's
+    classified outcome.
+
+    Called from check()'s finally, after the authentication-log row is written,
+    so a failure count over the log includes the just-written event. This only
+    produces side effects that the NEXT inbound request consults (it writes
+    lockout state); it must never alter or break the response that already
+    completed, so every error is swallowed. It deliberately returns nothing — a
+    ``return`` inside the finally would mask an in-flight exception.
+    """
+    try:
+        # The engine commits its own writes (and rolls them back on failure), so
+        # this caller must NOT wrap them in a transaction. Wrapping in
+        # db.session.begin_nested() and then committing breaks under SQLAlchemy 2.x:
+        # the engine's inner commit closes the transaction, so leaving the savepoint
+        # context raises InvalidRequestError ("Can't operate on closed transaction
+        # inside context manager") — which this finally would silently swallow.
+        evaluate_lockout_policies(context["user"], context[AUTH_EVENT_TYPE_KEY], source_ip=g.client_ip)
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+        # A failure may leave the session in an aborted state; clear it so request
+        # teardown can proceed cleanly. Guard the rollback so this finally-context
+        # helper never raises (it must never break the already-completed response).
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+
+
 @validate_blueprint.route('/triggerchallenge', methods=['POST', 'GET'])
 @admin_required
 @postpolicy(is_authorized, request=request)
@@ -982,9 +1062,8 @@ def trigger_challenge():
     token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
 
-    # Add all params to the options
-    options: dict = {}
-    options.update(request.all_data)
+    # Add request params to the options, minus the internal token-engine state keys
+    options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
     tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)

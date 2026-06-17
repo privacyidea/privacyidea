@@ -48,7 +48,7 @@ export class PushApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     return payload;
   }
 
-  override fromApiPayload(payload: any): PushEnrollmentData {
+  override fromApiPayload(payload: PushEnrollmentPayload): PushEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PushEnrollmentData;
   }

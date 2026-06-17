@@ -53,7 +53,6 @@ import { TokenService } from "@services/token/token.service";
 import { UiPolicyService } from "@services/ui-policy/ui-policy.service";
 import { UserService } from "@services/user/user.service";
 
-
 export const routes: Routes = [
   { path: "login", component: LoginComponent },
   { path: "", redirectTo: "login", pathMatch: "full" },
@@ -92,7 +91,7 @@ export const routes: Routes = [
       TokengroupService,
       TokenService,
       UiPolicyService,
-      UserService,
+      UserService
     ],
     children: [
       {

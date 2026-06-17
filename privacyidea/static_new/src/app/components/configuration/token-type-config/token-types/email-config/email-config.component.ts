@@ -30,25 +30,18 @@ import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token
 @Component({
   selector: "app-email-config",
   standalone: true,
-  imports: [
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    RouterLink,
-    ClearButtonComponent
-  ],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./email-config.component.html",
   styleUrl: "./email-config.component.scss"
 })
 export class EmailConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string | number>>();
+  formDataChange = output<Record<string, string | number>>();
   smtpServers = input.required<string[]>();
   expanded = input<boolean>(false);
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string | number): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

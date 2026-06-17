@@ -24,7 +24,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { AuthService } from "@services/auth/auth.service";
+import { AuthData, AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
@@ -40,7 +40,7 @@ import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.componen
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
   let fixture: ComponentFixture<NewPrivacyideaServerComponent>;
-  let privacyideaServerServiceMock: any;
+  let privacyideaServerServiceMock: MockPrivacyideaServerService;
   let dialogServiceMock: MockDialogService;
   let router: Router;
   let paramMapSubject: BehaviorSubject<ParamMap>;
@@ -63,9 +63,8 @@ describe("NewPrivacyideaServerComponent", () => {
     }).compileComponents();
 
     const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authService.authData.set({ ...(authService.authData() as any), rights: ["privacyideaserver_write"] } as any);
-
-    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
+    authService.authData.set({ ...(authService.authData() ?? ({} as AuthData)), rights: ["privacyideaserver_write"] });
+    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService) as unknown as MockPrivacyideaServerService;
     router = TestBed.inject(Router);
 
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
@@ -84,7 +83,9 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should initialize form for edit mode", () => {
-    privacyideaServerServiceMock.remoteServerOptions = signal([{ identifier: "test", url: "http://test", tls: true }]);
+    privacyideaServerServiceMock.remoteServerOptions = signal([
+      { identifier: "test", id: "test", name: "test", url: "http://test", tls: true }
+    ]);
 
     paramMapSubject.next(convertToParamMap({ identifier: "test" }));
 
@@ -99,13 +100,13 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should be invalid when required fields are missing", () => {
-    component.privacyideaModel.update(m => ({ ...m, identifier: "", url: "" }));
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "", url: "" }));
     expect(component.privacyideaForm().valid()).toBe(false);
   });
 
   it("should call save when form is valid", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-    component.privacyideaModel.update(m => ({ ...m, identifier: "test", url: "http://test" }));
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "test", url: "http://test" }));
     const success = await component.save();
     expect(success).toBe(true);
     expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
@@ -113,7 +114,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("save should return false on error", async () => {
-    component.privacyideaModel.update(m => ({ ...m, identifier: "test", url: "http://test" }));
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "test", url: "http://test" }));
     privacyideaServerServiceMock.postPrivacyideaServer = jest.fn().mockRejectedValue(new Error("post-failed"));
 
     const success = await component.save();
@@ -122,7 +123,7 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should call test when form is valid", async () => {
-    component.privacyideaModel.update(m => ({ ...m, identifier: "test", url: "http://test" }));
+    component.privacyideaModel.update((m) => ({ ...m, identifier: "test", url: "http://test" }));
     component.test();
     expect(privacyideaServerServiceMock.testPrivacyideaServer).toHaveBeenCalled();
   });
@@ -155,20 +156,20 @@ describe("NewPrivacyideaServerComponent", () => {
 
   it("test should set isTesting flag while waiting and reset on completion", async () => {
     component.privacyideaModel.update((m) => ({ ...m, identifier: "t", url: "http://t" }));
-    let resolveFn: () => void;
+    let resolveFn: (value: boolean) => void;
     privacyideaServerServiceMock.testPrivacyideaServer = jest.fn(
-      () => new Promise<void>((resolve) => (resolveFn = resolve))
+      () => new Promise<boolean>((resolve) => (resolveFn = resolve))
     );
     component.test();
     expect(component.isTesting()).toBe(true);
-    resolveFn!();
+    resolveFn!(true);
     await Promise.resolve();
     await Promise.resolve();
     expect(component.isTesting()).toBe(false);
   });
 
   describe("onCancel dialog handling", () => {
-    let mockDialogRef: any;
+    let mockDialogRef: { afterClosed: jest.Mock };
 
     beforeEach(() => {
       mockDialogRef = { afterClosed: jest.fn() };

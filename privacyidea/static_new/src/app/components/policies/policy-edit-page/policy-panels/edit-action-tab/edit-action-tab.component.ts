@@ -45,11 +45,9 @@ export class EditActionTabComponent {
 
   readonly policy = input.required<PolicyDetail>();
   readonly policyScopeChange = output<string | undefined>();
-  readonly actionsUpdate = output<{
-    [actionName: string]: any;
-  }>();
+  readonly actionsUpdate = output<Record<string, string | boolean>>();
 
-  readonly selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
+  readonly selectedAction: WritableSignal<{ name: string; value: string | boolean } | null> = linkedSignal({
     source: () => ({
       scope: this.policy().scope
     }),
@@ -57,21 +55,21 @@ export class EditActionTabComponent {
   });
   readonly selectedActionDetail = signal<PolicyActionDetail | null>(null);
 
-  readonly actions: Signal<{ name: string; value: any }[]> = computed(() => {
+  readonly actions: Signal<{ name: string; value: string | boolean }[]> = computed(() => {
     const policy = this.policy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
   });
 
-  onActionsChange(updatedActions: { name: string; value: any }[]) {
-    const newActions: { [key: string]: any } = {};
+  onActionsChange(updatedActions: { name: string; value: string | boolean }[]) {
+    const newActions: Record<string, string | boolean> = {};
     updatedActions.forEach((action) => {
       newActions[action.name] = action.value;
     });
     this.actionsUpdate.emit(newActions);
   }
 
-  onActionAdd(event: { action: { name: string; value: any }; newScope?: string | null }) {
+  onActionAdd(event: { action: { name: string; value: string | boolean }; newScope?: string | null }) {
     const { action, newScope } = event;
     const newActions = [...this.actions(), action];
     if (newScope && newScope !== this.policy().scope) {

@@ -146,7 +146,7 @@ describe("SystemService", () => {
       expect(req.request.method).toBe("GET");
       const systemConfig = [{ name: "test", providermodule: "TestProvider", options: {}, headers: {} }];
       const systemConfigInit = { key1: "value1", key2: "value2" };
-      let response = MockPiResponse.fromValue(systemConfig, {}, systemConfigInit);
+      const response = MockPiResponse.fromValue(systemConfig, {}, systemConfigInit);
       req.flush(response);
       await Promise.resolve();
 
@@ -184,7 +184,7 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/nodes");
       expect(req.request.method).toBe("GET");
       const nodes = [{ name: "test", uuid: "1234" }];
-      let response = MockPiResponse.fromValue(nodes);
+      const response = MockPiResponse.fromValue(nodes);
       req.flush(response);
       await Promise.resolve();
 
@@ -224,7 +224,7 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/names/radius");
       expect(req.request.method).toBe("GET");
       const radiusServers = ["server1", "server2"];
-      let response = MockPiResponse.fromValue(radiusServers);
+      const response = MockPiResponse.fromValue(radiusServers);
       req.flush(response);
       await Promise.resolve();
 

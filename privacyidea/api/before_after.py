@@ -521,6 +521,9 @@ def auth_error(error):
                 error.message = _("Authentication failed.")
                 error.details["message"] = error.message
                 error.details.pop("loginmode", None)
+                # Drop the conditional-access restriction hint: when specifics are
+                # hidden, even "permanent vs temporary" must not leak.
+                error.details.pop("restriction", None)
 
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 

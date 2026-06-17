@@ -70,13 +70,13 @@
     class="service-ids-table"
     mat-table
     matSort>
-
     <ng-container matColumnDef="id">
       <th
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Id
+        mat-sort-header>
+        Id
       </th>
       <td
         *matCellDef="let service"
@@ -90,14 +90,18 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Name
+        mat-sort-header>
+        Name
       </th>
       <td
         *matCellDef="let service"
         mat-cell>
         <app-copyable [copyText]="service.servicename">
           <a
+            role="button"
+            tabindex="0"
             (click)="onEditServiceId(service)"
+            (keydown.enter)="onEditServiceId(service)"
             class="flex ali-center">
             {{ service.servicename }}
           </a>
@@ -110,11 +114,13 @@
         *matHeaderCellDef
         i18n
         mat-header-cell
-        mat-sort-header> Description
+        mat-sort-header>
+        Description
       </th>
       <td
         *matCellDef="let service"
-        mat-cell> {{ service.description }}
+        mat-cell>
+        {{ service.description }}
       </td>
     </ng-container>
 
@@ -122,7 +128,8 @@
       <th
         *matHeaderCellDef
         i18n
-        mat-header-cell> Actions
+        mat-header-cell>
+        Actions
       </th>
       <td
         *matCellDef="let service"
@@ -144,7 +151,7 @@
       *matHeaderRowDef="displayedColumns"
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: displayedColumns;"
+      *matRowDef="let row; columns: displayedColumns"
       mat-row></tr>
 
     <tr
@@ -153,7 +160,8 @@
       <td
         class="mat-cell"
         colspan="4"
-        i18n>No service IDs found.
+        i18n>
+        No service IDs found.
       </td>
     </tr>
   </table>
