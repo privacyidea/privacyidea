@@ -37,145 +37,16 @@
     </app-details-header>
 
     <div class="details-grid">
-      @if (descriptionRow(); as desc) {
-        <app-details-card
-          class="details-card--description"
-          [class.is-editing]="desc.isEditing()"
-          [title]="'Description'">
-          <div class="value-row">
-            <div class="value-content">
-              @if (desc.isEditing()) {
-                <mat-form-field
-                  class="input-width-m description height-136"
-                  subscriptSizing="dynamic">
-                  <mat-label i18n>Description</mat-label>
-                  <textarea
-                    [value]="desc.value"
-                    (input)="desc.value = $any($event.target).value"
-                    maxlength="80"
-                    i18n-placeholder
-                    matInput
-                    placeholder="Enter description"
-                    rows="4"></textarea>
-                  <mat-hint align="end"
-                    >{{ desc.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
-                  </mat-hint>
-                </mat-form-field>
-              } @else {
-                <span class="description-text">{{ desc.value || "—" }}</span>
-              }
-            </div>
-            <div class="value-edit">
-              @if (isEditableElement(desc.keyMap.key)) {
-                <app-edit-buttons
-                  [cancelEdit]="cancelTokenEdit.bind(this)"
-                  [element]="desc"
-                  [isEditingInfo]="isEditingInfo()"
-                  [isEditingUser]="isEditingUser()"
-                  [saveEdit]="saveTokenEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditingOrRevoked()"
-                  [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
-              }
-            </div>
-          </div>
-        </app-details-card>
-      }
-
-      <app-details-card
-        class="details-card--identity"
-        [title]="'Status'">
-        <div class="details-field-list">
-          <app-detail-field
-            [label]="'Type'"
-            [displayText]="str(tokenDetails().tokentype)" />
-          <app-detail-field
-            [label]="'Status'"
-            [displayText]="
-              tableUtilsService.getDisplayTextForKeyAndRevoked('active', tokenIsActive(), tokenIsRevoked())
-            "
-            [spanClass]="
-              tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail })
-            " />
-          <app-detail-field
-            [label]="'Rollout State'"
-            [displayText]="str(tokenDetails().rollout_state)" />
-          <app-token-failcount-field
-            [value]="str(tokenDetails().failcount)"
-            [maxfail]="maxfail"
-            [disabled]="isAnyEditingOrRevoked()" />
-          @if (createdDisplay()) {
-            <app-detail-field
-              [label]="'Created'"
-              [displayText]="createdDisplay()" />
-          }
-          @if (lastAuthDisplay()) {
-            <app-detail-field
-              [label]="'Last Authentication'"
-              [displayText]="lastAuthDisplay()" />
-          }
-        </div>
-      </app-details-card>
+      <app-token-details-status
+        [tokenDetails]="tokenDetails()"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+        [selfService]="true" />
 
       @if (showCounters()) {
-        <app-details-card
-          class="details-card--counters"
-          [title]="'Counters'">
-          <div class="details-field-list">
-            <app-detail-field
-              [label]="'Max Count'"
-              [displayText]="str(tokenDetails().maxfail)"
-              [editValue]="str(tokenDetails().maxfail)"
-              [editable]="isEditableElement('maxfail')"
-              [number]="true"
-              [blockEditing]="isAnyEditingOrRevoked()"
-              [save]="saveMaxfail" />
-            <app-detail-field
-              [label]="'OTP Length'"
-              [displayText]="str(tokenDetails().otplen)"
-              [editValue]="str(tokenDetails().otplen)" />
-            <app-detail-field
-              [label]="'Count Window'"
-              [displayText]="str(tokenDetails().count_window)"
-              [editValue]="str(tokenDetails().count_window)"
-              [editable]="isEditableElement('count_window')"
-              [number]="true"
-              [blockEditing]="isAnyEditingOrRevoked()"
-              [save]="saveCountWindow" />
-            <app-detail-field
-              [label]="'Sync Window'"
-              [displayText]="str(tokenDetails().sync_window)"
-              [editValue]="str(tokenDetails().sync_window)"
-              [editable]="isEditableElement('sync_window')"
-              [number]="true"
-              [blockEditing]="isAnyEditingOrRevoked()"
-              [save]="saveSyncWindow" />
-            <app-detail-field
-              [label]="'Count'"
-              [displayText]="str(tokenDetails().count)"
-              [editValue]="str(tokenDetails().count)" />
-          </div>
-        </app-details-card>
+        <app-token-details-counters
+          [tokenDetails]="tokenDetails()"
+          [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
       }
-
-      <app-details-card
-        class="details-card--assignment"
-        [title]="'Assignments'">
-        <div class="details-field-list">
-          <app-token-realms-field
-            [realms]="tokenDetails().realms"
-            [userRealm]="userRealm"
-            [blockEditing]="isAnyEditingOrRevoked()" />
-          <app-token-tokengroup-field
-            [tokengroup]="$any(tokenDetails().tokengroup)"
-            [userRealm]="userRealm"
-            [blockEditing]="isAnyEditingOrRevoked()" />
-          <app-token-container-field
-            [container]="str(tokenDetails().container_serial)"
-            [tokenHasUser]="!!tokenDetails().username"
-            [blockEditing]="isAnyEditingOrRevoked()"
-            [selfService]="true" />
-        </div>
-      </app-details-card>
 
       <app-token-details-user-self-service
         class="details-card-user"
@@ -184,6 +55,12 @@
         [isEditingUser]="isEditingUser"
         [tokenSerial]="tokenSerial"
         [userData]="userData"></app-token-details-user-self-service>
+
+      <app-token-details-assignments
+        [tokenDetails]="tokenDetails()"
+        [userRealm]="userRealm"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+        [selfService]="true" />
 
       @if (tokenType() === "sshkey" || tokenType() === "hotp") {
         <app-token-details-machine class="details-card-machine" />
@@ -195,6 +72,19 @@
         [setPinValue]="setPinValue"
         [tokenType]="tokenType"
         [token]="tokenDetails()"></app-token-details-actions>
+
+      @if (descriptionRow(); as desc) {
+        <app-token-details-description
+          [element]="desc"
+          [editable]="isEditableElement(desc.keyMap.key)"
+          [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+          [isEditingInfo]="isEditingInfo()"
+          [isEditingUser]="isEditingUser()"
+          [selfService]="true"
+          [cancelEdit]="cancelTokenEdit.bind(this)"
+          [saveEdit]="saveTokenEdit.bind(this)"
+          [toggleEdit]="toggleTokenEdit.bind(this)" />
+      }
 
       <app-token-details-info
         class="details-info-area"

@@ -1,5 +1,8 @@
-@use "styles";
 @use "table";
+
+:host {
+  display: contents;
+}
 
 .status-toggle {
   padding: 0;

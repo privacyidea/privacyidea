@@ -1,0 +1,38 @@
+:host {
+  display: contents;
+}
+
+.details-card--description {
+  width: 340px;
+  align-self: flex-start;
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    min-width: 80px;
+    justify-content: flex-end;
+  }
+
+  .description-text {
+    overflow-wrap: anywhere;
+  }
+
+  .description-field {
+    width: 100%;
+    max-width: 700px;
+  }
+}

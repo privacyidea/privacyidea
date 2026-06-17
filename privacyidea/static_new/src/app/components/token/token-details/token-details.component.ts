@@ -43,29 +43,18 @@ import {
 import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
 import { tokenTypes } from "@utils/token.utils";
 import { lastValueFrom, switchMap } from "rxjs";
-import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 
 import { NgClass } from "@angular/common";
-import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
-import { TokenContainerFieldComponent } from "./fields/token-container-field.component";
-import { TokenFailcountFieldComponent } from "./fields/token-failcount-field.component";
-import { TokenRealmsFieldComponent } from "./fields/token-realms-field.component";
-import { TokenStatusFieldComponent } from "./fields/token-status-field.component";
-import { TokenTokengroupFieldComponent } from "./fields/token-tokengroup-field.component";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
-import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -76,8 +65,12 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
+import { TokenDetailsAssignmentsComponent } from "./token-details-assignments/token-details-assignments.component";
+import { TokenDetailsCountersComponent } from "./token-details-counters/token-details-counters.component";
+import { TokenDetailsDescriptionComponent } from "./token-details-description/token-details-description.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
+import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import {
   SshMachineAssignDialogData,
@@ -107,7 +100,7 @@ export const tokenDetailsKeyMap: { key: string; label: string; group: TokenDetai
   { key: "container_serial", label: "Container Serial", group: "assignment" }
 ];
 
-function formatTokenTimestamp(value: string | undefined): string | undefined {
+export function formatTokenTimestamp(value: string | undefined): string | undefined {
   if (value === undefined || value === "") return undefined;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -138,25 +131,18 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
   imports: [
     MatIcon,
     NgClass,
-    MatInput,
-    MatFormFieldModule,
     TokenDetailsUserComponent,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
-    EditButtonsComponent,
+    TokenDetailsStatusComponent,
+    TokenDetailsCountersComponent,
+    TokenDetailsAssignmentsComponent,
+    TokenDetailsDescriptionComponent,
     MatButton,
     RouterLink,
-    AutofocusDirective,
     ScrollToTopDirective,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
-    DetailsCardComponent,
-    DetailFieldComponent,
-    TokenStatusFieldComponent,
-    TokenFailcountFieldComponent,
-    TokenRealmsFieldComponent,
-    TokenTokengroupFieldComponent,
-    TokenContainerFieldComponent,
     OverflowNavDirective
   ],
   providers: [DetailsEditRegistry],
@@ -169,7 +155,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly editRegistry = inject(DetailsEditRegistry);
@@ -309,14 +294,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     const type = this.tokenDetails()?.tokentype;
     return !(type === "webauthn" || type === "passkey" || type === "push");
   });
-  protected readonly createdDisplay = computed(() => formatTokenTimestamp(this.tokenDetails().info?.["creation_date"]) ?? "");
-  protected readonly lastAuthDisplay = computed(() => formatTokenTimestamp(this.tokenDetails().info?.["last_auth"]) ?? "");
-  protected readonly saveMaxfail = (value: string): void => this.saveTokenDetail("maxfail", value);
-  protected readonly saveCountWindow = (value: string): void => this.saveTokenDetail("count_window", value);
-  protected readonly saveSyncWindow = (value: string): void => this.saveTokenDetail("sync_window", value);
-  protected str(value: unknown): string {
-    return value === null || value === undefined ? "" : String(value);
-  }
   descriptionRow = computed(
     () => this.tokenDetailData().find((r) => r.keyMap.key === "description") as EditableElement<string> | undefined
   );
@@ -325,7 +302,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     computation: () => this.tokenDetails()?.tokentype ?? ""
   });
   userRealm = "";
-  maxfail = 0;
   isAnyEditingOrRevoked = computed(() => {
     return (
       this.tokenDetailData().some((element) => element.isEditing()) ||
@@ -341,7 +317,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.tokenDetails()) return;
       this.tokenIsActive.set(this.tokenDetails().active);
       this.tokenIsRevoked.set(this.tokenDetails().revoked);
-      this.maxfail = this.tokenDetails().maxfail;
       this.realmService.selectedRealms.set(this.tokenDetails().realms);
       this.userRealm = (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) || "";
       this.containerService.compatibleWithSelectedTokenType.set(this.tokenDetails().tokentype);

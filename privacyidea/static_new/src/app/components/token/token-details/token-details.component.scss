@@ -52,43 +52,6 @@
     }
   }
 
-  .value-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .value-content {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .value-edit {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-  }
-
-  .status-toggle {
-    padding: 0;
-    margin: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    font: inherit;
-    color: inherit;
-    display: inline-flex;
-    align-items: center;
-
-    &:focus-visible {
-      outline: 2px solid var(--mat-sys-primary);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-  }
-
 }
 
 .details-header h3 {
@@ -128,25 +91,6 @@
   }
 }
 
-.details-card--description {
-  width: 340px;
-  align-self: flex-start;
-
-  .value-edit {
-    min-width: 80px;
-    justify-content: flex-end;
-  }
-
-  .description-text {
-    overflow-wrap: anywhere;
-  }
-
-  .description-field {
-    width: 100%;
-    max-width: 700px;
-  }
-}
-
 .details-grid {
   display: flex;
   flex-direction: row;
@@ -156,11 +100,6 @@
   margin-top: 8px;
 }
 
-.details-card--counters {
-  min-width: var(--details-card-min-width);
-  max-width: var(--details-card-max-width);
-  box-sizing: border-box;
-}
 .details-card-machine { display: contents; }
 
 .details-card-user {
@@ -193,12 +132,4 @@
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;
-}
-
-.container-serial-row {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  min-height: 101px;
 }

@@ -1,0 +1,122 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-details-card
+  class="details-card--identity"
+  [title]="'Status'">
+  <div class="details-field-list">
+    <app-detail-field
+      [label]="'Type'"
+      [displayText]="str(tokenDetails().tokentype)" />
+    @if (selfService()) {
+      <app-detail-field
+        [label]="'Status'"
+        [displayText]="tableUtilsService.getDisplayTextForKeyAndRevoked('active', tokenIsActive(), tokenIsRevoked())"
+        [spanClass]="tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })" />
+    } @else {
+      <div class="detail-field">
+        <div
+          class="detail-field-key"
+          i18n>
+          Status
+        </div>
+        <div class="detail-field-value">
+          @if (
+            !isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")
+          ) {
+            <button
+              type="button"
+              class="status-toggle"
+              (click)="toggleActive()"
+              i18n-aria-label="Toggle Status">
+              <span
+                [ngClass]="[
+                  tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
+                ]">
+                {{ tableUtilsService.getDisplayTextForKeyAndRevoked("active", tokenIsActive(), tokenIsRevoked()) }}
+              </span>
+            </button>
+          } @else {
+            <div [ngClass]="[tableUtilsService.getDivClassForKey('active')]">
+              <span
+                [ngClass]="[
+                  tableUtilsService.getSpanClassForKey({ key: 'active', value: tokenIsActive(), maxfail: maxfail() })
+                ]">
+                {{ tableUtilsService.getDisplayTextForKeyAndRevoked("active", tokenIsActive(), tokenIsRevoked()) }}
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    <app-detail-field
+      [label]="'Rollout State'"
+      [displayText]="str(tokenDetails().rollout_state)" />
+    <div class="detail-field">
+      <div
+        class="detail-field-key"
+        i18n>
+        Fail Count
+      </div>
+      <div class="detail-field-value">
+        <div class="value-row">
+          <div class="value-content">
+            <div [ngClass]="[tableUtilsService.getDivClassForKey('failcount')]">
+              <span
+                [ngClass]="[
+                  tableUtilsService.getSpanClassForKey({
+                    key: 'failcount',
+                    value: str(tokenDetails().failcount),
+                    maxfail: maxfail()
+                  })
+                ]">
+                {{
+                  tableUtilsService.getDisplayTextForKeyAndRevoked(
+                    "failcount",
+                    str(tokenDetails().failcount),
+                    tokenIsRevoked()
+                  )
+                }}
+              </span>
+            </div>
+          </div>
+          <div class="value-edit">
+            @if (!isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
+              <button
+                mat-icon-button
+                (click)="resetFailCount()"
+                i18n-aria-label="Reset Fail Count">
+                <mat-icon>lock_reset</mat-icon>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+    @if (createdDisplay()) {
+      <app-detail-field
+        [label]="'Created'"
+        [displayText]="createdDisplay()" />
+    }
+    @if (lastAuthDisplay()) {
+      <app-detail-field
+        [label]="'Last Authentication'"
+        [displayText]="lastAuthDisplay()" />
+    }
+  </div>
+</app-details-card>

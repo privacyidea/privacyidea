@@ -1,0 +1,11 @@
+@use "table";
+
+:host {
+  display: contents;
+}
+
+.details-card--counters {
+  min-width: var(--details-card-min-width);
+  max-width: var(--details-card-max-width);
+  box-sizing: border-box;
+}

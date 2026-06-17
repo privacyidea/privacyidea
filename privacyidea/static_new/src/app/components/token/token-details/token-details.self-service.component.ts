@@ -17,20 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
-import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
 import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
-import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
-import { TokenContainerFieldComponent } from "./fields/token-container-field.component";
-import { TokenFailcountFieldComponent } from "./fields/token-failcount-field.component";
-import { TokenRealmsFieldComponent } from "./fields/token-realms-field.component";
-import { TokenTokengroupFieldComponent } from "./fields/token-tokengroup-field.component";
+import { TokenDetailsAssignmentsComponent } from "./token-details-assignments/token-details-assignments.component";
+import { TokenDetailsCountersComponent } from "./token-details-counters/token-details-counters.component";
+import { TokenDetailsDescriptionComponent } from "./token-details-description/token-details-description.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
+import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
 
@@ -38,18 +33,13 @@ import { TokenDetailsComponent } from "./token-details.component";
   selector: "app-token-details-self-service",
   standalone: true,
   imports: [
-    DetailsCardComponent,
-    MatInput,
-    MatFormFieldModule,
     TokenDetailsUserSelfServiceComponent,
     TokenDetailsInfoComponent,
     TokenDetailsActionsComponent,
-    DetailFieldComponent,
-    TokenFailcountFieldComponent,
-    TokenRealmsFieldComponent,
-    TokenTokengroupFieldComponent,
-    TokenContainerFieldComponent,
-    EditButtonsComponent,
+    TokenDetailsStatusComponent,
+    TokenDetailsCountersComponent,
+    TokenDetailsAssignmentsComponent,
+    TokenDetailsDescriptionComponent,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent
   ],
