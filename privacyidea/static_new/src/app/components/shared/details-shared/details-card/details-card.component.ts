@@ -29,9 +29,13 @@ import { MatIcon } from "@angular/material/icon";
 export class DetailsCardComponent {
   readonly title = input<string>("");
   readonly collapsible = input(false);
+  readonly collapseLocked = input(false);
   readonly expanded = signal(false);
 
   protected toggleExpanded(): void {
+    if (this.collapseLocked()) {
+      return;
+    }
     this.expanded.set(!this.expanded());
   }
 }

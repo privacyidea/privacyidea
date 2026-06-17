@@ -18,7 +18,8 @@
 -->
 <app-details-card
   [title]="'Token Information'"
-  [collapsible]="true">
+  [collapsible]="true"
+  [collapseLocked]="isEditingInfo()">
   @if (infoData()[0]; as element) {
     @let info = asInfoMap(element.value);
     @if (authService.actionAllowed("settokeninfo")) {

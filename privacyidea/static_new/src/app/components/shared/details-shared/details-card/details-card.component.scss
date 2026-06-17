@@ -66,6 +66,10 @@
     margin: 0;
   }
 
+  &:disabled {
+    cursor: default;
+  }
+
   &:focus-visible {
     outline: 2px solid var(--mat-sys-primary);
     outline-offset: 2px;

@@ -21,6 +21,7 @@
     type="button"
     class="details-card-toggle"
     (click)="toggleExpanded()"
+    [disabled]="collapseLocked()"
     [attr.aria-expanded]="expanded()">
     <h4 class="details-card-title">{{ title() }}</h4>
     <mat-icon
