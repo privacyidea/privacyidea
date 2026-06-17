@@ -131,7 +131,6 @@
 .details-card--description {
   width: 340px;
   align-self: flex-start;
-  order: 9;
 
   .value-edit {
     min-width: 80px;
@@ -157,17 +156,12 @@
   margin-top: 8px;
 }
 
-.details-card--identity { order: 1; }
-.details-card-user { order: 2; }
-.details-card--assignment { order: 3; }
 .details-card--counters {
-  order: 4;
   min-width: var(--details-card-min-width);
   max-width: var(--details-card-max-width);
   box-sizing: border-box;
 }
-.details-card-machine { order: 5; display: contents; }
-.details-card-actions { flex: 1 1 100%; order: 11; }
+.details-card-machine { display: contents; }
 
 .details-card-user {
   display: block;
@@ -196,7 +190,6 @@
 }
 
 .details-info-area {
-  order: 10;
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;

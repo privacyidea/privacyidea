@@ -24,7 +24,6 @@ import { MatDivider } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { ResyncTokenActionComponent } from "@components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component";
 import { SetPinActionComponent } from "@components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "@components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component";
@@ -41,7 +40,6 @@ import { TokenDetails } from "@services/token/token.service";
     MatDivider,
     MatIconModule,
     RouterLink,
-    DetailsCardComponent,
     SetPinActionComponent,
     ResyncTokenActionComponent,
     TestOtpPinActionComponent,

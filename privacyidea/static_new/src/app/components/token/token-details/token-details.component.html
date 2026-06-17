@@ -159,47 +159,6 @@
   </div>
 
   <div class="details-grid margin-bottom-16">
-    @if (descriptionRow(); as desc) {
-      <app-details-card
-        class="details-card--description"
-        [class.is-editing]="desc.isEditing()"
-        [title]="'Description'">
-        <div class="value-row">
-          <div class="value-content">
-            @if (desc.isEditing()) {
-              <mat-form-field
-                class="description-field"
-                subscriptSizing="dynamic">
-                <mat-label i18n>Description</mat-label>
-                <textarea
-                  [value]="desc.value"
-                  (input)="desc.value = $any($event.target).value"
-                  maxlength="80"
-                  appAutofocus
-                  matInput
-                  rows="7"></textarea>
-                <mat-hint align="end">{{ desc.value.length || 0 }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
-              </mat-form-field>
-            } @else {
-              <span class="description-text">{{ desc.value || "—" }}</span>
-            }
-          </div>
-          <div class="value-edit">
-            @if (isEditableElement(desc.keyMap.key)) {
-              <app-edit-buttons
-                [cancelEdit]="cancelTokenEdit.bind(this)"
-                [element]="desc"
-                [isEditingInfo]="isEditingInfo()"
-                [isEditingUser]="isEditingUser()"
-                [saveEdit]="saveTokenEdit.bind(this)"
-                [shouldHideEdit]="isAnyEditingOrRevoked()"
-                [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
-            }
-          </div>
-        </div>
-      </app-details-card>
-    }
-
     <app-details-card
       class="details-card--identity"
       [title]="'Status'">
@@ -227,25 +186,6 @@
             [label]="'Last Authentication'"
             [displayText]="lastAuthDisplay()" />
         }
-      </div>
-    </app-details-card>
-
-    <app-details-card
-      class="details-card--assignment"
-      [title]="'Assignments'">
-      <div class="details-field-list">
-        <app-token-realms-field
-          [realms]="tokenDetails().realms"
-          [userRealm]="userRealm"
-          [blockEditing]="isAnyEditingOrRevoked()" />
-        <app-token-tokengroup-field
-          [tokengroup]="$any(tokenDetails().tokengroup)"
-          [userRealm]="userRealm"
-          [blockEditing]="isAnyEditingOrRevoked()" />
-        <app-token-container-field
-          [container]="str(tokenDetails().container_serial)"
-          [tokenHasUser]="!!tokenDetails().username"
-          [blockEditing]="isAnyEditingOrRevoked()" />
       </div>
     </app-details-card>
 
@@ -298,6 +238,25 @@
       [tokenSerial]="tokenSerial"
       [userData]="userData"></app-token-details-user>
 
+    <app-details-card
+      class="details-card--assignment"
+      [title]="'Assignments'">
+      <div class="details-field-list">
+        <app-token-realms-field
+          [realms]="tokenDetails().realms"
+          [userRealm]="userRealm"
+          [blockEditing]="isAnyEditingOrRevoked()" />
+        <app-token-tokengroup-field
+          [tokengroup]="$any(tokenDetails().tokengroup)"
+          [userRealm]="userRealm"
+          [blockEditing]="isAnyEditingOrRevoked()" />
+        <app-token-container-field
+          [container]="str(tokenDetails().container_serial)"
+          [tokenHasUser]="!!tokenDetails().username"
+          [blockEditing]="isAnyEditingOrRevoked()" />
+      </div>
+    </app-details-card>
+
     @if (tokenType() === "sshkey" || tokenType() === "hotp") {
       <app-token-details-machine class="details-card-machine" />
     }
@@ -310,6 +269,47 @@
       [token]="tokenDetails()"
       [passkeyTestResult]="passkeyTestResult"
       (testPasskey)="testPasskey()"></app-token-details-actions>
+
+    @if (descriptionRow(); as desc) {
+      <app-details-card
+        class="details-card--description"
+        [class.is-editing]="desc.isEditing()"
+        [title]="'Description'">
+        <div class="value-row">
+          <div class="value-content">
+            @if (desc.isEditing()) {
+              <mat-form-field
+                class="description-field"
+                subscriptSizing="dynamic">
+                <mat-label i18n>Description</mat-label>
+                <textarea
+                  [value]="desc.value"
+                  (input)="desc.value = $any($event.target).value"
+                  maxlength="80"
+                  appAutofocus
+                  matInput
+                  rows="7"></textarea>
+                <mat-hint align="end">{{ desc.value.length || 0 }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
+              </mat-form-field>
+            } @else {
+              <span class="description-text">{{ desc.value || "—" }}</span>
+            }
+          </div>
+          <div class="value-edit">
+            @if (isEditableElement(desc.keyMap.key)) {
+              <app-edit-buttons
+                [cancelEdit]="cancelTokenEdit.bind(this)"
+                [element]="desc"
+                [isEditingInfo]="isEditingInfo()"
+                [isEditingUser]="isEditingUser()"
+                [saveEdit]="saveTokenEdit.bind(this)"
+                [shouldHideEdit]="isAnyEditingOrRevoked()"
+                [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
+            }
+          </div>
+        </div>
+      </app-details-card>
+    }
 
     <app-token-details-info
       class="details-info-area"

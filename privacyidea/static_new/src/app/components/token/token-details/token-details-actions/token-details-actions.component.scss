@@ -1,124 +1,109 @@
 @use "styles";
 @use "table";
 
-$padding-horizontal: 16px;
-
 :host {
   display: block;
 }
 
-.actions-otp-container {
+.actions-status-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+}
+
+.actions-sections-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--global-gap);
+  align-items: flex-start;
+}
+
+.actions-section {
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
+  gap: 8px;
+  flex: 0 0 auto;
+  width: fit-content;
+  align-self: flex-start;
 
-  app-verify-enrollment,
-  > mat-divider {
-    width: 100%;
-  }
-
-  .actions-status-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    padding: 12px 14px;
-    border: 1px solid var(--mat-sys-outline-variant);
-    border-radius: var(--border-radius);
-    background: var(--mat-sys-surface-container-low);
-  }
-
-  .actions-sections-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 240px);
-    gap: var(--global-gap);
-    justify-content: start;
-    align-items: start;
-  }
-
-  .actions-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  app-set-pin-action,
+  app-resync-token-action,
+  app-test-otp-pin-action,
+  .passkey-test-panel {
     flex: 0 0 auto;
     width: fit-content;
-    align-self: flex-start;
+    min-height: 0;
   }
+}
 
-  .test-sync-section {
-    app-resync-token-action,
-    app-test-otp-pin-action {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 8px;
-      padding: 8px 12px 12px;
-      border: 1px solid var(--mat-sys-outline-variant);
-      border-radius: var(--border-radius);
-      box-sizing: border-box;
-
-      .actions-pin-input,
-      .actions-otp-pin-input {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        flex: 1 1 auto;
-        min-width: 0;
-      }
-
-      .actions-pin-input-button,
-      .actions-pin-button {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-    }
-  }
-
-  .actions-section {
-    app-set-pin-action,
-    app-resync-token-action,
-    app-test-otp-pin-action,
-    .passkey-test-panel {
-      flex: 0 0 auto;
-      width: fit-content;
-      min-height: 0;
-    }
-  }
-
-  .passkey-test-panel {
+.test-sync-section {
+  app-resync-token-action,
+  app-test-otp-pin-action {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
     padding: 8px 12px 12px;
     border: 1px solid var(--mat-sys-outline-variant);
     border-radius: var(--border-radius);
     box-sizing: border-box;
-  }
 
-  .passkey-test-result {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.4;
-  }
+    .actions-pin-input,
+    .actions-otp-pin-input {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
 
-  .passkey-test-result--success {
-    color: var(--mat-sys-primary);
+    .actions-pin-input-button,
+    .actions-pin-button {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   }
+}
 
-  .passkey-test-result--warning {
-    color: var(--mat-sys-error);
-  }
+.passkey-test-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
+}
 
-  .lifecycle-buttons {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
+.passkey-test-result {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.passkey-test-result--success {
+  color: var(--mat-sys-primary);
+}
+
+.passkey-test-result--warning {
+  color: var(--mat-sys-error);
+}
+
+.lifecycle-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
 }
