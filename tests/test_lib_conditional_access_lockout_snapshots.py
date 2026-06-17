@@ -33,8 +33,7 @@ Two configurations are pinned here, each as its own test case:
   combined count trips the threshold).
 
 ``counter_types_to_track`` is a JSON list in both. The configuration is encoded as
-fixtures rather than read from the CSV/DB at run time (the CSVs live outside the
-repo and the dev DB must never be touched by the suite); each ``SNAPSHOT`` is a
+fixtures rather than read from the CSV/DB at run time; each ``SNAPSHOT`` is a
 faithful transcription of the corresponding rows.
 """
 from datetime import timedelta
