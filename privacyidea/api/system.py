@@ -571,28 +571,43 @@ def list_nodes():
 @log_with(log)
 def get_health_certificates():
     """
-    Return certificate expiry information for all configured LDAP resolvers
-    (where the resolver uses ldaps:// or START_TLS) and for the privacyIDEA
-    server certificate.
+    Return certificate expiry information for the certificates privacyIDEA
+    depends on. Several sources are inspected automatically:
 
-    Server-certificate sources are admin-configured via two pi.cfg keys:
+    * **LDAP resolvers** - the TLS server certificate of every resolver whose
+      URI uses ``ldaps://`` or that has ``START_TLS`` enabled (``source`` =
+      ``ldap-resolver``).
+    * **Keycloak resolvers** - the TLS server certificate of the resolver's
+      ``base_url`` when it is an ``https://`` endpoint (``source`` =
+      ``keycloak-resolver``).
+    * **EntraID resolvers** - the client-certificate credential used to
+      authenticate against Entra, for resolvers configured with
+      ``client_credential_type = certificate``. The certificate is read from
+      the resolver's ``private_key_file``; only its validity period is
+      inspected (``source`` = ``entraid-resolver``). The Microsoft endpoints
+      themselves are not probed, as their certificates are managed by Microsoft.
+
+    In addition, the privacyIDEA server certificate can be reported via two
+    admin-configured pi.cfg keys (both opt-in, see :ref:`picfg_metrics_health`):
 
     * ``PI_SERVER_CERT_FILE`` - path to a cert file on disk to read.
     * ``PI_HEALTH_CERT_PROBES`` - list of ``{"host": "...", "port": int}``
       dicts naming TLS endpoints to probe over the network.
 
-    Both are opt-in. With neither configured, only LDAP resolver entries
-    are returned. The endpoint never derives probe targets from request
-    headers - that would be an SSRF primitive.
+    Probe targets are never derived from request headers - that would be an
+    SSRF primitive.
 
     The result is cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds
     (default 3600). Pass ``?refresh=1`` to bypass the cache.
 
-    Each entry has a ``status`` of ``ok`` (>30 days), ``warning`` (<=30 days),
-    ``critical`` (<=7 days), ``expired`` (<=0 days), or ``error`` (probe failed).
+    Each entry carries ``source``, ``name``, ``host``, ``tls_mode``, the
+    certificate ``subject`` / ``issuer`` / ``not_after`` / ``days_remaining``,
+    an ``error`` message (or ``null``), and a ``status`` of ``ok`` (>30 days),
+    ``warning`` (<=30 days), ``critical`` (<=7 days), ``expired`` (<=0 days),
+    or ``error`` (the certificate could not be read).
 
     :queryparam refresh: If truthy, bypass the cache and re-check.
-    :>json list value: List of certificate status entries.
+    :>json list value: List of certificate status entries (see above).
     :reqheader PI-Authorization: The authorization token
     """
     refresh = is_true(get_optional(request.all_data, "refresh"))
@@ -618,12 +633,20 @@ def get_health_resolver_timing():
     ``get_user_id``, ``get_username``). Covers all resolver types
     uniformly (LDAP, SQL, HTTP, EntraID, Keycloak, passwd).
 
-    The returned ``count``, ``avg``, ``p50``, ``p95``, ``max`` are summed
-    across all privacyIDEA nodes and 5-minute windows that fall within
-    the requested window.
+    The values are aggregated across all privacyIDEA nodes and 5-minute windows
+    that fall within the requested window. Each entry carries ``labels``
+    (``resolver``, ``resolver_type``, ``op``), the ``count`` of observations,
+    ``avg`` / ``p50`` / ``p95`` / ``max`` durations in seconds, and ``buckets``
+    (ordered ``[upper_bound_seconds, cumulative_count]`` pairs). The buckets let
+    a client roll several operations of one resolver into a single, correct
+    combined percentile instead of taking the maximum of the per-op p95s.
+    ``p50`` / ``p95`` are approximated from the histogram buckets and so round up
+    to the next bucket boundary; they are ``null`` when the quantile lies in the
+    open-ended (> 5 s) tail.
 
     :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
-    :>json list value: One entry per ``(resolver, resolver_type, op)`` triple.
+    :>json list value: One entry per ``(resolver, resolver_type, op)`` triple
+        (see above for the per-entry fields).
     :reqheader PI-Authorization: The authorization token
     """
     try:
@@ -682,13 +705,22 @@ def get_health_notification_delivery():
     Return rolling delivery counters and latency for the three notification
     channels (push, SMS, email).
 
-    Each channel folds rows by its primary label dimension:
+    The result is a dict with one key per channel (``push``, ``sms``, ``email``)
+    plus the echoed ``since_seconds``. Each channel folds rows by its primary
+    label dimension:
 
     * push: ``gateway`` (the SMS gateway identifier configured for Firebase)
     * sms: ``gateway`` (the SMS gateway identifier)
     * email: ``identifier`` (the SMTP server identifier)
 
+    Each channel value is a list of per-target entries, sorted by total volume.
+    An entry carries ``key`` (the gateway/identifier), the outcome counts ``ok``
+    / ``failed`` / ``error`` / ``total``, and - when latency was recorded -
+    ``avg`` / ``p50`` / ``p95`` / ``max`` (seconds) plus ``duration_count``.
+
     :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
+    :>json dict value: ``{"push": [...], "sms": [...], "email": [...],
+        "since_seconds": <int>}`` (see above for the per-entry fields).
     :reqheader PI-Authorization: The authorization token
     """
     try:
@@ -753,12 +785,17 @@ def delete_user_cache_api():
 @log_with(log)
 def metricscleanup_api():
     """
-    Delete metric_aggregate rows older than ``older_than_hours`` hours.
-    Mirrors what the ``MetricsCleanup`` periodic task does, but on demand.
+    Delete ``metric_aggregate`` rows older than ``older_than_hours`` hours.
+    Mirrors what the ``MetricsCleanup`` periodic task does (see
+    :ref:`taskmodule_metricscleanup`), but on demand. The metrics table backs
+    the resolver-timing and notification-delivery dashboard panels; this keeps
+    it from growing unbounded.
 
     :jsonparam older_than_hours: retention threshold in hours. Default 24.
                                  Values < 1 are clamped to 1 to prevent wiping
                                  the live (in-progress) bucket.
+    :>json dict value: ``{"status": true, "deleted": <n>,
+        "older_than_hours": <hours>}`` where ``n`` is the number of rows removed.
     :reqheader PI-Authorization: The authorization token
     """
     try:

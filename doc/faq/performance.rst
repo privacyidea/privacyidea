@@ -13,6 +13,37 @@ Then you can run::
 The performance depends on several aspects like the connection speed to your
 database and the connection speed to your user stores.
 
+.. _faq_perf_is_it_the_database:
+
+Is the database the bottleneck?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because almost every request reads from the database and the user store, a slow
+database or a slow network link to it makes privacyIDEA feel slow - even though
+privacyIDEA itself is not the cause. Before assuming the application is at
+fault, check where the time is actually spent:
+
+* The *Resolver Timing* panel on the :ref:`dashboard` shows the per-resolver
+  latency of user-store operations. Consistently high values there point at the
+  user store (e.g. a remote LDAP/SQL/HTTP backend) or the network to it, not at
+  privacyIDEA.
+
+* For the database itself, use the database's own diagnostics, which are far
+  more precise than anything in the application:
+
+  * **PostgreSQL:** set ``log_min_duration_statement`` (for example to ``200``
+    ms) to log slow statements, and/or enable the ``pg_stat_statements``
+    extension to see which statements cost the most over time.
+  * **MySQL / MariaDB:** enable the slow query log (``slow_query_log = 1``
+    together with a suitable ``long_query_time``).
+
+* Also check the network round-trip latency to the database host, whether the
+  connection pool is saturated, and that the database server has enough CPU,
+  memory and I/O.
+
+The ``ab`` benchmark above, run against a simple pass token, is a quick way to
+isolate the privacyIDEA + database path from token and user-store crypto.
+
 Processes
 ~~~~~~~~~
 
