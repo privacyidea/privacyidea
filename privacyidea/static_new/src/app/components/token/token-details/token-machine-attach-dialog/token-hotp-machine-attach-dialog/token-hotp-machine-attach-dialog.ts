@@ -24,29 +24,24 @@ import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { PiResponse } from "@app/app.component";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { Observable } from "rxjs";
 
-export type HotpMachineAssignDialogData = {
+export interface HotpMachineAssignDialogData {
   tokenSerial: string;
-};
+}
 
 @Component({
-  selector: "token-ssh-machine-attach-dialog",
+  selector: "app-token-hotp-machine-attach-dialog",
   styleUrls: ["./token-hotp-machine-attach-dialog.component.scss"],
   templateUrl: "./token-hotp-machine-attach-dialog.component.html",
   standalone: true,
-  imports: [
-    FormField,
-    MatInputModule,
-    MatButtonModule,
-    MatDialogModule,
-    DialogWrapperComponent
-  ]
+  imports: [FormField, MatInputModule, MatButtonModule, MatDialogModule, DialogWrapperComponent]
 })
 export class TokenHotpMachineAssignDialogComponent extends AbstractDialogComponent<
   HotpMachineAssignDialogData,
-  Observable<any> | null
+  Observable<PiResponse<number>> | null
 > {
   private machineService: MachineServiceInterface = inject(MachineService);
   public tokenSerial = this.data.tokenSerial;
@@ -68,8 +63,8 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
     validate(f, (ctx) => {
       const value = ctx.value();
       const numericValue = Number(value);
-      if (!value || isNaN(numericValue)) return [{ kind: "required" as any }];
-      if (numericValue < 10) return [{ kind: "min" as any }];
+      if (!value || isNaN(numericValue)) return [{ kind: "required" }];
+      if (numericValue < 10) return [{ kind: "min" }];
       return [];
     });
   });
@@ -79,8 +74,8 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
     validate(f, (ctx) => {
       const value = ctx.value();
       const numericValue = Number(value);
-      if (!value || isNaN(numericValue)) return [{ kind: "required" as any }];
-      if (numericValue < 1000) return [{ kind: "min" as any }];
+      if (!value || isNaN(numericValue)) return [{ kind: "required" }];
+      if (numericValue < 1000) return [{ kind: "min" }];
       return [];
     });
   });
@@ -99,7 +94,7 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
       serial: this.data.tokenSerial
     });
     request.subscribe({
-      next: (_) => {
+      next: () => {
         // Subscribed to ensure that the request will be executed
       },
       error: (error) => {

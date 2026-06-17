@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Pipe, PipeTransform, SecurityContext } from "@angular/core";
+import { inject, Pipe, PipeTransform, SecurityContext } from "@angular/core";
 import { DomSanitizer } from "@angular/platform-browser";
 
 @Pipe({
@@ -25,7 +25,7 @@ import { DomSanitizer } from "@angular/platform-browser";
   standalone: true
 })
 export class HighlightPipe implements PipeTransform {
-  constructor(private sanitizer: DomSanitizer) {}
+  private sanitizer = inject(DomSanitizer);
 
   transform(value: string, searchTerm: string): string | null {
     if (!searchTerm || !value) return this.escapeHtml(value);

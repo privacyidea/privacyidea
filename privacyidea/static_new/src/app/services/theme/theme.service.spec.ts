@@ -24,7 +24,7 @@ import { DOCUMENT, Renderer2, RendererFactory2 } from "@angular/core";
 import { APP_THEME_STORAGE_KEY } from "@core/constants";
 
 class DomRendererFactory implements RendererFactory2 {
-  createRenderer(_: any, __: any): Renderer2 {
+  createRenderer(): Renderer2 {
     return {
       addClass: (el: Element, name: string) => el.classList.add(name),
       removeClass: (el: Element, name: string) => el.classList.remove(name)
@@ -64,7 +64,7 @@ function setupMatchMedia(prefersDarkInitial: boolean) {
   });
 
   const emitChange = (matches: boolean) => {
-    (mql as any).matches = matches;
+    (mql as { matches: boolean }).matches = matches;
     if (listener) listener({ matches } as MediaQueryListEvent);
   };
 
@@ -114,7 +114,7 @@ describe("ThemeService", () => {
     expect(htmlEl.classList.contains("dark")).toBe(true);
     expect(htmlEl.classList.contains("light")).toBe(false);
 
-    expect((mql as any).addEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+    expect(mql.addEventListener as unknown as jest.Mock).toHaveBeenCalledWith("change", expect.any(Function));
   });
 
   it("setTheme('light') applies classes, updates storage and currentTheme", () => {
@@ -156,7 +156,7 @@ describe("ThemeService", () => {
     expect(htmlEl.classList.contains("dark")).toBe(true);
     expect(htmlEl.classList.contains("light")).toBe(false);
 
-    expect((mql as any).addEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+    expect(mql.addEventListener as unknown as jest.Mock).toHaveBeenCalledWith("change", expect.any(Function));
   });
 
   it("leaves system mode: removes the media query listener", () => {
@@ -165,7 +165,7 @@ describe("ThemeService", () => {
     service.setTheme("system");
     service.setTheme("dark");
 
-    expect((mql as any).removeEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+    expect(mql.removeEventListener as unknown as jest.Mock).toHaveBeenCalledWith("change", expect.any(Function));
   });
 
   it("always writes the theme to localStorage", () => {

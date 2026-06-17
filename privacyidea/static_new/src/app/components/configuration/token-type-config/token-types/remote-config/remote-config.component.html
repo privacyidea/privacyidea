@@ -27,7 +27,8 @@
       <mat-checkbox
         [checked]="verifySSL()"
         (change)="updateFormData(REMOTE_VERIFY_SSL, $event.checked)"
-        i18n>Verify SSL certificate
+        i18n
+        >Verify SSL certificate
       </mat-checkbox>
     </div>
 
@@ -42,7 +43,7 @@
           (input)="updateFormData(REMOTE_SERVER, $any($event.target).value)"
           matInput
           placeholder="https://your.other.privacyidea.server"
-          required>
+          required />
         @if (remoteServerInput.validity.valueMissing) {
           <mat-error i18n>Default Remote Server is <strong>required</strong></mat-error>
         }

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkCopyToClipboard } from "@angular/cdk/clipboard";
-import { Component, Input, signal } from "@angular/core";
+import { Component, input, signal } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 
 @Component({
@@ -28,7 +28,7 @@ import { MatIcon } from "@angular/material/icon";
   styleUrls: ["./copy-button.component.scss"]
 })
 export class CopyButtonComponent {
-  @Input() copyText: string = "";
+  copyText = input.required<string>();
   copied = signal(false);
 
   onCopy(): void {

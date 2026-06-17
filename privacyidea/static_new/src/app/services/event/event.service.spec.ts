@@ -29,7 +29,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import { EventService } from "./event.service";
+import { EventHandler, EventHandlerSaveParams, EventService } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -72,7 +72,16 @@ describe("EventService", () => {
   });
 
   it("should save an event handler", () => {
-    const event = { name: "test", handlermodule: "mod" };
+    const event: EventHandlerSaveParams = {
+      name: "test",
+      handlermodule: "mod",
+      active: true,
+      ordering: 0,
+      position: "post",
+      event: [],
+      action: "",
+      conditions: {}
+    };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeTruthy();
       expect(response?.result).toBeDefined();
@@ -83,12 +92,19 @@ describe("EventService", () => {
   });
 
   it("should handle error when saving an event handler", () => {
-    const event = { name: "fail", handlermodule: "mod" };
+    const event: EventHandlerSaveParams = {
+      name: "fail",
+      handlermodule: "mod",
+      active: true,
+      ordering: 0,
+      position: "post",
+      event: [],
+      action: "",
+      conditions: {}
+    };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeUndefined();
-      expect(notificationMock.error).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to save event handler.")
-      );
+      expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to save event handler."));
     });
     const req = httpMock.expectOne(service.eventBaseUrl);
     expect(req.request.method).toBe("POST");
@@ -112,9 +128,7 @@ describe("EventService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to enable event handler!")
-    );
+    expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to enable event handler!"));
     expect(service.allEventsResource.reload).toHaveBeenCalled();
   });
 
@@ -134,9 +148,7 @@ describe("EventService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to disable event handler!")
-    );
+    expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to disable event handler!"));
   });
 
   it("should delete an event handler", () => {
@@ -157,10 +169,8 @@ describe("EventService", () => {
         // Should not be called
         fail("Expected error, but got success response");
       },
-      error: (err) => {
-        expect(notificationMock.error).toHaveBeenCalledWith(
-          expect.stringContaining("Failed to delete event handler.")
-        );
+      error: () => {
+        expect(notificationMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete event handler."));
         done();
       }
     });
@@ -170,15 +180,15 @@ describe("EventService", () => {
   });
 
   describe("deleteWithConfirmDialog", () => {
-    let event: any;
+    let event: EventHandler;
 
     beforeEach(() => {
-      event = { id: 1, name: "Test Event" } as any;
+      event = { id: 1, name: "Test Event" } as unknown as EventHandler;
     });
 
     it("should open confirmation dialog and call delete on success", async () => {
-      const response = { result: { value: event.id } };
-      const deleteSpy = jest.spyOn(service, "deleteEvent").mockReturnValue(of(response as any));
+      const response = MockPiResponse.fromValue<number>(event.id as number);
+      const deleteSpy = jest.spyOn(service, "deleteEvent").mockReturnValue(of(response));
       const deletePromise = service.deleteWithConfirmDialog(event);
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalled();

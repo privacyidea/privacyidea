@@ -63,7 +63,7 @@ describe("TokenApplicationsComponent (Jest)", () => {
 
     fixture = TestBed.createComponent(TokenApplicationsComponent);
     component = fixture.componentInstance;
-    machineServiceMock = TestBed.inject(MachineService) as any;
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
     fixture.detectChanges();
   });
 

@@ -16,8 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="user-container responsive-pad-0-1310">
+<div class="user-container responsive-pad-0-1310">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -53,7 +52,9 @@
                     [value]="userService.selectionFilter()"
                     (input)="userService.selectionFilter.set($any($event.target).value)"
                     [matAutocomplete]="userAuto" />
-                  <mat-autocomplete #userAuto="matAutocomplete">
+                  <mat-autocomplete
+                    #userAuto="matAutocomplete"
+                    (optionSelected)="userService.selectionFilter.set($event.option.value)">
                     @for (option of userService.selectionFilteredUsernames(); track option) {
                       <mat-option [value]="option">{{ option }}</mat-option>
                     }

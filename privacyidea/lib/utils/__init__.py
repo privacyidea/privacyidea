@@ -48,7 +48,7 @@ from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
-from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.framework import get_app_config_value, get_base_url
 
 log = logging.getLogger(__name__)
 
@@ -1195,9 +1195,6 @@ def prepare_result(obj, rid=1, details=None, **kwargs):
         res["detail"] = details
 
     if rid > 1:
-        if isinstance(obj, dict):
-            # TODO: Remove when /validate/samlcheck is removed
-            obj = obj.get("auth")
         if obj and obj != AUTH_RESPONSE.CHALLENGE and not details.get("multi_challenge"):
             r_authentication = AUTH_RESPONSE.ACCEPT
         elif obj and obj == AUTH_RESPONSE.CHALLENGE:
@@ -1288,7 +1285,8 @@ def create_tag_dict(logged_in_user=None,
                 realm=logged_in_user.get("realm") if logged_in_user else "",
                 action=request.path if request else "",
                 serial=serial,
-                url=request.url_root if request else "",
+                # Never derive an out-of-band link from the requests host header
+                url=get_base_url(),
                 user=user_info.get("givenname", ""),
                 surname=user_info.get("surname", ""),
                 givenname=user_info.get("givenname", ""),

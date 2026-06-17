@@ -29,6 +29,9 @@ export interface FilterPair {
   value: string;
 }
 
+export type TableRow = Record<string, unknown>;
+export type TableCellValue = string | number | boolean | null | undefined;
+
 export type ColumnKey =
   | "select"
   | "serial"
@@ -96,13 +99,13 @@ export interface TableUtilsServiceInterface {
 
   isLink(columnKey: string): boolean;
 
-  getClassForColumn(columnKey: string, element: any): string;
+  getClassForColumn(columnKey: string, element: TableRow): string;
 
-  getTooltipForColumn(columnKey: string, element: any): string;
+  getTooltipForColumn(columnKey: string, element: TableRow): string;
 
-  getDisplayText(columnKey: string, element: any): string;
+  getDisplayText(columnKey: string, element: TableRow): string;
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: number }): string;
+  getSpanClassForKey(args: { key: string; value?: TableCellValue; maxfail?: number }): string;
 
   getDivClassForKey(key: string): string;
 
@@ -110,7 +113,7 @@ export interface TableUtilsServiceInterface {
 
   getChildClassForColumnKey(columnKey: string): string;
 
-  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string;
+  getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string;
 
   getTdClassForKey(key: string): string[];
 
@@ -194,7 +197,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     );
   }
 
-  getClassForColumn(columnKey: string, element: any): string {
+  getClassForColumn(columnKey: string, element: TableRow): string {
     if (element["locked"] || element["revoked"]) return "highlight-disabled";
 
     switch (columnKey) {
@@ -209,20 +212,26 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         }
         return "";
 
-      case "failcount":
-        if (element["failcount"] === "") return "";
-        if (element["failcount"] <= 0) return "highlight-true";
-        if (element["failcount"] < element["maxfail"]) {
+      case "failcount": {
+        const raw = element["failcount"];
+        if (raw === "" || raw === null || raw === undefined) return "";
+        const failcount = typeof raw === "number" ? raw : Number(raw);
+        const rawMax = element["maxfail"];
+        const maxfail = typeof rawMax === "number" ? rawMax : Number(rawMax);
+        if (!Number.isFinite(failcount)) return "";
+        if (failcount <= 0) return "highlight-true";
+        if (Number.isFinite(maxfail) && failcount < maxfail) {
           if (this.authService.actionAllowed("reset")) return "highlight-warning-clickable";
           else return "highlight-warning";
         }
         if (this.authService.actionAllowed("reset")) return "highlight-false-clickable";
         else return "highlight-false";
+      }
     }
     return "";
   }
 
-  getTooltipForColumn(columnKey: string, element: any): string {
+  getTooltipForColumn(columnKey: string, element: TableRow): string {
     if (element["locked"]) return "Locked";
     if (element["revoked"]) return "Revoked";
 
@@ -237,7 +246,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return "";
   }
 
-  getDisplayText(columnKey: string, element: any): string {
+  getDisplayText(columnKey: string, element: TableRow): string {
     switch (columnKey) {
       case "active":
         if (element["active"] === "") return "";
@@ -247,10 +256,11 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         if (element["active"] === false) return "deactivated";
         break;
     }
-    return element[columnKey];
+    const cell = element[columnKey];
+    return cell == null ? "" : String(cell);
   }
 
-  getSpanClassForKey(args: { key: string; value?: any; maxfail?: number }): string {
+  getSpanClassForKey(args: { key: string; value?: TableCellValue; maxfail?: number }): string {
     const { key, value, maxfail } = args;
     if (key === "success") {
       if (value === "" || value === null || value === undefined) {
@@ -268,7 +278,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
       return value === true ? "highlight-true" : "highlight-false";
     }
-    if (key === "authentication") {
+    if (key === "authentication" && typeof value === "string") {
       if (value.toLowerCase() === "accept") {
         return "highlight-true";
       } else if (value.toLowerCase() === "challenge") {
@@ -282,7 +292,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
         return "";
       } else if (value === 0) {
         return "highlight-true";
-      } else if (value >= 1 && maxfail !== undefined && value < maxfail) {
+      } else if (typeof value === "number" && value >= 1 && maxfail !== undefined && value < maxfail) {
         return "highlight-warning";
       } else {
         return "highlight-false";
@@ -324,14 +334,14 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return "";
   }
 
-  getDisplayTextForKeyAndRevoked(key: string, value: any, revoked: boolean): string {
+  getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string {
     if (value === "") {
       return "";
     }
     if (key === "active") {
       return revoked ? "revoked" : value ? "active" : "deactivated";
     }
-    return value;
+    return value == null ? "" : String(value);
   }
 
   getTdClassForKey(key: string) {

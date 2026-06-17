@@ -35,12 +35,8 @@
     }
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="sticky-header">
+      class="sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="sticky-controls ali-center">
         <button
           (click)="onCancel()"
@@ -75,13 +71,12 @@
           </app-clearable-input>
           <mat-hint i18n>The unique identifying name of the SMTP server definition.</mat-hint>
           @if (smtpForm.identifier().errors().some(e => e.kind === 'required')) {
-            <mat-error
-              i18n>Identifier is <strong>required</strong>
-            </mat-error>
+            <mat-error i18n>Identifier is <strong>required</strong> </mat-error>
           }
           @if (smtpForm.identifier().errors().some(e => e.kind === 'pattern')) {
-            <mat-error
-              i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            <mat-error i18n
+              >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+              and hyphens are allowed.
             </mat-error>
           }
         </mat-form-field>
@@ -100,9 +95,7 @@
                 placeholder="smtp://mail.example.com" />
             </app-clearable-input>
             @if (smtpForm.server().errors().some(e => e.kind === 'required')) {
-              <mat-error
-                i18n>Server is <strong>required</strong>
-              </mat-error>
+              <mat-error i18n>Server is <strong>required</strong> </mat-error>
             }
           </mat-form-field>
 
@@ -132,14 +125,10 @@
                 placeholder="privacyidea@example.com" />
             </app-clearable-input>
             @if (smtpForm.sender().errors().some(e => e.kind === 'required')) {
-              <mat-error
-                i18n>Sender email is <strong>required</strong>
-              </mat-error>
+              <mat-error i18n>Sender email is <strong>required</strong> </mat-error>
             }
             @if (smtpForm.sender().errors().some(e => e.kind === 'email')) {
-              <mat-error
-                i18n>Invalid email format
-              </mat-error>
+              <mat-error i18n>Invalid email format </mat-error>
             }
           </mat-form-field>
 
@@ -206,13 +195,15 @@
             <mat-checkbox
               [checked]="smtpModel().tls"
               (change)="smtpModel.update(m => ({...m, tls: $event.checked}))"
-              i18n>Use StartTLS
+              i18n
+              >Use StartTLS
             </mat-checkbox>
           }
           <mat-checkbox
             [checked]="smtpModel().enqueue_job"
             (change)="smtpModel.update(m => ({...m, enqueue_job: $event.checked}))"
-            i18n>Send mail from job queue
+            i18n
+            >Send mail from job queue
           </mat-checkbox>
         </div>
 
@@ -247,12 +238,14 @@
             <mat-checkbox
               [checked]="smtpModel().smime"
               (change)="smtpModel.update(m => ({...m, smime: $event.checked}))"
-              i18n>S/MIME signing
+              i18n
+              >S/MIME signing
             </mat-checkbox>
             <mat-checkbox
               [checked]="smtpModel().dont_send_on_error"
               (change)="smtpModel.update(m => ({...m, dont_send_on_error: $event.checked}))"
-              i18n>Don't send on signing error
+              i18n
+              >Don't send on signing error
             </mat-checkbox>
           </div>
 

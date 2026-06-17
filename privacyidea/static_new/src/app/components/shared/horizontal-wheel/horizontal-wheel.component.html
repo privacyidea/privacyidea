@@ -23,9 +23,12 @@
     @for (value of values(); track $index) {
       <div
         class="wheel-item"
+        role="button"
+        tabindex="0"
         [class.active]="value === selectedValue()"
         #item
-        (click)="onItemClick($event, $index)">
+        (click)="onItemClick($event, $index)"
+        (keydown.enter)="selectItem($index)">
         {{ value }}
       </div>
     }

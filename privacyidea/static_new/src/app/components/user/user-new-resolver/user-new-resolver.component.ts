@@ -17,19 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild,
-  viewChild
-} from "@angular/core";
+import { HttpErrorResponse } from "@angular/common/http";
+import { Component, computed, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
@@ -39,14 +28,16 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ActivatedRoute, Router } from "@angular/router";
+import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { ResolverService, ResolverType } from "@services/resolver/resolver.service";
+import { ResolverData, ResolverService, ResolverType } from "@services/resolver/resolver.service";
 import { finalize } from "rxjs";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
@@ -77,6 +68,7 @@ interface ResolverNameModel {
     MatCardModule,
     PasswdResolverComponent,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     LdapResolverComponent,
     SqlResolverComponent,
     ScimResolverComponent,
@@ -88,7 +80,7 @@ interface ResolverNameModel {
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
 })
-export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
+export class UserNewResolverComponent implements OnDestroy {
   private readonly _resolverService = inject(ResolverService);
   private readonly _notificationService = inject(NotificationService);
   private readonly _router = inject(Router);
@@ -96,14 +88,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
 
-  protected readonly _renderer: Renderer2 = inject(Renderer2);
-
-  private _observer!: IntersectionObserver;
   private _editInitialized = false;
-
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   ldapResolver = viewChild(LdapResolverComponent);
   sqlResolver = viewChild(SqlResolverComponent);
@@ -114,7 +99,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   keycloakResolver = viewChild(KeycloakResolverComponent);
 
   resolverType = signal<ResolverType>("passwdresolver");
-  formData: Record<string, any> = { fileName: "/etc/passwd" };
+  formData: ResolverData = { fileName: "/etc/passwd" };
   testUsername = signal<string>("");
   testUserId = signal<string>("");
 
@@ -218,31 +203,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     );
   }
 
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) {
-          return;
-        }
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this._renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this._renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
-  }
-
   ngOnDestroy(): void {
     this._resolverService.selectedResolverName.set("");
     this._pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   onTypeChange(type: ResolverType): void {
@@ -358,10 +321,10 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private _getAdditionalData(): Record<string, any> {
+  private _getAdditionalData(): ResolverData {
     const resolver = this._activeResolver();
     if (!resolver) return {};
-    return resolver.getValue() as Record<string, any>;
+    return resolver.getValue() as unknown as ResolverData;
   }
 
   private _runTest(quick: boolean): void {
@@ -377,7 +340,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
     this.isTesting.set(true);
 
-    const payload: any = {
+    const payload: ResolverData = {
       type: this.resolverType(),
       ...this.formData,
       test_username: this.testUsername(),
@@ -386,11 +349,11 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     };
 
     if (quick) {
-      payload.SIZELIMIT = 1;
+      payload["SIZELIMIT"] = 1;
     }
 
     if (this.isEditMode()) {
-      payload.resolver = this.resolverNameModel().resolverName;
+      payload["resolver"] = this.resolverNameModel().resolverName;
     }
 
     this._resolverService
@@ -398,7 +361,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       .pipe(finalize(() => setTimeout(() => this.isTesting.set(false))))
       .subscribe({
         next: (res) => {
-          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+          if (res.result?.status === true && res.result.value === true) {
             const detail = res.detail?.description || "";
             this._notificationService.success($localize`Resolver test executed: ${detail}`, { duration: 20000 });
           } else {
@@ -409,13 +372,19 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       });
   }
 
-  private _notifyError(prefix: string, errorSource: any, testFallback?: string): void {
+  private _notifyError(
+    prefix: string,
+    errorSource: HttpErrorResponse | PiResponse<unknown>,
+    testFallback?: string
+  ): void {
+    const source = errorSource as Partial<HttpErrorResponse> &
+      Partial<PiResponse<unknown, { description?: string } | undefined>>;
     const detail =
-      errorSource.error?.result?.error?.message ||
-      errorSource.error?.message ||
-      errorSource.message ||
-      errorSource.detail?.description ||
-      errorSource.result?.error?.message ||
+      source.error?.result?.error?.message ||
+      source.error?.message ||
+      source.message ||
+      source.detail?.description ||
+      source.result?.error?.message ||
       $localize`Unknown server error.`;
 
     if (detail.includes("Detailed error")) {

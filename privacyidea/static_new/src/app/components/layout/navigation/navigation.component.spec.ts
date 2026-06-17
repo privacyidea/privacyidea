@@ -23,7 +23,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { NavigationComponent } from "@components/layout/navigation/navigation.component";
+import { NavItem, NavigationComponent } from "@components/layout/navigation/navigation.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { ContentService } from "@services/content/content.service";
@@ -50,6 +50,11 @@ import { PeriodicTaskService } from "@services/periodic-task/periodic-task.servi
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventService } from "@services/event/event.service";
 import { SystemService } from "@services/system/system.service";
+
+interface NavigationComponentPrivate {
+  getFilteredNavItems: () => NavItem[];
+  calculateVisibleItems: (navEl: HTMLElement) => void;
+}
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;
@@ -174,18 +179,19 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
+    const componentPrivate = component as unknown as NavigationComponentPrivate;
     jest
-      .spyOn(component as any, "getFilteredNavItems")
-      .mockReturnValue([{ section: "token" }, { section: "container" }]);
+      .spyOn(componentPrivate, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }] as NavItem[]);
 
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
 
     expect(component.visibleNavCount()).toBe(2);
 
     // Shrink navWidth - should trigger overflow
     // To fit 1 item (100px) with more button (50px) and safety buffer (30px), we need at least 180px.
     Object.defineProperty(navEl, "clientWidth", { value: 200, configurable: true });
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
     // item1(100) fits in availableWidth (200 - 50 - 30 = 120).
     expect(component.visibleNavCount()).toBe(1);
   });
@@ -207,12 +213,13 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
+    const componentPrivate = component as unknown as NavigationComponentPrivate;
     jest
-      .spyOn(component as any, "getFilteredNavItems")
-      .mockReturnValue([{ section: "token" }, { section: "container" }]);
+      .spyOn(componentPrivate, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }] as NavItem[]);
 
     // Initial calculation to store widths
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
     expect(component.visibleNavCount()).toBe(2);
 
     // Remove item2 from DOM (simulating Angular removing it from visible items)
@@ -220,7 +227,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     // Grow container
     Object.defineProperty(navEl, "clientWidth", { value: 500, configurable: true });
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
 
     // Should still calculate 2 visible items because it remembers the width of 'container'
     expect(component.visibleNavCount()).toBe(2);

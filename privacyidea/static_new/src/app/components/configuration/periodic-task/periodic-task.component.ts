@@ -90,7 +90,7 @@ export class PeriodicTaskComponent implements OnInit {
     return ["true", "false"].includes(String(value).toLowerCase());
   }
 
-  formatOptions(options: Record<string, unknown> | null | undefined): string {
+  formatOptions(options: Record<string, string> | null | undefined): string {
     if (!options || typeof options !== "object") return "";
     return Object.entries(options)
       .map(([key, value]) => (this.isBooleanValue(value) ? key : `${key}: ${value}`))

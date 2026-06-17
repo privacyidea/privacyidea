@@ -22,10 +22,9 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  <div #stickySentinel></div>
   <div
-    #stickyHeader
-    class="filter-paginator-container sticky-header">
+    class="filter-paginator-container sticky-header"
+    [appStickyHeader]="scrollContainer">
     <h3
       class="selfservice-paginator-label"
       i18n>
@@ -77,7 +76,11 @@
                 <app-copyable [copyText]="element.serial">
                   <a
                     attr.aria-label="{{ column.label }} Link"
-                    (click)="contentService.tokenSelected(element.serial)">
+                    (click)="contentService.tokenSelected(element.serial)"
+                    (keydown.enter)="contentService.tokenSelected(element.serial)"
+                    (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                    role="button"
+                    tabindex="0">
                     {{ element[column.key] }}
                   </a>
                 </app-copyable>
@@ -87,7 +90,13 @@
                   @if (containerService.containerBelongsToUser(element.container_serial)) {
                     <a
                       attr.aria-label="{{ column.label }} Link"
-                      (click)="contentService.navigateContainerDetails(element.container_serial)">
+                      (click)="contentService.navigateContainerDetails(element.container_serial)"
+                      (keydown.enter)="contentService.navigateContainerDetails(element.container_serial)"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
+                      "
+                      role="button"
+                      tabindex="0">
                       {{ element[column.key] }}
                     </a>
                   } @else {
@@ -99,8 +108,12 @@
                 @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                   <span
                     (click)="toggleActive(element)"
+                    (keydown.enter)="toggleActive(element)"
+                    (keydown.space)="$event.preventDefault(); toggleActive(element)"
                     [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                    [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                    [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                    role="button"
+                    tabindex="0">
                     {{ tableUtilsService.getDisplayText(column.key, element) }}
                   </span>
                 } @else {
@@ -113,7 +126,11 @@
                 @if (authService.actionAllowed("reset")) {
                   <span
                     (click)="resetFailCount(element)"
-                    [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                    (keydown.enter)="resetFailCount(element)"
+                    (keydown.space)="$event.preventDefault(); resetFailCount(element)"
+                    [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                    role="button"
+                    tabindex="0">
                     {{ tableUtilsService.getDisplayText(column.key, element) }}
                   </span>
                 } @else {

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, linkedSignal, model, Signal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, model, Signal, viewChild } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -25,7 +25,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 
 import {
   ContainerTemplateService,
@@ -53,6 +54,19 @@ import { ContainerTemplateEditBodyComponent } from "./container-template-edit-bo
 })
 export class ContainerTemplateEditComponent {
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+
+  private readonly editBody = viewChild(ContainerTemplateEditBodyComponent);
+
+  // Called by the page at save time. Returns null if any token row's strategy form is invalid.
+  collectTokens(): TokenEnrollmentPayload[] | null {
+    const body = this.editBody();
+    if (!body) return null;
+    return body.collectTokens();
+  }
+
+  scrollToFirstInvalid(): void {
+    this.editBody()?.scrollToFirstInvalid();
+  }
 
   readonly template = model<ContainerTemplate>({
     container_type: "",

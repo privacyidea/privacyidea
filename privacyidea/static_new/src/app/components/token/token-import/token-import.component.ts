@@ -16,13 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
+
+import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatError, MatFormField, MatHint, MatLabel, MatSelect } from "@angular/material/select";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -38,6 +40,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatSelect,
     MatOption,
     ScrollToTopDirective,
+    StickyHeaderDirective,
     MatLabel,
     MatButton,
     MatInput,
@@ -47,15 +50,13 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatError
   ]
 })
-export class TokenImportComponent implements OnDestroy {
+export class TokenImportComponent implements OnDestroy, OnInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly Object = Object;
-  private observer!: IntersectionObserver;
   fileTypes: Record<string, string> = {
     "OATH CSV": "CSV File for OATH Tokens",
     "Yubikey CSV": "CSV File for Yubikey Tokens",
@@ -78,47 +79,18 @@ export class TokenImportComponent implements OnDestroy {
   readonly preSharedKeyValid = computed(() => [0, 32].includes(this.preSharedKey().length));
   readonly formValid = computed(() => !!this.file() && this.preSharedKeyValid());
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
       () =>
         this.fileName() !== "" ||
         this.pskPassword() !== "" ||
         this.fileType() !== "OATH CSV" ||
-        this.pskValidation() !== "check_fail_hard",
+        this.pskValidation() !== "check_fail_hard"
     );
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
-
-    const options = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-
-      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
-
-      if (isSticky) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
   onFileSelected(event: Event): void {
@@ -157,7 +129,7 @@ export class TokenImportComponent implements OnDestroy {
           const total = success + failed;
           this.notificationService.success(success + "/" + total + " tokens imported successfully.");
         },
-        error: (error) => {
+        error: () => {
           // error handled in the token service
         }
       });

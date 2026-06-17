@@ -13,6 +13,7 @@ export * from "./mock-loading-service";
 export * from "./mock-local-service";
 export * from "./mock-machine-resolver-service";
 export * from "./mock-machine-service";
+export * from "./mock-mat-dialog";
 export * from "./mock-notification-service";
 export * from "./mock-pending-changes-service";
 export * from "./mock-periodic-task-service";

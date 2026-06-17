@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, inject, input, OnInit, Output, signal } from "@angular/core";
+import { Component, effect, forwardRef, inject, input, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -26,7 +26,11 @@ import {
   FourEyesApiPayloadMapper,
   FourEyesEnrollmentData
 } from "@app/mappers/token-api-payload/4eyes-token-api-payload.mapper";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -42,26 +46,22 @@ export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [FormField, MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatError],
   templateUrl: "./enroll-foureyes.component.html",
-  styleUrl: "./enroll-foureyes.component.scss"
+  styleUrl: "./enroll-foureyes.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollFoureyesComponent) }
+  ]
 })
-export class EnrollFoureyesComponent implements OnInit {
+export class EnrollFoureyesComponent extends EnrollTokenBase<FourEyesEnrollmentData> {
   protected readonly enrollmentMapper: FourEyesApiPayloadMapper = inject(FourEyesApiPayloadMapper);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
   enrollmentData = input<FourEyesEnrollmentData>();
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: FourEyesEnrollmentData;
-      mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
-    } | null
-  >();
   disabled = input<boolean>(false);
 
   separator = signal<string>("|");
   requiredTokensOfRealms = signal<string[]>([]);
-  tokensByRealm: Map<string, number> = new Map();
+  tokensByRealm = new Map<string, number>();
 
   separatorForm = form(this.separator, (f) => {
     required(f);
@@ -71,6 +71,8 @@ export class EnrollFoureyesComponent implements OnInit {
   realmOptions = this.realmService.realmOptions;
 
   constructor() {
+    super();
+
     effect(() => {
       if (this.enrollmentData()) {
         this.separator.set(this.enrollmentData()?.separator ?? "|");
@@ -82,11 +84,6 @@ export class EnrollFoureyesComponent implements OnInit {
         }
       }
     });
-  }
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
   getTokenCount(realm: string): number {
@@ -101,12 +98,7 @@ export class EnrollFoureyesComponent implements OnInit {
     }
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: FourEyesEnrollmentData;
-    mapper: TokenApiPayloadMapper<FourEyesEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<FourEyesEnrollmentData> | null {
     if (!this.separatorForm().valid()) {
       this.separatorForm().markAsTouched();
       return null;
@@ -131,5 +123,5 @@ export class EnrollFoureyesComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 }

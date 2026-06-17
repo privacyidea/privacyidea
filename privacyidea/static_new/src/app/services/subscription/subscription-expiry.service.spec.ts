@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
@@ -24,9 +23,10 @@ import { MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
 import { SubscriptionExpiryService } from "./subscription-expiry.service";
+import { Subscription, SubscriptionService } from "./subscription.service";
 
-function makeSubs(value: Record<string, any>) {
-  return MockPiResponse.fromValue<Record<string, any>>(value);
+function makeSubs(value: Record<string, Partial<Subscription>>) {
+  return MockPiResponse.fromValue<Record<string, Subscription>>(value as Record<string, Subscription>);
 }
 
 describe("SubscriptionExpiryService", () => {
@@ -36,17 +36,18 @@ describe("SubscriptionExpiryService", () => {
 
   beforeEach(() => {
     dialogMock = { open: jest.fn() };
-    authMock = { isAuthenticated: signal(false) } as any;
-    subsMock = new MockSubscriptionService();
 
     TestBed.configureTestingModule({
       providers: [
         SubscriptionExpiryService,
         { provide: MatDialog, useValue: dialogMock },
-        { provide: AuthService, useValue: authMock },
-        { provide: require("./subscription.service").SubscriptionService, useValue: subsMock }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: SubscriptionService, useClass: MockSubscriptionService }
       ]
     });
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    subsMock = TestBed.inject(SubscriptionService) as unknown as MockSubscriptionService;
+    authMock.isAuthenticated.set(false);
   });
 
   it("opens dialog with expiring subscriptions when authenticated", () => {
@@ -65,7 +66,7 @@ describe("SubscriptionExpiryService", () => {
     expect(service.opened()).toBe(true);
     expect(dialogMock.open).toHaveBeenCalled();
 
-    const [_, config] = dialogMock.open.mock.calls[0];
+    const [, config] = dialogMock.open.mock.calls[0];
     // expect(config.data.items.length).toBe(1);
     expect(config.data.items[0].application).toBe("app1");
   });
@@ -77,7 +78,7 @@ describe("SubscriptionExpiryService", () => {
         b: { application: "app2", timedelta: 5, date_till: "2026-03-01" }
       })
     );
-    (authMock.isAuthenticated as any).set(true);
+    authMock.isAuthenticated.set(true);
 
     const service = TestBed.inject(SubscriptionExpiryService);
 

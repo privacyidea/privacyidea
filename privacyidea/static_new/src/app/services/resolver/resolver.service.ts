@@ -36,21 +36,27 @@ export type ResolverType =
   | "entraidresolver"
   | "keycloakresolver";
 
-export type LdapPreset = {
+export interface LdapPreset {
   name: string;
   loginName: string;
   searchFilter: string;
   userInfo: string;
   uidType: string;
-};
+}
 
 export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";
 
 export interface ResolverData {
-  [key: string]: any;
+  [key: string]: unknown;
+  USERINFO?: string;
+  Map?: string;
+  attribute_mapping?: Record<string, string>;
+  Editable?: boolean | string;
+  editable?: boolean | string;
+  EDITABLE?: boolean | string;
 }
 
-export type Resolvers = { [key: string]: Resolver };
+export type Resolvers = Record<string, Resolver>;
 
 export interface Resolver {
   censor_keys: string[];
@@ -118,23 +124,49 @@ export interface PasswdResolverData extends ResolverData {
   filename?: string;
 }
 
+/**
+ * Configuration of a single HTTP request the resolver performs, matching the
+ * backend `RequestConfig` (see lib/resolvers/HTTPResolver.py). The mapping and
+ * header fields can be sent/received either as objects or as JSON strings.
+ */
+export interface HTTPRequestConfig {
+  method?: string;
+  endpoint?: string;
+  headers?: Record<string, string> | string;
+  requestMapping?: Record<string, unknown> | string;
+  responseMapping?: Record<string, unknown> | string;
+  hasSpecialErrorHandler?: boolean;
+  errorResponse?: Record<string, unknown> | string;
+}
+
+/**
+ * Like {@link HTTPRequestConfig} but with the extra fields the backend reads
+ * for the user-groups endpoint (see lib/resolvers/HTTPResolver.py).
+ */
+export interface HTTPUserGroupsConfig extends HTTPRequestConfig {
+  active?: boolean;
+  pi_user_groups_key?: string;
+  user_groups_attribute?: string;
+}
+
 export interface HTTPResolverData extends ResolverData {
   base_url?: string;
-  attribute_mapping?: { [key: string]: string };
+  attribute_mapping?: Record<string, string>;
   Editable?: boolean;
   verify_tls?: boolean;
   tls_ca_path?: string;
   timeout?: number;
   advanced?: boolean;
-  config_get_user_list?: any;
-  config_get_user_by_id?: any;
-  config_get_user_by_name?: any;
-  config_create_user?: any;
-  config_edit_user?: any;
-  config_delete_user?: any;
-  config_authorization?: any;
-  config_user_auth?: any;
-  config_get_user_groups?: any;
+  config_get_user_list?: HTTPRequestConfig;
+  config_get_user_by_id?: HTTPRequestConfig;
+  config_get_user_by_name?: HTTPRequestConfig;
+  config_create_user?: HTTPRequestConfig;
+  config_edit_user?: HTTPRequestConfig;
+  config_delete_user?: HTTPRequestConfig;
+  config_authorization?: HTTPRequestConfig;
+  // The backend also accepts this as a JSON string.
+  config_user_auth?: HTTPRequestConfig | string;
+  config_get_user_groups?: HTTPUserGroupsConfig;
 }
 
 export interface EntraIDResolverData extends HTTPResolverData {
@@ -165,28 +197,26 @@ export interface SCIMResolverData extends ResolverData {
 export interface ResolverServiceInterface {
   resolversResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   selectedResolverName: WritableSignal<string>;
-  selectedResolverResource: HttpResourceRef<PiResponse<any> | undefined>;
+  selectedResolverResource: HttpResourceRef<PiResponse<Resolvers> | undefined>;
   resolvers: Signal<Resolver[]>;
   resolverOptions: Signal<string[]>;
   editableResolvers: Signal<string[]>;
   userAttributes: Signal<string[]>;
 
-  postResolverTest(data: any): Observable<PiResponse<any, any>>;
-
-  postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>>;
-
-  deleteResolver(resolverName: string): Observable<PiResponse<any, any>>;
-
-  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>>;
+  postResolverTest(data: ResolverData): Observable<PiResponse<boolean, { description: string }>>;
+  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>>;
+  deleteResolver(resolverName: string): Observable<PiResponse<number>>;
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<unknown>>;
 }
 
 @Injectable()
 export class ResolverService implements ResolverServiceInterface {
-  readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
+
+  readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
 
   constructor() {
     effect(() => {
@@ -210,7 +240,7 @@ export class ResolverService implements ResolverServiceInterface {
     };
   });
   selectedResolverName = signal<string>("");
-  selectedResolverResource = httpResource<PiResponse<any>>(() => {
+  selectedResolverResource = httpResource<PiResponse<Resolvers>>(() => {
     const resolverName = this.selectedResolverName();
     if (resolverName === "") {
       return undefined;
@@ -227,7 +257,7 @@ export class ResolverService implements ResolverServiceInterface {
     if (!resolverResource) return [];
     const resolverConfig = resolverResource[this.selectedResolverName()];
     const resolverType = resolverConfig?.type;
-    let userInfo: Record<string, any> | string = {};
+    let userInfo: Record<string, string> | string = {};
 
     switch (resolverType) {
       case "ldapresolver":
@@ -274,7 +304,7 @@ export class ResolverService implements ResolverServiceInterface {
   editableResolvers = computed(() => {
     const resolvers = this.resolverResourceValue();
     if (!resolvers) return [];
-    let editableResolverNames: string[] = [];
+    const editableResolverNames: string[] = [];
     for (const [name, resolver] of Object.entries(resolvers)) {
       const editable =
         resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;
@@ -285,9 +315,11 @@ export class ResolverService implements ResolverServiceInterface {
     return editableResolverNames;
   });
 
-  postResolverTest(data: any = {}): Observable<PiResponse<any, any>> {
+  postResolverTest(data: ResolverData = {}): Observable<PiResponse<boolean, { description: string }>> {
     return this.http
-      .post<PiResponse<any, any>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
+      .post<
+        PiResponse<boolean, { description: string }>
+      >(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error("Error during resolver test:", error);
@@ -298,10 +330,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>> {
+  postResolver(resolverName: string, data: ResolverData): Observable<PiResponse<number>> {
     return this.http
       .post<
-        PiResponse<any, any>
+        PiResponse<number>
       >(this.resolverBaseUrl + encodeURIComponent(resolverName), data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
@@ -313,10 +345,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  deleteResolver(resolverName: string): Observable<PiResponse<any, any>> {
+  deleteResolver(resolverName: string): Observable<PiResponse<number>> {
     return this.http
       .delete<
-        PiResponse<any, any>
+        PiResponse<number>
       >(this.resolverBaseUrl + encodeURIComponent(resolverName), { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
@@ -328,10 +360,10 @@ export class ResolverService implements ResolverServiceInterface {
       );
   }
 
-  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>> {
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<unknown>> {
     return this.http
       .get<
-        PiResponse<any, any>
+        PiResponse<unknown>
       >(this.resolverBaseUrl + encodeURIComponent(resolverType) + "/default", { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {

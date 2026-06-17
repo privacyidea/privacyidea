@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (!wizard) {
+@if (!wizard()) {
   <div class="flex-column">
     @if (twoStep() !== "disabled") {
       <mat-checkbox
@@ -53,8 +53,7 @@
         </mat-form-field>
       }
 
-      <mat-form-field
-        class="input-width-l">
+      <mat-form-field class="input-width-l">
         <mat-label>OTP length</mat-label>
         <mat-select
           [value]="otpLength()"
@@ -69,8 +68,7 @@
         <mat-hint>Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field
-        class="input-width-l">
+      <mat-form-field class="input-width-l">
         <mat-label>Hash algorithm</mat-label>
         <mat-select
           [value]="hashAlgorithm()"
@@ -86,8 +84,7 @@
       </mat-form-field>
     </div>
     <div class="flex-row gap-16">
-      <mat-form-field
-        class="input-width-l margin-top-16">
+      <mat-form-field class="input-width-l margin-top-16">
         <mat-label>Timestep</mat-label>
         <mat-select
           [value]="timeStep()"

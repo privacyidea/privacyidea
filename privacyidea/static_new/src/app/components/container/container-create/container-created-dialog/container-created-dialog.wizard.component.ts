@@ -38,6 +38,8 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   public readonly authService: AuthServiceInterface = inject(AuthService);
+  private http = inject(HttpClient);
+  private sanitizer = inject(DomSanitizer);
   tagData = computed<Record<string, string>>(() => {
     const data = this.data();
     if (!data) {
@@ -73,11 +75,4 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
       catchError(() => of("")),
       map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData())))
     );
-
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer
-  ) {
-    super();
-  }
 }

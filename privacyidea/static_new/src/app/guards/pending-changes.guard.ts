@@ -23,7 +23,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { from, map, of, switchMap } from "rxjs";
 
-export const pendingChangesGuard: CanDeactivateFn<any> = () => {
+export const pendingChangesGuard: CanDeactivateFn<unknown> = () => {
   const pendingChangesService = inject(PendingChangesService);
   const dialogService: DialogServiceInterface = inject(DialogService);
 

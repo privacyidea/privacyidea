@@ -33,10 +33,12 @@ describe("EnrollYubicoComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollYubicoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
         { provide: TokenService, useClass: MockTokenService },
-        { provide: ContentService, useClass: MockContentService}
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 

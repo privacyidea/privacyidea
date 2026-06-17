@@ -52,7 +52,7 @@ export class SshkeyApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): SshkeyEnrollmentData {
+  override fromApiPayload(payload: SshkeyEnrollmentPayload): SshkeyEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return { ...payload, sshPublicKey: payload.sshkey } as SshkeyEnrollmentData;
   }

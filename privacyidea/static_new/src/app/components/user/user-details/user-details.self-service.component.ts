@@ -88,7 +88,7 @@ export class UserDetailsSelfServiceComponent {
   userData = this.userService.user;
 
   detailsEntries = computed(() => {
-    const data = this.userData() ?? {};
+    const data: Record<string, unknown> = this.userData() ?? {};
     const result: { key: string; label: string; value: unknown }[] = [];
 
     for (const key of this.detailOrder) {
@@ -97,7 +97,7 @@ export class UserDetailsSelfServiceComponent {
       result.push({
         key,
         label: this.labels[key] ?? key,
-        value: this.normalizeValue((data as any)[key])
+        value: this.normalizeValue(data[key])
       });
     }
 

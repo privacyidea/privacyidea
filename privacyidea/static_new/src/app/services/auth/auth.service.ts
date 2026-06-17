@@ -27,11 +27,17 @@ import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
 import { Observable, catchError, tap, throwError } from "rxjs";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
+
+export interface ContainerWizardConfig {
+  enabled: boolean;
+  type: string;
+  registration: boolean;
+  template: string | null;
+}
 
 export interface AuthData {
   log_level: number;
@@ -69,12 +75,7 @@ export interface AuthData {
   logout_redirect_url: string;
   require_description: string[];
   rss_age: number;
-  container_wizard: {
-    enabled: boolean;
-    type: string;
-    registration: boolean;
-    template: string | null;
-  };
+  container_wizard: ContainerWizardConfig;
 }
 
 export interface JwtData {
@@ -89,6 +90,18 @@ export interface JwtData {
 
 export type AuthRole = "admin" | "user" | "";
 
+export interface WebAuthnSignRequestData {
+  challenge: string;
+  allowCredentials: {
+    id: string;
+    type?: PublicKeyCredentialType;
+    transports?: AuthenticatorTransport[];
+  }[];
+  rpId: string;
+  userVerification: UserVerificationRequirement;
+  timeout?: number;
+}
+
 export interface MultiChallenge {
   client_mode: string;
   message: string;
@@ -96,7 +109,7 @@ export interface MultiChallenge {
   transaction_id: string;
   type: string;
   attributes?: {
-    webAuthnSignRequest?: any;
+    webAuthnSignRequest?: WebAuthnSignRequestData;
   };
 }
 
@@ -118,6 +131,45 @@ export interface AuthDetail {
 }
 
 export type TwoStepValue = "disabled" | "allow" | "force";
+
+/**
+ * Parameters for password-based authentication. Covers standard login, remote
+ * login (password omitted), and challenge response (transaction_id set).
+ */
+export interface PasswordLoginParams {
+  username: string;
+  password?: string;
+  realm?: string;
+  transaction_id?: string;
+}
+
+/**
+ * Parameters for WebAuthn second-factor authentication. Mirrors
+ * `PasskeyCheckParams` plus `username` and a nullable `userHandle`.
+ */
+export interface WebAuthnLoginParams {
+  transaction_id: string;
+  username: string;
+  credential_id: string;
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string | null;
+}
+
+/**
+ * Union of all parameter shapes accepted by `authenticate()`.
+ * Imported `PasskeyCheckParams` from `validate.service` would create a
+ * cycle, so callers pass the structurally compatible shape directly.
+ */
+export type AuthenticateParams = PasswordLoginParams | WebAuthnLoginParams | {
+  transaction_id: string;
+  credential_id: string;
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  userHandle: string;
+};
 
 export interface AuthServiceInterface {
   // Properties
@@ -180,7 +232,7 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
-  authenticate(params: any): Observable<AuthResponse>;
+  authenticate(params: AuthenticateParams): Observable<AuthResponse>;
   acceptAuthentication(): void;
   logout(): void;
   actionAllowed(action: PolicyAction): boolean;
@@ -197,13 +249,12 @@ export interface AuthServiceInterface {
   providedIn: "root"
 })
 export class AuthService implements AuthServiceInterface {
-  protected readonly router: Router = inject(Router);
-  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authUrl = environment.proxyUrl + "/auth";
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
-  protected readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly http = inject(HttpClient);
 
   // Writable Signals
   readonly jwtData = signal<JwtData | null>(null);
@@ -293,7 +344,7 @@ export class AuthService implements AuthServiceInterface {
     });
   }
 
-  authenticate(params: any): Observable<AuthResponse> {
+  authenticate(params: AuthenticateParams): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(this.authUrl, JSON.stringify(params), {
         headers: new HttpHeaders({

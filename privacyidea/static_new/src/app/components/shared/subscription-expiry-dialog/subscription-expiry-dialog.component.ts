@@ -21,15 +21,15 @@ import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogClose } from "@angular/material/dialog";
 
-export type SubscriptionExpiryItem = {
+export interface SubscriptionExpiryItem {
   application: string;
   date_till: string;
   timedelta: number;
-};
+}
 
-export type SubscriptionExpiryDialogData = {
+export interface SubscriptionExpiryDialogData {
   items: SubscriptionExpiryItem[];
-};
+}
 
 @Component({
   selector: "app-subscription-expiry-dialog",

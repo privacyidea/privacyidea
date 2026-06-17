@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input } from "@angular/core";
+import { Component, input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import {
   MatAccordion,
@@ -34,7 +34,7 @@ import { MatIcon } from "@angular/material/icon";
   styleUrl: "./otp-values.component.scss"
 })
 export class OtpValuesComponent {
-  @Input() otpValues!: Array<string>;
+  otpValues = input.required<string[]>();
   protected readonly Object = Object;
 
   printOtps(): void {

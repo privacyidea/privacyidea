@@ -49,7 +49,9 @@
             matInput
             placeholder="http://localhost:8080/osiam-resource-server" />
         </app-clearable-input>
-        @if (scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()) {
+        @if (
+          scimForm.Resourceserver().errors().some(e => e.kind === 'required') && scimForm.Resourceserver().touched()
+        ) {
           <mat-error i18n>
             Resource server URI is
             <strong>required</strong>

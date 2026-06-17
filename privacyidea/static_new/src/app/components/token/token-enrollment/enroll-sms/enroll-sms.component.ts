@@ -16,16 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SmsApiPayloadMapper, SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { SMS_GATEWAY } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -55,9 +59,12 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-sms.component.html",
-  styleUrl: "./enroll-sms.component.scss"
+  styleUrl: "./enroll-sms.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSmsComponent) }
+  ]
 })
-export class EnrollSmsComponent implements OnInit {
+export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: SmsApiPayloadMapper = inject(SmsApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -66,14 +73,7 @@ export class EnrollSmsComponent implements OnInit {
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
 
   enrollmentData = input<SmsEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<Record<string, unknown>>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: SmsEnrollmentData;
-      mapper: TokenApiPayloadMapper<SmsEnrollmentData>;
-    } | null
-  >();
+  wizard = input<boolean>(false);
 
   disabled = input<boolean>(false);
 
@@ -91,7 +91,7 @@ export class EnrollSmsComponent implements OnInit {
     validate(f, (ctx) => {
       const value = ctx.value();
       const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" as any }];
+      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" }];
       return [];
     });
     disabled(f, () => this.disabled() || this.readNumberDynamically());
@@ -133,6 +133,8 @@ export class EnrollSmsComponent implements OnInit {
   private smsGatewayInitialized = false;
 
   constructor() {
+    super();
+
     effect(() => {
       if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[SMS_GATEWAY];
@@ -151,16 +153,9 @@ export class EnrollSmsComponent implements OnInit {
       this.phoneNumber.set(data.phoneNumber ?? "");
       this.smsGatewayInitialized = true;
     }
-    this.additionalFormFieldsChange.emit({});
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: SmsEnrollmentData;
-    mapper: TokenApiPayloadMapper<SmsEnrollmentData>;
-  } | null => {
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<SmsEnrollmentData> | null {
     if (!this.smsGatewayForm().valid()) {
       this.smsGatewayForm().markAsTouched();
       return null;
@@ -182,7 +177,7 @@ export class EnrollSmsComponent implements OnInit {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
+  }
 
   goToSmsConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "sms" });

@@ -52,7 +52,7 @@ export class YubicoApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): YubicoEnrollmentData {
+  override fromApiPayload(payload: YubicoEnrollmentPayload): YubicoEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as YubicoEnrollmentData;
   }

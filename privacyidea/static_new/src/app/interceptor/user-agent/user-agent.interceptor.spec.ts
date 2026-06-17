@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpEvent, HttpHeaders, HttpRequest } from "@angular/common/http";
+import { HttpHandlerFn, HttpHeaders, HttpRequest } from "@angular/common/http";
 import { TestBed } from "@angular/core/testing";
 import { VersioningService } from "@services/version/version.service";
 import { MockVersioningService } from "@testing/mock-services";
-import { Observable } from "rxjs";
+import { EMPTY } from "rxjs";
 import { userAgentInterceptor } from "./user-agent.interceptor";
 
 describe("userAgentInterceptor", () => {
-  const run = (req: HttpRequest<any>, next: (req: HttpRequest<any>) => Observable<HttpEvent<any>>) =>
+  const run = (req: HttpRequest<unknown>, next: HttpHandlerFn) =>
     TestBed.runInInjectionContext(() => userAgentInterceptor(req, next));
   let versioningService: MockVersioningService;
 
@@ -43,10 +43,10 @@ describe("userAgentInterceptor", () => {
 
   it("should add the User-Agent header with the correct version", (done) => {
     const req = new HttpRequest("GET", "/test");
-    const next = (request: HttpRequest<any>) => {
+    const next: HttpHandlerFn = (request) => {
       expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3.dev224");
       done();
-      return null as any;
+      return EMPTY;
     };
     run(req, next);
   });
@@ -54,12 +54,12 @@ describe("userAgentInterceptor", () => {
   it("should preserve other headers", (done) => {
     const req = new HttpRequest("GET", "/test", {
       headers: new HttpHeaders({ "PI-Authorization": "abc" })
-    } as any);
-    const next = (request: HttpRequest<any>) => {
+    });
+    const next: HttpHandlerFn = (request) => {
       expect(request.headers.get("PI-Authorization")).toBe("abc");
       expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3.dev224");
       done();
-      return null as any;
+      return EMPTY;
     };
     run(req, next);
   });

@@ -22,9 +22,11 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_from_param,
                                   UserError, get_attributes)
 from privacyidea.lib.user import log as user_log
-from privacyidea.models import NodeName, db
+from sqlalchemy import delete, select
+
+from privacyidea.models import InternalUserAttribute, NodeName, db
 from . import ldap3mock
-from .base import MyTestCase, OverrideConfigTestCase
+from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures
 from .test_lib_resolver import LDAPDirectory_small
 from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
@@ -33,10 +35,11 @@ PWFILE2 = "tests/testdata/passwords"
 PWFILE3 = "tests/testdata/passwd-mask-user"
 
 
-class UserTestCase(MyTestCase):
+class UserTestCase(PristineSqliteFixtures, MyTestCase):
     """
     Test the user on the database level
     """
+    pristine_fixtures = ["tests/testdata/testuser.sqlite"]
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -873,6 +876,174 @@ class UserTestCase(MyTestCase):
         self.assertEqual(attrs.get("hugen"), None)
         self.assertEqual(attrs.get("key"), None)
         # Cleanup
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_51_internal_user_attributes(self):
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        user = User(login="root", realm=self.realm1)
+
+        # Set + read JSON-typed values (dict and scalar string)
+        user.set_internal_attribute("last_used_token", {"app-a": "hotp"})
+        user.set_internal_attribute("fido2_user_id", "abc123")
+        attrs = user.internal_attributes
+        self.assertEqual({"app-a": "hotp"}, attrs.get("last_used_token"))
+        self.assertEqual("abc123", attrs.get("fido2_user_id"))
+
+        # Overwrite an existing key
+        user.set_internal_attribute("last_used_token", {"app-a": "totp", "app-b": "push"})
+        self.assertEqual({"app-a": "totp", "app-b": "push"},
+                         user.internal_attributes.get("last_used_token"))
+
+        # Delete a single key
+        r = user.delete_internal_attribute("fido2_user_id")
+        self.assertEqual(1, r)
+        attrs = user.internal_attributes
+        self.assertIsNone(attrs.get("fido2_user_id"))
+        self.assertIn("last_used_token", attrs)
+
+        # JSON contract: list, nested dict, numeric, boolean, None all round-trip
+        user.set_internal_attribute("a_list", ["push", "hotp", "totp"])
+        user.set_internal_attribute("a_nested", {"outer": {"inner": [1, 2, 3]}})
+        user.set_internal_attribute("a_number", 42)
+        user.set_internal_attribute("a_bool", True)
+        user.set_internal_attribute("a_null", None)
+        attrs = user.internal_attributes
+        self.assertEqual(["push", "hotp", "totp"], attrs.get("a_list"))
+        self.assertEqual({"outer": {"inner": [1, 2, 3]}}, attrs.get("a_nested"))
+        self.assertEqual(42, attrs.get("a_number"))
+        self.assertEqual(True, attrs.get("a_bool"))
+        self.assertIsNone(attrs.get("a_null"))
+
+        # Delete-all clears the rest
+        r = user.delete_internal_attribute()
+        self.assertEqual(6, r)
+        self.assertEqual({}, user.internal_attributes)
+
+        # Cleanup
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_51b_internal_attributes_unresolved_user(self):
+        """Unresolved User (empty uid) reads return {} (callers like
+        preferred_client_mode run on every auth response); writes/deletes
+        refuse to create empty-uid rows that would be shared across users."""
+        from privacyidea.lib.error import UserError
+        unresolved = User()
+        self.assertFalse(unresolved.uid)
+        self.assertEqual({}, unresolved.internal_attributes)
+        self.assertRaises(UserError, unresolved.set_internal_attribute, "k", "v")
+        self.assertRaises(UserError, unresolved.delete_internal_attribute)
+
+    def test_53_find_and_delete_orphaned_internal_attributes(self):
+        """find_orphaned_internal_attributes() flags rows whose user has
+        vanished from the resolver; delete_orphaned_internal_attributes()
+        prunes them and leaves resolvable users untouched."""
+        from privacyidea.lib.user import (
+            delete_orphaned_internal_attributes,
+            find_orphaned_internal_attributes,
+        )
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        live_user = User(login="root", realm=self.realm1)
+        live_user.set_internal_attribute("k", "v-live")
+
+        # Inject a row keyed on a uid that the resolver does not know.
+        ghost = InternalUserAttribute(user_id="ghost-uid-9999",
+                                      resolver=self.resolvername1,
+                                      realm_id=live_user.realm_id,
+                                      Key="k", Value="v-ghost")
+        db.session.add(ghost)
+        db.session.commit()
+
+        orphans = find_orphaned_internal_attributes()
+        self.assertEqual([("ghost-uid-9999", self.resolvername1, live_user.realm_id)], orphans)
+
+        deleted = delete_orphaned_internal_attributes(orphans)
+        self.assertEqual(1, deleted)
+
+        # Live user's row survives, ghost row is gone, second pass is empty.
+        self.assertEqual({"k": "v-live"}, live_user.internal_attributes)
+        self.assertEqual([], find_orphaned_internal_attributes())
+
+        live_user.delete_internal_attribute()
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_53b_find_orphaned_edge_cases(self):
+        """Cover the remaining orphan-detection branches:
+        empty identifiers, deleted resolver, and resolver raising on lookup."""
+        from privacyidea.lib.user import find_orphaned_internal_attributes
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        live_user = User(login="root", realm=self.realm1)
+
+        # Branch 1: row with an empty user_id or empty resolver. Bypass the
+        # write-side guard via the raw model.
+        db.session.add(InternalUserAttribute(user_id="", resolver=self.resolvername1,
+                                             realm_id=None, Key="k", Value="v"))
+        db.session.add(InternalUserAttribute(user_id="uid-X", resolver="",
+                                             realm_id=None, Key="k", Value="v"))
+        # Branch 2: row pointing at a resolver name that does not exist.
+        db.session.add(InternalUserAttribute(user_id="uid-Y", resolver="never-existed",
+                                             realm_id=None, Key="k", Value="v"))
+        # Branch 3 setup: a row on the live resolver whose lookup we will force
+        # to raise via a mocked getUsername.
+        db.session.add(InternalUserAttribute(user_id="uid-Z", resolver=self.resolvername1,
+                                             realm_id=live_user.realm_id, Key="k", Value="v"))
+        db.session.commit()
+
+        from privacyidea.lib.resolver import get_resolver_object
+        real_resolver = get_resolver_object(self.resolvername1)
+        with mock.patch.object(real_resolver, "getUsername",
+                               side_effect=RuntimeError("resolver unreachable")):
+            # Default orphaned_on_error=False: errored row is skipped (not reported).
+            orphans = set(find_orphaned_internal_attributes())
+            self.assertIn(("", self.resolvername1, None), orphans)        # branch 1a
+            self.assertIn(("uid-X", "", None), orphans)                   # branch 1b
+            self.assertIn(("uid-Y", "never-existed", None), orphans)      # branch 2
+            self.assertNotIn(("uid-Z", self.resolvername1, live_user.realm_id), orphans)
+
+            # orphaned_on_error=True: errored row is reported.
+            orphans_strict = set(find_orphaned_internal_attributes(orphaned_on_error=True))
+            self.assertIn(("uid-Z", self.resolvername1, live_user.realm_id), orphans_strict)
+
+        # Cleanup
+        db.session.execute(delete(InternalUserAttribute))
+        db.session.commit()
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_52_internal_user_attribute_node_column(self):
+        """The ``node`` column is reserved for future per-node state and is
+        not writable through the set_internal_attribute API yet, so every
+        row written via the API has node = NULL."""
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        user = User(login="root", realm=self.realm1)
+
+        def _row(key):
+            return db.session.execute(
+                select(InternalUserAttribute).filter_by(
+                    user_id=user.uid, resolver=user.resolver,
+                    realm_id=user.realm_id, Key=key)
+            ).scalar_one()
+
+        # Rows written through the API default node to NULL (global value)
+        user.set_internal_attribute("global_key", "v1")
+        self.assertIsNone(_row("global_key").node)
+        user.set_internal_attribute("global_key", "v2")
+        self.assertIsNone(_row("global_key").node)
+
+        # The write API does not accept a node argument
+        self.assertRaises(TypeError, user.set_internal_attribute, "k", "v", "node-A")
+
+        user.delete_internal_attribute()
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 

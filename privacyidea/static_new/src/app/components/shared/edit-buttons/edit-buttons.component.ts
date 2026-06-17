@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input, Signal, WritableSignal } from "@angular/core";
+import { Component, input, WritableSignal } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 
@@ -33,11 +33,11 @@ export interface EditableElement<V = unknown> {
   styleUrl: "./edit-buttons.component.scss"
 })
 export class EditButtonsComponent<T extends EditableElement> {
-  @Input() toggleEdit!: (element: T) => void;
-  @Input() saveEdit!: (element: T) => void;
-  @Input() cancelEdit!: (element: T) => void;
-  @Input() shouldHideEdit!: Signal<boolean>;
-  @Input() isEditingUser!: WritableSignal<boolean>;
-  @Input() isEditingInfo!: WritableSignal<boolean>;
-  @Input() element!: T;
+  toggleEdit = input.required<(element: T) => void>();
+  saveEdit = input.required<(element: T) => void>();
+  cancelEdit = input.required<(element: T) => void>();
+  shouldHideEdit = input.required<boolean>();
+  isEditingUser = input.required<boolean>();
+  isEditingInfo = input.required<boolean>();
+  element = input.required<T>();
 }

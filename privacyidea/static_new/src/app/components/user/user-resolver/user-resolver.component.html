@@ -63,6 +63,8 @@
           <div class="name-actions-container">
             <a
               (click)="onEditResolver(element)"
+              (keydown.enter)="onEditResolver(element)"
+              role="button"
               tabindex="0">
               {{ element.resolvername }}
             </a>

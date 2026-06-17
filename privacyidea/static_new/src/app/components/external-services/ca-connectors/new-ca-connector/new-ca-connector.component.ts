@@ -16,18 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
-} from "@angular/core";
+import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
@@ -42,10 +31,13 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import {
   CaConnector,
+  CaConnectorConfigValue,
   CaConnectorService,
-  CaConnectorServiceInterface
+  CaConnectorServiceInterface,
+  CaSpecificOptionsParams
 } from "@services/ca-connector/ca-connector.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -113,24 +105,18 @@ const EMPTY_CA_CONNECTOR_FORM: CaConnectorFormModel = {
     MatProgressSpinnerModule,
     MatSelectModule,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-ca-connector.component.html",
   styleUrl: "./new-ca-connector.component.scss"
 })
-export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
+export class NewCaConnectorComponent implements OnDestroy {
   protected readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
-
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-
-  private observer!: IntersectionObserver;
 
   isEditMode = signal(false);
   availableCas = signal<string[]>([]);
@@ -201,61 +187,40 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
 
   private loadData(connector: CaConnector | null): void {
     const connectorData = connector?.data || {};
+    const asString = (v: CaConnectorConfigValue): string => (v === undefined || v === null || v === "" ? "" : String(v));
     this.caConnectorModel.set({
       connectorname: connector?.connectorname || "",
       type: connector?.type || "local",
-      cacert: connectorData["cacert"] || "",
-      cakey: connectorData["cakey"] || "",
-      "openssl.cnf": connectorData["openssl.cnf"] || "",
-      templates: connectorData["templates"] || "",
-      WorkingDir: connectorData["WorkingDir"] || "",
-      CSRDir: connectorData["CSRDir"] || "",
-      CertificateDir: connectorData["CertificateDir"] || "",
-      CRL: connectorData["CRL"] || "",
-      CRL_Validity_Period: connectorData["CRL_Validity_Period"] || "",
-      CRL_Overlap_Period: connectorData["CRL_Overlap_Period"] || "",
-      hostname: connectorData["hostname"] || "",
-      port: connectorData["port"] || "",
-      http_proxy: connectorData["http_proxy"] || false,
-      use_ssl: connectorData["use_ssl"] || false,
-      ssl_ca_cert: connectorData["ssl_ca_cert"] || "",
-      ssl_client_cert: connectorData["ssl_client_cert"] || "",
-      ssl_client_key: connectorData["ssl_client_key"] || "",
-      ssl_client_key_password: connectorData["ssl_client_key_password"] || "",
-      ca: connectorData["ca"] || ""
+      cacert: asString(connectorData["cacert"]),
+      cakey: asString(connectorData["cakey"]),
+      "openssl.cnf": asString(connectorData["openssl.cnf"]),
+      templates: asString(connectorData["templates"]),
+      WorkingDir: asString(connectorData["WorkingDir"]),
+      CSRDir: asString(connectorData["CSRDir"]),
+      CertificateDir: asString(connectorData["CertificateDir"]),
+      CRL: asString(connectorData["CRL"]),
+      CRL_Validity_Period: asString(connectorData["CRL_Validity_Period"]),
+      CRL_Overlap_Period: asString(connectorData["CRL_Overlap_Period"]),
+      hostname: asString(connectorData["hostname"]),
+      port: asString(connectorData["port"]),
+      http_proxy: Boolean(connectorData["http_proxy"]),
+      use_ssl: Boolean(connectorData["use_ssl"]),
+      ssl_ca_cert: asString(connectorData["ssl_ca_cert"]),
+      ssl_client_cert: asString(connectorData["ssl_client_cert"]),
+      ssl_client_key: asString(connectorData["ssl_client_key"]),
+      ssl_client_key_password: asString(connectorData["ssl_client_key_password"]),
+      ca: asString(connectorData["ca"])
     });
     this.caConnectorForm().reset();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.observer?.disconnect();
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-      if (shouldFloat) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
   loadAvailableCas(): void {
     const model = this.caConnectorModel();
-    const params = {
+    const params: CaSpecificOptionsParams = {
       hostname: model.hostname,
       port: model.port,
       use_ssl: model.use_ssl,
@@ -263,7 +228,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
       ssl_client_cert: model.ssl_client_cert,
       ssl_client_key: model.ssl_client_key,
       ssl_client_key_password: model.ssl_client_key_password,
-      http_proxy: model.http_proxy
+      http_proxy: String(model.http_proxy)
     };
 
     if (params.hostname && params.port) {
@@ -271,7 +236,8 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
       this.caConnectorService
         .getCaSpecificOptions("microsoft", params)
         .then((res) => {
-          this.availableCas.set(res.available_cas || []);
+          const cas = res?.["available_cas"];
+          this.availableCas.set(Array.isArray(cas) ? cas.filter((c): c is string => typeof c === "string") : []);
           this.isLoadingCas.set(false);
         })
         .catch(() => {
@@ -288,7 +254,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
     const type = model.type;
     const connectorname = model.connectorname;
 
-    const data: Record<string, any> = { type };
+    const data: Record<string, string | number | boolean | string[]> = { type };
 
     if (type === "local") {
       const localFields = [
@@ -340,7 +306,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -96,7 +96,7 @@ describe("ConfigService", () => {
     const req = httpMock.expectOne(environment.proxyUrl + "/config");
     expect(req.request.method).toBe("GET");
 
-    const mockResponse: PiResponse<Record<any, any>> = {
+    const mockResponse: PiResponse<AppConfig> = {
       id: 1,
       jsonrpc: "2.0",
       detail: {},

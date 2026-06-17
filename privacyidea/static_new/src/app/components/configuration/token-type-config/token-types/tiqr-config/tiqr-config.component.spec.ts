@@ -20,13 +20,13 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
 import {
-    TIQR_AUTH_SERVER,
-    TIQR_INFO_URL,
-    TIQR_LOGO_URL,
-    TIQR_OCRASUITE,
-    TIQR_REG_SERVER,
-    TIQR_SERVICE_DISPLAYNAME,
-    TIQR_SERVICE_IDENTIFIER
+  TIQR_AUTH_SERVER,
+  TIQR_INFO_URL,
+  TIQR_LOGO_URL,
+  TIQR_OCRASUITE,
+  TIQR_REG_SERVER,
+  TIQR_SERVICE_DISPLAYNAME,
+  TIQR_SERVICE_IDENTIFIER
 } from "@constants/token.constants";
 
 describe("TiqrConfigComponent", () => {

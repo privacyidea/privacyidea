@@ -26,7 +26,7 @@ import { TokenType } from "@services/token/token.service";
 import { UserData } from "@services/user/user.service";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 
-export type TokenEnrollmentLastStepDialogData = {
+export interface TokenEnrollmentLastStepDialogData {
   tokentype: TokenType;
   response: EnrollmentResponse;
   serial: WritableSignal<string | null>;
@@ -35,7 +35,7 @@ export type TokenEnrollmentLastStepDialogData = {
   userRealm: string;
   onlyAddToRealm: boolean;
   rollover?: boolean;
-};
+}
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog-self-service",

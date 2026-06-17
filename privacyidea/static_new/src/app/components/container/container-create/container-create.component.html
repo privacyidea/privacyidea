@@ -23,10 +23,9 @@
   class="container-create-container"
   i18n-aria-label>
   <h3 class="margin-8">Create a New Container</h3>
-  <div #stickySentinel></div>
   <div
-    #stickyHeader
-    class="sticky-header">
+    class="sticky-header"
+    [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
       <mat-form-field class="input-width-xl type-select">
         <mat-select
@@ -70,14 +69,20 @@
       [containerService]="containerService"
       [tokenService]="tokenService"
       [authService]="authService"
-      [description]="description"
-      [selectedTemplate]="selectedTemplate"
-      [templateOptions]="templateOptions"
-      [availableTokenTypes]="availableTokenTypes"
-      [generateQRCode]="generateQRCode"
-      [passphrasePrompt]="passphrasePrompt"
-      [passphraseResponse]="passphraseResponse"
-      [userStorePassphrase]="userStorePassphrase"
+      [description]="description()"
+      (descriptionChange)="description.set($event)"
+      [selectedTemplate]="selectedTemplate()"
+      (selectedTemplateChange)="selectedTemplate.set($event)"
+      [templateOptions]="templateOptions()"
+      [availableTokenTypes]="availableTokenTypes()"
+      [generateQRCode]="generateQRCode()"
+      (generateQRCodeChange)="generateQRCode.set($event)"
+      [passphrasePrompt]="passphrasePrompt()"
+      (passphrasePromptChange)="passphrasePrompt.set($event)"
+      [passphraseResponse]="passphraseResponse()"
+      (passphraseResponseChange)="passphraseResponse.set($event)"
+      [userStorePassphrase]="userStorePassphrase()"
+      (userStorePassphraseChange)="userStorePassphrase.set($event)"
       [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone'"
       [containerHasOwner]="isUserSelected()"
       [templateFieldClass]="'input-width-l'"
