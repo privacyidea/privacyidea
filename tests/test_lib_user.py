@@ -494,6 +494,57 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(users, [])
         self.assertEqual(failures, [self.resolvername1], failures)
 
+    def test_12e_get_user_list_user_object_does_not_narrow_other_realm(self):
+        # When both a `user` object (carrying its own resolver) and a separate
+        # `realm` param are supplied, the user's resolver must narrow only the
+        # user's own realm, not the separately requested realm. The user lives in
+        # realm1/resolvername1; querying realm "double" must still return
+        # "double"'s users instead of dropping them because resolvername1 is not
+        # part of "double".
+        user = User(login="root", realm=self.realm1, resolver=self.resolvername1)
+        users = get_user_list({"realm": "double"}, user=user)
+        self.assertTrue(any(u.get("realm") == "double" for u in users), users)
+
+    def test_12f_get_user_list_resolver_recovers_not_marked_skipped(self):
+        # A resolver-only query iterates every realm containing the resolver. If
+        # the resolver raises in one realm but returns users in another, it did
+        # contribute data and must NOT be reported as skipped.
+        from privacyidea.lib.error import ResolverError
+
+        (added, failed) = set_realm("double_extra", [{"name": "double2"}])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 1)
+
+        import privacyidea.lib.user as user_module
+        real_get_resolver_object = user_module.get_resolver_object
+        state = {"first": True}
+
+        def flaky_get_resolver_object(name):
+            resolver = real_get_resolver_object(name)
+            if name == "double2":
+                class Flaky:
+                    editable = resolver.editable
+
+                    def getUserList(self, search_dict, attributes):
+                        if state["first"]:
+                            state["first"] = False
+                            raise ResolverError("transient outage")
+                        return resolver.getUserList(search_dict, attributes)
+                return Flaky()
+            return resolver
+
+        failures = []
+        try:
+            with mock.patch.object(user_module, "get_resolver_object",
+                                   side_effect=flaky_get_resolver_object):
+                users = get_user_list({"resolver": "double2"}, failures=failures)
+            # Failed in the first realm, succeeded in the second: users are
+            # returned and the resolver is not listed as skipped.
+            self.assertTrue(len(users) > 0, users)
+            self.assertEqual(failures, [], failures)
+        finally:
+            delete_realm("double_extra")
+
     def test_12a_get_user_list_resolver_only(self):
         # Realm "double" from test_12 contains double1 (prio 3), double2 (prio 2),
         # double3 (prio 1) — all backed by the same PWFILE. Querying with only

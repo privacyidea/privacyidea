@@ -833,6 +833,11 @@ def get_user_list(param: dict | None = None, user: User | None = None,
       result is empty.
     * neither: query every resolver in every realm.
 
+    An empty ``realm`` or ``resolver`` value is treated as if it were not
+    supplied and therefore does not restrict the scope. When a ``user`` object
+    is passed as well, its resolver narrows only the user's own realm, not a
+    separately requested ``realm``.
+
     The ``realm``, ``resolver`` and ``editable`` keys are added on the lib layer and are only included in the
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
 
@@ -877,32 +882,33 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     param_realm = get_optional(param, "realm")
     user_resolver = None
     user_realm = None
-    # list of realms to iterate through
-    realm_iteration = []
     if user is not None:
         user_resolver = user.resolver
         user_realm = user.realm
 
-    # Determine the realms to iterate through. Dedupe while preserving order in case param_realm == user_realm.
+    # Map each realm we will query to the resolver that should narrow it (or None
+    # for "every resolver in the realm"). A resolver narrows only the realm it was
+    # supplied with: param_resolver narrows param_realm, user_resolver narrows the
+    # user's realm. Realms are deduped; if both sources name the same realm, a
+    # resolver from either source narrows it.
+    realm_filters = {}
     if param_realm:
-        realm_iteration.append(param_realm)
+        realm_filters[param_realm] = param_resolver
     if user_realm:
-        realm_iteration.append(user_realm)
-    realm_iteration = list(dict.fromkeys(realm_iteration))
+        realm_filters[user_realm] = realm_filters.get(user_realm) or user_resolver
 
-    if not (param_resolver or user_resolver or param_realm or user_realm):
-        # if no realm or resolver was specified, we search the resolvers in all realms
-        log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
-        all_realms = get_realms()
-        realm_iteration = list(all_realms)
-
-    if not realm_iteration:
-        # No realm given but a resolver is given. Find all realms that contain this resolver.
+    if not realm_filters:
         resolver_name = param_resolver or user_resolver
-        realm_iteration = get_realms_of_resolver(resolver_name)
-        if not realm_iteration:
-            log.warning(f"Resolver '{resolver_name}' is not assigned to any realm.")
-            return []
+        if resolver_name:
+            # A resolver was given without a realm: query it in every realm that contains it.
+            realm_filters = {realm: resolver_name for realm in get_realms_of_resolver(resolver_name)}
+            if not realm_filters:
+                log.warning(f"Resolver '{resolver_name}' is not assigned to any realm.")
+                return []
+        else:
+            # Neither realm nor resolver was specified: search every resolver in all realms.
+            log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
+            realm_filters = {realm: None for realm in get_realms()}
 
     # Determine some display values. Work on a local copy of requested_attributes
     # so the caller's list is never mutated as a side effect of this call.
@@ -916,24 +922,24 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     requested_pi_user_attributes = list({"realm", "resolver", "editable"}.intersection(requested_attributes or []))
     requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
 
-    effective_resolver = param_resolver or user_resolver
+    succeeded_resolvers = set()
 
-    for realm in realm_iteration:
+    for realm, resolver_filter in realm_filters.items():
         resolvers = get_ordered_resolvers(realm)
-        if effective_resolver:
-            if effective_resolver not in resolvers:
+        if resolver_filter:
+            if resolver_filter not in resolvers:
                 # The resolver is not queryable in this realm: either it is genuinely not
                 # assigned to the realm (an empty result is the expected answer) or it is
                 # assigned but pinned to a different node, in which case it could not be
                 # queried here and is recorded as a skipped resolver.
                 assigned_resolvers = {entry.get("name")
                                       for entry in get_realms(realm).get(realm, {}).get("resolver", [])}
-                if (effective_resolver in assigned_resolvers and failures is not None
-                        and effective_resolver not in failures):
-                    failures.append(effective_resolver)
-                log.info(f"Resolver {effective_resolver!r} is not queryable in realm {realm!r}, skipping.")
+                if (resolver_filter in assigned_resolvers and failures is not None
+                        and resolver_filter not in failures):
+                    failures.append(resolver_filter)
+                log.info(f"Resolver {resolver_filter!r} is not queryable in realm {realm!r}, skipping.")
                 continue
-            resolvers = [effective_resolver]
+            resolvers = [resolver_filter]
         realm_id = get_realm_id(realm)
 
         for resolver_name in resolvers:
@@ -945,6 +951,7 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                     log.info(f"Can not find a resolver with the name '{resolver_name}'")
                     continue
                 user_list = resolver.getUserList(search_dict, requested_user_store_attributes)
+                succeeded_resolvers.add(resolver_name)
                 for user_info in user_list:
                     if not requested_attributes or "realm" in requested_pi_user_attributes:
                         user_info["realm"] = realm
@@ -977,6 +984,13 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                 if failures is not None and resolver_name not in failures:
                     failures.append(resolver_name)
                 continue
+
+    # A resolver can be queried in several realms (resolver-only queries iterate
+    # every realm containing it). If it failed in one realm but returned a user
+    # list in another, it is not a skipped resolver overall, so drop it: callers
+    # should only see resolvers that could not be queried anywhere.
+    if failures is not None and succeeded_resolvers:
+        failures[:] = [name for name in failures if name not in succeeded_resolvers]
 
     users = list(users_dict.values())
     return users
