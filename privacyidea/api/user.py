@@ -63,6 +63,7 @@ from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
+from privacyidea.lib.usersetting import SettingsSubject, get_user_settings, set_user_settings
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -161,6 +162,54 @@ def get_users():
                         'info': f"realm: {realm!s}"})
 
     return send_result(users)
+
+
+@user_blueprint.route('/settings', methods=['GET'])
+@event("user_settings_get", request, g)
+def get_user_settings_api():
+    """
+    Return the WebUI settings of the logged-in principal.
+
+    The settings are always scoped to the caller's own JWT identity; there
+    is no way to read another principal's settings through this endpoint.
+    Declared defaults are merged in, so the response is always complete.
+
+    Requires authentication (any role).
+
+    :reqheader PI-Authorization: JWT auth token returned by
+        :http:post:`/auth`.
+    :status 200: the settings object in ``result.value``.
+    """
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user)
+    settings = get_user_settings(subject)
+    g.audit_object.log({"success": True})
+    return send_result(settings)
+
+
+@user_blueprint.route('/settings', methods=['POST'])
+@event("user_settings_set", request, g)
+def set_user_settings_api():
+    """
+    Store WebUI settings for the logged-in principal.
+
+    The settings are validated against the server-side schema (unknown keys,
+    wrong types and oversized payloads are rejected). By default the given
+    keys are merged into the existing settings; pass ``replace=1`` to replace
+    the whole document. Always scoped to the caller's own JWT identity.
+
+    Requires authentication (any role).
+
+    :jsonparam settings: a JSON object with the settings to store.
+    :jsonparam replace: if true, replace the whole document instead of merging.
+    :status 200: the stored settings object in ``result.value``.
+    :status 400: a setting is unknown, of the wrong type or too large.
+    """
+    settings = get_required(request.all_data, "settings")
+    replace = is_true(get_optional(request.all_data, "replace"))
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user)
+    stored = set_user_settings(subject, settings, replace=replace)
+    g.audit_object.log({"success": True})
+    return send_result(stored)
 
 
 @user_blueprint.route('/attribute', methods=['POST'])
