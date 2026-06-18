@@ -30,8 +30,12 @@ class MockResizeObserver {
   }
 }
 
-type GlobalWithResizeObserver = typeof globalThis & { ResizeObserver?: typeof ResizeObserver };
-type WindowWithRaf = Window & { requestAnimationFrame?: typeof window.requestAnimationFrame };
+interface GlobalWithResizeObserver {
+  ResizeObserver?: typeof ResizeObserver;
+}
+interface WindowWithRaf {
+  requestAnimationFrame?: typeof window.requestAnimationFrame;
+}
 
 @Component({
   standalone: true,
