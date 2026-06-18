@@ -128,6 +128,7 @@ from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import PolicyClass, SCOPE
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
@@ -686,6 +687,13 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             "serial": token.get_serial()
         })
         context["serial_list"].append(token.get_serial())
+
+        # FIDO2/passkey authentication does not pass through check_token_list,
+        # so the reset_all_user_tokens policy is applied here explicitly. This
+        # must only happen for actual authentication, not for enrollment via
+        # multichallenge (attestation_object present), which also ends up here.
+        if not attestation_object and reset_all_user_tokens_active(g, user):
+            reset_token_failcounters(get_tokens(user=user))
     else:
         context["details"]["message"] = _("Authentication failed.")
 
