@@ -55,6 +55,11 @@ class UserSetting(MethodsMixin, db.Model):
 
     Only principals that deviate from the defaults get a row, so the
     table stays small even with a large user base.
+
+    The ``realm_id`` foreign key is ``ON DELETE CASCADE``: deleting a realm
+    removes its users' settings, since those users are gone with it. Rows
+    orphaned by *user* or *resolver* removal (which the FK does not cover) are
+    pruned by the ``pi-tokenjanitor user-settings`` CLI command.
     """
     __tablename__ = 'usersetting'
     __table_args__ = (

@@ -11,7 +11,9 @@ from privacyidea.lib.user import User
 from privacyidea.lib.usersetting import (SettingsSubject, SUBJECT_LOCAL_ADMIN, SUBJECT_USER,
                                          KNOWN_SETTING_KEYS, MAX_SETTINGS_BYTES,
                                          get_allowed_keys, get_user_settings, set_user_settings,
-                                         delete_user_settings, validate_user_settings)
+                                         delete_user_settings, validate_user_settings,
+                                         find_orphaned_user_settings, delete_orphaned_user_settings)
+from privacyidea.models import UserSetting
 from .base import MyTestCase
 
 
@@ -178,3 +180,39 @@ class UserSettingTestCase(MyTestCase):
         set_user_settings(subject, {"theme": "dark"})
         self.assertEqual({}, set_user_settings(subject, {}, replace=True))
         self.assertEqual({}, get_user_settings(subject))
+
+    def test_19_realm_fk_is_on_delete_cascade(self):
+        # Deleting a realm must cascade-delete its users' settings. SQLite does
+        # not enforce FKs in the unit-test engine, so assert the declaration
+        # (the behaviour is exercised by the migration tests on Postgres/MariaDB).
+        realm_fk = next(fk for fk in UserSetting.__table__.foreign_keys
+                        if fk.column.table.name == "realm")
+        self.assertEqual("CASCADE", realm_fk.ondelete)
+
+    def test_20_find_and_delete_orphans(self):
+        # Valid principals: a present local admin and a resolvable user.
+        set_user_settings(self._admin_subject(), {"theme": "dark"})
+        set_user_settings(self._user_subject(), {"theme": "dark"})
+        cornelius_uid = self._user_subject().user_id
+        realm_id = self._user_subject().realm_id
+        # Orphans created directly, bypassing the identity guard: an admin that
+        # no longer exists and a user uid the resolver cannot resolve.
+        UserSetting(subject_type=SUBJECT_LOCAL_ADMIN, username="ghost-admin",
+                    settings={"a": 1}).save()
+        UserSetting(subject_type=SUBJECT_USER, user_id="999999",
+                    resolver=self.resolvername1, realm_id=realm_id, settings={"a": 1}).save()
+
+        described = {(o.subject_type, o.username or "", o.user_id or "")
+                     for o in find_orphaned_user_settings()}
+        self.assertIn((SUBJECT_LOCAL_ADMIN, "ghost-admin", ""), described)
+        self.assertIn((SUBJECT_USER, "", "999999"), described)
+        # The valid principals are not flagged
+        self.assertNotIn((SUBJECT_LOCAL_ADMIN, "testadmin", ""), described)
+        self.assertNotIn((SUBJECT_USER, "cornelius", cornelius_uid), described)
+
+        deleted = delete_orphaned_user_settings(find_orphaned_user_settings())
+        self.assertGreaterEqual(deleted, 2)
+        # Orphans are gone; the valid principals' settings survive.
+        self.assertEqual([], find_orphaned_user_settings())
+        self.assertEqual("dark", get_user_settings(self._admin_subject())["theme"])
+        self.assertEqual("dark", get_user_settings(self._user_subject())["theme"])

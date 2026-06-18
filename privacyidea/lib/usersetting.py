@@ -34,10 +34,10 @@ import json
 import logging
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
-from privacyidea.lib.auth import ROLE
+from privacyidea.lib.auth import ROLE, db_admin_exists
 from privacyidea.lib.error import ParameterError, UserError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.user import User
@@ -219,7 +219,10 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
     if not subject.is_identified():
         raise UserError("Cannot store settings for an unidentified subject "
                         f"(subject_type={subject.subject_type!r}, username={subject.username!r}).")
-    row = db.session.scalars(_select_for_subject(subject)).first()
+    # Lock the row for the read-modify-write so two concurrent partial updates
+    # (e.g. two browser tabs) serialize instead of last-writer-wins clobbering
+    # each other's keys. No-op on SQLite; a real row lock on Postgres/MariaDB.
+    row = db.session.scalars(_select_for_subject(subject).with_for_update()).first()
     new_settings = _merge_settings(row.settings if row else None, settings, replace)
     # Re-validate the full document, not just the incoming delta, so the size
     # cap cannot be bypassed by accumulating keys across repeated partial writes.
@@ -243,7 +246,7 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
         # NULL realm_id makes the key non-unique, so that race can still leave a
         # duplicate row). Recover by re-reading and applying the update.
         db.session.rollback()
-        row = db.session.scalars(_select_for_subject(subject)).first()
+        row = db.session.scalars(_select_for_subject(subject).with_for_update()).first()
         if row is None:
             raise
         row.settings = _merge_settings(row.settings, settings, replace)
@@ -265,7 +268,8 @@ def delete_user_settings(subject: SettingsSubject, key: str | None = None) -> di
     # Same guard as reads: never match the shared row of unidentified principals.
     if not subject.is_identified():
         return {}
-    row = db.session.scalars(_select_for_subject(subject)).first()
+    # Lock the row so a key removal does not race with a concurrent write.
+    row = db.session.scalars(_select_for_subject(subject).with_for_update()).first()
     if row is None:
         return {}
     if key is None:
@@ -281,3 +285,67 @@ def delete_user_settings(subject: SettingsSubject, key: str | None = None) -> di
     row.settings = current
     row.save()
     return row.settings or {}
+
+
+def find_orphaned_user_settings(orphaned_on_error: bool = False) -> list[UserSetting]:
+    """
+    Return the ``usersetting`` rows whose principal no longer exists.
+
+    A row is orphaned when:
+
+    * (``user`` rows) its ``(user_id, resolver, realm_id)`` no longer resolves
+      to a user -- the resolver is gone, the uid no longer exists, or the row
+      has empty identifiers; or
+    * (``local_admin`` rows) its ``username`` is no longer in the ``admin``
+      table.
+
+    The realm FK removes rows when a *realm* is deleted, but a user removed
+    from the store (or an admin deleted from the DB) leaves a row that the
+    normal API can no longer reach. There is no periodic task for this -- like
+    ``internaluserattribute``, cleanup is a manual CLI command.
+
+    :param orphaned_on_error: if a resolver raises while looking up the user,
+        treat that row as orphaned (mirrors ``find_orphaned_internal_attributes``).
+    """
+    from privacyidea.lib.resolver import get_resolver_object
+
+    rows = db.session.scalars(select(UserSetting)).all()
+    orphans: list[UserSetting] = []
+    resolver_cache: dict = {}
+    for row in rows:
+        if row.subject_type == SUBJECT_LOCAL_ADMIN:
+            if not row.username or not db_admin_exists(row.username):
+                orphans.append(row)
+            continue
+        # SUBJECT_USER: reuse the internaluserattribute orphan logic.
+        if not row.user_id or not row.resolver:
+            orphans.append(row)
+            continue
+        if row.resolver not in resolver_cache:
+            resolver_cache[row.resolver] = get_resolver_object(row.resolver)
+        resolver = resolver_cache[row.resolver]
+        if resolver is None:
+            orphans.append(row)
+            continue
+        try:
+            login = resolver.getUsername(row.user_id)
+        except Exception:
+            if orphaned_on_error:
+                orphans.append(row)
+            continue
+        if not login:
+            orphans.append(row)
+    return orphans
+
+
+def delete_orphaned_user_settings(orphans: list[UserSetting]) -> int:
+    """
+    Delete the given orphaned ``usersetting`` rows (by id) and return the count.
+    Bypasses the normal API on purpose -- orphans cannot be addressed through it.
+    """
+    if not orphans:
+        return 0
+    ids = [row.id for row in orphans]
+    total = db.session.execute(delete(UserSetting).where(UserSetting.id.in_(ids))).rowcount
+    db.session.commit()
+    return total

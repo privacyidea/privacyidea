@@ -89,3 +89,49 @@ class UserSettingsAPITestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertEqual({}, res.json["result"]["value"])
         self.assertEqual({}, self._get().json["result"]["value"])
+
+    def _user_request(self, method, path, body=None):
+        kwargs = {"method": method, "headers": {"Authorization": self.at_user}}
+        if body is not None:
+            kwargs["content_type"] = "application/json"
+            kwargs["data"] = json.dumps(body)
+        with self.app.test_request_context(path, **kwargs):
+            return self.app.full_dispatch_request()
+
+    def test_10_user_role_crud_and_isolation(self):
+        # Exercise the SUBJECT_USER endpoint path with a real user-role JWT.
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+
+        # Nothing stored yet
+        self.assertEqual({}, self._user_request("GET", "/user/settings").json["result"]["value"])
+
+        res = self._user_request("POST", "/user/settings", {"settings": {"theme": "user-dark"}})
+        self.assertEqual(200, res.status_code, res)
+        self.assertEqual({"theme": "user-dark"}, res.json["result"]["value"])
+        self.assertEqual({"theme": "user-dark"},
+                         self._user_request("GET", "/user/settings").json["result"]["value"])
+
+        # Isolation: the admin (local_admin row) does not see the user's value
+        self.assertNotEqual("user-dark", self._get().json["result"]["value"].get("theme"))
+
+        # Delete the user's key
+        res = self._user_request("DELETE", "/user/settings/theme")
+        self.assertEqual(200, res.status_code, res)
+        self.assertEqual({}, res.json["result"]["value"])
+        self.assertEqual({}, self._user_request("GET", "/user/settings").json["result"]["value"])
+
+    def test_11_user_param_cannot_redirect_user_write(self):
+        # A user passing a stray 'user=' is forced back to their own identity by
+        # resolve_logged_in_user, so the write lands on the caller, not the target.
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        res = self._user_request("POST", "/user/settings",
+                                 {"settings": {"theme": "mine"}, "user": "cornelius", "realm": "realm1"})
+        self.assertEqual(200, res.status_code, res)
+        # 'cornelius' was not targeted -> still empty
+        victim = SettingsSubject.from_logged_in_user(
+            {"username": "cornelius", "realm": "realm1", "role": "user"})
+        self.assertEqual({}, get_user_settings(victim))
+        # The caller (selfservice) got it
+        self.assertEqual("mine", self._user_request("GET", "/user/settings").json["result"]["value"]["theme"])
