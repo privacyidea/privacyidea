@@ -202,6 +202,7 @@ select = ["E", "W", "F", "UP"]
 [tool.pytest.ini_options]
 markers = [
     "migration: marks tests as database migration tests (run separately with -m migration)",
+    "backup: marks backup/restore round-trip tests needing a live DB and client tools (run separately with -m backup)",
 ]
 filterwarnings = [
     "once::DeprecationWarning",

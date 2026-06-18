@@ -38,7 +38,7 @@ DB_URL = os.environ.get("TEST_DATABASE_URL", "")
 
 class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
     REVISION = "a1e0ba6ad9dc"
-    PARENT_REVISION = "06b105a4f941"
+    PARENT_REVISION = "b1a2c3d4e5f6"
 
     def _insert_u2f_token(self, engine, token_id: int, serial: str, active: bool = True) -> None:
         self._insert_rows(engine, "token", [{

@@ -30,7 +30,7 @@ delete and the test request are gated by :ref:`policy_radiusserver_write`.
 """
 from flask import (Blueprint, request)
 
-from privacyidea.lib.resolver import CENSORED
+from privacyidea.lib.crypto import CENSORED
 from .lib.utils import (send_result)
 from ..lib.params import get_optional, get_required
 from ..lib.log import log_with

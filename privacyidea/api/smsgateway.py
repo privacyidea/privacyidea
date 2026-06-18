@@ -36,6 +36,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
+from ..lib.crypto import censor_dict
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -44,7 +45,6 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_sms_provider_class)
 
 log = logging.getLogger(__name__)
-
 
 smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 
@@ -67,6 +67,12 @@ def get_gateway(gwid=None):
       the gateway-creation form; it does not look up a gateway with the
       literal id ``providers``.
 
+    Secret options and headers (those whose name contains ``PASSWORD`` or
+    ``SECRET``) are not returned in clear text; they are replaced by the
+    placeholder ``__CENSORED__``. When updating a gateway, submit
+    ``__CENSORED__`` for such a value to keep it unchanged, an empty string to
+    clear it, or a new value to replace it.
+
     Requires admin authentication and the policy action
     :ref:`policy_smsgateway_read`.
 
@@ -82,7 +88,19 @@ def get_gateway(gwid=None):
                                               classname.rsplit(".", 1)[1])
             res[classname] = smsclass.parameters()
     else:
-        res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
+        res = []
+        for gw in get_smsgateway(id=gwid):
+            gw_dict = gw.as_dict()
+            # Censor secret-looking options AND headers (e.g. auth headers) so they
+            # are not returned in clear text. NOTE: this is still a key-name
+            # heuristic; secrets in differently-named keys (e.g. an Authorization
+            # header or a Firebase credentials option) are not detected. A robust
+            # fix needs the provider classes to declare which fields are secret.
+            for section in ("options", "headers"):
+                secret_keys = [key for key in gw_dict.get(section, {})
+                               if "PASSWORD" in key.upper() or "SECRET" in key.upper()]
+                gw_dict[section] = censor_dict(gw_dict.get(section, {}), secret_keys)
+            res.append(gw_dict)
 
     g.audit_object.log({"success": True})
     return send_result(res)
