@@ -29,11 +29,7 @@ import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.co
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
-import {
-  ContainerDetailData,
-  ContainerService,
-  ContainerServiceInterface
-} from "@services/container/container.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -150,7 +146,7 @@ describe("ContainerDetailsComponent", () => {
 
     component.containerDetailData.set([
       {
-        keyMap: { key: "description", label: "Description" },
+        keyMap: { key: "description", label: "Description", group: "container" },
         value: "Old description",
         isEditing: signal(false)
       }
@@ -162,7 +158,7 @@ describe("ContainerDetailsComponent", () => {
 
     component.containerDetailData.set([
       {
-        keyMap: { key: "description", label: "Description" },
+        keyMap: { key: "description", label: "Description", group: "container" },
         value: "New description from UI",
         isEditing: signal(false)
       }
