@@ -28,6 +28,7 @@ from privacyidea.lib.conditional_access.authentication_log import (
     get_authentication_logs_paginate,
     delete_authentication_logs,
     cleanup_authentication_log,
+    AuthenticationLogVisibilityScope,
 )
 from privacyidea.lib.error import ParameterError
 from .base import MyTestCase
@@ -425,16 +426,45 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         self.assertEqual(2, page.count)
         self.assertTrue(all(entry.serial == "TOK_A" for entry in page.auth_logs))
 
-    def test_allowed_realms_excludes_other_and_null_realms(self):
+    def test_visibility_scope_by_realm_excludes_other_and_null_realms(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm2")
         log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)  # no realm
         # None means unrestricted
         self.assertEqual(3, get_authentication_logs_paginate().count)
-        # Restricting to realm1 hides realm2 and the null-realm row
-        restricted = get_authentication_logs_paginate(allowed_realms=["realm1"])
+        # A realm-only scope hides realm2 and the null-realm row
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(1, restricted.count)
         self.assertEqual("realm1", restricted.auth_logs[0].realm)
+
+    def test_visibility_scope_by_resolver(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="realm1")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=["res1"], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("res1", restricted.auth_logs[0].resolver)
+
+    def test_visibility_scope_dimensions_are_anded(self):
+        # A single scope with realm + resolver matches only entries satisfying both.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u3", realm="realm2")
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=["res1"], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual(("res1", "realm1"), (restricted.auth_logs[0].resolver, restricted.auth_logs[0].realm))
+
+    def test_visibility_scopes_are_ored_across_policies(self):
+        # Two scopes (from two policies) act as a union: realm1 OR resolver res2.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="resA", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="realm9")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="resZ", uid="u3", realm="realm9")
+        scopes = [AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[]),
+                  AuthenticationLogVisibilityScope(realms=[], resolvers=["res2"], usernames=[])]
+        restricted = get_authentication_logs_paginate(visibility_scopes=scopes)
+        self.assertEqual(2, restricted.count)
 
     def test_to_dict_shape_and_iso_timestamp(self):
         self._create(1)
@@ -469,12 +499,13 @@ class AuthenticationLogDeleteTestCase(MyTestCase):
         # nothing was deleted
         self.assertEqual(1, len(get_authentication_logs()))
 
-    def test_delete_allowed_realms_excludes_other_and_null_realms(self):
+    def test_delete_visibility_scope_excludes_other_and_null_realms(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm2")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)  # no realm
-        # Deleting all LOGIN_SUCCESS while restricted to realm1 only removes the realm1 row.
-        deleted = delete_authentication_logs(event_type=AuthEventType.LOGIN_SUCCESS, allowed_realms=["realm1"])
+        # Deleting all LOGIN_SUCCESS while scoped to realm1 only removes the realm1 row.
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[])
+        deleted = delete_authentication_logs(event_type=AuthEventType.LOGIN_SUCCESS, visibility_scopes=[scope])
         self.assertEqual(1, deleted)
         remaining_realms = {entry.realm for entry in get_authentication_logs()}
         self.assertEqual({"realm2", None}, remaining_realms)

@@ -27,12 +27,13 @@ from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    delete_authentication_logs,
+                                                                   AuthenticationLogVisibilityScope,
                                                                    DEFAULT_PAGE_SIZE)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_authentication_log_allowed_realms
-from privacyidea.lib.utils import parse_timedelta
+from privacyidea.lib.policies.helper import get_authentication_log_visibility_scopes
+from privacyidea.lib.utils import parse_timedelta, is_true
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ def get_authentication_log():
     Return a paginated, filtered page of authentication-log entries.
 
     Requires admin authentication and the policy action :ref:`policy_authentication_log_read`. If that policy is
-    scoped to realms, only entries of those realms are returned.
+    scoped to realms, resolvers and/or users, only entries matching that scope are returned.
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
     ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
@@ -64,6 +65,8 @@ def get_authentication_log():
     :query timelimit: only entries newer than now minus this delta (e.g. ``1d``, ``2h``). Overrides ``start``.
     :query start: only entries at/after this ISO 8601 timestamp.
     :query end: only entries at/before this ISO 8601 timestamp.
+    :query include_own: if set, a scoped admin also sees their own entries (matched by username + realm), in
+        addition to the policy scope.
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
@@ -78,11 +81,21 @@ def get_authentication_log():
     end = get_optional(params, "end")
     end_timestamp = isoparse(end) if end else None
 
+    visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
+    # A scoped admin may opt in to also see their own entries (username + realm), added to the policy scope as an
+    # extra OR alternative.
+    if visibility_scopes is not None and is_true(get_optional(params, "include_own")):
+        own_realm = g.logged_in_user.get("realm")
+        own_username = g.logged_in_user.get("username")
+        if own_realm and own_username:
+            visibility_scopes = visibility_scopes + [
+                AuthenticationLogVisibilityScope(realms=[own_realm], resolvers=[], usernames=[own_username])]
+
     result = get_authentication_logs_paginate(
         **filters,
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
-        allowed_realms=get_authentication_log_allowed_realms(),
+        visibility_scopes=visibility_scopes,
         page=int(get_optional(params, "page", default=1)),
         page_size=int(get_optional(params, "page_size", default=DEFAULT_PAGE_SIZE)),
         sort_column=get_optional(params, "sort_column", default="id"),
@@ -101,9 +114,9 @@ def delete_authentication_log():
     Delete authentication-log entries matching the given filters and return the number deleted.
 
     Requires admin authentication and the policy action :ref:`policy_authentication_log_delete`. If that policy is
-    scoped to realms, only entries of those realms are deleted. At least one filter must be given; an unfiltered
-    request is rejected so the whole log cannot be wiped by accident. To delete entries older than a point in time,
-    pass ``end`` (entries with a timestamp at or before it).
+    scoped to realms, resolvers and/or users, only entries matching that scope are deleted. At least one filter must
+    be given; an unfiltered request is rejected so the whole log cannot be wiped by accident. To delete entries older
+    than a point in time, pass ``end`` (entries with a timestamp at or before it).
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
     ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
@@ -122,7 +135,7 @@ def delete_authentication_log():
         **filters,
         start_timestamp=isoparse(start) if start else None,
         end_timestamp=isoparse(end) if end else None,
-        allowed_realms=get_authentication_log_allowed_realms(PolicyAction.AUTHENTICATION_LOG_DELETE))
+        visibility_scopes=get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_DELETE))
 
     g.audit_object.log({"success": True})
     return send_result(count)

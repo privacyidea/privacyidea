@@ -19,8 +19,9 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
@@ -40,6 +41,19 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "serial": AuthenticationLog.serial,
 }
 DEFAULT_PAGE_SIZE = 15
+
+
+@dataclass
+class AuthenticationLogVisibilityScope:
+    """
+    One policy's target scope, restricting which authentication-log entries an admin may see/delete. An entry must
+    match all dimensions a policy sets (logical AND); across several scopes (from several policies) an entry is
+    visible if it matches any one of them (logical OR) -- see :func:`get_authentication_logs_paginate`. Empty lists
+    mean "no restriction on that dimension".
+    """
+    realms: list[str]
+    resolvers: list[str]
+    usernames: list[str]
 
 
 @dataclass
@@ -222,6 +236,26 @@ def _filter_conditions(resolver: str | None = None,
     return conditions
 
 
+def _visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
+    """
+    Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
+    dimensions a scope sets (AND), and is included if it matches any one scope (OR). An entry matches a dimension via
+    ``IN`` on the corresponding column, so entries with a NULL value in a restricted dimension are excluded.
+    """
+    scope_conditions = []
+    for scope in scopes:
+        dimensions = []
+        if scope.realms:
+            dimensions.append(AuthenticationLog.realm.in_(scope.realms))
+        if scope.resolvers:
+            dimensions.append(AuthenticationLog.resolver.in_(scope.resolvers))
+        if scope.usernames:
+            dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+        if dimensions:
+            scope_conditions.append(and_(*dimensions))
+    return or_(*scope_conditions)
+
+
 def get_authentication_logs(resolver: str | None = None,
                             uid: str | None = None,
                             realm: str | None = None,
@@ -257,7 +291,7 @@ def get_authentication_logs_paginate(resolver: str | None = None,
                                      previous_transaction_id: str | None = None,
                                      start_timestamp: datetime | None = None,
                                      end_timestamp: datetime | None = None,
-                                     allowed_realms: list[str] | None = None,
+                                     visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
                                      page: int = 1,
                                      page_size: int = DEFAULT_PAGE_SIZE,
                                      sort_column: str = "id",
@@ -265,19 +299,25 @@ def get_authentication_logs_paginate(resolver: str | None = None,
     """
     Return a single page of authentication log entries matching the given filters.
 
-    All filter parameters behave like :func:`get_authentication_logs`. ``allowed_realms`` restricts the result to
-    entries whose realm is in that list (entries without a realm are therefore excluded); ``None`` means no realm
-    restriction. ``sort_column`` is one of :data:`SORTABLE_COLUMNS` (falling back to ``id``) and is always
-    tie-broken by id so the order is stable across pages.
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``,
+    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``start_timestamp`` and ``end_timestamp`` -- behave
+    exactly like :func:`get_authentication_logs`. The remaining parameters control visibility scoping and pagination:
 
+    :param visibility_scopes: restrict the result to entries matching any of these scopes
+        (see :func:`_visibility_condition`); ``None`` means no restriction
+    :param page: the page number to return, 1-indexed
+    :param page_size: the number of entries per page
+    :param sort_column: the column to sort by; one of :data:`SORTABLE_COLUMNS` (falling back to ``id``), always
+        tie-broken by id so the order is stable across pages
+    :param sort_order: ``asc`` or ``desc``
     :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
     """
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, start_timestamp=start_timestamp,
                                     end_timestamp=end_timestamp)
-    if allowed_realms is not None:
-        conditions.append(AuthenticationLog.realm.in_(allowed_realms))
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)
 
     count = db.session.scalar(select(func.count()).select_from(stmt.subquery()))
@@ -311,29 +351,32 @@ def delete_authentication_logs(resolver: str | None = None,
                                previous_transaction_id: str | None = None,
                                start_timestamp: datetime | None = None,
                                end_timestamp: datetime | None = None,
-                               allowed_realms: list[str] | None = None,
+                               visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
                                chunk_size: int | None = None) -> int:
     """
     Delete all authentication log entries matching the given filters and return the number deleted.
 
-    All filter parameters behave like :func:`get_authentication_logs` (to delete entries older than a point in time,
-    pass ``end_timestamp``). ``allowed_realms`` restricts the deletion to entries whose realm is in that list (entries
-    without a realm are therefore not deleted); ``None`` means no realm restriction. ``chunk_size`` deletes in chunks
-    to avoid long locks on large tables.
+    The filter parameters -- ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``,
+    ``serial``, ``transaction_id``, ``previous_transaction_id``, ``start_timestamp`` and ``end_timestamp`` -- behave
+    exactly like :func:`get_authentication_logs` (to delete entries older than a point in time, pass
+    ``end_timestamp``). The caller must pass at least one filter: with no filter this would delete the entire log,
+    which this function refuses.
 
-    The caller must pass at least one filter: with no conditions this would delete the entire log, which this function
-    refuses.
+    :param visibility_scopes: restrict the deletion to entries matching any of these scopes
+        (see :func:`_visibility_condition`); ``None`` means no restriction
+    :param chunk_size: if given, delete in chunks of this size to avoid long locks on large tables
+    :return: the number of deleted entries
     """
     conditions = _filter_conditions(resolver=resolver, uid=uid, realm=realm, username=username, event_type=event_type,
                                     source_ip=source_ip, serial=serial, transaction_id=transaction_id,
                                     previous_transaction_id=previous_transaction_id, start_timestamp=start_timestamp,
                                     end_timestamp=end_timestamp)
-    # Guard on the caller's filters before adding the realm restriction, so a realm-scoped admin also cannot wipe a
-    # whole realm with an unfiltered request.
+    # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
+    # whole scope with an unfiltered request.
     if not conditions:
         raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
-    if allowed_realms is not None:
-        conditions.append(AuthenticationLog.realm.in_(allowed_realms))
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
     return delete_matching_rows(db.session, AuthenticationLog.__table__, and_(*conditions), chunk_size)
 
 

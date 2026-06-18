@@ -18,10 +18,13 @@
 
 import datetime
 
+import mock
+
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_tokens, get_one_token, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.models import db
@@ -971,12 +974,18 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
     OTHER_REALM = "otherrealm"
 
     def _seed_entries(self):
-        # 2 in realm1, 1 in another realm, 1 with no realm (e.g. USER_UNKNOWN)
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1)
-        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2", realm=self.realm1)
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.OTHER_REALM)
-        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)
+        # 2 in realm1, 1 in another realm, 1 with no realm (e.g. USER_UNKNOWN). Returns the created ids by key.
+        ids = {
+            "realm1_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1",
+                                                     realm=self.realm1),
+            "realm1_fail": log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2",
+                                                    realm=self.realm1),
+            "other_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3",
+                                                    realm=self.OTHER_REALM),
+            "no_realm": log_authentication_event(event_type=AuthEventType.USER_UNKNOWN),
+        }
         db.session.commit()
+        return ids
 
     def _get(self, query_string=None, status=200):
         with self.app.test_request_context('/authenticationlog/', method='GET', query_string=query_string or {},
@@ -984,6 +993,10 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(status, res.status_code, res.json)
             return res.json
+
+    @staticmethod
+    def _returned_ids(value):
+        return {entry["id"] for entry in value["auth_logs"]}
 
     def test_requires_admin(self):
         with self.app.test_request_context('/authenticationlog/', method='GET'):
@@ -1029,16 +1042,111 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
             delete_policy("authlog_other")
 
     def test_realm_scoped_policy_restricts_visible_entries(self):
-        self._seed_entries()
-        # Policy scoped to realm1: the admin sees only realm1 rows, not the other realm or the null-realm row.
+        ids = self._seed_entries()
+        # Policy scoped to realm1: the admin sees exactly the realm1 rows, not the other realm or the null-realm row.
         set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
                    realm=self.realm1)
         try:
             value = self._get({"page_size": 50})["result"]["value"]
-            self.assertEqual(2, value["count"])
-            self.assertTrue(all(entry["realm"] == self.realm1 for entry in value["auth_logs"]), value)
+            self.assertEqual({ids["realm1_login"], ids["realm1_fail"]}, self._returned_ids(value))
         finally:
             delete_policy("authlog_realm")
+
+    def test_resolver_scoped_policy_restricts_visible_entries(self):
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver", uid="2",
+                                 realm=self.realm1)
+        db.session.commit()
+        set_policy("authlog_resolver", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   resolver=self.resolvername1)
+        try:
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual({in_scope}, self._returned_ids(value))
+        finally:
+            delete_policy("authlog_resolver")
+
+    def test_multiple_policies_union_scopes(self):
+        # P1 scopes realm1, P2 scopes resolver1 -> the admin sees (realm1) OR (resolver1).
+        matches_p1 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver",
+                                              uid="1", realm=self.realm1)
+        matches_p2 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                              uid="2", realm=self.OTHER_REALM)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver", uid="3",
+                                 realm=self.OTHER_REALM)                             # matches neither
+        db.session.commit()
+        set_policy("authlog_p1", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        set_policy("authlog_p2", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   resolver=self.resolvername1)
+        try:
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual({matches_p1, matches_p2}, self._returned_ids(value))
+        finally:
+            delete_policy("authlog_p1")
+            delete_policy("authlog_p2")
+
+    def test_unscoped_policy_grants_all_even_alongside_a_scoped_one(self):
+        # If any applicable policy has no target scope, the admin is unrestricted -- even when another policy is
+        # scoped. (The scoped policy alone would have limited the result to realm1's 2 rows.)
+        ids = self._seed_entries()  # realm1 x2, OTHER_REALM x1, null-realm x1
+        set_policy("authlog_scoped", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        set_policy("authlog_all", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual(set(ids.values()), self._returned_ids(value))
+        finally:
+            delete_policy("authlog_scoped")
+            delete_policy("authlog_all")
+
+    def test_unscoped_policy_builds_no_visibility_filter(self):
+        # Efficiency: an unscoped policy grants everything, so no realm/resolver/user filter is built at all -- the
+        # lib is called with visibility_scopes=None, not scopes that merely happen to match every row.
+        with mock.patch("privacyidea.api.authentication_log.get_authentication_logs_paginate") as paginate_mock:
+            paginate_mock.return_value.to_dict.return_value = {}
+            # Only a scoped policy -> the lib receives concrete scopes.
+            set_policy("authlog_scoped", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                       realm=self.realm1)
+            self._get()
+            self.assertIsNotNone(paginate_mock.call_args.kwargs["visibility_scopes"])
+            # Adding an unscoped policy of the same action -> no filter is built at all.
+            set_policy("authlog_all", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ)
+            try:
+                self._get()
+                self.assertIsNone(paginate_mock.call_args.kwargs["visibility_scopes"])
+            finally:
+                delete_policy("authlog_scoped")
+                delete_policy("authlog_all")
+
+    def test_include_own_adds_admins_own_entries(self):
+        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so include_own works.
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": "selfservice@adminrealm", "password": "test"}):
+            helpdesk_token = self.app.full_dispatch_request().json["result"]["value"]["token"]
+        # The login above logged its own auth event; clear so the test works on controlled entries only.
+        self._clear_log()
+        # One in-scope (realm1) entry and the admin's own entry (username=selfservice, realm=adminrealm).
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                       realm="adminrealm", username="selfservice")
+        db.session.commit()
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+
+        def helpdesk_get(query_string):
+            with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string,
+                                               headers={"Authorization": helpdesk_token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return {entry["id"] for entry in res.json["result"]["value"]["auth_logs"]}
+        try:
+            # Without include_own: only the realm1 entry.
+            self.assertEqual({in_scope}, helpdesk_get({"page_size": 50}))
+            # With include_own: the realm1 entry plus the admin's own adminrealm entry.
+            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50, "include_own": "1"}))
+        finally:
+            delete_policy("authlog_realm")
+            delete_realm("adminrealm")
 
 
 class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
@@ -1054,11 +1162,21 @@ class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
             return res.json
 
     def _seed(self):
-        # 1 LOGIN_SUCCESS + 1 MFA_FAIL in realm1, 1 LOGIN_SUCCESS in another realm
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1)
-        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2", realm=self.realm1)
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3", realm=self.OTHER_REALM)
+        # 1 LOGIN_SUCCESS + 1 MFA_FAIL in realm1, 1 LOGIN_SUCCESS in another realm. Returns the created ids by key.
+        ids = {
+            "realm1_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1",
+                                                     realm=self.realm1),
+            "realm1_fail": log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2",
+                                                    realm=self.realm1),
+            "other_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3",
+                                                    realm=self.OTHER_REALM),
+        }
         db.session.commit()
+        return ids
+
+    @staticmethod
+    def _remaining_ids():
+        return {entry.id for entry in get_authentication_logs()}
 
     def test_delete_requires_admin(self):
         with self.app.test_request_context("/authenticationlog/", method="DELETE",
@@ -1072,12 +1190,11 @@ class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
         self.assertEqual(3, len(get_authentication_logs()))
 
     def test_delete_by_filter(self):
-        self._seed()
+        ids = self._seed()
         body = self._delete({"event_type": AuthEventType.MFA_FAIL})
         self.assertEqual(1, body["result"]["value"])
-        remaining = get_authentication_logs()
-        self.assertEqual(2, len(remaining))
-        self.assertTrue(all(entry.event_type != AuthEventType.MFA_FAIL for entry in remaining))
+        # Exactly the MFA_FAIL row is gone; the two LOGIN_SUCCESS rows remain.
+        self.assertEqual({ids["realm1_login"], ids["other_login"]}, self._remaining_ids())
 
     def test_delete_older_than_end(self):
         self._seed()
@@ -1101,13 +1218,29 @@ class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
         self.assertEqual(3, len(get_authentication_logs()))
 
     def test_delete_realm_restriction(self):
-        self._seed()
+        ids = self._seed()
         set_policy("authlog_delete_realm", scope=SCOPE.ADMIN,
                    action=PolicyAction.AUTHENTICATION_LOG_DELETE, realm=self.realm1)
         try:
-            # Deleting all LOGIN_SUCCESS only affects realm1; the other realm's entry survives.
+            # Deleting all LOGIN_SUCCESS only affects realm1; the realm1 MFA_FAIL and the other realm's row survive.
             count = self._delete({"event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]
             self.assertEqual(1, count)
-            self.assertIn(self.OTHER_REALM, {entry.realm for entry in get_authentication_logs()})
+            self.assertEqual({ids["realm1_fail"], ids["other_login"]}, self._remaining_ids())
         finally:
             delete_policy("authlog_delete_realm")
+
+    def test_delete_resolver_restriction(self):
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.resolvername1, uid="1",
+                                 realm=self.realm1)  # in scope -> deleted
+        other = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="otherresolver", uid="2",
+                                         realm=self.realm1)
+        db.session.commit()
+        set_policy("authlog_delete_resolver", scope=SCOPE.ADMIN,
+                   action=PolicyAction.AUTHENTICATION_LOG_DELETE, resolver=self.resolvername1)
+        try:
+            # Deleting all MFA_FAIL only removes the scoped resolver's row; the other resolver's row survives.
+            count = self._delete({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
+            self.assertEqual(1, count)
+            self.assertEqual({other}, self._remaining_ids())
+        finally:
+            delete_policy("authlog_delete_resolver")
