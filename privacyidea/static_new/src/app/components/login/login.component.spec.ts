@@ -185,6 +185,17 @@ describe("LoginComponent", () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
     });
 
+    it("should not send the realm when the '-' no-realm sentinel is selected", () => {
+      component.realm.set("-");
+      component.onSubmit();
+
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        username: "test-user",
+        password: "test-pass"
+      });
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
+    });
+
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
       const webAuthnSignRequestData: WebAuthnSignRequestData = {
         allowCredentials: [

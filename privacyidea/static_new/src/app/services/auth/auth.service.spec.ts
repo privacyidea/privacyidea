@@ -46,7 +46,6 @@ describe("AuthService", () => {
   let httpMock: HttpTestingController;
   let mockLocal: MockLocalService;
   let routerMock: MockRouter;
-  let notifications: MockNotificationService;
 
   beforeEach(() => {
     routerMock = new MockRouter();
@@ -67,7 +66,6 @@ describe("AuthService", () => {
     authService = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
     mockLocal = TestBed.inject(LocalService) as unknown as MockLocalService;
-    notifications = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     jest.spyOn(console, "error").mockReturnValue();
     ensureAtob();
   });
@@ -270,8 +268,6 @@ describe("AuthService", () => {
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await routerMock.navigate.mock.results[0].value;
-    expect(notifications.success).toHaveBeenCalledWith("Logout successful.");
-    expect(notifications.success).toHaveBeenCalledTimes(1);
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {

@@ -51,6 +51,9 @@ import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, time
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+// A "-" entry in the realmdropdown policy is the privacyIDEA "no realm" sentinel:
+// it is offered as a selectable option but must not be sent as a realm parameter.
+const NO_REALM_SENTINEL = "-";
 
 @Component({
   selector: "app-login",
@@ -174,7 +177,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     const password = isChallengeResponse ? this.otp() : this.password();
 
     const params: PasswordLoginParams = { username, password };
-    if (this.realm()) {
+    if (this.realm() && this.realm() !== NO_REALM_SENTINEL) {
       params.realm = this.realm();
     }
 
@@ -234,7 +237,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   logout(): void {
     this.authService.logout();
     this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]).then(() => this.notificationService.success("Logout successful."));
+    this.router.navigate(["login"]);
   }
 
   resetLogin(): void {

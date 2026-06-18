@@ -26,7 +26,6 @@ import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
-import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { tokenTypes } from "@utils/token.utils";
 import { Observable, catchError, tap, throwError } from "rxjs";
 
@@ -252,7 +251,6 @@ export class AuthService implements AuthServiceInterface {
   readonly authUrl = environment.proxyUrl + "/auth";
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly http = inject(HttpClient);
 
@@ -379,7 +377,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.success($localize`Logout successful.`));
+    this.router.navigate(["login"]);
   }
 
   actionAllowed(action: PolicyAction): boolean {
