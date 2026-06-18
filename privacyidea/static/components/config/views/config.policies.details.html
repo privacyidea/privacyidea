@@ -407,27 +407,6 @@
                 </div>
                 <div class="row">
                     <div class="col-sm-12">
-                        <div ng-show="!isActionValues" class="mt-5px">
-                            <table class="table table-hover">
-                                <tr ng-repeat="action in actions"
-                                    ng-show="!onlySelectedVisible || action.ticked">
-                                    <td>
-                                        <input type="checkbox"
-                                               name="action.name"
-                                               ng-model="action.ticked"
-                                               id="cb_simple_{{ action.name }}">
-                                        <label for="cb_simple_{{ action.name }}"
-                                               ng-bind-html="action.name | highlight: action_filter">
-                                        </label>
-                                    </td>
-                                    <td>
-                                        <p class="help help-block"
-                                           ng-bind-html="action.help | highlight: action_filter">
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
                         <div ng-show="isActionValues" class="mt-5px">
                             <uib-accordion close-others="false">
                                 <div uib-accordion-group

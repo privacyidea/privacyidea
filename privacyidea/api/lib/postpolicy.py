@@ -232,6 +232,51 @@ def sign_response(request, response):
     return resp
 
 
+def hide_version(request, response):
+    """
+    This policy function is used as a postrequest decorator.
+    If the policy action HIDE_VERSION is set in the HARDENING scope,
+    the version and versionnumber fields are removed from JSON responses
+    for unauthenticated requests (before login). Authenticated users
+    will still see the version number.
+
+    :param request: The request object
+    :param response: The response object
+    :return: The (maybe modified) response
+    """
+    # Only hide the version for unauthenticated requests
+    logged_in_user = getattr(g, "logged_in_user", None)
+    if logged_in_user:
+        return response
+
+    if response.is_json:
+        # Ensure g.policy_object and g.client_ip are available even when
+        # before_request failed early (e.g. due to AuthError before the
+        # policy object was created).
+        if not getattr(g, "policy_object", None):
+            from privacyidea.lib.policy import PolicyClass
+            g.policy_object = PolicyClass()
+        if not getattr(g, "client_ip", None):
+            from privacyidea.lib.utils import get_client_ip
+            g.client_ip = get_client_ip(request, None)
+        try:
+            policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
+                write_to_audit_log=False)
+        except AttributeError:
+            # g.policy_object might not be set in some edge cases
+            return response
+        if policy:
+            content = response.json
+            content.pop("version", None)
+            content.pop("versionnumber", None)
+            # Also strip version from the nested result value (e.g. /config endpoint)
+            result_value = content.get("result", {}).get("value", {})
+            if isinstance(result_value, dict):
+                result_value.pop("privacyideaVersionNumber", None)
+            response.set_data(json.dumps(content))
+    return response
+
+
 def check_tokentype(request, response):
     """
     This policy function is to be used in a decorator of an API function.

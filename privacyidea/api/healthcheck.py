@@ -35,21 +35,32 @@ authenticated administrator. Because the ``/healthz`` endpoints expose
 information about this server without authentication, they should be reachable
 only from a trusted network and not exposed to untrusted clients.
 """
-from flask import Blueprint, current_app, g
+from flask import Blueprint, current_app, g, request
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, Error
-from privacyidea.lib.policy import Match, SCOPE, PolicyAction
+from privacyidea.lib.config import get_from_config, SYSCONF
+from privacyidea.lib.policy import Match, SCOPE, PolicyAction, PolicyClass
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
+from privacyidea.lib.utils import get_client_ip
 import logging
 import time
 
 log = logging.getLogger(__name__)
 
 healthz_blueprint = Blueprint('healthz_blueprint', __name__)
+
+
+@healthz_blueprint.before_request
+def before_healthz_request():
+    """Set up minimal g attributes required by after_request handlers."""
+    if not getattr(g, 'policy_object', None):
+        g.policy_object = PolicyClass()
+    if not getattr(g, 'client_ip', None):
+        g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
 
 
 @healthz_blueprint.route('/', methods=['GET'])

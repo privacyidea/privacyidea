@@ -22,6 +22,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             no_detail_on_success,
                                             no_detail_on_fail, autoassign,
                                             offline_info, sign_response,
+                                            hide_version,
                                             get_webui_settings,
                                             save_pin_change,
                                             add_user_detail_to_response,
@@ -720,6 +721,118 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # different. So we have to verify the signature through the sign object
         sig = jresult.pop('signature')
         self.assertTrue(sign_object.verify(json.dumps(jresult, sort_keys=True), sig))
+
+    def test_07a_hide_version(self):
+        builder = EnvironBuilder(method='POST',
+                                 data={},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        g.policy_object = PolicyClass()
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True, "value": True},
+               "version": "privacyIDEA test",
+               "versionnumber": "3.9",
+               "id": 1}
+
+        # --- Without the policy, version fields should remain ---
+        g.logged_in_user = {}
+        resp = jsonify(res)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertIn("version", jresult)
+        self.assertIn("versionnumber", jresult)
+
+        # --- Set the hide_version policy ---
+        set_policy(name="hide_version_pol",
+                   scope=SCOPE.HARDENING,
+                   action=PolicyAction.HIDE_VERSION)
+        g.policy_object = PolicyClass()
+
+        # Unauthenticated request: version fields should be stripped
+        g.logged_in_user = {}
+        resp = jsonify(res)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("version", jresult)
+        self.assertNotIn("versionnumber", jresult)
+        # Other fields must remain
+        self.assertEqual(jresult["id"], 1)
+        self.assertEqual(jresult["result"]["status"], True)
+
+        # Also strip privacyideaVersionNumber from result.value (e.g. /config)
+        g.logged_in_user = {}
+        res_with_nested_version = {
+            "jsonrpc": "2.0",
+            "result": {"status": True,
+                       "value": {"browser_lang": "en",
+                                 "privacyideaVersionNumber": "3.9"}},
+            "version": "privacyIDEA test",
+            "versionnumber": "3.9",
+            "id": 1}
+        resp = jsonify(res_with_nested_version)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("version", jresult)
+        self.assertNotIn("versionnumber", jresult)
+        self.assertNotIn("privacyideaVersionNumber",
+                         jresult["result"]["value"])
+        # Other nested fields must remain
+        self.assertEqual(jresult["result"]["value"]["browser_lang"], "en")
+
+        # None logged_in_user should also strip (edge case)
+        g.logged_in_user = None
+        resp = jsonify(res)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("version", jresult)
+        self.assertNotIn("versionnumber", jresult)
+
+        # Authenticated request: version fields should remain
+        g.logged_in_user = {"username": "testadmin", "role": "admin"}
+        resp = jsonify(res)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertIn("version", jresult)
+        self.assertIn("versionnumber", jresult)
+
+        # Response without version fields should not break
+        g.logged_in_user = {}
+        res_no_version = {"jsonrpc": "2.0",
+                          "result": {"status": True},
+                          "id": 1}
+        resp = jsonify(res_no_version)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("version", jresult)
+        self.assertNotIn("versionnumber", jresult)
+        self.assertEqual(jresult["id"], 1)
+
+        # Non-JSON response should pass through unchanged
+        g.logged_in_user = {}
+        from flask import make_response
+        resp = make_response("plain text", 200)
+        resp.content_type = "text/plain"
+        new_response = hide_version(req, resp)
+        self.assertEqual(new_response.get_data(as_text=True), "plain text")
+
+        # Missing policy_object on g: hide_version lazily creates one,
+        # so version stripping still works when the policy is active.
+        g.logged_in_user = {}
+        del g.policy_object
+        resp = jsonify(res)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("version", jresult)
+        self.assertNotIn("versionnumber", jresult)
+
+        # Restore g.policy_object for subsequent tests
+        g.policy_object = PolicyClass()
+
+        delete_policy("hide_version_pol")
 
     def test_08_get_webui_settings(self):
         self.setUp_user_realms()

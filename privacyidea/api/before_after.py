@@ -77,7 +77,8 @@ from .tokengroup import tokengroup_blueprint
 from .serviceid import serviceid_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
-from privacyidea.api.lib.postpolicy import postrequest, sign_response
+from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
+from privacyidea.webui.login import login_blueprint
 from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
@@ -469,6 +470,8 @@ def before_request():
 @container_blueprint.after_request
 @info_blueprint.after_request
 @jwtauth.after_request
+@login_blueprint.after_request
+@healthz_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """
@@ -477,6 +480,11 @@ def after_request(response):
     """
     # No caching!
     response.headers['Cache-Control'] = 'no-cache'
+
+    # Strip version information before signing if the hide_version policy
+    # is active and no user is logged in.
+    response = hide_version(request, response)
+
     return response
 
 
