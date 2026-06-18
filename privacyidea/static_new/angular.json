@@ -5,7 +5,10 @@
   "projects": {
     "privacyidea-webui": {
       "i18n": {
-        "sourceLocale": "en",
+        "sourceLocale": {
+          "code": "en",
+          "subPath": "en"
+        },
         "locales": {
           "de": { "translation": "src/locale/messages.de.xlf" },
           "nl": { "translation": "src/locale/messages.nl.xlf" },

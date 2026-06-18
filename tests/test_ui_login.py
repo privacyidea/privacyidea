@@ -424,6 +424,61 @@ class NewUIRoutingTestCase(MyTestCase):
         self.assertEqual(res.status_code, 302)
         self.assertIn("/", res.location)
 
+    def test_fallback_general_extracts_locale_prefix(self):
+        """404 on /<locale>/path (browser) extracts the locale prefix and serves that build.
+
+        The other general-branch tests use a path with no locale prefix, so they only
+        exercise the ``else "en"`` default. This drives the ``locale_prefix_match.group(1)``
+        extraction with a real locale.
+        """
+        served_locales = []
+
+        def record_locale(locale):
+            served_locales.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=record_locale):
+            with self.app.test_request_context("/de/some-page", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served_locales[0], "de")
+
+    def test_fallback_general_extracts_locale_at_path_end(self):
+        """404 on /<locale> (no subpath, browser) matches the ``$`` anchor and extracts the locale."""
+        served_locales = []
+
+        def record_locale(locale):
+            served_locales.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=record_locale):
+            with self.app.test_request_context("/fr", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served_locales[0], "fr")
+
+    def test_locale_route_unknown_locale_api_client_aborts_404(self):
+        """GET /app/v2/invalid with Accept: application/json aborts 404 without an English fallback."""
+        with self.app.test_request_context("/app/v2/invalid", method="GET",
+                                           headers={"Accept": "application/json"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 404)
+
+    def test_locale_route_unknown_locale_browser_no_en_build_redirects_to_root(self):
+        """GET /app/v2/invalid (browser) with no English build ends at a redirect to /.
+
+        The blueprint aborts 404 (``_serve_locale("en") or abort(404)``), which the app's
+        404 errorhandler re-handles: for a browser with no build it redirects to /.
+        """
+        with mock.patch("privacyidea.webui.login._serve_locale", return_value=None):
+            with self.app.test_request_context("/app/v2/invalid", method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 302)
+        self.assertIn("/", res.location)
+
     def test_serve_locale_returns_none_for_unknown_locale(self):
         """_serve_locale returns None for a locale not in the allowed list."""
         with self.app.test_request_context("/"):
