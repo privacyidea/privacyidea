@@ -1244,3 +1244,44 @@ class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
             self.assertEqual({other}, self._remaining_ids())
         finally:
             delete_policy("authlog_delete_resolver")
+
+
+class AuthenticationLogUserReadAPITestCase(AuthLogTestCase):
+    """GET /authenticationlog/ for a normal user: only their own entries, gated by the user-scope policy."""
+
+    def setUp(self):
+        super().setUp()
+        # Log in the self-service user "selfservice" in realm1 (-> self.at_user, role "user").
+        self.authenticate_selfservice_user()
+        # That login wrote its own auth-log entry; start the test from a clean log.
+        self._clear_log()
+
+    def _user_get(self, query_string=None, status=200):
+        with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string or {},
+                                           headers={"Authorization": self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
+
+    def test_user_sees_only_own_entries(self):
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",
+                                       realm=self.realm1, username="selfservice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                 realm=self.realm1, username="hans")  # another user, same realm
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)  # no identity
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            value = self._user_get({"page_size": 50})["result"]["value"]
+            self.assertEqual({own}, {entry["id"] for entry in value["auth_logs"]})
+        finally:
+            delete_policy("authlog_user")
+
+    def test_user_denied_without_action(self):
+        # A user-scope policy exists but does not grant authentication_log_read -> the user is denied.
+        set_policy("user_other", scope=SCOPE.USER, action=PolicyAction.DISABLE)
+        try:
+            body = self._user_get(status=403)
+            self.assertFalse(body["result"]["status"], body)
+        finally:
+            delete_policy("user_other")

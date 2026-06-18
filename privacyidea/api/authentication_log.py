@@ -22,9 +22,10 @@ from datetime import datetime, timezone
 from dateutil.parser import isoparse
 from flask import Blueprint, request, g
 
-from privacyidea.api.auth import admin_required
+from privacyidea.api.auth import admin_required, user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    delete_authentication_logs,
                                                                    AuthenticationLogVisibilityScope,
@@ -45,15 +46,16 @@ _FILTER_PARAMS = ["resolver", "uid", "realm", "username", "event_type", "source_
 
 
 @authentication_log_blueprint.route("/", methods=["GET"])
-@admin_required
+@user_required
 @prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
 @log_with(log)
 def get_authentication_log():
     """
     Return a paginated, filtered page of authentication-log entries.
 
-    Requires admin authentication and the policy action :ref:`policy_authentication_log_read`. If that policy is
-    scoped to realms, resolvers and/or users, only entries matching that scope are returned.
+    Requires the policy action :ref:`policy_authentication_log_read`. An **admin** with that action set in the admin
+    scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
+    scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
     ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
@@ -66,7 +68,7 @@ def get_authentication_log():
     :query start: only entries at/after this ISO 8601 timestamp.
     :query end: only entries at/before this ISO 8601 timestamp.
     :query include_own: if set, a scoped admin also sees their own entries (matched by username + realm), in
-        addition to the policy scope.
+        addition to the policy scope (ignored for users, who already see only their own).
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
@@ -83,8 +85,9 @@ def get_authentication_log():
 
     visibility_scopes = get_authentication_log_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
     # A scoped admin may opt in to also see their own entries (username + realm), added to the policy scope as an
-    # extra OR alternative.
-    if visibility_scopes is not None and is_true(get_optional(params, "include_own")):
+    # extra OR alternative. (A user already sees only their own entries, so include_own is irrelevant for them.)
+    if (g.logged_in_user["role"] == ROLE.ADMIN and visibility_scopes is not None
+            and is_true(get_optional(params, "include_own"))):
         own_realm = g.logged_in_user.get("realm")
         own_username = g.logged_in_user.get("username")
         if own_realm and own_username:

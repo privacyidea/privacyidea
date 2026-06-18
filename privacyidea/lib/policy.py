@@ -2219,6 +2219,10 @@ def get_static_policy_definitions(scope=None):
                           " using the token serial number."),
                 'mainmenu': [MAIN_MENU.TOKENS],
                 'group': GROUP.TOKEN},
+            PolicyAction.AUTHENTICATION_LOG_READ: {
+                'type': 'bool',
+                'desc': _("The user is allowed to read their own entries from the authentication log."),
+                'group': GROUP.SYSTEM},
             PolicyAction.DISABLE: {'type': 'bool',
                                    'desc': _('The user is allowed to disable his own tokens.'),
                                    'mainmenu': [MAIN_MENU.TOKENS],
