@@ -1,4 +1,4 @@
-"""v3.14: Added authentication log table
+"""v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
 Revises: 7d4e9b2c1a3f

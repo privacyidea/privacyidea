@@ -1,4 +1,4 @@
-"""Add conditional access lockout policy tables
+"""v3.14: Add conditional access lockout policy tables
 
 Create the four tables of the lockout policy framework:
 lockout_policies (the policy container), lockout_policy_counter_types (the
@@ -7,7 +7,7 @@ lookup), lockout_policy_stages (the failure thresholds within a policy) and
 lockout_stage_actions (the reactions when a stage is triggered).
 
 Revision ID: 173d32328846
-Revises: 7d4e9b2c1a3f
+Revises: 0147d78cbace
 Create Date: 2026-06-03 00:00:00.000000
 
 """
@@ -21,7 +21,7 @@ from privacyidea.models.db import build_restart_sequence_sql
 
 # revision identifiers, used by Alembic.
 revision = '173d32328846'
-down_revision = '7d4e9b2c1a3f'
+down_revision = '0147d78cbace'
 branch_labels = None
 depends_on = None
 

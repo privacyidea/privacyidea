@@ -1,4 +1,4 @@
-"""Add user_lockout_state live-state table
+"""v3.14: Add user_lockout_state live-state table
 
 Create the user_lockout_state table that records the current locked status
 of a user, keyed by the same (resolver, uid, realm) tuple used in

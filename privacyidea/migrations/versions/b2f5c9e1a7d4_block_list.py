@@ -1,4 +1,4 @@
-"""Add block_list table and merge the lockout / authentication-log heads
+"""v3.14: Add block_list table
 
 Create the block_list table, which records a blocked source IP written by the
 BLOCK_IP conditional-access action and consulted by the authentication
@@ -7,14 +7,8 @@ user_lockout_state, but keyed by source IP. The load-bearing field is
 block_expires_at: a row whose block_expires_at lies in the future means the IP
 is currently blocked; a NULL value means a permanent block.
 
-This revision also merges the two pre-existing heads into one: the lockout
-branch (...->173d32328846->c1a9f7e2b840) and the authentication-log branch
-(...->0147d78cbace) both descend from 7d4e9b2c1a3f. Giving this migration both
-as its down_revision rejoins them into a single head, so a fresh install ends
-up with one linear head again.
-
 Revision ID: b2f5c9e1a7d4
-Revises: 0147d78cbace, c1a9f7e2b840
+Revises: c1a9f7e2b840
 Create Date: 2026-06-10 00:00:00.000000
 
 """
@@ -24,7 +18,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = 'b2f5c9e1a7d4'
-down_revision = ('0147d78cbace', 'c1a9f7e2b840')
+down_revision = 'c1a9f7e2b840'
 branch_labels = None
 depends_on = None
 
