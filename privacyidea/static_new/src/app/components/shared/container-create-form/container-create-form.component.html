@@ -20,20 +20,21 @@
   class="container-type-hint"
   i18n>
   Supported Token Types:
-  @if ((containerService.selectedContainerType()?.token_types?.length ?? 0) >= tokenService.tokenTypeOptions().length) {
+  @if ((containerService().selectedContainerType()?.token_types?.length ?? 0) >= tokenService().tokenTypeOptions().length) {
     All
-  } @else if ((containerService.selectedContainerType()?.token_types?.length ?? 0) > 1) {
-    {{ containerService.selectedContainerType()?.token_types?.join(", ") }}
+  } @else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) > 1) {
+    {{ containerService().selectedContainerType()?.token_types?.join(", ") }}
   } @else {
-    {{ containerService.selectedContainerType()?.token_types?.[0] }}
+    {{ containerService().selectedContainerType()?.token_types?.[0] }}
   }
 </div>
 
 <mat-form-field class="input-width-xl margin-top-16">
   <mat-label i18n>Description</mat-label>
   <textarea
-    [(ngModel)]="description"
-    [maxlength]="80"
+    [value]="description()"
+    (input)="description.set($any($event.target).value)"
+    maxlength="80"
     i18n
     i18n-placeholder
     matInput
@@ -41,27 +42,27 @@
     rows="3"></textarea>
 </mat-form-field>
 
-@if (authService.actionAllowed("container_template_list")) {
+@if (authService().actionAllowed("container_template_list")) {
   <div class="flex-column">
     <h4 i18n>Use a Template</h4>
-    <mat-form-field [class]="templateFieldClass">
+    <mat-form-field [class]="templateFieldClass()">
       <mat-label i18n>Template</mat-label>
       <mat-select
-        [(ngModel)]="selectedTemplate"
-        [compareWith]="compareTemplates"
-        [value]="selectedTemplate()">
+        [value]="selectedTemplate()"
+        (selectionChange)="selectedTemplate.set($event.value)"
+        [compareWith]="compareTemplates">
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
         }
       </mat-select>
       @if (templateIsSelected) {
         <app-clear-button
-          (onClick)="clearTemplateSelection()"
+          (clearButtonClick)="clearTemplateSelection()"
           matSuffix></app-clear-button>
       }
     </mat-form-field>
 
-    <mat-expansion-panel class="expansion-panel margin-top-8">
+    <mat-expansion-panel class="expansion-panel input-width-xxl margin-top-8">
       <mat-expansion-panel-header>
         <mat-panel-title i18n>Added Tokens</mat-panel-title>
       </mat-expansion-panel-header>
@@ -75,11 +76,11 @@
 
 <ng-content select="[userAssignment]"></ng-content>
 
-@if (showRegistration) {
+@if (showRegistration()) {
   <h4 i18n>Registration</h4>
   <mat-checkbox
-    (change)="registrationSettings.expanded = false"
-    [(ngModel)]="generateQRCode">
+    [checked]="generateQRCode()"
+    (change)="generateQRCode.set($event.checked); registrationSettings.expanded = false">
     Generate a QR code to register the container on a smartphone.
   </mat-checkbox>
   <mat-accordion>
@@ -92,10 +93,13 @@
       </mat-expansion-panel-header>
       <app-container-registration-config
         (validInputChange)="validInputChange.emit($event)"
-        [containerHasOwner]="containerHasOwner"
-        [passphrasePrompt]="passphrasePrompt"
-        [passphraseResponse]="passphraseResponse"
-        [userStorePassphrase]="userStorePassphrase"></app-container-registration-config>
+        [containerHasOwner]="containerHasOwner()"
+        [passphrasePrompt]="passphrasePrompt()"
+        (passphrasePromptChange)="passphrasePrompt.set($event)"
+        [passphraseResponse]="passphraseResponse()"
+        (passphraseResponseChange)="passphraseResponse.set($event)"
+        [userStorePassphrase]="userStorePassphrase()"
+        (userStorePassphraseChange)="userStorePassphrase.set($event)"></app-container-registration-config>
     </mat-expansion-panel>
   </mat-accordion>
 }

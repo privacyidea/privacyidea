@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatSelect } from "@angular/material/select";
 import { MockTokenService } from "../../../../../testing/mock-services";
-import { TokenService } from "../../../../services/token/token.service";
+import { TokenService, TokenType } from "../../../../services/token/token.service";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector.component";
 
 describe("TokenEnrollmentTypeSelectorComponent", () => {
@@ -30,20 +30,9 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
   let tokenService: MockTokenService;
   let scrollEl: HTMLDivElement;
 
-  let mockObserver: { observe: jest.Mock; disconnect: jest.Mock };
-  let intersectionCallback: (entries: Partial<IntersectionObserverEntry>[]) => void;
-  let originalIntersectionObserver: any;
-
   beforeEach(async () => {
-    originalIntersectionObserver = (global as any).IntersectionObserver;
-    mockObserver = { observe: jest.fn(), disconnect: jest.fn() };
-    (global as any).IntersectionObserver = jest.fn().mockImplementation((cb: any) => {
-      intersectionCallback = cb;
-      return mockObserver;
-    });
-
     await TestBed.configureTestingModule({
-      imports: [TokenEnrollmentTypeSelectorComponent, NoopAnimationsModule],
+      imports: [TokenEnrollmentTypeSelectorComponent],
       providers: [{ provide: TokenService, useClass: MockTokenService }]
     }).compileComponents();
 
@@ -57,7 +46,6 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
   });
 
   afterEach(() => {
-    (global as any).IntersectionObserver = originalIntersectionObserver;
     jest.clearAllMocks();
   });
 
@@ -86,7 +74,7 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
     });
 
     it("enroll button is disabled when no token type is selected", () => {
-      (tokenService.selectedTokenType as any).set(null);
+      (tokenService.selectedTokenType as unknown as WritableSignal<TokenType | null>).set(null);
       fixture.detectChanges();
       const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
       expect(button.disabled).toBe(true);
@@ -119,55 +107,6 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
 
       expect(emitSpy).toHaveBeenCalledTimes(1);
       sub.unsubscribe();
-    });
-  });
-
-  describe("sticky header behavior", () => {
-    it("observes the sentinel element on init", () => {
-      expect(mockObserver.observe).toHaveBeenCalledTimes(1);
-    });
-
-    it("passes the provided scroll container as IntersectionObserver root", () => {
-      expect((global as any).IntersectionObserver).toHaveBeenCalledWith(
-        expect.any(Function),
-        { root: scrollEl, threshold: [0, 1] }
-      );
-    });
-
-    it("adds 'is-sticky' class to the header when sentinel scrolls above the root", () => {
-      intersectionCallback([
-        {
-          boundingClientRect: { top: -10 } as DOMRect,
-          rootBounds: { top: 0 } as DOMRect
-        }
-      ]);
-
-      const header: HTMLElement = fixture.nativeElement.querySelector(".sticky-header");
-      expect(header.classList.contains("is-sticky")).toBe(true);
-    });
-
-    it("removes 'is-sticky' class when sentinel is back inside the root", () => {
-      intersectionCallback([
-        { boundingClientRect: { top: -10 } as DOMRect, rootBounds: { top: 0 } as DOMRect }
-      ]);
-      intersectionCallback([
-        { boundingClientRect: { top: 5 } as DOMRect, rootBounds: { top: 0 } as DOMRect }
-      ]);
-
-      const header: HTMLElement = fixture.nativeElement.querySelector(".sticky-header");
-      expect(header.classList.contains("is-sticky")).toBe(false);
-    });
-
-    it("does nothing when rootBounds is null", () => {
-      intersectionCallback([{ boundingClientRect: { top: -10 } as DOMRect, rootBounds: null }]);
-
-      const header: HTMLElement = fixture.nativeElement.querySelector(".sticky-header");
-      expect(header.classList.contains("is-sticky")).toBe(false);
-    });
-
-    it("disconnects the IntersectionObserver on destroy", () => {
-      component.ngOnDestroy();
-      expect(mockObserver.disconnect).toHaveBeenCalledTimes(1);
     });
   });
 });

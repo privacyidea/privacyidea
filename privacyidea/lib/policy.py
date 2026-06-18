@@ -1321,7 +1321,6 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     :param name: The name of the policy
     :param scope: The scope of the policy. Something like "admin" or "authentication"
     :param action: A scope specific action or a comma separated list of actions
-    :type active: basestring
     :param realm: A realm, for which this policy is valid
     :param resolver: A resolver, for which this policy is valid
     :param user: A username or a list of usernames
@@ -1655,6 +1654,7 @@ def get_static_policy_definitions(scope=None):
     # "group": ment to be used for grouping actions for better finding
     # "mainmenu": list of enabled Menus. If this action is set, this menu
     #                 is visible in the WebUI
+
     pol = {
         SCOPE.REGISTER: {
             PolicyAction.RESOLVER: {'type': 'str',
@@ -1764,6 +1764,12 @@ def get_static_policy_definitions(scope=None):
                                         'users.'),
                                     'mainmenu': [MAIN_MENU.USERS],
                                     'group': GROUP.GENERAL},
+            PolicyAction.GET_USER_INTERNAL_ATTRIBUTES: {
+                'type': 'bool',
+                'desc': _('Admin is allowed to read the privacyIDEA-internal '
+                          'attributes of a user (e.g. fido2_user_id).'),
+                'mainmenu': [MAIN_MENU.USERS],
+                'group': GROUP.USER},
             PolicyAction.MACHINELIST: {'type': 'bool',
                                        'desc': _('The Admin is allowed to list '
                                                  'the machines.'),
@@ -2700,7 +2706,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'bool',
                 'desc': _("Allow the application to choose which token types should be used "
                           "for authentication. Application may set the parameter 'type' in "
-                          "the request. Works with validate/check, validate/samlcheck and "
+                          "the request. Works with validate/check and "
                           "validate/triggerchallenge.")
             },
             PolicyAction.AUTHMAXSUCCESS: {
@@ -2925,7 +2931,10 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("A list of realm names, which are "
                           "displayed in a drop down menu in the WebUI login "
-                          "screen. Realms are separated by white spaces.")
+                          "screen. Realms are separated by white spaces. "
+                          "The order of the realms in the policy is preserved "
+                          "in the drop down. Include '-' as an entry to add "
+                          "an empty option. The first option specified here will be preselected.")
             },
             PolicyAction.HIDE_WELCOME: {
                 'type': 'bool',
@@ -3085,7 +3094,6 @@ def get_static_policy_definitions(scope=None):
         }
 
     }
-
     if scope:
         if scope not in pol:
             log.debug(f"Scope '{scope}' is not defined in the static policy definitions.")

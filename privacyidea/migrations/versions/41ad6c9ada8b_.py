@@ -105,11 +105,30 @@ def downgrade():
         with op.batch_alter_table('realm', schema=None) as batch_op:
             batch_op.add_column(sa.Column('option', sa.VARCHAR(length=40), autoincrement=False, nullable=True))
 
-    with op.batch_alter_table('policy', schema=None) as batch_op:
-        batch_op.alter_column('action',
-                              existing_type=sa.Text(),
-                              type_=sa.VARCHAR(length=2000),
-                              existing_nullable=True)
+    # Oracle cannot alter a CLOB column back to VARCHAR2 (ORA-22859), so reverse
+    # the upgrade's CLOB conversion the same way it was applied: add a VARCHAR2
+    # column, copy the data across, then swap the columns by renaming. The copy
+    # uses DBMS_LOB.SUBSTR to explicitly truncate to 2000 chars — a direct
+    # CLOB->VARCHAR2 assignment errors (ORA-12899/ORA-22835) instead of
+    # truncating when a value exceeds the column width, which would make the
+    # downgrade fail on real data.
+    if context.get_context().dialect.name == "oracle":
+        op.execute(
+            """
+            begin
+            execute immediate 'alter table policy add (action_small varchar2(2000))';
+            execute immediate 'update policy set action_small = dbms_lob.substr(action, 2000, 1)';
+            execute immediate 'alter table policy rename column action to action_old';
+            execute immediate 'alter table policy rename column action_small to action';
+            execute immediate 'alter table policy drop column action_old';
+            end;
+            """)
+    else:
+        with op.batch_alter_table('policy', schema=None) as batch_op:
+            batch_op.alter_column('action',
+                                  existing_type=sa.Text(),
+                                  type_=sa.VARCHAR(length=2000),
+                                  existing_nullable=True)
 
     existing_audit_cols = {col['name'] for col in sa.inspect(bind).get_columns('pidea_audit')}
     with op.batch_alter_table('pidea_audit', schema=None) as batch_op:

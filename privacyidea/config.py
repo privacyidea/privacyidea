@@ -54,6 +54,7 @@ class ConfigKey:
     ENABLE_CSP = "PI_ENABLE_CSP"
     SESSION_COOKIE_SECURE = "PI_SESSION_COOKIE_SECURE"
     FORCE_HTTPS = "PI_FORCE_HTTPS"
+    BASE_URL = "PI_BASE_URL"
     SECRET_KEY = "SECRET_KEY"
     PEPPER = "PI_PEPPER"
     ENCFILE = "PI_ENCFILE"
@@ -164,6 +165,8 @@ class TestingConfig(Config):
     PI_LOGLEVEL = logging.INFO
     PI_GNUPG_HOME = "tests/testdata/gpg"
     PI_AUDIT_SQL_TRUNCATE = True
+    # Disable the /healthz/resolversz probe cache so tests see fresh results
+    PI_HEALTHZ_RESOLVER_CACHE_SECONDS = 0
     CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
     PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY = "tests/testdata/"

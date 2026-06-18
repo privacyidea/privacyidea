@@ -382,6 +382,44 @@ $button-low-contrast-variant: linear-gradient(
   mask-size: 100% 100%;
 }
 
+.icon-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+
+  .icon-badge-overlay {
+    position: absolute;
+    bottom: -1px;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    border-radius: 50%;
+    background-color: var(--mat-sys-surface-container-lowest);
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &.mat-icon {
+      width: 14px !important;
+      height: 14px !important;
+      font-size: 14px !important;
+    }
+
+    &.icon-badge-add {
+      font-weight: bold;
+      right: -3px;
+    }
+
+    &.icon-badge-gear {
+      right: -1px;
+    }
+  }
+}
+
 .mdi--github {
   display: inline-block;
   width: 1em;
@@ -539,6 +577,14 @@ $button-low-contrast-variant: linear-gradient(
     $border: false,
     $primary: true
   );
+
+  .icon-badge-overlay {
+    background-color: var(--mat-sys-primary);
+  }
+
+  &:hover .icon-badge-overlay {
+    background-color: var(--mat-sys-primary-base-active);
+  }
 }
 
 .action-button-secondary {
@@ -655,6 +701,7 @@ $button-low-contrast-variant: linear-gradient(
     height: 36px !important;
   }
 }
+
 .text-button {
   background: none !important;
   border: none !important;
@@ -675,6 +722,7 @@ $button-low-contrast-variant: linear-gradient(
     cursor: default;
   }
 }
+
 // .add-action-button {
 //   align-self: flex-end;
 //   color: var(--mat-sys-primary);

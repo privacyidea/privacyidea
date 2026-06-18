@@ -21,8 +21,11 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { ClientsDict } from "@services/clients/clients.service";
-import { MockAuditService, MockContentService, MockPiResponse } from "@testing/mock-services";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ClientsDict, ClientsService } from "@services/clients/clients.service";
+import { ContentService } from "@services/content/content.service";
+import { MockAuditService, MockClientsService, MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("ClientsComponent", () => {
@@ -35,9 +38,10 @@ describe("ClientsComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ClientsComponent],
       providers: [
-        { provide: "AuditService", useClass: MockAuditService },
-        { provide: "AuthService", useClass: MockAuthService },
-        { provide: "ContentService", useClass: MockContentService },
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: ClientsService, useClass: MockClientsService },
         provideHttpClient()
       ]
     }).compileComponents();
@@ -76,7 +80,7 @@ describe("ClientsComponent", () => {
   });
 
   it("should set filterValue and filter datasource on handleFilterInput", () => {
-    const event = { target: { value: "test" } } as any as Event;
+    const event = { target: { value: "test" } } as unknown as Event;
     component.handleFilterInput(event);
     expect(component.filterValue).toBe("test");
     expect(component.clientDataSource().filter).toBe("test");
@@ -98,7 +102,7 @@ describe("ClientsComponent", () => {
   });
 
   it("should split user agent string correctly", () => {
-    const result = (component as any)._split_user_agent("privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
+    const result = component["_split_user_agent"]("privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
     expect(result.userAgent).toBe("privacyIDEA-Keycloak");
     expect(result.version).toBe("1.5.1");
     expect(result.comment).toBe("Keycloak/25.0.1");
@@ -106,13 +110,13 @@ describe("ClientsComponent", () => {
 
   it("should call auditService.auditFilter.set with correct IP filter", () => {
     const spy = jest.spyOn(component.auditService.auditFilter, "set");
-    (component as any).showInAuditLog("ip", "1.2.3.4");
+    component.showInAuditLog("ip", "1.2.3.4");
     expect(spy).toHaveBeenCalledWith(new FilterValue({ value: "client: 1.2.3.4" }));
   });
 
   it("should call auditService.auditFilter.set with correct user agent filter", () => {
     const spy = jest.spyOn(component.auditService.auditFilter, "set");
-    (component as any).showInAuditLog("application", "privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
+    component.showInAuditLog("application", "privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
     expect(spy).toHaveBeenCalledWith(
       new FilterValue({
         value: "user_agent: privacyIDEA-Keycloak user_agent_version:" + " 1.5.1"
@@ -122,7 +126,7 @@ describe("ClientsComponent", () => {
 
   it("should not set auditFilter for not covered columns", () => {
     const spy = jest.spyOn(component.auditService.auditFilter, "set");
-    (component as any).showInAuditLog("hostname", "host");
+    component.showInAuditLog("hostname", "host");
     expect(spy).not.toHaveBeenCalled();
   });
 

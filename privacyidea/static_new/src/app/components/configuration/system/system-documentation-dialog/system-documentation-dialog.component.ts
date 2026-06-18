@@ -17,39 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CdkTextareaAutosize } from "@angular/cdk/text-field";
-import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { AfterViewInit, Component, ElementRef, inject, ViewChild } from "@angular/core";
+
 import { MatButton } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 
 @Component({
   selector: "app-system-documentation-dialog",
   templateUrl: "./system-documentation-dialog.component.html",
   styleUrls: ["./system-documentation-dialog.component.scss"],
   standalone: true,
-  imports: [
-    MatDialogModule,
-    FormsModule,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatButton,
-    CdkTextareaAutosize,
-    CopyButtonComponent
-  ]
+  imports: [MatDialogModule, MatFormField, MatLabel, MatInput, MatButton, CdkTextareaAutosize, CopyableComponent]
 })
 export class SystemDocumentationDialogComponent implements AfterViewInit {
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
-  documentation: string = "";
+  documentation = "";
 
-  constructor(
-    public dialogRef: MatDialogRef<SystemDocumentationDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { documentation: string }
-  ) {
-    this.documentation = data.documentation || "";
+  public dialogRef = inject(MatDialogRef<SystemDocumentationDialogComponent>);
+  public data: { documentation: string } = inject(MAT_DIALOG_DATA);
+
+  constructor() {
+    this.documentation = this.data.documentation || "";
   }
 
   ngAfterViewInit(): void {
@@ -58,7 +49,9 @@ export class SystemDocumentationDialogComponent implements AfterViewInit {
       if (element) {
         try {
           element.setSelectionRange(0, 0);
-        } catch {}
+        } catch {
+          // setSelectionRange may throw in some browser environments; ignore
+        }
         element.scrollTop = 0;
       }
     });

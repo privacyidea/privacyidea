@@ -18,7 +18,7 @@
  **/
 
 import { Component, signal } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -45,7 +45,7 @@ import {
   selector: "app-entraid-resolver",
   standalone: true,
   imports: [
-    FormsModule,
+    FormField,
     MatFormField,
     MatLabel,
     MatInput,
@@ -62,7 +62,6 @@ import {
     MatExpansionPanelTitle,
     MatDivider,
     MatError,
-    ReactiveFormsModule,
     MatDivider,
     MatButtonToggleGroup,
     MatButtonToggle,
@@ -74,8 +73,8 @@ import {
   styleUrl: "../http-resolver//http-resolver.component.scss"
 })
 export class EntraidResolverComponent extends HttpResolverComponent {
-  override isAdvanced: boolean = true;
-  override isAuthorizationExpanded: boolean = true;
+  override isAdvanced = true;
+  override isAuthorizationExpanded = true;
   override defaultMapping = signal<AttributeMappingRow[]>([
     { privacyideaAttr: "userid", userStoreAttr: "id" },
     { privacyideaAttr: "username", userStoreAttr: "userPrincipalName" },

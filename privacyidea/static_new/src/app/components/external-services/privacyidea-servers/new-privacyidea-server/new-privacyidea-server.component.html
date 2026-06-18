@@ -21,8 +21,7 @@
   appScrollToTop
   class="privacyidea-server-page-layout">
   <div class="privacyidea-server-page-container">
-
-    @if (isEditMode) {
+    @if (isEditMode()) {
       <h3
         class="margin-8"
         i18n>
@@ -37,12 +36,8 @@
     }
 
     <div
-      #stickySentinel
-      class="sticky-sentinel"></div>
-
-    <div
-      #stickyHeader
-      class="header-row sticky-header">
+      class="header-row sticky-header"
+      [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
         <button
           (click)="onCancel()"
@@ -52,7 +47,7 @@
         </button>
         <button
           (click)="save()"
-          [disabled]="privacyideaForm.invalid || privacyideaForm.pristine"
+          [disabled]="!privacyideaForm().valid() || !privacyideaForm().dirty()"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
@@ -61,124 +56,120 @@
       </div>
     </div>
 
-    @if (privacyideaForm) {
-      <form
-        [formGroup]="privacyideaForm"
-        class="privacyidea-server-form">
-
-        <div class="flex-row gap-16 margin-bottom-16">
-          <mat-form-field
-            appearance="fill"
-            class="input-width-l">
-            <mat-label i18n>Identifier</mat-label>
-            <app-clearable-input
-              (onClick)="privacyideaForm.get('identifier')?.setValue('')"
-              [showClearButton]="!isEditMode && !!privacyideaForm.get('identifier')?.value">
-              <input
-                formControlName="identifier"
-                matInput
-                placeholder="myRemotePrivacyIDEAServer"
-                required />
-            </app-clearable-input>
-            @if (privacyideaForm.get('identifier')?.hasError('required')) {
-              <mat-error i18n>Identifier is <strong>required</strong></mat-error>
-            }
-            @if (privacyideaForm.get('identifier')?.hasError('pattern')) {
-              <mat-error
-                i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
-              </mat-error>
-            }
-            <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
-          </mat-form-field>
-
-          <mat-form-field
-            appearance="fill"
-            class="input-width-l">
-            <mat-label i18n>URL of the privacyIDEA Server</mat-label>
-            <app-clearable-input
-              (onClick)="privacyideaForm.get('url')?.setValue('')"
-              [showClearButton]="!!privacyideaForm.get('url')?.value">
-              <input
-                formControlName="url"
-                matInput
-                placeholder="https://pi17.example.com/"
-                required />
-            </app-clearable-input>
-            @if (privacyideaForm.get('url')?.hasError('required')) {
-              <mat-error i18n>URL of the privacyIDEA Server is <strong>required</strong></mat-error>
-            }
-            <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
-          </mat-form-field>
-        </div>
-
-        <div class="margin-top-16">
-          <mat-checkbox formControlName="tls">
-            <span i18n>Verify the Certificate</span>
-          </mat-checkbox>
-          <p
-            class="mat-hint"
-            i18n>
-            The certificate will be checked for a valid hostname and for a trusted certificate.
-            <br />
-            Do not uncheck this in productive use!
-          </p>
-        </div>
+    <div class="privacyidea-server-form">
+      <div class="flex-row gap-16 margin-bottom-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Identifier</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="privacyideaModel.update(m => ({...m, identifier: ''}))"
+            [showClearButton]="!isEditMode() && !!privacyideaModel().identifier">
+            <input
+              [formField]="privacyideaForm.identifier"
+              matInput
+              placeholder="myRemotePrivacyIDEAServer" />
+          </app-clearable-input>
+          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'required')) {
+            <mat-error i18n>Identifier is <strong>required</strong></mat-error>
+          }
+          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'pattern')) {
+            <mat-error i18n
+              >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
+              and hyphens are allowed.
+            </mat-error>
+          }
+          <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
+        </mat-form-field>
 
         <mat-form-field
           appearance="fill"
-          class="input-width-xl margin-top-16">
-          <mat-label i18n>Description</mat-label>
+          class="input-width-l">
+          <mat-label i18n>URL of the privacyIDEA Server</mat-label>
           <app-clearable-input
-            (onClick)="privacyideaForm.get('description')?.setValue('')"
-            [showClearButton]="!!privacyideaForm.get('description')?.value">
+            (clearButtonClick)="privacyideaModel.update(m => ({...m, url: ''}))"
+            [showClearButton]="!!privacyideaModel().url">
             <input
-              formControlName="description"
-              matInput />
+              [formField]="privacyideaForm.url"
+              matInput
+              placeholder="https://pi17.example.com/" />
           </app-clearable-input>
+          @if (privacyideaForm.url().errors().some(e => e.kind === 'required')) {
+            <mat-error i18n>URL of the privacyIDEA Server is <strong>required</strong></mat-error>
+          }
+          <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
         </mat-form-field>
+      </div>
 
-        <div class="flex-row ali-center gap-16 margin-bottom-16">
-          <div class="flex-column">
-            <mat-form-field
-              appearance="fill"
-              class="input-width-l">
-              <mat-label i18n>User</mat-label>
-              <app-clearable-input
-                (onClick)="privacyideaForm.get('username')?.setValue('')"
-                [showClearButton]="!!privacyideaForm.get('username')?.value">
-                <input
-                  formControlName="username"
-                  matInput />
-              </app-clearable-input>
-            </mat-form-field>
+      <div class="margin-top-16">
+        <mat-checkbox
+          [checked]="privacyideaModel().tls"
+          (change)="privacyideaModel.update(m => ({...m, tls: $event.checked}))">
+          <span i18n>Verify the Certificate</span>
+        </mat-checkbox>
+        <p
+          class="mat-hint"
+          i18n>
+          The certificate will be checked for a valid hostname and for a trusted certificate.
+          <br />
+          Do not uncheck this in productive use!
+        </p>
+      </div>
 
-            <mat-form-field
-              appearance="fill"
-              class="input-width-l">
-              <mat-label i18n>Password</mat-label>
-              <app-clearable-input
-                (onClick)="privacyideaForm.get('password')?.setValue('')"
-                [showClearButton]="!!privacyideaForm.get('password')?.value">
-                <input
-                  autocomplete="new-password"
-                  formControlName="password"
-                  matInput
-                  type="password" />
-              </app-clearable-input>
-            </mat-form-field>
-          </div>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl margin-top-16">
+        <mat-label i18n>Description</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="privacyideaModel.update(m => ({...m, description: ''}))"
+          [showClearButton]="!!privacyideaModel().description">
+          <input
+            [formField]="privacyideaForm.description"
+            matInput />
+        </app-clearable-input>
+      </mat-form-field>
 
-          <button
-            (click)="test()"
-            [disabled]="privacyideaForm.invalid || isTesting()"
-            class="action-button-secondary button-width-m margin-bottom-16"
-            mat-stroked-button
-            type="button">
-            <mat-icon>send</mat-icon>
-            <span i18n>Send Test Request</span>
-          </button>
+      <div class="flex-row ali-center gap-16 margin-bottom-16">
+        <div class="flex-column">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>User</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="privacyideaModel.update(m => ({...m, username: ''}))"
+              [showClearButton]="!!privacyideaModel().username">
+              <input
+                [formField]="privacyideaForm.username"
+                matInput />
+            </app-clearable-input>
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Password</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="privacyideaModel.update(m => ({...m, password: ''}))"
+              [showClearButton]="!!privacyideaModel().password">
+              <input
+                autocomplete="new-password"
+                [formField]="privacyideaForm.password"
+                matInput
+                type="password" />
+            </app-clearable-input>
+          </mat-form-field>
         </div>
-      </form>
-    }
+
+        <button
+          (click)="test()"
+          [disabled]="!privacyideaForm().valid() || isTesting()"
+          class="action-button-secondary button-width-m margin-bottom-16"
+          mat-stroked-button
+          type="button">
+          <mat-icon>send</mat-icon>
+          <span i18n>Send Test Request</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>

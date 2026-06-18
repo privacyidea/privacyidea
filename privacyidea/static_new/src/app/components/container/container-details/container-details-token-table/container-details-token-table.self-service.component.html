@@ -1,0 +1,218 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="Container Details Token Table"
+  class="container-details-token-table-layout"
+  i18n-aria-label>
+  <div class="flex-column">
+    <h3
+      class="margin-8"
+      i18n>
+      Tokens in Container
+    </h3>
+    <div class="flex-row filter-paginator-container">
+      @if (dataSource().data.length > 1) {
+        <mat-form-field
+          class="container-details-token-table-filter width-50"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Filter Token...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="clearFilter()"
+            [showClearButton]="filterInput.value !== ''">
+            <input
+              #filterInput
+              (keyup)="handleFilterInput($event)"
+              i18n-aria-label
+              aria-label="Filter Input"
+              matInput
+              i18n-placeholder
+              placeholder="Filter across all columns." />
+          </app-clearable-input>
+        </mat-form-field>
+      }
+      <mat-paginator
+        [hidePageSize]="true"
+        [pageSize]="pageSize" />
+    </div>
+  </div>
+  <div class="responsive-flex-row-1580">
+    <table
+      [dataSource]="dataSource()"
+      aria-label="Token of Container Data Table"
+      class="container-details-token-table"
+      i18n-aria-label
+      mat-table>
+      @for (column of columnsKeyMap; track column) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell>
+            <div class="flex ali-center">
+              {{ column.label }}
+              <div class="margin-left-16 flex">
+                <button
+                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  class="sort-button"
+                  mat-icon-button
+                  type="button">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                </button>
+              </div>
+            </div>
+          </th>
+          <td
+            *matCellDef="let element"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell>
+            <ng-container>
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("serial") {
+                    <app-copyable [copyText]="element.serial">
+                      @if (element.username === authService.username()) {
+                        <a
+                          attr.aria-label="{{ column.label }} Link"
+                          (click)="contentService.tokenSelected(element.serial)"
+                          (keydown.enter)="contentService.tokenSelected(element.serial)"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                      } @else {
+                        <span> {{ element[column.key] }} </span>
+                      }
+                    </app-copyable>
+                  }
+                  @case ("active") {
+                    <span
+                      (click)="toggleActive(element)"
+                      (keydown.enter)="toggleActive(element)"
+                      [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
+                      [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                      role="button"
+                      tabindex="0">
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
+                  }
+                  @case ("username") {
+                    <span>
+                      {{ element[column.key] }}
+                    </span>
+                  }
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a
+                        attr.aria-label="{{ column.label }} Link"
+                        href="#">
+                        {{ element[column.key] }}
+                      </a>
+                    } @else {
+                      <span> {{ element[column.key] }} </span>
+                    }
+                  }
+                }
+              </div>
+            </ng-container>
+          </td>
+        </ng-container>
+      }
+      @if (authService.actionAllowed("container_remove_token")) {
+        <ng-container matColumnDef="remove">
+          <th
+            *matHeaderCellDef
+            aria-label="Remove Column Header"
+            i18n
+            i18n-aria-label
+            mat-header-cell>
+            Remove
+          </th>
+          <td
+            *matCellDef="let element"
+            aria-label="Remove Button Cell"
+            i18n-aria-label
+            mat-cell>
+            <div class="flex just-center">
+              @if (element.username === authService.username()) {
+                <button
+                  (click)="removeTokenFromContainer(containerSerial(), element.serial)"
+                  mat-icon-button
+                  i18n-matTooltip
+                  matTooltip="Remove Token from Container">
+                  <mat-icon> highlight_remove</mat-icon>
+                </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+      @if (authService.actionAllowed("delete")) {
+        <ng-container matColumnDef="delete">
+          <th
+            *matHeaderCellDef
+            aria-label="Delete Column Header"
+            i18n
+            i18n-aria-label
+            mat-header-cell>
+            Delete
+          </th>
+          <td
+            *matCellDef="let element"
+            aria-label="Delete Button Cell"
+            i18n-aria-label
+            mat-cell>
+            <div class="flex just-center">
+              @if (element.username === authService.username()) {
+                <button
+                  (click)="deleteTokenFromContainer(element.serial)"
+                  mat-icon-button
+                  i18n-matTooltip
+                  matTooltip="Delete Token">
+                  <mat-icon> delete</mat-icon>
+                </button>
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        aria-label="Header Row"
+        i18n-aria-label
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        aria-label="Data Row"
+        i18n-aria-label
+        mat-row></tr>
+      <tr
+        *matNoDataRow
+        aria-label="No Data Row"
+        i18n-aria-label>
+        <td
+          [attr.colspan]="displayedColumns.length"
+          aria-label="No Data Cell"
+          i18n
+          i18n-aria-label>
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

@@ -22,7 +22,7 @@ jobs:
     name: Jest with Codecov
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - name: Set up Node.js for testing the new WebUI
@@ -35,10 +35,10 @@ jobs:
         run: npm ci
       - name: Run tests for the new WebUI
         id: jest_run
-        run: npm run test
+        run: npm run test:coverage
       - name: Codecov upload
         if: ${{ steps.jest_run.outcome == 'success' }}
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: ./privacyidea/static_new/coverage/lcov.info
           flags: frontend

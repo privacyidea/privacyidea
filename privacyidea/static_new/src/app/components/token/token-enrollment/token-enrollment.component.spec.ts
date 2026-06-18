@@ -20,8 +20,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -32,8 +35,10 @@ import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
-import { TokenService } from "@services/token/token.service";
+import { SystemService } from "@services/system/system.service";
+import { EnrollTokenArguments, TokenService, TokenType } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
@@ -42,12 +47,14 @@ import {
   MockLocalService,
   MockNotificationService,
   MockRealmService,
+  MockSystemService,
   MockTokenService,
   MockUserService,
   MockVersioningService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { of } from "rxjs";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
@@ -58,17 +65,30 @@ import {
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
 
+interface TokenEnrollmentComponentInternals {
+  _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
+  openLastStepDialog: (response: EnrollmentResponse | null) => void;
+  handleCompleteEnrollment: (response: EnrollmentResponse | null) => void;
+  handleVerifyEnrollment: (response: EnrollmentResponse | null) => void;
+}
+
+// Mock token enroll strategy
+function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
+  Object.defineProperty(component, "enrollSwitch", {
+    value: () => ({ currentStrategy: () => strategy }),
+    configurable: true
+  });
+}
+
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
   let component: TokenEnrollmentComponent;
-  let selfFixture: ComponentFixture<TokenEnrollmentSelfServiceComponent>;
-  let selfComponent: TokenEnrollmentSelfServiceComponent;
-
   let tokenService: MockTokenService;
-  let userSvc: MockUserService;
+  let userService: MockUserService;
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
   let authServiceMock: MockAuthService;
+  let pendingChangesService: MockPendingChangesService;
   let httpTestingController: HttpTestingController;
 
   beforeAll(() => {
@@ -89,48 +109,43 @@ describe("TokenEnrollmentComponent", () => {
     class IO {
       observe = jest.fn();
       disconnect = jest.fn();
-
-      constructor(_: any, __?: any) {}
     }
 
-    (global as any).IntersectionObserver = IO;
+    (globalThis as unknown as { IntersectionObserver: typeof IO }).IntersectionObserver = IO;
   });
 
   beforeEach(async () => {
-    let mockVersioningService: MockVersioningService;
-
     await TestBed.configureTestingModule({
       imports: [TokenEnrollmentComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        NoopAnimationsModule,
         MockLocalService,
         MockNotificationService,
         { provide: LocalService, useExisting: MockLocalService },
         { provide: NotificationService, useExisting: MockNotificationService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: RealmService, useClass: MockRealmService },
+        { provide: SystemService, useClass: MockSystemService },
         { provide: UserService, useClass: MockUserService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: VersioningService, useClass: MockVersioningService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(TokenEnrollmentComponent);
     component = fixture.componentInstance;
-    selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
-    selfComponent = selfFixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    userSvc = TestBed.inject(UserService) as unknown as MockUserService;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     httpTestingController = TestBed.inject(HttpTestingController);
 
     fixture.detectChanges();
@@ -146,7 +161,8 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   it("creates self service", () => {
-    expect(selfComponent).toBeTruthy();
+    const selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("formatDateTimeOffset builds the expected ISO-ish string", () => {
@@ -156,19 +172,23 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   it("no default values for validity period", () => {
-    expect(component.selectedStartDateControl.value).toBeNull();
-    expect(component.selectedEndDateControl.value).toBeNull();
+    expect(component.selectedStartDate()).toBeNull();
+    expect(component.selectedEndDate()).toBeNull();
   });
 
-  it("pinMismatchValidator: returns error when PINs differ; null when equal", () => {
-    const group = new FormGroup({
-      setPin: new FormControl("1234", { nonNullable: true }),
-      repeatPin: new FormControl("9999", { nonNullable: true })
-    });
-    expect(TokenEnrollmentComponent.pinMismatchValidator(group)).toEqual({ pinMismatch: true });
+  it("repeatPinForm is invalid when PINs differ and valid when equal", () => {
+    component.setPin.set("1234");
+    component.repeatPin.set("9999");
+    expect(component.repeatPinForm().valid()).toBe(false);
+    expect(
+      component
+        .repeatPinForm()
+        .errors()
+        .some((e) => e.kind === "pinMismatch")
+    ).toBe(true);
 
-    group.get("repeatPin")!.setValue("1234");
-    expect(TokenEnrollmentComponent.pinMismatchValidator(group)).toBeNull();
+    component.repeatPin.set("1234");
+    expect(component.repeatPinForm().valid()).toBe(true);
   });
 
   it("isUserRequired depends on selected token type", () => {
@@ -185,68 +205,25 @@ describe("TokenEnrollmentComponent", () => {
     expect(component.isUserRequired()).toBe(true);
   });
 
-  it("userExistsValidator flags unknown usernames and accepts existing ones", () => {
-    userSvc.users.set([
-      {
-        username: "alice",
-        resolver: "r1",
-        description: "",
-        editable: false,
-        email: "",
-        givenname: "",
-        mobile: "",
-        phone: "",
-        surname: "",
-        userid: "",
-        user_realm: ""
-      } as any,
-      {
-        username: "bob",
-        resolver: "r1",
-        description: "",
-        editable: false,
-        email: "",
-        givenname: "",
-        mobile: "",
-        phone: "",
-        surname: "",
-        userid: "",
-        user_realm: ""
-      } as any
-    ]);
-
-    const ctrl = new FormControl<string | any | null>("charlie", { nonNullable: true });
-    expect(component.userExistsValidator(ctrl as any)).toEqual({ userNotInRealm: { value: "charlie" } });
-
-    ctrl.setValue("alice");
-    expect(component.userExistsValidator(ctrl as any)).toBeNull();
-
-    ctrl.setValue({ username: "alice" });
-    expect(component.userExistsValidator(ctrl as any)).toBeNull();
-
-    ctrl.setValue("");
-    expect(component.userExistsValidator(ctrl as any)).toBeNull();
-  });
-
   describe("enrollToken()", () => {
     it("snacks and returns when no token type selected", async () => {
-      (tokenService.selectedTokenType as any).set("");
+      tokenService.selectedTokenType.set("" as unknown as TokenType);
 
-      await (component as any).enrollToken();
+      await component.enrollToken();
 
       expect(notificationServiceMock.warning).toHaveBeenCalledWith("Please select a token type.");
     });
 
     it("snacks when user is required but missing", async () => {
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
-      userSvc.selectedUser.set(null);
+      userService.selectedUser.set(null);
 
-      component.setPinControl.setValue("1234");
-      component.repeatPinControl.setValue("1234");
-      component.selectedUserRealmControl.setValue("realm1");
-      component.userFilterControl.setValue("alice");
+      component.setPin.set("1234");
+      component.repeatPin.set("1234");
+      userService.selectedUserRealm.set("realm1");
+      userService.selectionFilter.set("alice");
 
-      await (component as any).enrollToken();
+      await component.enrollToken();
 
       expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
@@ -255,12 +232,12 @@ describe("TokenEnrollmentComponent", () => {
 
     it("snacks when form is invalid (e.g., PIN mismatch)", async () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      userSvc.selectedUser.set(null);
+      userService.selectedUser.set(null);
 
-      component.setPinControl.setValue("1234");
-      component.repeatPinControl.setValue("9999");
+      component.setPin.set("1234");
+      component.repeatPin.set("9999");
 
-      await (component as any).enrollToken();
+      await component.enrollToken();
 
       expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
@@ -270,10 +247,10 @@ describe("TokenEnrollmentComponent", () => {
     it("snacks when clickEnroll is not provided", async () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
 
-      component.setPinControl.setValue("1234");
-      component.repeatPinControl.setValue("1234");
+      component.setPin.set("1234");
+      component.repeatPin.set("1234");
 
-      component.enrollmentArgsGetter = undefined;
+      installStrategy(component, undefined);
 
       await component.enrollToken();
 
@@ -284,10 +261,10 @@ describe("TokenEnrollmentComponent", () => {
 
     it("_handleEnrollmentResponse snacks when user is required but missing", () => {
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
-      (component as any)._handleEnrollmentResponse({
-        response: { detail: { rollout_state: "done" } } as any,
+      (component as unknown as TokenEnrollmentComponentInternals)._handleEnrollmentResponse({
+        response: { detail: { rollout_state: "done" } },
         user: null
-      });
+      } as unknown as EnrollmentResponse);
 
       expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "User is required for this token type, but no user was provided."
@@ -296,7 +273,7 @@ describe("TokenEnrollmentComponent", () => {
 
     it("Default values for enrollment", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
-      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
 
       component.enrollToken();
 
@@ -317,9 +294,9 @@ describe("TokenEnrollmentComponent", () => {
 
     it("Setting validity dates works", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
-      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
-      component.selectedStartDateControl.setValue(new Date("2026-01-01"));
-      component.selectedEndDateControl.setValue(new Date("2026-12-31"));
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
+      component.selectedStartDate.set(new Date("2026-01-01"));
+      component.selectedEndDate.set(new Date("2026-12-31"));
 
       component.enrollToken();
 
@@ -343,9 +320,9 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest.fn().mockReturnValue({ type: "totp" }) as any
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate 2-step init enrollment response
         const enrollResponse = {
@@ -354,7 +331,7 @@ describe("TokenEnrollmentComponent", () => {
         };
         tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
 
-        const spyOpen = jest.spyOn(component as any, "openLastStepDialog");
+        const spyOpen = jest.spyOn(component as unknown as TokenEnrollmentComponentInternals, "openLastStepDialog");
 
         // Call enrollToken (should open last step dialog)
         await component.enrollToken();
@@ -390,12 +367,12 @@ describe("TokenEnrollmentComponent", () => {
 
       it("handles clickEnroll rejection by showing error snack", async () => {
         tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-        component.setPinControl.setValue("1111");
-        component.repeatPinControl.setValue("1111");
+        component.setPin.set("1111");
+        component.repeatPin.set("1111");
 
         const error = { error: { result: { error: { message: "nope" } } } };
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({});
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
         tokenService.enrollToken.mockReturnValue(Promise.reject(error));
 
         await component.enrollToken().catch(() => undefined);
@@ -407,9 +384,12 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest.fn().mockReturnValue({ type: "totp", "2stepinit": true }) as any
+          mapper: jest.fn().mockReturnValue({
+            type: "totp",
+            "2stepinit": true
+          }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate 2-step init enrollment response
         const twoStepDetail = {
@@ -471,9 +451,12 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest.fn().mockReturnValue({ type: "totp", "2stepinit": true }) as any
+          mapper: jest.fn().mockReturnValue({
+            type: "totp",
+            "2stepinit": true
+          }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate 2-step init enrollment response
         const twoStepDetail = {
@@ -548,9 +531,9 @@ describe("TokenEnrollmentComponent", () => {
         tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
         const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
           data: { type: "totp" },
-          mapper: jest.fn().mockReturnValue({ type: "totp" }) as any
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         });
-        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
 
         // Simulate init enrollment response
         const completeDetail = {
@@ -612,15 +595,19 @@ describe("TokenEnrollmentComponent", () => {
 
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
-      (component as any).openLastStepDialog(null);
+      (component as unknown as TokenEnrollmentComponentInternals).openLastStepDialog(null);
       expect(notificationServiceMock.warning).toHaveBeenCalledWith("No enrollment response available.");
     });
 
     it("openLastStepDialog: stores last-step data and opens dialog", () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      component.enrolledDialogData.set({ response: {} as any, enrollParameters: {} as any, tokenType: "hotp" });
-      const response = { detail: {} } as any;
-      (component as any).openLastStepDialog(response);
+      component.enrolledDialogData.set({
+        response: {} as unknown as EnrollmentResponse,
+        enrollParameters: {} as unknown as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+      const response = { detail: {} } as unknown as EnrollmentResponse;
+      (component as unknown as TokenEnrollmentComponentInternals).openLastStepDialog(response);
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
@@ -639,7 +626,7 @@ describe("TokenEnrollmentComponent", () => {
 
     it("reopenEnrollmentDialog: uses reopen function when provided", () => {
       const fn = jest.fn().mockReturnValue(of(null));
-      component.updateReopenDialog(fn);
+      installStrategy(component, { reopenDialog: () => fn });
       component.reopenEnrollmentDialog();
 
       expect(fn).toHaveBeenCalledTimes(1);
@@ -650,13 +637,14 @@ describe("TokenEnrollmentComponent", () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.enrolledDialogData.set({
         tokenType: "hotp",
-        response: { result: {}, detail: {} } as any,
-        enrollParameters: {} as any
+        response: { result: {}, detail: {} } as unknown as EnrollmentResponse,
+        enrollParameters: {} as unknown as EnrollTokenArguments
       });
 
-      const completeSpy = jest.spyOn(component as any, "handleCompleteEnrollment");
-      const verifySpy = jest.spyOn(component as any, "handleVerifyEnrollment");
-      const successSpy = jest.spyOn(component as any, "_handleEnrollmentResponse");
+      const internals = component as unknown as TokenEnrollmentComponentInternals;
+      const completeSpy = jest.spyOn(internals, "handleCompleteEnrollment");
+      const verifySpy = jest.spyOn(internals, "handleVerifyEnrollment");
+      const successSpy = jest.spyOn(internals, "_handleEnrollmentResponse");
       component.reopenEnrollmentDialog();
       expect(completeSpy).toHaveBeenCalledTimes(1);
       expect(verifySpy).toHaveBeenCalledTimes(1);
@@ -666,70 +654,15 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   describe("ngOnInit subscriptions", () => {
-    it("selectedContainerControl updates containerService.selectedContainer", () => {
+    it("selectedContainer signal updates containerService.selectedContainer", () => {
       const containers = TestBed.inject(ContainerService) as unknown as MockContainerService;
 
-      component.selectedContainerControl.setValue("CONT-9");
+      component.selectedContainer.set("CONT-9");
       component.ngOnInit();
-      component.selectedContainerControl.setValue("CONT-42");
+      component.selectedContainer.set("CONT-42");
+      fixture.detectChanges();
 
       expect(containers.selectedContainerSerial()).toBe("CONT-42");
-    });
-  });
-
-  describe("token-enrollment constants", () => {
-    const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
-    const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
-    const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
-
-    it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
-      const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
-      expect(allIn).toBe(true);
-    });
-
-    it("NO_REGENERATE_TOKEN_TYPES contains WebAuthn and Passkey", () => {
-      expect(NO_REGENERATE_TOKEN_TYPES).toEqual(expect.arrayContaining(["webauthn", "passkey"]));
-    });
-
-    it("NO_QR_CODE_TOKEN_TYPES lists paper and tan; does not include hotp", () => {
-      expect(NO_QR_CODE_TOKEN_TYPES).toEqual(expect.arrayContaining(["paper", "tan"]));
-      expect(NO_QR_CODE_TOKEN_TYPES).not.toContain("hotp");
-    });
-
-    it("hotp → shows QR, can regenerate, label is 'QR Code'", () => {
-      expect(hasQr("hotp")).toBe(true);
-      expect(canRegenerate("hotp")).toBe(true);
-      expect(regenerateLabel("hotp")).toBe("QR Code");
-    });
-
-    it("paper → no QR, can regenerate, label is 'Values'", () => {
-      expect(hasQr("paper")).toBe(false);
-      expect(canRegenerate("paper")).toBe(true);
-      expect(regenerateLabel("paper")).toBe("Values");
-    });
-
-    it("tan → no QR, can regenerate, label is 'Values'", () => {
-      expect(hasQr("tan")).toBe(false);
-      expect(canRegenerate("tan")).toBe(true);
-      expect(regenerateLabel("tan")).toBe("Values");
-    });
-
-    it("indexedsecret → no QR and cannot regenerate", () => {
-      expect(hasQr("indexedsecret")).toBe(false);
-      expect(canRegenerate("indexedsecret")).toBe(false);
-      expect(regenerateLabel("indexedsecret")).toBe("QR Code"); // label ignored when cannot regenerate
-    });
-
-    it("webauthn → no QR, cannot regenerate; label would be 'QR Code'", () => {
-      expect(hasQr("webauthn")).toBe(false);
-      expect(canRegenerate("webauthn")).toBe(false);
-      expect(regenerateLabel("webauthn")).toBe("QR Code"); // label ignored when cannot regenerate
-    });
-
-    it("passkey → no QR, cannot regenerate; label would be 'QR Code'", () => {
-      expect(hasQr("passkey")).toBe(false);
-      expect(canRegenerate("passkey")).toBe(false);
-      expect(regenerateLabel("passkey")).toBe("QR Code"); // label ignored when cannot regenerate
     });
   });
 
@@ -805,8 +738,7 @@ describe("TokenEnrollmentComponent", () => {
         req2.flush("");
       });
 
-      it("sets description validator correctly when description is required", () => {
-        // Set require_description for HOTP
+      it("description form reports required error when description is required and empty", () => {
         authServiceMock.authData.set({
           ...authServiceMock.authData()!,
           require_description: ["hotp"],
@@ -814,19 +746,19 @@ describe("TokenEnrollmentComponent", () => {
           default_tokentype: "hotp"
         });
         wizardFixture.detectChanges();
-        wizardComponent.setDescriptionValidators();
-        wizardFixture.detectChanges();
         expect(wizardComponent.descriptionRequired()).toBe(true);
-        expect(wizardComponent.descriptionControl.hasValidator(Validators.required)).toBe(true);
-        // Should have required error if empty
-        wizardComponent.descriptionControl.setValue("");
-        wizardComponent.descriptionControl.markAsTouched();
-        wizardComponent.descriptionControl.updateValueAndValidity();
-        expect(wizardComponent.descriptionControl.hasError("required")).toBe(true);
+        wizardComponent.description.set("");
+        wizardComponent.descriptionForm().markAsTouched();
+        wizardFixture.detectChanges();
+        expect(
+          wizardComponent
+            .descriptionForm()
+            .errors()
+            .some((e) => e.kind === "required")
+        ).toBe(true);
       });
 
-      it("does not set required validator if description is not required", () => {
-        // Remove require_description
+      it("description form is valid when description is not required", () => {
         authServiceMock.authData.set({
           ...authServiceMock.authData()!,
           require_description: ["totp"],
@@ -834,14 +766,17 @@ describe("TokenEnrollmentComponent", () => {
           default_tokentype: "hotp"
         });
         wizardFixture.detectChanges();
-        wizardComponent.setDescriptionValidators();
-        wizardFixture.detectChanges();
         expect(wizardComponent.descriptionRequired()).toBe(false);
-        expect(wizardComponent.descriptionControl.hasValidator(Validators.required)).toBe(false);
-        wizardComponent.descriptionControl.setValue("");
-        wizardComponent.descriptionControl.markAsTouched();
-        wizardComponent.descriptionControl.updateValueAndValidity();
-        expect(wizardComponent.descriptionControl.hasError("required")).toBe(false);
+        wizardComponent.description.set("");
+        wizardComponent.descriptionForm().markAsTouched();
+        wizardFixture.detectChanges();
+        expect(
+          wizardComponent
+            .descriptionForm()
+            .errors()
+            .some((e) => e.kind === "required")
+        ).toBe(false);
+        expect(wizardComponent.descriptionForm().valid()).toBe(true);
       });
 
       it("shows description input only if description is required", () => {
@@ -866,5 +801,87 @@ describe("TokenEnrollmentComponent", () => {
         expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).toBeNull();
       });
     });
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects the form's dirty state", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+      component.descriptionForm().markAsDirty();
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges is false when no token type is selected", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      tokenService.selectedTokenType.set({ key: "", name: "", info: "", text: "" } as unknown as TokenType);
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
+  });
+});
+
+describe("token-enrollment constants", () => {
+  const hasQr = (type: string) => !NO_QR_CODE_TOKEN_TYPES.includes(type);
+  const canRegenerate = (type: string) => !NO_REGENERATE_TOKEN_TYPES.includes(type);
+  const regenerateLabel = (type: string) => (REGENERATE_AS_VALUES_TOKEN_TYPES.includes(type) ? "Values" : "QR Code");
+
+  it("REGENERATE_AS_VALUES_TOKEN_TYPES is a subset of NO_QR_CODE_TOKEN_TYPES", () => {
+    const allIn = REGENERATE_AS_VALUES_TOKEN_TYPES.every((t) => NO_QR_CODE_TOKEN_TYPES.includes(t));
+    expect(allIn).toBe(true);
+  });
+
+  it("NO_REGENERATE_TOKEN_TYPES contains WebAuthn and Passkey", () => {
+    expect(NO_REGENERATE_TOKEN_TYPES).toEqual(expect.arrayContaining(["webauthn", "passkey"]));
+  });
+
+  it("NO_QR_CODE_TOKEN_TYPES lists paper and tan; does not include hotp", () => {
+    expect(NO_QR_CODE_TOKEN_TYPES).toEqual(expect.arrayContaining(["paper", "tan"]));
+    expect(NO_QR_CODE_TOKEN_TYPES).not.toContain("hotp");
+  });
+
+  it("hotp → shows QR, can regenerate, label is 'QR Code'", () => {
+    expect(hasQr("hotp")).toBe(true);
+    expect(canRegenerate("hotp")).toBe(true);
+    expect(regenerateLabel("hotp")).toBe("QR Code");
+  });
+
+  it("paper → no QR, can regenerate, label is 'Values'", () => {
+    expect(hasQr("paper")).toBe(false);
+    expect(canRegenerate("paper")).toBe(true);
+    expect(regenerateLabel("paper")).toBe("Values");
+  });
+
+  it("tan → no QR, can regenerate, label is 'Values'", () => {
+    expect(hasQr("tan")).toBe(false);
+    expect(canRegenerate("tan")).toBe(true);
+    expect(regenerateLabel("tan")).toBe("Values");
+  });
+
+  it("indexedsecret → no QR and cannot regenerate", () => {
+    expect(hasQr("indexedsecret")).toBe(false);
+    expect(canRegenerate("indexedsecret")).toBe(false);
+    expect(regenerateLabel("indexedsecret")).toBe("QR Code");
+  });
+
+  it("webauthn → no QR, cannot regenerate; label would be 'QR Code'", () => {
+    expect(hasQr("webauthn")).toBe(false);
+    expect(canRegenerate("webauthn")).toBe(false);
+    expect(regenerateLabel("webauthn")).toBe("QR Code");
+  });
+
+  it("passkey → no QR, cannot regenerate; label would be 'QR Code'", () => {
+    expect(hasQr("passkey")).toBe(false);
+    expect(canRegenerate("passkey")).toBe(false);
+    expect(regenerateLabel("passkey")).toBe("QR Code");
   });
 });

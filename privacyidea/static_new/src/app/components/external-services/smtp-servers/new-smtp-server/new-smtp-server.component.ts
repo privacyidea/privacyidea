@@ -17,19 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild
-} from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { disabled, email, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -43,9 +33,48 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+
+interface SmtpFormModel {
+  identifier: string;
+  server: string;
+  port: number;
+  timeout: number;
+  sender: string;
+  username: string;
+  password: string;
+  description: string;
+  tls: boolean;
+  enqueue_job: boolean;
+  certificate: string;
+  private_key: string;
+  private_key_password: string;
+  smime: boolean;
+  dont_send_on_error: boolean;
+  recipient: string;
+}
+
+const EMPTY_SMTP_FORM: SmtpFormModel = {
+  identifier: "",
+  server: "",
+  port: 25,
+  timeout: 10,
+  sender: "",
+  username: "",
+  password: "",
+  description: "",
+  tls: true,
+  enqueue_job: false,
+  certificate: "",
+  private_key: "",
+  private_key_password: "",
+  smime: false,
+  dont_send_on_error: false,
+  recipient: ""
+};
 
 @Component({
   selector: "app-smtp-edit-dialog",
@@ -54,7 +83,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
@@ -62,31 +91,37 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
     MatIconModule,
     MatTooltip,
     ClearableInputComponent,
-    MatDivider
+    MatDivider,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"
 })
-export class NewSmtpServerComponent implements AfterViewInit, OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
+export class NewSmtpServerComponent implements OnDestroy {
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly renderer = inject(Renderer2);
 
   protected data: SmtpServer | null = null;
-  smtpForm!: FormGroup;
-  isEditMode = false;
+  isEditMode = signal(false);
   isTesting = signal(false);
   private editIdentifier: string | null = null;
+  private initialPrivateKeyPassword = "";
 
-  private _observer!: IntersectionObserver;
+  smtpModel = signal<SmtpFormModel>({ ...EMPTY_SMTP_FORM });
 
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  smtpForm = form(this.smtpModel, (f) => {
+    required(f.identifier);
+    pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    required(f.server);
+    required(f.sender);
+    email(f.sender);
+    disabled(f.identifier, () => this.isEditMode());
+  });
+
+  showTLS = computed(() => !this.smtpModel().server?.toLowerCase().startsWith("smtps:"));
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -96,116 +131,92 @@ export class NewSmtpServerComponent implements AfterViewInit, OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const identifier = params.get("identifier");
       if (identifier) {
-        this.isEditMode = true;
+        this.isEditMode.set(true);
         this.editIdentifier = identifier;
         this.data = this.smtpService.smtpServers().find((s) => s.identifier === identifier) ?? null;
       } else {
-        this.isEditMode = false;
+        this.isEditMode.set(false);
         this.editIdentifier = null;
         this.data = null;
       }
-      this.initForm();
+      this.loadData(this.data);
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const servers = this.smtpService.smtpServers();
-      if (this.isEditMode && this.editIdentifier && this.smtpForm?.pristine) {
+      if (this.isEditMode() && this.editIdentifier && untracked(() => !this.smtpForm().dirty())) {
         const found = servers.find((s) => s.identifier === this.editIdentifier);
         if (found) {
           this.data = found;
-          this.initForm();
+          this.loadData(this.data);
         }
       }
     });
   }
 
   get hasChanges(): boolean {
-    return !this.smtpForm.pristine;
+    return this.smtpForm().dirty();
   }
 
   get canSave(): boolean {
-    return this.smtpForm.valid;
+    return this.smtpForm().valid();
   }
 
-  get showTLS(): boolean {
-    return !this.smtpForm.get("server")?.value?.toLowerCase().startsWith("smtps:");
-  }
-
-  initialPrivateKeyPassword = this.data?.private_key_password || "";
-
-  private initForm(): void {
-    this.smtpForm = this.formBuilder.group({
-      identifier: [this.data?.identifier || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-      server: [this.data?.server || "", [Validators.required]],
-      port: [this.data?.port || 25],
-      timeout: [this.data?.timeout || 10],
-      sender: [this.data?.sender || "", [Validators.required, Validators.email]],
-      username: [this.data?.username || ""],
-      password: [this.data?.password || ""],
-      description: [this.data?.description || ""],
-      tls: [this.data?.tls ?? true],
-      enqueue_job: [this.data?.enqueue_job ?? false],
-      certificate: [this.data?.certificate || ""],
-      private_key: [this.data?.private_key || ""],
-      private_key_password: [this.data?.private_key_password || ""],
-      smime: [this.data?.smime ?? false],
-      dont_send_on_error: [this.data?.dont_send_on_error ?? false],
-      recipient: [""]
+  private loadData(data: SmtpServer | null): void {
+    this.smtpModel.set({
+      identifier: data?.identifier || "",
+      server: data?.server || "",
+      port: data?.port || 25,
+      timeout: data?.timeout || 10,
+      sender: data?.sender || "",
+      username: data?.username || "",
+      password: data?.password || "",
+      description: data?.description || "",
+      tls: data?.tls ?? true,
+      enqueue_job: data?.enqueue_job ?? false,
+      certificate: data?.certificate || "",
+      private_key: data?.private_key || "",
+      private_key_password: data?.private_key_password || "",
+      smime: data?.smime ?? false,
+      dont_send_on_error: data?.dont_send_on_error ?? false,
+      recipient: ""
     });
-    if (this.isEditMode) {
-      this.smtpForm.get("identifier")?.disable();
-    }
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-    this._observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this._observer.observe(this.stickySentinel.nativeElement);
+    this.smtpForm().reset();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this._observer?.disconnect();
   }
 
   async save(): Promise<boolean> {
-    if (this.smtpForm.invalid) {
+    if (!this.smtpForm().valid()) {
       return false;
     }
-    const server: SmtpServer = {
-      ...this.smtpForm.getRawValue()
-    };
+    const model = this.smtpModel();
+    const server = Object.fromEntries(Object.entries(model).filter(([k]) => k !== "recipient")) as Omit<
+      typeof model,
+      "recipient"
+    >;
 
     if (server.private_key_password === this.initialPrivateKeyPassword) {
-      delete server.private_key_password;
+      delete (server as Partial<SmtpServer>).private_key_password;
     }
 
     try {
-      await this.smtpService.postSmtpServer(server);
+      await this.smtpService.postSmtpServer(server as SmtpServer);
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   async test(): Promise<void> {
-    if (this.smtpForm.valid) {
+    if (this.smtpForm().valid()) {
       this.isTesting.set(true);
-      const params = this.smtpForm.getRawValue();
+      const params = this.smtpModel();
       await this.smtpService.testSmtpServer(params);
       this.isTesting.set(false);
     }

@@ -17,7 +17,9 @@ $breakpoint-compact: 1822px;
   height: 40px;
   white-space: nowrap;
   border-radius: var(--border-radius);
-  transition: background 200ms ease, color 200ms ease;
+  transition:
+    background 200ms ease,
+    color 200ms ease;
   flex-shrink: 0;
   border: none;
   background: transparent;
@@ -88,7 +90,7 @@ $breakpoint-compact: 1822px;
   flex: 1;
   justify-content: start;
   flex-wrap: nowrap;
-  margin-left: 10px;
+  padding-left: 10px;
   overflow: hidden;
   min-width: 0;
 }
@@ -105,7 +107,7 @@ $breakpoint-compact: 1822px;
 
 .nav-active {
   color: var(--mat-sys-primary) !important;
-  padding: 0 15px;
+  padding: 0 16px;
 }
 
 .nav-item {
@@ -114,7 +116,9 @@ $breakpoint-compact: 1822px;
 
   &.active {
     background-color: var(--mat-sys-surface-container-lowest);
-    box-shadow: -8px 0 8px -8px var(--nav-item-border), 8px 0 8px -8px var(--nav-item-border);
+    box-shadow:
+      -8px 0 8px -8px var(--nav-item-border),
+      8px 0 8px -8px var(--nav-item-border);
     border-top-right-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
   }
@@ -138,7 +142,8 @@ $breakpoint-compact: 1822px;
   box-shadow: var(--elevation-3);
   border-radius: var(--border-radius);
 
-  a:not(.overflow-more-btn), button:not(.overflow-more-btn) {
+  a:not(.overflow-more-btn),
+  button:not(.overflow-more-btn) {
     @include nav-button-base;
     justify-content: center;
     text-decoration: none;
@@ -160,7 +165,6 @@ $breakpoint-compact: 1822px;
 
 .support-color {
   color: var(--green-brand-base) !important;
-
 
   &:hover {
     color: var(--green-brand-light) !important;
@@ -205,6 +209,12 @@ $breakpoint-compact: 1822px;
   flex-shrink: 0;
 }
 
+.version-text {
+  font-size: 14px;
+  color: var(--mat-sys-surface-container-highest);
+  white-space: nowrap;
+}
+
 .docs-button-icon {
   display: none !important;
 }
@@ -232,7 +242,7 @@ $breakpoint-compact: 1822px;
 
   .main-nav {
     margin-right: 8px;
-    margin-left: 19px;
+    padding-left: 19px;
     gap: 2px;
   }
 
@@ -265,6 +275,10 @@ $breakpoint-compact: 1822px;
     .docs-button-icon {
       display: inline-flex !important;
     }
+  }
+
+  .version-prefix {
+    display: none;
   }
 
   :host.has-custom-logo .secondary-toolbar {

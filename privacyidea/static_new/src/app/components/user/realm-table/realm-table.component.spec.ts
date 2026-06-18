@@ -26,8 +26,8 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { RealmService, Realms } from "@services/realm/realm.service";
-import { ResolverService } from "@services/resolver/resolver.service";
+import { Realm, RealmRow, RealmService, Realms } from "@services/realm/realm.service";
+import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { SystemService } from "@services/system/system.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
@@ -40,6 +40,8 @@ import {
   MockSystemService,
   MockTableUtilsService
 } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { RealmTableComponent } from "./realm-table.component";
 
@@ -54,11 +56,11 @@ class LocalMockMatDialog {
 describe("RealmTableComponent", () => {
   let component: RealmTableComponent;
   let realmService: MockRealmService;
-  let systemService: MockSystemService;
   let notificationService: MockNotificationService;
   let dialog: LocalMockMatDialog;
   let resolverService: MockResolverService;
   let router: Router;
+  let pendingChangesService: MockPendingChangesService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -73,7 +75,8 @@ describe("RealmTableComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useClass: LocalMockMatDialog },
         { provide: ResolverService, useClass: MockResolverService },
-        { provide: Router, useClass: MockRouter }
+        { provide: Router, useClass: MockRouter },
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -81,11 +84,11 @@ describe("RealmTableComponent", () => {
     component = fixture.componentInstance;
 
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
-    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     router = TestBed.inject(Router);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
     fixture.detectChanges();
   });
@@ -148,18 +151,18 @@ describe("RealmTableComponent", () => {
   });
 
   it("realmRows should build resolverGroups and resolversText", () => {
-    const realms = {
+    const realms: Realms = {
       realmA: {
         default: true,
         resolver: [
           { name: "resGlobal", type: "ldap", node: "", priority: null },
           { name: "resNode", type: "sql", node: "node-1", priority: 5 }
         ]
-      }
-    } as any;
+      } as Realm
+    };
 
     const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
-    ref.set(MockPiResponse.fromValue<Realms>(realms as any));
+    ref.set(MockPiResponse.fromValue<Realms>(realms));
 
     const rows = component.realmRows();
     expect(rows.length).toBe(1);
@@ -191,22 +194,22 @@ describe("RealmTableComponent", () => {
   });
 
   it("realmRows should filter by selected node", () => {
-    const realms = {
+    const realms: Realms = {
       realmA: {
         default: false,
         resolver: [
           { name: "resGlobal", type: "ldap", node: "", priority: null },
           { name: "resNode", type: "sql", node: "node-1", priority: 5 }
         ]
-      },
+      } as Realm,
       realmB: {
         default: false,
         resolver: [{ name: "resOther", type: "http", node: "node-2", priority: 3 }]
-      }
-    } as any;
+      } as Realm
+    };
 
     const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
-    ref.set(MockPiResponse.fromValue<Realms>(realms as any));
+    ref.set(MockPiResponse.fromValue<Realms>(realms));
 
     component.selectedNode.set("node-1");
     const rowsNode1 = component.realmRows();
@@ -253,16 +256,16 @@ describe("RealmTableComponent", () => {
       "node-1": [{ name: "res1", priority: null }]
     });
 
-    component.setNewRealmResolverPriority("node-1", "res1", 10);
+    component.setNewRealmResolverPriority({ nodeId: "node-1", resolverName: "res1", priority: String(10) });
     expect(component.newRealmNodeResolvers()["node-1"][0].priority).toBe(10);
 
-    component.setNewRealmResolverPriority("node-1", "res1", 0);
+    component.setNewRealmResolverPriority({ nodeId: "node-1", resolverName: "res1", priority: String(0) });
     expect(component.newRealmNodeResolvers()["node-1"][0].priority).toBe(1);
 
-    component.setNewRealmResolverPriority("node-1", "res1", 2000);
+    component.setNewRealmResolverPriority({ nodeId: "node-1", resolverName: "res1", priority: String(2000) });
     expect(component.newRealmNodeResolvers()["node-1"][0].priority).toBe(999);
 
-    component.setNewRealmResolverPriority("node-1", "res1", "");
+    component.setNewRealmResolverPriority({ nodeId: "node-1", resolverName: "res1", priority: String("") });
     expect(component.newRealmNodeResolvers()["node-1"][0].priority).toBeNull();
   });
 
@@ -271,13 +274,13 @@ describe("RealmTableComponent", () => {
       "node-1": [{ name: "res1", priority: 5 }]
     });
 
-    component.setEditResolverPriority("node-1", "res1", 20);
+    component.setEditResolverPriority("node-1", "res1", String(20));
     expect(component.editNodeResolvers()["node-1"][0].priority).toBe(20);
 
-    component.setEditResolverPriority("node-1", "res1", 0);
+    component.setEditResolverPriority("node-1", "res1", String(0));
     expect(component.editNodeResolvers()["node-1"][0].priority).toBe(1);
 
-    component.setEditResolverPriority("node-1", "res1", 2000);
+    component.setEditResolverPriority("node-1", "res1", String(2000));
     expect(component.editNodeResolvers()["node-1"][0].priority).toBe(999);
 
     component.setEditResolverPriority("node-1", "res1", "");
@@ -310,16 +313,17 @@ describe("RealmTableComponent", () => {
     expect(component.newRealmNodeResolvers()).toEqual({});
   });
 
-  it("onCreateRealm should do nothing when cannot submit", () => {
+  it("onCreateRealm should resolve false when cannot submit", async () => {
     component.newRealmName.set("");
     component.isCreatingRealm.set(false);
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(false);
     expect(realmService.createRealm).not.toHaveBeenCalled();
   });
 
-  it("onCreateRealm should create realm with global resolvers and optional priorities", () => {
+  it("onCreateRealm should create realm with global resolvers and optional priorities", async () => {
     component.newRealmName.set("realmA");
     component.newRealmNodeResolvers.set({
       "": [
@@ -332,8 +336,9 @@ describe("RealmTableComponent", () => {
       ]
     });
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(true);
     expect(realmService.createRealm).toHaveBeenCalledTimes(2);
 
     const callGlobal = (realmService.createRealm as jest.Mock).mock.calls[0];
@@ -353,12 +358,13 @@ describe("RealmTableComponent", () => {
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
-  it("onCreateRealm should create realm with empty resolver list when none configured", () => {
+  it("onCreateRealm should create realm with empty resolver list when none configured", async () => {
     component.newRealmName.set("realmEmpty");
     component.newRealmNodeResolvers.set({});
 
-    component.onCreateRealm();
+    const result = await component.onCreateRealm();
 
+    expect(result).toBe(true);
     expect(realmService.createRealm).toHaveBeenCalledTimes(1);
     const call = (realmService.createRealm as jest.Mock).mock.calls[0];
     expect(call[0]).toBe("realmEmpty");
@@ -367,7 +373,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("startEditRealm should initialize editing state and maps", () => {
-    const row = {
+    const row: RealmRow = {
       name: "realmA",
       isDefault: false,
       resolversText: "",
@@ -385,7 +391,7 @@ describe("RealmTableComponent", () => {
       ]
     };
 
-    component.startEditRealm(row as any);
+    component.startEditRealm(row);
 
     expect(component.editingRealmName()).toBe("realmA");
 
@@ -414,7 +420,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("canSaveEditedRealm should be true only when same realm and not saving", () => {
-    const row = { name: "realmA" } as any;
+    const row = { name: "realmA" } as unknown as RealmRow;
 
     component.editingRealmName.set("realmA");
     component.isSavingEditedRealm.set(false);
@@ -429,7 +435,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("saveEditedRealm should show error when no resolvers configured", () => {
-    const row = { name: "realmA" } as any;
+    const row = { name: "realmA" } as unknown as RealmRow;
     component.editingRealmName.set("realmA");
     component.editNodeResolvers.set({});
 
@@ -441,7 +447,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("saveEditedRealm should send updated resolvers and reset editing state", () => {
-    const row = { name: "realmA" } as any;
+    const row = { name: "realmA" } as unknown as RealmRow;
 
     component.editingRealmName.set("realmA");
     component.editNodeResolvers.set({
@@ -473,13 +479,13 @@ describe("RealmTableComponent", () => {
   });
 
   it("onDeleteRealm should do nothing when row has no name", () => {
-    component.onDeleteRealm({} as any);
+    component.onDeleteRealm({} as unknown as RealmRow);
     expect(dialog.open).not.toHaveBeenCalled();
   });
 
   it("onDeleteRealm should delete realm when confirmed", () => {
     dialog.result$ = of(true);
-    const row = { name: "realmA" } as any;
+    const row = { name: "realmA" } as unknown as RealmRow;
 
     component.onDeleteRealm(row);
 
@@ -491,7 +497,7 @@ describe("RealmTableComponent", () => {
 
   it("onDeleteRealm should not delete when dialog is cancelled", () => {
     dialog.result$ = of(false);
-    const row = { name: "realmA" } as any;
+    const row = { name: "realmA" } as unknown as RealmRow;
 
     component.onDeleteRealm(row);
 
@@ -500,12 +506,12 @@ describe("RealmTableComponent", () => {
   });
 
   it("onSetDefaultRealm should do nothing when row has no name", () => {
-    component.onSetDefaultRealm({} as any);
+    component.onSetDefaultRealm({} as unknown as RealmRow);
     expect(realmService.setDefaultRealm).not.toHaveBeenCalled();
   });
 
   it("onSetDefaultRealm should call service and reload resources", () => {
-    const row = { name: "realmA" } as any;
+    const row = { name: "realmA" } as unknown as RealmRow;
 
     component.onSetDefaultRealm(row);
 
@@ -516,7 +522,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("onClickResolver should redirect to resolver details page", () => {
-    const resolver = { resolvername: "res1", type: "ldapresolver" } as any;
+    const resolver = { resolvername: "res1", type: "ldapresolver" } as unknown as Resolver;
     resolverService.setResolvers([resolver]);
 
     component.onClickResolver("res1");
@@ -528,5 +534,51 @@ describe("RealmTableComponent", () => {
     resolverService.setResolvers([]);
     component.onClickResolver("non-existing");
     expect(dialog.open).not.toHaveBeenCalled();
+  });
+
+  describe("pending changes", () => {
+    it("registers hasChanges, validChanges, and save in ngOnInit", () => {
+      expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalled();
+      expect(pendingChangesService.registerSave).toHaveBeenCalled();
+    });
+
+    it("hasChanges reflects newRealmName, newRealmNodeResolvers, and edit diff", () => {
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+      expect(fn()).toBe(false);
+
+      component.newRealmName.set("newRealm");
+      expect(fn()).toBe(true);
+      component.newRealmName.set("");
+
+      component.newRealmNodeResolvers.set({ node1: [{ name: "res", priority: null }] });
+      expect(fn()).toBe(true);
+      component.newRealmNodeResolvers.set({});
+
+      // Entering edit mode alone (no diff) should NOT trigger hasChanges
+      component.editingRealmName.set("someRealm");
+      expect(fn()).toBe(false);
+
+      // Edit diff triggers hasChanges
+      component.editNodeResolvers.set({ node1: [{ name: "res", priority: 1 }] });
+      expect(fn()).toBe(true);
+    });
+
+    it("validChanges reflects canSubmitNewRealm", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+
+      component.newRealmName.set("validName");
+      expect(fn()).toBe(true);
+
+      component.newRealmName.set("invalid name with spaces");
+      expect(fn()).toBe(false);
+    });
+
+    it("ngOnDestroy clears all pending-changes registrations", () => {
+      component.ngOnDestroy();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
   });
 });

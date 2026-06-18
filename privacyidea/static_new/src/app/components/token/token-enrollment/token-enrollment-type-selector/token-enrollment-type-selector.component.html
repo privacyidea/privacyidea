@@ -16,17 +16,15 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div #stickySentinel></div>
 <div
-  #stickyHeader
-  class="sticky-header">
+  class="sticky-header"
+  [appStickyHeader]="scrollContainer()">
   <div class="sticky-controls ali-center">
     <mat-form-field class="input-width-xl type-select">
       <mat-select
-        [(ngModel)]="tokenService.selectedTokenType"
-        [ngModelOptions]="{ standalone: true }"
         [panelClass]="'multi-column-panel'"
-        [value]="tokenService.selectedTokenType()">
+        [value]="tokenService.selectedTokenType()"
+        (selectionChange)="tokenService.selectedTokenType.set($event.value)">
         @for (type of tokenService.tokenTypeOptions(); track type) {
           <mat-option
             #tooltip="matTooltip"

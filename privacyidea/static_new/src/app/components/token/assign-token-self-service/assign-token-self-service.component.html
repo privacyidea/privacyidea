@@ -22,12 +22,15 @@
   aria-label="Assign Token Self-Service"
   class="assign-token-self-service-container"
   i18n-aria-label>
-  <div #stickySentinel></div>
   <div
-    #stickyHeader
-    class="sticky-header">
+    class="sticky-header"
+    [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
-      <h3 class="margin-8" i18n>Assign Token</h3>
+      <h3
+        class="margin-8"
+        i18n>
+        Assign Token
+      </h3>
 
       <div class="enroll-button-container margin-left-auto">
         <button
@@ -45,14 +48,15 @@
   <div class="margin-left-16">
     <div class="width-884 margin-bottom-0">
       <p i18n>
-        If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a
-        serial number printed on the token. Please enter this serial number and make up a token pin.
+        If you were handed a token device, you may connect this device to your account. Turn over the token, you may
+        find a serial number printed on the token. Please enter this serial number and make up a token pin.
       </p>
     </div>
     <mat-form-field class="input-width-l">
       <mat-label i18n>Enter Serial</mat-label>
       <input
-        [(ngModel)]="selectedToken"
+        [value]="selectedToken()"
+        (input)="selectedToken.set($any($event.target).value)"
         matInput
         required />
       <mat-error i18n>Serial is <strong>required</strong></mat-error>
@@ -70,7 +74,8 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>PIN</mat-label>
           <input
-            [(ngModel)]="setPinValue"
+            [value]="setPinValue()"
+            (input)="setPinValue.set($any($event.target).value)"
             [type]="'password'"
             matInput />
         </mat-form-field>
@@ -78,7 +83,8 @@
         <mat-form-field class="input-width-s">
           <mat-label i18n>Repeat PIN</mat-label>
           <input
-            [(ngModel)]="repeatPinValue"
+            [value]="repeatPinValue()"
+            (input)="repeatPinValue.set($any($event.target).value)"
             [type]="'password'"
             matInput />
         </mat-form-field>

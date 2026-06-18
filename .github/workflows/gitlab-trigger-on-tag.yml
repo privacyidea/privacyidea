@@ -1,4 +1,4 @@
-name: GitLab
+name: GitLab Tag Master Branch
 
 on:
   push:
@@ -15,7 +15,33 @@ jobs:
     environment: gitlab
 
     steps:
+      - name: Check out repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch branch-* heads
+        # actions/checkout only fetches the triggering tag ref; the
+        # `branch-*` remote-tracking refs need to be fetched explicitly
+        # before `git branch -r --contains` can see them.
+        run: git fetch --no-tags origin '+refs/heads/branch-*:refs/remotes/origin/branch-*'
+
+      - name: Skip if tag is on a branch-* branch
+        id: check
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          branches=$(git branch -r --contains "$GITHUB_SHA" | sed 's|^[ *]*origin/||' | grep -E '^branch-' || true)
+          if [ -n "$branches" ]; then
+            echo "Tag is on $branches; handled by gitlab-trigger-branch-tag, skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: On Tag Trigger Pipeline
+        if: steps.check.outputs.skip == 'false'
         env:
           GITLAB_TRIGGER_URL: https://lucan.netknights.it/api/v4/projects/3/trigger/pipeline
           GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}

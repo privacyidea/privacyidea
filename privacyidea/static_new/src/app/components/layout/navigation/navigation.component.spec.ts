@@ -23,20 +23,38 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { NavigationComponent } from "@components/layout/navigation/navigation.component";
+import { NavItem, NavigationComponent } from "@components/layout/navigation/navigation.component";
 import { AuthService } from "@services/auth/auth.service";
+import { ConfigService } from "@services/config/config.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
+import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import {
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
+  MockPeriodicTaskService,
+  MockRealmService,
   MockSessionTimerService,
+  MockSystemService,
   MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { RealmService } from "@services/realm/realm.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { EventService } from "@services/event/event.service";
+import { SystemService } from "@services/system/system.service";
+
+interface NavigationComponentPrivate {
+  getFilteredNavItems: () => NavItem[];
+  calculateVisibleItems: (navEl: HTMLElement) => void;
+}
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;
@@ -75,7 +93,13 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
         { provide: AuthService, useClass: MockAuthService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
         { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ConfigService, useClass: MockConfigService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        { provide: PeriodicTaskService, useClass: MockPeriodicTaskService },
+        { provide: EventService, useClass: MockEventService },
+        { provide: SystemService, UseClass: MockSystemService },
         MockLocalService
       ]
     })
@@ -155,18 +179,19 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
+    const componentPrivate = component as unknown as NavigationComponentPrivate;
     jest
-      .spyOn(component as any, "getFilteredNavItems")
-      .mockReturnValue([{ section: "token" }, { section: "container" }]);
+      .spyOn(componentPrivate, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }] as NavItem[]);
 
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
 
     expect(component.visibleNavCount()).toBe(2);
 
     // Shrink navWidth - should trigger overflow
     // To fit 1 item (100px) with more button (50px) and safety buffer (30px), we need at least 180px.
     Object.defineProperty(navEl, "clientWidth", { value: 200, configurable: true });
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
     // item1(100) fits in availableWidth (200 - 50 - 30 = 120).
     expect(component.visibleNavCount()).toBe(1);
   });
@@ -188,12 +213,13 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
+    const componentPrivate = component as unknown as NavigationComponentPrivate;
     jest
-      .spyOn(component as any, "getFilteredNavItems")
-      .mockReturnValue([{ section: "token" }, { section: "container" }]);
+      .spyOn(componentPrivate, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }] as NavItem[]);
 
     // Initial calculation to store widths
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
     expect(component.visibleNavCount()).toBe(2);
 
     // Remove item2 from DOM (simulating Angular removing it from visible items)
@@ -201,9 +227,99 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     // Grow container
     Object.defineProperty(navEl, "clientWidth", { value: 500, configurable: true });
-    (component as any).calculateVisibleItems(navEl);
+    componentPrivate.calculateVisibleItems(navEl);
 
     // Should still calculate 2 visible items because it remembers the width of 'container'
     expect(component.visibleNavCount()).toBe(2);
+  });
+
+  describe("customLogo and versionPrefix", () => {
+    it("should return null for customLogo when no logo is configured", () => {
+      const configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
+      configService.config.set({ ...configService.config(), logo: "" });
+
+      expect(component.customLogo()).toBeNull();
+    });
+
+    it("should build customLogo URL when a logo is configured", () => {
+      const configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
+      configService.config.set({ ...configService.config(), logo: "my-logo.png" });
+
+      const logo = component.customLogo();
+      expect(logo).not.toBeNull();
+      expect(logo).toContain("/static/public/my-logo.png");
+    });
+
+    it("should return empty versionPrefix when no custom logo is set", () => {
+      const configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
+      configService.config.set({ ...configService.config(), logo: "" });
+
+      expect(component.versionPrefix()).toBe("");
+    });
+
+    it("should return 'privacyIDEA ' versionPrefix when a custom logo is set", () => {
+      const configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
+      configService.config.set({ ...configService.config(), logo: "my-logo.png" });
+
+      expect(component.versionPrefix()).toBe("privacyIDEA ");
+    });
+
+    it("should expose the version from VersioningService", () => {
+      const versioningService = TestBed.inject(VersioningService);
+      expect(typeof versioningService.version()).toBe("string");
+    });
+  });
+
+  describe("activeSection", () => {
+    let contentService: MockContentService;
+
+    beforeEach(() => {
+      contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    });
+
+    it("should default to 'token' for an unknown route", () => {
+      contentService.routeUrl.set("/something/else");
+      expect(component.activeSection()).toBe("token");
+    });
+
+    it("should detect 'container' for containers route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      expect(component.activeSection()).toBe("container");
+    });
+
+    it("should detect 'users' for users route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.USERS);
+      expect(component.activeSection()).toBe("users");
+    });
+
+    it("should detect 'policies' for policies route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.POLICIES);
+      expect(component.activeSection()).toBe("policies");
+    });
+
+    it("should detect 'subscription' for subscription route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.SUBSCRIPTION);
+      expect(component.activeSection()).toBe("subscription");
+    });
+
+    it("should detect 'audit' for audit route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.AUDIT);
+      expect(component.activeSection()).toBe("audit");
+    });
+
+    it("should detect 'external_services' for external services route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
+      expect(component.activeSection()).toBe("external_services");
+    });
+
+    it("should detect 'config' for configuration route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.CONFIGURATION_SYSTEM);
+      expect(component.activeSection()).toBe("config");
+    });
+
+    it("should detect 'token' for tokens route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
+      expect(component.activeSection()).toBe("token");
+    });
   });
 });

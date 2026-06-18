@@ -1,0 +1,27 @@
+@use "styles";
+@use "table";
+
+$gap-small: 8px;
+
+.details-container {
+  @include styles.main-component-style;
+  display: grid;
+
+  .mat-mdc-select-value-text {
+    font-size: 14px;
+  }
+}
+
+.detail-table-wrapper {
+  display: flex;
+  gap: 20px;
+  width: auto;
+  max-width: fit-content;
+}
+
+.details-section {
+  width: auto;
+  max-width: fit-content;
+  table-layout: auto;
+  border-collapse: collapse;
+}

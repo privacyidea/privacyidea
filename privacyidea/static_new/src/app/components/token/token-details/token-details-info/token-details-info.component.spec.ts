@@ -18,7 +18,6 @@
  **/
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsInfoComponent } from "./token-details-info.component";
@@ -34,7 +33,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 describe("TokenDetailsInfoComponent", () => {
   let component: TokenDetailsInfoComponent;
   let fixture: ComponentFixture<TokenDetailsInfoComponent>;
-  let tokenSvc: MockTokenService;
+  let tokenService: MockTokenService;
 
   const makeInfoEl = (value: Record<string, string>): EditableElement<Record<string, string>> => ({
     keyMap: { key: "info" },
@@ -52,7 +51,7 @@ describe("TokenDetailsInfoComponent", () => {
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
-      imports: [TokenDetailsInfoComponent, BrowserAnimationsModule],
+      imports: [TokenDetailsInfoComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -63,8 +62,8 @@ describe("TokenDetailsInfoComponent", () => {
       ]
     }).compileComponents();
 
-    // IMPORTANT: inject the mock instance so tokenSvc is not undefined
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
+    // IMPORTANT: inject the mock instance so tokenService is not undefined
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
 
     fixture = TestBed.createComponent(TokenDetailsInfoComponent);
     component = fixture.componentInstance;
@@ -90,11 +89,11 @@ describe("TokenDetailsInfoComponent", () => {
 
     component.toggleInfoEdit();
     expect(component.isEditingInfo()).toBe(true);
-    expect(tokenSvc.tokenDetailResource.reload).not.toHaveBeenCalled();
+    expect(tokenService.tokenDetailResource.reload).not.toHaveBeenCalled();
 
     component.toggleInfoEdit();
     expect(component.isEditingInfo()).toBe(false);
-    expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("saveInfo adds new key/value if provided, calls setTokenInfos, resets newInfo, turns off edit, and reloads", () => {
@@ -103,39 +102,51 @@ describe("TokenDetailsInfoComponent", () => {
 
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "b", value: "2" });
-    tokenSvc.tokenSerial.set("SER");
+    tokenService.tokenSerial.set("SER");
 
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1", b: "2" });
-    expect(tokenSvc.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" });
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" });
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
-    expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("saveInfo without new pair still calls setTokenInfos and reloads", () => {
     const el = component.infoData()[0] as EditableElement<Record<string, string>>;
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "", value: "" });
-    tokenSvc.tokenSerial.set("SER");
+    tokenService.tokenSerial.set("SER");
 
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1" });
-    expect(tokenSvc.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" });
-    expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" });
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
     expect(component.isEditingInfo()).toBe(false);
+  });
+
+  it("template cast helpers pass values through and hide timestamp keys", () => {
+    expect(component.asInfoMap(undefined)).toEqual({});
+    expect(component.asInfoMap({ a: "1" })).toEqual({ a: "1" });
+
+    const el = makeInfoEl({ a: "1" });
+    expect(component.asInfoElement(el as unknown as EditableElement)).toBe(el);
+
+    expect(component.visibleInfoKeys({ a: "1", creation_date: "x", assignment_date: "y", last_auth: "z" })).toEqual([
+      "a"
+    ]);
   });
 
   it("deleteInfo calls service, marks info section as editing, and reloads", () => {
     component.isEditingInfo.set(false);
-    tokenSvc.tokenSerial.set("SER");
+    tokenService.tokenSerial.set("SER");
 
     component.deleteInfo("a");
 
-    expect(tokenSvc.deleteInfo).toHaveBeenCalledWith("SER", "a");
+    expect(tokenService.deleteInfo).toHaveBeenCalledWith("SER", "a");
     expect(component.isEditingInfo()).toBe(true);
-    expect(tokenSvc.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
+    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 });

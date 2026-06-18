@@ -20,10 +20,10 @@ import { inject, Injectable } from "@angular/core";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { VersioningService } from "@services/version/version.service";
 
-export type ActionDocumentation = {
+export interface ActionDocumentation {
   info: string[];
   notes: string[];
-};
+}
 export interface DocumentationServiceInterface {
   openDocumentation(page: string): Promise<void>;
   getVersionUrl(pageUrl: string): string;
@@ -40,11 +40,9 @@ export interface DocumentationServiceInterface {
    */
   getPolicyActionDocumentation(scope: string, actionName: string): Promise<ActionDocumentation | null>;
 }
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class DocumentationService implements DocumentationServiceInterface {
-  private _versioningService = inject(VersioningService);
+  private readonly _versioningService = inject(VersioningService);
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
   getVersionUrl(pageUrl: string): string {
     pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
@@ -59,7 +57,7 @@ export class DocumentationService implements DocumentationServiceInterface {
     let pageUrl;
     if (page.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       pageUrl = "webui/token_details.html";
-    } else if (page.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+    } else if (page.startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
       pageUrl = "webui/container_view.html#container-details";
     } else {
       switch (page) {
@@ -69,7 +67,7 @@ export class DocumentationService implements DocumentationServiceInterface {
         case ROUTE_PATHS.TOKENS:
           pageUrl = "webui/index.html#tokens";
           break;
-        case ROUTE_PATHS.TOKENS_CONTAINERS:
+        case ROUTE_PATHS.CONTAINERS:
           pageUrl = "webui/index.html#containers";
           break;
         case "tokentypes":
@@ -87,7 +85,7 @@ export class DocumentationService implements DocumentationServiceInterface {
         case "containertypes":
           pageUrl = "container/container_types.html";
           break;
-        case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
+        case ROUTE_PATHS.CONTAINERS_CREATE:
           pageUrl = "webui/container_view.html#container-create";
           break;
         default:
@@ -155,9 +153,9 @@ export class DocumentationService implements DocumentationServiceInterface {
       }
     });
   }
-  openDocumentationPage(page: string): Promise<boolean> {
+  async openDocumentationPage(page: string): Promise<boolean> {
     // First check the page and when found open it
-    return new Promise((_) => {
+    return new Promise(() => {
       const versionUrl = this.getVersionUrl(page);
       this.checkFullUrl(versionUrl).then((found) => {
         if (found) {

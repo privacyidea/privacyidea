@@ -30,7 +30,7 @@ describe("ApplicationService", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(), ApplicationService]
     });
     applicationService = TestBed.inject(ApplicationService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -90,7 +90,7 @@ describe("ApplicationService", () => {
     req.flush(MockPiResponse.fromValue(apiApplications));
     await Promise.resolve();
 
-    let applications = applicationService.applications();
+    const applications = applicationService.applications();
     expect(applications).toEqual(apiApplications);
   });
 
@@ -123,5 +123,43 @@ describe("ApplicationService", () => {
       }
     };
     expect(applications).toEqual(defaultApplications);
+  });
+
+  it("should reset to default applications when resource errors after successful load", async () => {
+    TestBed.tick();
+    let req = httpMock.expectOne((req) => req.url.includes(applicationService.applicationBaseUrl));
+    const apiApplications = {
+      luks: { options: { totp: { partition: { type: "str" }, slot: { type: "int", value: [0, 1] } } } },
+      offline: { options: { hotp: { count: { type: "str" }, rounds: { type: "str" } }, passkey: {}, webauthn: {} } },
+      ssh: {
+        options: {
+          sshkey: {
+            service_id: { description: "desc", type: "str", value: ["id1"] },
+            user: { description: "u", type: "str" }
+          }
+        }
+      }
+    };
+    req.flush(MockPiResponse.fromValue(apiApplications));
+    await Promise.resolve();
+    expect(applicationService.applications()).toEqual(apiApplications);
+
+    // Reload and return error
+    applicationService.applicationResource.reload();
+    TestBed.tick();
+    req = httpMock.expectOne((req) => req.url.includes(applicationService.applicationBaseUrl));
+    req.flush("Error", { status: 500, statusText: "Server Error" });
+    await Promise.resolve();
+
+    const defaultApplications = {
+      luks: { options: { totp: { partition: { type: "" }, slot: { type: "", value: [] } } } },
+      offline: { options: { hotp: { count: { type: "" }, rounds: { type: "" } }, passkey: {}, webauthn: {} } },
+      ssh: {
+        options: {
+          sshkey: { service_id: { description: "", type: "", value: [] }, user: { description: "", type: "" } }
+        }
+      }
+    };
+    expect(applicationService.applications()).toEqual(defaultApplications);
   });
 });

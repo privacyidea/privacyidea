@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -35,7 +34,7 @@ import {
 @Component({
   selector: "app-tiqr-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
   templateUrl: "./tiqr-config.component.html",
   styleUrl: "./tiqr-config.component.scss"
 })
@@ -48,10 +47,10 @@ export class TiqrConfigComponent {
   protected readonly TIQR_INFO_URL = TIQR_INFO_URL;
   protected readonly TIQR_OCRASUITE = TIQR_OCRASUITE;
 
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
+  formDataChange = output<Record<string, string>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

@@ -29,7 +29,7 @@
         class="table-filter">
         <mat-label i18n>Filter Resolvers...</mat-label>
         <app-clearable-input
-          (onClick)="resetFilter()"
+          (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
@@ -63,6 +63,8 @@
           <div class="name-actions-container">
             <a
               (click)="onEditResolver(element)"
+              (keydown.enter)="onEditResolver(element)"
+              role="button"
               tabindex="0">
               {{ element.resolvername }}
             </a>

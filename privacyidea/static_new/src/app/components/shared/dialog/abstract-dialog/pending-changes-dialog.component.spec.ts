@@ -31,7 +31,7 @@ import { PendingChangesDialogComponent } from "./pending-changes-dialog.componen
   template: "",
   standalone: true
 })
-class TestDialogComponent extends PendingChangesDialogComponent<any, any> {
+class TestDialogComponent extends PendingChangesDialogComponent<object, boolean> {
   readonly canSave = signal(true);
   readonly isDirty = signal(false);
 
@@ -45,7 +45,7 @@ describe("PendingChangesDialogComponent", () => {
   let fixture: ComponentFixture<TestDialogComponent>;
   let dialogService: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
-  let dialogRef: MockMatDialogRef<any>;
+  let dialogRef: MockMatDialogRef<TestDialogComponent, boolean>;
   let backdropClickSubject: Subject<MouseEvent>;
 
   beforeEach(async () => {
@@ -61,7 +61,7 @@ describe("PendingChangesDialogComponent", () => {
       ]
     }).compileComponents();
 
-    dialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any>;
+    dialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<TestDialogComponent, boolean>;
     jest.spyOn(dialogRef, "backdropClick").mockReturnValue(backdropClickSubject.asObservable());
 
     fixture = TestBed.createComponent(TestDialogComponent);
@@ -89,7 +89,10 @@ describe("PendingChangesDialogComponent", () => {
   });
 
   it("should unsubscribe from backdrop clicks on destroy", () => {
-    const handleSpy = jest.spyOn(component as any, "handleCloseAttempt");
+    const handleSpy = jest.spyOn(
+      component as TestDialogComponent & { handleCloseAttempt: () => Promise<void> },
+      "handleCloseAttempt"
+    );
 
     fixture.destroy();
     backdropClickSubject.next(new MouseEvent("click"));

@@ -21,6 +21,7 @@ import { PendingChangesServiceInterface } from "@services/pending-changes/pendin
 export class MockPendingChangesService implements PendingChangesServiceInterface {
   hasChangesMockValue = false;
   validChangesMockValue = true;
+  hasSaveFnMockValue = false;
 
   get hasChanges() {
     return this.hasChangesMockValue;
@@ -28,6 +29,10 @@ export class MockPendingChangesService implements PendingChangesServiceInterface
 
   get validChanges() {
     return this.validChangesMockValue;
+  }
+
+  get hasSaveFn() {
+    return this.hasSaveFnMockValue;
   }
 
   registerHasChanges = jest.fn();

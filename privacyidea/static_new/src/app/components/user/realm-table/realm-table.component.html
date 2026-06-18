@@ -11,7 +11,7 @@
         subscriptSizing="dynamic">
         <mat-label i18n>Filter Realms...</mat-label>
         <app-clearable-input
-          (onClick)="resetFilter()"
+          (clearButtonClick)="resetFilter()"
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
@@ -84,7 +84,9 @@
               mat-cell>
               @switch (column.key) {
                 @case ("name") {
-                  <span>{{ element.name }}</span>
+                  <app-copyable [copyText]="element.name">
+                    <span>{{ element.name }}</span>
+                  </app-copyable>
                 }
                 @case ("isDefault") {
                   <div class="flex just-center">
@@ -136,8 +138,8 @@
                                     (click)="$event.stopPropagation()"
                                     (keydown)="$event.stopPropagation()"
                                     (mousedown)="$event.stopPropagation()"
-                                    (ngModelChange)="setEditResolverPriority(group.id, r.name, $event)"
-                                    [ngModel]="r.priority"
+                                    (input)="setEditResolverPriority(group.id, r.name, $event.target['value'])"
+                                    [value]="r.priority"
                                     class="resolver-priority-input"
                                     max="999"
                                     min="1"
@@ -170,9 +172,11 @@
                                 <li class="resolver-item">
                                   <a
                                     (click)="onClickResolver(res.name); $event.preventDefault()"
+                                    (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
                                     attr.aria-label="{{ column.label }} Link"
                                     class="resolver-name"
-                                    role="button">
+                                    role="button"
+                                    tabindex="0">
                                     {{ res.name }}
                                   </a>
                                   @if (res.priority !== null && res.priority !== undefined) {
@@ -251,13 +255,10 @@
                     subscriptSizing="dynamic">
                     <mat-label i18n>Realm Name</mat-label>
                     <input
-                      #newRealmNameInput="ngModel"
                       (input)="newRealmName.set($any($event.target).value)"
-                      [ngModel]="newRealmName()"
-                      matInput
-                      pattern="^[a-zA-Z0-9._-]*$"
-                      required />
-                    @if (newRealmNameInput.errors?.['pattern']) {
+                      [value]="newRealmName()"
+                      matInput />
+                    @if (newRealmNameHasPatternError()) {
                       <mat-error i18n>Invalid characters.</mat-error>
                     }
                   </mat-form-field>
@@ -294,8 +295,14 @@
                             <div class="resolver-priority-item">
                               <span class="priority-label">{{ r.name }}</span>
                               <input
-                                (ngModelChange)="setNewRealmResolverPriority(group.id, r.name, $event)"
-                                [ngModel]="r.priority"
+                                (input)="
+                                  setNewRealmResolverPriority({
+                                    nodeId: group.id,
+                                    resolverName: r.name,
+                                    priority: $any($event.target).value
+                                  })
+                                "
+                                [value]="r.priority"
                                 class="resolver-priority-input"
                                 max="999"
                                 min="1"

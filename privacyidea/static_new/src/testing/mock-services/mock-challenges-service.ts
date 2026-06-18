@@ -16,6 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-export class MockChallengesService {
-  challengesResource = { reload: jest.fn() } as any;
+import { signal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { Challenges, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
+import { of } from "rxjs";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+
+export class MockChallengesService implements ChallengesServiceInterface {
+  apiFilter = ["serial", "transaction_id"];
+  advancedApiFilter: string[] = [];
+  challengesFilter = signal(new FilterValue());
+  pageSize = signal(10);
+  pageIndex = signal(0);
+  sort = signal<Sort>({ active: "timestamp", direction: "asc" });
+  challengesResource = new MockHttpResourceRef<PiResponse<Challenges> | undefined>(
+    MockPiResponse.fromValue<Challenges>({ challenges: [], count: 0, current: 0 })
+  );
+  clearFilter = jest.fn().mockImplementation(() => {
+    this.challengesFilter.set(new FilterValue());
+  });
+  handleFilterInput = jest.fn().mockImplementation(($event: Event) => {
+    const input = $event.target as HTMLInputElement;
+    this.challengesFilter.set(this.challengesFilter().copyWith({ value: input.value }));
+  });
+  deleteExpiredChallenges = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<unknown>(true)));
 }

@@ -32,7 +32,7 @@ import { MockContentService } from "@testing/mock-services/mock-content-service"
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 import { UserResolversComponent } from "./user-resolver.component";
 
 class LocalMockMatDialog {
@@ -134,10 +134,10 @@ describe("UserSourcesComponent", () => {
     fixture.detectChanges();
 
     const ds = component.resolversDataSource();
-    expect(ds.filterPredicate(resolvers[0] as any, "admin")).toBeTruthy();
-    expect(ds.filterPredicate(resolvers[0] as any, "passwd")).toBeTruthy();
-    expect(ds.filterPredicate(resolvers[0] as any, "nomatch")).toBeFalsy();
-    expect(ds.filterPredicate(resolvers[0] as any, "  ")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "admin")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "passwd")).toBeTruthy();
+    expect(ds.filterPredicate(resolvers[0], "nomatch")).toBeFalsy();
+    expect(ds.filterPredicate(resolvers[0], "  ")).toBeTruthy();
   });
 
   it("onEditResolver should open dialog", () => {
@@ -171,9 +171,7 @@ describe("UserSourcesComponent", () => {
   it("onDeleteResolver should show error if delete fails", () => {
     dialog.result$ = of(true);
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
-    resolverService.deleteResolver.mockReturnValue({
-      subscribe: (obs: any) => obs.error({ message: "Delete failed" })
-    } as any);
+    resolverService.deleteResolver.mockReturnValue(throwError(() => ({ message: "Delete failed" })));
 
     component.onDeleteResolver(resolver);
 
@@ -192,9 +190,7 @@ describe("UserSourcesComponent", () => {
         }
       }
     };
-    resolverService.deleteResolver.mockReturnValue({
-      subscribe: (obs: any) => obs.error(errorResponse)
-    } as any);
+    resolverService.deleteResolver.mockReturnValue(throwError(() => errorResponse));
 
     component.onDeleteResolver(resolver);
 

@@ -18,12 +18,14 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This endpoint is used to create, modify, list and delete SMS gateway
-definitions.
-These gateway definitions are written to the database table "smsgateway" and
-"smsgatewayoption".
+The SMS-gateway REST API manages SMS gateway definitions used to send
+SMS messages (for SMS-token OTP delivery, notifications, and event
+handlers). See :ref:`sms_gateway_config` for the conceptual chapter
+covering the supported provider modules and their options.
 
-The code of this module is tested in tests/test_api_smsgateway.py
+All endpoints require admin authentication. Read access is gated by
+the admin policy action :ref:`policy_smsgateway_read`; create, update
+and delete are gated by :ref:`policy_smsgateway_write`.
 """
 from flask import (Blueprint,
                    request)
@@ -34,6 +36,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
+from ..lib.crypto import censor_dict
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -42,7 +45,6 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_sms_provider_class)
 
 log = logging.getLogger(__name__)
-
 
 smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 
@@ -53,25 +55,52 @@ smsgateway_blueprint = Blueprint('smsgateway_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYREAD)
 def get_gateway(gwid=None):
     """
-    returns a json list of the gateway definitions
+    Return SMS gateway information. The behavior depends on the path:
 
-    Or
+    * ``/smsgateway/`` — return all configured gateway definitions as a
+      list of dictionaries.
+    * ``/smsgateway/<gwid>`` — return the gateway with the given numeric
+      id (still wrapped in a single-element list).
+    * ``/smsgateway/providers`` — return a dictionary keyed by provider
+      class name, where each value describes the configuration parameters
+      the class accepts. This special path is used by the WebUI to render
+      the gateway-creation form; it does not look up a gateway with the
+      literal id ``providers``.
 
-    returns a list of available sms providers with their configuration
-    /smsgateway/providers
+    Secret options and headers (those whose name contains ``PASSWORD`` or
+    ``SECRET``) are not returned in clear text; they are replaced by the
+    placeholder ``__CENSORED__``. When updating a gateway, submit
+    ``__CENSORED__`` for such a value to keep it unchanged, an empty string to
+    clear it, or a new value to replace it.
 
+    Requires admin authentication and the policy action
+    :ref:`policy_smsgateway_read`.
+
+    :param gwid: optional path component, the numeric id of a gateway,
+        or the literal string ``providers`` for the schema lookup.
+    :status 200: list of gateway dictionaries, or a dictionary of provider
+        schemas, in ``result.value``.
     """
     res = {}
-    # TODO: if the gateway definitions contains a password normal users should
-    #  not be allowed to read the configuration. Normal users should only be
-    #  allowed to read the identifier of the definitions!
     if gwid == "providers":
         for classname in SMS_PROVIDERS:
             smsclass = get_sms_provider_class(classname.rsplit(".", 1)[0],
                                               classname.rsplit(".", 1)[1])
             res[classname] = smsclass.parameters()
     else:
-        res = [gw.as_dict() for gw in get_smsgateway(id=gwid)]
+        res = []
+        for gw in get_smsgateway(id=gwid):
+            gw_dict = gw.as_dict()
+            # Censor secret-looking options AND headers (e.g. auth headers) so they
+            # are not returned in clear text. NOTE: this is still a key-name
+            # heuristic; secrets in differently-named keys (e.g. an Authorization
+            # header or a Firebase credentials option) are not detected. A robust
+            # fix needs the provider classes to declare which fields are secret.
+            for section in ("options", "headers"):
+                secret_keys = [key for key in gw_dict.get(section, {})
+                               if "PASSWORD" in key.upper() or "SECRET" in key.upper()]
+                gw_dict[section] = censor_dict(gw_dict.get(section, {}), secret_keys)
+            res.append(gw_dict)
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -82,15 +111,23 @@ def get_gateway(gwid=None):
 @prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYWRITE)
 def set_gateway():
     """
-    This creates a new SMS gateway definition or updates an existing one.
+    Create or update an SMS gateway definition. If a definition with the
+    given ``name`` already exists it is updated; otherwise it is created.
 
-    :jsonparam name: The unique identifier of the SMS gateway definition
-    :jsonparam module: The providermodule name
-    :jsonparam description: An optional description of the definition
-    :jsonparam option.*: Additional options for the provider module (module
-        specific)
-    :jsonparam header.*: Additional headers for the provider module (module
-        specific)
+    Requires admin authentication and the policy action
+    :ref:`policy_smsgateway_write`.
+
+    :jsonparam name: unique identifier for the gateway (required).
+    :jsonparam module: dotted Python path of the SMS provider class to
+        use (required, e.g.
+        ``privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider``).
+    :jsonparam description: free-form description.
+    :jsonparam option.*: provider-specific options. Field names are taken
+        after the ``option.`` prefix (e.g. ``option.URL`` becomes the
+        ``URL`` option).
+    :jsonparam header.*: HTTP headers to send with provider requests, same
+        naming scheme as ``option.*``.
+    :status 200: database id of the gateway in ``result.value``.
     """
     param = request.all_data
     identifier = get_required(param, "name")
@@ -116,10 +153,15 @@ def set_gateway():
 @prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYWRITE)
 def delete_gateway(identifier=None):
     """
-    this function deletes an existing smsgateway definition
+    Delete the SMS gateway definition with the given identifier and all
+    its options and headers.
 
-    :param identifier: The name of the sms gateway definition
-    :return: json with success or fail
+    Requires admin authentication and the policy action
+    :ref:`policy_smsgateway_write`.
+
+    :param identifier: path component, the gateway name.
+    :status 200: number of deleted rows in ``result.value``
+        (``0`` if no gateway with that name existed).
     """
     res = delete_smsgateway(identifier=identifier)
     g.audit_object.log({"success": res,
@@ -133,10 +175,16 @@ def delete_gateway(identifier=None):
 @prepolicy(check_base_action, request, PolicyAction.SMSGATEWAYWRITE)
 def delete_gateway_option(gwid=None, key=None):
     """
-    this function deletes an option of a gateway definition
+    Delete a single option (or header) from an SMS gateway definition.
 
-    :param gwid: The id of the sms gateway definition
-    :return: json with success or fail
+    Requires admin authentication and the policy action
+    :ref:`policy_smsgateway_write`.
+
+    :param gwid: path component, the numeric id of the gateway.
+    :param key: path component, the option name to delete. Prefix with
+        ``header.`` to remove a header instead of an option (e.g. pass
+        ``header.X-Foo`` to delete the ``X-Foo`` header).
+    :status 200: number of deleted rows in ``result.value``.
     """
     type = "option"
     if "." in key:

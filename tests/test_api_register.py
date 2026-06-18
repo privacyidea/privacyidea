@@ -1,6 +1,8 @@
+from email import message_from_string
+
 from privacyidea.lib.resolver import delete_resolver, save_resolver
-from privacyidea.lib.realm import delete_realm, set_realm
-from .base import MyApiTestCase
+from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
+from .base import MyApiTestCase, PristineSqliteFixtures
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
@@ -12,10 +14,11 @@ from privacyidea.lib.user import User
 from privacyidea.lib.error import Error
 
 
-class RegisterTestCase(MyApiTestCase):
+class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
     """
     test the api.register and api.recover endpoints
     """
+    pristine_fixtures = ["tests/testdata/testuser.sqlite"]
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
@@ -143,9 +146,72 @@ class RegisterTestCase(MyApiTestCase):
             self.assertEqual(data.get("result").get("value"), True)
 
     @smtpmock.activate
+    def test_01b_register_falls_back_to_default_realm(self):
+        # Without a SCOPE.REGISTER realm policy, the user must be created in
+        # the configured default realm.
+        smtpmock.setdata(response={"another@privacyidea.org": (200, "OK")})
+        # Drop the realm part of pol2; keep the resolver mapping.
+        set_policy(name="pol2", scope=SCOPE.REGISTER,
+                   action="{0!s}={1!s}".format(PolicyAction.RESOLVER, "register"))
+        set_default_realm("register")
+        try:
+            with self.app.test_request_context('/register',
+                                               method='POST',
+                                               data={"username": "corneliusRegDefault",
+                                                     "surname": "Kölbel",
+                                                     "givenname": "Cornelius",
+                                                     "password": "cammerah",
+                                                     "email": "another@privacyidea.org"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.data)
+                self.assertTrue(res.json["result"]["value"], res.json)
+        finally:
+            # Restore the realm policy used by the remaining tests.
+            set_policy(name="pol2", scope=SCOPE.REGISTER,
+                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
+                                                                PolicyAction.RESOLVER, "register"))
+            # Clean up the user we just created so test_99 stays idempotent.
+            y = SQLResolver()
+            y.loadConfig(self.parameters)
+            uid = y.getUserId("corneliusRegDefault")
+            if uid:
+                y.delete_user(uid)
+
+    @smtpmock.activate
     def test_02_reset_password(self):
         smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
         set_privacyidea_config("recovery.identifier", "myserver")
+        # With a trusted PI_BASE_URL configured, recovery works and the link
+        # host is taken from the configuration, never from the inbound request
+        # host (which is "localhost" here)
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+        try:
+            with self.app.test_request_context('/recover',
+                                               method='POST',
+                                               data={"user": "corneliusReg",
+                                                     "realm": "register",
+                                                     "email":
+                                                         "cornelius@privacyidea.org"}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res.data)
+                data = res.json
+                self.assertEqual(data.get("result").get("value"), True)
+                # The emailed link host is the configured PI_BASE_URL, not the
+                # request host (which is "localhost" here).
+                body = message_from_string(
+                    smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+                self.assertIn("https://pi.example.com/#!/reset/corneliusReg@register/", body)
+                self.assertNotIn("localhost", body)
+        finally:
+            self.app.config.pop("PI_BASE_URL", None)
+
+    @smtpmock.activate
+    def test_02b_recover_requires_base_url(self):
+        # Without a configured PI_BASE_URL, the recovery link would be built
+        # from the untrusted HTTP Host header, so the endpoint must refuse
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
+        set_privacyidea_config("recovery.identifier", "myserver")
+        self.app.config.pop("PI_BASE_URL", None)
         with self.app.test_request_context('/recover',
                                            method='POST',
                                            data={"user": "corneliusReg",
@@ -153,9 +219,8 @@ class RegisterTestCase(MyApiTestCase):
                                                  "email":
                                                      "cornelius@privacyidea.org"}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res.data)
-            data = res.json
-            self.assertEqual(data.get("result").get("value"), True)
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json.get("result").get("status"))
 
     @smtpmock.activate
     def test_03_set_new_password(self):
@@ -189,6 +254,10 @@ class RegisterTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res.data)
             data = res.json
             self.assertEqual(data.get("result").get("value"), False)
+
+        # The failed reset attempt is recorded in the audit log.
+        audit_entry = self.find_most_recent_audit_entry(action='POST /recover/reset')
+        self.assertEqual(0, audit_entry['success'], audit_entry)
 
         # test the new password
 

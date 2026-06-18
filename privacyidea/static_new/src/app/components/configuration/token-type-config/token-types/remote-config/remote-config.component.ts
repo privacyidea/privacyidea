@@ -18,7 +18,6 @@
  **/
 import { Component, computed, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -29,7 +28,7 @@ import { parseBooleanValue } from "@utils/parse-boolean-value";
 @Component({
   selector: "app-remote-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
   templateUrl: "./remote-config.component.html",
   styleUrl: "./remote-config.component.scss"
 })
@@ -37,12 +36,12 @@ export class RemoteConfigComponent {
   protected readonly REMOTE_SERVER = REMOTE_SERVER;
   protected readonly REMOTE_VERIFY_SSL = REMOTE_VERIFY_SSL;
 
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string | boolean>>();
+  formDataChange = output<Record<string, string | boolean>>();
 
   verifySSL = computed(() => parseBooleanValue(this.formData()[REMOTE_VERIFY_SSL]));
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string | boolean): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

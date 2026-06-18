@@ -21,29 +21,77 @@
   <div class="margin-bottom-16">
     <span i18n>
       The token was successfully enrolled with serial number
-      <a (click)="tokenSelected()"> {{ serial() }} </a>.
+      <a
+        role="button"
+        tabindex="0"
+        (click)="tokenSelected()"
+        (keydown.enter)="tokenSelected()"
+        (keydown.space)="$event.preventDefault(); tokenSelected()">
+        {{ serial() }} </a
+      >.
     </span>
     @if (containerSerial()) {
       <div i18n>
         It has been enrolled in the container
-        <a (click)="natigateContainerDetails()">
+        <a
+          role="button"
+          tabindex="0"
+          (click)="natigateContainerDetails()"
+          (keydown.enter)="natigateContainerDetails()"
+          (keydown.space)="$event.preventDefault(); natigateContainerDetails()">
           {{ containerSerial() }}
         </a>
         .
       </div>
     }
-    @if (username() && userRealm() != "" && !onlyAddToRealm()) {
+    @if (username() && userRealm() !== "" && !onlyAddToRealm()) {
       <div i18n>
         The user
-        <span>{{ username() }}</span>
+        @if (authService.actionAllowed("userlist")) {
+          <a
+            role="button"
+            tabindex="0"
+            (click)="navigateUserDetails()"
+            (keydown.enter)="navigateUserDetails()"
+            (keydown.space)="$event.preventDefault(); navigateUserDetails()"
+            class="text-link-button cursor-pointer"
+            >{{ username() }}</a
+          >
+        } @else {
+          <span>{{ username() }}</span>
+        }
         in the realm
-        <span>{{ userRealm() }}</span>
+        @if (authService.role() === "admin") {
+          <a
+            role="button"
+            tabindex="0"
+            (click)="navigateRealms()"
+            (keydown.enter)="navigateRealms()"
+            (keydown.space)="$event.preventDefault(); navigateRealms()"
+            class="text-link-button cursor-pointer"
+            >{{ userRealm() }}</a
+          >
+        } @else {
+          <span>{{ userRealm() }}</span>
+        }
         was assigned to the token.
       </div>
     } @else if (userRealm() && onlyAddToRealm()) {
       <div i18n>
         The token was assigned to the realm
-        <span>{{ userRealm() }}</span>
+        @if (authService.role() === "admin") {
+          <a
+            role="button"
+            tabindex="0"
+            (click)="navigateRealms()"
+            (keydown.enter)="navigateRealms()"
+            (keydown.space)="$event.preventDefault(); navigateRealms()"
+            class="text-link-button cursor-pointer"
+            >{{ userRealm() }}</a
+          >
+        } @else {
+          <span>{{ userRealm() }}</span>
+        }
         .
       </div>
     }
@@ -52,7 +100,14 @@
   <div class="margin-bottom-16">
     <span i18n>
       The token with serial number
-      <a (click)="tokenSelected()"> {{ serial() }} </a>
+      <a
+        role="button"
+        tabindex="0"
+        (click)="tokenSelected()"
+        (keydown.enter)="tokenSelected()"
+        (keydown.space)="$event.preventDefault(); tokenSelected()">
+        {{ serial() }}
+      </a>
       was successfully rolled over.
     </span>
   </div>

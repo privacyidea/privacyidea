@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnInit, ViewChild } from "@angular/core";
-import { FormsModule, NgForm } from "@angular/forms";
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
@@ -27,13 +26,38 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { isChecked } from "@utils/parse-boolean-value";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
+
+export interface SystemConfigParams {
+  splitAtSign?: boolean;
+  IncFailCountOnFalsePin?: boolean;
+  no_auth_counter?: boolean;
+  PrependPin?: boolean;
+  ReturnSamlAttributes?: boolean;
+  ReturnSamlAttributesOnFail?: boolean;
+  AutoResync?: boolean;
+  UiLoginDisplayHelpButton?: boolean;
+  UiLoginDisplayRealmBox?: boolean;
+  AutoResyncTimeout?: string;
+  OverrideAuthorizationClient?: string;
+  UserCacheExpiration?: string;
+  failcounter_clear_timeout?: string;
+  DefaultChallengeValidityTime?: string;
+  DefaultCountWindow?: string;
+  DefaultMaxFailCount?: string;
+  DefaultOtpLen?: string;
+  DefaultSyncWindow?: string;
+  "recovery.identifier"?: string;
+  [key: string]: string | boolean | undefined;
+}
 
 @Component({
   selector: "app-system-config",
@@ -41,7 +65,6 @@ import { SystemDocumentationDialogComponent } from "./system-documentation-dialo
   imports: [
     MatFormField,
     MatLabel,
-    FormsModule,
     MatInput,
     MatSelect,
     MatOption,
@@ -50,43 +73,45 @@ import { SystemDocumentationDialogComponent } from "./system-documentation-dialo
     MatCheckbox,
     ScrollToTopDirective,
     MatButton,
-    MatIcon
+    MatIcon,
+    ClearableInputComponent
   ],
   styleUrls: ["./system-config.component.scss"]
 })
-export class SystemConfigComponent implements OnInit {
+export class SystemConfigComponent implements OnInit, OnDestroy {
   private readonly systemService: SystemServiceInterface = inject(SystemService);
-  protected readonly authService: AuthService = inject(AuthService);
+  protected readonly authService = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
-  @ViewChild("systemConfigForm", { static: true }) systemConfigForm!: NgForm;
 
-  params: any = {};
+  params = signal<SystemConfigParams>({});
+  isDirty = signal(false);
   smtpIdentifiers: string[] = [];
 
   constructor() {
     effect(() => {
       const config = this.systemService.systemConfig();
       if (config && Object.keys(config).length > 0) {
-        this.params = { ...config };
+        const newParams: Record<string, string | boolean> = { ...config };
         const booleanKeys = [
           "splitAtSign",
           "IncFailCountOnFalsePin",
           "no_auth_counter",
           "PrependPin",
-          "ReturnSamlAttributes",
-          "ReturnSamlAttributesOnFail",
           "AutoResync",
           "UiLoginDisplayHelpButton",
           "UiLoginDisplayRealmBox"
         ];
         booleanKeys.forEach((key) => {
-          if (this.params[key] !== undefined) {
-            this.params[key] = isChecked(this.params[key]);
+          if (newParams[key] !== undefined) {
+            newParams[key] = isChecked(newParams[key]);
           }
         });
+        this.params.set(newParams as SystemConfigParams);
+        this.isDirty.set(false);
       }
     });
 
@@ -99,8 +124,15 @@ export class SystemConfigComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSystemConfig();
-    // Trigger loading SMTP servers; the effect above will populate smtpIdentifiers when loaded
     this.smtpService.smtpServerResource.reload();
+    this.pendingChangesService.registerHasChanges(() => this.isDirty());
+    this.pendingChangesService.registerValidChanges(() => this.hasConfigWritePermission());
+    this.pendingChangesService.registerSave(() => this._saveAndReturn());
+  }
+
+  updateParam(key: string, value: string | boolean): void {
+    this.params.set({ ...this.params(), [key]: value });
+    this.isDirty.set(true);
   }
 
   loadSystemConfig(): void {
@@ -108,33 +140,53 @@ export class SystemConfigComponent implements OnInit {
   }
 
   saveSystemConfig(): void {
-    const body = { ...this.params };
+    const body = { ...this.params() };
 
     this.systemService.saveSystemConfig(body).subscribe({
-      next: (response: any) => {
-        if (response.result.status) {
+      next: (response) => {
+        if (response.result?.status) {
           this.notificationService.success("System configuration saved successfully.");
         } else {
           this.notificationService.error("Failed to save system configuration.");
         }
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error saving system configuration:", error);
         this.notificationService.error("Error saving system configuration.");
       }
     });
   }
 
+  private _saveAndReturn(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      this.systemService.saveSystemConfig({ ...this.params() }).subscribe({
+        next: (response) => {
+          if (response.result?.status) {
+            this.notificationService.success("System configuration saved successfully.");
+            resolve(true);
+          } else {
+            this.notificationService.error("Failed to save system configuration.");
+            resolve(false);
+          }
+        },
+        error: () => {
+          this.notificationService.error("Error saving system configuration.");
+          resolve(false);
+        }
+      });
+    });
+  }
+
   deleteUserCache(): void {
     this.systemService.deleteUserCache().subscribe({
-      next: (response: any) => {
-        if (response.result.status) {
+      next: (response) => {
+        if (response.result?.status) {
           this.notificationService.success("User cache deleted successfully.");
         } else {
           this.notificationService.error("Failed to delete user cache.");
         }
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error deleting user cache:", error);
         this.notificationService.error("Error deleting user cache.");
       }
@@ -154,10 +206,14 @@ export class SystemConfigComponent implements OnInit {
           data: { documentation }
         });
       },
-      error: (error: any) => {
+      error: (error) => {
         console.error("Error loading system documentation:", error);
         this.notificationService.error("Error loading system documentation.");
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
   }
 }

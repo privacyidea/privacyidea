@@ -25,14 +25,32 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
+export type CaConnectorConfigValue = string | number | boolean | string[] | null;
+export type CaConnectorData = Record<string, CaConnectorConfigValue>;
+export type CaConnectorTemplate = Record<string, CaConnectorConfigValue>;
+export type CaConnectorTemplates = Record<string, CaConnectorTemplate>;
+
 export interface CaConnector {
   connectorname: string;
   type: string;
-  data: Record<string, any>;
-  templates?: Record<string, any>;
+  data: CaConnectorData;
+  templates?: CaConnectorTemplates;
 }
 
 export type CaConnectors = CaConnector[];
+
+export type CaSpecificOptions = Record<string, CaConnectorConfigValue | CaConnectorTemplates>;
+
+export interface CaSpecificOptionsParams {
+  hostname: string;
+  port?: string | number;
+  use_ssl?: boolean | string;
+  ssl_ca_cert?: string;
+  ssl_client_cert?: string;
+  ssl_client_key?: string;
+  ssl_client_key_password?: string;
+  http_proxy?: string;
+}
 
 export interface CaConnectorServiceInterface {
   caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
@@ -42,29 +60,15 @@ export interface CaConnectorServiceInterface {
 
   deleteCaConnector(connectorname: string): Promise<void>;
 
-  getCaSpecificOptions(
-    catype: string,
-    params: {
-      hostname: any;
-      port?: any;
-      use_ssl?: any;
-      ssl_ca_cert?: any;
-      ssl_client_cert?: any;
-      ssl_client_key?: any;
-      ssl_client_key_password?: any;
-      http_proxy?: any;
-    }
-  ): Promise<any>;
+  getCaSpecificOptions(catype: string, params: CaSpecificOptionsParams): Promise<CaSpecificOptions | undefined>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class CaConnectorService implements CaConnectorServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
 
@@ -80,13 +84,22 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: () => (this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined),
-    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+    source: () => ({
+      value: this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+      isLoading: this.caConnectorResource.isLoading(),
+      error: this.caConnectorResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
+      return value;
+    }
   });
 
   async postCaConnector(connector: CaConnector): Promise<void> {
     const url = `${this.caConnectorBaseUrl}${encodeURIComponent(connector.connectorname)}`;
-    const request = this.http.post<PiResponse<any>>(url, connector.data, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(url, connector.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
@@ -101,7 +114,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   }
 
   async deleteCaConnector(connectorname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(
+    const request = this.http.delete<PiResponse<number>>(
       `${this.caConnectorBaseUrl}${encodeURIComponent(connectorname)}`,
       {
         headers: this.authService.getHeaders()
@@ -119,10 +132,10 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       });
   }
 
-  async getCaSpecificOptions(catype: string, params: any): Promise<any> {
-    const pstring = new URLSearchParams(params).toString();
+  async getCaSpecificOptions(catype: string, params: CaSpecificOptionsParams): Promise<CaSpecificOptions | undefined> {
+    const pstring = new URLSearchParams(params as unknown as Record<string, string>).toString();
     const url = `${this.caConnectorBaseUrl}specific/${encodeURIComponent(catype)}?${pstring}`;
-    const request = this.http.get<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
+    const request = this.http.get<PiResponse<CaSpecificOptions>>(url, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then((res) => {

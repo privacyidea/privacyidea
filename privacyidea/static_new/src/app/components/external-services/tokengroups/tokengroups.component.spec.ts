@@ -18,53 +18,58 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockTableUtilsService,
+  MockTokengroupService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { TokengroupsComponent } from "./tokengroups.component";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;
   let fixture: ComponentFixture<TokengroupsComponent>;
-  let tokengroupServiceMock: any;
+  let tokengroupServiceMock: MockTokengroupService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<SaveAndExitDialogResult>;
   let router: Router;
 
   beforeEach(async () => {
-    tokengroupServiceMock = {
-      tokengroups: signal([
-        { groupname: "group1", description: "desc1", id: 1 },
-        { groupname: "group2", description: "desc2", id: 2 }
-      ]),
-      deleteTokengroup: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
-      imports: [TokengroupsComponent, NoopAnimationsModule],
+      imports: [TokengroupsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: TokengroupService, useValue: tokengroupServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: TokengroupService, useClass: MockTokengroupService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
+
+    tokengroupServiceMock = TestBed.inject(TokengroupService) as unknown as MockTokengroupService;
+    tokengroupServiceMock.tokengroups.set([
+      { groupname: "group1", description: "desc1", id: 1 },
+      { groupname: "group2", description: "desc2", id: 2 }
+    ]);
 
     fixture = TestBed.createComponent(TokengroupsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;

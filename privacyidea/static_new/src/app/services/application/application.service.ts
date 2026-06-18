@@ -22,12 +22,11 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
-
-export type Applications = {
+export interface Applications {
   luks: ApplicationLuks;
   offline: ApplicationOffline;
   ssh: ApplicationSsh;
-};
+}
 
 interface ApplicationLuks {
   options: {
@@ -44,8 +43,8 @@ interface ApplicationOffline {
       count: { type: string };
       rounds: { type: string };
     };
-    passkey: {};
-    webauthn: {};
+    passkey: Record<string, never>;
+    webauthn: Record<string, never>;
   };
 }
 
@@ -71,13 +70,35 @@ export interface ApplicationServiceInterface {
   applications: WritableSignal<Applications>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ApplicationService implements ApplicationServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+
   readonly applicationBaseUrl = environment.proxyUrl + "/application/";
+
+  private readonly empty: Applications = {
+    luks: {
+      options: {
+        totp: { partition: { type: "" }, slot: { type: "", value: [] } }
+      }
+    },
+    offline: {
+      options: {
+        hotp: { count: { type: "" }, rounds: { type: "" } },
+        passkey: {},
+        webauthn: {}
+      }
+    },
+    ssh: {
+      options: {
+        sshkey: {
+          service_id: { description: "", type: "", value: [] },
+          user: { description: "", type: "" }
+        }
+      }
+    }
+  };
 
   constructor() {
     effect(() => {
@@ -91,35 +112,16 @@ export class ApplicationService implements ApplicationServiceInterface {
     headers: this.authService.getHeaders()
   }));
   applications: WritableSignal<Applications> = linkedSignal({
-    source: this.applicationResource.value,
+    source: () => ({
+      value: this.applicationResource.hasValue() ? this.applicationResource.value() : undefined,
+      isLoading: this.applicationResource.isLoading(),
+      error: this.applicationResource.error()
+    }),
     computation: (source, previous) => {
-      if (source?.result?.value) {
-        return source.result.value;
-      }
-      return (
-        previous?.value ?? {
-          luks: {
-            options: {
-              totp: { partition: { type: "" }, slot: { type: "", value: [] } }
-            }
-          },
-          offline: {
-            options: {
-              hotp: { count: { type: "" }, rounds: { type: "" } },
-              passkey: {},
-              webauthn: {}
-            }
-          },
-          ssh: {
-            options: {
-              sshkey: {
-                service_id: { description: "", type: "", value: [] },
-                user: { description: "", type: "" }
-              }
-            }
-          }
-        }
-      );
+      if (source.error) return this.empty;
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? this.empty) : this.empty;
+      return value;
     }
   });
 }

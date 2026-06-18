@@ -25,9 +25,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
-type ServiceIds = {
-  [key: string]: _ServiceId;
-};
+type ServiceIds = Record<string, _ServiceId>;
 
 interface _ServiceId {
   description: string;
@@ -47,14 +45,12 @@ export interface ServiceIdServiceInterface {
   deleteServiceId(servicename: string): Promise<void>;
 }
 
-@Injectable({
-  providedIn: "root"
-})
+@Injectable()
 export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  private readonly http: HttpClient = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
@@ -71,12 +67,15 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   });
 
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
-    source: () => (this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined),
-    computation: (serviceIdResource, previous) => {
-      const value = serviceIdResource?.result?.value;
-      if (!value) {
-        return previous?.value ?? [];
-      }
+    source: () => ({
+      value: this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined,
+      isLoading: this.serviceIdResource.isLoading(),
+      error: this.serviceIdResource.error()
+    }),
+    computation: (source, previous) => {
+      if (source.error) return [];
+      const value = source.value?.result?.value;
+      if (!value) return source.isLoading ? (previous?.value ?? []) : [];
       return Object.entries(value).map(([servicename, { description, id }]) => ({
         servicename,
         description,
@@ -87,7 +86,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   async postServiceId(serviceId: ServiceId): Promise<void> {
     const url = `${this.serviceIdBaseUrl}${encodeURIComponent(serviceId.servicename)}`;
-    const request = this.http.post<PiResponse<any>>(url, serviceId, { headers: this.authService.getHeaders() });
+    const request = this.http.post<PiResponse<number>>(url, serviceId, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
@@ -102,7 +101,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   }
 
   async deleteServiceId(servicename: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.serviceIdBaseUrl}${encodeURIComponent(servicename)}`, {
+    const request = this.http.delete<PiResponse<number>>(`${this.serviceIdBaseUrl}${encodeURIComponent(servicename)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

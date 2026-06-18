@@ -16,19 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  AfterViewInit,
-  Component,
-  effect,
-  ElementRef,
-  inject,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild
-} from "@angular/core";
+import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -40,6 +30,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -49,11 +40,39 @@ import {
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
 
+interface RadiusFormModel {
+  identifier: string;
+  server: string;
+  port: number;
+  timeout: number;
+  retries: number;
+  secret: string;
+  message_authenticator: boolean;
+  dictionary: string;
+  description: string;
+  username: string;
+  password: string;
+}
+
+const EMPTY_RADIUS_FORM: RadiusFormModel = {
+  identifier: "",
+  server: "",
+  port: 1812,
+  timeout: 5,
+  retries: 3,
+  secret: "",
+  message_authenticator: true,
+  dictionary: "",
+  description: "",
+  username: "",
+  password: ""
+};
+
 @Component({
   selector: "app-new-radius-server",
   standalone: true,
   imports: [
-    ReactiveFormsModule,
+    FormField,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
@@ -61,31 +80,33 @@ import {
     MatIconModule,
     MatTooltip,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    StickyHeaderDirective
   ],
   templateUrl: "./new-radius-server.component.html",
   styleUrl: "./new-radius-server.component.scss"
 })
-export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
+export class NewRadiusServerComponent implements OnDestroy {
   protected readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly renderer: Renderer2 = inject(Renderer2);
 
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-
-  private observer!: IntersectionObserver;
-
-  radiusForm!: FormGroup;
-  isEditMode = false;
+  isEditMode = signal(false);
   isTesting = signal(false);
   private editIdentifier: string | null = null;
+
+  radiusModel = signal<RadiusFormModel>({ ...EMPTY_RADIUS_FORM });
+
+  radiusForm = form(this.radiusModel, (f) => {
+    required(f.identifier);
+    pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    required(f.server);
+    required(f.secret);
+    disabled(f.identifier, () => this.isEditMode());
+  });
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -95,99 +116,74 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const identifier = params.get("identifier");
       if (identifier) {
-        this.isEditMode = true;
+        this.isEditMode.set(true);
         this.editIdentifier = identifier;
         const server = this.radiusService.radiusServers().find((s) => s.identifier === identifier);
-        this.initForm(server ?? null);
+        this.loadData(server ?? null);
       } else {
-        this.isEditMode = false;
+        this.isEditMode.set(false);
         this.editIdentifier = null;
-        this.initForm(null);
+        this.loadData(null);
       }
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const servers = this.radiusService.radiusServers();
-      if (this.isEditMode && this.editIdentifier && this.radiusForm?.pristine) {
+      if (this.isEditMode() && this.editIdentifier && untracked(() => !this.radiusForm().dirty())) {
         const found = servers.find((s) => s.identifier === this.editIdentifier);
         if (found) {
-          this.initForm(found);
+          this.loadData(found);
         }
       }
     });
   }
 
   get hasChanges(): boolean {
-    return !this.radiusForm.pristine;
+    return this.radiusForm().dirty();
   }
 
   get canSave(): boolean {
-    return this.authService.actionAllowed("radiusserver_write") && this.radiusForm.valid;
-  }
-
-  ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    const options: IntersectionObserverInit = {
-      root: this.scrollContainer.nativeElement,
-      threshold: [0, 1]
-    };
-
-    this.observer = new IntersectionObserver(([entry]) => {
-      if (!entry.rootBounds) return;
-      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-      if (shouldFloat) {
-        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-      } else {
-        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-      }
-    }, options);
-
-    this.observer.observe(this.stickySentinel.nativeElement);
+    return this.authService.actionAllowed("radiusserver_write") && this.radiusForm().valid();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.observer?.disconnect();
   }
 
-  private initForm(data: RadiusServer | null): void {
-    this.radiusForm = this.formBuilder.group({
-      identifier: [data?.identifier || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-      server: [data?.server || "", [Validators.required]],
-      port: [data?.port || 1812],
-      timeout: [data?.timeout || 5],
-      retries: [data?.retries || 3],
-      secret: [data?.secret || "", [Validators.required]],
-      message_authenticator: [data?.options?.message_authenticator ?? true],
-      dictionary: [data?.dictionary || ""],
-      description: [data?.description || ""],
-      username: [""],
-      password: [""]
+  private loadData(data: RadiusServer | null): void {
+    this.radiusModel.set({
+      identifier: data?.identifier || "",
+      server: data?.server || "",
+      port: data?.port || 1812,
+      timeout: data?.timeout || 5,
+      retries: data?.retries || 3,
+      secret: data?.secret || "",
+      message_authenticator: data?.options?.message_authenticator ?? true,
+      dictionary: data?.dictionary || "",
+      description: data?.description || "",
+      username: "",
+      password: ""
     });
-
-    if (this.isEditMode) {
-      this.radiusForm.get("identifier")?.disable();
-    }
+    this.radiusForm().reset();
   }
 
   async save(): Promise<boolean> {
-    if (this.radiusForm.invalid) {
+    if (!this.radiusForm().valid()) {
       return false;
     }
-    const formValue = this.radiusForm.getRawValue();
+    const model = this.radiusModel();
     const server: RadiusServer = {
-      identifier: formValue.identifier,
-      server: formValue.server,
-      port: formValue.port,
-      timeout: formValue.timeout,
-      retries: formValue.retries,
-      secret: formValue.secret,
-      dictionary: formValue.dictionary,
-      description: formValue.description,
+      identifier: model.identifier,
+      server: model.server,
+      port: model.port,
+      timeout: model.timeout,
+      retries: model.retries,
+      secret: model.secret,
+      dictionary: model.dictionary,
+      description: model.description,
       options: {
-        message_authenticator: formValue.message_authenticator
+        message_authenticator: model.message_authenticator
       }
     };
     try {
@@ -195,19 +191,19 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   test(): void {
-    if (this.radiusForm.valid) {
+    if (this.radiusForm().valid()) {
       this.isTesting.set(true);
-      const formValue = this.radiusForm.getRawValue();
+      const model = this.radiusModel();
       const params = {
-        ...formValue,
+        ...model,
         options: {
-          message_authenticator: formValue.message_authenticator
+          message_authenticator: model.message_authenticator
         }
       };
       this.radiusService.testRadiusServer(params).then(() => {

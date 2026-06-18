@@ -47,8 +47,8 @@ describe("ClientsService", () => {
       ]
     });
     clientService = TestBed.inject(ClientsService);
-    contentService = TestBed.inject(ContentService) as any;
-    mockAuthService = TestBed.inject(AuthService) as any;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    mockAuthService = TestBed.inject(AuthService) as unknown as MockAuthService;
     mockAuthService.actionAllowed.mockImplementation((action: string) => action === "clienttype");
   });
 
@@ -79,5 +79,36 @@ describe("ClientsService", () => {
     await Promise.resolve();
 
     expect(clientService.clientsResource.value()).toBeDefined();
+  });
+
+  it("triggers a request on a non-CLIENTS route after requestClientsForAutocomplete is called", async () => {
+    contentService.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+    const mockBackend = TestBed.inject(HttpTestingController);
+    TestBed.tick();
+    mockBackend.expectNone(environment.proxyUrl + "/client/");
+
+    clientService.requestClientsForAutocomplete();
+    TestBed.tick();
+
+    const req = mockBackend.expectOne(environment.proxyUrl + "/client/");
+    req.flush({ result: { value: {} } });
+    await Promise.resolve();
+
+    expect(clientService.clientsResource.value()).toBeDefined();
+  });
+
+  it("is idempotent: calling requestClientsForAutocomplete twice only triggers one request", async () => {
+    contentService.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+    const mockBackend = TestBed.inject(HttpTestingController);
+    TestBed.tick();
+
+    clientService.requestClientsForAutocomplete();
+    clientService.requestClientsForAutocomplete();
+    TestBed.tick();
+
+    const req = mockBackend.expectOne(environment.proxyUrl + "/client/");
+    req.flush({ result: { value: {} } });
+    await Promise.resolve();
+    mockBackend.verify();
   });
 });

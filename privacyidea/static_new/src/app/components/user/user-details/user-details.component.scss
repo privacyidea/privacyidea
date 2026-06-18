@@ -8,9 +8,9 @@
 
 .user-details {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 32px;
-  padding: 12px 16px;
+  grid-template-columns: repeat(3, calc(100% / 3));
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
@@ -19,8 +19,8 @@
 .custom-user-details {
   display: grid;
   grid-template-columns: repeat(2, auto);
-  gap: 0 16px;
-  padding: 12px 16px;
+  gap: 0 var(--global-gap);
+  padding: var(--three-quarters-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
@@ -29,21 +29,21 @@
 .custom-user-details-column {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 0 16px;
+  gap: 0 var(--global-gap);
   margin-bottom: auto;
 
   &:not(:last-of-type) {
     border-right: 1px solid var(--mat-sys-surface-container-highest);
-    padding-right: 32px;
+    padding-right: var(--double-global-padding);
   }
 }
 
 .user-details-grid,
 .user-details-column {
   display: grid;
-  grid-template-columns: auto auto;
-  gap: 16px;
-  padding: 0;
+  grid-template-columns: max-content;
+  gap: var(--half-global-gap) var(--global-gap);
+  padding-right: var(--half-global-padding);
   border: 0;
   margin-bottom: auto;
 
@@ -54,20 +54,67 @@
 
 .label {
   font-weight: 600;
-  overflow: auto;
-  text-overflow: ellipsis;
   display: block;
-  margin-block: auto;
-  max-width: 240px;
+  min-height: 28px;
+  align-self: start;
+  overflow-wrap: anywhere;
 }
 
 .value {
   grid-column: 2;
-  overflow: auto;
-  text-overflow: ellipsis;
   display: block;
-  margin-block: auto;
-  max-width: 240px;
+  min-height: 28px;
+  align-self: start;
+  overflow-wrap: anywhere;
+}
+
+.value-list {
+  list-style: disc outside;
+  padding-left: 1em;
+  margin: 0;
+}
+
+.value-list li {
+  overflow-wrap: anywhere;
+}
+
+.value-list li + li {
+  margin-top: var(--quarter-global-padding);
+}
+
+.value-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--quarter-global-padding);
+  padding: var(--eighth-global-padding) 6px var(--eighth-global-padding) var(--quarter-global-padding);
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85em;
+  border-radius: var(--border-radius);
+
+  &:hover {
+    background: var(--mat-sys-surface-container-highest);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: var(--eighth-global-padding);
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.label-value-row {
+  display: grid;
+  grid-template-columns: auto auto;
 }
 
 .return-button {
@@ -78,7 +125,7 @@
 
 @media (max-width: 1240px) {
   .user-details {
-    grid-template-columns: repeat(2, auto);
+    grid-template-columns: repeat(2, 50%);
   }
   .custom-user-details {
     grid-template-columns: auto;
@@ -102,9 +149,9 @@
 
 .custom-attr-add-row {
   display: flex;
-  gap: 12px;
+  gap: calc(var(--global-gap) * 0.75);
   align-items: center;
-  margin: 8px 0 16px;
+  margin: var(--half-global-padding) 0 var(--global-padding);
 }
 
 .custom-attr-add-row mat-form-field {
@@ -118,29 +165,28 @@
 
 .add-attr-row {
   display: flex;
-  gap: 12px;
+  gap: calc(var(--global-gap) * 0.75);
   align-items: center;
   flex-wrap: wrap;
 }
 
 .ml-8 {
-  margin-left: 8px;
+  margin-left: var(--half-global-padding);
 }
 
 .ml-4 {
-  margin-left: 4px;
+  margin-left: var(--quarter-global-padding);
 }
 
 .no-indention {
-  margin-left: 8px;
-  padding-left: 8px;
+  margin-left: var(--half-global-padding);
+  padding-left: var(--half-global-padding);
 }
 
 .mt--8 {
-  margin-top: -8px;
+  margin-top: calc(var(--half-global-padding) * -1);
 }
 
 .username-header {
   color: var(--mat-sys-primary);
-  margin-right: -8px;
 }

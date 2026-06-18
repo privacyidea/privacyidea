@@ -336,16 +336,16 @@ describe("PolicyService", () => {
         expect(service.allPolicies()[0].action).toEqual({ "updated-action": true });
 
         // Handle POST request for update
-        let postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
+        const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
         expect(postReq.request.method).toBe("POST");
         expect(postReq.request.body).toMatchObject(updatedPolicy);
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Give patch request time to be sent after successful POST
-        await new Promise((resolve) => process.nextTick(resolve));
+        await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 
         // Handle PATCH request for rename
-        let patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
+        const patchReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
         expect(patchReq.request.method).toBe("PATCH");
         expect(patchReq.request.body).toEqual({ name: "renamed-policy" });
         patchReq.flush(MockPiResponse.fromValue({ status: true }));
@@ -397,7 +397,7 @@ describe("PolicyService", () => {
         postReq.flush(MockPiResponse.fromValue({ status: true }));
 
         // Wait for microtasks to complete
-        await new Promise((resolve) => process.nextTick(resolve));
+        await new Promise((resolve) => queueMicrotask(() => resolve(undefined)));
 
         // Handle failed PATCH request
         const patchReq = httpTestingController.expectOne(
@@ -547,6 +547,56 @@ describe("PolicyService", () => {
       expect(service.allPolicyActionsFlat()).toEqual({});
       expect(service.allPolicyScopes()).toEqual([]);
       expect(service.policyActionsByGroup()).toEqual({});
+    });
+  });
+
+  describe("getDetailsOfAction", () => {
+    const adminDetail: PolicyActionDetail = { type: "bool", desc: "Admin is allowed." };
+    const userDetail: PolicyActionDetail = { type: "str", desc: "User is allowed." };
+
+    async function loadPolicyActions(actions: object) {
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
+      req.flush(MockPiResponse.fromValue(actions));
+      await Promise.resolve();
+    }
+
+    it("should return null for empty actionName", () => {
+      expect(service.getDetailsOfAction("")).toBeNull();
+    });
+
+    it("should return null when action does not exist", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("nonexistent")).toBeNull();
+    });
+
+    it("should return action detail from flat map when no scope provided", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("configread")).toEqual(adminDetail);
+    });
+
+    it("should return scope-specific detail when scope is provided", async () => {
+      await loadPolicyActions({
+        admin: { container_add_token: adminDetail },
+        user: { container_add_token: userDetail }
+      });
+      expect(service.getDetailsOfAction("container_add_token", "admin")).toEqual(adminDetail);
+      expect(service.getDetailsOfAction("container_add_token", "user")).toEqual(userDetail);
+    });
+
+    it("should return null when action does not exist in the given scope", async () => {
+      await loadPolicyActions({ admin: { configread: adminDetail } });
+      expect(service.getDetailsOfAction("configread", "user")).toBeNull();
+    });
+
+    it("allPolicyActionsFlat should only contain one entry for duplicate action names across scopes", async () => {
+      await loadPolicyActions({
+        admin: { container_add_token: adminDetail },
+        user: { container_add_token: userDetail }
+      });
+      const flat = service.allPolicyActionsFlat();
+      expect(Object.keys(flat).filter((k) => k === "container_add_token").length).toBe(1);
     });
   });
 });

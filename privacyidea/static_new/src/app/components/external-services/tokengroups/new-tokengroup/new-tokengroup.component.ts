@@ -16,9 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy } from "@angular/core";
+import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -31,22 +31,24 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
+interface TokengroupFormModel {
+  groupname: string;
+  description: string;
+}
+
+const EMPTY_TOKENGROUP_FORM: TokengroupFormModel = {
+  groupname: "",
+  description: ""
+};
+
 @Component({
   selector: "app-new-tokengroup",
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    ClearableInputComponent
-  ],
+  imports: [FormField, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, ClearableInputComponent],
   templateUrl: "./new-tokengroup.component.html",
   styleUrl: "./new-tokengroup.component.scss"
 })
 export class NewTokengroupComponent implements OnDestroy {
-  private readonly formBuilder = inject(FormBuilder);
   protected readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
@@ -54,9 +56,16 @@ export class NewTokengroupComponent implements OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
 
   protected data: Tokengroup | null = null;
-  tokengroupForm!: FormGroup;
-  isEditMode = false;
+  isEditMode = signal(false);
   private editGroupName: string | null = null;
+
+  tokengroupModel = signal<TokengroupFormModel>({ ...EMPTY_TOKENGROUP_FORM });
+
+  tokengroupForm = form(this.tokengroupModel, (f) => {
+    required(f.groupname);
+    pattern(f.groupname, /^[a-zA-Z0-9._-]*$/);
+    disabled(f.groupname, () => this.isEditMode());
+  });
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -66,46 +75,44 @@ export class NewTokengroupComponent implements OnDestroy {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const name = params.get("name");
       if (name) {
-        this.isEditMode = true;
+        this.isEditMode.set(true);
         this.editGroupName = name;
         this.data = this.tokengroupService.tokengroups().find((g) => g.groupname === name) ?? null;
       } else {
-        this.isEditMode = false;
+        this.isEditMode.set(false);
         this.editGroupName = null;
         this.data = null;
       }
-      this.initForm();
+      this.loadData(this.data);
     });
 
     // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
       const tokengroups = this.tokengroupService.tokengroups();
-      if (this.isEditMode && this.editGroupName && this.tokengroupForm?.pristine) {
+      if (this.isEditMode() && this.editGroupName && untracked(() => !this.tokengroupForm().dirty())) {
         const found = tokengroups.find((g) => g.groupname === this.editGroupName);
         if (found) {
           this.data = found;
-          this.initForm();
+          this.loadData(this.data);
         }
       }
     });
   }
 
   get hasChanges(): boolean {
-    return !this.tokengroupForm.pristine;
+    return this.tokengroupForm().dirty();
   }
 
   get canSave(): boolean {
-    return this.tokengroupForm.valid;
+    return this.tokengroupForm().valid();
   }
 
-  private initForm(): void {
-    this.tokengroupForm = this.formBuilder.group({
-      groupname: [this.data?.groupname || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
-      description: [this.data?.description || ""]
+  private loadData(data: Tokengroup | null): void {
+    this.tokengroupModel.set({
+      groupname: data?.groupname || "",
+      description: data?.description || ""
     });
-    if (this.isEditMode) {
-      this.tokengroupForm.get("groupname")?.disable();
-    }
+    this.tokengroupForm().reset();
   }
 
   ngOnDestroy(): void {
@@ -113,19 +120,18 @@ export class NewTokengroupComponent implements OnDestroy {
   }
 
   async save(): Promise<boolean> {
-    if (this.tokengroupForm.invalid) {
+    if (!this.tokengroupForm().valid()) {
       return false;
     }
-    const group: Tokengroup = {
-      ...this.tokengroupForm.getRawValue()
-    };
+    const { groupname, description } = this.tokengroupModel();
+    const group: Tokengroup = { groupname, description };
 
     try {
       await this.tokengroupService.postTokengroup(group);
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

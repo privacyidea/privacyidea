@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpEvent, HttpRequest, HttpResponse } from "@angular/common/http";
+import { HttpEvent, HttpHandlerFn, HttpRequest, HttpResponse } from "@angular/common/http";
 import { TestBed } from "@angular/core/testing";
 import { LoadingService } from "@services/loading/loading-service";
 import { MockLoadingService } from "@testing/mock-services";
-import { Observable, of, Subject } from "rxjs";
+import { of, Subject } from "rxjs";
 import { loadingInterceptor } from "./loading.interceptor";
 
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }));
 
 describe("loadingInterceptor", () => {
-  let loadingSvc: MockLoadingService;
+  let loadingService: MockLoadingService;
 
-  const run = (req: HttpRequest<any>, next: (req: HttpRequest<any>) => Observable<HttpEvent<any>>) =>
+  const run = (req: HttpRequest<unknown>, next: HttpHandlerFn) =>
     TestBed.runInInjectionContext(() => loadingInterceptor(req, next));
 
   beforeEach(() => {
@@ -37,7 +37,7 @@ describe("loadingInterceptor", () => {
       providers: [{ provide: LoadingService, useClass: MockLoadingService }]
     });
 
-    loadingSvc = TestBed.inject(LoadingService) as unknown as MockLoadingService;
+    loadingService = TestBed.inject(LoadingService) as unknown as MockLoadingService;
   });
 
   it("is creatable", () => {
@@ -49,15 +49,15 @@ describe("loadingInterceptor", () => {
 
   it("calls addLoading with uuid, url and the returned shared observable", () => {
     const req = new HttpRequest("GET", "/api/items");
-    const src$ = new Subject<HttpEvent<any>>();
+    const src$ = new Subject<HttpEvent<unknown>>();
     const next = jest.fn().mockReturnValue(src$.asObservable());
 
     const shared$ = run(req, next);
 
     expect(next).toHaveBeenCalledTimes(1);
-    expect(loadingSvc.addLoading).toHaveBeenCalledTimes(1);
+    expect(loadingService.addLoading).toHaveBeenCalledTimes(1);
 
-    const arg = loadingSvc.addLoading.mock.calls[0][0];
+    const arg = loadingService.addLoading.mock.calls[0][0];
     expect(arg.key).toBe("mock-uuid");
     expect(arg.url).toBe("/api/items");
     expect(arg.observable).toBe(shared$);
@@ -65,12 +65,12 @@ describe("loadingInterceptor", () => {
 
   it("removes loading on completion (finalize)", () => {
     const req = new HttpRequest("GET", "/done");
-    const src$ = new Subject<HttpEvent<any>>();
+    const src$ = new Subject<HttpEvent<unknown>>();
     const next = jest.fn().mockReturnValue(src$.asObservable());
 
     const shared$ = run(req, next);
 
-    const results: HttpEvent<any>[] = [];
+    const results: HttpEvent<unknown>[] = [];
     shared$.subscribe((e) => results.push(e));
 
     const ev = new HttpResponse({ status: 200, body: "ok" });
@@ -78,18 +78,18 @@ describe("loadingInterceptor", () => {
     src$.complete();
 
     expect(results).toEqual([ev]);
-    expect(loadingSvc.removeLoading).toHaveBeenCalledWith("mock-uuid");
-    expect(loadingSvc.removeLoading).toHaveBeenCalledTimes(1);
+    expect(loadingService.removeLoading).toHaveBeenCalledWith("mock-uuid");
+    expect(loadingService.removeLoading).toHaveBeenCalledTimes(1);
   });
 
   it("removes loading on error (finalize)", () => {
     const req = new HttpRequest("GET", "/fail");
-    const src$ = new Subject<HttpEvent<any>>();
+    const src$ = new Subject<HttpEvent<unknown>>();
     const next = jest.fn().mockReturnValue(src$.asObservable());
 
     const shared$ = run(req, next);
 
-    const errors: any[] = [];
+    const errors: Error[] = [];
     shared$.subscribe({
       error: (e) => errors.push(e)
     });
@@ -98,19 +98,19 @@ describe("loadingInterceptor", () => {
     src$.error(err);
 
     expect(errors[0]).toBe(err);
-    expect(loadingSvc.removeLoading).toHaveBeenCalledWith("mock-uuid");
-    expect(loadingSvc.removeLoading).toHaveBeenCalledTimes(1);
+    expect(loadingService.removeLoading).toHaveBeenCalledWith("mock-uuid");
+    expect(loadingService.removeLoading).toHaveBeenCalledTimes(1);
   });
 
   it("shares the underlying source across overlapping subscribers", () => {
     const req = new HttpRequest("GET", "/overlap");
-    const src$ = new Subject<HttpEvent<any>>();
+    const src$ = new Subject<HttpEvent<unknown>>();
     const next = jest.fn().mockReturnValue(src$.asObservable());
 
     const shared$ = run(req, next);
 
-    const a: HttpEvent<any>[] = [];
-    const b: HttpEvent<any>[] = [];
+    const a: HttpEvent<unknown>[] = [];
+    const b: HttpEvent<unknown>[] = [];
     const subA = shared$.subscribe((e) => a.push(e));
     const subB = shared$.subscribe((e) => b.push(e));
 
@@ -125,6 +125,6 @@ describe("loadingInterceptor", () => {
     expect(a).toEqual([ev]);
     expect(b).toEqual([ev]);
     // finalize runs per subscription after share(), so two calls here
-    expect(loadingSvc.removeLoading).toHaveBeenCalledTimes(2);
+    expect(loadingService.removeLoading).toHaveBeenCalledTimes(2);
   });
 });

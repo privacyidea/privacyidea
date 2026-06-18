@@ -16,29 +16,38 @@
 # SPDX-FileCopyrightText: 2024 Henrik Falk <henrik.falk@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-"""This module is intended to ensure the application can be monitored effectively
-and provide insights into whether the application and its dependencies are operational.
-A primary intention was to create a way for Kubernetes to check on containers.
+"""
+The healthcheck REST API exposes liveness, readiness and resolver
+connectivity probes intended for orchestrators (Kubernetes, Docker
+health checks, monitoring systems).
 
 Endpoints:
     - :http:get:`/healthz/` : Combined health check for liveness and readiness.
     - :http:get:`/healthz/startupz` : Startup check to confirm if the app has started.
     - :http:get:`/healthz/livez` : Liveness check to verify if the app is running.
     - :http:get:`/healthz/readyz` : Readiness check to confirm if the app is ready to serve requests.
-    - :http:get:`/healthz/resolversz` : Resolver check to test the connection to all LDAP and SQL resolvers.
+    - :http:get:`/healthz/resolversz` : Resolver check that tests the connection to all LDAP and SQL resolvers.
 
-The corresponding code is tested in tests/test_api_healthcheck.py.
+The endpoints are anonymous so that orchestrators can probe them without
+credentials. ``/healthz/resolversz`` returns the overall resolver-connectivity
+``status`` to anyone, but reveals the individual resolver names only to an
+authenticated administrator. Because the ``/healthz`` endpoints expose
+information about this server without authentication, they should be reachable
+only from a trusted network and not exposed to untrusted clients.
 """
-from flask import Blueprint, current_app, g
+from flask import Blueprint, current_app, g, request
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
+from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, Error
-from privacyidea.lib.policy import PolicyAction, Match, SCOPE
+from privacyidea.lib.policy import Match, PolicyClass, SCOPE, PolicyAction
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
+from privacyidea.lib.utils import get_client_ip
 import logging
+import time
 
 log = logging.getLogger(__name__)
 
@@ -200,80 +209,161 @@ def readyz():
                             "hsm": "OK"}), 200
 
 
+# Probing every resolver opens a connection to each configured LDAP/SQL backend,
+# so the result is cached for PI_HEALTHZ_RESOLVER_CACHE_SECONDS (default 10; 0
+# disables). This bounds how often repeated probe hits — or abusive anonymous
+# requests — re-connect to every backend.
+_resolver_probe_cache = {"snapshot": None}  # snapshot = (monotonic_ts, status, details)
+
+
+def _probe_resolvers():
+    """Probe every LDAP and SQL resolver, with a short result cache.
+
+    :return: a tuple ``(total_status, details)`` where ``total_status`` is
+        ``"OK"``/``"fail"`` and ``details`` maps each resolver type to
+        ``{resolver_name: "OK"/"fail"}``. Recomputed at most once per
+        ``PI_HEALTHZ_RESOLVER_CACHE_SECONDS``.
+    """
+    cache_seconds = int(current_app.config.get("PI_HEALTHZ_RESOLVER_CACHE_SECONDS", 10))
+    snapshot = _resolver_probe_cache["snapshot"]
+    if snapshot is not None and (time.monotonic() - snapshot[0]) < cache_seconds:
+        return snapshot[1], snapshot[2]
+
+    details = {}
+    total_status = "OK"
+    for resolver_type in ("ldapresolver", "sqlresolver"):
+        resolver_status = {}
+        for resolver_name, resolver_data in get_resolver_list(filter_resolver_type=resolver_type).items():
+            if resolver_data:
+                success, _ = get_resolver_class(resolver_type).testconnection(resolver_data.get("data"))
+                if not success:
+                    total_status = "fail"
+                resolver_status[resolver_name] = "OK" if success else "fail"
+            else:
+                resolver_status[resolver_name] = "fail"
+        details[resolver_type] = resolver_status
+
+    _resolver_probe_cache["snapshot"] = (time.monotonic(), total_status, details)
+    return total_status, details
+
+
 @healthz_blueprint.route('/resolversz', methods=['GET'])
 def resolversz():
     """
-    Resolver check endpoint that tests the connection to all resolvers types defined in resolver_types.
-    For now LDAP and SQL resolvers are tested.
+    Test connectivity to every configured LDAP and SQL resolver.
 
-    The endpoint returns a JSON object with the status of each resolver (either "OK"
-    or "fail"). It attempts to establish a connection to each resolver, and if any
-    exception occurs during the check, a 503 status is returned.
+    The endpoint tries to open a connection to each resolver, returning
+    ``OK`` for resolvers that respond and ``fail`` for those that don't.
+    The top-level ``status`` field is ``OK`` if every resolver responded,
+    ``fail`` if any resolver failed, or ``error`` if an unexpected
+    exception aborted the probe.
+
+    The endpoint is anonymous so that orchestrators (Kubernetes, Docker,
+    monitoring) can poll it without credentials: an unauthenticated caller
+    receives the overall ``status`` only. The individual resolver names are
+    returned solely to an authenticated administrator, so they are never
+    disclosed to anonymous callers. If the
+    ``require_auth_for_resolver_details`` policy (scope ``authz``) is set, a
+    *present* but invalid or non-admin token is rejected with ``401`` instead of
+    being treated as anonymous; a request without an Authorization header is
+    still served the status. The probe result is cached for
+    ``PI_HEALTHZ_RESOLVER_CACHE_SECONDS`` seconds (default 10; set to 0 to
+    disable), so frequent or repeated calls do not re-open a connection to every
+    backend each time.
+
+    .. note::
+       The ``/healthz`` endpoints expose information about this server without
+       authentication, so they should be reachable only from a trusted network
+       (the orchestrator / monitoring network) and not exposed to untrusted
+       clients. A dedicated operational guide for deploying and securing these
+       probes is planned.
 
     :resheader Content-Type: application/json
-    :status 200: All resolvers have been successfully checked.
-    :status 503: Failed to check resolvers or an error occurred.
+    :status 200: probe completed; result in the body — the per-resolver names
+        are included only for an authenticated administrator.
+    :status 401: the ``require_auth_for_resolver_details`` policy is set and the
+        request carried a present but invalid or non-admin token.
+    :status 503: an unexpected exception aborted the probe.
 
-   **Example Request**:
+    **Example Request**:
 
-   .. sourcecode:: http
+    .. sourcecode:: http
 
-      GET /healthz/resolversz HTTP/1.1
-      Host: example.com
-      Accept: application/json
+       GET /healthz/resolversz HTTP/1.1
+       Host: example.com
+       Accept: application/json
 
-   **Example Response**:
+    **Example Response**:
 
-   .. sourcecode:: http
+    .. sourcecode:: http
 
-      HTTP/1.1 200 OK
-      Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-      {
-          "status": "ready",
-          "ldapresolver": {
-              "ldapresolver1": "OK",
-              "ldapresolver2": "OK"
-          },
-          "sqlresolver": {
-              "sqlresolver1": "OK",
-              "sqlresolver2": "OK"
-          },
-      }
+       {
+         "status": "OK",
+         "ldapresolver": {
+           "ldapresolver1": "OK",
+           "ldapresolver2": "OK"
+         },
+         "sqlresolver": {
+           "sqlresolver1": "OK",
+           "sqlresolver2": "OK"
+         }
+       }
     """
-    result = {}
-    resolver_types = ["ldapresolver", "sqlresolver"]
-    total_status = "OK"
-    # TODO this has to be inverted on a major update, so that authentication is required by default
-    requires_auth = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any()
-    if requires_auth:
-        try:
-            check_auth_token(required_role=[ROLE.ADMIN])
-        except AuthError as e:
-            if e.id != Error.AUTHENTICATE_AUTH_HEADER:
-                raise
-            authenticated = False
-        else:
-            authenticated = True
+    # Resolver NAMES are only ever returned to an authenticated admin; everyone
+    # else gets the overall status only. The require_auth_for_resolver_details
+    # policy (SCOPE.AUTHZ) additionally controls whether a *present* but invalid
+    # token is rejected with 401 (legacy behavior). All combinations:
+    #
+    #   caller                 policy off          policy on
+    #   valid admin token      200 + names         200 + names
+    #   no Authorization hdr   200, status only    200, status only
+    #   invalid/expired token  200, status only    401
+    #   valid non-admin token  200, status only    401
+    #
+    # So names are always admin-only (the secure default, no policy needed); the
+    # policy only re-adds the 401 for a present-but-unusable token, while a
+    # header-less probe stays anonymous (status only) either way.
+    #
+    # The /healthz probes have no before_request hook, so build the minimal
+    # context the policy match needs here — and only here. The other probes
+    # (livez/readyz/startupz) deliberately stay independent of the DB/config
+    # subsystem so they keep answering even while the database is unavailable.
+    # Building this context reads the config/policies from the DB, so guard it the
+    # same way as the resolver probe below: on a DB/config failure answer with the
+    # 503 status response rather than letting an unhandled exception become a 500.
+    try:
+        ensure_no_config_object()
+        g.policy_object = PolicyClass()
+        g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+        # write_to_audit_log=False: this lightweight context has no audit object,
+        # and we do not want frequent probes writing to the audit log anyway.
+        require_auth = Match.action_only(g, scope=SCOPE.AUTHZ,
+                                         action=PolicyAction.REQUIRE_AUTH_FOR_RESOLVER_DETAILS).any(
+            write_to_audit_log=False)
+    except Exception as e:
+        log.debug(f"Exception building policy context in /resolversz endpoint: {e}")
+        return send_result({"status": "error"}), 503
+
+    authenticated = False
+    try:
+        check_auth_token(required_role=[ROLE.ADMIN])
+        authenticated = True
+    except AuthError as e:
+        # With the policy on, reject a present-but-invalid / non-admin token (401)
+        # but still treat a missing Authorization header as anonymous — this is the
+        # pre-3.13.2 behavior. With the policy off, any failure is anonymous.
+        if require_auth and e.id != Error.AUTHENTICATE_AUTH_HEADER:
+            raise
+        authenticated = False
 
     try:
-        for resolver_type in resolver_types:
-            resolver_status = {}
-            resolvers_list = get_resolver_list(filter_resolver_type=resolver_type)
-            for resolver_name, resolver_data in resolvers_list.items():
-                if resolver_data:
-                    resolver_class = get_resolver_class(resolver_type)
-                    success, _ = resolver_class.testconnection(resolver_data.get("data"))
-                    if not success:
-                        total_status = "fail"
-                    resolver_status[resolver_name] = "OK" if success else "fail"
-                else:
-                    resolver_status[resolver_name] = "fail"
-
-            if not requires_auth or authenticated:
-                result[resolver_type] = resolver_status
-
-        result["status"] = total_status
+        total_status, resolver_details = _probe_resolvers()
+        result = {"status": total_status}
+        if authenticated:
+            result.update(resolver_details)
         return send_result(result), 200
 
     except Exception as e:

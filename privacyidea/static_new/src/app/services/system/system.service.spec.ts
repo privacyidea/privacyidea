@@ -111,6 +111,27 @@ describe("SystemService", () => {
     expect(service.caConnectors()).toEqual([]);
   });
 
+  it("caConnectors should reset to empty when resource errors after successful load", async () => {
+    authService.actionAllowed.mockImplementation((action) => action === "enrollCERTIFICATE");
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+
+    TestBed.tick();
+    let req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
+    const caConnectorResponse = { service1: {}, service2: {} };
+    req.flush(MockPiResponse.fromValue(caConnectorResponse));
+    await lastValueFrom(of({}));
+    expect(service.caConnectors()).toEqual(caConnectorResponse);
+
+    service.caConnectorResource.reload();
+    TestBed.tick();
+    req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
+    req.flush("Error", { status: 500, statusText: "Server Error" });
+    await lastValueFrom(of({}));
+
+    expect(service.caConnectors()).toEqual([]);
+  });
+
   describe("systemConfigResource", () => {
     it("systemConfig and systemConfigInit fall back to default when resource empty", () => {
       expect(service.systemConfig()).toEqual({});
@@ -125,7 +146,7 @@ describe("SystemService", () => {
       expect(req.request.method).toBe("GET");
       const systemConfig = [{ name: "test", providermodule: "TestProvider", options: {}, headers: {} }];
       const systemConfigInit = { key1: "value1", key2: "value2" };
-      let response = MockPiResponse.fromValue(systemConfig, {}, systemConfigInit);
+      const response = MockPiResponse.fromValue(systemConfig, {}, systemConfigInit);
       req.flush(response);
       await Promise.resolve();
 
@@ -163,7 +184,7 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/nodes");
       expect(req.request.method).toBe("GET");
       const nodes = [{ name: "test", uuid: "1234" }];
-      let response = MockPiResponse.fromValue(nodes);
+      const response = MockPiResponse.fromValue(nodes);
       req.flush(response);
       await Promise.resolve();
 
@@ -203,7 +224,7 @@ describe("SystemService", () => {
       const req = httpMock.expectOne((r) => r.url === "/system/names/radius");
       expect(req.request.method).toBe("GET");
       const radiusServers = ["server1", "server2"];
-      let response = MockPiResponse.fromValue(radiusServers);
+      const response = MockPiResponse.fromValue(radiusServers);
       req.flush(response);
       await Promise.resolve();
 

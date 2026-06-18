@@ -16,112 +16,82 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="info-container responsive-pad-0-1310">
-  <span
-    class="info-title details-key-row"
-    i18n>
-    Information
-  </span>
-  <table
-    [dataSource]="infoData()"
-    aria-label="Token Details Data Table"
-    class="info-table"
-    i18n-aria-label
-    mat-table>
-    <ng-container matColumnDef="value">
-      <td
-        *matCellDef="let element"
-        [ngClass]="[isEditingInfo() ? 'padding-0' : '']"
-        class="height-52 width-241"
-        mat-cell>
-        <div class="info-value-container">
-          <mat-list>
-            @for (key of Object.keys(element.value); track key) {
-              @if (isEditingInfo()) {
-                <div class="flex-row">
-                  <mat-list-item class="height-auto">
-                    <div class="flex-row">
-                      <mat-form-field
-                        class="width-192"
-                        subscriptSizing="dynamic">
-                        <mat-label>{{ key }}</mat-label>
-                        <textarea
-                          [(ngModel)]="element.value[key]"
-                          class="info-input"
-                          matInput
-                          rows="1"></textarea>
-                      </mat-form-field>
-                      <button
-                        (click)="deleteInfo(key)"
-                        class="delete-info-button"
-                        i18n-aria-label="Delete Information"
-                        mat-icon-button>
-                        <mat-icon>delete_outlined</mat-icon>
-                      </button>
-                    </div>
-                  </mat-list-item>
-                </div>
-              } @else {
-                <mat-list-item class="height-auto info-row">
-                  <div class="info-span">
-                    <span class="info-span-title"> {{ key }}: </span>
-                    <span class="info-span-value">{{ element.value[key] }}</span>
-                    <mat-divider class="info-divider" />
-                  </div>
-                </mat-list-item>
-              }
-            }
-            @if (isEditingInfo()) {
-              <mat-divider class="margin-8" />
-              <mat-list-item class="height-auto">
-                <div class="flex-column">
-                  <mat-form-field
-                    class="width-192"
-                    subscriptSizing="dynamic">
-                    <input
-                      [(ngModel)]="newInfo().key"
-                      i18n-placeholder
-                      matInput
-                      placeholder="Add new key" />
-                  </mat-form-field>
-                  <mat-form-field
-                    class="width-192"
-                    subscriptSizing="dynamic">
-                  <textarea
-                    [(ngModel)]="newInfo().value"
-                    i18n-placeholder
-                    matInput
-                    placeholder="Add new info"
-                    rows="1"></textarea>
-                  </mat-form-field>
-                </div>
-              </mat-list-item>
-            }
-          </mat-list>
-        </div>
-      </td>
-    </ng-container>
-    <ng-container matColumnDef="edit">
-      <td
-        *matCellDef="let element"
-        class="height-52 edit-column-cell"
-        mat-cell>
-        @if (authService.actionAllowed("settokeninfo")) {
+<details class="token-info-panel">
+  <summary class="token-info-summary">
+    <span
+      class="token-info-title"
+      i18n
+      >Token Information</span
+    >
+    <mat-icon class="token-info-chevron">expand_more</mat-icon>
+  </summary>
+  <div class="token-info-body">
+    @if (infoData()[0]; as element) {
+      @let info = asInfoMap(element.value);
+      @if (authService.actionAllowed("settokeninfo")) {
+        <div class="info-actions-row">
           <app-edit-buttons
             [cancelEdit]="toggleInfoEdit.bind(this)"
-            [element]="element"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
+            [element]="asInfoElement(element)"
+            [isEditingInfo]="isEditingInfo()"
+            [isEditingUser]="isEditingUser()"
             [saveEdit]="saveInfo.bind(this)"
-            [shouldHideEdit]="isAnyEditingOrRevoked"
+            [shouldHideEdit]="isAnyEditingOrRevoked()"
             [toggleEdit]="toggleInfoEdit.bind(this)"></app-edit-buttons>
+        </div>
+      }
+      <dl class="info-grid">
+        @for (key of visibleInfoKeys(info); track key) {
+          <dt class="info-key">{{ key }}</dt>
+          <dd class="info-value">
+            @if (isEditingInfo()) {
+              <div class="info-edit-row">
+                <mat-form-field
+                  class="info-edit-field input-width-l"
+                  subscriptSizing="dynamic">
+                  <textarea
+                    [(ngModel)]="info[key]"
+                    matInput
+                    rows="1"></textarea>
+                </mat-form-field>
+                <button
+                  (click)="deleteInfo(key)"
+                  i18n-aria-label="Delete Information"
+                  mat-icon-button>
+                  <mat-icon>delete_outlined</mat-icon>
+                </button>
+              </div>
+            } @else {
+              <span>{{ info[key] }}</span>
+            }
+          </dd>
         }
-      </td>
-    </ng-container>
-    <tr
-      *matRowDef="let row; columns: ['value', 'edit']"
-      class="height-52"
-      mat-row></tr>
-  </table>
-</div>
+      </dl>
+      @if (isEditingInfo()) {
+        <mat-divider class="margin-8" />
+        <div class="info-add-row">
+          <mat-form-field
+            class="input-width-m"
+            subscriptSizing="dynamic">
+            <input
+              [(ngModel)]="newInfo().key"
+              i18n-placeholder
+              matInput
+              placeholder="Add new key" />
+          </mat-form-field>
+          <span class="margin-right-16 flex ali-center">:</span>
+          <mat-form-field
+            class="input-width-m"
+            subscriptSizing="dynamic">
+            <textarea
+              [(ngModel)]="newInfo().value"
+              i18n-placeholder
+              matInput
+              placeholder="Add new info"
+              rows="1"></textarea>
+          </mat-form-field>
+        </div>
+      }
+    }
+  </div>
+</details>

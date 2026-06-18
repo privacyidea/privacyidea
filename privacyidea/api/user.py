@@ -26,7 +26,30 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask_babel import _
+"""
+The user REST API exposes the user records held by the configured
+user resolvers (LDAP, SQL, ...). Endpoints fall in three groups:
+
+* listing / lookup — :http:get:`/user/`.
+* user-store CRUD against editable resolvers — admin-only:
+  :http:post:`/user/`, :http:put:`/user/`,
+  :http:delete:`/user/(resolvername)/(username)`.
+* custom user attributes — small key/value records that privacyIDEA
+  attaches to a user independent of the user store:
+  :http:get:`/user/attribute`, :http:post:`/user/attribute`,
+  :http:delete:`/user/attribute/(attrkey)/(username)/(realm)`,
+  :http:get:`/user/editable_attributes/`.
+
+CRUD on user-store records requires admin authentication and the
+respective policy action (:ref:`policy_adduser`,
+:ref:`policy_updateuser`, :ref:`policy_deleteuser`); the underlying
+resolver must also have the ``editable`` flag set. Listing is gated
+by :ref:`policy_userlist` and is realm-scoped for realm-admins. The
+custom-attribute write/delete endpoints are gated by the
+:ref:`policy_set_custom_user_attributes` and
+:ref:`policy_delete_custom_user_attributes` policies and may be
+invoked by users on themselves as well as by admins on other users.
+"""
 import logging
 
 from flask import g, Blueprint, request
@@ -35,12 +58,11 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
-from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -54,23 +76,35 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 @event("user_list", request, g)
 def get_users():
     """
-    list the users in a realm
+    Return users from the configured resolvers.
 
-    A normal user can call this endpoint and will get information about his
-    own account.
+    When called by a regular user the response is restricted to that
+    user's own record \u2014 the ``user`` / ``realm`` / ``resolver``
+    parameters are bound to the calling user before the search runs.
 
-    :query realm: a realm that contains several resolvers. Only show users
-                  from this realm
-    :query resolver: a distinct resolvername
-    :query <searchexpr>: a search expression, that depends on the ResolverClass
-    :query attributes: a comma separated list of attributes that should be returned for each user. If not given, all
-        attributes are returned. If an attribute is not available in the user store, an empty value is returned for
-        this attribute.
-    :query include_custom_attributes: If this parameter is set to true, the custom attributes of the user are included
-        in the result. Default is true. If this parameter is false, it overwrites custom attributes included in the
-        attributes parameter list, they will not be included in the result.
+    Requires admin authentication and the policy action
+    :ref:`policy_userlist` to list other users.
 
-    :return: json result with "result": true and the userlist in "value".
+    Realm and resolver scoping is additive: ``realm=R`` queries every
+    resolver in ``R``, ``resolver=X`` queries ``X``, and combining both
+    queries the union. With neither parameter all resolvers across all
+    realms are queried.
+
+    :query realm: query every resolver in this realm.
+    :query resolver: query this resolver.
+    :query user / username: filter by login name; supports the ``*``
+        wildcard.
+    :query <resolver-attr>: any other key is forwarded to each
+        resolver's ``getUserList`` as a search field. Wildcard support
+        is resolver-class-specific.
+    :query attributes: comma-separated list of attribute names to
+        return per user. In addition to user-store attributes,
+        ``resolver`` and ``editable`` are privacyIDEA-managed extras.
+        If omitted, all attributes are returned.
+    :query include_custom_attributes: ``True`` (default) merges
+        privacyIDEA custom user attributes into the response. Custom
+        attributes are only merged when a single realm is in scope.
+    :status 200: list of user dictionaries in ``result.value``.
 
     **Example request**:
 
@@ -87,27 +121,27 @@ def get_users():
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-              {
-                "description": "Cornelius K\u00f6lbel,+49 151 2960 1417,cornelius.koelbel@netknights.it",
-                "email": "cornelius.koelbel@netknights.it",
-                "givenname": "Cornelius",
-                "mobile": "+49 151 2960 1417",
-                "phone": "+49 561 3166797",
-                "surname": "K\u00f6lbel",
-                "userid": "1009",
-                "username": "cornelius",
-                "resolver": "name-of-resolver"
-              }
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": [
+             {
+               "username": "alice",
+               "userid": "1009",
+               "givenname": "Alice",
+               "surname": "Liddell",
+               "email": "alice@example.com",
+               "mobile": "+44 12345",
+               "phone": "+44 67890",
+               "description": "Alice Liddell,...",
+               "resolver": "ldap-corp"
+             }
+           ]
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     realm = get_optional(request.all_data, "realm")
     search_parameters = dict(request.all_data)
@@ -134,19 +168,25 @@ def get_users():
 @event("set_custom_user_attribute", request, g)
 def set_user_attribute():
     """
-    Set a custom attribute for a user.
-    The user is specified by the usual parameters user, resolver and realm.
-    When a user is calling the endpoint the parameters will be implicitly set.
+    Set a custom user attribute. Custom attributes are key/value records
+    privacyIDEA stores alongside a user, independent of the user store.
 
-    :json user: The username of the user, for whom the attribute should be set
-    :json resolver: The resolver of the user (optional)
-    :json realm: The realm of the user (optional)
-    :json key: The name of the attributes
-    :json value: The value of the attribute
-    :json type: an optional type of the attribute
+    When invoked by a regular user the ``user`` / ``resolver`` / ``realm``
+    body fields are bound to the calling user.
 
-    The database id of the attribute is returned. The return
-    value thus should be >=0.
+    Authorization is gated by the :ref:`policy_set_custom_user_attributes`
+    policy. The policy value whitelists allowed key/value combinations
+    (the ``*`` wildcard is allowed for keys or values).
+
+    :jsonparam user: user name (required).
+    :jsonparam resolver: resolver name.
+    :jsonparam realm: realm name.
+    :jsonparam key: attribute name (required).
+    :jsonparam value: attribute value (required).
+    :jsonparam type: optional attribute type identifier.
+    :status 200: database id of the attribute row in ``result.value``.
+    :status 403: the active policy does not allow this key/value
+        combination.
     """
     # We basically need a user, otherwise we will fail, but the
     # user object is later simply used from request.User. We only
@@ -155,13 +195,6 @@ def set_user_attribute():
     attrkey = get_required(request.all_data, "key")
     attrvalue = get_required(request.all_data, "value")
     attrtype = get_optional(request.all_data, "type")
-
-    # Check if the attribute starts with an internally used prefix
-    internal_prefixes = InternalCustomUserAttributes.get_internal_prefixes()
-    for prefix in internal_prefixes:
-        if attrkey.startswith(prefix):
-            raise ParameterError(_("Invalid attribute name! The name shall not start with {prefix}. "
-                                   "This is an internally used prefix.").format(prefix=prefix))
 
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     g.audit_object.log({"success": True,
@@ -173,17 +206,20 @@ def set_user_attribute():
 @event("get_user_attribute", request, g)
 def get_user_attribute():
     """
-    Return the *custom* attribute of the given user.
-    This does *not* return the user attributes which are contained in the user store!
-    The user is specified by the usual parameters user, resolver and realm.
-    When a user is calling the endpoint the parameters will be implicitly set.
+    Return custom user attributes. This does **not** include attributes
+    from the user store (those come back via :http:get:`/user/`); only
+    the privacyIDEA-managed custom attributes are returned.
 
-    :query user: The username of the user, for whom the attribute should be set
-    :query resolver: The resolver of the user (optional)
-    :query realm: The realm of the user (optional)
-    :query key: The optional name of the attribute. If it is not specified
-         all custom attributes of the user are returned.
+    When invoked by a regular user the ``user`` / ``resolver`` / ``realm``
+    parameters are bound to the calling user.
 
+    :query user: user name (required to identify the target).
+    :query resolver: resolver name.
+    :query realm: realm name.
+    :query key: attribute name. If omitted, all custom attributes are
+        returned as a dict; if given, the value of that single attribute
+        is returned (or ``null`` if it is not set).
+    :status 200: attribute value or dict of attributes in ``result.value``.
     """
     _user = get_required(request.all_data, "user")
     attrkey = get_optional(request.all_data, "key")
@@ -195,20 +231,67 @@ def get_user_attribute():
     return send_result(r)
 
 
+@user_blueprint.route('/internal_attribute', methods=['GET'])
+@admin_required
+@prepolicy(realmadmin, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@prepolicy(check_base_action, request, PolicyAction.GET_USER_INTERNAL_ATTRIBUTES)
+@event("get_user_internal_attribute", request, g)
+def get_user_internal_attribute():
+    """
+    Return privacyIDEA-internal attributes for a user. These are caches
+    privacyIDEA writes about itself (e.g. ``fido2_user_id``,
+    ``last_used_token``) and are NOT user-facing — admin-only, read-only.
+
+    Requires the policy action :ref:`policy_get_user_internal_attributes`.
+    A realm-restricted admin is confined to their realms.
+
+    Intended for support / debugging via the WebUI details panel.
+
+    :query user: user name (required).
+    :query resolver: resolver name.
+    :query realm: realm name.
+    :status 200: dict of internal attributes in ``result.value``.
+    """
+    # Resolve the user from request.all_data *after* the prepolicies ran, not
+    # from request.User: realmadmin may have injected the admin's realm into
+    # request.all_data when no realm was given. request.User was built earlier
+    # (in before_request) from the original params and would resolve in the
+    # default realm, so reading it would return data for a different realm than
+    # the one check_base_action authorized.
+    user = get_user_from_param(request.all_data)
+    if not user or not user.exist():
+        username = get_required(request.all_data, "user")
+        raise UserError(f"The user '{username!s}' does not exist.")
+    r = user.internal_attributes
+    g.audit_object.log({"success": True, "info": f"{user.login!s}"})
+    return send_result(r)
+
+
 @user_blueprint.route('/editable_attributes/', methods=['GET'])
 @event("get_editable_attributes", request, g)
 def get_editable_attributes():
     """
-    The resulting editable custom attributes according to the policies
-    are returned. This can be a user specific result.
-    When a user is calling the endpoint the parameters will be implicitly set.
+    Return the custom user attributes that the calling principal is
+    allowed to set or delete on the given user, computed from the
+    active :ref:`policy_set_custom_user_attributes` and
+    :ref:`policy_delete_custom_user_attributes` policies. The WebUI
+    uses this to decide which fields to render as editable.
 
-    :query user: The username of the user, for whom the attribute should be set
-    :query resolver: The resolver of the user (optional)
-    :query realm: The realm of the user (optional)
+    When invoked by a regular user the ``user`` / ``resolver`` / ``realm``
+    parameters are bound to the calling user.
 
-    Works for admins and normal users.
-    :return:
+    The result is a dict with two keys:
+
+    * ``"delete"`` — list of attribute names that may be deleted; ``*``
+      means any attribute name.
+    * ``"set"`` — dict of ``key: [allowed_values]``; ``*`` may appear
+      as a key (any key allowed) or in the value list (any value
+      allowed).
+
+    :query user: user name (required to identify the target).
+    :query resolver: resolver name.
+    :query realm: realm name.
+    :status 200: editable-attributes dict in ``result.value``.
     """
     _user = get_required(request.all_data, "user")
     r = get_allowed_custom_attributes(g, request.User)
@@ -221,15 +304,31 @@ def get_editable_attributes():
 @event("delete_custom_user_attribute", request, g)
 def delete_user_attribute(attrkey, username, realm=None):
     """
-    Delete a specified custom attribute from the user.
-    The user is specified by the positional parameters user and realm.
+    Delete a single custom user attribute from the named user.
 
-    :param username: The username of the user, for whom the attribute should be set
-    :param realm: The realm of the user
-    :param attrkey: The name of the attribute that should be deleted from the user.
+    Authorization is gated by the
+    :ref:`policy_delete_custom_user_attributes` policy: a
+    whitespace-separated list of allowed attribute names; ``*`` matches
+    any name.
 
-    Returns the number of deleted attributes.
+    :param attrkey: path component, the attribute name to remove.
+    :param username: path component, the target user.
+    :param realm: path component, the target realm.
+    :status 200: number of attribute rows removed in ``result.value``.
+    :status 403: the active policy does not allow deleting this
+        attribute name, or a non-admin caller targeted a different user.
     """
+    # Non-admin callers may only delete attributes on themselves. The
+    # ``check_custom_user_attributes`` prepolicy evaluates the policy
+    # against ``request.User`` (which the request rewrite binds to the
+    # caller for role=user), but the path components below are not
+    # rewritten — without this check a user with a self-scoped policy
+    # could target a different user via the URL.
+    if g.logged_in_user.get("role") == "user":
+        caller_user = g.logged_in_user.get("username")
+        caller_realm = g.logged_in_user.get("realm")
+        if username != caller_user or (realm or "") != (caller_realm or ""):
+            raise PolicyError("User is not allowed to delete attributes of other users.")
     user = User(username, realm)
     r = user.delete_attribute(attrkey)
     g.audit_object.log({"success": True,
@@ -243,22 +342,23 @@ def delete_user_attribute(attrkey, username, realm=None):
 @event("user_delete", request, g)
 def delete_user(resolvername=None, username=None):
     """
-    Delete a User in the user store.
-    The resolver must have the flag editable, so that the user can be deleted.
-    Only administrators are allowed to delete users.
+    Delete a user from the user store. The resolver must have the
+    ``editable`` flag set.
 
-    :param resolvername: The name of the resolver
-    :param username: The username of the user, who should be deleted
+    Requires admin authentication and the policy action
+    :ref:`policy_deleteuser`.
 
-    Delete a user object in a user store by calling
+    :param resolvername: path component, the resolver the user lives in.
+    :param username: path component, the user name to delete.
+    :status 200: ``True`` on success in ``result.value``.
 
     **Example request**:
 
     .. sourcecode:: http
 
-      DELETE /user/<resolvername>/<username> HTTP/1.1
-      Host: example.com
-      Accept: application/json
+       DELETE /user/<resolvername>/<username> HTTP/1.1
+       Host: example.com
+       Accept: application/json
     """
     user_obj = request.User
     res = user_obj.delete()
@@ -274,25 +374,30 @@ def delete_user(resolvername=None, username=None):
 @event("user_add", request, g)
 def create_user_api():
     """
-    Create a new user in the given resolver.
+    Create a new user in an editable resolver. The set of fields read
+    from the request is determined by the resolver's attribute map —
+    fields outside that map are ignored.
+
+    Requires admin authentication and the policy action :ref:`policy_adduser`.
+
+    :jsonparam user: user name of the new user (required).
+    :jsonparam resolver: resolver to create the user in (required).
+    :jsonparam password: password the user will authenticate with.
+    :jsonparam: any other attribute name in the resolver's map
+        (``surname``, ``givenname``, ``email``, ``mobile``, ``phone``,
+        ``description``, ...).
+    :status 200: id of the new user in ``result.value``.
 
     **Example request**:
 
     .. sourcecode:: http
 
-       POST /user HTTP/1.1
+       POST /user/ HTTP/1.1
        Host: example.com
-       Accept: application/json
+       Content-Type: application/x-www-form-urlencoded
 
-       user=new_user
-       resolver=<resolvername>
-       surname=...
-       givenname=...
-       email=...
-       mobile=...
-       phone=...
-       password=...
-       description=...
+       user=new_user&resolver=local-sql&surname=Doe&givenname=Jane
+       &email=jane@example.com&password=...
     """
     # We can not use "get_user_from_param", since this checks the existence
     # of the user.
@@ -316,32 +421,34 @@ def create_user_api():
 @event("user_update", request, g)
 def update_user():
     """
-    Edit a user in the user store.
-    The resolver must have the flag editable, so that the user can be deleted.
-    Only administrators are allowed to edit users.
+    Update a user in an editable resolver.
+
+    Admins may update any user the ``updateuser`` policy permits. An
+    authenticated user without admin role may update only themselves —
+    the ``user`` / ``resolver`` / ``realm`` body fields are bound to
+    the calling user (typical use: a user changing their own password).
+
+    Requires the policy action :ref:`policy_updateuser`. The resolver
+    must have the ``editable`` flag set.
+
+    :jsonparam user: user name (required).
+    :jsonparam resolver: resolver name (required).
+    :jsonparam userid: optional user id; if given, identifies the
+        record by uid instead of by login.
+    :jsonparam password: new password (sent through ``password=``
+        rather than as an attribute field).
+    :jsonparam: any other attribute name in the resolver's map.
+    :status 200: ``True`` on success in ``result.value``.
 
     **Example request**:
 
     .. sourcecode:: http
 
-       PUT /user HTTP/1.1
+       PUT /user/ HTTP/1.1
        Host: example.com
-       Accept: application/json
+       Content-Type: application/x-www-form-urlencoded
 
-       user=existing_user
-       resolver=<resolvername>
-       surname=...
-       givenname=...
-       email=...
-       mobile=...
-       phone=...
-       password=...
-       description=...
-
-    .. note:: Also a user can call this function to e.g. change his password.
-       But in this case the parameter "user" and "resolver" get overwritten
-       by the values of the authenticated user, even if he specifies another
-       username.
+       user=existing_user&resolver=local-sql&password=...&email=...
     """
     attributes = _get_attributes_from_param(request.all_data)
     username = get_required(request.all_data, "user")

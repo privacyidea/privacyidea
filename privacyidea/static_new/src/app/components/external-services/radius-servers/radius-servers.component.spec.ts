@@ -19,51 +19,56 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
-import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { RadiusServer, RadiusServerService } from "@services/radius-server/radius-server.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import { MockDialogService } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockDialogService,
+  MockRadiusService,
+  MockTableUtilsService
+} from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { RadiusServersComponent } from "./radius-servers.component";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;
   let fixture: ComponentFixture<RadiusServersComponent>;
-  let radiusServiceMock: any;
+  let radiusServiceMock: MockRadiusService;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
   let router: Router;
 
   beforeEach(async () => {
-    radiusServiceMock = {
-      radiusServers: signal([
-        { identifier: "server1", server: "1.1.1.1" },
-        { identifier: "server2", server: "2.2.2.2" }
-      ]),
-      deleteRadiusServer: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
-      imports: [RadiusServersComponent, NoopAnimationsModule],
+      imports: [RadiusServersComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: RadiusServerService, useValue: radiusServiceMock },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: RadiusServerService, useClass: MockRadiusService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService }
       ]
     }).compileComponents();
+
+    radiusServiceMock = TestBed.inject(RadiusServerService) as unknown as MockRadiusService;
+    radiusServiceMock.radiusServers.set([
+      { identifier: "server1", server: "1.1.1.1" },
+      { identifier: "server2", server: "2.2.2.2" }
+    ] as unknown as RadiusServer[]);
 
     fixture = TestBed.createComponent(RadiusServersComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
     confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
+    const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
 

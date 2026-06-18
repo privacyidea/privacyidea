@@ -28,7 +28,7 @@
             class="table-filter">
             <mat-label i18n>Filter Machines...</mat-label>
             <app-clearable-input
-              (onClick)="resetFilter()"
+              (clearButtonClick)="resetFilter()"
               [showClearButton]="filterString().length > 0">
               <input
                 #filterHTMLInputElement
@@ -54,25 +54,28 @@
       class="machines-table"
       mat-table
       matSort>
-
       <ng-container matColumnDef="hostname">
         <th
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> Hostname
+          mat-sort-header>
+          Hostname
         </th>
         <td
           *matCellDef="let machine"
           mat-cell>
-          <div class="flex-row flex-nowrap ali-center">
+          <app-copyable [copyText]="machine.hostname.join(', ')">
             <a
               (click)="openDetailsDialog(machine)"
-              class="flex ali-center clickable">
-              {{ machine.hostname }}
+              (keydown.enter)="openDetailsDialog(machine)"
+              (keydown.space)="$event.preventDefault(); openDetailsDialog(machine)"
+              class="flex ali-center clickable"
+              role="button"
+              tabindex="0">
+              {{ machine.hostname.join(", ") }}
             </a>
-            <app-copy-button [copyText]="machine.hostname" />
-          </div>
+          </app-copyable>
         </td>
       </ng-container>
 
@@ -81,11 +84,15 @@
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> IP Address
+          mat-sort-header>
+          IP Address
         </th>
         <td
           *matCellDef="let machine"
-          mat-cell> {{ machine.ip }}
+          mat-cell>
+          <app-copyable [copyText]="machine.ip">
+            <span>{{ machine.ip }}</span>
+          </app-copyable>
         </td>
       </ng-container>
 
@@ -94,11 +101,13 @@
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> ID
+          mat-sort-header>
+          ID
         </th>
         <td
           *matCellDef="let machine"
-          mat-cell> {{ machine.id }}
+          mat-cell>
+          {{ machine.id }}
         </td>
       </ng-container>
 
@@ -107,11 +116,15 @@
           *matHeaderCellDef
           i18n
           mat-header-cell
-          mat-sort-header> Machine Resolver
+          mat-sort-header>
+          Machine Resolver
         </th>
         <td
           *matCellDef="let machine"
-          mat-cell> {{ machine.resolver_name }}
+          mat-cell>
+          <app-copyable [copyText]="machine.resolver_name">
+            <span>{{ machine.resolver_name }}</span>
+          </app-copyable>
         </td>
       </ng-container>
 
@@ -119,7 +132,7 @@
         *matHeaderRowDef="displayedColumns"
         mat-header-row></tr>
       <tr
-        *matRowDef="let row; columns: displayedColumns;"
+        *matRowDef="let row; columns: displayedColumns"
         mat-row></tr>
 
       <tr
@@ -128,7 +141,8 @@
         <td
           class="mat-cell"
           colspan="5"
-          i18n>No machines found.
+          i18n>
+          No machines found.
         </td>
       </tr>
     </table>

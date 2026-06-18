@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input } from "@angular/core";
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, inject, input, signal } from "@angular/core";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -27,14 +27,39 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ResolverService, SQLResolverData } from "@services/resolver/resolver.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 
+interface SqlPreset {
+  name: string;
+  table: string;
+  map: string;
+}
+
+interface SqlFormModel {
+  Driver: string;
+  Server: string;
+  Table: string;
+  Limit: string;
+  Map: string;
+  Database: string;
+  Port: string;
+  User: string;
+  Password: string;
+  Password_Hash_Type: string;
+  poolSize: string;
+  poolTimeout: string;
+  poolRecycle: string;
+  Editable: boolean;
+  conParams: string;
+  Encoding: string;
+  Where: string;
+}
+
 @Component({
   selector: "app-sql-resolver",
   standalone: true,
   imports: [
+    FormField,
     MatFormField,
     MatLabel,
-    FormsModule,
-    ReactiveFormsModule,
     MatInput,
     MatCheckbox,
     MatHint,
@@ -87,78 +112,73 @@ export class SqlResolverComponent {
     }
   ];
 
-  driverControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  serverControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  tableControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  limitControl = new FormControl<number | undefined>(undefined, { validators: [Validators.required] });
-  mapControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  model = signal<SqlFormModel>({
+    Driver: "",
+    Server: "",
+    Table: "",
+    Limit: "",
+    Map: "",
+    Database: "",
+    Port: "",
+    User: "",
+    Password: "",
+    Password_Hash_Type: "",
+    poolSize: "5",
+    poolTimeout: "10",
+    poolRecycle: "7200",
+    Editable: false,
+    conParams: "",
+    Encoding: "",
+    Where: ""
+  });
 
-  databaseControl = new FormControl<string>("", { nonNullable: true });
-  portControl = new FormControl<number | undefined>(undefined);
-  userControl = new FormControl<string>("", { nonNullable: true });
-  passwordControl = new FormControl<string>("", { nonNullable: true });
-  passwordHashTypeControl = new FormControl<string>("", { nonNullable: true });
-  poolSizeControl = new FormControl<number>(5, { nonNullable: true });
-  poolTimeoutControl = new FormControl<number>(10, { nonNullable: true });
-  poolRecycleControl = new FormControl<number>(7200, { nonNullable: true });
-  editableControl = new FormControl<boolean>(false, { nonNullable: true });
-  conParamsControl = new FormControl<string>("", { nonNullable: true });
-  encodingControl = new FormControl<string>("", { nonNullable: true });
-  whereControl = new FormControl<string>("", { nonNullable: true });
+  sqlForm = form(this.model, (f) => {
+    required(f.Driver);
+    required(f.Server);
+    required(f.Table);
+    required(f.Limit);
+    required(f.Map);
+  });
 
-  controls = computed<Record<string, AbstractControl>>(() => ({
-    Driver: this.driverControl,
-    Server: this.serverControl,
-    Table: this.tableControl,
-    Limit: this.limitControl,
-    Map: this.mapControl,
-    Database: this.databaseControl,
-    Port: this.portControl,
-    User: this.userControl,
-    Password: this.passwordControl,
-    Password_Hash_Type: this.passwordHashTypeControl,
-    poolSize: this.poolSizeControl,
-    poolTimeout: this.poolTimeoutControl,
-    poolRecycle: this.poolRecycleControl,
-    Editable: this.editableControl,
-    conParams: this.conParamsControl,
-    Encoding: this.encodingControl,
-    Where: this.whereControl
-  }));
+  isValid = () => this.sqlForm().valid();
+  isDirty = () => this.sqlForm().dirty();
+  getValue = () => this.model();
 
-  applySqlPreset(preset: any): void {
-    this.tableControl.setValue(preset.table);
-    this.mapControl.setValue(preset.map);
-    this.poolSizeControl.setValue(5);
-    this.poolTimeoutControl.setValue(10);
-    this.poolRecycleControl.setValue(7200);
+  applySqlPreset(preset: SqlPreset): void {
+    this.model.update((m) => ({
+      ...m,
+      Table: preset.table,
+      Map: preset.map,
+      poolSize: "5",
+      poolTimeout: "10",
+      poolRecycle: "7200"
+    }));
   }
 
   constructor() {
     effect(() => {
       const initial = this.data();
-      if (initial.Driver !== undefined) this.driverControl.setValue(initial.Driver, { emitEvent: false });
-      if (initial.Server !== undefined) this.serverControl.setValue(initial.Server, { emitEvent: false });
-      if (initial.Table !== undefined) this.tableControl.setValue(initial.Table, { emitEvent: false });
-      if (initial.Limit !== undefined) this.limitControl.setValue(Number(initial.Limit), { emitEvent: false });
-      if (initial.Map !== undefined) this.mapControl.setValue(initial.Map, { emitEvent: false });
-
-      if (initial.Database !== undefined) this.databaseControl.setValue(initial.Database, { emitEvent: false });
-      if (initial.Port !== undefined) this.portControl.setValue(Number(initial.Port), { emitEvent: false });
-      if (initial.User !== undefined) this.userControl.setValue(initial.User, { emitEvent: false });
-      if (initial.Password !== undefined) this.passwordControl.setValue(initial.Password, { emitEvent: false });
-      if (initial.Password_Hash_Type !== undefined)
-        this.passwordHashTypeControl.setValue(initial.Password_Hash_Type, { emitEvent: false });
-      if (initial.poolSize !== undefined) this.poolSizeControl.setValue(Number(initial.poolSize), { emitEvent: false });
-      if (initial.poolTimeout !== undefined)
-        this.poolTimeoutControl.setValue(Number(initial.poolTimeout), { emitEvent: false });
-      if (initial.poolRecycle !== undefined)
-        this.poolRecycleControl.setValue(Number(initial.poolRecycle), { emitEvent: false });
-      if (initial.Editable !== undefined)
-        this.editableControl.setValue(parseBooleanValue(initial.Editable), { emitEvent: false });
-      if (initial.conParams !== undefined) this.conParamsControl.setValue(initial.conParams, { emitEvent: false });
-      if (initial.Encoding !== undefined) this.encodingControl.setValue(initial.Encoding, { emitEvent: false });
-      if (initial.Where !== undefined) this.whereControl.setValue(initial.Where, { emitEvent: false });
+      this.model.update((m) => ({
+        ...m,
+        ...(initial.Driver !== undefined ? { Driver: initial.Driver } : {}),
+        ...(initial.Server !== undefined ? { Server: initial.Server } : {}),
+        ...(initial.Table !== undefined ? { Table: initial.Table } : {}),
+        ...(initial.Limit !== undefined ? { Limit: String(initial.Limit) } : {}),
+        ...(initial.Map !== undefined ? { Map: initial.Map } : {}),
+        ...(initial.Database !== undefined ? { Database: initial.Database } : {}),
+        ...(initial.Port !== undefined ? { Port: String(initial.Port) } : {}),
+        ...(initial.User !== undefined ? { User: initial.User } : {}),
+        ...(initial.Password !== undefined ? { Password: initial.Password } : {}),
+        ...(initial.Password_Hash_Type !== undefined ? { Password_Hash_Type: initial.Password_Hash_Type } : {}),
+        ...(initial.poolSize !== undefined ? { poolSize: String(initial.poolSize) } : {}),
+        ...(initial.poolTimeout !== undefined ? { poolTimeout: String(initial.poolTimeout) } : {}),
+        ...(initial.poolRecycle !== undefined ? { poolRecycle: String(initial.poolRecycle) } : {}),
+        ...(initial.Editable !== undefined ? { Editable: parseBooleanValue(initial.Editable) } : {}),
+        ...(initial.conParams !== undefined ? { conParams: initial.conParams } : {}),
+        ...(initial.Encoding !== undefined ? { Encoding: initial.Encoding } : {}),
+        ...(initial.Where !== undefined ? { Where: initial.Where } : {})
+      }));
+      this.sqlForm().reset();
     });
   }
 }

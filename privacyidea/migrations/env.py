@@ -4,9 +4,8 @@
 import logging
 from logging.config import fileConfig
 
-from flask import current_app
-
 from alembic import context
+from flask import current_app
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -111,7 +110,19 @@ def run_migrations_online():
         )
 
         with context.begin_transaction():
+            ctx = context.get_context()
+            current_heads = ctx.get_current_heads()
+            current_rev = ", ".join(current_heads) if current_heads else "base"
+
             context.run_migrations()
+
+            if not getattr(config.cmd_opts, 'autogenerate', False):
+                new_heads = ctx.get_current_heads()
+                new_rev = ", ".join(new_heads) if new_heads else "base"
+                if current_rev != new_rev:
+                    log.info(f'Migrated from revision {current_rev} to revision {new_rev}')
+                else:
+                    log.info(f'Revision remains at {current_rev}')
 
 
 if context.is_offline_mode():

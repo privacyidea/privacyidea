@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { linkedSignal, Signal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -27,7 +27,7 @@ export class MockAuditService implements AuditServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
   apiFilter = ["user", "success"];
   advancedApiFilter = ["machineid", "resolver"];
-  auditFilter: WritableSignal<FilterValue> = signal(new FilterValue());
+  auditFilter = signal(new FilterValue());
   filterParams: Signal<Record<string, string>> = signal({});
   pageSize = linkedSignal({ source: this.auditFilter, computation: () => 10 });
   pageIndex = linkedSignal({
@@ -37,8 +37,8 @@ export class MockAuditService implements AuditServiceInterface {
   auditResource = new MockHttpResourceRef<PiResponse<Audit> | undefined>(
     MockPiResponse.fromValue<Audit>({ auditcolumns: [], auditdata: [], count: 0, current: 0 })
   );
-  sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
-  isDownloading: WritableSignal<boolean> = signal(false);
+  sort = signal<Sort>({ active: "time", direction: "desc" });
+  isDownloading = signal(false);
   clearFilter = jest.fn().mockImplementation(() => {
     this.auditFilter.set(new FilterValue());
   });

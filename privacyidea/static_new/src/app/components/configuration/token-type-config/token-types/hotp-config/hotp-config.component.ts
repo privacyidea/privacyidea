@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
@@ -28,16 +27,16 @@ import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 @Component({
   selector: "app-hotp-config",
   standalone: true,
-  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, ClearButtonComponent],
+  imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, ClearButtonComponent],
   templateUrl: "./hotp-config.component.html",
   styleUrl: "./hotp-config.component.scss"
 })
 export class HotpConfigComponent {
-  formData = input.required<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
   hashLibs = input.required<string[]>();
-  formDataChange = output<Record<string, any>>();
+  formDataChange = output<Record<string, string>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

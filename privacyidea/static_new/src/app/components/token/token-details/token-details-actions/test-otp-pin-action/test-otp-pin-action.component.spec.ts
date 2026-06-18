@@ -55,7 +55,7 @@ describe("TestOtpPinActionComponent", () => {
 
   it("should test and verify token", () => {
     const testSpy = jest.spyOn(validateService, "testToken");
-    component.otpOrPinToTest = "1234";
+    component.otpOrPinToTest.set("1234");
     tokenService.tokenSerial.set("Mock serial");
 
     component.testToken();

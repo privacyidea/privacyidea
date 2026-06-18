@@ -18,13 +18,16 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This endpoint is used to create, update, list and delete SMTP
-server definitions. SMTP server definitions can be used for several purposes
-like
-EMail-Token, SMS Token with SMTP gateway, notification like PIN handler and
-registration.
+__doc__ = """
+The SMTP-server REST API manages mail server definitions used by
+privacyIDEA to send email — for the :ref:`email_token`, for SMS tokens
+with an SMTP-to-SMS gateway, for the password recovery flow, for event
+notifications, and for the user-self-registration flow. See
+:ref:`smtpserver` for the conceptual chapter.
 
-The code of this module is tested in tests/test_api_smtpserver.py
+All endpoints require admin authentication. Read access is gated by the
+admin policy action :ref:`policy_smtpserver_read`; create, update,
+delete and the test send are gated by :ref:`policy_smtpserver_write`.
 """
 
 import logging
@@ -40,7 +43,11 @@ from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
+from ..lib.crypto import censor_dict
 from ..lib.utils import is_true
+
+#: SMTP server fields that must never be returned in clear text by the API.
+SMTPSERVER_SECRET_KEYS = {"password", "private_key_password"}
 
 log = logging.getLogger(__name__)
 
@@ -52,20 +59,33 @@ smtpserver_blueprint = Blueprint('smtpserver_blueprint', __name__)
 @log_with(log)
 def create(identifier=None):
     """
-    This call creates or updates an SMTP server definition.
+    Create or update an SMTP server definition. If a definition with the
+    given ``identifier`` already exists it is updated; otherwise it is
+    created.
 
-    :param identifier: The unique name of the SMTP server definition
-    :param server: The FQDN or IP of the mail server
-    :param port: The port of the mail server
-    :param username: The mail username for authentication at the SMTP server
-    :param password: The password for authentication at the SMTP server
-    :param tls: If the server should do TLS
-    :param description: A description for the definition
-    :param smime: If the server should do S/MIME signing
-    :param dont_send_on_error: If the email should not be sent if there is an error in the S/MIME signing process
-    :param private_key: The private key for S/MIME signing
-    :param private_key_password: The password for the private key for S/MIME signing
-    :param certificate: The certificate for S/MIME signing
+    Requires admin authentication and the policy action
+    :ref:`policy_smtpserver_write`.
+
+    :param identifier: path component, the unique name of the definition.
+    :jsonparam server: hostname or IP of the mail server (required).
+    :jsonparam port: TCP port of the mail server, default ``25``.
+    :jsonparam username: SMTP auth user. Empty string disables auth.
+    :jsonparam password: SMTP auth password (stored encrypted).
+    :jsonparam sender: ``From:`` address used when sending mail through
+        this server.
+    :jsonparam tls: ``True`` to use STARTTLS, ``False`` (default) for plain.
+    :jsonparam timeout: socket timeout in seconds, default ``10``.
+    :jsonparam enqueue_job: if ``True``, mail is queued via the privacyIDEA
+        job queue instead of being sent inline. Default ``False``.
+    :jsonparam description: free-form description.
+    :jsonparam smime: if ``True``, outgoing mail is S/MIME-signed using the
+        configured key/certificate.
+    :jsonparam dont_send_on_error: if ``True`` and S/MIME signing fails,
+        the mail is dropped instead of being sent unsigned.
+    :jsonparam private_key: PEM-encoded private key for S/MIME signing.
+    :jsonparam private_key_password: passphrase for the S/MIME private key.
+    :jsonparam certificate: PEM-encoded certificate for S/MIME signing.
+    :status 200: ``True`` on success.
     """
     param = request.all_data
     server = get_required(param, "server")
@@ -100,9 +120,30 @@ def create(identifier=None):
 @prepolicy(check_base_action, request, PolicyAction.SMTPSERVERREAD)
 def list_smtpservers_api():
     """
-    This call gets the list of SMTP server definitions
+    Return all SMTP server definitions known to this server.
+
+    The result is a dictionary keyed by ``identifier``; each value contains
+    ``server``, ``port``, ``username``, ``password``, ``sender``, ``tls``,
+    ``timeout``, ``enqueue_job``, ``description``, ``smime``,
+    ``dont_send_on_error``, ``private_key``, ``private_key_password`` and
+    ``certificate``.
+
+    Secret values are not returned in clear text: ``password`` and
+    ``private_key_password`` are replaced by the placeholder ``__CENSORED__``.
+    (``private_key`` holds the *path* to the S/MIME key file, not key material,
+    so it is returned unchanged.) When updating a server, submit ``__CENSORED__``
+    for a secret to keep its stored value, an empty string to clear it, or a new
+    value to change it.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_smtpserver_read`.
+
+    :status 200: dict of definitions in ``result.value``.
     """
     res = list_smtpservers()
+    # Do not expose secrets in the API response
+    for identifier, data in res.items():
+        res[identifier] = censor_dict(data, SMTPSERVER_SECRET_KEYS)
     g.audit_object.log({'success': True})
     return send_result(res)
 
@@ -112,9 +153,13 @@ def list_smtpservers_api():
 @log_with(log)
 def delete_server(identifier=None):
     """
-    This call deletes the specified SMTP server configuration
+    Delete the SMTP server definition with the given identifier.
 
-    :param identifier: The unique name of the SMTP server definition
+    Requires admin authentication and the policy action
+    :ref:`policy_smtpserver_write`.
+
+    :param identifier: path component, the name of the definition.
+    :status 200: ``True`` if a definition was deleted, ``False`` otherwise.
     """
     r = delete_smtpserver(identifier)
 
@@ -128,8 +173,35 @@ def delete_server(identifier=None):
 @log_with(log)
 def test():
     """
-    Test the email configuration
-    :return:
+    Send a real test email through the supplied SMTP configuration. The
+    configuration does not need to be saved first — all connection
+    parameters are taken from the request body, and a fixed test message
+    is delivered to ``recipient``.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_smtpserver_write`.
+
+    :jsonparam identifier: identifier under which the definition would be
+        saved (used in the test message body and in the audit log).
+    :jsonparam recipient: email address to deliver the test message to
+        (required).
+    :jsonparam server: hostname or IP of the mail server (required).
+    :jsonparam port: TCP port, default ``25``.
+    :jsonparam username: SMTP auth user.
+    :jsonparam password: SMTP auth password.
+    :jsonparam sender: ``From:`` address used for the test message.
+    :jsonparam tls: ``True`` to use STARTTLS, default ``False``.
+    :jsonparam timeout: socket timeout in seconds, default ``10``.
+    :jsonparam enqueue_job: if ``True``, the test mail is queued via the
+        job queue instead of being sent inline. Default ``False``.
+    :jsonparam smime: if ``True``, the test message is S/MIME-signed.
+    :jsonparam dont_send_on_error: if ``True`` and S/MIME signing fails,
+        the message is dropped instead of being sent unsigned.
+    :jsonparam private_key: PEM-encoded S/MIME private key.
+    :jsonparam private_key_password: passphrase for the S/MIME private key.
+    :jsonparam certificate: PEM-encoded S/MIME certificate.
+    :status 200: ``True`` if the message was delivered (or queued)
+        successfully, ``False`` otherwise.
     """
     param = request.all_data
     identifier = get_required(param, "identifier")

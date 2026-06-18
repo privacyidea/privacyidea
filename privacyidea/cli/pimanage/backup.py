@@ -17,23 +17,23 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Create/Restore database backup"""
-import os
-import sys
-import shutil
-import shlex
-import pathlib
 import configparser
+import os
+import pathlib
+import re
+import shlex
+import shutil
 import subprocess
+import sys
 import tarfile
 from datetime import datetime
-import re
+from urllib.parse import urlparse
 
 import click
 from dateutil.tz import tzlocal
-from urllib.parse import urlparse
 from flask import current_app
-from flask.config import Config
 from flask.cli import AppGroup
+from flask.config import Config
 
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql", "mariadb+pymysql"]
 
@@ -105,13 +105,28 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         database = parsed_sqluri.path[1:]
         defaults_file = conf_dir.joinpath("mysql.cnf")
         _write_mysql_defaults(defaults_file, parsed_sqluri)
-        # call mysqldump to get a copy of the database
-        cmd = ['mysqldump', f'--defaults-file={defaults_file!s}', '-h',
+        # call mysqldump to get a copy of the database.
+        # --single-transaction dumps a consistent InnoDB snapshot without taking
+        # table locks. The default (LOCK TABLES) path fails on a MariaDB Galera
+        # cluster, which rejects locking the SEQUENCE objects privacyIDEA creates
+        # ("This version of MariaDB doesn't yet support 'LOCK TABLE on SEQUENCES
+        # in Galera cluster'"). --skip-lock-tables is already implied by
+        # --single-transaction and is passed only as an explicit safeguard.
+        cmd = ['mysqldump', f'--defaults-file={defaults_file!s}',
+               '--single-transaction', '--skip-lock-tables', '-h',
                shlex.quote(parsed_sqluri.hostname)]
         if parsed_sqluri.port:
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database), '-r', sqlfile])
-        subprocess.run(cmd)
+        result = subprocess.run(cmd)  # nosec B603 - fixed argv, no shell
+        if result.returncode != 0:
+            # Never package a partial or empty dump as a successful backup.
+            if sqlfile.exists():
+                sqlfile.unlink()
+            click.secho(
+                f"Database dump failed (mysqldump exit code {result.returncode}); "
+                "no backup file was written.", fg="red")
+            sys.exit(2)
     else:
         click.echo(f"unsupported SQL syntax: {sqltype}")
         sys.exit(2)
@@ -147,7 +162,6 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
                    "instead of overwriting it with the one stored in the backup.")
 def backup_restore(backup_file, keep_db_uri):
     """Restore a previously made backup from the BACKUP_FILE"""
-    # TODO: Use tarfile package
     # TODO: Also allow to specify a target directory, otherwise it will always
     #  extract to the base /
     # TODO: extracting the SQLite file does not work if there are other SQLite
@@ -157,23 +171,26 @@ def backup_restore(backup_file, keep_db_uri):
     sqlfile = None
     enckey_contained = False
 
-    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,
-                       text=True)
-    if p.returncode != 0:
-        click.secho(f"Unable to open backup file {backup_file}", fg="red")
+    try:
+        with tarfile.open(backup_file, "r:gz") as tf:
+            for member in tf:
+                member_name = member.name
+                if re.search(r"/pi.cfg$", member_name):
+                    config_file = f"/{member_name}"
+                elif re.search(r"dbdump-\d{8}-\d{4}\.sql", member_name):
+                    sqlfile = f"/{member_name}"
+                elif re.search(r"/enc[kK]ey", member_name):
+                    enckey_contained = True
+    except (tarfile.TarError, OSError) as e:
+        click.secho(f"Unable to open backup file {backup_file}: {e}", fg="red")
         sys.exit(2)
-    for line in p.stdout.split("\n"):
-        if re.search(r"/pi.cfg$", line):
-            config_file = f"/{line.strip()!s}"
-        elif re.search(r"dbdump-\d{8}-\d{4}\.sql", line):
-            sqlfile = f"/{line.strip()!s}"
-        elif re.search(r"/enc[kK]ey", line):
-            enckey_contained = True
 
     if not config_file:
         click.secho("Missing config file pi.cfg in backup file.", fg="red")
+        sys.exit(2)
     if not sqlfile:
         click.secho("Missing database dump in backup file.", fg="red")
+        sys.exit(2)
 
     config_file = pathlib.Path(config_file)
     sqlfile = pathlib.Path(sqlfile)
@@ -207,7 +224,11 @@ def backup_restore(backup_file, keep_db_uri):
                     fg="yellow",
                 )
 
-    subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
+    with tarfile.open(backup_file, "r:gz") as tf:
+        if sys.version_info >= (3, 12):
+            tf.extractall(path="/", filter="data")
+        else:
+            tf.extractall(path="/", members=_safe_members(tf, "/"))
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
@@ -258,20 +279,59 @@ def backup_restore(backup_file, keep_db_uri):
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database)])
         with open(sqlfile) as sql_file:
-            p = subprocess.run(cmd, input=sql_file.read(), text=True)
-            if p.returncode == 0:
-                os.unlink(sqlfile)
+            p = subprocess.run(cmd, input=sql_file.read(), text=True)  # nosec B603 - fixed argv, no shell
+        if p.returncode != 0:
+            click.secho(
+                f"Database restore failed (mysql exit code {p.returncode}). "
+                f"The dump file was kept at {sqlfile} for inspection/retry.",
+                fg="red")
+            sys.exit(2)
+        os.unlink(sqlfile)
     else:
         print(f"unsupported SQL syntax: {sqltype}")
         sys.exit(2)
 
 
+def _safe_members(tf, dest):
+    """Fallback member filter for Python < 3.12, which lacks ``tarfile``'s
+    ``filter='data'`` option.
+
+    Skips special files (devices, fifos, character/block specials) so a
+    malicious or corrupted archive can't create them on extraction. Only
+    regular files, directories, symlinks and hardlinks are yielded.
+
+    The path-traversal and link-target checks below are no-ops when ``dest``
+    is ``/`` (every resolved absolute path is contained in ``/``), but are
+    kept so the helper stays correct if a non-root extraction target is
+    introduced later (see TODOs in ``backup_restore``).
+    """
+    dest = pathlib.Path(dest).resolve()
+    for member in tf.getmembers():
+        member_path = (dest / member.name).resolve()
+        if not str(member_path).startswith(str(dest)):
+            click.secho(f"Skipping unsafe path: {member.name}", fg="yellow")
+            continue
+        if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
+            click.secho(f"Skipping special file: {member.name}", fg="yellow")
+            continue
+        if member.issym() or member.islnk():
+            link_target = pathlib.Path(member.linkname)
+            if not link_target.is_absolute():
+                link_target = (member_path.parent / link_target).resolve()
+            else:
+                link_target = link_target.resolve()
+            if not str(link_target).startswith(str(dest)):
+                click.secho(f"Skipping link escaping destination: {member.name} -> {member.linkname}", fg="yellow")
+                continue
+        yield member
+
+
 def _write_mysql_defaults(defaults_file, parsed_sqluri):
     # create a mysql config file to avoid adding username and password to the command
-    sql_defaults = configparser.ConfigParser()
+    sql_defaults = configparser.ConfigParser(interpolation=None)
     sql_defaults['client'] = {
-        "user": parsed_sqluri.username,
-        "password": parsed_sqluri.password
+        "user": str(parsed_sqluri.username or ""),
+        "password": str(parsed_sqluri.password or "")
     }
     sql_defaults['mysqldump'] = {"no-tablespaces": "True"}
     with defaults_file.open(mode="w") as f:

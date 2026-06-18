@@ -25,10 +25,11 @@ from urllib.parse import urlparse
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
+from flask import current_app
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
-                                    FAILED_TO_DECRYPT_PASSWORD)
+                                    FAILED_TO_DECRYPT_PASSWORD, is_censored)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
@@ -48,6 +49,13 @@ log = logging.getLogger(__name__)
 TIMEOUT = 10
 
 SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
+
+
+def _get_mail_debug_level():
+    try:
+        return int(current_app.config.get("PI_MAIL_DEBUG_LEVEL", 0))
+    except (RuntimeError, ValueError, TypeError):
+        return 0
 
 
 class SMTPServer:
@@ -120,8 +128,11 @@ class SMTPServer:
             mail = smtplib.SMTP(smtp_url.hostname,
                                 port=smtp_url.port or int(config['port']),
                                 timeout=config.get('timeout', TIMEOUT))
-        log.debug("submitting message to {!s}".format(msg["To"]))
-        log.debug("Saying EHLO to mailserver {!s}".format(config['server']))
+        debug_level = _get_mail_debug_level()
+        if debug_level:
+            mail.set_debuglevel(debug_level)
+        log.debug(f"submitting message to {msg['To']!s}")
+        log.debug(f"Saying EHLO to mailserver {config['server']!s}")
         r = mail.ehlo()
         log.debug(f"mailserver responded with {r!s}")
         # Start TLS if required
@@ -135,9 +146,10 @@ class SMTPServer:
             if password == FAILED_TO_DECRYPT_PASSWORD:
                 password = config['password']
             mail.login(config['username'], password)
-        msg = msg.as_bytes()
+        msg = msg.as_string()
         if config.get('smime', False):
             try:
+                msg = msg.encode("utf-8")
                 with open(config['private_key'], "rb") as key_file:
                     private_key = key_file.read()
                 with open(config['certificate'], "rb") as cert_file:
@@ -282,7 +294,7 @@ def get_smtpservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, log_exit=False)
 def list_smtpservers(identifier=None, server=None):
     """
     This returns a list of all smtpservers matching the criterion.
@@ -314,7 +326,7 @@ def list_smtpservers(identifier=None, server=None):
     return res
 
 
-@log_with(log)
+@log_with(log, hide_kwargs=["password", "private_key_password"])
 def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",
                    sender: str = "", description: str = "", tls: bool = False, timeout: int = TIMEOUT,
                    enqueue_job: bool = False, smime: bool = False, dont_send_on_error: bool = False,
@@ -332,7 +344,18 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     :type server: basestring
     :return: The Id of the database object
     """
-    encrypted_password = encryptPassword(password)
+
+    # The CENSORED placeholder (what the API returned for the password) means
+    # "keep the stored password unchanged" -> leave encrypted_password = None so
+    # the update below skips the column. An empty string clears the password, any
+    # other value sets it.
+    if is_censored(password):
+        encrypted_password = None
+    else:
+        encrypted_password = encryptPassword(password)
+    if is_censored(private_key_password):
+        private_key_password = None
+
     # private_key_password could be empty string or None, which have a different effect later.
     # here we only care if it has an actual value that we should encrypt, otherwise leave it at empty string or None
     encrypted_private_key_password = private_key_password

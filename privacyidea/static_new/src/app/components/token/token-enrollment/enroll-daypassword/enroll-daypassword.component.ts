@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal } from "@angular/core";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -28,6 +28,10 @@ import {
   DaypasswordApiPayloadMapper,
   DaypasswordEnrollmentData
 } from "@app/mappers/token-api-payload/daypassword-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_OTP_LENGTH, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -52,154 +56,119 @@ export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
     MatLabel,
     MatOption,
     MatSelect,
-    ReactiveFormsModule,
-    FormsModule,
     MatHint,
     MatError,
-    MatCheckbox
+    MatCheckbox,
+    FormField
   ],
   templateUrl: "./enroll-daypassword.component.html",
-  styleUrl: "./enroll-daypassword.component.scss"
+  styleUrl: "./enroll-daypassword.component.scss",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollDaypasswordComponent) }
+  ]
 })
-export class EnrollDaypasswordComponent implements OnInit {
+export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrollmentData> {
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
+
   enrollmentData = input<DaypasswordEnrollmentData>();
-  @Input() wizard: boolean = false;
-  @Output() additionalFormFieldsChange = new EventEmitter<{
-    [key: string]: FormControl<any>;
-  }>();
-  @Output() enrollmentArgsGetterChange = new EventEmitter<
-    (basicOptions: TokenEnrollmentData) => {
-      data: DaypasswordEnrollmentData;
-      mapper: DaypasswordApiPayloadMapper;
-    } | null
-  >();
+  wizard = input<boolean>(false);
   disabled = input<boolean>(false);
 
-  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  defaultHashlib = computed(() => this.systemService.systemConfig()[DAYPASSWORD_HASHLIB] || "sha1");
-  hashAlgorithmControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
-  defaultTimeStep = computed(() => this.systemService.systemConfig()[DAYPASSWORD_TIME_STEP] || "24h");
-  timeStepControl = new FormControl<string>(this.defaultTimeStep(), [Validators.required]);
-  generateOnServerControl = new FormControl(true);
-  otpLengthControl = new FormControl<number>(6, [Validators.required]);
+  generateOnServer = signal<boolean>(true);
+  otpKey = signal<string>("");
+  otpLength = signal<number>(6);
 
-  daypasswordForm = new FormGroup({
-    otpKey: this.otpKeyFormControl,
-    otpLength: this.otpLengthControl,
-    hashAlgorithm: this.hashAlgorithmControl,
-    timeStep: this.timeStepControl
+  defaultHashlib = computed(() => this.systemService.systemConfig()[DAYPASSWORD_HASHLIB] || "sha1");
+  defaultTimeStep = computed(() => this.systemService.systemConfig()[DAYPASSWORD_TIME_STEP] || "24h");
+
+  hashAlgorithm = linkedSignal<string>(() => this.defaultHashlib());
+  timeStep = linkedSignal<string>(() => this.defaultTimeStep());
+
+  otpKeyForm = form(this.otpKey, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
+  });
+
+  otpLengthForm = form(this.otpLength, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH]);
+  });
+
+  hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB]);
+  });
+
+  timeStepForm = form(this.timeStep, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP]);
   });
 
   constructor() {
-    effect(() => (this.disabled() ? this.daypasswordForm.disable({ emitEvent: false }) : this._enableFormControls()));
-  }
+    super();
 
-  ngOnInit(): void {
-    this._setInitialFormValues();
-    this.additionalFormFieldsChange.emit({
-      otpKey: this.otpKeyFormControl,
-      otpLength: this.otpLengthControl,
-      hashAlgorithm: this.hashAlgorithmControl,
-      timeStep: this.timeStepControl,
-      generateOnServer: this.generateOnServerControl
-    });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-    this._applyPolicies();
-  }
-
-  private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
-      this.otpKeyFormControl.setValue(this.enrollmentData()?.otpKey ?? "", { emitEvent: false });
-      this.otpLengthControl.setValue(this.enrollmentData()?.otpLength ?? 6, { emitEvent: false });
-      this.hashAlgorithmControl.setValue(this.enrollmentData()?.hashAlgorithm ?? "sha256", { emitEvent: false });
-      this.timeStepControl.setValue(this.enrollmentData()?.timeStep ?? "24h", { emitEvent: false });
-      this.generateOnServerControl.setValue(this.enrollmentData()?.generateOnServer ?? true, { emitEvent: false });
-    }
-  }
-
-  private _applyPolicies() {
-    this.updateOtpKeyControlState(this.generateOnServerControl.value ?? true);
-
-    if (this.authService.checkForceServerGenerateOTPKey("daypassword")) {
-      this.generateOnServerControl.disable({ emitEvent: false });
-    } else {
-      this.generateOnServerControl.valueChanges.subscribe((generateOnServer) => {
-        this.updateOtpKeyControlState(generateOnServer ?? true);
-      });
-    }
-
-    const hashlib = this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB];
-    if (hashlib) {
-      this.hashAlgorithmControl.setValue(hashlib, { emitEvent: false });
-      this.hashAlgorithmControl.disable({ emitEvent: false });
-    }
-    const otpLength = this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH];
-    if (otpLength) {
-      const otpLengthNumber = parseInt(otpLength, 10);
-      if (!isNaN(otpLengthNumber)) {
-        this.otpLengthControl.setValue(otpLengthNumber, { emitEvent: false });
-        this.otpLengthControl.disable({ emitEvent: false });
+    // Apply policy defaults when rights load
+    effect(() => {
+      const hashlib = this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB];
+      if (hashlib) this.hashAlgorithm.set(hashlib);
+      const otpLengthPolicy = this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH];
+      if (otpLengthPolicy) {
+        const parsedLength = parseInt(otpLengthPolicy, 10);
+        if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
       }
-    }
-    const timeStep = this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP];
-    if (timeStep) {
-      this.timeStepControl.setValue(timeStep, { emitEvent: false });
-      this.timeStepControl.disable({ emitEvent: false });
-    }
+      const timeStepPolicy = this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP];
+      if (timeStepPolicy) this.timeStep.set(timeStepPolicy);
+    });
+
+    // Force generateOnServer when policy requires it
+    effect(() => {
+      if (this.authService.checkForceServerGenerateOTPKey("daypassword")) this.generateOnServer.set(true);
+    });
+
+    // Apply initial enrollment data
+    effect(() => {
+      const data = this.enrollmentData();
+      if (data) {
+        this.generateOnServer.set(data.generateOnServer ?? true);
+        this.otpLength.set(data.otpLength ?? 6);
+        this.hashAlgorithm.set(data.hashAlgorithm ?? "sha256");
+        this.timeStep.set(data.timeStep ?? "24h");
+        if (data.otpKey) this.otpKey.set(data.otpKey);
+      }
+    });
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
-    data: DaypasswordEnrollmentData;
-    mapper: DaypasswordApiPayloadMapper;
-  } | null => {
-    if (this.daypasswordForm.invalid) {
-      this.daypasswordForm.markAllAsTouched();
-      this.notificationService.warning($localize`Invalid enrollment data.`);
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<DaypasswordEnrollmentData> | null {
+    if (!this.generateOnServer() && !this.otpKeyForm().valid()) {
+      this.otpKeyForm().markAsTouched();
       return null;
     }
     const enrollmentData: DaypasswordEnrollmentOptions = {
       ...basicOptions,
       type: "daypassword",
-      otpLength: this.otpLengthControl.value ?? 10,
-      hashAlgorithm: this.hashAlgorithmControl.value ?? "sha256",
-      timeStep: this.timeStepControl.value ?? "24h",
-      generateOnServer: this.generateOnServerControl.value ?? true
+      otpLength: this.otpLength(),
+      hashAlgorithm: this.hashAlgorithm(),
+      timeStep: this.timeStep(),
+      generateOnServer: this.generateOnServer()
     };
-    if (!enrollmentData.generateOnServer) {
-      enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
+    if (!this.generateOnServer()) {
+      enrollmentData.otpKey = this.otpKey();
     }
     return {
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  };
-
-  private updateOtpKeyControlState(generateOnServer: boolean): void {
-    if (generateOnServer) {
-      this.otpKeyFormControl.disable({ emitEvent: false });
-      this.otpKeyFormControl.clearValidators();
-    } else {
-      this.otpKeyFormControl.enable({ emitEvent: false });
-      this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
-    }
-    this.otpKeyFormControl.updateValueAndValidity();
-  }
-
-  private _enableFormControls(): void {
-    this.daypasswordForm.enable({ emitEvent: false });
-    this._applyPolicies();
   }
 }

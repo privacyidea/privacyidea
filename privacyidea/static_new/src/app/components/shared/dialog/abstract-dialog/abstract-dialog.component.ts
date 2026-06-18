@@ -21,7 +21,7 @@ import { Directive, inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
 @Directive()
-export abstract class AbstractDialogComponent<D = any, R = any> {
+export abstract class AbstractDialogComponent<D = unknown, R = unknown> {
   /**
    * The injected data. By initializing it in the constructor, we enforce
    * that any inheriting class must expect this structure (title, content, etc.) in its data.

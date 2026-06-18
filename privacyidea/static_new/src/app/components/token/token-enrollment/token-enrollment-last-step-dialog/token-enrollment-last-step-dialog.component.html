@@ -17,12 +17,11 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  (close)="close()"
+  (wrapperClose)="close()"
   [showCancelButton]="true"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@closeButtonLabel"
-  title="{{title()}}">
-
+  title="{{ title() }}">
   <app-token-enrolled-text
     (switchRoute)="onSwitchRoute()"
     [containerSerial]="containerSerial"
@@ -38,5 +37,4 @@
       [enrollmentParameters]="data.enrollParameters"
       [tokenType]="data.tokenType"></app-token-enrollment-data>
   }
-
 </app-dialog-wrapper>

@@ -169,13 +169,15 @@ policy_template_url
 
 type: ``string``
 
-Here you can define a URL from where the policies should be fetched. The
-default URL is a Github repository [#defaulturl]_.
+Here you can define a URL from where the policy templates should be fetched.
+The default is ``/static/policy-templates/``, which resolves to the bundled
+templates shipped with privacyIDEA.
+
+You can point this to an external URL (e.g. ``https://example.com/my-templates/``)
+or any other path reachable by the WebUI to provide custom policy templates.
 
 .. note:: When setting a template_url policy the modified URL will only get
    active after the user has logged out and in again.
-
-.. [#defaulturl] "/static/policy-templates/".
 
 
 .. index:: Default tokentype
@@ -296,9 +298,13 @@ user is not known at this moment.
 
 The type of this action was changed to "string" in version 2.16. You can set
 a space separated list of realm names. Only these realm names are displayed in
-the dropdown box. The first realm in the list will be preselected.
+the dropdown box, in the order given by the policy. The first realm in the
+list is preselected.
 
-.. note:: The realm names in the policy are not checked, if they really exist!
+You can include ``-`` as an entry in the list to add an empty option to the
+dropdown (i.e. authenticate without selecting a specific realm). If ``-`` is
+the first entry, no realm is preselected and the user must explicitly choose
+one (or leave the field empty).
 
 .. index:: Search on Enter
 

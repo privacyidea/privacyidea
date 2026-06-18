@@ -29,7 +29,17 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 __doc__ = """
-The code of this module is tested in tests/test_api_system.py
+The policy REST API manages privacyIDEA policies — the rule
+definitions that decide what an admin or user is allowed to do, what
+defaults apply, and how authentication and enrollment behave. See
+:ref:`policies` for the conceptual chapter and :ref:`policy_conditions`
+for the policy-condition feature.
+
+All endpoints require admin authentication. Reading is gated by the
+admin policy action :ref:`policyread`; create, update, enable,
+disable, rename and import by :ref:`policywrite`; deletion by
+:ref:`policydelete`. The introspection helpers under ``/policy/defs``
+and ``/policy/check`` are admin-only.
 """
 from flask_babel import _
 from flask import Blueprint, request, current_app
@@ -74,10 +84,14 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def enable_policy_api(name):
     """
-    Enable a given policy by its name.
+    Enable a policy. The policy definition is preserved; only the
+    ``active`` flag is set to ``True``.
 
-    :jsonparam name: Name of the policy
-    :return: ID in the database
+    Requires admin authentication and the policy action :ref:`policywrite`.
+
+    :param name: path component, the name of the policy.
+    :status 200: database id of the policy in ``result.value``.
+    :status 404: no policy with that name exists.
     """
     p = enable_policy(name)
     g.audit_object.log({"success": True})
@@ -89,10 +103,14 @@ def enable_policy_api(name):
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def disable_policy_api(name):
     """
-    Disable a given policy by its name.
+    Disable a policy. The policy definition is preserved; only the
+    ``active`` flag is set to ``False``.
 
-    :jsonparam name: The name of the policy
-    :return: ID in the database
+    Requires admin authentication and the policy action :ref:`policywrite`.
+
+    :param name: path component, the name of the policy.
+    :status 200: database id of the policy in ``result.value``.
+    :status 404: no policy with that name exists.
     """
     p = enable_policy(name, False)
     g.audit_object.log({"success": True})
@@ -103,13 +121,19 @@ def disable_policy_api(name):
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def patch_policy_name_api(old_name):
     """
-    Rename an existing policy.
+    Rename a policy. Only the policy's name is modified; all other
+    attributes are preserved. The new name must satisfy the same
+    character/prefix rules as a freshly-created policy
+    (``a-zA-Z0-9_.-`` plus space; ``check`` and the
+    ``pi-update-policy-`` prefix are reserved).
 
-    Only the policy’s name is modified; all other attributes remain unchanged.
+    Requires admin authentication and the policy action :ref:`policywrite`.
 
-    :param old_name: Current name of the policy (from the URL).
-    :jsonparam name: New name to assign to the policy (in the JSON body).
-    :return: Database ID of the renamed policy.
+    :param old_name: path component, the current name of the policy.
+    :jsonparam name: the new name to assign (required).
+    :status 200: database id of the renamed policy in ``result.value``.
+    :status 400: ``old_name`` does not exist, ``name`` already exists,
+        or ``name`` violates the character/prefix rules.
     """
     new_name = get_required(request.all_data, "name")
     result = rename_policy(name=old_name, new_name=new_name)
@@ -121,81 +145,96 @@ def patch_policy_name_api(old_name):
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def set_policy_api(name=None):
     """
-    Creates a new policy that defines access or behaviour of different
-    actions in privacyIDEA
+    Create or update a policy. If a policy with the given ``name``
+    already exists, it is updated; otherwise it is created.
 
-    :jsonparam basestring name: name of the policy
-    :jsonparam scope: the scope of the policy like "admin", "system",
-        "authentication" or "selfservice"
-    :jsonparam priority: the priority of the policy
-    :jsonparam description: a description of the policy
-    :jsonparam adminrealm: Realm of the administrator. (only for admin scope)
-    :jsonparam adminuser: Username of the administrator. (only for admin scope)
-    :jsonparam action: which action may be executed
-    :jsonparam realm: For which realm this policy is valid
-    :jsonparam resolver: This policy is valid for this resolver
-    :jsonparam user: The policy is valid for these users.
-        string with wild cards or list of strings
-    :jsonparam time: on which time does this policy hold
-    :jsonparam pinode: The privacyIDEA node (or list of nodes) for which this policy is valid
-    :jsonparam client: for which requesting client this should be
-    :jsontype client: IP address with subnet
-    :jsonparam user_agents: List of user agents for which this policy is valid.
-    :jsonparam active: bool, whether this policy is active or not
-    :jsonparam check_all_resolvers: bool, whether all all resolvers in which
-        the user exists should be checked with this policy.
-    :jsonparam conditions: a (possibly empty) list of conditions of the policy.
-        Each condition is encoded as a list with 5 elements:
-        ``[section (string), key (string), comparator (string), value (string), active (boolean)]``
-        Hence, the ``conditions`` parameter expects a list of lists.
-        When privacyIDEA checks if a defined policy should take effect,
-        *all* conditions of the policy must be fulfilled for the policy to match.
-        Note that the order of conditions is not guaranteed to be preserved.
+    Policies in privacyIDEA gate what an admin or user is allowed to do,
+    define defaults, and shape authentication and enrollment behavior.
+    See :ref:`policies` for the conceptual model and the available
+    actions per scope, and :ref:`policy_conditions` for the optional
+    condition mechanism.
 
-    :return: a json result with success or error
+    Requires admin authentication and the policy action :ref:`policywrite`.
 
-    :status 200: Policy created or modified.
-    :status 401: Authentication failed
+    :param name: path component, the policy name. Allowed characters
+        are ``a-zA-Z0-9_.-``; whitespace is rejected. The literal
+        ``check`` and any name starting with ``pi-update-policy-``
+        are reserved.
+    :jsonparam scope: scope of the policy — one of ``admin``,
+        ``user``, ``authentication``, ``authorization``, ``enrollment``,
+        ``webui``, ``register``, ``token``, ``container`` (required).
+    :jsonparam action: scope-specific action or comma-separated list.
+        Required for every scope except ``user`` (where it may be
+        empty).
+    :jsonparam priority: integer priority; lower values bind first.
+        Must be ``>= 1``. Default ``1``.
+    :jsonparam description: free-form description.
+    :jsonparam adminrealm: admin realm the policy applies to (admin
+        scope only). Validated against ``SUPERUSER_REALM`` from
+        ``pi.cfg``.
+    :jsonparam adminuser: comma-separated list of admin user names
+        (admin scope only).
+    :jsonparam realm: user realm(s) for which the policy is valid.
+        Validated against the configured realms.
+    :jsonparam resolver: resolver(s) for which the policy is valid.
+        Validated against the configured resolvers.
+    :jsonparam user: user(s) the policy applies to — string with
+        wildcards or list of strings.
+    :jsonparam time: time-of-day window during which the policy is
+        active (see the policy reference for the format).
+    :jsonparam pinode: privacyIDEA node or list of nodes the policy
+        applies to. Validated against the configured nodes.
+    :jsonparam client: client IP, optionally with a subnet
+        (e.g. ``172.16.0.0/16``).
+    :jsonparam user_agents: list of user-agent identifiers the policy
+        applies to.
+    :jsonparam active: boolean, whether the policy starts out active.
+        Default ``True``.
+    :jsonparam check_all_resolvers: if ``True``, the policy is checked
+        against every resolver in which the user exists.
+    :jsonparam conditions: list of policy conditions. Each entry is a
+        5- or 6-element list
+        ``[section, key, comparator, value, active(, handle_missing_data)]``.
+        All conditions must match for the policy to take effect.
+        The order of conditions is not guaranteed to be preserved.
+    :status 200: ``{"setPolicy <name>": <db-id>}`` in ``result.value``.
+    :status 400: invalid scope, invalid policy name, priority below
+        1, invalid time format, or unknown realm / resolver / pinode /
+        admin realm.
 
     **Example request**:
-
-    In this example a policy "pol1" is created.
 
     .. sourcecode:: http
 
        POST /policy/pol1 HTTP/1.1
        Host: example.com
-       Accept: application/json
+       Content-Type: application/json
 
-       scope=admin
-       realm=realm1
-       action=enroll, disable
-
-    The policy POST request can also take the parameter of conditions. This is a list of conditions sets:
-    [ [ "userinfo", "memberOf", "equals", "groupA", "true" ], [ ... ] ]
-    With the entries being the ``section``, the ``key``, the ``comparator``, the ``value`` and ``active``.
-    For more on conditions see :ref:`policy_conditions`.
-
+       {
+         "scope": "admin",
+         "realm": "realm1",
+         "action": "enroll, disable",
+         "conditions": [
+           ["userinfo", "memberOf", "equals", "groupA", true]
+         ]
+       }
 
     **Example response**:
 
     .. sourcecode:: http
 
-       HTTP/1.0 200 OK
-       Content-Length: 354
+       HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "setPolicy pol1": 1
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {"setPolicy pol1": 1}
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     res = {}
     param = request.all_data
@@ -212,7 +251,7 @@ def set_policy_api(name=None):
     user = param.get("user")
     time = param.get("time")
     client = param.get("client")
-    active = param.get("active")
+    active = is_true(param.get("active", True))
     check_all_resolvers = param.get("check_all_resolvers")
     admin_realm = param.get("adminrealm")
     admin_user = param.get("adminuser")
@@ -220,6 +259,7 @@ def set_policy_api(name=None):
     conditions = param.get("conditions")
     description = param.get("description")
     user_agents = param.get("user_agents", None)
+    user_case_insensitive = param.get("user_case_insensitive")
 
     # Validate admin realms here, because the allowed realms need to be read from the config file
     # (avoid flask imports on lib level)
@@ -230,11 +270,12 @@ def set_policy_api(name=None):
                         'info': f"{param!s}"})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
-                     active=active or True, adminrealm=admin_realm,
+                     active=active, adminrealm=admin_realm,
                      adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions,
-                     description=description, user_agents=user_agents)
+                     description=description, user_agents=user_agents,
+                     user_case_insensitive=user_case_insensitive)
     log.debug(f"policy {name!s} successfully saved.")
     string = "setPolicy " + name
     res[string] = ret
@@ -250,28 +291,29 @@ def set_policy_api(name=None):
 @prepolicy(check_base_action, request, PolicyAction.POLICYREAD)
 def get_policy(name=None, export=None):
     """
-    this function is used to retrieve the policies that you
-    defined.
-    It can also be used to export the policy to a file.
+    Return policy definitions, or export them to a file. The behavior
+    depends on the URL shape:
 
-    :query name: will only return the policy with the given name
-    :query export: The filename needs to be specified as the
-        third part of the URL like policy.cfg. It
-        will then be exported to this file.
-    :query realm: will return all policies in the given realm
-    :query scope: will only return the policies within the given scope
-    :query active: Set to true or false if you only want to display
-        active or inactive policies.
+    * ``/policy/`` — return all policies (subject to the query
+      filters) as a dictionary keyed by policy name.
+    * ``/policy/<name>`` — return the named policy as a single-entry
+      dictionary.
+    * ``/policy/export/<filename>`` — export every policy to a
+      ``.cfg`` file; the response Content-Type is ``text/plain`` and
+      the filename in the path is suggested as the download name.
 
-    :return: a json result with the configuration of the specified policies
-    :rtype: json
+    Requires admin authentication and the policy action :ref:`policyread`.
 
-    :status 200: Policy created or modified.
-    :status 401: Authentication failed
+    :param name: path component, the name of a single policy.
+    :param export: path component, the suggested filename for the
+        export download (e.g. ``policies.cfg``).
+    :query realm: return only policies that apply to this realm.
+    :query scope: return only policies in the given scope.
+    :query active: ``true`` / ``false`` to filter by the active flag.
+    :status 200: dictionary of policy definitions in ``result.value``,
+        or — for the export URL — a ``text/plain`` response body.
 
     **Example request**:
-
-    In this example a policy "pol1" is created.
 
     .. sourcecode:: http
 
@@ -283,30 +325,30 @@ def get_policy(name=None, export=None):
 
     .. sourcecode:: http
 
-       HTTP/1.0 200 OK
+       HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "pol_update_del": {
-                "action": "enroll",
-                "active": true,
-                "client": "1.1.1.1",
-                "name": "pol_update_del",
-                "realm": "r1",
-                "resolver": "test",
-                "scope": "selfservice",
-                "time": "",
-                "user": "admin"
-              }
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "pol_update_del": {
+               "action": "enroll",
+               "active": true,
+               "client": "1.1.1.1",
+               "name": "pol_update_del",
+               "realm": "r1",
+               "resolver": "test",
+               "scope": "selfservice",
+               "time": "",
+               "user": "admin"
+             }
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     param = getLowerParams(request.all_data)
     realm = get_optional(param, "realm")
@@ -335,18 +377,15 @@ def get_policy(name=None, export=None):
 @prepolicy(check_base_action, request, PolicyAction.POLICYDELETE)
 def delete_policy_api(name=None):
     """
-    This deletes the policy of the given name.
+    Delete the named policy.
 
-    :jsonparam name: the policy with the given name
-    :return: a json result about the delete success.
-             In case of success value > 0
+    Requires admin authentication and the policy action :ref:`policydelete`.
 
-    :status 200: Policy created or modified.
-    :status 401: Authentication failed
+    :param name: path component, the name of the policy to delete.
+    :status 200: database id of the deleted policy in ``result.value``.
+    :status 404: no policy with that name exists.
 
     **Example request**:
-
-    In this example a policy "pol1" is created.
 
     .. sourcecode:: http
 
@@ -358,17 +397,17 @@ def delete_policy_api(name=None):
 
     .. sourcecode:: http
 
-       HTTP/1.0 200 OK
+       HTTP/1.1 200 OK
        Content-Type: application/json
 
        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 1
-          },
-          "version": "privacyIDEA unknown"
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
        }
     """
     ret = delete_policy(name)
@@ -382,16 +421,21 @@ def delete_policy_api(name=None):
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
 def import_policy_api(filename=None):
     """
-    This function is used to import policies from a file.
+    Import policies from a previously-exported ``.cfg`` file. The
+    request body must be ``multipart/form-data`` with a single field
+    named ``file`` carrying the file contents. The path component
+    ``filename`` is used only for logging — it does not have to match
+    the uploaded file's actual name.
 
-    :jsonparam filename: The name of the file in the request
+    Requires admin authentication and the policy action :ref:`policywrite`.
 
-    :formparam file: The uploaded file contents
-
-    :return: A json response with the number of imported policies.
-
-    :status 200: Policy created or modified.
-    :status 401: Authentication failed
+    :param filename: path component, used as a log/audit label for
+        the imported file.
+    :reqheader Content-Type: ``multipart/form-data`` (required).
+    :formparam file: the file contents (required).
+    :status 200: number of imported policies in ``result.value``.
+    :status 400: the file is empty or its contents are not valid
+        text.
 
     **Example request**:
 
@@ -399,26 +443,24 @@ def import_policy_api(filename=None):
 
        POST /policy/import/backup-policy.cfg HTTP/1.1
        Host: example.com
-       Accept: application/json
+       Content-Type: multipart/form-data; boundary=...
 
     **Example response**:
 
     .. sourcecode:: http
 
-       HTTP/1.0 200 OK
+       HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 2
-          },
-          "version": "privacyIDEA unknown"
-        }
-
-
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 2
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     policy_file = request.files['file']
     if isinstance(policy_file, FileStorage):
@@ -449,63 +491,26 @@ def import_policy_api(filename=None):
 
 @policy_blueprint.route('/check', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.POLICYREAD)
 def check_policy_api():
     """
-    This function checks, if the given parameters would match a defined policy
-    or not.
+    Probe whether a given (user, realm, scope, action, client,
+    resolver) tuple would match any active policy. Used by the WebUI
+    "Test policy" feature and as a self-check tool.
 
-    :query user: the name of the user
-    :query realm: the realm of the user or the realm the administrator
-        want to do administrative tasks on.
-    :query resolver: the resolver of a user
-    :query scope: the scope of the policy
-    :query action: the action that is done - if applicable
-    :query IP_Address client: the client, from which this request would be
-        issued
+    Requires admin authentication and the policy action
+    :ref:`policy_policyread`.
 
-    :return: a json result with the keys allowed and policy in the value key
-    :rtype: json
-
-    :status 200: Policy created or modified.
-    :status 401: Authentication failed
-
-    **Example request**:
-
-    .. sourcecode:: http
-
-       GET /policy/check?user=admin&realm=r1&client=172.16.1.1 HTTP/1.1
-       Host: example.com
-       Accept: application/json
-
-    **Example response**:
-
-    .. sourcecode:: http
-
-       HTTP/1.0 200 OK
-       Content-Type: application/json
-
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "pol_update_del": {
-                "action": "enroll",
-                "active": true,
-                "client": "172.16.0.0/16",
-                "name": "pol_update_del",
-                "realm": "r1",
-                "resolver": "test",
-                "scope": "selfservice",
-                "time": "",
-                "user": "admin"
-              }
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
-
+    :query user: user name (required).
+    :query realm: realm name (required).
+    :query scope: policy scope to check (required).
+    :query action: action to check (required).
+    :query client: client IP, optionally with a subnet.
+    :query resolver: resolver name.
+    :status 200: ``result.value`` is ``{"allowed": true, "policy":
+        <dict-of-matching-policies>}`` if at least one active policy
+        matches, otherwise
+        ``{"allowed": false, "info": "No policies found"}``.
     """
     res = {}
     param = getLowerParams(request.all_data)
@@ -541,31 +546,35 @@ def check_policy_api():
 @policy_blueprint.route('/defs', methods=['GET'])
 @policy_blueprint.route('/defs/<scope>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.POLICYREAD)
 def get_policy_defs(scope=None):
     """
-    This is a helper function that returns the POSSIBLE policy
-    definitions, that can
-    be used to define your policies.
+    Return the catalogue of possible policy definitions — the
+    actions, types and metadata that the WebUI uses to render the
+    policy editor. Two literal scope values produce introspection
+    output instead of policy actions:
 
-    If the given scope is "conditions", this returns a dictionary with the following keys:
-     * ``"sections"``, containing a dictionary mapping each condition section name to a dictionary with
-       the following keys:
-         * ``"description"``, a human-readable description of the section
-     * ``"comparators"``, containing a dictionary mapping each comparator to a dictionary with the following keys:
-         * ``"description"``, a human-readable description of the comparator
-     * ``"handle_missing_data"``, containing a dictionary mapping each handle_missing_data to a dictionary with the
-        following keys:
-            * ``"display_value"``, a human-readable name of the behaviour to be displayed in the webUI
-            * ``"description"``, a short description of the behaviour
+    * ``conditions`` — return ``{"sections": ..., "comparators": ...,
+      "handle_missing_data": ...}`` describing the policy-condition
+      vocabulary. Each map carries per-entry ``description`` and (for
+      ``handle_missing_data``) a WebUI-facing ``display_value``.
+    * ``pinodes`` — return the list of privacyIDEA node names
+      declared in the server configuration.
 
-    if the scope is "pinodes", it returns a list of the configured privacyIDEA nodes.
+    Without ``scope``, the response is a dictionary keyed by every
+    known scope (admin, user, authentication, authorization,
+    enrollment, webui, ...) with the static + dynamically-discovered
+    actions for each. With a regular scope name, only that scope's
+    entry is returned.
 
-    :query scope: if given, the function will only return policy
-                  definitions for the given scope.
+    Requires admin authentication and the policy action
+    :ref:`policy_policyread`.
 
-    :return: The policy definitions of the allowed scope with the actions and
-        action types. The top level key is the scope.
-    :rtype: dict
+    :param scope: optional path component — a scope name
+        (``admin``, ``user``, ...) or one of the literals
+        ``conditions`` / ``pinodes``.
+    :status 200: dict (or list, for ``pinodes``) of definitions in
+        ``result.value``.
     """
 
     if scope == 'conditions':

@@ -39,6 +39,7 @@ export class MockContentService implements ContentServiceInterface {
   onPolicies = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
   onTokenDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
   onUserDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
+  onUserDetailsSelfService = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_DETAILS);
   onUserRealms = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_REALMS);
   onTokensEnrollment = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
   onTokenEnrollmentLikely = signal(false);
@@ -46,28 +47,29 @@ export class MockContentService implements ContentServiceInterface {
   onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
   onTokensGetSerial = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
   onTokensImport = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
-  onTokensContainers = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
-  onTokensContainersCreate = computed(() =>
-    [ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.routeUrl())
+  onContainers = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS);
+  onContainersCreate = computed(() =>
+    [ROUTE_PATHS.CONTAINERS_CREATE, ROUTE_PATHS.CONTAINERS_WIZARD].includes(this.routeUrl())
   );
-  onTokensContainersDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS));
+  onContainersDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS));
   onTokensAssignToken = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   onTokensWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
-  onTokensContainersWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
+  onContainersWizard = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_WIZARD);
   onAnyTokensRoute = computed(
     () => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
   );
   onAnyUsersRoute = computed(
     () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
-  onTokensContainersTemplates: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES
+  onContainersTemplates: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES);
+  onContainersTemplatesCreate: Signal<boolean> = computed(
+    () => this.routeUrl() === ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE
   );
-  onTokensContainersTemplatesCreate: Signal<boolean> = computed(
-    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE
+  onContainersTemplatesDetails: Signal<boolean> = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS)
   );
-  onTokensContainersTemplatesDetails: Signal<boolean> = computed(() =>
-    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)
+  onAnyContainerTemplatesRoute = computed(
+    () => this.onContainersTemplates() || this.onContainersTemplatesCreate() || this.onContainersTemplatesDetails()
   );
   onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
   onConfigurationSystem: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);

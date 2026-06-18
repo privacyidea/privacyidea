@@ -18,7 +18,6 @@
  **/
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { AfterViewInit, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
@@ -41,7 +40,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 
 import { ROUTE_PATHS } from "@app/route_paths";
-import { OverflowNavDirective } from "./overflow-nav.directive";
+import { OverflowNavDirective } from "../../shared/directives/overflow-nav/overflow-nav.directive";
 
 export interface NavItem {
   icon: string;
@@ -73,7 +72,6 @@ export interface SubNavSection {
     RouterLink,
     NgClass,
     MatTooltipModule,
-    FormsModule,
     UserUtilsPanelComponent,
     NgTemplateOutlet,
     MatMenuModule,
@@ -95,14 +93,14 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly configService: ConfigServiceInterface = inject(ConfigService);
-  protected readonly router: Router = inject(Router);
+  protected readonly router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
-    { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.TOKENS_CONTAINERS, section: "container" },
+    { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.CONTAINERS, section: "container" },
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
     { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
     { icon: "event_repeat", label: $localize`Subscription`, route: ROUTE_PATHS.SUBSCRIPTION, section: "subscription" },
@@ -127,15 +125,15 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     }
     return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
   });
-  versionText = computed(() => {
+  versionPrefix = computed(() => {
     if (this.customLogo()) {
-      return $localize`privacyIDEA Version ` + this.versioningService.version();
+      return $localize`privacyIDEA` + " ";
     }
-    return $localize`Version ` + this.versioningService.version();
+    return "";
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
-    if (url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)) return "container";
+    if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
@@ -187,7 +185,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();
-    (event as any).stopImmediatePropagation?.();
+    event.stopImmediatePropagation?.();
     event.stopPropagation();
 
     this.router.navigate([route_path]);

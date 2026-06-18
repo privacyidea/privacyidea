@@ -43,7 +43,8 @@
     }
     @if (enrolledData()?.["password"]) {
       <p i18n>
-        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong>.
+        Your Password: <strong>{{ enrolledData()?.["password"] }}</strong
+        >.
       </p>
     }
     @if (enrolledData()?.otpkey?.value && !enrolledData()?.["otps"] && showQRCode()) {
@@ -55,13 +56,10 @@
       <app-tiqr-enroll-url [url]="enrolledData()?.['tiqrenroll']?.value ?? ''" />
     }
     @if (tokenType() === "registration") {
-      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode']" />
+      <app-registration-code [registrationCode]="enrolledData()?.['registrationcode'] ?? ''" />
     }
     @if (enrolledData()?.["otps"]) {
-      <app-otp-values [otpValues]="enrolledData()?.['otps']" />
-    }
-    @if (!hasEnrollmentData()) {
-      <p i18n>Token <strong>{{ serial() }}</strong> successfully enrolled.</p>
+      <app-otp-values [otpValues]="enrolledData()?.['otps'] ?? []" />
     }
   </div>
 </div>

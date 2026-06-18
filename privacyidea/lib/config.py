@@ -142,7 +142,7 @@ class SharedConfigClass:
                             try:
                                 value = json.loads(rconf.Value)
                             except json.JSONDecodeError as error:
-                                log.debug(
+                                log.warning(
                                     f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
                                 value = rconf.Value
                         elif rconf.Type == "dict_with_password":
@@ -154,7 +154,7 @@ class SharedConfigClass:
                                         value[key] = decryptPassword(val)
                                         resolverdef["censor_keys"].append(f"{rconf.Key}.{key}")
                             except json.JSONDecodeError as error:
-                                log.debug(
+                                log.warning(
                                     f"Could not load {rconf.Key} ({rconf.Value}) from resolver config as JSON: {error}")
                                 value = rconf.Value
                         else:
@@ -270,7 +270,7 @@ class LocalConfigClass:
             is given a string/bool is returned.
         """
         default_true_keys = [SYSCONF.PREPENDPIN, SYSCONF.SPLITATSIGN,
-                             SYSCONF.INCFAILCOUNTER, SYSCONF.RETURNSAML]
+                             SYSCONF.INCFAILCOUNTER]
 
         r_config = {}
 
@@ -314,8 +314,6 @@ class SYSCONF:
     PREPENDPIN = "PrependPin"
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
-    RETURNSAML = "ReturnSamlAttributes"
-    RETURNSAMLONFAIL = "ReturnSamlAttributesOnFail"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
@@ -423,10 +421,9 @@ def get_caconnector_types():
     Returns a list of valid CA connector types
     :return:
     """
-    caconnector_types = []
-    for cacon in BaseCAConnector.__subclasses__():
-        caconnector_types.append(cacon.connector_type)
-    return caconnector_types
+    _, type_dict = get_caconnector_class_dict()
+    types = sorted(type_dict.values())
+    return types
 
 
 # @cache.cached(key_prefix="classes")
@@ -1053,18 +1050,6 @@ def set_prepend_pin(prepend=True):
     :return: None
     """
     set_privacyidea_config("PrependPin", prepend)
-
-
-def return_saml_attributes():
-    r = get_from_config(key=SYSCONF.RETURNSAML, default=False,
-                        return_bool=True)
-    return r
-
-
-def return_saml_attributes_on_fail():
-    r = get_from_config(key=SYSCONF.RETURNSAMLONFAIL, default=False,
-                        return_bool=True)
-    return r
 
 
 def get_privacyidea_node(default=DefaultConfigValues.NODE_NAME) -> str:

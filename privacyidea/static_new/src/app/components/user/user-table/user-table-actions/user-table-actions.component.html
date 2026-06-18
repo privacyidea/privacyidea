@@ -16,14 +16,16 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="actions-div margin-bottom-16">
+<div
+  appOverflowNav
+  class="actions-div margin-bottom-16">
   <mat-form-field
     class="input-width-l"
     subscriptSizing="dynamic">
     <mat-label>Select Realm</mat-label>
     <mat-select
-      [(ngModel)]="userService.selectedUserRealm"
-      [value]="userService.selectedUserRealm()">
+      [value]="userService.selectedUserRealm()"
+      (selectionChange)="userService.selectedUserRealm.set($event.value)">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }

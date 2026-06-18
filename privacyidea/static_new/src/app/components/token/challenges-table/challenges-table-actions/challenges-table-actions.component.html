@@ -16,8 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row gap-8">
+<div
+  appOverflowNav
+  class="flex-row gap-8">
   <button
+    data-overflow-pinned
     (click)="onDeleteExpiredChallenges()"
     class="action-button-delete-primary button-width-m"
     i18n
@@ -28,6 +31,7 @@
 
   @if (advancedApiFilter.length > 0) {
     <button
+      data-overflow-pinned
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-primary button-width-m"
       i18n-matTooltip

@@ -210,6 +210,51 @@ class APIPolicyTestCase(MyApiTestCase):
 
         delete_policy("pol1")
 
+    def test_01b_set_policy_user_case_insensitive(self):
+        # The user_case_insensitive flag can be configured through the API.
+        with self.app.test_request_context('/policy/polci',
+                                           method='POST',
+                                           data={"scope": SCOPE.USER,
+                                                 "action": "disable",
+                                                 "user_case_insensitive": "true"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        policy = get_policies(name="polci")[0]
+        self.assertTrue(policy.get("user_case_insensitive"), policy)
+
+        delete_policy("polci")
+
+    def test_01c_set_policy_active(self):
+        policy_name = "policy_inactive"
+        with self.app.test_request_context(f"/policy/{policy_name}",
+                                           method="POST",
+                                           data={"scope": SCOPE.USER,
+                                                 "action": "disable",
+                                                 "active": False},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        policy = get_policies(name=policy_name)[0]
+        self.assertFalse(policy.get("active"), policy)
+
+        # activate policy
+        with self.app.test_request_context(f"/policy/{policy_name}",
+                                           method="POST",
+                                           data={"scope": SCOPE.USER,
+                                                 "action": "disable",
+                                                 "active": True},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        policy = get_policies(name=policy_name)[0]
+        self.assertTrue(policy.get("active"), policy)
+
+        delete_policy(policy_name)
+
     def test_02_set_policy_conditions(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()

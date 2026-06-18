@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "start-hmr": "ng serve --hmr --port 4200",
     "start-hmr-de": "ng serve --hmr --port 4200 --configuration=de",
     "lint": "ng lint",
@@ -15,7 +16,6 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "21.2.8",
     "@angular/cdk": "21.2.6",
     "@angular/common": "21.2.8",
     "@angular/compiler": "21.2.8",

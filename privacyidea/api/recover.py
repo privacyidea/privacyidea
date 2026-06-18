@@ -18,14 +18,22 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__doc__ = """This module provides the REST API for the password recovery for a
-user managed in privacyIDEA.
+__doc__ = """
+The password recovery REST API lets a user request and consume a one-time
+recovery code in order to reset their password. It is only useful for users
+in editable user stores; the user-scope policy :ref:`policy_password_reset`
+must be active for the user.
 
-The methods are also tested in the file tests/test_api_register.py
+Sending the recovery code requires a working email transport: the server
+config key ``recovery.identifier`` must point to a configured SMTP server
+(see :ref:`smtpserver`).
+
+The endpoints are anonymous (no auth header).
 """
 from flask import (Blueprint, request, g)
 from .lib.utils import send_result
 from ..lib.params import get_required
+from privacyidea.lib.framework import get_base_url
 from privacyidea.lib.user import get_user_from_param
 import logging
 from privacyidea.lib.passwordreset import (create_recoverycode,
@@ -45,18 +53,33 @@ recover_blueprint = Blueprint('recover_blueprint', __name__)
 @prepolicy(check_anonymous_user, request, action=PolicyAction.PASSWORDRESET)
 def get_recover_code():
     """
-    This method requests a recover code for a user. The recover code it sent
-    via email to the user.
+    Request a one-time password recovery code for a user. The recovery code
+    is sent by email to the address stored for that user; it expires after
+    one hour.
 
-    :queryparam user: username of the user
-    :queryparam realm: realm of the user
-    :queryparam email: email of the user
-    :return: JSON with value=True or value=False
+    The server must have ``recovery.identifier`` configured to a working
+    SMTP server, the user must live in an editable user store, and the
+    user-scope policy :ref:`policy_password_reset` must be active. The
+    ``email`` form field has to match the user's stored email address
+    (case-insensitive); otherwise the request is rejected.
+
+    The recovery link is built from the configured ``PI_BASE_URL`` (see
+    ``pi.cfg``). If ``PI_BASE_URL`` is not configured, this endpoint refuses
+    to operate.
+
+    This endpoint is anonymous — no authentication header is required.
+
+    :jsonparam user: login name of the user (required).
+    :jsonparam realm: realm of the user (required if the user is not in
+        the default realm).
+    :jsonparam email: the user's email address (required).
+    :status 200: ``True`` on success; failures raise a JSON error response.
     """
     param = request.all_data
     user_obj = get_user_from_param(param, False)
     email = get_required(param, "email")
-    r = create_recoverycode(user_obj, email, base_url=request.base_url)
+    # The recovery link must be built from a trusted, configured base URL
+    r = create_recoverycode(user_obj, email, base_url=get_base_url(required=True))
     g.audit_object.log({"success": r,
                         "info": f"{user_obj!s}"})
     return send_result(r)
@@ -66,14 +89,22 @@ def get_recover_code():
 @prepolicy(check_anonymous_user, request, action=PolicyAction.PASSWORDRESET)
 def reset_password():
     """
-    reset the password with a given recovery code.
-    The recovery code was sent by get_recover_code and is bound to a certain
-    user.
+    Consume a recovery code (previously obtained via :http:post:`/recover`)
+    and set a new password for the user. The recovery code is bound to a
+    specific user, so the request must identify the same user that requested
+    the code.
 
-    :jsonparam recoverycode: The recoverycode sent the the user
-    :jsonparam password: The new password of the user
+    The user-scope policy :ref:`policy_password_reset` must be active. This
+    endpoint is anonymous — no authentication header is required.
 
-    :return: a json result with a boolean "result": true
+    :jsonparam user: login name of the user (required).
+    :jsonparam realm: realm of the user (required if the user is not in
+        the default realm).
+    :jsonparam recoverycode: the one-time code that was emailed to the
+        user (required).
+    :jsonparam password: the new password to set for the user (required).
+    :status 200: ``result.value`` is ``True`` if the password was changed,
+        ``False`` if the recovery code was invalid or expired.
     """
     r = False
     user_obj = get_user_from_param(request.all_data, False)
@@ -82,6 +113,6 @@ def reset_password():
     if check_recoverycode(user_obj, recoverycode):
         # set password
         r = user_obj.update_user_info({"password": password})
-        g.audit_object.log({"success": r,
-                            "info": f"{user_obj!s}"})
+    g.audit_object.log({"success": r,
+                        "info": f"{user_obj!s}"})
     return send_result(r)

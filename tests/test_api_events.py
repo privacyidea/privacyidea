@@ -14,11 +14,6 @@ from .base import MyApiTestCase, FakeFlaskG
 from .test_lib_events import ContainerEventTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
-# TODO: this should be imported from lib.event when available
-HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
-            "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes", "Container"]
-
-
 class APIEventsTestCase(MyApiTestCase):
 
     def test_00_api_errors(self):
@@ -68,6 +63,27 @@ class APIEventsTestCase(MyApiTestCase):
         auditentry = self.find_most_recent_audit_entry(action='POST /event/enable/<eventid>')
         self.assertEqual(auditentry['action'], 'POST /event/enable/<eventid>', auditentry)
         self.assertEqual(auditentry['success'], 0, auditentry)
+
+    def test_00b_invalid_conditions_rejected_cleanly(self):
+        # A malformed 'conditions' string (JSONDecodeError) or a non-string value
+        # (TypeError from json.loads) must yield a clean 400 ParameterError, not an
+        # uncaught exception / HTTP 500.
+        base = {"name": "cond_check", "event": "token_init",
+                "action": "sendmail", "handlermodule": "UserNotification"}
+        # Malformed JSON string (form data is always a string).
+        with self.app.test_request_context('/event', method='POST',
+                                           data=dict(base, conditions="{not valid json"),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json["result"]["status"], res.json)
+        # Non-string conditions via a JSON body (a list is valid JSON but not a dict).
+        with self.app.test_request_context('/event', method='POST',
+                                           json=dict(base, conditions=[1, 2, 3]),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 400, res.data)
+            self.assertFalse(res.json["result"]["status"], res.json)
 
     def test_01_crud_events(self):
         # list empty events
@@ -254,16 +270,6 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue("token_init" in result.get("value"))
             self.assertTrue("token_assign" in result.get("value"))
             self.assertTrue("token_unassign" in result.get("value"))
-
-    def test_04_handler_modules(self):
-        with self.app.test_request_context('/event/handlermodules',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            for h in HANDLERS:
-                self.assertIn(h, result.get("value"), result)
 
     def test_05_get_handler_actions(self):
         with self.app.test_request_context('/event/actions/UserNotification',
@@ -813,7 +819,7 @@ class EventWrapperTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
         delete_event(r)
 
@@ -846,7 +852,7 @@ class EventWrapperTestCase(MyApiTestCase):
             expected = "Failed to send a notification email to user {'email': ['donut@example.com']}"
             mock_log.assert_called_once_with(expected)
 
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: donut@example.com', msg)
         delete_event(r)
 
@@ -1073,7 +1079,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Registration", msg)
         delete_event(r)
@@ -1128,7 +1134,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Your container was unregistered.", msg)
         delete_event(r)
@@ -1191,7 +1197,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
         delete_event(r)
@@ -1257,7 +1263,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
 

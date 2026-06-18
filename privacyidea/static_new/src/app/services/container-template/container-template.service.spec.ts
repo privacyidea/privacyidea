@@ -24,13 +24,14 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService, ContainerTemplate } from "@services/container/container.service";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import {
-    MockContainerService,
-    MockContentService,
-    MockNotificationService,
-    MockPiResponse
+  MockContainerService,
+  MockContentService,
+  MockNotificationService,
+  MockPiResponse
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContainerTemplateService } from "./container-template.service";
@@ -40,7 +41,6 @@ describe("ContainerTemplateService", () => {
   let httpMock: HttpTestingController;
   let authServiceMock: MockAuthService;
   let contentServiceMock: MockContentService;
-  let containerServiceMock: MockContainerService;
   let notificationServiceMock: MockNotificationService;
 
   beforeEach(() => {
@@ -59,7 +59,6 @@ describe("ContainerTemplateService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
-    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     authServiceMock.actionAllowed.mockReturnValue(true);
   });
@@ -74,7 +73,7 @@ describe("ContainerTemplateService", () => {
 
   describe("templatesResource", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -133,11 +132,29 @@ describe("ContainerTemplateService", () => {
 
       expect(service.templates()).toEqual([]);
     });
+
+    it("should reset to empty array when templatesResource errors after successful load", async () => {
+      TestBed.tick();
+
+      let req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush({ result: { value: { templates: [{ name: "template1" }] } } });
+      TestBed.tick();
+      await Promise.resolve();
+      expect(service.templates()).toEqual([{ name: "template1" }]);
+
+      service.templatesResource.reload();
+      TestBed.tick();
+      req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(service.templates()).toEqual([]);
+    });
   });
 
   describe("templateTokentypesResource", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -181,7 +198,9 @@ describe("ContainerTemplateService", () => {
       TestBed.tick();
 
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
-      tokenTypesReq.flush({ result: { value: { generic: { token_types: ["hotp"] }, smartphone: { token_types: ["push"] } } } });
+      tokenTypesReq.flush({
+        result: { value: { generic: { token_types: ["hotp"] }, smartphone: { token_types: ["push"] } } }
+      });
       TestBed.tick();
       await Promise.resolve();
 
@@ -222,7 +241,7 @@ describe("ContainerTemplateService", () => {
 
   describe("getTokenTypesForContainerType", () => {
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
@@ -282,15 +301,13 @@ describe("ContainerTemplateService", () => {
 
     it("should throw error on delete", async () => {
       const templateName = "template-to-fail";
-      const deletePromise = service.deleteTemplate(templateName).catch(() => {});
+      const deletePromise = service.deleteTemplate(templateName);
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateName}`));
 
       req.flush("Error", { status: 500, statusText: "Server Error" });
 
-      await deletePromise;
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to delete template")
-      );
+      await expect(deletePromise).rejects.toBeDefined();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete template"));
     });
 
     it("should check permissions and throw if denied", async () => {
@@ -303,9 +320,7 @@ describe("ContainerTemplateService", () => {
 
       httpMock.expectNone(`/container/template/${templateName}`);
       expect(authServiceMock.actionAllowed).toHaveBeenCalledWith("container_template_delete");
-      expect(notificationServiceMock.error).toHaveBeenCalledWith(
-        "You are not allowed to delete container templates."
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("You are not allowed to delete container templates.");
     });
   });
 
@@ -335,7 +350,7 @@ describe("ContainerTemplateService", () => {
       const spy = jest.spyOn(service.templatesResource, "reload");
       const templateNames = ["template-1", "template-2"];
 
-      const deletePromise = service.deleteTemplates(templateNames).catch(() => {});
+      const deletePromise = service.deleteTemplates(templateNames);
 
       const req1 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[0]}`));
       req1.flush(
@@ -343,7 +358,7 @@ describe("ContainerTemplateService", () => {
         { status: 500, statusText: "Server Error" }
       );
 
-      await deletePromise;
+      await expect(deletePromise).rejects.toBeDefined();
 
       httpMock.expectNone((req) => req.url.includes(`/container/template/${templateNames[1]}`));
 
@@ -365,7 +380,7 @@ describe("ContainerTemplateService", () => {
     };
 
     beforeEach(() => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
       TestBed.tick();
       const reqs = httpMock.match(() => true);
@@ -442,12 +457,12 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should show a generic error notification on delete if error response contains no message", async () => {
-      const deletePromise = service.deleteTemplate("some-template").catch(() => {});
+      const deletePromise = service.deleteTemplate("some-template");
 
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/some-template`));
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });
 
-      await deletePromise;
+      await expect(deletePromise).rejects.toBeDefined();
 
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete template. ");
     });
@@ -458,7 +473,7 @@ describe("ContainerTemplateService", () => {
         name: "Original",
         container_type: "generic",
         default: true,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       const promise = service.copyTemplate(source, "Copy");
 
@@ -477,7 +492,7 @@ describe("ContainerTemplateService", () => {
         name: "bad name!",
         container_type: "generic",
         default: false,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       expect(service.canSaveTemplate(template)).toBe(false);
     });
@@ -487,7 +502,7 @@ describe("ContainerTemplateService", () => {
         name: "",
         container_type: "generic",
         default: false,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       expect(service.canSaveTemplate(template)).toBe(false);
     });
@@ -497,7 +512,7 @@ describe("ContainerTemplateService", () => {
         name: "valid",
         container_type: "",
         default: false,
-        template_options: { tokens: [{ type: "hotp" } as any] }
+        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
       };
       expect(service.canSaveTemplate(template)).toBe(false);
     });

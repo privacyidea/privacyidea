@@ -18,22 +18,29 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This endpoint is used to create, modify, list and delete Event Handling
-Configuration. Event handling configuration is stored in the database table
-"eventhandling"
+The event-handling REST API manages event handler bindings: which
+handler module reacts to which event, on which condition, with which
+action and options. See :ref:`eventhandler` for the conceptual chapter
+covering the available handler modules and their actions.
 
-The code of this module is tested in tests/test_api_events.py
+All endpoints require admin authentication. Read access for the
+binding list and the lookup endpoints (handler module positions,
+actions, conditions) is gated by the admin policy action
+:ref:`policy_eventhandling_read`; create, update, enable, disable and
+delete are gated by :ref:`policy_eventhandling_write`.
 """
 from flask import (Blueprint,
                    request)
 from .lib.utils import send_result, get_required
 from ..lib.log import log_with
 from ..lib.event import set_event, delete_event, enable_event
+from ..lib.error import ParameterError
+from privacyidea.lib import _
 from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
-from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
+from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object, get_handler_modules
 from privacyidea.lib.utils import is_true
 import json
 
@@ -50,22 +57,32 @@ eventhandling_blueprint = Blueprint('eventhandling_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_eventhandling(eventid=None):
     """
-    returns a json list of the event handling configuration
+    Return event handler bindings, or one of two special introspection
+    results, depending on the path:
 
-    Or
+    * ``/event/`` — return all configured event handler bindings.
+    * ``/event/<eventid>`` — return the binding with the given numeric id.
+    * ``/event/available`` — return the list of event names privacyIDEA
+      emits, as a flat list of strings. (Special path; no binding lookup.)
+    * ``/event/handlermodules`` — return the list of available handler
+      module identifiers (e.g. ``UserNotification``, ``Token``,
+      ``Federation``, ``Counter``, ...). (Special path; no binding
+      lookup.)
 
-    returns a list of available events when calling as /event/available
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
 
-    Or
-
-    the available handler modules when calling as /event/handlermodules
+    :param eventid: optional path component, the numeric id of a binding,
+        or one of the literal strings ``available`` / ``handlermodules``
+        for the special introspection results.
+    :status 200: list of binding dicts, list of event names, list of
+        handler module names, or a single binding dict — depending on the
+        path.
     """
     if eventid == "available":
         res = AVAILABLE_EVENTS
     elif eventid == "handlermodules":
-        # TODO: We need to provide a dynamic list of event handlers
-        res = ["UserNotification", "Token", "Federation", "Script", "Counter",
-               "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes", "WebHook", "Container"]
+        res = get_handler_modules()
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
@@ -74,13 +91,19 @@ def get_eventhandling(eventid=None):
 
 @eventhandling_blueprint.route('/positions/<handlermodule>', methods=["GET"])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_module_positions(handlermodule=None):
     """
-    Return the list of positions a handlermodule provides.
+    Return the positions a handler module supports — typically ``pre``
+    and/or ``post``, indicating where in the request lifecycle the handler
+    can fire.
 
-    :param handlermodule: Identifier of the handler module like
-        "UserNotification"
-    :return: list oft actions
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
+
+    :param handlermodule: path component, the handler module identifier
+        (e.g. ``UserNotification``).
+    :status 200: list of position names in ``result.value``.
     """
     ret = []
     h_obj = get_handler_object(handlermodule)
@@ -92,13 +115,19 @@ def get_module_positions(handlermodule=None):
 
 @eventhandling_blueprint.route('/actions/<handlermodule>', methods=["GET"])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_module_actions(handlermodule=None):
     """
-    Return the list of actions a handlermodule provides.
+    Return the actions a handler module supports. Each entry includes the
+    action name and any per-action option schema the WebUI uses to render
+    its form.
 
-    :param handlermodule: Identifier of the handler module like
-        "UserNotification"
-    :return: list oft actions
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
+
+    :param handlermodule: path component, the handler module identifier
+        (e.g. ``UserNotification``).
+    :status 200: dict of action descriptors in ``result.value``.
     """
     ret = []
     h_obj = get_handler_object(handlermodule)
@@ -110,13 +139,18 @@ def get_module_actions(handlermodule=None):
 
 @eventhandling_blueprint.route('/conditions/<handlermodule>', methods=["GET"])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_module_conditions(handlermodule=None):
     """
-    Return the list of conditions a handlermodule provides.
+    Return the conditions a handler module supports — the predicates that
+    can gate whether the handler fires for a given event.
 
-    :param handlermodule: Identifier of the handler module like
-        "UserNotification"
-    :return: list of conditions
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
+
+    :param handlermodule: path component, the handler module identifier
+        (e.g. ``UserNotification``).
+    :status 200: dict of condition descriptors in ``result.value``.
     """
     ret = []
     h_obj = get_handler_object(handlermodule)
@@ -131,18 +165,39 @@ def get_module_conditions(handlermodule=None):
 @prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def set_eventhandling():
     """
-    This creates a new event handling definition
+    Create or update an event handler binding. Pass an existing ``id`` to
+    update; omit it to create a new binding.
 
-    :param name: A describing name of the event.bool
-    :param id: (optional) when updating an existing event you need to
-        specify the id
-    :param event: A comma separated list of events
-    :param handlermodule: A handlermodule
-    :param action: The action to perform
-    :param ordering: An integer number
-    :param position: "pre" or "post"
-    :param conditions: Conditions, when the event will trigger
-    :param options.: A list of possible options.
+    .. warning::
+       Updates are not partial. The full set of fields must be supplied on
+       every update — ``action`` and ``position`` are silently set to empty
+       strings if omitted, and ``options`` / ``conditions`` are deleted and
+       replaced with whatever you send (so omitting them wipes them).
+
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_write`.
+
+    :jsonparam id: id of an existing binding to update; omit to create.
+    :jsonparam name: human-readable name of the binding (required).
+    :jsonparam event: comma-separated list of event names that should
+        trigger this binding (required); see :http:get:`/event/available`.
+    :jsonparam handlermodule: handler module identifier (required); see
+        :http:get:`/event/handlermodules`.
+    :jsonparam action: action the handler should perform (required); see
+        :http:get:`/event/actions/(handlermodule)`.
+    :jsonparam position: ``post`` (default) or ``pre`` — when in the
+        request lifecycle the handler fires.
+    :jsonparam ordering: integer >= 0; bindings with lower ordering run
+        first. Default ``0``.
+    :jsonparam active: ``True`` (default) to enable the binding, ``False``
+        to create it disabled.
+    :jsonparam conditions: dict (or JSON-encoded dict) of per-binding
+        conditions; see :http:get:`/event/conditions/(handlermodule)`.
+        On update, replaces all conditions.
+    :jsonparam option.*: per-action options. Field names are taken after
+        the ``option.`` prefix (e.g. ``option.subject`` becomes the
+        ``subject`` option). On update, replaces all options.
+    :status 200: id of the binding in ``result.value``.
     """
     param = request.all_data
     name = get_required(param, "name")
@@ -152,12 +207,19 @@ def set_eventhandling():
     if eid:
         eid = int(eid)
     handlermodule = get_required(param, "handlermodule")
+    if get_handler_object(handlermodule) is None:
+        raise ParameterError(_("Unknown handler module: {0!s}").format(handlermodule))
     action = get_required(param, "action")
     ordering = param.get("ordering", 0)
     position = param.get("position", "post")
     conditions = param.get("conditions", {})
-    if type(conditions) is not dict:
-        conditions = json.loads(conditions)
+    if not isinstance(conditions, dict):
+        try:
+            conditions = json.loads(conditions)
+        except (ValueError, TypeError):
+            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
+        if not isinstance(conditions, dict):
+            raise ParameterError(_("The 'conditions' parameter must be a dictionary."))
     options = {}
     for k, v in param.items():
         if k.startswith("option."):
@@ -177,10 +239,13 @@ def set_eventhandling():
 @prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def enable_event_api(eventid):
     """
-    Enable a given event by its id.
+    Enable an event handler binding.
 
-    :jsonparam eventid: ID of the event
-    :return: ID in the database
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_write`.
+
+    :param eventid: path component, the numeric id of the binding.
+    :status 200: id of the binding in ``result.value``.
     """
     p = enable_event(eventid, True)
     g.audit_object.log({"success": True})
@@ -192,10 +257,14 @@ def enable_event_api(eventid):
 @prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def disable_event_api(eventid):
     """
-    Disable a given policy by its name.
+    Disable an event handler binding. The binding is preserved but will
+    not fire on its events until enabled again.
 
-    :jsonparam name: The name of the policy
-    :return: ID in the database
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_write`.
+
+    :param eventid: path component, the numeric id of the binding.
+    :status 200: id of the binding in ``result.value``.
     """
     p = enable_event(eventid, False)
     g.audit_object.log({"success": True})
@@ -207,10 +276,13 @@ def disable_event_api(eventid):
 @prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def delete_eventid(eid=None):
     """
-    this function deletes an existing event handling configuration
+    Delete the event handler binding with the given id.
 
-    :param eid: The id of the event handling configuration
-    :return: json with success or fail
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_write`.
+
+    :param eid: path component, the numeric id of the binding.
+    :status 200: id of the deleted binding in ``result.value``.
     """
     res = delete_event(eid)
     g.audit_object.log({"success": True,

@@ -361,7 +361,7 @@ def check_application_tokentype(request=None, action=None):
     Check ACTION.APPLICATION_TOKENTYPE
 
     This decorator should wrap
-        /validate/check, /validate/samlcheck and /validate/triggerchallenge.
+        /validate/check and /validate/triggerchallenge.
 
     :param request: The request that is intercepted during the API call
     :type request: Request Object
@@ -1301,6 +1301,19 @@ def check_base_action(request=None, action=None, anonymous=False):
     if not action_allowed:
         raise PolicyError(ERROR.get(role))
     return True
+
+
+def check_admin_base_action(request=None, action=None, anonymous=False):
+    """
+    Like ``check_base_action``, but only enforces the action when the
+    caller is an admin. User-role callers are passed through untouched
+    so endpoints that admins and users share (e.g. ``GET /system/``)
+    can be gated against an admin-only policy without breaking the
+    user-side path.
+    """
+    if g.logged_in_user.get("role") == ROLE.USER:
+        return True
+    return check_base_action(request=request, action=action, anonymous=anonymous)
 
 
 def check_token_action(request: Request = None, action: str = None):

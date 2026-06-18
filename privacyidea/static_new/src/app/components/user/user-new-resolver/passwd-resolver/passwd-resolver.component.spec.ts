@@ -18,7 +18,6 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { PasswdResolverComponent } from "./passwd-resolver.component";
 
 describe("PasswdResolverComponent", () => {
@@ -28,7 +27,7 @@ describe("PasswdResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PasswdResolverComponent, NoopAnimationsModule]
+      imports: [PasswdResolverComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PasswdResolverComponent);
@@ -41,23 +40,19 @@ describe("PasswdResolverComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should expose controls via signal", () => {
-    const controls = component.controls();
-    expect(controls).toEqual(
-      expect.objectContaining({
-        fileName: component.filenameControl
-      })
-    );
+  it("should expose isValid and getValue", () => {
+    expect(typeof component.isValid).toBe("function");
+    expect(typeof component.getValue).toBe("function");
   });
 
-  it("should update controls when data input changes", () => {
+  it("should update model when data input changes", () => {
     componentRef.setInput("data", {
       fileName: "/etc/passwd"
     });
 
     fixture.detectChanges();
 
-    expect(component.filenameControl.value).toBe("/etc/passwd");
+    expect(component.model().fileName).toBe("/etc/passwd");
   });
 
   it("should also accept all filename variable, but prioritise fileName", () => {
@@ -66,7 +61,7 @@ describe("PasswdResolverComponent", () => {
     });
     fixture.detectChanges();
 
-    expect(component.filenameControl.value).toBe("/etc/filename-passwd");
+    expect(component.model().fileName).toBe("/etc/filename-passwd");
 
     componentRef.setInput("data", {
       filename: "/etc/filename-passwd",
@@ -74,6 +69,6 @@ describe("PasswdResolverComponent", () => {
     });
     fixture.detectChanges();
 
-    expect(component.filenameControl.value).toBe("/etc/passwd");
+    expect(component.model().fileName).toBe("/etc/passwd");
   });
 });

@@ -24,8 +24,9 @@
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n>The questionnaire lets you define a set of questions.</p>
-    <p i18n>The questionnaire token needs to define answers to these questions and the user will be presented with
-            random questions and needs to provide his previously defined answer.
+    <p i18n>
+      The questionnaire token needs to define answers to these questions and the user will be presented with random
+      questions and needs to provide his previously defined answer.
     </p>
 
     <div class="flex-row gap-16 ali-center">
@@ -34,22 +35,23 @@
         class="input-width-s">
         <mat-label i18n>Number of Answers</mat-label>
         <input
-          [ngModel]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
-          (ngModelChange)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event)"
-          #numAnswersInput="ngModel"
-          [ngModelOptions]="{ standalone: true }"
+          #numAnswersInput
+          [value]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
+          (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $any($event.target).value)"
           matInput
           placeholder="5"
           required
-          type="number">
-        @if (numAnswersInput.errors?.['required']) {
+          type="number" />
+        @if (numAnswersInput.validity.valueMissing) {
           <mat-error i18n>Number of Answers is <strong>required</strong></mat-error>
         }
       </mat-form-field>
 
       <span
         class="checkbox-hint"
-        i18n>This is the number of answers a user needs to define to enroll a token.</span>
+        i18n
+        >This is the number of answers a user needs to define to enroll a token.</span
+      >
     </div>
 
     <h4 i18n>Questionnaire</h4>
@@ -57,10 +59,10 @@
 
     <table class="table">
       <thead>
-      <tr>
-        <th i18n>Question</th>
-        <th></th>
-      </tr>
+        <tr>
+          <th i18n>Question</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>
         @for (key of questionKeys(); track key) {
@@ -87,9 +89,10 @@
         class="input-width-xl">
         <mat-label i18n>Question</mat-label>
         <input
-          [(ngModel)]="newQuestionText"
+          [value]="newQuestionText()"
+          (input)="newQuestionText.set($any($event.target).value)"
           matInput
-          placeholder="Enter new question here">
+          placeholder="Enter new question here" />
       </mat-form-field>
       <button
         (click)="addQuestion()"

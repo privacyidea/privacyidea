@@ -26,7 +26,7 @@
       class="challenges-table-filter">
       <mat-label i18n>Filter Challenges...</mat-label>
       <app-clearable-input
-        (onClick)="challengesService.clearFilter()"
+        (clearButtonClick)="challengesService.clearFilter()"
         [showClearButton]="challengesService.challengesFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
@@ -91,16 +91,17 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <div class="flex-row flex-nowrap ali-center">
+                <app-copyable [copyText]="element.serial">
                   <a
+                    role="button"
+                    tabindex="0"
                     (click)="serialClicked(element)"
+                    (keydown.enter)="serialClicked(element)"
+                    (keydown.space)="$event.preventDefault(); serialClicked(element)"
                     class="flex ali-center">
                     {{ element.serial }}
                   </a>
-                  @if (element.serial) {
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
-                </div>
+                </app-copyable>
               }
               @case ("otp_received") {
                 <div class="flex just-center width-100">

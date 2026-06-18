@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,16 +22,218 @@
   aria-label="Periodic Tasks"
   i18n-aria-label>
   <h3 i18n>Periodic Tasks</h3>
-  <mat-accordion class="list-layout">
+
+  <div class="filter-paginator-container">
+    <mat-form-field
+      appearance="fill"
+      class="periodic-task-table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Periodic Tasks ...</mat-label>
+      <app-clearable-input
+        (clearButtonClick)="resetFilter()"
+        [showClearButton]="filterString().length > 0">
+        <input
+          #filterHTMLInputElement
+          (input)="onFilterInput(filterHTMLInputElement.value)"
+          [value]="filterString()"
+          aria-label="Filter Input"
+          i18n-aria-label
+          matInput />
+      </app-clearable-input>
+    </mat-form-field>
+  </div>
+  <div class="actions-container">
     @if (authService.actionAllowed("periodictask_write")) {
-      <app-periodic-task-panel-new
-        [task]="newTask"
-        (taskSaved)="resetNewTask()"></app-periodic-task-panel-new>
-      <mat-divider class="margin-top-16 margin-bottom-16"></mat-divider>
+      <button
+        (click)="onCreateNewTask()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create Periodic Task</span>
+      </button>
+      <button
+        (click)="deleteSelected()"
+        [disabled]="selectedTaskIds().size < 1"
+        class="action-button-secondary button-width-l"
+        color="warn"
+        mat-stroked-button>
+        <mat-icon>delete</mat-icon>
+        <span i18n>Delete Selected</span>
+      </button>
     }
-    @for (task of periodicTasks(); track task.name) {
-      <app-periodic-task-panel
-        [task]="task"></app-periodic-task-panel>
-    }
-  </mat-accordion>
+    <mat-slide-toggle
+      (change)="toggleDetailedView()"
+      [checked]="detailedView()"
+      i18n>
+      Detailed View
+    </mat-slide-toggle>
+  </div>
+
+  <table
+    [dataSource]="periodicTasksDataSource()"
+    class="periodic-task-table"
+    mat-table
+    matSort>
+    <ng-container matColumnDef="select">
+      <th
+        *matHeaderCellDef
+        mat-header-cell>
+        <mat-checkbox
+          (change)="masterToggle()"
+          [checked]="isAllSelected()"
+          [disabled]="!authService.actionAllowed('periodictask_write') || selectableTaskIds().length === 0"
+          [indeterminate]="selectedTaskIds().size > 0 && !isAllSelected()"
+          aria-label="Select all periodic tasks"
+          i18n-aria-label></mat-checkbox>
+      </th>
+      <td
+        *matCellDef="let task"
+        mat-cell>
+        <mat-checkbox
+          (change)="updateSelection($event, task)"
+          (click)="$event.stopPropagation()"
+          [checked]="task.id !== null && task.id !== undefined && selectedTaskIds().has(task.id)"
+          [disabled]="!authService.actionAllowed('periodictask_write') || task.id === null || task.id === undefined"
+          aria-label="Select periodic task"
+          i18n-aria-label></mat-checkbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Name
+      </th>
+      <td
+        *matCellDef="let task"
+        mat-cell>
+        <app-copyable [copyText]="task.name">
+          <a
+            (click)="onEditTask(task)"
+            (keydown.enter)="onEditTask(task)"
+            (keydown.space)="onEditTask(task); $event.preventDefault()"
+            class="flex ali-center"
+            role="button"
+            tabindex="0">
+            {{ task.name }}
+          </a>
+        </app-copyable>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="taskmodule">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Task Module
+      </th>
+      <td
+        *matCellDef="let task"
+        mat-cell>
+        {{ getModuleLabel(task.taskmodule) }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="interval">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Interval
+      </th>
+      <td
+        *matCellDef="let task"
+        mat-cell>
+        {{ task.interval }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="nodes">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Nodes
+      </th>
+      <td
+        *matCellDef="let task"
+        mat-cell>
+        {{ Array.isArray(task.nodes) ? task.nodes.join(", ") : task.nodes }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="options">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell>
+        Options
+      </th>
+      <td
+        *matCellDef="let task"
+        class="column-max-width"
+        mat-cell>
+        @if (detailedView()) {
+          <ul class="no-indention margin-0">
+            @for (option of Object.entries(task.options); track option[0]) {
+              @if (isBooleanValue(option[1])) {
+                <li>{{ option[0] }}</li>
+              } @else {
+                <li>{{ option[0] }}: {{ option[1] }}</li>
+              }
+            }
+          </ul>
+        } @else {
+          <div class="truncate-cell">{{ formatOptions(task.options) }}</div>
+        }
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="active">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header>
+        Active
+      </th>
+      <td
+        *matCellDef="let task"
+        mat-cell>
+        <mat-slide-toggle
+          i18n-matTooltip
+          matTooltip="Toggle Active Status"
+          [checked]="task.active"
+          (change)="toggleActive(task, $event.checked)"
+          (click)="$event.stopPropagation()"
+          [disabled]="!authService.actionAllowed('periodictask_write')"
+          [disableRipple]="true"></mat-slide-toggle>
+      </td>
+    </ng-container>
+
+    <tr
+      *matHeaderRowDef="displayedColumns"
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: displayedColumns"
+      mat-row></tr>
+
+    <tr
+      *matNoDataRow
+      class="mat-row">
+      <td
+        class="mat-cell"
+        colspan="7"
+        i18n>
+        No periodic tasks found.
+      </td>
+    </tr>
+  </table>
 </div>
