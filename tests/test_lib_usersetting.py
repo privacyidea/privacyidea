@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 Tests for privacyidea.lib.usersetting (per-principal frontend settings).
+
+The backend is a pass-through store: it returns stored documents verbatim and
+does not supply default values (the WebUI owns those).
 """
 from privacyidea.lib.error import ParameterError, UserError
 from privacyidea.lib.user import User
 from privacyidea.lib.usersetting import (SettingsSubject, SUBJECT_LOCAL_ADMIN, SUBJECT_USER,
-                                         SETTINGS_SCHEMA, MAX_SETTINGS_BYTES,
+                                         KNOWN_SETTING_KEYS, MAX_SETTINGS_BYTES,
                                          get_allowed_keys, get_user_settings, set_user_settings,
-                                         validate_user_settings)
+                                         delete_user_settings, validate_user_settings)
 from .base import MyTestCase
 
 
@@ -38,34 +41,28 @@ class UserSettingTestCase(MyTestCase):
         self.assertTrue(user.user_id)
         self.assertIsNotNone(user.realm_id)
 
-    def test_02_get_returns_defaults(self):
-        settings = get_user_settings(self._admin_subject())
-        # No row stored yet -> every declared default is present
-        for key, spec in SETTINGS_SCHEMA.items():
-            self.assertEqual(spec["default"], settings[key])
+    def test_02_get_empty_returns_empty_dict(self):
+        # No row stored yet -> empty document, no backend-supplied defaults
+        self.assertEqual({}, get_user_settings(self._admin_subject()))
 
-    def test_03_set_merges_and_persists(self):
+    def test_03_set_and_get_roundtrip_verbatim(self):
         subject = self._admin_subject()
         set_user_settings(subject, {"theme": "dark"})
-        settings = get_user_settings(subject)
-        self.assertEqual("dark", settings["theme"])
-        # Untouched key keeps its default
-        self.assertEqual(SETTINGS_SCHEMA["language"]["default"], settings["language"])
+        # Returned verbatim, no extra default keys injected
+        self.assertEqual({"theme": "dark"}, get_user_settings(subject))
 
-        # A second partial write merges, it does not clobber the first
-        set_user_settings(subject, {"language": "de"})
-        settings = get_user_settings(subject)
-        self.assertEqual("dark", settings["theme"])
-        self.assertEqual("de", settings["language"])
+        # A second partial write merges at the top level, not clobbering the first
+        set_user_settings(subject, {"token_columns": ["serial", "type"]})
+        self.assertEqual({"theme": "dark", "token_columns": ["serial", "type"]},
+                         get_user_settings(subject))
 
     def test_04_replace_overwrites_document(self):
         subject = self._admin_subject()
-        set_user_settings(subject, {"theme": "dark", "language": "de"})
+        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
         stored = set_user_settings(subject, {"theme": "light"}, replace=True)
         self.assertEqual({"theme": "light"}, stored)
-        settings = get_user_settings(subject)
-        # 'language' fell back to its default after the replace
-        self.assertEqual(SETTINGS_SCHEMA["language"]["default"], settings["language"])
+        # The dropped key is simply gone (the WebUI falls back to its default)
+        self.assertEqual({"theme": "light"}, get_user_settings(subject))
 
     def test_05_admin_and_user_settings_are_isolated(self):
         set_user_settings(self._admin_subject(), {"theme": "dark"})
@@ -81,14 +78,14 @@ class UserSettingTestCase(MyTestCase):
 
     def test_07_open_mode_accepts_unknown_keys_and_types(self):
         # Keys are not enforced yet: unknown keys and arbitrary value types pass
-        validate_user_settings({"unknown_key": 1, "tokens_per_page": "many"})
+        validate_user_settings({"unknown_key": 1, "whatever": "many"})
         stored = set_user_settings(self._admin_subject(), {"frontend_only_key": {"nested": True}})
         self.assertEqual({"nested": True}, stored["frontend_only_key"])
 
     def test_08_allowed_keys_placeholder_includes_config(self):
         # get_allowed_keys() is wired up (for the later enforcement step) and
-        # already merges the admin-configured keys with the schema keys.
-        self.assertTrue(set(SETTINGS_SCHEMA).issubset(get_allowed_keys()))
+        # already merges the admin-configured keys with the known keys.
+        self.assertTrue(KNOWN_SETTING_KEYS.issubset(get_allowed_keys()))
         self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = ["custom_admin_key"]
         try:
             self.assertIn("custom_admin_key", get_allowed_keys())
@@ -101,10 +98,12 @@ class UserSettingTestCase(MyTestCase):
         ghost = SettingsSubject.from_logged_in_user(
             {"username": "does-not-exist", "realm": self.realm1, "role": "user"})
         self.assertFalse(ghost.is_identified())
-        # Read is tolerated and returns only defaults
-        self.assertEqual(SETTINGS_SCHEMA["theme"]["default"], get_user_settings(ghost)["theme"])
+        # Read is tolerated and returns an empty document
+        self.assertEqual({}, get_user_settings(ghost))
         # Write is refused
         self.assertRaises(UserError, set_user_settings, ghost, {"theme": "dark"})
+        # Delete is a no-op (never matches the shared row)
+        self.assertEqual({}, delete_user_settings(ghost, "theme"))
 
     def test_10_size_cap_not_bypassable_by_merge(self):
         # Each partial write is small, but the merged document must still be
@@ -119,6 +118,14 @@ class UserSettingTestCase(MyTestCase):
         # A non-JSON-serializable value yields a controlled ParameterError,
         # not an unhandled TypeError.
         self.assertRaises(ParameterError, validate_user_settings, {"x": {1, 2, 3}})
+
+    def test_12_non_ascii_counted_by_real_byte_size(self):
+        # ensure_ascii=False: a non-ASCII string near the cap is measured by its
+        # real UTF-8 size, not the inflated \\uXXXX-escaped size.
+        # "ä" is 2 UTF-8 bytes; MAX_SETTINGS_BYTES//2 of them ~= the cap in real
+        # bytes but would be ~3x over if counted as escapes.
+        value = "ä" * (MAX_SETTINGS_BYTES // 2 - 20)
+        validate_user_settings({"k": value})  # does not raise
 
     def test_13_reuses_resolved_user_for_user_role(self):
         # When request.User is the JWT user, it is reused (no re-resolution)
@@ -143,10 +150,31 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual("testadmin", subject.username)
         self.assertEqual("", subject.user_id)
 
-    def test_12_non_ascii_counted_by_real_byte_size(self):
-        # ensure_ascii=False: a non-ASCII string near the cap is measured by its
-        # real UTF-8 size, not the inflated \\uXXXX-escaped size.
-        # "ä" is 2 UTF-8 bytes; MAX_SETTINGS_BYTES//2 of them ~= the cap in real
-        # bytes but would be ~3x over if counted as escapes.
-        value = "ä" * (MAX_SETTINGS_BYTES // 2 - 20)
-        validate_user_settings({"k": value})  # does not raise
+    def test_15_delete_key_resets_to_default(self):
+        subject = self._admin_subject()
+        # replace=True for a clean baseline independent of other tests' writes
+        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"}, replace=True)
+        remaining = delete_user_settings(subject, "theme")
+        self.assertEqual({"starting_page": "tokens"}, remaining)
+        self.assertEqual({"starting_page": "tokens"}, get_user_settings(subject))
+        # Deleting an absent key is a no-op
+        self.assertEqual({"starting_page": "tokens"}, delete_user_settings(subject, "theme"))
+
+    def test_16_delete_last_key_removes_row(self):
+        subject = self._admin_subject()
+        set_user_settings(subject, {"theme": "dark"}, replace=True)
+        self.assertEqual({}, delete_user_settings(subject, "theme"))
+        # Row is gone -> indistinguishable from never-set
+        self.assertEqual({}, get_user_settings(subject))
+
+    def test_17_delete_all_clears_document(self):
+        subject = self._admin_subject()
+        set_user_settings(subject, {"theme": "dark", "starting_page": "tokens"})
+        self.assertEqual({}, delete_user_settings(subject))
+        self.assertEqual({}, get_user_settings(subject))
+
+    def test_18_replace_with_empty_prunes_row(self):
+        subject = self._admin_subject()
+        set_user_settings(subject, {"theme": "dark"})
+        self.assertEqual({}, set_user_settings(subject, {}, replace=True))
+        self.assertEqual({}, get_user_settings(subject))

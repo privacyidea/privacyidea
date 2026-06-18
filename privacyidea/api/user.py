@@ -63,7 +63,8 @@ from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
-from privacyidea.lib.usersetting import SettingsSubject, get_user_settings, set_user_settings
+from privacyidea.lib.usersetting import (SettingsSubject, delete_user_settings, get_user_settings,
+                                         set_user_settings)
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -171,8 +172,9 @@ def get_user_settings_api():
     Return the WebUI settings of the logged-in principal.
 
     The settings are always scoped to the caller's own JWT identity; there
-    is no way to read another principal's settings through this endpoint.
-    Declared defaults are merged in, so the response is always complete.
+    is no way to read another principal's settings through this endpoint. The
+    stored document is returned verbatim (an empty object if nothing has been
+    stored); the WebUI applies its own defaults for absent keys.
 
     Requires authentication (any role).
 
@@ -202,7 +204,8 @@ def set_user_settings_api():
 
     :jsonparam settings: a JSON object with the settings to store.
     :jsonparam replace: if true, replace the whole document instead of merging.
-    :status 200: the stored settings object in ``result.value``.
+    :status 200: the stored settings object in ``result.value`` -- the same
+        shape :http:get:`/user/settings` returns.
     :status 400: the settings are not a JSON object, not JSON-serializable, or
         exceed the maximum size.
     """
@@ -212,6 +215,28 @@ def set_user_settings_api():
     stored = set_user_settings(subject, settings, replace=replace)
     g.audit_object.log({"success": True})
     return send_result(stored)
+
+
+@user_blueprint.route('/settings', methods=['DELETE'])
+@user_blueprint.route('/settings/<key>', methods=['DELETE'])
+@event("user_settings_delete", request, g)
+def delete_user_settings_api(key=None):
+    """
+    Delete WebUI settings of the logged-in principal.
+
+    With a ``key`` path segment only that setting is removed (the WebUI then
+    falls back to its own default for it); without one the whole document is
+    cleared. Always scoped to the caller's own JWT identity.
+
+    Requires authentication (any role).
+
+    :param key: the single setting to delete; omit to clear all settings.
+    :status 200: the remaining settings object in ``result.value``.
+    """
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user, request.User)
+    remaining = delete_user_settings(subject, key=key)
+    g.audit_object.log({"success": True})
+    return send_result(remaining)
 
 
 @user_blueprint.route('/attribute', methods=['POST'])

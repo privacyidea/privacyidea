@@ -19,9 +19,11 @@
 Per-principal frontend settings.
 
 This module stores and serves the WebUI settings of whoever is logged in
-(a local admin or a resolver user). The backend does not act on these
-settings; it only validates them on write and merges them over the
-declared defaults on read.
+(a local admin or a resolver user). The backend is a pass-through store: it
+validates a document's shape and size on write and serves it back verbatim
+on read. It does not interpret the settings and does not supply default
+*values* -- the WebUI owns the defaults, so an absent key means "not
+customized, use the frontend default".
 
 The data lives in the ``usersetting`` table, one JSON document per
 principal. See :class:`privacyidea.models.usersetting.UserSetting` for the
@@ -35,6 +37,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ParameterError, UserError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.user import User
@@ -46,8 +49,9 @@ SUBJECT_LOCAL_ADMIN = "local_admin"
 SUBJECT_USER = "user"
 
 # Hard cap on the serialized settings document, so the column cannot be abused
-# as arbitrary per-principal storage. The settings are small UI preferences.
-MAX_SETTINGS_BYTES = 8192
+# as arbitrary per-principal storage. Generous enough for a dashboard layout
+# plus a pinned-item list, which are the largest expected settings.
+MAX_SETTINGS_BYTES = 16384
 
 # pi.cfg / environment option letting admins extend the set of accepted setting
 # keys without a code change, e.g. PI_USER_SETTINGS_ALLOWED_KEYS = ["foo", "bar"].
@@ -56,29 +60,29 @@ MAX_SETTINGS_BYTES = 8192
 # the TODO in validate_user_settings).
 USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 
-# Declarative registry of the settings the WebUI may store. The backend is the
-# source of truth for *which* settings exist; adding a new setting is a one-line
-# entry here. ``default`` is merged in on read; ``type`` will be checked on write
-# once key enforcement is turned on. Admins can add further accepted keys via
+# Registry of the top-level setting keys the WebUI may store. Only used to seed
+# the (not-yet-enforced) allow-list; the backend stores the *values* verbatim
+# and never validates their structure. Admins can add further accepted keys via
 # PI_USER_SETTINGS_ALLOWED_KEYS without touching this registry.
 #
-# NOTE: the keys below are PLACEHOLDERS to exercise the mechanism. The frontend
-# team defines the real set; do not treat these names as a committed API yet.
-SETTINGS_SCHEMA = {
-    "theme": {"type": str, "default": "light"},
-    "language": {"type": str, "default": "en"},
-    "tokens_per_page": {"type": int, "default": 25},
-    "advanced_mode": {"type": bool, "default": False},
+# NOTE: these names are PLACEHOLDERS reflecting the intended settings. The
+# frontend team defines the real set; do not treat them as a committed API yet.
+KNOWN_SETTING_KEYS = {
+    "theme",
+    "starting_page",
+    "token_columns",
+    "dashboard",
+    "pinned_items",
 }
 
 
 def get_allowed_keys() -> set:
     """
-    The set of accepted setting keys: the keys declared in
-    :data:`SETTINGS_SCHEMA` plus any added by the admin via the
-    ``PI_USER_SETTINGS_ALLOWED_KEYS`` config option.
+    The set of accepted top-level setting keys: :data:`KNOWN_SETTING_KEYS` plus
+    any added by the admin via the ``PI_USER_SETTINGS_ALLOWED_KEYS`` config
+    option.
     """
-    allowed = set(SETTINGS_SCHEMA)
+    allowed = set(KNOWN_SETTING_KEYS)
     configured = get_app_config_value(USER_SETTINGS_ALLOWED_KEYS_CONFIG, [])
     if isinstance(configured, str):
         configured = [key.strip() for key in configured.split(",") if key.strip()]
@@ -130,9 +134,9 @@ class SettingsSubject:
         username = logged_in_user.get("username") or ""
         realm = logged_in_user.get("realm") or ""
         role = logged_in_user.get("role")
-        if role == "admin" and not realm:
+        if role == ROLE.ADMIN and not realm:
             return cls(subject_type=SUBJECT_LOCAL_ADMIN, username=username)
-        if (role == "user" and resolved_user is not None and resolved_user.login == username
+        if (role == ROLE.USER and resolved_user is not None and resolved_user.login == username
                 and (resolved_user.realm or "") == realm.lower() and resolved_user.uid):
             user = resolved_user
         else:
@@ -165,10 +169,10 @@ def validate_user_settings(settings: dict) -> None:
         raise ParameterError(f"The settings must be JSON-serializable: {error}")
     if len(serialized.encode("utf-8")) > MAX_SETTINGS_BYTES:
         raise ParameterError(f"The settings exceed the maximum size of {MAX_SETTINGS_BYTES} bytes.")
-    # TODO: Enforce the set of allowed keys once the frontend has settled them.
-    #  Reject any key not in get_allowed_keys() (SETTINGS_SCHEMA +
-    #  PI_USER_SETTINGS_ALLOWED_KEYS) and type-check the SETTINGS_SCHEMA entries
-    #  against their declared "type" here (bool is a subclass of int, guard that).
+    # TODO: Enforce the top-level key allow-list once the frontend has settled
+    #  the set of settings: reject any key not in get_allowed_keys()
+    #  (KNOWN_SETTING_KEYS + PI_USER_SETTINGS_ALLOWED_KEYS). Values stay
+    #  unvalidated -- the backend remains a pass-through store.
 
 
 def _select_for_subject(subject: SettingsSubject):
@@ -187,30 +191,29 @@ def _merge_settings(existing: dict | None, incoming: dict, replace: bool) -> dic
 
 def get_user_settings(subject: SettingsSubject) -> dict:
     """
-    Return the principal's settings, with every declared default filled in
-    for keys the principal has not overridden.
+    Return the principal's stored settings verbatim, or an empty dict if the
+    principal has not stored any. Defaults are not filled in -- the WebUI owns
+    those.
     """
-    defaults = {key: spec["default"] for key, spec in SETTINGS_SCHEMA.items()}
     # An unidentified subject must not query with empty/NULL keys: it would
     # match the shared row of every other unidentified principal. Reads are
-    # tolerated and just return the defaults.
+    # tolerated and just return an empty document.
     if not subject.is_identified():
-        return defaults
+        return {}
     row = db.session.scalars(_select_for_subject(subject)).first()
-    if row and row.settings:
-        defaults.update(row.settings)
-    return defaults
+    return (row.settings if row else None) or {}
 
 
 def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = False) -> dict:
     """
-    Store settings for the principal and return the stored (raw) document.
+    Store settings for the principal and return the stored document.
 
     ``settings`` is validated first. By default the given keys are merged into
     the existing document (partial update); pass ``replace=True`` to overwrite
-    the whole document.
+    the whole document. If the resulting document is empty the row is removed,
+    so an absent row and an empty document are the same state.
 
-    :return: the raw stored settings (without defaults merged in)
+    :return: the stored settings
     """
     validate_user_settings(settings)
     if not subject.is_identified():
@@ -221,6 +224,11 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
     # Re-validate the full document, not just the incoming delta, so the size
     # cap cannot be bypassed by accumulating keys across repeated partial writes.
     validate_user_settings(new_settings)
+    if not new_settings:
+        # Store absence rather than an empty document (absent == empty).
+        if row is not None:
+            row.delete()
+        return {}
     if row is None:
         row = UserSetting(subject_type=subject.subject_type, username=subject.username,
                           user_id=subject.user_id, resolver=subject.resolver,
@@ -241,4 +249,35 @@ def set_user_settings(subject: SettingsSubject, settings: dict, replace: bool = 
         row.settings = _merge_settings(row.settings, settings, replace)
         validate_user_settings(row.settings)
         row.save()
+    return row.settings or {}
+
+
+def delete_user_settings(subject: SettingsSubject, key: str | None = None) -> dict:
+    """
+    Delete one setting (``key``) or the whole document (``key=None``) and
+    return the remaining stored settings.
+
+    Deleting a key is the way to "reset to default": with the key gone the
+    WebUI falls back to its own default, which also tracks future default
+    changes (unlike pinning the current default value). When the last key is
+    removed the row is dropped, keeping absent == empty.
+    """
+    # Same guard as reads: never match the shared row of unidentified principals.
+    if not subject.is_identified():
+        return {}
+    row = db.session.scalars(_select_for_subject(subject)).first()
+    if row is None:
+        return {}
+    if key is None:
+        row.delete()
+        return {}
+    current = dict(row.settings or {})
+    if key not in current:
+        return current
+    del current[key]
+    if not current:
+        row.delete()
+        return {}
+    row.settings = current
+    row.save()
     return row.settings or {}

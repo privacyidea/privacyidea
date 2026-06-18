@@ -65,6 +65,11 @@ class UserSetting(MethodsMixin, db.Model):
         # treats NULLs in a unique key as distinct.
         UniqueConstraint('subject_type', 'username', 'user_id', 'resolver', 'realm_id',
                          name='uq_usersetting_subject'),
+        # The local-admin lookup (subject_type, username) uses the unique key's
+        # leading prefix, but the resolver-user lookup keys on
+        # (user_id, resolver, realm_id) -- which is not a prefix of the unique
+        # key -- so it gets its own index to stay seekable as the table grows.
+        db.Index('ix_usersetting_user', 'user_id', 'resolver', 'realm_id'),
     )
 
     id: Mapped[int] = mapped_column(Integer, Sequence("usersetting_seq"), primary_key=True)

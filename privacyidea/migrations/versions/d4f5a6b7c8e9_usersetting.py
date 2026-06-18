@@ -7,11 +7,10 @@ Create Date: 2026-06-18 00:00:00.000000
 """
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import text, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
-from sqlalchemy.schema import CreateSequence
 
-from privacyidea.models.db import build_restart_sequence_sql
+from privacyidea.models.db import (create_sequence_if_supported, restart_sequence_past_max,
+                                   sequence_id_column)
 
 # revision identifiers, used by Alembic.
 revision = 'd4f5a6b7c8e9'
@@ -19,32 +18,18 @@ down_revision = '7d4e9b2c1a3f'
 branch_labels = None
 depends_on = None
 
+SEQUENCE_NAME = "usersetting_seq"
+
 
 def upgrade():
-    bind = op.get_bind()
-    is_postgres = bind.dialect.name == 'postgresql'
-
     # The model declares Sequence('usersetting_seq'), so SQLAlchemy emits
-    # SELECT nextval(...) on every ORM insert. Create the sequence on any
-    # backend that supports CREATE SEQUENCE (Postgres + MariaDB 10.3+) via
-    # SQLAlchemy's CreateSequence construct, which the increment_by_zero
-    # @compiles hook rewrites to append INCREMENT BY 0 on MariaDB so a Galera
-    # cluster accepts the cached sequence. A raw "CREATE SEQUENCE" string would
-    # bypass that hook.
-    if bind.dialect.supports_sequences:
-        op.execute(CreateSequence(Sequence("usersetting_seq"), if_not_exists=True))
+    # SELECT nextval(...) on every ORM insert; create it where supported.
+    create_sequence_if_supported(op, SEQUENCE_NAME)
 
     try:
-        if is_postgres:
-            id_column = sa.Column(
-                'id', sa.Integer(), nullable=False,
-                server_default=sa.text("nextval('usersetting_seq')"),
-            )
-        else:
-            id_column = sa.Column('id', sa.Integer(), nullable=False, autoincrement=True)
         op.create_table(
             'usersetting',
-            id_column,
+            sequence_id_column(op, SEQUENCE_NAME),
             sa.Column('subject_type', sa.Unicode(length=20), nullable=False),
             sa.Column('username', sa.Unicode(length=320), nullable=True),
             sa.Column('user_id', sa.Unicode(length=320), nullable=True),
@@ -57,6 +42,9 @@ def upgrade():
             sa.PrimaryKeyConstraint('id'),
             sa.UniqueConstraint('subject_type', 'username', 'user_id', 'resolver', 'realm_id',
                                 name='uq_usersetting_subject'),
+            # Serves the resolver-user lookup, which keys on
+            # (user_id, resolver, realm_id) and is not a prefix of the unique key.
+            sa.Index('ix_usersetting_user', 'user_id', 'resolver', 'realm_id'),
         )
     except (OperationalError, ProgrammingError) as ex:
         if "already exists" in str(ex.orig).lower():
@@ -66,14 +54,9 @@ def upgrade():
             raise
 
     # Advance the sequence past any existing rows (covers the
-    # table-already-exists branch where the sequence would otherwise hand out a
-    # value <= MAX(id)). build_restart_sequence_sql emits each dialect's syntax
-    # and appends INCREMENT BY 0 on MariaDB for Galera.
-    if bind.dialect.supports_sequences:
-        max_id = bind.execute(
-            text("SELECT COALESCE(MAX(id), 0) FROM usersetting")
-        ).scalar() or 0
-        op.execute(build_restart_sequence_sql("usersetting_seq", max_id + 1, bind.dialect.name))
+    # table-already-exists branch where it would otherwise hand out a value
+    # <= MAX(id)).
+    restart_sequence_past_max(op, 'usersetting', SEQUENCE_NAME)
 
 
 def downgrade():
