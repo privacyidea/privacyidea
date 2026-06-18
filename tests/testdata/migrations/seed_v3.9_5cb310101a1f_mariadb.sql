@@ -1264,45 +1264,52 @@ INSERT INTO `pidea_audit` (`date`, `action`, `success`, `serial`, `token_type`, 
 -- SEQUENCEs in directly to match the on-disk state of an upgraded install.
 -- START WITH values match MAX(id)+1 of the seeded data so the next nextval
 -- returns a free PK.
+--
+-- INCREMENT BY 0 is required for the seed to load on a MariaDB Galera cluster:
+-- Galera rejects a cached sequence (the default) unless INCREMENT BY 0 is set,
+-- failing with "CACHE without INCREMENT BY 0 in Galera cluster" (ERROR 1235).
+-- On a standalone server INCREMENT BY 0 behaves like the default increment of
+-- 1, so the same seed loads identically on both — see the Galera CI job in
+-- .github/workflows/migration-tests.yml.
 -- ---------------------------------------------------------------------------
-CREATE SEQUENCE `audit_seq` START WITH 3;
-CREATE SEQUENCE `authcache_seq` START WITH 1;
-CREATE SEQUENCE `caconfig_seq` START WITH 1;
-CREATE SEQUENCE `caconnector_seq` START WITH 1;
-CREATE SEQUENCE `challenge_seq` START WITH 1;
-CREATE SEQUENCE `clientapp_seq` START WITH 3;
-CREATE SEQUENCE `customuserattribute_seq` START WITH 2;
-CREATE SEQUENCE `eventcounter_seq` START WITH 3;
-CREATE SEQUENCE `eventhandler_seq` START WITH 2;
-CREATE SEQUENCE `eventhandlercond_seq` START WITH 2;
-CREATE SEQUENCE `eventhandleropt_seq` START WITH 3;
-CREATE SEQUENCE `machineresolver_seq` START WITH 1;
-CREATE SEQUENCE `machineresolverconf_seq` START WITH 1;
-CREATE SEQUENCE `machinetoken_seq` START WITH 1;
-CREATE SEQUENCE `machtokenopt_seq` START WITH 1;
-CREATE SEQUENCE `monitoringstats_seq` START WITH 3;
-CREATE SEQUENCE `periodictask_seq` START WITH 2;
-CREATE SEQUENCE `periodictasklastrun_seq` START WITH 2;
-CREATE SEQUENCE `periodictaskopt_seq` START WITH 2;
-CREATE SEQUENCE `policy_seq` START WITH 5;
-CREATE SEQUENCE `policycondition_seq` START WITH 2;
-CREATE SEQUENCE `privacyideaserver_seq` START WITH 1;
-CREATE SEQUENCE `pwreset_seq` START WITH 1;
-CREATE SEQUENCE `radiusserver_seq` START WITH 1;
-CREATE SEQUENCE `realm_seq` START WITH 3;
-CREATE SEQUENCE `resolver_seq` START WITH 2;
-CREATE SEQUENCE `resolverconf_seq` START WITH 2;
-CREATE SEQUENCE `resolverrealm_seq` START WITH 3;
-CREATE SEQUENCE `serviceid_seq` START WITH 2;
-CREATE SEQUENCE `smsgateway_seq` START WITH 2;
-CREATE SEQUENCE `smsgwoption_seq` START WITH 3;
-CREATE SEQUENCE `smtpserver_seq` START WITH 2;
-CREATE SEQUENCE `subscription_seq` START WITH 1;
-CREATE SEQUENCE `token_seq` START WITH 4;
-CREATE SEQUENCE `tokeninfo_seq` START WITH 5;
-CREATE SEQUENCE `tokenowner_seq` START WITH 3;
-CREATE SEQUENCE `tokenrealm_seq` START WITH 4;
-CREATE SEQUENCE `usercache_seq` START WITH 1;
+CREATE SEQUENCE `audit_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `authcache_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `caconfig_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `caconnector_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `challenge_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `clientapp_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `customuserattribute_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `eventcounter_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `eventhandler_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `eventhandlercond_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `eventhandleropt_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `machineresolver_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `machineresolverconf_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `machinetoken_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `machtokenopt_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `monitoringstats_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `periodictask_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `periodictasklastrun_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `periodictaskopt_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `policy_seq` START WITH 5 INCREMENT BY 0;
+CREATE SEQUENCE `policycondition_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `privacyideaserver_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `pwreset_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `radiusserver_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `realm_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `resolver_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `resolverconf_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `resolverrealm_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `serviceid_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `smsgateway_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `smsgwoption_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `smtpserver_seq` START WITH 2 INCREMENT BY 0;
+CREATE SEQUENCE `subscription_seq` START WITH 1 INCREMENT BY 0;
+CREATE SEQUENCE `token_seq` START WITH 4 INCREMENT BY 0;
+CREATE SEQUENCE `tokeninfo_seq` START WITH 5 INCREMENT BY 0;
+CREATE SEQUENCE `tokenowner_seq` START WITH 3 INCREMENT BY 0;
+CREATE SEQUENCE `tokenrealm_seq` START WITH 4 INCREMENT BY 0;
+CREATE SEQUENCE `usercache_seq` START WITH 1 INCREMENT BY 0;
 
 -- ---------------------------------------------------------------------------
 -- alembic_version — stamp the DB at START_REVISION

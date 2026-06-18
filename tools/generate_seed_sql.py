@@ -13,7 +13,7 @@ USAGE
   Directory (current split-package layout, e.g. privacyidea/models/):
     python tools/generate_seed_sql.py <path/to/models/> <dialect> [out.sql]
 
-  dialect: mariadb | postgresql
+  dialect: mariadb | postgresql | oracle
 
 ────────────────────────────────────────────────────────────────────────────
 EXTRACTING A HISTORICAL VERSION FROM GIT
@@ -349,6 +349,57 @@ def _render_postgresql(metadata) -> str:
     return "\n".join(lines)
 
 
+def _render_oracle(metadata) -> str:
+    import re
+    from sqlalchemy import create_engine, Sequence as SASequence
+    from sqlalchemy.schema import CreateTable, CreateSequence
+
+    # DDL compilation only needs the dialect, not a live connection, so the
+    # thin-mode oracledb URL is never actually opened.
+    engine = create_engine("oracle+oracledb://user:pass@localhost/db")
+
+    lines = [
+        "-- Auto-generated Oracle seed SQL",
+        "-- Source: SQLAlchemy metadata",
+        "--",
+        "",
+    ]
+
+    seen_sequences: set[str] = set()
+    for table in metadata.sorted_tables:
+        for col in table.columns:
+            for default in (col.default, col.onupdate):
+                if isinstance(default, SASequence) and default.name not in seen_sequences:
+                    seen_sequences.add(default.name)
+                    seq_ddl = str(CreateSequence(default).compile(dialect=engine.dialect))
+                    lines.append(seq_ddl.strip().rstrip(";") + ";")
+
+    if seen_sequences:
+        lines.append("")
+
+    for table in metadata.sorted_tables:
+        ddl = str(CreateTable(table).compile(dialect=engine.dialect))
+        # SQLAlchemy emits SELECT <seq>.nextval at INSERT time for a column with
+        # a Sequence() default, but does not bake it into the CREATE TABLE DDL —
+        # and it ignores a post-hoc server_default when a Sequence is set. Raw
+        # SQL inserts (the seed and per-migration tests) would therefore not
+        # auto-populate the PK on Oracle. Mirror the Postgres seed's
+        # DEFAULT nextval(...) by injecting "DEFAULT <seq>.nextval" into each
+        # such column's definition, before any NOT NULL.
+        for col in table.columns:
+            if isinstance(col.default, SASequence):
+                ddl = re.sub(
+                    rf"(\n\t{re.escape(col.name)}\s+\w+(?:\([^)]*\))?)(\s+NOT NULL)?(,)",
+                    rf"\1 DEFAULT {col.default.name}.nextval\2\3",
+                    ddl,
+                    count=1,
+                )
+        lines.append(ddl.strip().rstrip(";") + ";")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -372,7 +423,7 @@ def main() -> None:
         help="Path to models.py (single file) or models/ directory (package)",
     )
     parser.add_argument(
-        "dialect", choices=["mariadb", "postgresql"],
+        "dialect", choices=["mariadb", "postgresql", "oracle"],
         help="Target SQL dialect",
     )
     parser.add_argument(
@@ -405,6 +456,8 @@ def main() -> None:
 
     if args.dialect == "mariadb":
         sql = _render_mariadb(metadata)
+    elif args.dialect == "oracle":
+        sql = _render_oracle(metadata)
     else:
         sql = _render_postgresql(metadata)
 

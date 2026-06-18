@@ -124,22 +124,36 @@ class RequestConfig:
         self.response_mapping = config.get(RESPONSE_MAPPING, {})
 
         request_mapping = config.get(REQUEST_MAPPING, {})
-        if isinstance(request_mapping, dict):
-            request_mapping = json.dumps(request_mapping)
+        content_type = self.headers.get("Content-Type", "application/json")
+        if content_type == "application/x-www-form-urlencoded":
+            if isinstance(request_mapping, str) and request_mapping:
+                pairs = [part.split("=", 1) for part in request_mapping.split("&") if "=" in part]
+                request_mapping = {k: v for k, v in pairs}
+            elif not isinstance(request_mapping, dict):
+                request_mapping = {}
+        else:
+            if isinstance(request_mapping, str):
+                try:
+                    request_mapping = self.get_as_dict(request_mapping)
+                except json.JSONDecodeError as error:
+                    raise ParameterError(f"Invalid JSON format for '{REQUEST_MAPPING}' '{request_mapping}': {error}")
 
         # replace tags in endpoint and request mapping
         if tags:
             for tag, value in tags.items():
-                self.endpoint = self.endpoint.replace(f"{{{tag}}}", str(value).replace("*", wildcard))
-                request_mapping = request_mapping.replace(f"{{{tag}}}", str(value).replace("*", wildcard))
-        content_type = self.headers.get("Content-Type", "application/json")
-        if content_type == "application/json":
-            try:
-                self.request_mapping = self.get_as_dict(request_mapping)
-            except json.JSONDecodeError as error:
-                raise ParameterError(f"Invalid JSON format for '{REQUEST_MAPPING}' '{request_mapping}': {error}")
-        else:
-            self.request_mapping = request_mapping
+                value_str = str(value).replace("*", wildcard)
+                self.endpoint = self.endpoint.replace(f"{{{tag}}}", value_str)
+                if isinstance(request_mapping, dict):
+                    self._replace_tags_in_dict(request_mapping, f"{{{tag}}}", value_str)
+        self.request_mapping = request_mapping
+
+    @staticmethod
+    def _replace_tags_in_dict(d: dict, tag: str, value: str):
+        for k in d:
+            if isinstance(d[k], str):
+                d[k] = d[k].replace(tag, value)
+            elif isinstance(d[k], dict):
+                RequestConfig._replace_tags_in_dict(d[k], tag, value)
 
     @staticmethod
     def get_as_dict(value: str | dict) -> dict:
@@ -921,7 +935,7 @@ class HTTPResolver(UserIdResolver):
         if not self.authorization_config:
             return auth_header
 
-        config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencode"},
+        config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencoded"},
                                {"username": self.username, "password": self.password}, "")
 
         response = self._do_request(config, config.request_mapping, censor_log=True)
@@ -961,7 +975,7 @@ class HTTPResolver(UserIdResolver):
             mapped_response[key] = value
         return mapped_response
 
-    def _do_request(self, config: RequestConfig, params: dict | str, censor_log: bool = False) -> Response:
+    def _do_request(self, config: RequestConfig, params: dict | None, censor_log: bool = False) -> Response:
         """
         Performs the HTTP request based on the provided configuration and parameters.
 
@@ -977,12 +991,14 @@ class HTTPResolver(UserIdResolver):
 
         json_params = None
         if isinstance(params, dict) and config.method in HTTPMethod.methods_with_body():
-            # params are dict than we can pass them as json parameters to be formatted correctly
-            json_params = params
-            params = None
+            if "application/json" in config.headers.get("Content-Type", "application/json"):
+                # params are dict than we can pass them as json parameters to be formatted correctly
+                json_params = params
+                params = None
 
         start_time = time.time()
         try:
+            # dicts passed to json or data are encoded accordingly, no manual urlencoding required
             if config.method == HTTPMethod.GET:
                 response = requests.get(config.endpoint, params=urlencode(params or {}), headers=config.headers,
                                         timeout=self.timeout,
