@@ -28,7 +28,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import remove_token, init_token, get_tokens
+from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
