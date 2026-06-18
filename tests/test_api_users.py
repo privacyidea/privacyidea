@@ -993,5 +993,8 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                # The only queried resolver raised, so no users are returned.
+                self.assertEqual([], result.get("value"), res.json)
                 detail = res.json.get("detail") or {}
                 self.assertEqual([flaky], detail.get("skipped_resolvers"), res.json)

@@ -93,7 +93,7 @@ def expire(realm, attribute_name, delete_serial, unassign_serial, noaction):
     params = {attribute_name: "1"}
     if realm:
         params["realm"] = realm
-    failures: list[tuple[str, str, str]] = []
+    failures: list[str] = []
     try:
         users = get_user_list(params, failures=failures)
     except KeyError as e:
@@ -102,7 +102,7 @@ def expire(realm, attribute_name, delete_serial, unassign_serial, noaction):
                     f"attribute mapping of the resolver?", fg="yellow")
         users = []
     if failures:
-        skipped = sorted({name for name, _realm, _err in failures})
+        skipped = sorted(failures)
         click.secho(f"Warning: the following resolvers raised errors and were skipped; "
                     f"the report below is incomplete: {skipped}", fg="yellow")
 

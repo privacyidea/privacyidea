@@ -355,11 +355,11 @@ class UserNotificationEventHandler(BaseEventHandler):
             # any skipped resolvers — the recipient list may be incomplete.
             admin_realm = handler_options.get("To " + NOTIFY_TYPE.ADMIN_REALM)
             attr = is_attribute_at_all()
-            failures: list[tuple[str, str, str]] = []
+            failures: list[str] = []
             ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr,
                                   failures=failures)
             if failures:
-                skipped = sorted({name for name, _realm, _err in failures})
+                skipped = sorted(failures)
                 log.warning(f"Admin notification recipient list for realm {admin_realm!r} "
                             f"may be incomplete; resolvers skipped due to errors: {skipped}")
             # create a list of all user-emails, if the user has an email
@@ -489,11 +489,11 @@ class UserNotificationEventHandler(BaseEventHandler):
                         # from the reply-to list, so capture and warn-log any skipped resolvers.
                         admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
                         attr = is_attribute_at_all()
-                        failures: list[tuple[str, str, str]] = []
+                        failures: list[str] = []
                         ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr,
                                               failures=failures)
                         if failures:
-                            skipped = sorted({name for name, _realm, _err in failures})
+                            skipped = sorted(failures)
                             log.warning(f"Reply-to recipient list for realm {admin_realm!r} "
                                         f"may be incomplete; resolvers skipped due to errors: {skipped}")
                         # create a list of all user-emails, if the user has an email

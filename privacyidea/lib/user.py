@@ -818,7 +818,7 @@ def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
 def get_user_list(param: dict | None = None, user: User | None = None,
                   include_custom_attributes: bool = False,
                   requested_attributes: list[str] | None = None,
-                  failures: list[tuple[str, str, str]] | None = None) -> list[dict]:
+                  failures: list[str] | None = None) -> list[dict]:
     """
     This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
     if requested.
@@ -841,12 +841,11 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     :param include_custom_attributes:  Set to True, if you want to receive custom attributes of external users.
     :param requested_attributes: A list of attributes to return for each user. If None or empty, all
         attributes are returned.
-    :param failures: optional list. When provided, every resolver that is skipped because it raised
-        ``ResolverError`` or ``ParameterError`` is appended as ``(resolver_name, realm, error_repr)``.
-        The same resolver can fail in several realms (resolver-only queries iterate every realm the
-        resolver is assigned to), so one entry per ``(resolver, realm)`` is recorded — callers that
-        want one entry per resolver (audit log, API response) can dedupe by name. Callers that want
-        to surface partial failures can pass an empty list and inspect it after the call.
+    :param failures: optional list. When provided, the name of every resolver that could not be
+        queried is appended once (deduplicated). This covers resolvers that raised ``ResolverError``
+        or ``ParameterError`` as well as resolvers that are assigned to a realm in scope but pinned to
+        a different node and could therefore not be queried here. Callers that want to surface partial
+        failures can pass an empty list and inspect it after the call.
     :return: list of user info as dictionaries
     """
     # The user dictionary, what we use to avoid duplicates in realms, while searching for users. The key will be the
@@ -923,7 +922,16 @@ def get_user_list(param: dict | None = None, user: User | None = None,
         resolvers = get_ordered_resolvers(realm)
         if effective_resolver:
             if effective_resolver not in resolvers:
-                log.info(f"Resolver {effective_resolver!r} is not part of realm {realm!r}, skipping.")
+                # The resolver is not queryable in this realm: either it is genuinely not
+                # assigned to the realm (an empty result is the expected answer) or it is
+                # assigned but pinned to a different node, in which case it could not be
+                # queried here and is recorded as a skipped resolver.
+                assigned_resolvers = {entry.get("name")
+                                      for entry in get_realms(realm).get(realm, {}).get("resolver", [])}
+                if (effective_resolver in assigned_resolvers and failures is not None
+                        and effective_resolver not in failures):
+                    failures.append(effective_resolver)
+                log.info(f"Resolver {effective_resolver!r} is not queryable in realm {realm!r}, skipping.")
                 continue
             resolvers = [effective_resolver]
         realm_id = get_realm_id(realm)
@@ -961,14 +969,13 @@ def get_user_list(param: dict | None = None, user: User | None = None,
 
             except (ResolverError, ParameterError) as ex:
                 # In case of wrong search parameters or broken resolver we continue.
-                # All other errors will be passed down. Skipped resolvers are recorded
-                # in the optional ``failures`` list (one entry per resolver+realm so the
-                # context is preserved for callers that want it; the audit/API formatter
-                # dedupes by name when it only wants one entry per resolver).
+                # All other errors will be passed down. The skipped resolver name is
+                # recorded once in the optional ``failures`` list so callers can surface
+                # partial failures.
                 log.warning(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
                 log.debug(f"{traceback.format_exc()!s}")
-                if failures is not None:
-                    failures.append((resolver_name, realm, repr(ex)))
+                if failures is not None and resolver_name not in failures:
+                    failures.append(resolver_name)
                 continue
 
     users = list(users_dict.values())
