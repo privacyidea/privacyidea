@@ -3,7 +3,8 @@
 """
 Tests for privacyidea.lib.usersetting (per-principal frontend settings).
 """
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, UserError
+from privacyidea.lib.user import User
 from privacyidea.lib.usersetting import (SettingsSubject, SUBJECT_LOCAL_ADMIN, SUBJECT_USER,
                                          SETTINGS_SCHEMA, MAX_SETTINGS_BYTES,
                                          get_allowed_keys, get_user_settings, set_user_settings,
@@ -93,3 +94,59 @@ class UserSettingTestCase(MyTestCase):
             self.assertIn("custom_admin_key", get_allowed_keys())
         finally:
             del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
+
+    def test_09_unidentified_user_is_not_shared(self):
+        # An unresolvable user (no uid/realm_id) must not read or write a row:
+        # otherwise every unresolved principal would share one row.
+        ghost = SettingsSubject.from_logged_in_user(
+            {"username": "does-not-exist", "realm": self.realm1, "role": "user"})
+        self.assertFalse(ghost.is_identified())
+        # Read is tolerated and returns only defaults
+        self.assertEqual(SETTINGS_SCHEMA["theme"]["default"], get_user_settings(ghost)["theme"])
+        # Write is refused
+        self.assertRaises(UserError, set_user_settings, ghost, {"theme": "dark"})
+
+    def test_10_size_cap_not_bypassable_by_merge(self):
+        # Each partial write is small, but the merged document must still be
+        # bounded by MAX_SETTINGS_BYTES.
+        subject = self._admin_subject()
+        chunk = "x" * (MAX_SETTINGS_BYTES // 2)
+        set_user_settings(subject, {"a": chunk})
+        # Merging a second half-cap chunk would push the stored doc over the cap
+        self.assertRaises(ParameterError, set_user_settings, subject, {"b": chunk})
+
+    def test_11_validation_rejects_non_serializable(self):
+        # A non-JSON-serializable value yields a controlled ParameterError,
+        # not an unhandled TypeError.
+        self.assertRaises(ParameterError, validate_user_settings, {"x": {1, 2, 3}})
+
+    def test_13_reuses_resolved_user_for_user_role(self):
+        # When request.User is the JWT user, it is reused (no re-resolution)
+        # and produces the same identity as resolving from scratch.
+        resolved = User(login="cornelius", realm=self.realm1)
+        reused = SettingsSubject.from_logged_in_user(
+            {"username": "cornelius", "realm": self.realm1, "role": "user"}, resolved)
+        fresh = self._user_subject()
+        self.assertEqual(SUBJECT_USER, reused.subject_type)
+        self.assertEqual(fresh.user_id, reused.user_id)
+        self.assertEqual(fresh.resolver, reused.resolver)
+        self.assertEqual(fresh.realm_id, reused.realm_id)
+
+    def test_14_admin_ignores_resolved_user(self):
+        # For an admin, request.User may reflect a 'user=' request parameter and
+        # must NOT decide whose settings are touched. A local admin stays keyed
+        # by its own username regardless of the passed-in user.
+        attacker_param_user = User(login="cornelius", realm=self.realm1)
+        subject = SettingsSubject.from_logged_in_user(
+            {"username": "testadmin", "realm": "", "role": "admin"}, attacker_param_user)
+        self.assertEqual(SUBJECT_LOCAL_ADMIN, subject.subject_type)
+        self.assertEqual("testadmin", subject.username)
+        self.assertEqual("", subject.user_id)
+
+    def test_12_non_ascii_counted_by_real_byte_size(self):
+        # ensure_ascii=False: a non-ASCII string near the cap is measured by its
+        # real UTF-8 size, not the inflated \\uXXXX-escaped size.
+        # "ä" is 2 UTF-8 bytes; MAX_SETTINGS_BYTES//2 of them ~= the cap in real
+        # bytes but would be ~3x over if counted as escapes.
+        value = "ä" * (MAX_SETTINGS_BYTES // 2 - 20)
+        validate_user_settings({"k": value})  # does not raise

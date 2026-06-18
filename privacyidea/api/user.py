@@ -180,7 +180,7 @@ def get_user_settings_api():
         :http:post:`/auth`.
     :status 200: the settings object in ``result.value``.
     """
-    subject = SettingsSubject.from_logged_in_user(g.logged_in_user)
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user, request.User)
     settings = get_user_settings(subject)
     g.audit_object.log({"success": True})
     return send_result(settings)
@@ -192,21 +192,23 @@ def set_user_settings_api():
     """
     Store WebUI settings for the logged-in principal.
 
-    The settings are validated against the server-side schema (unknown keys,
-    wrong types and oversized payloads are rejected). By default the given
-    keys are merged into the existing settings; pass ``replace=1`` to replace
-    the whole document. Always scoped to the caller's own JWT identity.
+    The settings must be a JSON object and stay within the server-side size
+    limit; key and value-type enforcement is not active yet, so any keys are
+    currently accepted (see ``PI_USER_SETTINGS_ALLOWED_KEYS``). By default the
+    given keys are merged into the existing settings; pass ``replace=1`` to
+    replace the whole document. Always scoped to the caller's own JWT identity.
 
     Requires authentication (any role).
 
     :jsonparam settings: a JSON object with the settings to store.
     :jsonparam replace: if true, replace the whole document instead of merging.
     :status 200: the stored settings object in ``result.value``.
-    :status 400: a setting is unknown, of the wrong type or too large.
+    :status 400: the settings are not a JSON object, not JSON-serializable, or
+        exceed the maximum size.
     """
     settings = get_required(request.all_data, "settings")
     replace = is_true(get_optional(request.all_data, "replace"))
-    subject = SettingsSubject.from_logged_in_user(g.logged_in_user)
+    subject = SettingsSubject.from_logged_in_user(g.logged_in_user, request.User)
     stored = set_user_settings(subject, settings, replace=replace)
     g.audit_object.log({"success": True})
     return send_result(stored)
