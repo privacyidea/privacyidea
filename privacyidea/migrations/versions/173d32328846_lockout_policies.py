@@ -1,4 +1,4 @@
-"""Add conditional access lockout policy tables
+"""v3.14: Add conditional access lockout policy tables
 
 Create the four tables of the lockout policy framework:
 lockout_policies (the policy container), lockout_policy_counter_types (the
@@ -7,17 +7,21 @@ lookup), lockout_policy_stages (the failure thresholds within a policy) and
 lockout_stage_actions (the reactions when a stage is triggered).
 
 Revision ID: 173d32328846
-Revises: 7d4e9b2c1a3f
+Revises: 0147d78cbace
 Create Date: 2026-06-03 00:00:00.000000
 
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy import inspect, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.schema import CreateSequence, DropSequence
+
+from privacyidea.models.db import build_restart_sequence_sql
 
 # revision identifiers, used by Alembic.
 revision = '173d32328846'
-down_revision = '7d4e9b2c1a3f'
+down_revision = '0147d78cbace'
 branch_labels = None
 depends_on = None
 
@@ -67,9 +71,22 @@ def _create_table(table_name, *columns):
 def upgrade():
     bind = op.get_bind()
     is_postgres = bind.dialect.name == 'postgresql'
+    # Build each sequence through SQLAlchemy's CreateSequence construct rather than a raw "CREATE SEQUENCE" string:
+    # CreateSequence is rewritten by the increment_by_zero @compiles hook in privacyidea.models.db, which appends
+    # INCREMENT BY 0 on MariaDB so a Galera cluster accepts the cached sequence. A raw string bypasses the hook and
+    # fails with "CACHE without INCREMENT BY 0 in Galera cluster".
     if bind.dialect.supports_sequences:
-        for seq in SEQUENCES:
-            op.execute(f"CREATE SEQUENCE IF NOT EXISTS {seq}")
+        if bind.dialect.name == "oracle":
+            # Oracle (19c+) has no "CREATE SEQUENCE IF NOT EXISTS" (23c-only), so reflect the
+            # existing sequences (upper-cased on Oracle, compared lower-case) and create only
+            # those that are absent.
+            existing = {name.lower() for name in inspect(bind).get_sequence_names()}
+            for seq in SEQUENCES:
+                if seq.lower() not in existing:
+                    op.execute(CreateSequence(Sequence(seq)))
+        else:
+            for seq in SEQUENCES:
+                op.execute(CreateSequence(Sequence(seq), if_not_exists=True))
 
     _create_table(
         'lockout_policies',
@@ -123,7 +140,12 @@ def upgrade():
         for table_name, seq in TABLE_SEQUENCES.items():
             max_id = bind.execute(
                 sa.text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0
-            op.execute(f"ALTER SEQUENCE {seq} RESTART WITH {max_id + 1}")
+            # No SQLAlchemy DDL construct exists for ALTER SEQUENCE ... RESTART, so a
+            # raw string would only be correct on one backend. build_restart_sequence_sql
+            # emits each dialect's accepted syntax and, crucially, appends INCREMENT BY 0
+            # on MariaDB — a Galera cluster otherwise rejects RESTART on a cached sequence
+            # with "CACHE without INCREMENT BY 0 in Galera cluster".
+            op.execute(build_restart_sequence_sql(seq, max_id + 1, bind.dialect.name))
 
 
 def downgrade():
@@ -138,6 +160,14 @@ def downgrade():
             else:
                 print(f"Could not remove table '{table_name}'.")
                 raise
-    if op.get_bind().dialect.supports_sequences:
-        for seq in SEQUENCES:
-            op.execute(f"DROP SEQUENCE IF EXISTS {seq}")
+    bind = op.get_bind()
+    if bind.dialect.supports_sequences:
+        if bind.dialect.name == "oracle":
+            # Oracle (19c+) has no "DROP SEQUENCE IF EXISTS"; reflect and drop only those present.
+            existing = {name.lower() for name in inspect(bind).get_sequence_names()}
+            for seq in SEQUENCES:
+                if seq.lower() in existing:
+                    op.execute(DropSequence(Sequence(seq)))
+        else:
+            for seq in SEQUENCES:
+                op.execute(f"DROP SEQUENCE IF EXISTS {seq}")

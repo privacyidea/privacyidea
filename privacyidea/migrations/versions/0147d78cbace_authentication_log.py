@@ -1,4 +1,4 @@
-"""v3.14: Added authentication log table
+"""v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
 Revises: 7d4e9b2c1a3f
@@ -7,9 +7,11 @@ Create Date: 2026-06-01 08:37:51.884173
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import text
+from sqlalchemy import text, inspect, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
+from sqlalchemy.schema import CreateSequence, DropSequence
 
+from privacyidea.models.db import build_restart_sequence_sql
 # Same type the model uses: BigInteger everywhere, but INTEGER on SQLite so the
 # primary key becomes "INTEGER PRIMARY KEY" and SQLite auto-assigns it via rowid.
 from privacyidea.models.utils import BigIntegerType
@@ -27,8 +29,20 @@ def upgrade():
 
     # The model declares Sequence('authentication_log_seq'), so SQLAlchemy emits SELECT nextval(...) on every ORM
     # insert. Create the sequence on any backend that supports CREATE SEQUENCE (Postgres + MariaDB 10.3+).
+    # Build it through SQLAlchemy's CreateSequence construct rather than a raw "CREATE SEQUENCE" string:
+    # CreateSequence is rewritten by the increment_by_zero @compiles hook in privacyidea.models.db, which appends
+    # INCREMENT BY 0 on MariaDB so a Galera cluster accepts the cached sequence. A raw string bypasses the hook and
+    # fails with "CACHE without INCREMENT BY 0 in Galera cluster".
     if bind.dialect.supports_sequences:
-        op.execute("CREATE SEQUENCE IF NOT EXISTS authentication_log_seq")
+        if bind.dialect.name == "oracle":
+            # Oracle (19c+) has no "CREATE SEQUENCE IF NOT EXISTS" (23c-only), so reflect the
+            # existing sequences (upper-cased on Oracle, compared lower-case) and create ours
+            # only when absent.
+            existing = {name.lower() for name in inspect(bind).get_sequence_names()}
+            if "authentication_log_seq" not in existing:
+                op.execute(CreateSequence(Sequence("authentication_log_seq")))
+        else:
+            op.execute(CreateSequence(Sequence("authentication_log_seq"), if_not_exists=True))
 
     try:
         if is_postgres:
@@ -80,7 +94,12 @@ def upgrade():
     # causing duplicate-PK errors on the next insert.
     if bind.dialect.supports_sequences:
         max_id = bind.execute(text("SELECT COALESCE(MAX(id), 0) FROM authentication_log")).scalar() or 0
-        op.execute(f"ALTER SEQUENCE authentication_log_seq RESTART WITH {max_id + 1}")
+        # No SQLAlchemy DDL construct exists for ALTER SEQUENCE ... RESTART, so a
+        # raw string would only be correct on one backend. build_restart_sequence_sql
+        # emits each dialect's accepted syntax and, crucially, appends INCREMENT BY 0
+        # on MariaDB — a Galera cluster otherwise rejects RESTART on a cached sequence
+        # with "CACHE without INCREMENT BY 0 in Galera cluster".
+        op.execute(build_restart_sequence_sql("authentication_log_seq", max_id + 1, bind.dialect.name))
 
 def downgrade():
     try:
@@ -89,8 +108,15 @@ def downgrade():
             batch_op.drop_index('ix_authlog_ip_event_time')
 
         op.drop_table('authentication_log')
-        if op.get_bind().dialect.supports_sequences:
-            op.execute("DROP SEQUENCE IF EXISTS authentication_log_seq")
+        bind = op.get_bind()
+        if bind.dialect.supports_sequences:
+            if bind.dialect.name == "oracle":
+                # Oracle (19c+) has no "DROP SEQUENCE IF EXISTS"; reflect and drop only if present.
+                existing = {name.lower() for name in inspect(bind).get_sequence_names()}
+                if "authentication_log_seq" in existing:
+                    op.execute(DropSequence(Sequence("authentication_log_seq")))
+            else:
+                op.execute("DROP SEQUENCE IF EXISTS authentication_log_seq")
 
     except (OperationalError, ProgrammingError) as ex:
         msg = str(ex.orig).lower()
