@@ -18,8 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyService } from "@services/policies/policies.service";
@@ -67,7 +69,9 @@ describe("PoliciesTableActionsComponent", () => {
   });
 
   it("should call delete on confirmed policies", async () => {
-    jest.spyOn(dialogService, "openDialog").mockReturnValue({ afterClosed: () => of(true) } as any);
+    jest
+      .spyOn(dialogService, "openDialog")
+      .mockReturnValue({ afterClosed: () => of(true) } as unknown as MatDialogRef<AbstractDialogComponent<unknown, unknown>, unknown>);
     const spy = jest.spyOn(policyService, "deletePolicy");
     await component.deleteSelectedPolicies();
     expect(spy).toHaveBeenCalledWith("policy1");

@@ -18,19 +18,24 @@
  **/
 
 import { SecurityContext } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
 import { DomSanitizer } from "@angular/platform-browser";
 import { HighlightPipe } from "./highlight.pipe";
 
 describe("HighlightPipe", () => {
-  let sanitizer: DomSanitizer;
   let pipe: HighlightPipe;
 
   beforeEach(() => {
-    // Minimal mock for DomSanitizer
-    sanitizer = {
-      sanitize: (ctx: SecurityContext, value: string | null) => value
-    } as DomSanitizer;
-    pipe = new HighlightPipe(sanitizer);
+    TestBed.configureTestingModule({
+      providers: [
+        HighlightPipe,
+        {
+          provide: DomSanitizer,
+          useValue: { sanitize: (_ctx: SecurityContext, value: string | null) => value } as DomSanitizer
+        }
+      ]
+    });
+    pipe = TestBed.inject(HighlightPipe);
   });
 
   it("should return escaped HTML if no search term is provided", () => {

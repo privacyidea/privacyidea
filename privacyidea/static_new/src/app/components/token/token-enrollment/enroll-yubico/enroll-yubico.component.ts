@@ -64,7 +64,7 @@ export class EnrollYubicoComponent extends EnrollTokenBase<YubicoEnrollmentData>
   yubicoIdentifier = signal<string>("");
   yubicoIdentifierForm = form(this.yubicoIdentifier, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length !== 12 ? [{ kind: "invalidLength" as any }] : []));
+    validate(f, (ctx) => (ctx.value().length !== 12 ? [{ kind: "invalidLength" }] : []));
     disabled(f, () => this.disabled());
   });
 

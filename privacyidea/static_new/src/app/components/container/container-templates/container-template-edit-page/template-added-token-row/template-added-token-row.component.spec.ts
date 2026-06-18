@@ -83,9 +83,9 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(component.tokenTypeDescription()).toContain("HOTP");
     });
 
-    it("should emit onRemoveToken when delete button is clicked", () => {
+    it("should emit removeToken when delete button is clicked", () => {
       fixture.componentRef.setInput("index", 5);
-      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      const spy = jest.spyOn(component.removeToken, "emit");
       fixture.detectChanges();
 
       const deleteBtn = fixture.debugElement.query(By.css("button[mat-icon-button]"));
@@ -160,10 +160,10 @@ describe("TemplateAddedTokenRowComponent", () => {
 
     it("should handle invalid index by not emitting remove event", () => {
       fixture.componentRef.setInput("index", -1);
-      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      const spy = jest.spyOn(component.removeToken, "emit");
       fixture.detectChanges();
 
-      component.removeToken();
+      component.emitRemoveToken();
       expect(spy).not.toHaveBeenCalled();
     });
 

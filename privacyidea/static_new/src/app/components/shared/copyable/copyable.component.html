@@ -18,7 +18,7 @@
 -->
 <div class="flex-row flex-nowrap ali-center">
   <ng-content></ng-content>
-  @if (copyText) {
-    <app-copy-button [copyText]="copyText" />
+  @if (copyText()) {
+    <app-copy-button [copyText]="copyText()" />
   }
 </div>

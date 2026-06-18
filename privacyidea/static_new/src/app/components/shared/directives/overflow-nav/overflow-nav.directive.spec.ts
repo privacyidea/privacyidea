@@ -53,7 +53,7 @@ function restoreGetComputedStyle(): void {
 
 /** Wait for the directive's setTimeout(50) to fire. */
 function waitForInit(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, 60));
+  return new Promise((resolve) => setTimeout(resolve, 60));
 }
 
 interface OverflowNavTestHost {
@@ -66,13 +66,35 @@ interface OverflowNavTestHost {
   standalone: true,
   imports: [OverflowNavDirective, MatIcon],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button" id="btn1"><mat-icon class="mat-icon material-icons">home</mat-icon><span>Home</span></button>
-      <button class="nav-button" id="btn2"><mat-icon class="mat-icon material-icons">list</mat-icon><span>Tokens</span></button>
-      <button class="nav-button" id="btn3"><mat-icon class="mat-icon material-icons">people</mat-icon><span>Users</span></button>
-      <button class="nav-button" id="btn4"><mat-icon class="mat-icon material-icons">settings</mat-icon><span>Config</span></button>
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button"
+        id="btn1">
+        <mat-icon class="mat-icon material-icons">home</mat-icon><span>Home</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn2">
+        <mat-icon class="mat-icon material-icons">list</mat-icon><span>Tokens</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn3">
+        <mat-icon class="mat-icon material-icons">people</mat-icon><span>Users</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn4">
+        <mat-icon class="mat-icon material-icons">settings</mat-icon><span>Config</span>
+      </button>
       <div class="spacer"></div>
-      <button class="nav-button" id="right1"><span>Profile</span></button>
+      <button
+        class="nav-button"
+        id="right1">
+        <span>Profile</span>
+      </button>
     </nav>
   `
 })
@@ -84,7 +106,9 @@ class TestHostComponent {
   standalone: true,
   imports: [OverflowNavDirective],
   template: `
-    <nav #nav appOverflowNav>
+    <nav
+      #nav
+      appOverflowNav>
       <div class="spacer"></div>
     </nav>
   `
@@ -97,10 +121,24 @@ class EmptyHostComponent {
   standalone: true,
   imports: [OverflowNavDirective],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button" id="btn1"><span>Home</span></button>
-      <button class="nav-button nav-active" id="btn2"><span>Tokens</span></button>
-      <button class="nav-button" id="btn3"><span>Users</span></button>
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button"
+        id="btn1">
+        <span>Home</span>
+      </button>
+      <button
+        class="nav-button nav-active"
+        id="btn2">
+        <span>Tokens</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn3">
+        <span>Users</span>
+      </button>
       <div class="spacer"></div>
     </nav>
   `
@@ -113,9 +151,19 @@ class ActiveHostComponent {
   standalone: true,
   imports: [OverflowNavDirective],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button" id="btn1"><span>Home</span></button>
-      <button class="nav-button" id="btn2"><span>Tokens</span></button>
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button"
+        id="btn1">
+        <span>Home</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn2">
+        <span>Tokens</span>
+      </button>
     </nav>
   `
 })
@@ -127,12 +175,35 @@ class NoSpacerHostComponent {
   standalone: true,
   imports: [OverflowNavDirective],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button" id="btn1"><span>Home</span></button>
-      <button class="nav-button" id="btn2"><span>Users</span></button>
-      <button class="nav-button nav-active" id="btn3" data-overflow-child><span>User Details</span></button>
-      <button class="nav-button" id="btn4"><span>Config</span></button>
-      <button class="nav-button" id="btn5"><span>Events</span></button>
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button"
+        id="btn1">
+        <span>Home</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn2">
+        <span>Users</span>
+      </button>
+      <button
+        class="nav-button nav-active"
+        id="btn3"
+        data-overflow-child>
+        <span>User Details</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn4">
+        <span>Config</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn5">
+        <span>Events</span>
+      </button>
       <div class="spacer"></div>
     </nav>
   `
@@ -145,12 +216,35 @@ class OverflowChildHostComponent {
   standalone: true,
   imports: [OverflowNavDirective],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button nav-active" id="btn1" data-overflow-child><span>Details</span></button>
-      <button class="nav-button" id="btn2"><span>Tokens</span></button>
-      <button class="nav-button" id="btn3"><span>Users</span></button>
-      <button class="nav-button" id="btn4"><span>Config</span></button>
-      <button class="nav-button" id="btn5"><span>Events</span></button>
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button nav-active"
+        id="btn1"
+        data-overflow-child>
+        <span>Details</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn2">
+        <span>Tokens</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn3">
+        <span>Users</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn4">
+        <span>Config</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn5">
+        <span>Events</span>
+      </button>
       <div class="spacer"></div>
     </nav>
   `
@@ -163,12 +257,36 @@ class FirstActiveOverflowChildHostComponent {
   standalone: true,
   imports: [OverflowNavDirective],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button" id="pinned1" data-overflow-pinned><span>Primary</span></button>
-      <button class="nav-button" id="pinned2" data-overflow-pinned><span>Filter</span></button>
-      <button class="nav-button" id="btn1"><span>Action1</span></button>
-      <button class="nav-button" id="btn2"><span>Action2</span></button>
-      <button class="nav-button" id="btn3"><span>Action3</span></button>
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button"
+        id="pinned1"
+        data-overflow-pinned>
+        <span>Primary</span>
+      </button>
+      <button
+        class="nav-button"
+        id="pinned2"
+        data-overflow-pinned>
+        <span>Filter</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn1">
+        <span>Action1</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn2">
+        <span>Action2</span>
+      </button>
+      <button
+        class="nav-button"
+        id="btn3">
+        <span>Action3</span>
+      </button>
       <div class="spacer"></div>
     </nav>
   `
@@ -181,14 +299,22 @@ class PinnedHostComponent {
   standalone: true,
   imports: [OverflowNavDirective, MatIcon],
   template: `
-    <nav #nav appOverflowNav>
-      <button class="nav-button" id="mdc-btn">
+    <nav
+      #nav
+      appOverflowNav>
+      <button
+        class="nav-button"
+        id="mdc-btn">
         <span class="mat-mdc-button-touch-target"></span>
         <span class="mdc-button__label"><mat-icon class="mat-icon material-icons">delete</mat-icon> Delete</span>
         <span class="mat-mdc-focus-indicator"></span>
         <span class="mat-ripple"></span>
       </button>
-      <button class="nav-button" id="direct-text-btn">Direct Text</button>
+      <button
+        class="nav-button"
+        id="direct-text-btn">
+        Direct Text
+      </button>
       <div class="spacer"></div>
     </nav>
   `
@@ -207,21 +333,25 @@ describe("OverflowNavDirective", () => {
   });
 
   afterEach(() => {
-    document.querySelectorAll(".overflow-dropdown").forEach(el => el.remove());
+    document.querySelectorAll(".overflow-dropdown").forEach((el) => el.remove());
   });
 
   function setUpWidths(container: HTMLElement, containerWidth: number, buttonWidth: number): void {
     mockClientWidth(container, containerWidth);
-    container.querySelectorAll("button.nav-button, a.nav-button").forEach(btn =>
-      mockElementWidth(btn as HTMLElement, buttonWidth)
-    );
+    container
+      .querySelectorAll("button.nav-button, a.nav-button")
+      .forEach((btn) => mockElementWidth(btn as HTMLElement, buttonWidth));
     const spacer = container.querySelector(".spacer");
     if (spacer) mockElementWidth(spacer as HTMLElement, 0);
     const moreBtn = container.querySelector(".overflow-more-btn");
     if (moreBtn) mockElementWidth(moreBtn as HTMLElement, 80);
   }
 
-  async function setup<T extends OverflowNavTestHost>(comp: new (...args: unknown[]) => T, containerWidth: number, buttonWidth: number) {
+  async function setup<T extends OverflowNavTestHost>(
+    comp: new (...args: unknown[]) => T,
+    containerWidth: number,
+    buttonWidth: number
+  ) {
     const fixture = TestBed.createComponent(comp);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -333,7 +463,7 @@ describe("OverflowNavDirective", () => {
     it("should set hidden buttons to display:none", async () => {
       const { navEl, fixture } = await setup(TestHostComponent, 250, 100);
       const hidden = navEl.querySelectorAll(".sub-overflow-hidden");
-      hidden.forEach(el => {
+      hidden.forEach((el) => {
         expect((el as HTMLElement).style.display).toBe("none");
       });
       fixture.destroy();
@@ -342,8 +472,9 @@ describe("OverflowNavDirective", () => {
     it("should not include buttons after spacer in overflow menu", async () => {
       const { fixture } = await setup(TestHostComponent, 100, 100);
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
-      const menuTexts = Array.from(dropdown.querySelectorAll(".overflow-menu-item"))
-        .map(el => el.textContent?.trim());
+      const menuTexts = Array.from(dropdown.querySelectorAll(".overflow-menu-item")).map((el) =>
+        el.textContent?.trim()
+      );
       expect(menuTexts).not.toContain("Profile");
       fixture.destroy();
     });
@@ -392,7 +523,7 @@ describe("OverflowNavDirective", () => {
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
       const items = dropdown.querySelectorAll(".overflow-menu-item");
       expect(items.length).toBeGreaterThan(0);
-      items.forEach(item => {
+      items.forEach((item) => {
         const span = item.querySelector("span");
         expect(span).toBeTruthy();
         expect(span!.textContent!.trim().length).toBeGreaterThan(0);
@@ -404,7 +535,7 @@ describe("OverflowNavDirective", () => {
       const { fixture } = await setup(TestHostComponent, 200, 100);
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
       const items = dropdown.querySelectorAll(".overflow-menu-item");
-      items.forEach(item => {
+      items.forEach((item) => {
         const icon = item.querySelector("mat-icon");
         expect(icon).toBeTruthy();
         expect(icon!.classList.contains("mat-icon")).toBe(true);
@@ -493,8 +624,15 @@ describe("OverflowNavDirective", () => {
       const { navEl, fixture } = await setup(TestHostComponent, 200, 100);
       const moreBtn = navEl.querySelector(".overflow-more-btn") as HTMLElement;
       jest.spyOn(moreBtn, "getBoundingClientRect").mockReturnValue({
-        top: 50, bottom: 90, left: 100, right: 180,
-        width: 80, height: 40, x: 100, y: 50, toJSON: () => ({})
+        top: 50,
+        bottom: 90,
+        left: 100,
+        right: 180,
+        width: 80,
+        height: 40,
+        x: 100,
+        y: 50,
+        toJSON: () => ({})
       });
 
       moreBtn.click();
@@ -551,8 +689,8 @@ describe("OverflowNavDirective", () => {
       if (btn1.classList.contains("sub-overflow-hidden")) {
         const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
         const menuIcons = Array.from(dropdown.querySelectorAll("mat-icon"));
-        const matchingIcon = menuIcons.find(icon =>
-          icon.classList.contains("ms--custom-icon") && icon.classList.contains("mdi--other")
+        const matchingIcon = menuIcons.find(
+          (icon) => icon.classList.contains("ms--custom-icon") && icon.classList.contains("mdi--other")
         );
         expect(matchingIcon).toBeTruthy();
       }
@@ -585,7 +723,7 @@ describe("OverflowNavDirective", () => {
 
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
       const items = dropdown.querySelectorAll(".overflow-menu-item");
-      items.forEach(item => {
+      items.forEach((item) => {
         expect(item.textContent).not.toContain("IGNORE");
       });
       fixture.destroy();
@@ -658,7 +796,7 @@ describe("OverflowNavDirective", () => {
       const { navEl, fixture } = await setup(PinnedHostComponent, 300, 60);
       const hidden = navEl.querySelectorAll(".sub-overflow-hidden");
       expect(hidden.length).toBeGreaterThan(0);
-      const hiddenIds = Array.from(hidden).map(el => el.id);
+      const hiddenIds = Array.from(hidden).map((el) => el.id);
       expect(hiddenIds).not.toContain("pinned1");
       expect(hiddenIds).not.toContain("pinned2");
       fixture.destroy();
@@ -669,8 +807,9 @@ describe("OverflowNavDirective", () => {
       const moreBtn = navEl.querySelector(".overflow-more-btn") as HTMLElement;
       moreBtn.click();
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
-      const menuTexts = Array.from(dropdown.querySelectorAll(".overflow-menu-item"))
-        .map(el => el.textContent?.trim());
+      const menuTexts = Array.from(dropdown.querySelectorAll(".overflow-menu-item")).map((el) =>
+        el.textContent?.trim()
+      );
       expect(menuTexts).not.toContain("Primary");
       expect(menuTexts).not.toContain("Filter");
       fixture.destroy();
@@ -688,7 +827,7 @@ describe("OverflowNavDirective", () => {
       const { fixture } = await setup(MaterialButtonHostComponent, 100, 100);
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
       const items = Array.from(dropdown.querySelectorAll(".overflow-menu-item"));
-      const mdcItem = items.find(item => item.querySelector("span")?.textContent?.includes("Delete"));
+      const mdcItem = items.find((item) => item.querySelector("span")?.textContent?.includes("Delete"));
       if (mdcItem) {
         const labelSpan = mdcItem.querySelector("span");
         expect(labelSpan?.textContent?.trim()).toBe("Delete");
@@ -700,9 +839,7 @@ describe("OverflowNavDirective", () => {
       const { fixture } = await setup(MaterialButtonHostComponent, 100, 100);
       const dropdown = document.querySelector(".overflow-dropdown") as HTMLElement;
       const items = Array.from(dropdown.querySelectorAll(".overflow-menu-item"));
-      const directTextItem = items.find(item =>
-        item.querySelector("span")?.textContent?.includes("Direct Text")
-      );
+      const directTextItem = items.find((item) => item.querySelector("span")?.textContent?.includes("Direct Text"));
       expect(directTextItem).toBeTruthy();
       fixture.destroy();
     });

@@ -20,6 +20,7 @@
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
@@ -78,9 +79,10 @@ describe("TokenCompleteEnrollmentComponent", () => {
   it("should call enrollToken and close dialog on successful enroll", () => {
     mockTokenService.enrollToken = jest.fn().mockReturnValue(
       of({
-        detail: { serial: "X", rollout_state: "enrolled" },
+        type: "hotp",
+        detail: { type: "hotp", serial: "X", rollout_state: "enrolled" },
         result: { status: true }
-      } as any)
+      } as EnrollmentResponse)
     );
     component.clientPart.set("SOMEKEY");
     component.onDialogAction("enroll");
@@ -91,9 +93,10 @@ describe("TokenCompleteEnrollmentComponent", () => {
   it("should not close dialog if rollout_state is client_wait", () => {
     mockTokenService.enrollToken = jest.fn().mockReturnValue(
       of({
-        detail: { serial: "X", rollout_state: "client_wait" },
+        type: "hotp",
+        detail: { type: "hotp", serial: "X", rollout_state: "client_wait" },
         result: { status: true }
-      } as any)
+      } as EnrollmentResponse)
     );
     component.clientPart.set("SOMEKEY");
     component.onDialogAction("enroll");

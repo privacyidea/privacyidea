@@ -86,5 +86,4 @@ describe("TotpConfigComponent", () => {
     expect(component.formData()[TOTP_TIME_SHIFT]).toEqual(5);
     expect(component.formData()[TOTP_HASHLIB]).toEqual("sha256");
   });
-
 });

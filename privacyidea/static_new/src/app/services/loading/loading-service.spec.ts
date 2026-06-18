@@ -38,7 +38,7 @@ describe("LoadingService", () => {
     loadingService.notifyListeners();
     expect(listener).toHaveBeenCalledWith(false);
 
-    const subj = new Subject<any>();
+    const subj = new Subject<HttpEvent<unknown>>();
     loadingService.addLoading({
       key: "k1",
       observable: subj.asObservable(),
@@ -51,7 +51,7 @@ describe("LoadingService", () => {
   });
 
   it("getLoadingUrls returns current list; removeLoading prunes it", () => {
-    const subj = new Subject<any>();
+    const subj = new Subject<HttpEvent<unknown>>();
     loadingService.addLoading({
       key: "abc",
       observable: subj.asObservable(),
@@ -71,7 +71,7 @@ describe("LoadingService", () => {
     it("removes loading when observable completes", () => {
       loadingService.addLoading({
         key: "c1",
-        observable: (of(null) as unknown as Observable<HttpEvent<unknown>>).pipe(delay(0)),
+        observable: of({} as HttpEvent<unknown>).pipe(delay(0)),
         url: "/complete"
       });
 
@@ -105,8 +105,8 @@ describe("LoadingService", () => {
   });
 
   it("clearAllLoadings unsubscribes and resets state", () => {
-    const subj1 = new Subject<any>();
-    const subj2 = new Subject<any>();
+    const subj1 = new Subject<HttpEvent<unknown>>();
+    const subj2 = new Subject<HttpEvent<unknown>>();
 
     loadingService.addLoading({
       key: "k1",

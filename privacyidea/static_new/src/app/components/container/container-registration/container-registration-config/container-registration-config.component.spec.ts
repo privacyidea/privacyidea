@@ -23,7 +23,7 @@ import { MatInput } from "@angular/material/input";
 import { By } from "@angular/platform-browser";
 import { ContainerRegistrationConfigComponent } from "./container-registration-config.component";
 
-const detectChangesStable = async (fixture: ComponentFixture<any>) => {
+const detectChangesStable = async (fixture: ComponentFixture<ContainerRegistrationConfigComponent>) => {
   fixture.detectChanges();
   await Promise.resolve();
   fixture.detectChanges();

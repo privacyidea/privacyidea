@@ -41,7 +41,10 @@ describe("FilterValueGeneric", () => {
         if (!val) return true;
         if (key === "active") return item.active.toString() === val;
         if (key === "priority") return item.priority.toString() === val;
-        return (item as any)[key]?.toString().toLowerCase().includes(val.toLowerCase());
+        return (
+          (item as unknown as Record<string, unknown>)[key]?.toString().toLowerCase().includes(val.toLowerCase()) ??
+          false
+        );
       }
     });
   };
@@ -184,11 +187,11 @@ describe("FilterValueGeneric", () => {
 
     it("should handle empty item lists gracefully", () => {
       expect(filter.filterItems([])).toEqual([]);
-      expect(filter.filterItems(null as any)).toEqual([]);
+      expect(filter.filterItems(null as unknown as PolicyMock[])).toEqual([]);
     });
 
     it("should ignore missing properties on items without throwing", () => {
-      const broken = [{ name: "B" } as any as PolicyMock];
+      const broken = [{ name: "B" } as Partial<PolicyMock> as PolicyMock];
       const f = filter.setValueOfKey("scope", "admin");
       expect(() => f.filterItems(broken)).not.toThrow();
       expect(f.filterItems(broken).length).toBe(0);

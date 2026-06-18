@@ -109,8 +109,8 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly http: HttpClient = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
 
   private periodicTaskBaseUrl = environment.proxyUrl + "/periodictask/";
 
@@ -129,10 +129,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   }
 
   periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
-    if (
-      !this.contentService.onConfigurationPeriodicTasks() ||
-      !this.authService.actionAllowed("periodictask_read")
-    ) {
+    if (!this.contentService.onConfigurationPeriodicTasks() || !this.authService.actionAllowed("periodictask_read")) {
       return undefined;
     }
     return {
@@ -156,20 +153,26 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   enablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<number, never>>(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
-        catchError(() => {
-          this.periodicTasksResource.reload();
-          this.notificationService.error("Failed to enable periodic task!");
-          return of(undefined);
-        })
-      )
+      this.http
+        .post<
+          PiResponse<number, never>
+        >(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers })
+        .pipe(
+          catchError(() => {
+            this.periodicTasksResource.reload();
+            this.notificationService.error("Failed to enable periodic task!");
+            return of(undefined);
+          })
+        )
     );
   }
 
   disablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     const response$ = this.http
-      .post<PiResponse<number, never>>(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers })
+      .post<
+        PiResponse<number, never>
+      >(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers })
       .pipe(
         catchError(() => {
           this.periodicTasksResource.reload();

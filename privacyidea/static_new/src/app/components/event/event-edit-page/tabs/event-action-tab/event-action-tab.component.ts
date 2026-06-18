@@ -25,7 +25,20 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
-import { ActionOptions, EventService } from "@services/event/event.service";
+import { ActionOptionDetails, EventService } from "@services/event/event.service";
+
+/**
+ * Value type for a single action option. The eventhandler backend supports
+ * "str", "int", "bool", "text", "regexp" and "multi" option types. In the
+ * action tab, "multi" renders as a single-select dropdown (the option's
+ * `value` array defines the choices), so all variants map to primitive
+ * form values here. Event *conditions* (different component) treat "multi"
+ * as `string[]`.
+ */
+export type EventActionOptionValue = string | number | boolean | null;
+
+/** Map of option name to its current user-entered value. */
+export type EventActionOptionValues = Record<string, EventActionOptionValue>;
 
 @Component({
   selector: "app-event-action-tab",
@@ -48,9 +61,9 @@ import { ActionOptions, EventService } from "@services/event/event.service";
 export class EventActionTabComponent {
   protected readonly eventService = inject(EventService);
   action = input.required<string>();
-  options = input.required<Record<string, any>>();
+  options = input.required<EventActionOptionValues>();
   newAction = output<string>();
-  newOptions = output<ActionOptions>();
+  newOptions = output<EventActionOptionValues>();
   optionsValid = output<boolean>();
   protected readonly Object = Object;
 
@@ -64,7 +77,7 @@ export class EventActionTabComponent {
     return actionForm.errors().some((error) => error.kind === "required") && actionForm.touched();
   });
 
-  selectedOptions = signal<Record<string, any>>({});
+  selectedOptions = signal<EventActionOptionValues>({});
   touchedOptions = signal<Record<string, boolean>>({});
 
   actionOptions = computed(() => {
@@ -99,13 +112,15 @@ export class EventActionTabComponent {
     effect(() => {
       const optionDefinitions = this.actionOptions();
       const incoming = this.options();
-      const rebuilt: Record<string, any> = {};
+      const rebuilt: EventActionOptionValues = {};
       for (const name of Object.keys(optionDefinitions)) {
-        const definition = optionDefinitions[name] as Record<string, any>;
+        const definition = optionDefinitions[name] as ActionOptionDetails & {
+          default?: EventActionOptionValue;
+        };
         if (incoming[name] !== undefined) {
           rebuilt[name] = incoming[name];
-        } else if (definition["default"] !== undefined) {
-          rebuilt[name] = definition["default"];
+        } else if (definition.default !== undefined) {
+          rebuilt[name] = definition.default;
         } else {
           rebuilt[name] = "";
         }
@@ -122,12 +137,12 @@ export class EventActionTabComponent {
     });
   }
 
-  private isEmpty(value: any): boolean {
+  private isEmpty(value: EventActionOptionValue | undefined): boolean {
     return value === null || value === undefined || value === "";
   }
 
-  private optionsToDict(values: Record<string, any>): Record<string, any> {
-    const result: Record<string, any> = {};
+  private optionsToDict(values: EventActionOptionValues): EventActionOptionValues {
+    const result: EventActionOptionValues = {};
     for (const key of Object.keys(values)) {
       const value = values[key];
       if (value === null || value === undefined) continue;
@@ -136,7 +151,7 @@ export class EventActionTabComponent {
     return result;
   }
 
-  setOption(name: string, value: any): void {
+  setOption(name: string, value: EventActionOptionValue): void {
     this.selectedOptions.update((current) => ({ ...current, [name]: value }));
   }
 

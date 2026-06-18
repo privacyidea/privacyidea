@@ -21,7 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
-import { UserService } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import { MockUserService } from "@testing/mock-services";
 import { BehaviorSubject, map, of } from "rxjs";
 import { UserDetailsSelfServiceComponent } from "./user-details.self-service.component";
@@ -87,7 +87,7 @@ describe("UserDetailsSelfServiceComponent", () => {
       userid: "u1",
       resolver: "res1",
       editable: true
-    } as any);
+    });
 
     const entries = component.detailsEntries();
     const keys = entries.map((e) => e.key);
@@ -109,11 +109,11 @@ describe("UserDetailsSelfServiceComponent", () => {
   it("detailsEntries normalizes null/empty values to '-'", () => {
     userServiceMock.user.set({
       username: "alice",
-      givenname: null as any,
+      givenname: null,
       surname: "  ",
       email: "",
       resolver: "res1"
-    } as any);
+    } as unknown as UserData);
 
     const map = new Map(component.detailsEntries().map((e) => [e.key, e.value]));
     expect(map.get("givenname")).toBe("-");
@@ -129,7 +129,7 @@ describe("UserDetailsSelfServiceComponent", () => {
       resolver: "res1",
       foo: "bar",
       editable: false
-    } as any);
+    } as unknown as UserData);
 
     const keys = component.detailsEntries().map((e) => e.key);
     expect(keys[0]).toBe("username");
@@ -138,7 +138,7 @@ describe("UserDetailsSelfServiceComponent", () => {
   });
 
   it("uses the localized label when available, falls back to the key otherwise", () => {
-    userServiceMock.user.set({ username: "alice", foo: "bar" } as any);
+    userServiceMock.user.set({ username: "alice", foo: "bar" } as unknown as UserData);
     const entries = component.detailsEntries();
     const usernameEntry = entries.find((e) => e.key === "username");
     const fooEntry = entries.find((e) => e.key === "foo");
@@ -149,9 +149,9 @@ describe("UserDetailsSelfServiceComponent", () => {
   it("normalizes undefined values to '-' and preserves array values as-is", () => {
     userServiceMock.user.set({
       username: "alice",
-      givenname: undefined as any,
-      email: ["a@example.com", "b@example.com"] as any
-    } as any);
+      givenname: undefined,
+      email: ["a@example.com", "b@example.com"]
+    } as unknown as UserData);
 
     const map = new Map(component.detailsEntries().map((e) => [e.key, e.value]));
     expect(map.get("givenname")).toBe("-");
@@ -160,7 +160,7 @@ describe("UserDetailsSelfServiceComponent", () => {
   });
 
   it("returns no entries when user data is empty/null", () => {
-    userServiceMock.user.set(null as any);
+    userServiceMock.user.set(null as unknown as UserData);
     expect(component.detailsEntries()).toEqual([]);
     const cols = component.detailsColumns();
     expect(cols.length).toBe(component.colCount());
@@ -181,7 +181,7 @@ describe("UserDetailsSelfServiceComponent", () => {
     userServiceMock.user.set({
       username: "alice",
       email: "a@example.com"
-    } as any);
+    } as unknown as UserData);
     fixture.detectChanges();
 
     const host: HTMLElement = fixture.nativeElement;
@@ -197,8 +197,8 @@ describe("UserDetailsSelfServiceComponent", () => {
   it("renders array values collapsed by default and expands on toggle", () => {
     userServiceMock.user.set({
       username: "alice",
-      email: ["a@example.com", "b@example.com"] as any
-    } as any);
+      email: ["a@example.com", "b@example.com"]
+    } as unknown as UserData);
     fixture.detectChanges();
 
     const host: HTMLElement = fixture.nativeElement;
@@ -225,7 +225,7 @@ describe("UserDetailsSelfServiceComponent", () => {
       email: "d",
       phone: "e",
       mobile: "f"
-    } as any);
+    } as unknown as UserData);
 
     expect(component.colCount()).toBe(3);
     let columns = component.detailsColumns();

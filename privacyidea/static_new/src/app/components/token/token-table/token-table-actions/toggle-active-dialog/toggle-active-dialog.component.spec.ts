@@ -19,10 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import {
-  ToggleActiveDialogComponent,
-  ToggleActiveDialogData
-} from "./toggle-active-dialog.component";
+import { ToggleActiveDialogComponent, ToggleActiveDialogData } from "./toggle-active-dialog.component";
 
 describe("ToggleActiveDialogComponent", () => {
   let component: ToggleActiveDialogComponent;
@@ -105,4 +102,3 @@ describe("ToggleActiveDialogComponent", () => {
     expect(listItems[2].textContent).toContain("active → inactive");
   });
 });
-

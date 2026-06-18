@@ -48,7 +48,9 @@ describe("SetPinActionComponent", () => {
   } as unknown as MatDialog;
 
   const notificationServiceStub = {
-    success: jest.fn(), error: jest.fn(), warning: jest.fn()
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn()
   };
 
   beforeEach(async () => {
@@ -69,8 +71,8 @@ describe("SetPinActionComponent", () => {
 
     fixture = TestBed.createComponent(SetPinActionComponent);
     component = fixture.componentInstance;
-    component.setPinValue = signal("1234");
-    component.repeatPinValue = signal("1234");
+    fixture.componentRef.setInput("setPinValue", "1234");
+    fixture.componentRef.setInput("repeatPinValue", "1234");
     fixture.detectChanges();
   });
 

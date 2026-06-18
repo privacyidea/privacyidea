@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
@@ -68,13 +68,11 @@ describe("ContainerDetailsInfoComponent", () => {
     const infoArr: ContainerInfoDetail<Record<string, string>>[] = [makeInfoEl({ a: "1" })];
     const detailArr: ContainerInfoDetail[] = [makeOtherEl("info", {})];
 
-    component.infoData = signal(infoArr as unknown as ContainerInfoDetail[]) as WritableSignal<ContainerInfoDetail[]>;
-    component.detailData = signal(detailArr as unknown as ContainerInfoDetail[]) as WritableSignal<
-      ContainerInfoDetail[]
-    >;
-    component.isAnyEditingOrRevoked = signal(false);
-    component.isEditingInfo = signal(false);
-    component.isEditingUser = signal(false);
+    fixture.componentRef.setInput("infoData", infoArr as unknown as ContainerInfoDetail[]);
+    fixture.componentRef.setInput("detailData", detailArr as unknown as ContainerInfoDetail[]);
+    fixture.componentRef.setInput("isAnyEditingOrRevoked", false);
+    fixture.componentRef.setInput("isEditingInfo", false);
+    fixture.componentRef.setInput("isEditingUser", false);
 
     containerService.containerSerial.set("CONT-7");
 

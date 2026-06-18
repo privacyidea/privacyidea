@@ -6,9 +6,17 @@ This directory contains the migration test suite for privacyIDEA.
 
 | File | Purpose |
 |---|---|
-| `test_migrations.py` | Structural integrity tests — run for every revision |
+| `test_migrations.py` | Structural integrity tests — run for every revision (needs a database; marked `migration`) |
 | `test_migration_<rev>.py` | Data-transformation tests — one file per migration that rewrites rows |
 | `migration_test_utils.py` | Shared base class and helpers for all migration tests |
+| `test_migration_conventions.py` | Database-independent migration-file convention checks — run in the regular suite |
+| `test_sequence_ddl.py` | Database-independent guards for Galera-/Oracle-safe sequence DDL — run in the regular suite |
+
+> **Convention:** every migration from the pinned start revision onward must
+> begin its docstring with the release that introduced it, e.g.
+> `"""v3.13: Add column foo to table bar"""`. That first line is the message
+> Alembic shows in `alembic history`. It is enforced by
+> `test_migration_conventions.py`.
 
 ---
 

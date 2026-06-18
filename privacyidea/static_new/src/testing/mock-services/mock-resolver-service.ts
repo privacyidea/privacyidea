@@ -17,36 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal, Signal, WritableSignal } from "@angular/core";
+import { signal, Signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { Resolver, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { Resolver, Resolvers, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { of } from "rxjs";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockResolverService implements ResolverServiceInterface {
-  private _resolversValue: WritableSignal<Resolver[]> = signal([]);
-  private _resolverOptionsValue: WritableSignal<string[]> = signal([]);
-  resolversResource: any = {
-    value: () => undefined,
-    reload: jest.fn()
-  };
-  selectedResolverName: WritableSignal<string> = signal("");
-  selectedResolverResource: any = {
-    value: signal(undefined),
-    status: signal("resolved"),
-    reload: jest.fn()
-  };
+  private _resolversValue = signal<Resolver[]>([]);
+  private _resolverOptionsValue = signal<string[]>([]);
+  resolversResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
+  selectedResolverName = signal("");
+  selectedResolverResource = new MockHttpResourceRef<PiResponse<Resolvers> | undefined>(undefined);
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
   resolverOptions: Signal<string[]> = this._resolverOptionsValue.asReadonly();
-  editableResolvers: WritableSignal<string[]> = signal([]);
-  userAttributes: WritableSignal<string[]> = signal([]);
+  editableResolvers = signal<string[]>([]);
+  userAttributes = signal<string[]>([]);
 
-  postResolverTest = jest.fn(() => of({} as PiResponse<any, any>));
-
-  postResolver = jest.fn((resolverName: string, data: any) => of({} as PiResponse<any, any>));
-
-  deleteResolver = jest.fn((resolverName: string) => of({} as PiResponse<any, any>));
-
-  getDefaultResolverConfig = jest.fn((resolverType: string) => of({} as PiResponse<any, any>));
+  postResolverTest = jest.fn(() => of(MockPiResponse.fromValue<boolean, { description: string }>(true, { description: "ok" })));
+  postResolver = jest.fn(() => of(MockPiResponse.fromValue<number>(1)));
+  deleteResolver = jest.fn(() => of(MockPiResponse.fromValue<number>(1)));
+  getDefaultResolverConfig = jest.fn(() => of({} as PiResponse<unknown>));
 
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);

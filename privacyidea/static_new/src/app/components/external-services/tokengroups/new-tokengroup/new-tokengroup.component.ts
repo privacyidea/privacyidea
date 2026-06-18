@@ -44,14 +44,7 @@ const EMPTY_TOKENGROUP_FORM: TokengroupFormModel = {
 @Component({
   selector: "app-new-tokengroup",
   standalone: true,
-  imports: [
-    FormField,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    ClearableInputComponent
-  ],
+  imports: [FormField, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, ClearableInputComponent],
   templateUrl: "./new-tokengroup.component.html",
   styleUrl: "./new-tokengroup.component.scss"
 })
@@ -138,7 +131,7 @@ export class NewTokengroupComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

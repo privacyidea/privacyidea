@@ -76,15 +76,15 @@
         <app-machine-resolver-hosts-tab
           [isEditMode]="isEditMode()"
           [machineResolverData]="currentMachineResolver().data"
-          (onNewData)="onNewData($event)"
-          (onNewValidator)="onNewValidator($event)" />
+          (newData)="onNewData($event)"
+          (newValidator)="onNewValidator($event)" />
       }
       @case ("ldap") {
         <app-machine-resolver-ldap-tab
           [isEditMode]="isEditMode()"
           [machineResolverData]="currentMachineResolver().data"
-          (onNewData)="onNewData($event)"
-          (onNewValidator)="onNewValidator($event)" />
+          (newData)="onNewData($event)"
+          (newValidator)="onNewValidator($event)" />
       }
       @default {
         <p i18n>Unknown machine resolver type: {{ currentMachineResolver().type }}</p>

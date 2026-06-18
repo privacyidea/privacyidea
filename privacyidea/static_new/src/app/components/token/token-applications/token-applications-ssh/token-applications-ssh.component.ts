@@ -71,7 +71,7 @@ export class TokenApplicationsSshComponent {
   sort = this.machineService.sort;
 
   dataSource = computed(() => {
-    var data = this.machineService.tokenApplications();
+    const data = this.machineService.tokenApplications();
     if (data) {
       return new MatTableDataSource<TokenApplication>(data);
     }

@@ -30,10 +30,10 @@ import { MatInputModule } from "@angular/material/input";
   styleUrl: "./u2f-config.component.scss"
 })
 export class U2fConfigComponent {
-  formData = input.required<Record<string, any>>();
-  formDataChange = output<Record<string, any>>();
+  formData = input.required<Record<string, string>>();
+  formDataChange = output<Record<string, string>>();
 
-  updateFormData(fieldName: string, value: any): void {
+  updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };
     this.formDataChange.emit(newValue);
   }

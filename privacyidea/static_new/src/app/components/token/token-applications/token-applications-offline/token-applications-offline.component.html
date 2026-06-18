@@ -106,7 +106,11 @@
                 <app-copyable [copyText]="element.serial">
                   <a
                     (click)="contentService.tokenSelected(element.serial)"
-                    attr.aria-label="{{ column.label }} Link">
+                    (keydown.enter)="contentService.tokenSelected(element.serial)"
+                    (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                    attr.aria-label="{{ column.label }} Link"
+                    role="button"
+                    tabindex="0">
                     {{ element[column.key] }}
                   </a>
                 </app-copyable>

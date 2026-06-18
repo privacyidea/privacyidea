@@ -167,7 +167,7 @@ export class MachineResolverPanelEditComponent {
     }
     try {
       await this.machineResolverService.postMachineResolver(current);
-    } catch (error) {
+    } catch {
       return false;
     }
     this.isEditMode.set(false);
@@ -191,7 +191,7 @@ export class MachineResolverPanelEditComponent {
           if (result) {
             try {
               await this.machineResolverService.deleteMachineResolver(this.currentMachineResolver().resolvername);
-            } catch (error) {
+            } catch {
               return;
             }
           }

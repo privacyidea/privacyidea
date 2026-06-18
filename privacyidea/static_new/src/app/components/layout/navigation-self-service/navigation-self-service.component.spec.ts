@@ -174,7 +174,7 @@ describe("NavigationSelfServiceComponent", () => {
   });
 
   it("exposes ROUTE_PATHS and the user signal from UserService", () => {
-    expect((component as any).ROUTE_PATHS).toBe(ROUTE_PATHS);
+    expect((component as unknown as { ROUTE_PATHS: typeof ROUTE_PATHS }).ROUTE_PATHS).toBe(ROUTE_PATHS);
     expect(component.userData).toBe(userServiceMock.user);
   });
 
@@ -268,7 +268,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   });
 
@@ -281,7 +281,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).not.toContain(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   });
 
@@ -294,7 +294,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.AUDIT);
   });
 
@@ -307,7 +307,7 @@ describe("NavigationSelfServiceComponent", () => {
 
     const keys = fixture.debugElement
       .queryAll(By.directive(NavigationSelfServiceButtonComponent))
-      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key);
+      .map((d) => (d.componentInstance as NavigationSelfServiceButtonComponent).key());
     expect(keys).toContain(ROUTE_PATHS.CONTAINERS);
   });
 });

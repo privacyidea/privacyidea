@@ -18,7 +18,7 @@
 -->
 <button
   (click)="onCopy(); $event.stopPropagation()"
-  [cdkCopyToClipboard]="copyText"
+  [cdkCopyToClipboard]="copyText()"
   class="copy-button">
   <mat-icon class="copy-icon">{{ copied() ? "check" : "content_copy" }}</mat-icon>
 </button>

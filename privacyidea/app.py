@@ -227,16 +227,22 @@ def _warn_if_base_url_missing(app: Flask):
     produce links.
     """
     if not app.config.get(ConfigKey.BASE_URL):
-        for line in (
-            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-            "  SECURITY WARNING: 'PI_BASE_URL' is not configured!",
-            "  This is required for user facing links.",
-            "  Password recovery is DISABLED until PI_BASE_URL is set in pi.cfg",
-            "  to the public URL of this privacyIDEA server, e.g.",
-            "      PI_BASE_URL = 'https://pi.example.com'",
-            "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-        ):
-            sys.stderr.write(line + "\n")
+        # The loud stderr banner is meant for an interactive server startup, so
+        # it honours the same VERBOSE/silent flag as the other startup output.
+        # CLI tooling (pi-manage uses create_silent_app) and tests run silent and
+        # would otherwise get the banner on every invocation as pure noise. The
+        # log.warning below is always emitted, so the warning is never lost.
+        if app.config.get(ConfigKey.VERBOSE):
+            for line in (
+                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+                "  SECURITY WARNING: 'PI_BASE_URL' is not configured!",
+                "  This is required for user facing links.",
+                "  Password recovery is DISABLED until PI_BASE_URL is set in pi.cfg",
+                "  to the public URL of this privacyIDEA server, e.g.",
+                "      PI_BASE_URL = 'https://pi.example.com'",
+                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+            ):
+                sys.stderr.write(line + "\n")
         log.warning("'PI_BASE_URL' is not configured! Password recovery is "
                     "disabled and user-facing links (the {url} notification tag) "
                     "are left blank. They are never built from the untrusted HTTP "

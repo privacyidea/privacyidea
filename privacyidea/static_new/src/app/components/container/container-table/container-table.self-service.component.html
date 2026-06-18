@@ -106,7 +106,10 @@
                 <app-copyable [copyText]="element.serial">
                   <a
                     (click)="contentService.navigateContainerDetails(element.serial)"
-                    attr.aria-label="{{ column.label }} Link">
+                    (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                    attr.aria-label="{{ column.label }} Link"
+                    role="button"
+                    tabindex="0">
                     {{ element[column.key] }}
                   </a>
                 </app-copyable>
@@ -126,7 +129,10 @@
               @case ("states") {
                 <span
                   (click)="handleStateClick(element)"
-                  [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)">
+                  (keydown.enter)="handleStateClick(element)"
+                  [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
+                  role="button"
+                  tabindex="0">
                   {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
                 </span>
               }
@@ -169,7 +175,11 @@
                 @for (token of element.tokens; track token) {
                   <div class="token-item">
                     @if (containerService.containerBelongsToUser(token.container_serial)) {
-                      <a (click)="contentService.tokenSelected(token.serial)">
+                      <a
+                        (click)="contentService.tokenSelected(token.serial)"
+                        (keydown.enter)="contentService.tokenSelected(token.serial)"
+                        role="button"
+                        tabindex="0">
                         {{ token.serial }}
                       </a>
                     } @else {
@@ -177,9 +187,7 @@
                     }
                     @if (token.tokentype) {
                       [
-                      <span i18n>
-                        {{ token.tokentype }} </span
-                      >]
+                      <span i18n> {{ token.tokentype }} </span>]
                     }
                   </div>
                 }

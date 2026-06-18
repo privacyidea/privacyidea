@@ -19,7 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DialogService } from "@services/dialog/dialog.service";
-import { AdditionalCondition, PolicyService } from "@services/policies/policies.service";
+import { AdditionalCondition, PolicyService, SectionOptionKey } from "@services/policies/policies.service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -38,7 +38,7 @@ describe("EditAdditionalConditionsComponent", () => {
       imports: [EditAdditionalConditionsComponent],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
-        { provide: DialogService, useClass: MockDialogService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -111,7 +111,7 @@ describe("EditAdditionalConditionsComponent", () => {
 
   it("should return empty available keys for unknown sections", () => {
     // Cast to any to simulate other sections if SectionOptionKey allows or for JS safety
-    component.conditionSection.set("userinfo" as any);
+    component.conditionSection.set("userinfo" as unknown as SectionOptionKey);
     component.conditionKey.set("any");
 
     fixture.detectChanges();

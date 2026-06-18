@@ -29,10 +29,10 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 
 export type EnrolledTokenInfo = EnrollmentResponseDetail & { type: string; serial: string };
 
-export type ContainerTokensEnrolledDialogData = {
+export interface ContainerTokensEnrolledDialogData {
   enrolledTokens: EnrolledTokenInfo[];
   containerSerial: string;
-};
+}
 
 @Component({
   selector: "app-container-tokens-enrolled-dialog",

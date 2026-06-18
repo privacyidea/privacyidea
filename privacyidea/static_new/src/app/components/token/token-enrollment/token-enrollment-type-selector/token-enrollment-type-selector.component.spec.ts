@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { MatSelect } from "@angular/material/select";
 import { MockTokenService } from "../../../../../testing/mock-services";
-import { TokenService } from "../../../../services/token/token.service";
+import { TokenService, TokenType } from "../../../../services/token/token.service";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector.component";
 
 describe("TokenEnrollmentTypeSelectorComponent", () => {
@@ -73,7 +74,7 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
     });
 
     it("enroll button is disabled when no token type is selected", () => {
-      (tokenService.selectedTokenType as any).set(null);
+      (tokenService.selectedTokenType as unknown as WritableSignal<TokenType | null>).set(null);
       fixture.detectChanges();
       const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
       expect(button.disabled).toBe(true);

@@ -65,7 +65,7 @@ export class EnrollEmailComponent extends EnrollTokenBase<EmailEnrollmentData> i
     required(f);
     validate(f, (ctx) => {
       const value = ctx.value();
-      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return [{ kind: "invalidEmail" as any }];
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return [{ kind: "invalidEmail" }];
       return [];
     });
     disabled(f, () => this.disabled() || this.readEmailDynamically());

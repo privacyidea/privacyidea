@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
+import { signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -27,10 +27,10 @@ import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 export class MockChallengesService implements ChallengesServiceInterface {
   apiFilter = ["serial", "transaction_id"];
   advancedApiFilter: string[] = [];
-  challengesFilter: WritableSignal<FilterValue> = signal(new FilterValue());
-  pageSize: WritableSignal<number> = signal(10);
-  pageIndex: WritableSignal<number> = signal(0);
-  sort: WritableSignal<Sort> = signal({ active: "timestamp", direction: "asc" });
+  challengesFilter = signal(new FilterValue());
+  pageSize = signal(10);
+  pageIndex = signal(0);
+  sort = signal<Sort>({ active: "timestamp", direction: "asc" });
   challengesResource = new MockHttpResourceRef<PiResponse<Challenges> | undefined>(
     MockPiResponse.fromValue<Challenges>({ challenges: [], count: 0, current: 0 })
   );
