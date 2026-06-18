@@ -59,7 +59,8 @@ from flask_babel import _, lazy_gettext
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
+from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node, \
+    get_from_config, SYSCONF
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
@@ -258,7 +259,7 @@ def hide_version(request, response):
             g.policy_object = PolicyClass()
         if not getattr(g, "client_ip", None):
             from privacyidea.lib.utils import get_client_ip
-            g.client_ip = get_client_ip(request, None)
+            g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
         try:
             policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
                 write_to_audit_log=False)

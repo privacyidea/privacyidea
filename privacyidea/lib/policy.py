@@ -3096,9 +3096,10 @@ def get_static_policy_definitions(scope=None):
         SCOPE.HARDENING: {
             PolicyAction.HIDE_VERSION: {
                 'type': 'bool',
-                'desc': _('If enabled, the version number will only shown after loggin. '
+                'desc': _('If enabled, the version number will only be shown after login. '
                           'This can help to harden the system by not exposing version information. '
-                          'Note: This policy will ignore all conditions.'),
+                          'Note: This policy is evaluated without user/realm/resolver/time conditions '
+                          '(client IP and user agent matching still apply).'),
                 'group': GROUP.SYSTEM,
             }
         }

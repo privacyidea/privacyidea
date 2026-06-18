@@ -58,9 +58,16 @@ healthz_blueprint = Blueprint('healthz_blueprint', __name__)
 def before_healthz_request():
     """Set up minimal g attributes required by after_request handlers."""
     if not getattr(g, 'policy_object', None):
-        g.policy_object = PolicyClass()
+        try:
+            g.policy_object = PolicyClass()
+        except Exception:
+            g.policy_object = None
     if not getattr(g, 'client_ip', None):
-        g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+        try:
+            override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
+        except Exception:
+            override_client = None
+        g.client_ip = get_client_ip(request, override_client)
 
 
 @healthz_blueprint.route('/', methods=['GET'])
