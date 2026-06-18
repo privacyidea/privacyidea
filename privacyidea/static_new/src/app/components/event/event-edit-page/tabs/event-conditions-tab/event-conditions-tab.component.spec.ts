@@ -108,9 +108,9 @@ describe("EventConditionsTabComponent", () => {
   });
 
   it("should update conditionsToBeAdded on onConditionValueToBeAddedChange", () => {
-    component.conditionsToBeAdded = {};
+    component.conditionsToBeAdded.set({});
     component.onConditionValueToBeAddedChange("condX", "valX");
-    expect(component.conditionsToBeAdded["condX"]).toBe("valX");
+    expect(component.conditionsToBeAdded()["condX"]).toBe("valX");
   });
 
   it("should update selectedConditions and emit newConditions on onConditionValueChange", () => {

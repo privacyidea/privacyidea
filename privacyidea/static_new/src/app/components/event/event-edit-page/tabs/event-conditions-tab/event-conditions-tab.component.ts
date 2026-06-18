@@ -28,7 +28,7 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { EventConditionListComponent } from "@components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component";
@@ -40,7 +40,6 @@ import { EventService } from "@services/event/event.service";
   selector: "app-event-conditions-tab",
   imports: [
     ClearableInputComponent,
-    ReactiveFormsModule,
     FormsModule,
     EventConditionListComponent,
     MatExpansionModule,
@@ -57,7 +56,7 @@ export class EventConditionsTabComponent {
   newConditions = output<Record<string, string>>();
 
   selectedConditions = linkedSignal(() => this.conditions());
-  conditionsToBeAdded: Record<string, string> = {};
+  conditionsToBeAdded = signal<Record<string, string>>({});
   protected readonly Object = Object;
 
   addToolTip = $localize`Add Condition`;
@@ -87,9 +86,10 @@ export class EventConditionsTabComponent {
     source: () => ({
       available: this.eventService.moduleConditionsByGroup(),
       selected: this.selectedConditions(),
-      search: this.searchTerm()
+      search: this.searchTerm(),
+      toBeAdded: this.conditionsToBeAdded()
     }),
-    computation: ({ available, selected, search }) => {
+    computation: ({ available, selected, search, toBeAdded }) => {
       // TODO: Can we simplify this logic?
       // let remaining = deepCopy(available);
       const remaining: Record<string, Record<string, string>> = {};
@@ -99,7 +99,7 @@ export class EventConditionsTabComponent {
           if (conditionName in selected || !conditionName.toLowerCase().includes(search.toLowerCase())) {
             // delete remaining[groupName][conditionName];
           } else {
-            remaining[groupName][conditionName] = this.conditionsToBeAdded[conditionName] || "";
+            remaining[groupName][conditionName] = toBeAdded[conditionName] || "";
           }
         }
       }
@@ -108,7 +108,8 @@ export class EventConditionsTabComponent {
   });
 
   onConditionValueToBeAddedChange(conditionName: string, value: string | string[]) {
-    this.conditionsToBeAdded[conditionName] = Array.isArray(value) ? value.join(",") : value;
+    const normalizedValue = Array.isArray(value) ? value.join(",") : value;
+    this.conditionsToBeAdded.update((current) => ({ ...current, [conditionName]: normalizedValue }));
   }
 
   onConditionValueChange(conditionName: string, value: string | string[]) {
