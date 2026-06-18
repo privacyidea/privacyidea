@@ -19,8 +19,10 @@
 import { OverlayContainer } from "@angular/cdk/overlay";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { WidgetPaletteComponent } from "./widget-palette.component";
 
 describe("WidgetPaletteComponent", () => {
@@ -34,9 +36,10 @@ describe("WidgetPaletteComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [WidgetPaletteComponent],
-      providers: [provideZonelessChangeDetection()]
+      providers: [provideZonelessChangeDetection(), { provide: AuthService, useClass: MockAuthService }]
     }).compileComponents();
 
+    (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
     layoutService = TestBed.inject(DashboardLayoutService);
     registry = TestBed.inject(WidgetRegistryService);
     overlayContainer = TestBed.inject(OverlayContainer);

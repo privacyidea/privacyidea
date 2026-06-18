@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Directive, input, signal, Type } from "@angular/core";
+import { PolicyAction } from "@services/auth/policy-actions";
 
 export const DASHBOARD_COLUMNS = 24;
 
@@ -55,6 +56,7 @@ export abstract class DashboardWidget {
   static readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
   static readonly pinned: boolean = false;
   static readonly fixedPosition: { x: number; y: number } | null = null;
+  static readonly requiredAction: PolicyAction | null = null;
 }
 
 export type WidgetComponentType = typeof DashboardWidget & Type<DashboardWidget>;

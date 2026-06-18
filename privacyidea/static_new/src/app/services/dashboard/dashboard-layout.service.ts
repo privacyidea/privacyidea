@@ -18,6 +18,7 @@
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { DASHBOARD_COLUMNS, WidgetInstance, WidgetTypeId } from "@models/dashboard";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   DashboardPersistenceService,
   DashboardPersistenceServiceInterface
@@ -42,6 +43,10 @@ export interface DashboardLayoutServiceInterface {
 
   hasWidgetOfType(type: string): boolean;
 
+  isWidgetTypeAllowed(type: string): boolean;
+
+  pruneForbiddenWidgets(): void;
+
   removeWidget(id: string): void;
 
   moveWidgetTo(id: string, x: number, y: number): void;
@@ -59,6 +64,7 @@ export interface DashboardLayoutServiceInterface {
 export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private readonly persistence: DashboardPersistenceServiceInterface = inject(DashboardPersistenceService);
   private readonly registry: WidgetRegistryServiceInterface = inject(WidgetRegistryService);
+  private readonly auth: AuthServiceInterface = inject(AuthService);
 
   public readonly editMode = signal(false);
   public readonly widgets: WritableSignal<WidgetInstance[]> = signal(
@@ -97,6 +103,9 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     if (!widgetType) {
       return;
     }
+    if (!this.isWidgetTypeAllowed(widgetType.type)) {
+      return;
+    }
     if (this.hasWidgetOfType(widgetType.type)) {
       return;
     }
@@ -109,6 +118,24 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public hasWidgetOfType(type: string): boolean {
     return this.widgets().some((widget) => widget.type === type);
+  }
+
+  public isWidgetTypeAllowed(type: string): boolean {
+    const requiredAction = this.registry.get(type)?.requiredAction;
+    return !requiredAction || this.auth.actionAllowed(requiredAction);
+  }
+
+  public pruneForbiddenWidgets(): void {
+    // Guard against wiping the stored layout while auth data is not yet available:
+    // an empty rights list would otherwise mark every widget as forbidden.
+    if (!this.auth.isAuthenticated()) {
+      return;
+    }
+    const allowed = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
+    if (allowed.length !== this.widgets().length) {
+      this.widgets.set(allowed);
+      this.persistIfLive();
+    }
   }
 
   public removeWidget(id: string): void {

@@ -19,12 +19,15 @@
 import { provideZonelessChangeDetection } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { DashboardLayoutService } from "./dashboard-layout.service";
 import { DashboardPersistenceService } from "./dashboard-persistence.service";
 
 describe("DashboardLayoutService", () => {
   let service: DashboardLayoutService;
   let persistence: DashboardPersistenceService;
+  let auth: MockAuthService;
 
   const overlaps = (a: WidgetInstance, b: WidgetInstance): boolean =>
     a.x < b.x + b.cols && a.x + a.cols > b.x && a.y < b.y + b.rows && a.y + a.rows > b.y;
@@ -40,8 +43,10 @@ describe("DashboardLayoutService", () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection()]
+      providers: [provideZonelessChangeDetection(), { provide: AuthService, useClass: MockAuthService }]
     });
+    auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    auth.actionAllowed.mockReturnValue(true);
   });
 
   describe("initialisation", () => {
@@ -301,6 +306,57 @@ describe("DashboardLayoutService", () => {
       const saveSpy = jest.spyOn(persistence, "save");
       service.persist();
       expect(saveSpy).toHaveBeenCalledWith(service.widgets());
+    });
+  });
+
+  describe("permission filtering", () => {
+    it("should report a widget type as allowed when its required action is granted", () => {
+      build([]);
+      expect(service.isWidgetTypeAllowed("tokens")).toBe(true);
+    });
+
+    it("should report a widget type as forbidden when its required action is missing", () => {
+      build([]);
+      auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
+      expect(service.isWidgetTypeAllowed("tokens")).toBe(false);
+    });
+
+    it("should not add a widget the user is not allowed to see", () => {
+      build([]);
+      auth.actionAllowed.mockImplementation((action: string) => action !== "events_handling_read" && action !== "eventhandling_read");
+      service.addWidget("events");
+      expect(service.hasWidgetOfType("events")).toBe(false);
+    });
+
+    it("should remove forbidden widgets from the layout and persist the pruned state", () => {
+      build();
+      auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
+
+      service.pruneForbiddenWidgets();
+
+      expect(service.hasWidgetOfType("tokens")).toBe(false);
+      expect(persistence.load()?.some((widget) => widget.type === "tokens")).toBe(false);
+    });
+
+    it("should keep allowed and pinned widgets when pruning", () => {
+      build();
+      auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
+
+      service.pruneForbiddenWidgets();
+
+      expect(service.hasWidgetOfType("policies")).toBe(true);
+      expect(service.hasWidgetOfType("subscriptions")).toBe(true);
+    });
+
+    it("should not touch the layout when auth data is not yet available", () => {
+      build();
+      auth.isAuthenticated.set(false);
+      auth.actionAllowed.mockReturnValue(false);
+      const before = service.widgets().length;
+
+      service.pruneForbiddenWidgets();
+
+      expect(service.widgets()).toHaveLength(before);
     });
   });
 });

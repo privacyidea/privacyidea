@@ -38,7 +38,9 @@ export class WidgetPaletteComponent {
   private readonly widgetTypes: WidgetComponentType[] = this.registry.widgetTypes.filter((widget) => !widget.pinned);
 
   protected readonly availableWidgetTypes: Signal<WidgetComponentType[]> = computed(() =>
-    this.widgetTypes.filter((widget) => !this.layoutService.hasWidgetOfType(widget.type))
+    this.widgetTypes.filter(
+      (widget) => this.layoutService.isWidgetTypeAllowed(widget.type) && !this.layoutService.hasWidgetOfType(widget.type)
+    )
   );
 
   protected add(type: string): void {

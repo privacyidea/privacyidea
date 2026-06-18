@@ -35,6 +35,7 @@ import { Subscription, SubscriptionService } from "@services/subscription/subscr
 })
 export class SubscriptionsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "subscriptions";
+  static override readonly requiredAction = "managesubscription";
   static override readonly title = $localize`Subscriptions`;
   static override readonly icon = "event_repeat";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 5 };

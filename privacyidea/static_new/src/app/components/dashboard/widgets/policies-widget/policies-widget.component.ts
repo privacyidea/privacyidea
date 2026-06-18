@@ -40,6 +40,7 @@ export interface PolicyPartition {
 })
 export class PoliciesWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "policies";
+  static override readonly requiredAction = "policyread";
   static override readonly title = $localize`Policies`;
   static override readonly icon = "gavel";
   static override readonly defaultSize: WidgetSize = { cols: 10, rows: 5 };

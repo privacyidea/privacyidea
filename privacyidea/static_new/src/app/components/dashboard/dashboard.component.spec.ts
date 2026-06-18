@@ -84,6 +84,7 @@ describe("DashboardComponent", () => {
       ]
     }).compileComponents();
 
+    (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
     layoutService = TestBed.inject(DashboardLayoutService);
     layoutService.widgets.set([
       { id: "tokens-1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8 },

@@ -94,6 +94,7 @@ export class DashboardComponent implements OnDestroy {
   private readonly trailingRows = 4;
 
   constructor() {
+    this.layoutService.pruneForbiddenWidgets();
     afterRenderEffect(() => {
       this.fieldHeight();
       this.widgets();

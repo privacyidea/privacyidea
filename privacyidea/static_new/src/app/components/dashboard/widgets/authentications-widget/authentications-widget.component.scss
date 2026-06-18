@@ -51,6 +51,15 @@
   gap: calc(var(--global-gap) / 2);
   justify-content: flex-end;
   font-weight: normal;
+
+  a {
+    color: var(--mat-sys-primary);
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .auth-separator {

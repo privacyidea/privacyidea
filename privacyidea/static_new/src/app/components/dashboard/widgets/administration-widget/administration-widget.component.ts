@@ -35,6 +35,7 @@ import { forkJoin } from "rxjs";
 })
 export class AdministrationWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "administration";
+  static override readonly requiredAction = "auditlog";
   static override readonly title = $localize`Administration`;
   static override readonly icon = "supervised_user_circle";
   static override readonly defaultSize: WidgetSize = { cols: 10, rows: 6 };

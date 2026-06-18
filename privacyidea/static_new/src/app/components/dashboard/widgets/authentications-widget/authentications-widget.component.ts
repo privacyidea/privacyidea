@@ -17,13 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
-import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { Audit, AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { forkJoin } from "rxjs";
 
@@ -49,20 +48,20 @@ interface AuthenticationResponses {
 @Component({
   selector: "app-authentications-widget",
   standalone: true,
-  imports: [RouterLink, WidgetStateComponent],
+  imports: [WidgetStateComponent],
   templateUrl: "./authentications-widget.component.html",
   styleUrl: "./authentications-widget.component.scss"
 })
 export class AuthenticationsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "authentications";
+  static override readonly requiredAction = "auditlog";
   static override readonly title = $localize`Authentications`;
   static override readonly icon = "receipt_long";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 5, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: 10, rows: 8 };
 
-  protected readonly routePaths = ROUTE_PATHS;
-
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly store = inject(DashboardDataStore);
