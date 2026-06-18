@@ -33,13 +33,13 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
-  selector: "app-container-states-field",
+  selector: "app-container-details-states",
   standalone: true,
   imports: [NgClass, MatFormFieldModule, MatSelectModule, AutofocusDirective, EditButtonsComponent],
-  templateUrl: "./container-states-field.component.html",
-  styleUrl: "./container-states-field.component.scss"
+  templateUrl: "./container-details-states.component.html",
+  styleUrl: "./container-details-states.component.scss"
 })
-export class ContainerStatesFieldComponent implements OnInit, OnDestroy {
+export class ContainerDetailsStatesComponent implements OnInit, OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

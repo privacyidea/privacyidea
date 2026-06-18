@@ -114,6 +114,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   selectedUser = this.userService.selectionUsernameFilter;
   selectedUserRealm = this.userService.selectedUserRealm;
   isUserSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
+  protected readonly showUserAssignment = computed(() => this.authService.actionAllowed("container_assign_user"));
 
   templateOptions = this.containerTemplateService.templates;
   selectedTemplate: WritableSignal<ContainerTemplate> = linkedSignal({

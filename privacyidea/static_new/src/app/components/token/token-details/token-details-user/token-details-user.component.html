@@ -114,14 +114,16 @@
             @switch (element.keyMap.key) {
               @case ("username") {
                 @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-                  @if (element.value && authService.actionAllowed("unassign")) {
-                    <button
-                      (click)="unassignUser()"
-                      class="yellow"
-                      i18n-aria-label="Unassign User"
-                      mat-icon-button>
-                      <mat-icon>person_remove</mat-icon>
-                    </button>
+                  @if (element.value) {
+                    @if (authService.actionAllowed("unassign")) {
+                      <button
+                        (click)="unassignUser()"
+                        class="yellow"
+                        i18n-aria-label="Unassign User"
+                        mat-icon-button>
+                        <mat-icon>person_remove</mat-icon>
+                      </button>
+                    }
                   } @else if (authService.actionAllowed("assign")) {
                     @if (isEditingUser()) {
                       <app-edit-buttons

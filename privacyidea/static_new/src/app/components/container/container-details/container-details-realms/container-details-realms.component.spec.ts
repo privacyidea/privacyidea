@@ -24,7 +24,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { RealmService } from "@services/realm/realm.service";
 import { MockAuthService, MockContainerService, MockRealmService } from "@testing/mock-services";
-import { ContainerRealmsFieldComponent } from "./container-realms-field.component";
+import { ContainerDetailsRealmsComponent } from "./container-details-realms.component";
 
 interface ContainerRealmsFieldInternals {
   toggle(): void;
@@ -32,14 +32,14 @@ interface ContainerRealmsFieldInternals {
   cancel(): void;
 }
 
-describe("ContainerRealmsFieldComponent", () => {
-  let component: ContainerRealmsFieldComponent;
-  let fixture: ComponentFixture<ContainerRealmsFieldComponent>;
+describe("ContainerDetailsRealmsComponent", () => {
+  let component: ContainerDetailsRealmsComponent;
+  let fixture: ComponentFixture<ContainerDetailsRealmsComponent>;
   let containerService: MockContainerService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerRealmsFieldComponent],
+      imports: [ContainerDetailsRealmsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -50,7 +50,7 @@ describe("ContainerRealmsFieldComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerRealmsFieldComponent);
+    fixture = TestBed.createComponent(ContainerDetailsRealmsComponent);
     component = fixture.componentInstance;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     fixture.componentRef.setInput("realms", ["realm1"]);

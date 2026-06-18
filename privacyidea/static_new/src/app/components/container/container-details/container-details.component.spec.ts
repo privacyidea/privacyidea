@@ -24,7 +24,6 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
 import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsComponent } from "@components/container/container-details/container-details.component";
-import { ContainerDetailsSelfServiceComponent } from "@components/container/container-details/container-details.self-service.component";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
@@ -121,11 +120,6 @@ describe("ContainerDetailsComponent", () => {
 
   it("creates the component", () => {
     expect(component).toBeTruthy();
-  });
-
-  it("creates the self service component", () => {
-    const selfFixture = TestBed.createComponent(ContainerDetailsSelfServiceComponent);
-    expect(selfFixture.componentInstance).toBeTruthy();
   });
 
   it("addTokenToContainer calls service with correct params", () => {

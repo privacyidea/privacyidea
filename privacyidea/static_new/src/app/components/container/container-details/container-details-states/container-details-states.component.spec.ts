@@ -30,7 +30,7 @@ import {
   MockNotificationService,
   MockTableUtilsService
 } from "@testing/mock-services";
-import { ContainerStatesFieldComponent } from "./container-states-field.component";
+import { ContainerDetailsStatesComponent } from "./container-details-states.component";
 
 interface ContainerStatesFieldInternals {
   toggle(): void;
@@ -39,15 +39,15 @@ interface ContainerStatesFieldInternals {
   cancel(): void;
 }
 
-describe("ContainerStatesFieldComponent", () => {
-  let component: ContainerStatesFieldComponent;
-  let fixture: ComponentFixture<ContainerStatesFieldComponent>;
+describe("ContainerDetailsStatesComponent", () => {
+  let component: ContainerDetailsStatesComponent;
+  let fixture: ComponentFixture<ContainerDetailsStatesComponent>;
   let containerService: MockContainerService;
   let notificationService: MockNotificationService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerStatesFieldComponent],
+      imports: [ContainerDetailsStatesComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -59,7 +59,7 @@ describe("ContainerStatesFieldComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerStatesFieldComponent);
+    fixture = TestBed.createComponent(ContainerDetailsStatesComponent);
     component = fixture.componentInstance;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;

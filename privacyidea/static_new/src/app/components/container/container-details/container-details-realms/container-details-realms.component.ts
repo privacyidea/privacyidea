@@ -30,7 +30,7 @@ import { ContainerService, ContainerServiceInterface } from "@services/container
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 
 @Component({
-  selector: "app-container-realms-field",
+  selector: "app-container-details-realms",
   standalone: true,
   imports: [
     NgClass,
@@ -41,10 +41,10 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
     CopyableComponent,
     EditButtonsComponent
   ],
-  templateUrl: "./container-realms-field.component.html",
-  styleUrl: "./container-realms-field.component.scss"
+  templateUrl: "./container-details-realms.component.html",
+  styleUrl: "./container-details-realms.component.scss"
 })
-export class ContainerRealmsFieldComponent implements OnInit, OnDestroy {
+export class ContainerDetailsRealmsComponent implements OnInit, OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

@@ -83,7 +83,7 @@
         title="Status"
         i18n-title>
         <div class="details-field-list">
-          <app-container-states-field
+          <app-container-details-states
             [states]="selectedStates()"
             [blockEditing]="isAnyEditing()" />
           @if (lastAuthenticationDisplay()) {
@@ -120,7 +120,7 @@
             label="Template"
             i18n-label
             [displayText]="str(containerDetails().template)" />
-          <app-container-realms-field
+          <app-container-details-realms
             [realms]="selectedRealms()"
             [userRealm]="userRealm()"
             [blockEditing]="isAnyEditing()" />

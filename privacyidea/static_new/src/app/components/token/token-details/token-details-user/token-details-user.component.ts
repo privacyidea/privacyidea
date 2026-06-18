@@ -116,4 +116,18 @@ export class TokenDetailsUserComponent {
         }
       });
   }
+
+  assignToSelf() {
+    this.tokenService
+      .assignUser({
+        tokenSerial: this.tokenSerial(),
+        username: this.authService.username(),
+        realm: this.authService.realm()
+      })
+      .subscribe({
+        next: () => {
+          this.tokenService.tokenDetailResource.reload();
+        }
+      });
+  }
 }

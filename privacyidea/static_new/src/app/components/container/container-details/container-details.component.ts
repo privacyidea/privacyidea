@@ -42,8 +42,8 @@ import {
   ContainerDetailsInfoComponent,
   ContainerInfoDetail
 } from "@components/container/container-details/container-details-info/container-details-info.component";
-import { ContainerRealmsFieldComponent } from "@components/container/container-details/fields/container-realms-field.component";
-import { ContainerStatesFieldComponent } from "@components/container/container-details/fields/container-states-field.component";
+import { ContainerDetailsRealmsComponent } from "@components/container/container-details/container-details-realms/container-details-realms.component";
+import { ContainerDetailsStatesComponent } from "@components/container/container-details/container-details-states/container-details-states.component";
 import { ContainerDetailsUserComponent } from "@components/container/container-details/container-details-user/container-details-user.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
 import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
@@ -122,8 +122,8 @@ interface TokenOption {
     DetailsHeaderComponent,
     DetailsCardComponent,
     DetailFieldComponent,
-    ContainerStatesFieldComponent,
-    ContainerRealmsFieldComponent,
+    ContainerDetailsStatesComponent,
+    ContainerDetailsRealmsComponent,
     ContainerDetailsUserComponent,
     ContainerAddTokenComponent
   ],
@@ -207,11 +207,11 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   containerType = computed(() => {
     return this.containerDetails()?.type ?? "";
   });
-  protected readonly lastAuthenticationDisplay = computed(() =>
-    formatContainerTimestamp(this.containerDetails()?.last_authentication) ?? ""
+  protected readonly lastAuthenticationDisplay = computed(
+    () => formatContainerTimestamp(this.containerDetails()?.last_authentication) ?? ""
   );
-  protected readonly lastSynchronizationDisplay = computed(() =>
-    formatContainerTimestamp(this.containerDetails()?.last_synchronization) ?? ""
+  protected readonly lastSynchronizationDisplay = computed(
+    () => formatContainerTimestamp(this.containerDetails()?.last_synchronization) ?? ""
   );
   protected readonly registrationStateDisplay = computed(() =>
     this.str(this.containerDetails()?.info?.registration_state)
@@ -251,7 +251,8 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     }
   });
   descriptionRow = computed(
-    () => this.containerDetailData().find((row) => row.keyMap.key === "description") as EditableElement<string> | undefined
+    () =>
+      this.containerDetailData().find((row) => row.keyMap.key === "description") as EditableElement<string> | undefined
   );
   infoData = linkedSignal({
     source: this.containerDetails,
@@ -448,11 +449,13 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveDescription() {
     const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
-    this.containerService.setContainerDescription(this.containerSerial(), typeof description === "string" ? description : "").subscribe({
-      next: () => {
-        this.containerDetailResource.reload();
-      }
-    });
+    this.containerService
+      .setContainerDescription(this.containerSerial(), typeof description === "string" ? description : "")
+      .subscribe({
+        next: () => {
+          this.containerDetailResource.reload();
+        }
+      });
   }
 
   @ViewChild(ContainerDetailsInfoComponent) infoChild?: ContainerDetailsInfoComponent;
