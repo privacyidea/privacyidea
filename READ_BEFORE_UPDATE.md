@@ -51,6 +51,14 @@
   use `enrolled` instead. You can find affected event handlers in the WebUI under *Config → Events*
   by reviewing handlers whose conditions reference `rollout_state`.
 
+* `GET /user/` now honours the `resolver` parameter. Previously, combining `realm` and `resolver`
+  ignored the resolver and returned every user of the realm, and a `resolver`-only query fanned out
+  to every sibling resolver in the realms containing it (so the `resolver` field of a returned user
+  could be a different, higher-priority resolver). Now `realm` + `resolver` returns only that
+  resolver's users within the realm (an empty result if the resolver is not part of the realm), and
+  a `resolver`-only query returns only that resolver's users. If you have scripts or integrations
+  that call `GET /user/` with a `resolver` parameter and relied on the old behaviour, review them.
+
 ## Update from 3.13 to 3.14
 * Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
   Previously, the order was undefined and depended on the database insertion order, which could
