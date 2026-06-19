@@ -21,7 +21,6 @@ test modules. Registered for pytest assert-rewriting in tests/conftest.py so the
 plain ``assert`` statements still produce rich failure diffs.
 """
 from collections import Counter
-from typing import Tuple
 
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.user import User
