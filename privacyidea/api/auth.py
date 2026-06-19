@@ -83,7 +83,7 @@ from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPT
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
                                                        evaluate_lockout_policies,
                                                        evaluate_access_decision, AccessDecision,

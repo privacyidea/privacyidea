@@ -80,7 +80,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional, log_authentication
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class

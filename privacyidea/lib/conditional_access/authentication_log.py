@@ -24,7 +24,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import AuthenticationLog, authentication_log_column_length, db
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
 

@@ -51,7 +51,7 @@ from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import (AuthEventType,
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config

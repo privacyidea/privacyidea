@@ -21,7 +21,7 @@ import datetime
 import mock
 
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm

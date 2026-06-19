@@ -19,7 +19,7 @@ from datetime import datetime, timezone, timedelta
 
 import mock
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,

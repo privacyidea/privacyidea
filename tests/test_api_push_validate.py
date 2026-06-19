@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from testfixtures import LogCapture
 
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
