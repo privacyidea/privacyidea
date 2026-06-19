@@ -59,15 +59,15 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   private dialog = inject(MatDialog);
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
-      { key: "serial", label: "Serial" },
-      { key: "tokentype", label: "Type" },
-      { key: "description", label: "Description" },
-      { key: "container_serial", label: "Container" },
-      { key: "active", label: "Active" },
-      { key: "failcount", label: "Fail Counter" }
+      { key: "serial", label: $localize`Serial` },
+      { key: "tokentype", label: $localize`Type` },
+      { key: "description", label: $localize`Description` },
+      { key: "container_serial", label: $localize`Container` },
+      { key: "active", label: $localize`Active` },
+      { key: "failcount", label: $localize`Fail Counter` }
     ];
-    if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: "Revoke" });
-    if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: "Delete" });
+    if (this.authService.actionAllowed("revoke")) columnKeys.push({ key: "revoke", label: $localize`Revoke` });
+    if (this.authService.actionAllowed("delete")) columnKeys.push({ key: "delete", label: $localize`Delete` });
 
     return columnKeys;
   });
@@ -83,7 +83,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
           title: "Revoke Token",
           items: [serial],
           itemType: "token",
-          confirmAction: { label: "Revoke", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -108,7 +108,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
           title: "Delete Token",
           items: [serial],
           itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

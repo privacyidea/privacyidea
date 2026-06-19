@@ -261,7 +261,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
           title: "Remove Token",
           items: [tokenSerial],
           itemType: "token",
-          confirmAction: { label: "Remove", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -305,7 +305,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
           title: "Delete Token",
           items: [tokenSerial],
           itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

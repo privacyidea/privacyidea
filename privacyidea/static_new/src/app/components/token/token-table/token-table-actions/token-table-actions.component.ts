@@ -83,7 +83,7 @@ export class TokenTableActionsComponent {
           title: "Revoke Token",
           items: [this.tokenSerial()],
           itemType: "token",
-          confirmAction: { label: "Revoke", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -111,7 +111,7 @@ export class TokenTableActionsComponent {
           title: "Delete Token",
           items: [this.tokenSerial()],
           itemType: "token",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -203,7 +203,7 @@ export class TokenTableActionsComponent {
           title: "Reset Failcounter for Selected Tokens",
           items: selectedTokens.map((token) => token.serial),
           itemType: "token",
-          confirmAction: { label: "Reset", value: true, type: "confirm" }
+          confirmAction: { label: $localize`Reset`, value: true, type: "confirm" }
         }
       })
       .afterClosed()
@@ -281,7 +281,7 @@ export class TokenTableActionsComponent {
           title: "Unassign Selected Tokens",
           items: selectedTokens.map((token) => token.serial),
           itemType: "token",
-          confirmAction: { label: "Unassign", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

@@ -421,7 +421,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
           title: "Delete User",
           items: [this.userData().username],
           itemType: "user",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

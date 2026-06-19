@@ -67,7 +67,7 @@ export class ContainerTableActionsComponent {
           title: "Delete All Containers",
           items: selectedContainers.map((container) => container.serial),
           itemType: "container",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

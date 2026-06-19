@@ -83,10 +83,10 @@ const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
 
 const columnKeysMap = [
-  { key: "name", label: "Realm" },
-  { key: "isDefault", label: "Default" },
-  { key: "resolvers", label: "Resolvers" },
-  { key: "actions", label: "Actions" }
+  { key: "name", label: $localize`Realm` },
+  { key: "isDefault", label: $localize`Default` },
+  { key: "resolvers", label: $localize`Resolvers` },
+  { key: "actions", label: $localize`Actions` }
 ];
 
 @Component({

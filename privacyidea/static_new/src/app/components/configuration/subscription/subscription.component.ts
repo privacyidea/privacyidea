@@ -77,7 +77,7 @@ export class SubscriptionComponent {
           title: "Delete Subscription",
           items: [application],
           itemType: "subscription",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

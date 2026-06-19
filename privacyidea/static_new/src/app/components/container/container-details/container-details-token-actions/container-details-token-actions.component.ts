@@ -81,7 +81,7 @@ export class ContainerDetailsTokenActionsComponent {
           title: "Unassign User from All Tokens",
           items: tokenSerials,
           itemType: "token",
-          confirmAction: { label: "Unassign", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -148,7 +148,7 @@ export class ContainerDetailsTokenActionsComponent {
           items: serialList.split(","),
           title: "Remove Token",
           itemType: "token",
-          confirmAction: { label: "Remove", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

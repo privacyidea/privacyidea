@@ -155,7 +155,7 @@ export class MachineResolverPanelEditComponent {
                 title: "Save machineResolver despite test failure?",
                 items: [],
                 itemType: "machineResolver",
-                confirmAction: { label: "Save", value: true, type: "confirm" }
+                confirmAction: { label: $localize`Save`, value: true, type: "confirm" }
               }
             })
             .afterClosed()
@@ -182,7 +182,7 @@ export class MachineResolverPanelEditComponent {
           title: "Delete machine resolver",
           items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
           itemType: "machine resolver",
-          confirmAction: { label: "Delete", value: true, type: "destruct" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

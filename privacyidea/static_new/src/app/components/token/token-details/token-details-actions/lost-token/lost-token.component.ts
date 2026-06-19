@@ -45,7 +45,7 @@ export class LostTokenComponent extends AbstractDialogComponent<
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
   protected closeAction: DialogAction<void> = {
-    label: "Close",
+    label: $localize`Close`,
     type: "cancel",
     value: undefined,
     primary: this.data.isLost()
