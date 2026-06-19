@@ -2240,9 +2240,7 @@ class APITokenTestCase(MyApiTestCase):
                                  transaction_id)
 
         # A nonexistent serial - the realm-scope helper resolves the token
-        # for its owner, so it raises ResourceNotFoundError -> 404. (Before
-        # the v3.14 review fix this returned 200/empty, which silently
-        # bypassed the realm check for unknown serials.)
+        # for its owner, so it raises ResourceNotFoundError -> 404.
         with self.app.test_request_context('/token/challenges/CHAL2',
                                            method='GET',
                                            headers={'Authorization': self.at}):
