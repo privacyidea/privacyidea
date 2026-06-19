@@ -143,9 +143,17 @@ def log_authentication_event(event_type: AuthEventType,
         with db.session.begin_nested():
             db.session.add(entry)
         entry_id = entry.id
-        db.session.commit()
     except Exception as ex:
         log.warning(f"Failed to write the authentication log entry: {ex!r}")
+        return None
+    try:
+        db.session.commit()
+    except Exception as ex:
+        # The savepoint flush succeeded but the outer commit failed: roll back so the session is usable for the rest
+        # of the request, and report no id since the entry was not persisted.
+        log.warning(f"Failed to commit the authentication log entry: {ex!r}")
+        db.session.rollback()
+        return None
     return entry_id
 
 
@@ -189,9 +197,16 @@ def reclassify_authentication_log_event(event_id: int, event_type: AuthEventType
                 if old_txn and new_txn != old_txn:
                     entry.previous_transaction_id = old_txn
                 entry.transaction_id = new_txn
-        db.session.commit()
     except Exception as ex:
         log.info(f"Failed to reclassify the authentication log entry to {event_type}: {ex!r}")
+        return
+    try:
+        db.session.commit()
+    except Exception as ex:
+        # The savepoint update succeeded but the outer commit failed: roll back so the session is usable for the rest
+        # of the request.
+        log.info(f"Failed to commit the reclassified authentication log entry to {event_type}: {ex!r}")
+        db.session.rollback()
 
 
 def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
