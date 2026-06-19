@@ -45,6 +45,18 @@ _FILTER_PARAMS = ["resolver", "uid", "realm", "username", "event_type", "source_
                   "transaction_id", "previous_transaction_id"]
 
 
+def _positive_int(value: int | str, default: int) -> int:
+    """
+    Parse a positive paging parameter, falling back to *default* for a missing, non-numeric or non-positive value.
+    This keeps a bad ``page``/``page_size`` from casting straight to a negative SQL offset or an empty/undefined limit.
+    """
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed >= 1 else default
+
+
 @authentication_log_blueprint.route("/", methods=["GET"])
 @user_required
 @prepolicy(check_base_action, request, PolicyAction.AUTHENTICATION_LOG_READ)
@@ -99,8 +111,8 @@ def get_authentication_log():
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         visibility_scopes=visibility_scopes,
-        page=int(get_optional(params, "page", default=1)),
-        page_size=int(get_optional(params, "page_size", default=DEFAULT_PAGE_SIZE)),
+        page=_positive_int(get_optional(params, "page"), default=1),
+        page_size=_positive_int(get_optional(params, "page_size"), default=DEFAULT_PAGE_SIZE),
         sort_column=get_optional(params, "sort_column", default="id"),
         sort_order=get_optional(params, "sort_order", default="desc"))
 

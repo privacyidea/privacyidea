@@ -1210,6 +1210,20 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
         self.assertEqual(1, last["prev"])
         self.assertIsNone(last["next"])
 
+    def test_invalid_paging_params_fall_back_to_defaults(self):
+        # A bad page / page_size must not reach the query as a negative offset or empty limit: non-positive and
+        # non-numeric values fall back to the defaults (page 1, default page_size) instead.
+        self._seed_entries()
+        for bad in ({"page": 0}, {"page": -3}, {"page": "abc"}):
+            value = self._get(bad)["result"]["value"]
+            self.assertEqual(1, value["current"], bad)
+            self.assertEqual(4, value["count"], bad)
+            self.assertEqual(4, len(value["auth_logs"]), bad)
+            self.assertIsNone(value["prev"], bad)
+        for bad in ({"page_size": 0}, {"page_size": -10}, {"page_size": "abc"}):
+            value = self._get(bad)["result"]["value"]
+            self.assertEqual(4, len(value["auth_logs"]), bad)
+
     def test_serialized_entry_shape(self):
         self._seed_entries()
         value = self._get({"page_size": 50})["result"]["value"]
