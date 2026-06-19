@@ -212,7 +212,12 @@ export class ContentService implements ContentServiceInterface {
       this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS)
   );
   onSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
-  onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
+  onMachineResolver = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ||
+      this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS)
+  );
 
   tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent(serial));
@@ -232,7 +237,7 @@ export class ContentService implements ContentServiceInterface {
   }
 
   machineResolverSelected(resolverName: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER);
+    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(resolverName));
     this.machineResolver.set(resolverName);
   }
 }

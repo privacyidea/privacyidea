@@ -44,6 +44,7 @@ import { NewSmtpServerComponent } from "@components/external-services/smtp-serve
 import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
 import { NewTokengroupComponent } from "@components/external-services/tokengroups/new-tokengroup/new-tokengroup.component";
 import { TokengroupsComponent } from "@components/external-services/tokengroups/tokengroups.component";
+import { MachineResolverEditComponent } from "@components/machine-resolver/machine-resolver-edit/machine-resolver-edit.component";
 import { MachineResolverComponent } from "@components/machine-resolver/machine-resolver.component";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { PoliciesTableComponent } from "@components/policies/policies-table/policies-table.component";
@@ -131,7 +132,14 @@ export const routes: Routes = [
     path: "configuration",
     children: [
       // { path: "", component: SystemComponent },
-      { path: "machine_resolver", component: MachineResolverComponent, canDeactivate: [pendingChangesGuard] },
+      {
+        path: "machine_resolver",
+        children: [
+          { path: "", component: MachineResolverComponent },
+          { path: "new", component: MachineResolverEditComponent, canDeactivate: [pendingChangesGuard] },
+          { path: "details/:name", component: MachineResolverEditComponent, canDeactivate: [pendingChangesGuard] }
+        ]
+      },
       {
         path: "machines",
         children: [

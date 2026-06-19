@@ -47,6 +47,8 @@ export const ROUTE_PATHS = {
   USERS_RESOLVERS_DETAILS: "/users/resolvers/details/",
   USERS_RESOLVERS_NEW: "/users/resolvers/new",
   MACHINE_RESOLVER: "/configuration/machine_resolver",
+  MACHINE_RESOLVER_NEW: "/configuration/machine_resolver/new",
+  MACHINE_RESOLVER_DETAILS: "/configuration/machine_resolver/details/",
   CONFIGURATION: "/configuration",
   CONFIGURATION_MACHINES: "/configuration/machines",
   CONFIGURATION_MACHINES_DETAILS: "/configuration/machines/details/",

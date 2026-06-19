@@ -1,0 +1,33 @@
+@use "styles";
+
+.machine-resolver-edit-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.machine-resolver-edit-container {
+  @include styles.main-component-style;
+
+  & {
+    display: flex;
+    flex-direction: column;
+    width: 1000px;
+    gap: var(--global-gap);
+  }
+}
+
+.machine-resolver-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+.machine-resolver-type-select {
+  margin-left: var(--global-padding);
+}
+
+.machine-resolver-edit-controls {
+  display: flex;
+  justify-content: flex-start;
+  gap: var(--global-gap);
+}

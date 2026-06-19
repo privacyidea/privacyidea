@@ -22,6 +22,6 @@
     matInput
     [disabled]="!isEditMode()"
     placeholder="/etc/hosts"
-    [value]="hostsData().filename"
+    [value]="hostsData().filename ?? ''"
     (input)="updateData({ filename: $event.target['value'] })" />
 </mat-form-field>

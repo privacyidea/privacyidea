@@ -1,0 +1,119 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="Machine Resolver Editor"
+  class="machine-resolver-edit-layout"
+  i18n-aria-label>
+  <div
+    appScrollToTop
+    class="machine-resolver-edit-container">
+    @if (isEditMode()) {
+      <h3
+        class="margin-8"
+        i18n>
+        Edit Machine Resolver
+      </h3>
+    } @else {
+      <h3
+        class="margin-8"
+        i18n>
+        Create Machine Resolver
+      </h3>
+    }
+
+    <div class="machine-resolver-edit-body margin-left-16">
+      <div class="machine-resolver-edit-controls">
+        <button
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button
+          type="button">
+          <span i18n>Cancel</span>
+        </button>
+        <button
+          (click)="saveMachineResolver()"
+          [disabled]="!canSaveMachineResolver() || !isEdited()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button
+          type="button">
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+      </div>
+
+      <div class="flex-row">
+        <mat-form-field
+          class="input-width-l"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Machine Resolver Name</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="onResolvernameChange('')"
+            [showClearButton]="!isEditMode() && !!currentMachineResolver().resolvername">
+            <input
+              matInput
+              [disabled]="isEditMode()"
+              [value]="currentMachineResolver().resolvername"
+              (input)="onResolvernameChange($any($event.target).value)" />
+          </app-clearable-input>
+          @if (nameHasPatternError()) {
+            <mat-error i18n>
+              Machine resolver name contains
+              <strong>invalid characters</strong>
+              . Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field
+          class="input-width-l machine-resolver-type-select"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Type</mat-label>
+          <mat-select
+            [value]="currentMachineResolver().type"
+            [disabled]="isEditMode()"
+            (selectionChange)="onMachineResolverTypeChange($event.value)">
+            @for (machineResolverType of machineResolverTypes; track machineResolverType) {
+              <mat-option [value]="machineResolverType">{{ machineResolverType }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @switch (currentMachineResolver().type) {
+        @case ("hosts") {
+          <app-machine-resolver-hosts-tab
+            [isEditMode]="true"
+            [machineResolverData]="currentMachineResolver().data"
+            (newData)="onNewData($event)"
+            (newValidator)="onNewValidator($event)" />
+        }
+        @case ("ldap") {
+          <app-machine-resolver-ldap-tab
+            [isEditMode]="true"
+            [machineResolverData]="currentMachineResolver().data"
+            (newData)="onNewData($event)"
+            (newValidator)="onNewValidator($event)" />
+        }
+        @default {
+          <p i18n>Unknown machine resolver type: {{ currentMachineResolver().type }}</p>
+        }
+      }
+    </div>
+  </div>
+</div>
