@@ -18,7 +18,11 @@
 -->
 @if (anyActionsAllowed()) {
   <div class="actions-otp-container">
-    <h4 class="margin-8">Container Actions</h4>
+    <h4
+      class="margin-8"
+      i18n>
+      Container Actions
+    </h4>
     <div class="flex-column ali-center gap-8">
       @if (authService.actionAllowed("container_delete")) {
         <button

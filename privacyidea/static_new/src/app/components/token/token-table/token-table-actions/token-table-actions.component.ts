@@ -80,9 +80,9 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Revoke Token",
+          title: $localize`Revoke Token`,
           items: [this.tokenSerial()],
-          itemType: "token",
+          itemType: $localize`token`,
           confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
@@ -108,9 +108,9 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [this.tokenSerial()],
-          itemType: "token",
+          itemType: $localize`token`,
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
@@ -200,9 +200,9 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Reset Failcounter for Selected Tokens",
+          title: $localize`Reset Failcounter for Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: "token",
+          itemType: $localize`token`,
           confirmAction: { label: $localize`Reset`, value: true, type: "confirm" }
         }
       })
@@ -278,9 +278,9 @@ export class TokenTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Unassign Selected Tokens",
+          title: $localize`Unassign Selected Tokens`,
           items: selectedTokens.map((token) => token.serial),
-          itemType: "token",
+          itemType: $localize`token`,
           confirmAction: { label: $localize`Unassign`, value: true, type: "destruct" }
         }
       })

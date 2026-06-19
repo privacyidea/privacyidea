@@ -18,7 +18,11 @@
 -->
 @if (authService.oneActionAllowed(["assign", "unassign", "enable", "disable", "container_remove_token", "delete"])) {
   <div class="actions-otp-container">
-    <h4 class="margin-8">Token Actions</h4>
+    <h4
+      class="margin-8"
+      i18n>
+      Token Actions
+    </h4>
     <div class="flex-column ali-center gap-8">
       @if (authService.actionAllowed("assign")) {
         <button

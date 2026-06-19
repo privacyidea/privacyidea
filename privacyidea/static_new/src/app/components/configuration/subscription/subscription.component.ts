@@ -63,7 +63,7 @@ export class SubscriptionComponent {
     const fileList: FileList | null = element.files;
     if (fileList && fileList.length > 0) {
       this.subscriptionService.uploadSubscriptionFile(fileList[0]).subscribe(() => {
-        this.notificationService.success("File uploaded successfully.");
+        this.notificationService.success($localize`File uploaded successfully.`);
         this.subscriptionService.reload();
       });
     }
@@ -74,9 +74,9 @@ export class SubscriptionComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Subscription",
+          title: $localize`Delete Subscription`,
           items: [application],
-          itemType: "subscription",
+          itemType: $localize`subscription`,
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
@@ -84,7 +84,7 @@ export class SubscriptionComponent {
       .subscribe((result) => {
         if (result) {
           this.subscriptionService.deleteSubscription(application).subscribe(() => {
-            this.notificationService.success("Subscription deleted successfully.");
+            this.notificationService.success($localize`Subscription deleted successfully.`);
             this.subscriptionService.reload();
           });
         }

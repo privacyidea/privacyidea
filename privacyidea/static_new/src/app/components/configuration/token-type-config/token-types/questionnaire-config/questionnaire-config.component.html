@@ -92,6 +92,7 @@
           [value]="newQuestionText()"
           (input)="newQuestionText.set($any($event.target).value)"
           matInput
+          i18n-placeholder
           placeholder="Enter new question here" />
       </mat-form-field>
       <button

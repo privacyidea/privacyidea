@@ -80,9 +80,9 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Revoke Token",
+          title: $localize`Revoke Token`,
           items: [serial],
-          itemType: "token",
+          itemType: $localize`token`,
           confirmAction: { label: $localize`Revoke`, value: true, type: "destruct" }
         }
       })
@@ -105,9 +105,9 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [serial],
-          itemType: "token",
+          itemType: $localize`token`,
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })

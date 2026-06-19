@@ -64,7 +64,7 @@ export class ContainerTableActionsComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete All Containers",
+          title: $localize`Delete All Containers`,
           items: selectedContainers.map((container) => container.serial),
           itemType: "container",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }

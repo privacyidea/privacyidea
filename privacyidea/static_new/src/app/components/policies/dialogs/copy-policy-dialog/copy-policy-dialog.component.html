@@ -4,27 +4,28 @@
   [actions]="actions()"
   (actionTriggered)="onAction($event)">
   <div class="dialog-content">
-    <p>Please enter a unique name for the copied policy.</p>
+    <p i18n>Please enter a unique name for the copied policy.</p>
 
     <mat-form-field
       appearance="outline"
       class="full-width">
-      <mat-label>New Policy Name</mat-label>
+      <mat-label i18n>New Policy Name</mat-label>
       <input
         matInput
         [formField]="nameField"
         cdkFocusInitial
+        i18n-placeholder
         placeholder="e.g. New_Policy_Name"
         (keyup.enter)="!isInvalid() && onAction('submit')" />
 
       @if (nameField().errors().some(e => e.kind === 'required')) {
-        <mat-error>Policy name is <strong>required</strong></mat-error>
+        <mat-error i18n>Policy name is <strong>required</strong></mat-error>
       }
       @if (nameField().errors().some(e => e.kind === 'notChanged')) {
-        <mat-error>Policy name must be <strong>different</strong> from the original</mat-error>
+        <mat-error i18n>Policy name must be <strong>different</strong> from the original</mat-error>
       }
 
-      <mat-hint>Must be a unique identifier</mat-hint>
+      <mat-hint i18n>Must be a unique identifier</mat-hint>
     </mat-form-field>
   </div>
 </app-dialog-wrapper>

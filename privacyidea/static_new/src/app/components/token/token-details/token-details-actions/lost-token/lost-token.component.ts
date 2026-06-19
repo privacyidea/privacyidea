@@ -63,14 +63,14 @@ export class LostTokenComponent extends AbstractDialogComponent<
       next: (response) => {
         this.data.isLost.set(true);
         this.lostTokenData = response?.result?.value;
-        this.notificationService.success("Token marked as lost: " + this.data.tokenSerial());
+        this.notificationService.success($localize`Token marked as lost: ` + this.data.tokenSerial());
       }
     });
   }
 
   tokenSelected(tokenSerial?: string) {
     if (!tokenSerial) {
-      this.notificationService.warning("No token selected, please select a token.");
+      this.notificationService.warning($localize`No token selected, please select a token.`);
       return;
     }
     this.dialogRef.close();

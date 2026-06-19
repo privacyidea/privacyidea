@@ -418,7 +418,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete User",
+          title: $localize`Delete User`,
           items: [this.userData().username],
           itemType: "user",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }

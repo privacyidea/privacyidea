@@ -33,14 +33,18 @@
       }
       <div class="flex-column gap-16">
         @if (data()?.rollover) {
-          <p class="width-36">
+          <p
+            class="width-36"
+            i18n>
             Please scan the QR code with the privacyIDEA Authenticator App or click this
             <a href="{{ data()?.response?.result?.value?.container_url?.value }}">link</a>
             on your smartphone to complete the rollover of your container. It will send the missing data to the
             configured endpoint.
           </p>
         } @else {
-          <p class="width-36">
+          <p
+            class="width-36"
+            i18n>
             Please scan the QR code with the privacyIDEA Authenticator App or click this
             <a href="{{ data()?.response?.result?.value?.container_url?.value }}">link</a>
             on your smartphone to register your container. It will send the missing registration data to the configured
@@ -52,7 +56,7 @@
           class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>autorenew</mat-icon>
-          Regenerate QR Code
+          <span i18n>Regenerate QR Code</span>
         </button>
       </div>
     </div>

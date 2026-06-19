@@ -22,7 +22,11 @@
   aria-label="Create Container"
   class="container-create-container"
   i18n-aria-label>
-  <h3 class="margin-8">Create a New Container</h3>
+  <h3
+    class="margin-8"
+    i18n>
+    Create a New Container
+  </h3>
   <div
     class="sticky-header"
     [appStickyHeader]="scrollContainer">
@@ -50,7 +54,7 @@
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
-          Create Container
+          <span i18n>Create Container</span>
         </button>
         <button
           (click)="reopenEnrollmentDialog()"

@@ -23,6 +23,7 @@
     data-overflow-pinned
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
     class="action-button-primary button-width-m"
+    i18n
     mat-stroked-button>
     <mat-icon> add_moderator</mat-icon>
     Enroll Token
@@ -75,6 +76,7 @@
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
         class="action-button-secondary button-width-m"
+        i18n
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
         Unassign

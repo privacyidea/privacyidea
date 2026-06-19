@@ -258,7 +258,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Remove Token",
+          title: $localize`Remove Token`,
           items: [tokenSerial],
           itemType: "token",
           confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
@@ -302,7 +302,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Token",
+          title: $localize`Delete Token`,
           items: [tokenSerial],
           itemType: "token",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
@@ -332,7 +332,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       })
       .subscribe({
         next: () => {
-          this.notificationService.success("User assigned to token");
+          this.notificationService.success($localize`User assigned to token`);
           this.containerService.containerDetailsResource.reload();
         }
       });

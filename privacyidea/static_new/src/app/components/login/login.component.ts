@@ -158,7 +158,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.warning("User is already logged in.");
+      this.notificationService.warning($localize`User is already logged in.`);
     } else {
       this.showOtpField.set(false);
     }

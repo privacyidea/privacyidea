@@ -28,7 +28,7 @@
       [innerHTML]="preTopHtml?.sanitized"
       class="margin-top-16"></div>
   } @else {
-    <h3 class="margin-8">Enroll {{ tokenType().name }} Token</h3>
+    <h3 class="margin-8" i18n>Enroll {{ tokenType().name }} Token</h3>
   }
   <form
     class="margin-left-16"
@@ -40,7 +40,7 @@
         mat-stroked-button
         type="submit">
         <mat-icon>add_moderator</mat-icon>
-        Enroll Token
+        <span i18n>Enroll Token</span>
       </button>
       <button
         (click)="reopenEnrollmentDialog()"
@@ -56,9 +56,10 @@
       [wizard]="wizard" />
     @if (descriptionRequired()) {
       <mat-form-field class="input-width-l description-form">
-        <mat-label>Description</mat-label>
+        <mat-label i18n>Description</mat-label>
         <textarea
           [formField]="descriptionForm"
+          i18n-placeholder
           matInput
           placeholder="Enter description"
           rows="3"></textarea>

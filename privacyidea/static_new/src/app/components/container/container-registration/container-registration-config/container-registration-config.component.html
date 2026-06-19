@@ -21,7 +21,7 @@
     [checked]="userStorePassphrase()"
     (change)="userStorePassphrase.set($event.checked); onUserStorePassphraseChange()"
     [disabled]="!containerHasOwner()">
-    <span>Validate the passphrase against the user store.</span>
+    <span i18n>Validate the passphrase against the user store.</span>
   </mat-checkbox>
   <mat-form-field class="input-width-xl">
     <mat-label i18n>Passphrase Prompt</mat-label>

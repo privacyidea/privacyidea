@@ -54,7 +54,8 @@
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().splitAtSign"
-          (change)="updateParam('splitAtSign', $event.checked)">
+          (change)="updateParam('splitAtSign', $event.checked)"
+          i18n>
           Use &#64; sign to split the username and the realm
         </mat-checkbox>
       </div>
@@ -63,7 +64,8 @@
         <div class="form-group">
           <mat-checkbox
             [checked]="params().IncFailCountOnFalsePin"
-            (change)="updateParam('IncFailCountOnFalsePin', $event.checked)">
+            (change)="updateParam('IncFailCountOnFalsePin', $event.checked)"
+            i18n>
             Increase the failcounter
             <br />
             if the wrong PIN was entered
@@ -84,7 +86,8 @@
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().no_auth_counter"
-          (change)="updateParam('no_auth_counter', $event.checked)">
+          (change)="updateParam('no_auth_counter', $event.checked)"
+          i18n>
           Do not use an authentication counter per token
         </mat-checkbox>
       </div>
@@ -92,7 +95,8 @@
       <div class="form-group margin-bottom-16">
         <mat-checkbox
           [checked]="params().PrependPin"
-          (change)="updateParam('PrependPin', $event.checked)">
+          (change)="updateParam('PrependPin', $event.checked)"
+          i18n>
           Prepend the PIN in front of the OTP value. Otherwise it will be post pended
         </mat-checkbox>
       </div>
@@ -101,7 +105,8 @@
         <div class="form-group">
           <mat-checkbox
             [checked]="params().AutoResync"
-            (change)="updateParam('AutoResync', $event.checked)">
+            (change)="updateParam('AutoResync', $event.checked)"
+            i18n>
             Automatic resync during authentication
           </mat-checkbox>
         </div>

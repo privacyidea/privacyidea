@@ -148,9 +148,9 @@ export class MachineResolverPanelNewComponent implements OnInit, OnDestroy {
             .openDialog({
               component: SimpleConfirmationDialogComponent,
               data: {
-                title: "Save machine resolver despite test failure?",
+                title: $localize`Save machine resolver despite test failure?`,
                 confirmAction: { label: $localize`Proceed`, value: true, type: "destruct" },
-                items: [current.resolvername || "New Machine Resolver"],
+                items: [current.resolvername || $localize`New Machine Resolver`],
                 itemType: "machine resolver"
               }
             })

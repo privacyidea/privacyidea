@@ -93,7 +93,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: "Delete Container",
+          title: $localize`Delete Container`,
           items: [serial],
           itemType: "container",
           confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }

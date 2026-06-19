@@ -439,7 +439,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveStates(): boolean {
     if (this.selectedStates().length === 0) {
-      this.notificationService.error("At least one state must be selected.");
+      this.notificationService.error($localize`At least one state must be selected.`);
       return false;
     }
     this.containerService.setStates(this.containerSerial(), this.selectedStates()).subscribe({

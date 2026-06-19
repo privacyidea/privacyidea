@@ -42,6 +42,7 @@
                 matInput
                 type="text"
                 placeholder="Search condition ..."
+                i18n-placeholder
                 [value]="searchTerm()"
                 (input)="searchTerm.set($event['target']['value'])" />
             </app-clearable-input>
