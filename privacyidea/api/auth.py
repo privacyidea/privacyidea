@@ -412,6 +412,8 @@ def get_auth_token():
     realm_param = get_optional(request.all_data, "realm")
     details = {}
     auth_event_type = None
+    # A token can deliberately suppress its terminal event (push_wait timeout)
+    terminal_event_suppressed = False
     serials = None
     # Passkey login
     credential_id = get_optional(request.all_data, "credential_id")
@@ -610,7 +612,9 @@ def get_auth_token():
                                                         superuser_realms=superuser_realms)
             details = details or {}
             # Classification stashed by the lib layer: captured for the authentication log and
-            # popped so it is never returned to the client.
+            # popped so it is never returned to the client. A present-but-None value means a token suppressed its
+            # terminal event (push_wait timeout); absent means nothing classified the request.
+            terminal_event_suppressed = AUTH_EVENT_TYPE_KEY in details and details[AUTH_EVENT_TYPE_KEY] is None
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
@@ -644,11 +648,12 @@ def get_auth_token():
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
-    if auth_event_type is None:
+    if auth_event_type is None and not terminal_event_suppressed:
         # Nothing along the way classified this request. A successful login that no handler labelled is a
         # LOGIN_SUCCESS; an unclassified failure is logged as UNKNOWN_FAIL_REASON (not PASSWORD_FAIL, which would
         # misattribute it to a wrong userstore password and skew password-failure lockout counters), mirroring
-        # /validate/check.
+        # /validate/check. A deliberately suppressed terminal event (push_wait) keeps auth_event_type None, so
+        # log_authentication below is a no-op and no row is added over the one the token already wrote.
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                     admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
