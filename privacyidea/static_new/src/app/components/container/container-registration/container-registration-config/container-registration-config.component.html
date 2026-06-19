@@ -48,7 +48,7 @@
       matInput />
     <button
       (click)="toggleShowPassphrase()"
-      [attr.aria-label]="'Toggle passphrase visibility'"
+      aria-label="Toggle passphrase visibility" i18n-aria-label
       [disabled]="userStorePassphrase()"
       mat-icon-button
       matSuffix
@@ -69,7 +69,7 @@
       matInput />
     <button
       (click)="showRepeatPassphrase = !showRepeatPassphrase"
-      [attr.aria-label]="'Toggle passphrase visibility'"
+      aria-label="Toggle passphrase visibility" i18n-aria-label
       [disabled]="userStorePassphrase()"
       mat-icon-button
       matSuffix

@@ -21,7 +21,7 @@
   (actionTriggered)="onCloseAction()"
   [showCancelButton]="false"
   [actions]="[closeAction]"
-  [title]="'Token ' + data.tokenSerial() + ' is lost?'">
+  [title]="dialogTitle()">
   <div class="lost-content">
     <p i18n>
       If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP

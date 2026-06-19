@@ -64,7 +64,7 @@
                 #selectedConditionInput
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
                 [multiple]="true"
-                [placeholder]="'Select values ...'"
+                placeholder="Select values ..." i18n-placeholder
                 [required]="inputRequired()"
                 [value]="multiValueConditions()[conditionName] || []">
                 @for (option of availableConditionValues()[conditionName]; track option) {

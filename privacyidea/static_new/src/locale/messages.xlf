@@ -1269,6 +1269,10 @@
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.ts</context>
           <context context-type="linenumber">66</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">62</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="1859131936150262113" datatype="html">
         <source>Inactive</source>
@@ -1415,6 +1419,10 @@
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
           <context context-type="linenumber">43</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">61</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="3500669037237439640" datatype="html">
         <source>Unique name of the periodic task.</source>
@@ -1451,12 +1459,20 @@
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">129</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">65</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="3350676806684249188" datatype="html">
         <source>Interval</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">147</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">63</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8357942712349622466" datatype="html">
@@ -1507,6 +1523,10 @@
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">183</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">64</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="3250788776528124001" datatype="html">
         <source>Select the nodes on which the periodic task should be executed.</source>
@@ -1536,6 +1556,10 @@
           <context context-type="sourcefile">src/app/components/event/event.component.ts</context>
           <context context-type="linenumber">80</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">68</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="4858136669573383415" datatype="html">
         <source>Tasks with lower ordering number are executed first.</source>
@@ -1560,6 +1584,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
           <context context-type="linenumber">179,181</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6555318547274416232" datatype="html">
@@ -3368,6 +3396,29 @@
           <context context-type="linenumber">28,29</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="7445337416249392182" datatype="html">
+        <source>Reopen enrollment dialog</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create/container-create.component.html</context>
+          <context context-type="linenumber">61</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create/container-create.self-service.component.html</context>
+          <context context-type="linenumber">61</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create/container-create.wizard.component.html</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.html</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="3951914000525419184" datatype="html">
         <source> Assign the Container to a User </source>
         <context-group purpose="location">
@@ -4301,6 +4352,17 @@
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="6985901029755309877" datatype="html">
+        <source>Toggle passphrase visibility</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
+          <context context-type="linenumber">72</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="4494279282822239977" datatype="html">
         <source> This is the correct answer to the passphrase prompt the user has to enter to successfully register the container. </source>
         <context-group purpose="location">
@@ -4975,6 +5037,13 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component.html</context>
           <context context-type="linenumber">57,58</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5602667336381520869" datatype="html">
+        <source>Select values ...</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/event/event-edit-page/tabs/event-conditions-tab/event-condition-list/event-condition-list.component.html</context>
+          <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3589167945302106945" datatype="html">
@@ -6749,6 +6818,18 @@
           <context context-type="linenumber">672</context>
         </context-group>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">680</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">680</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">680</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table-actions/user-table-actions.component.html</context>
           <context context-type="linenumber">41,42</context>
         </context-group>
@@ -7479,6 +7560,17 @@
           <context context-type="linenumber">153</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="6645195020874350299" datatype="html">
+        <source>Copy Policy</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
+          <context context-type="linenumber">2</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.ts</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="5790891583970432418" datatype="html">
         <source>Please enter a unique name for the copied policy.</source>
         <context-group purpose="location">
@@ -7519,13 +7611,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
           <context context-type="linenumber">28</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="6645195020874350299" datatype="html">
-        <source>Copy Policy</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.ts</context>
-          <context context-type="linenumber">51</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3226519252792039060" datatype="html">
@@ -8751,25 +8836,32 @@
           <context context-type="linenumber">75,80</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="5906853010723436134" datatype="html">
+        <source>Token <x id="serial" equiv-text="this.data.tokenSerial()"/> is lost?</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="7819314041543176992" datatype="html">
         <source>Close</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
-          <context context-type="linenumber">48</context>
+          <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8304438962516043724" datatype="html">
         <source>Token marked as lost: </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
-          <context context-type="linenumber">66</context>
+          <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3768612344736766095" datatype="html">
         <source>No token selected, please select a token.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
-          <context context-type="linenumber">73</context>
+          <context context-type="linenumber">74</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3411472748315016433" datatype="html">
@@ -11216,6 +11308,13 @@
           <context context-type="linenumber">130</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="2206569732824957363" datatype="html">
+        <source>Assign Selected Token to User</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="3391450224522742153" datatype="html">
         <source> Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment. </source>
         <context-group purpose="location">
@@ -11256,6 +11355,13 @@
           <context context-type="linenumber">28</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="6541060686862379363" datatype="html">
+        <source>Show PIN</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
+          <context context-type="linenumber">94</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="5322732766972335355" datatype="html">
         <source>PIN (repeat)</source>
         <context-group purpose="location">
@@ -11265,6 +11371,13 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-pin-dialog/user-details-pin-dialog.component.html</context>
           <context context-type="linenumber">62</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1373693741365481722" datatype="html">
+        <source>Show PIN Repeat</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
+          <context context-type="linenumber">114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6119478045831148336" datatype="html">
@@ -12161,6 +12274,18 @@
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">700</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">708</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">708</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">708</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="7226684209936743036" datatype="html">
         <source>Your Details</source>
@@ -12881,6 +13006,18 @@
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">412</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">606</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">606</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">606</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="2906980870317616134" datatype="html">
         <source> This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order to receive an access token. This token can then be used to access the user store API. You can find most of these settings in the app registration in the Entra Admin Center or you also have to add them there. </source>
@@ -13076,6 +13213,18 @@
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">614</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">622</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">622</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">622</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="786206442402830864" datatype="html">
         <source>User List</source>
@@ -13090,6 +13239,18 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">629</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">637</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">637</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">637</context>
         </context-group>
       </trans-unit>
       <trans-unit id="705263345427358869" datatype="html">
@@ -13106,6 +13267,18 @@
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">643</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">651</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">651</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">651</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="6103312211386381532" datatype="html">
         <source>Get User by Name</source>
@@ -13121,6 +13294,18 @@
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">657</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">665</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">665</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">665</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="1211169124143348857" datatype="html">
         <source>Edit User</source>
@@ -13135,6 +13320,18 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">686</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">694</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">694</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
+          <context context-type="linenumber">694</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3461286522615832336" datatype="html">
@@ -14300,6 +14497,48 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">128</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8040881171107393560" datatype="html">
+        <source>ID</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8384115098006831621" datatype="html">
+        <source>Retry If Failed</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1225956843096417360" datatype="html">
+        <source>Last Update</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">67</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1964606836516767448" datatype="html">
+        <source>Last Runs</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">70</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7466338970294062917" datatype="html">
+        <source>Simple Statistics</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">91</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7007643848140306366" datatype="html">
+        <source>Event Counter</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
+          <context context-type="linenumber">92</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8571696584244865381" datatype="html">

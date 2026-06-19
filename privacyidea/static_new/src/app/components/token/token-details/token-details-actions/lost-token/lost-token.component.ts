@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe } from "@angular/common";
-import { Component, effect, inject, WritableSignal } from "@angular/core";
+import { Component, computed, effect, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardContent } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -44,6 +44,7 @@ export class LostTokenComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
+  protected readonly dialogTitle = computed(() => $localize`Token ${this.data.tokenSerial()}:serial: is lost?`);
   protected closeAction: DialogAction<void> = {
     label: $localize`Close`,
     type: "cancel",
