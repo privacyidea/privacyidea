@@ -432,17 +432,12 @@ def get_challenges_api(serial=None):
     param = request.all_data
     # user-aggregation mode kicks in only when the caller explicitly passes
     # the ``user`` query param. An empty string is rejected so the absence
-    # of an actual username can never be mistaken for "every user" - that
-    # was the cross-realm leak the v3.14 review caught.
+    # of an actual username can never be mistaken for "every user".
     if "user" in param:
         if serial is not None:
             # The three filter modes (path serial / ?user= / list-all) are
-            # mutually exclusive per the endpoint docstring. Reject the
-            # ambiguous combination loudly rather than silently picking one
-            # - the older code dropped the path serial on the floor here,
-            # which surprised admins and obscured realm-scope semantics.
-            raise ParameterError("Specify either a path serial or the 'user' "
-                                 "query parameter, not both.")
+            # mutually exclusive. Reject the ambiguous combination loudly.
+            raise ParameterError("Specify either a path serial or the 'user' query parameter, not both.")
         user = get_user_from_param(param, optional_or_required=False)
         if user.is_empty():
             raise ParameterError("user is required")
@@ -595,8 +590,7 @@ def cancel_challenge_api(transaction_id):
             break
         packed_serials = candidate
         fitted += 1
-    info = (f"Cancelled {result.removed} challenge(s) for transaction "
-            f"{transaction_id}")
+    info = f"Cancelled {result.removed} challenge(s) for transaction {transaction_id}"
     if serials and fitted < len(serials):
         info += f" (serials: {','.join(serials)})"
     g.audit_object.log({
