@@ -22,8 +22,10 @@ import { provideRouter } from "@angular/router";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
 import { MockAuditService } from "@testing/mock-services/mock-audit-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { of } from "rxjs";
 import { AuthenticationsWidgetComponent } from "./authentications-widget.component";
 
@@ -71,7 +73,8 @@ describe("AuthenticationsWidgetComponent", () => {
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: AuditService, useClass: MockAuditService }
+        { provide: AuditService, useClass: MockAuditService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();
 
