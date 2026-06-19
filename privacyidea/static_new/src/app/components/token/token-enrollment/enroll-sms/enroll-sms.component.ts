@@ -91,7 +91,7 @@ export class EnrollSmsComponent extends EnrollTokenBase<SmsEnrollmentData> imple
     validate(f, (ctx) => {
       const value = ctx.value();
       const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" as any }];
+      if (value && !phoneRegex.test(value)) return [{ kind: "invalidPhoneNumber" }];
       return [];
     });
     disabled(f, () => this.disabled() || this.readNumberDynamically());

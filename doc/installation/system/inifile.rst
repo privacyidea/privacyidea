@@ -109,6 +109,17 @@ Security
 ``PI_ENABLE_CSP`` will make the server return a strict Content Security Policy for the browser.
 ``PI_FORCE_HTTPS`` will enforce the use of HTTPS.
 
+``PI_BASE_URL`` is the trusted public URL of this privacyIDEA server, e.g.::
+
+    PI_BASE_URL = "https://pi.example.com"
+
+It is used to build user-facing links that are sent out of band, such as the
+password-recovery link (``POST /recover``) and the ``{url}`` tag in
+notifications. These links are never derived from the inbound HTTP ``Host``
+header. If ``PI_BASE_URL`` is not configured, the password-recovery endpoint refuses to
+operate and the ``{url}`` notification tag is left blank. Always configure
+``PI_BASE_URL`` for a secure deployment.
+
 Translation
 -----------
 

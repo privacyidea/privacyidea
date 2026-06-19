@@ -19,9 +19,13 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogResult
+} from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
@@ -34,7 +38,7 @@ import { NewServiceIdComponent } from "./new-service-id.component";
 describe("NewServiceIdComponent", () => {
   let component: NewServiceIdComponent;
   let fixture: ComponentFixture<NewServiceIdComponent>;
-  let serviceIdServiceMock: any;
+  let serviceIdServiceMock: MockServiceIdService;
   let router: Router;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
@@ -56,7 +60,7 @@ describe("NewServiceIdComponent", () => {
       ]
     }).compileComponents();
 
-    serviceIdServiceMock = TestBed.inject(ServiceIdService);
+    serviceIdServiceMock = TestBed.inject(ServiceIdService) as unknown as MockServiceIdService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
@@ -77,7 +81,7 @@ describe("NewServiceIdComponent", () => {
   });
 
   it("should call save when form is valid", async () => {
-    component.serviceIdModel.update(m => ({
+    component.serviceIdModel.update((m) => ({
       ...m,
       servicename: "test",
       description: "desc"
@@ -91,7 +95,7 @@ describe("NewServiceIdComponent", () => {
   });
 
   it("should keep on page if save fails", async () => {
-    component.serviceIdModel.update(m => ({
+    component.serviceIdModel.update((m) => ({
       ...m,
       servicename: "test",
       description: "desc"
@@ -106,7 +110,9 @@ describe("NewServiceIdComponent", () => {
   });
 
   describe("onCancel", () => {
-    let mockSaveExitDialogRef: any;
+    let mockSaveExitDialogRef: Partial<MatDialogRef<SaveAndExitDialogComponent, SaveAndExitDialogResult>> & {
+      afterClosed: jest.Mock;
+    };
 
     beforeEach(() => {
       mockSaveExitDialogRef = {
@@ -124,7 +130,7 @@ describe("NewServiceIdComponent", () => {
 
     it("should open SaveAndExitDialog when there are changes", () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.serviceIdModel.update(m => ({
+      component.serviceIdModel.update((m) => ({
         ...m,
         servicename: "test",
         description: "desc"
@@ -145,7 +151,7 @@ describe("NewServiceIdComponent", () => {
 
     it("should navigate back when user selects 'discard' in cancel dialog", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-      component.serviceIdModel.update(m => ({
+      component.serviceIdModel.update((m) => ({
         ...m,
         servicename: "test",
         description: "desc"
@@ -161,7 +167,7 @@ describe("NewServiceIdComponent", () => {
     });
 
     it("should navigate back when user selects 'save-exit' and save succeeds", async () => {
-      component.serviceIdModel.update(m => ({
+      component.serviceIdModel.update((m) => ({
         ...m,
         servicename: "test",
         description: "desc"
@@ -179,7 +185,7 @@ describe("NewServiceIdComponent", () => {
     });
 
     it("should NOT navigate back when user selects 'save-exit' but save fails", async () => {
-      component.serviceIdModel.update(m => ({
+      component.serviceIdModel.update((m) => ({
         ...m,
         servicename: "test",
         description: "desc"
@@ -198,7 +204,7 @@ describe("NewServiceIdComponent", () => {
     });
 
     it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
-      component.serviceIdModel.update(m => ({ ...m, servicename: "" }));
+      component.serviceIdModel.update((m) => ({ ...m, servicename: "" }));
       component.serviceIdForm().markAsDirty();
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
@@ -213,7 +219,7 @@ describe("NewServiceIdComponent", () => {
 
     it("should do nothing when user closes dialog without selecting an option", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
-      component.serviceIdModel.update(m => ({
+      component.serviceIdModel.update((m) => ({
         ...m,
         servicename: "test",
         description: "desc"

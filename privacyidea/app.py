@@ -221,6 +221,35 @@ def _check_config(app: Flask):
         app.config[ConfigKey.NO_RESPONSE_SIGN] = True
 
 
+def _warn_if_base_url_missing(app: Flask):
+    """
+    Emit a loud warning if ``PI_BASE_URL`` is not configured, since it is required to
+    produce links.
+    """
+    if not app.config.get(ConfigKey.BASE_URL):
+        # The loud stderr banner is meant for an interactive server startup, so
+        # it honours the same VERBOSE/silent flag as the other startup output.
+        # CLI tooling (pi-manage uses create_silent_app) and tests run silent and
+        # would otherwise get the banner on every invocation as pure noise. The
+        # log.warning below is always emitted, so the warning is never lost.
+        if app.config.get(ConfigKey.VERBOSE):
+            for line in (
+                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+                "  SECURITY WARNING: 'PI_BASE_URL' is not configured!",
+                "  This is required for user facing links.",
+                "  Password recovery is DISABLED until PI_BASE_URL is set in pi.cfg",
+                "  to the public URL of this privacyIDEA server, e.g.",
+                "      PI_BASE_URL = 'https://pi.example.com'",
+                "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+            ):
+                sys.stderr.write(line + "\n")
+        log.warning("'PI_BASE_URL' is not configured! Password recovery is "
+                    "disabled and user-facing links (the {url} notification tag) "
+                    "are left blank. They are never built from the untrusted HTTP "
+                    "Host header. Set PI_BASE_URL in pi.cfg to the public URL of "
+                    "this privacyIDEA server.")
+
+
 def _setup_node_configuration(app: Flask):
     # check that we have a correct node_name -> UUID relation
     with app.app_context():
@@ -360,6 +389,8 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
+    _warn_if_base_url_missing(app)
+
     # We allow to set different static folders
     app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
     app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
@@ -479,6 +510,8 @@ def create_docker_app():
     if ConfigKey.LOGLEVEL in app.config:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
     _setup_logging(app, DOCKER_LOGGING_CONFIG)
+
+    _warn_if_base_url_missing(app)
 
     # We allow to set different static folders
     app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)

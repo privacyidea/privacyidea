@@ -40,7 +40,7 @@ jobs:
       min: ${{ steps.load.outputs.min }}
       matrix: ${{ steps.load.outputs.matrix }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
       - id: load
@@ -71,7 +71,11 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11
+        # MariaDB 10.11 is the LTS most installations run (the Ubuntu 24.04
+        # default). Kept as a literal tag: a ${{ }} expression in image: is
+        # flagged by zizmor as an unpinned reference. Both 10.11 and 11 are
+        # covered for version-specific DDL by migration-tests.yml.
+        image: mariadb:10.11
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: privacyidea_test
@@ -86,7 +90,7 @@ jobs:
           --health-retries=10
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
@@ -137,8 +141,30 @@ jobs:
 
     - name: Codecov upload
       if: ${{ steps.pytest_run.outcome == 'success' && matrix.python-version == needs.versions.outputs.min }}
-      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         files: ./coverage.xml
         flags: backend
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  notify-failure:
+    needs: test
+    # Surface nightly breakage as a GitHub issue. Scheduled runs only — PR
+    # failures already show up as PR checks. Runs when any matrix job failed.
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/notify-nightly-failure
+        with:
+          title: Nightly backend unit tests failed on master
+          body: |
+            The nightly MariaDB backend unit-test run failed on master.
+
+            Commit: ${{ github.sha }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          token: ${{ secrets.GITHUB_TOKEN }}

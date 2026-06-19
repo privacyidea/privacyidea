@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="navigation-self-service-column">
-
   @if (contentService.onUserDetailsSelfService() || !authService.actionAllowed("userlist")) {
     <div class="username-button disabled">
       <mat-icon>account_circle</mat-icon>
@@ -59,7 +58,7 @@
     @if (authService.rights().includes("assign")) {
       <app-navigation-self-service-button
         i18n-title
-        key="{{this.ROUTE_PATHS.TOKENS_ASSIGN_TOKEN}}"
+        key="{{ this.ROUTE_PATHS.TOKENS_ASSIGN_TOKEN }}"
         matIconName="admin_panel_settings"
         matIconSize="tile-icon-large"
         title="Assign Token" />
@@ -74,7 +73,7 @@
     @if (authService.rights().includes("container_list")) {
       <app-navigation-self-service-button
         i18n-title
-        key="{{this.ROUTE_PATHS.CONTAINERS}}"
+        key="{{ this.ROUTE_PATHS.CONTAINERS }}"
         matIconClass="mdi--folder-list"
         matIconSize="tile-icon-x-large"
         title="Container Overview" />
@@ -82,14 +81,14 @@
     @if (authService.rights().includes("container_create") && authService.containerWizard().enabled) {
       <app-navigation-self-service-button
         i18n-title
-        key="{{this.ROUTE_PATHS.CONTAINERS_CREATE}}"
+        key="{{ this.ROUTE_PATHS.CONTAINERS_CREATE }}"
         matIconName="create_new_folder"
         title="Create Container" />
     }
     @if (authService.rights().includes("auditlog")) {
       <app-navigation-self-service-button
         i18n-title
-        key="{{this.ROUTE_PATHS.AUDIT}}"
+        key="{{ this.ROUTE_PATHS.AUDIT }}"
         matIconName="receipt_long"
         title="Audit Log" />
     }

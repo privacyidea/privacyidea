@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Input } from "@angular/core";
+import { Component, input } from "@angular/core";
 import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
@@ -33,6 +33,6 @@ import { MatInput } from "@angular/material/input";
   templateUrl: "./enrollment-pin.component.html"
 })
 export class EnrollmentPinComponent {
-  @Input({ required: true }) setPinControl!: FieldTree<string>;
-  @Input({ required: true }) repeatPinControl!: FieldTree<string>;
+  setPinControl = input.required<FieldTree<string>>();
+  repeatPinControl = input.required<FieldTree<string>>();
 }

@@ -31,8 +31,11 @@ describe("EnrollVascoComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollVascoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollVascoComponent);

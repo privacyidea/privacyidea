@@ -48,7 +48,7 @@ export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
   protected readonly hiddenInfoKeys: readonly string[] = TIMESTAMP_INFO_KEYS;
 
-  visibleInfoKeys(value: Record<string, unknown>): string[] {
+  visibleInfoKeys(value: Record<string, string>): string[] {
     return Object.keys(value).filter((k) => !this.hiddenInfoKeys.includes(k));
   }
 

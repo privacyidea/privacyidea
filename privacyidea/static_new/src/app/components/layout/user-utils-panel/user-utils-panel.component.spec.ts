@@ -24,7 +24,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { ActivatedRoute, provideRouter, Router } from "@angular/router";
+import { ActivatedRoute, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -106,10 +106,8 @@ describe("UserUtilsPanelComponent", () => {
   let content: MockContentService;
   let authService: MockAuthService;
   let sessionTimerService: MockSessionTimerService;
-  let notificationService: MockNotificationService;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
-  let router: Router;
 
   beforeAll(async () => {
     Object.defineProperty(window, "matchMedia", {
@@ -186,10 +184,8 @@ describe("UserUtilsPanelComponent", () => {
     content = TestBed.inject(ContentService) as unknown as MockContentService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     sessionTimerService = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
-    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
-    router = TestBed.inject(Router);
 
     fixture.detectChanges();
   });

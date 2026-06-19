@@ -80,6 +80,8 @@ from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
+from privacyidea.lib.token import get_tokens
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -88,7 +90,7 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
-from privacyidea.api.lib.utils import (send_result, get_all_params,
+from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required)
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
@@ -326,6 +328,10 @@ def get_auth_token():
             realm = user.realm
             username = user.login
             passkey_login_success = True
+            # Passkey login bypasses check_token_list, so the reset_all_user_tokens
+            # policy is applied explicitly here (mirrors the /validate FIDO2 path).
+            if reset_all_user_tokens_active(g, user):
+                reset_token_failcounters(get_tokens(user=user))
         else:
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
@@ -444,7 +450,8 @@ def get_auth_token():
 
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
-                if value and key not in ["g", "clientip"]:
+                # Never copy internal keys
+                if value and key not in ["g", "clientip"] and key not in INTERNAL_OPTION_KEYS:
                     options[key] = value
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)

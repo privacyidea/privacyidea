@@ -37,6 +37,8 @@ import { LocalService } from "@services/local/local.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MachineService } from "./machine.service";
+import { PageEvent } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
 import { TokenService } from "@services/token/token.service";
 
 environment.proxyUrl = "/api";
@@ -214,14 +216,14 @@ describe("MachineService (with mock classes)", () => {
   });
 
   it("onPageEvent & onSortEvent update linked signals", () => {
-    machineService.onPageEvent({ pageSize: 25, pageIndex: 3 } as any);
+    machineService.onPageEvent({ pageSize: 25, pageIndex: 3 } as PageEvent);
     expect(machineService.pageSize()).toBe(25);
     expect(machineService.pageIndex()).toBe(3);
 
     machineService.onSortEvent({
       active: "hostname",
       direction: "desc"
-    } as any);
+    } as Sort);
     expect(machineService.sort()).toEqual({
       active: "hostname",
       direction: "desc"
@@ -237,7 +239,7 @@ describe("MachineService (with mock classes)", () => {
         ["hostname", "   "],
         ["machineid", "*"]
       ])
-    } as any);
+    } as unknown as FilterValue);
 
     const params = machineService.filterParams();
     expect(params).not.toHaveProperty("serial");

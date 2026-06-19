@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -27,19 +26,24 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { MachineService } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService } from "@services/token/token.service";
-import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import {
+  MockApplicationService,
+  MockContentService,
+  MockDialogService,
+  MockMachineService,
+  MockPendingChangesService,
+  MockRouter,
+  MockTokenService
+} from "@testing/mock-services";
 import { of } from "rxjs";
 import { MachineDetailsComponent } from "./machine-details.component";
 
 describe("MachineDetailsComponent", () => {
   let component: MachineDetailsComponent;
   let fixture: ComponentFixture<MachineDetailsComponent>;
-  let machineServiceMock: any;
-  let applicationServiceMock: any;
-  let dialogServiceMock: any;
-  let routerMock: any;
-  let contentServiceMock: any;
-  let tokenServiceMock: any;
+  let machineServiceMock: MockMachineService;
+  let dialogServiceMock: MockDialogService;
+  let contentServiceMock: MockContentService;
   let pendingChangesService: MockPendingChangesService;
 
   const mockMachine = { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" };
@@ -48,69 +52,15 @@ describe("MachineDetailsComponent", () => {
     // Inject machine data via history state (the way the component reads it)
     window.history.pushState({ machine: mockMachine }, "");
 
-    machineServiceMock = {
-      getMachineTokens: jest.fn().mockReturnValue(
-        of({
-          result: {
-            value: [
-              {
-                id: 10,
-                serial: "S1",
-                application: "ssh",
-                type: "sshkey",
-                hostname: "host1",
-                options: { user: "alice", service_id: "svc1" }
-              }
-            ]
-          }
-        })
-      ),
-      machines: signal([mockMachine]),
-      deleteTokenById: jest.fn().mockReturnValue(of({})),
-      postAssignMachineToToken: jest.fn().mockReturnValue(of({})),
-      postTokenOption: jest.fn().mockReturnValue(of({}))
-    };
-
-    applicationServiceMock = {
-      applications: signal({
-        ssh: { options: {} },
-        offline: { options: {} },
-        luks: { options: {} }
-      })
-    };
-
-    dialogServiceMock = {
-      openDialog: jest.fn().mockReturnValue({
-        afterClosed: jest.fn().mockReturnValue(of(true))
-      })
-    };
-
-    routerMock = {
-      navigateByUrl: jest.fn()
-    };
-
-    tokenServiceMock = {
-      selectedToken: signal(null),
-      tokenOptions: signal([]),
-      filteredTokenOptions: computed(() => []),
-      getTokenDetails: jest.fn().mockReturnValue(of({ result: { value: { tokens: [] } } }))
-    };
-
-    contentServiceMock = {
-      routeUrl: signal(ROUTE_PATHS.CONFIGURATION_MACHINES),
-      tokenSelected: jest.fn(),
-      machineResolverSelected: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [MachineDetailsComponent],
       providers: [
-        { provide: MachineService, useValue: machineServiceMock },
-        { provide: ApplicationService, useValue: applicationServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
-        { provide: ContentService, useValue: contentServiceMock },
-        { provide: TokenService, useValue: tokenServiceMock },
-        { provide: Router, useValue: routerMock },
+        { provide: MachineService, useClass: MockMachineService },
+        { provide: ApplicationService, useClass: MockApplicationService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: Router, useClass: MockRouter },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         {
           provide: ActivatedRoute,
@@ -124,9 +74,34 @@ describe("MachineDetailsComponent", () => {
       ]
     }).compileComponents();
 
+    machineServiceMock = TestBed.inject(MachineService) as unknown as MockMachineService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+
+    // Override getMachineTokens to return specific test data
+    machineServiceMock.getMachineTokens.mockReturnValue(
+      of({
+        result: {
+          value: [
+            {
+              id: 10,
+              serial: "S1",
+              application: "ssh",
+              type: "sshkey",
+              hostname: "host1",
+              options: { user: "alice", service_id: "svc1" }
+            }
+          ]
+        }
+      })
+    );
+    machineServiceMock.machines.set([mockMachine]);
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONFIGURATION_MACHINES);
+    jest.spyOn(machineServiceMock, "postAssignMachineToToken");
+
     fixture = TestBed.createComponent(MachineDetailsComponent);
     component = fixture.componentInstance;
-    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     fixture.detectChanges();
   });
 
@@ -148,6 +123,9 @@ describe("MachineDetailsComponent", () => {
         component: SimpleConfirmationDialogComponent
       })
     );
+    // Simulate user confirming the dialog
+    const dialogRef = dialogServiceMock.openDialog.mock.results[0].value;
+    dialogRef.close(true);
     await Promise.resolve();
     expect(machineServiceMock.deleteTokenById).toHaveBeenCalledWith("S1", "ssh", "10");
   });

@@ -31,8 +31,11 @@ describe("EnrollRegistrationComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollRegistrationComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(),
-        { provide: TokenService, useClass: MockTokenService }]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: TokenService, useClass: MockTokenService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollRegistrationComponent);

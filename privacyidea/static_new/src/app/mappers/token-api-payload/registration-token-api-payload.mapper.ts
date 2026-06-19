@@ -51,7 +51,7 @@ export class RegistrationApiPayloadMapper
     return payload;
   }
 
-  override fromApiPayload(payload: any): RegistrationEnrollmentData {
+  override fromApiPayload(payload: RegistrationEnrollmentPayload): RegistrationEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as RegistrationEnrollmentData;
   }

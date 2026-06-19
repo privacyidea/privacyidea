@@ -4,7 +4,11 @@ This test file tests the lib/passwordreset.py
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
-from privacyidea.lib.error import PrivacyIDEAError
+from sqlalchemy import select
+
+from privacyidea.lib.error import PrivacyIDEAError, ConfigAdminError, UserError
+from privacyidea.lib.framework import get_base_url
+from privacyidea.models import PasswordReset, db
 from privacyidea.lib.passwordreset import (create_recoverycode,
                                            check_recoverycode,
                                            is_password_reset)
@@ -54,6 +58,15 @@ class RecoveryTestCase(MyTestCase):
         set_privacyidea_config("recovery.identifier", "myserver")
         r = create_recoverycode(User("cornelius", self.realm1))
         self.assertEqual(r, True)
+
+        # A user without an email address on file does not crash, but raises a
+        # clean UserError instead of an AttributeError on None. The rejected
+        # request must not leave a PasswordReset row behind (validation happens
+        # before the code is persisted).
+        self.assertRaises(UserError, create_recoverycode,
+                          user=User("selfservice", self.realm1))
+        stmt = select(PasswordReset).where(PasswordReset.username == "selfservice")
+        self.assertEqual(len(db.session.scalars(stmt).all()), 0)
 
     @smtpmock.activate
     def test_02_check_recoverycode(self):
@@ -125,3 +138,19 @@ class RecoveryTestCase(MyTestCase):
         # The recovery code is not valid a second time
         r = check_recoverycode(user, recoverycode)
         self.assertEqual(r, False)
+
+    def test_05_get_base_url(self):
+        # Not configured + required -> refuse, so that a recovery link can
+        # never be built from the untrusted HTTP Host header.
+        self.app.config.pop("PI_BASE_URL", None)
+        self.assertRaises(ConfigAdminError, get_base_url, required=True)
+        # Not configured + not required -> empty string (link left blank, never
+        # built from the request Host header)
+        self.assertEqual(get_base_url(), "")
+        # Configured -> value is returned, trailing slash stripped
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com/"
+        try:
+            self.assertEqual(get_base_url(), "https://pi.example.com")
+            self.assertEqual(get_base_url(required=True), "https://pi.example.com")
+        finally:
+            self.app.config.pop("PI_BASE_URL", None)

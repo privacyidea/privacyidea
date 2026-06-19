@@ -29,7 +29,7 @@ import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockContainerTemplateService implements ContainerTemplateServiceInterface {
   // --- Properties ---
-  containerTemplateBaseUrl: string = "/mock/container/templates/";
+  containerTemplateBaseUrl = "/mock/container/templates/";
 
   templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
     undefined
@@ -51,13 +51,13 @@ export class MockContainerTemplateService implements ContainerTemplateServiceInt
 
   // --- Mocked Methods ---
 
-  getTokenTypesForContainerType = jest.fn((_type: string): string[] => []);
+  getTokenTypesForContainerType = jest.fn((): string[] => []);
 
-  deleteTemplate = jest.fn((_name: string) => Promise.resolve());
-  deleteTemplates = jest.fn((_names: string[]) => Promise.resolve());
+  deleteTemplate = jest.fn(() => Promise.resolve());
+  deleteTemplates = jest.fn(() => Promise.resolve());
 
-  postTemplateEdits = jest.fn((_template: ContainerTemplate) => Promise.resolve(true));
-  copyTemplate = jest.fn((_template: ContainerTemplate, _newName: string) => Promise.resolve(true));
+  postTemplateEdits = jest.fn(() => Promise.resolve(true));
+  copyTemplate = jest.fn(() => Promise.resolve(true));
 
-  canSaveTemplate = jest.fn((_template: ContainerTemplate): boolean => true);
+  canSaveTemplate = jest.fn((): boolean => true);
 }

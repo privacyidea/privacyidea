@@ -76,9 +76,9 @@ describe("TokenRolloverComponent", () => {
 
     fixture = TestBed.createComponent(TokenRolloverComponent);
     component = fixture.componentInstance;
-    tokenService = TestBed.inject(TokenService) as any;
-    notificationService = TestBed.inject(NotificationService) as any;
-    dialogService = TestBed.inject(DialogService) as any;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.detectChanges();
   });
 
@@ -101,7 +101,7 @@ describe("TokenRolloverComponent", () => {
     });
 
     const reloadSpy = jest.spyOn(tokenService.tokenDetailResource, "reload");
-    tokenService.enrollToken.mockReturnValue(of(mockEnrollResp) as any);
+    tokenService.enrollToken.mockReturnValue(of(mockEnrollResp as unknown as EnrollmentResponse));
 
     await component.rolloverToken();
 

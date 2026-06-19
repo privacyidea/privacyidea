@@ -30,8 +30,7 @@
       auditTooltip="Show container in audit log"
       (auditClick)="showContainerAuditLog()">
     </app-details-header>
-    <div
-      class="details-flex-layout responsive-flex-row-1310">
+    <div class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="containerDetailData()"
@@ -155,10 +154,10 @@
                 <app-edit-buttons
                   [cancelEdit]="cancelContainerEdit.bind(this)"
                   [element]="element"
-                  [isEditingInfo]="isEditingInfo"
-                  [isEditingUser]="isEditingUser"
+                  [isEditingInfo]="isEditingInfo()"
+                  [isEditingUser]="isEditingUser()"
                   [saveEdit]="saveContainerEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditing"
+                  [shouldHideEdit]="isAnyEditing()"
                   [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
               }
             </td>
@@ -219,7 +218,9 @@
                       <a
                         (click)="contentService.userSelected(element.value, element['user_realm'])"
                         (keydown.enter)="contentService.userSelected(element.value, element['user_realm'])"
-                        (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.userSelected(element.value, element['user_realm'])
+                        "
                         i18n-aria-label="{{ element.keyMap.label }} Link"
                         role="button"
                         tabindex="0">
@@ -276,10 +277,10 @@
                     <app-edit-buttons
                       [cancelEdit]="cancelContainerEdit.bind(this)"
                       [element]="element"
-                      [isEditingInfo]="isEditingInfo"
-                      [isEditingUser]="isEditingUser"
+                      [isEditingInfo]="isEditingInfo()"
+                      [isEditingUser]="isEditingUser()"
                       [saveEdit]="saveContainerEdit.bind(this)"
-                      [shouldHideEdit]="isAnyEditing"
+                      [shouldHideEdit]="isAnyEditing()"
                       [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
                   }
                 }
@@ -292,19 +293,19 @@
             mat-row></tr>
         </table>
         <app-container-details-info
-          [detailData]="containerDetailData"
-          [infoData]="infoData"
-          [isAnyEditingOrRevoked]="isAnyEditing"
-          [isEditingInfo]="isEditingInfo"
-          [isEditingUser]="isEditingUser" />
+          [detailData]="containerDetailData()"
+          [infoData]="infoData()"
+          [isAnyEditingOrRevoked]="isAnyEditing()"
+          [(isEditingInfo)]="isEditingInfo"
+          [isEditingUser]="isEditingUser()" />
         <mat-divider class="responsive-divider-1310" />
       </div>
       <div class="flex-column responsive-margin-left-1310">
-        <app-container-details-token-table [containerTokenData]="containerTokenData" />
+        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
         <div class="flex-row gap-32">
           <app-container-add-token
             [authService]="authService"
-            [showOnlyTokenNotInContainer]="showOnlyTokenNotInContainer"
+            [(showOnlyTokenNotInContainer)]="showOnlyTokenNotInContainer"
             [total]="total()"
             [pageIndex]="pageIndex()"
             [pageSize]="pageSize()"
@@ -324,8 +325,8 @@
           [containerType]="containerType()"></app-container-details-actions>
         <app-container-details-token-actions
           [containerSerial]="containerSerial()"
-          [tokenData]="containerTokenData"
-          [user]="rawUserData"></app-container-details-token-actions>
+          [tokenData]="containerTokenData()"
+          [user]="rawUserData()"></app-container-details-token-actions>
       </div>
     </div>
   </div>

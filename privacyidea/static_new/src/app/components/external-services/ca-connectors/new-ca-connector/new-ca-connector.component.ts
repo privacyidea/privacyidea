@@ -34,8 +34,10 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import {
   CaConnector,
+  CaConnectorConfigValue,
   CaConnectorService,
-  CaConnectorServiceInterface
+  CaConnectorServiceInterface,
+  CaSpecificOptionsParams
 } from "@services/ca-connector/ca-connector.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -185,28 +187,29 @@ export class NewCaConnectorComponent implements OnDestroy {
 
   private loadData(connector: CaConnector | null): void {
     const connectorData = connector?.data || {};
+    const asString = (v: CaConnectorConfigValue): string => (v === undefined || v === null || v === "" ? "" : String(v));
     this.caConnectorModel.set({
       connectorname: connector?.connectorname || "",
       type: connector?.type || "local",
-      cacert: connectorData["cacert"] || "",
-      cakey: connectorData["cakey"] || "",
-      "openssl.cnf": connectorData["openssl.cnf"] || "",
-      templates: connectorData["templates"] || "",
-      WorkingDir: connectorData["WorkingDir"] || "",
-      CSRDir: connectorData["CSRDir"] || "",
-      CertificateDir: connectorData["CertificateDir"] || "",
-      CRL: connectorData["CRL"] || "",
-      CRL_Validity_Period: connectorData["CRL_Validity_Period"] || "",
-      CRL_Overlap_Period: connectorData["CRL_Overlap_Period"] || "",
-      hostname: connectorData["hostname"] || "",
-      port: connectorData["port"] || "",
-      http_proxy: connectorData["http_proxy"] || false,
-      use_ssl: connectorData["use_ssl"] || false,
-      ssl_ca_cert: connectorData["ssl_ca_cert"] || "",
-      ssl_client_cert: connectorData["ssl_client_cert"] || "",
-      ssl_client_key: connectorData["ssl_client_key"] || "",
-      ssl_client_key_password: connectorData["ssl_client_key_password"] || "",
-      ca: connectorData["ca"] || ""
+      cacert: asString(connectorData["cacert"]),
+      cakey: asString(connectorData["cakey"]),
+      "openssl.cnf": asString(connectorData["openssl.cnf"]),
+      templates: asString(connectorData["templates"]),
+      WorkingDir: asString(connectorData["WorkingDir"]),
+      CSRDir: asString(connectorData["CSRDir"]),
+      CertificateDir: asString(connectorData["CertificateDir"]),
+      CRL: asString(connectorData["CRL"]),
+      CRL_Validity_Period: asString(connectorData["CRL_Validity_Period"]),
+      CRL_Overlap_Period: asString(connectorData["CRL_Overlap_Period"]),
+      hostname: asString(connectorData["hostname"]),
+      port: asString(connectorData["port"]),
+      http_proxy: Boolean(connectorData["http_proxy"]),
+      use_ssl: Boolean(connectorData["use_ssl"]),
+      ssl_ca_cert: asString(connectorData["ssl_ca_cert"]),
+      ssl_client_cert: asString(connectorData["ssl_client_cert"]),
+      ssl_client_key: asString(connectorData["ssl_client_key"]),
+      ssl_client_key_password: asString(connectorData["ssl_client_key_password"]),
+      ca: asString(connectorData["ca"])
     });
     this.caConnectorForm().reset();
   }
@@ -217,7 +220,7 @@ export class NewCaConnectorComponent implements OnDestroy {
 
   loadAvailableCas(): void {
     const model = this.caConnectorModel();
-    const params = {
+    const params: CaSpecificOptionsParams = {
       hostname: model.hostname,
       port: model.port,
       use_ssl: model.use_ssl,
@@ -225,7 +228,7 @@ export class NewCaConnectorComponent implements OnDestroy {
       ssl_client_cert: model.ssl_client_cert,
       ssl_client_key: model.ssl_client_key,
       ssl_client_key_password: model.ssl_client_key_password,
-      http_proxy: model.http_proxy
+      http_proxy: String(model.http_proxy)
     };
 
     if (params.hostname && params.port) {
@@ -233,7 +236,8 @@ export class NewCaConnectorComponent implements OnDestroy {
       this.caConnectorService
         .getCaSpecificOptions("microsoft", params)
         .then((res) => {
-          this.availableCas.set(res.available_cas || []);
+          const cas = res?.["available_cas"];
+          this.availableCas.set(Array.isArray(cas) ? cas.filter((c): c is string => typeof c === "string") : []);
           this.isLoadingCas.set(false);
         })
         .catch(() => {
@@ -250,7 +254,7 @@ export class NewCaConnectorComponent implements OnDestroy {
     const type = model.type;
     const connectorname = model.connectorname;
 
-    const data: Record<string, any> = { type };
+    const data: Record<string, string | number | boolean | string[]> = { type };
 
     if (type === "local") {
       const localFields = [
@@ -302,7 +306,7 @@ export class NewCaConnectorComponent implements OnDestroy {
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

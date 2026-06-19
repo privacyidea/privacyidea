@@ -30,8 +30,8 @@ import { EditActionTabComponent } from "./edit-action-tab.component";
 })
 class MockAddedActionsListComponent {
   isEditMode = input.required<boolean>();
-  actions = input.required<any[]>();
-  actionsChange = output<any[]>();
+  actions = input.required<{ name: string; value: string | boolean }[]>();
+  actionsChange = output<{ name: string; value: string | boolean }[]>();
   actionRemove = output<string>();
 }
 
@@ -41,8 +41,8 @@ class MockAddedActionsListComponent {
   standalone: true
 })
 class MockActionSelectorComponent {
-  policy = input.required<any>();
-  actionAdd = output<any>();
+  policy = input.required<PolicyDetail>();
+  actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
 }
 
 class MockDialogService {}
@@ -51,14 +51,14 @@ describe("EditActionTabComponent", () => {
   let component: EditActionTabComponent;
   let fixture: ComponentFixture<EditActionTabComponent>;
 
-  const mockPolicy: PolicyDetail = {
+  const mockPolicy = {
     name: "test-policy",
     scope: "admin",
     action: {
       "action-1": "value-1",
       "action-2": "value-2"
     }
-  } as any;
+  } as unknown as PolicyDetail;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

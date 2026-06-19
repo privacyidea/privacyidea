@@ -56,7 +56,7 @@
         [labels]="containerTypesTitleCase()"
         [initialValue]="template().container_type"
         [allowDeselect]="true"
-        (onSelect)="editTemplate({ container_type: $event })"
+        (selected)="editTemplate({ container_type: $event })"
         [disabled]="hasToken()" />
     </div>
   </div>

@@ -22,11 +22,11 @@ import { MatDialogContent } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-export type MessageDialogData = {
+export interface MessageDialogData {
   title: string | null;
   texts: string[];
   icon?: string;
-};
+}
 
 @Component({
   selector: "app-simple-dialog",

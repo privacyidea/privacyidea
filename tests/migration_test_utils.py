@@ -25,6 +25,10 @@ def is_postgres(db_url: str = DB_URL) -> bool:
     return db_url.startswith("postgresql")
 
 
+def is_oracle(db_url: str = DB_URL) -> bool:
+    return db_url.startswith("oracle")
+
+
 def get_alembic_cfg(db_url: str = DB_URL) -> AlembicConfig:
     migrations_dir = str(pathlib.Path(__file__).parent.parent / "privacyidea" / "migrations")
     cfg = AlembicConfig(str(pathlib.Path(migrations_dir) / "alembic.ini"))
@@ -35,7 +39,12 @@ def get_alembic_cfg(db_url: str = DB_URL) -> AlembicConfig:
 
 def get_seed_path(revision: str = START_REVISION, db_url: str = DB_URL) -> pathlib.Path:
     """Return the seed file path for the given pinned revision and active dialect."""
-    dialect = "postgresql" if is_postgres(db_url) else "mariadb"
+    if is_postgres(db_url):
+        dialect = "postgresql"
+    elif is_oracle(db_url):
+        dialect = "oracle"
+    else:
+        dialect = "mariadb"
     # Seeds follow the naming convention:  seed_v<ver>_<revision>_<dialect>.sql
     # Glob for any file that matches the revision + dialect regardless of version tag.
     matches = list(SEED_SQL_DIR.glob(f"*_{revision}_{dialect}.sql"))
@@ -53,6 +62,25 @@ def drop_all_tables(engine) -> None:
         if is_postgres(str(engine.url)):
             conn.execute(text("DROP SCHEMA public CASCADE"))
             conn.execute(text("CREATE SCHEMA public"))
+        elif is_oracle(str(engine.url)):
+            # Oracle has no schema-wide DROP. CASCADE CONSTRAINTS lets us drop
+            # tables regardless of FK order, and PURGE skips the recyclebin so
+            # dropped tables (and the system-generated ISEQ$$ sequences backing
+            # any IDENTITY columns) are removed immediately rather than lingering
+            # as BIN$… objects. Objects were created with unquoted (case-folded,
+            # upper-case) names; the inspector returns them lower-cased, so drop
+            # unquoted to let Oracle fold them back.
+            inspector = sa_inspect(engine)
+            for table in inspector.get_table_names():
+                conn.execute(text(f"DROP TABLE {table} CASCADE CONSTRAINTS PURGE"))
+            # Identity-column sequences (ISEQ$$_*) are system-generated and are
+            # dropped with their table — never drop them directly (ORA-32794).
+            for seq in inspector.get_sequence_names():
+                if seq.lower().startswith("iseq$$"):
+                    continue
+                conn.execute(text(f"DROP SEQUENCE {seq}"))
+            # Sweep any recyclebin remnants from earlier non-PURGE drops.
+            conn.execute(text("PURGE RECYCLEBIN"))
         else:
             conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
             for table in sa_inspect(engine).get_table_names():
@@ -178,11 +206,22 @@ class MigrationTestBase:
         Insert *rows* into *table* using dialect-aware quoting.
 
         Column names that need quoting (e.g. ``Key``, ``Value``) are quoted
-        with double-quotes on Postgres and back-ticks on MariaDB/MySQL.
+        with double-quotes on Postgres/Oracle and back-ticks on MariaDB/MySQL.
+
+        Oracle is special: it folds unquoted identifiers to upper case, so an
+        all-lower-case column (created unquoted) must be referenced unquoted to
+        match, while a mixed-case column like ``Key`` (created quoted) must be
+        quoted exactly. Quoting an all-lower-case name would look for a
+        lower-case column that does not exist (ORA-00904).
         """
         if not rows:
             return
-        quote = (lambda c: f'"{c}"') if is_postgres() else (lambda c: f"`{c}`")
+        if is_postgres():
+            quote = lambda c: f'"{c}"'
+        elif is_oracle():
+            quote = lambda c: f'"{c}"' if any(ch.isupper() for ch in c) else c
+        else:
+            quote = lambda c: f"`{c}`"
         cols = list(rows[0].keys())
         col_list = ", ".join(quote(c) for c in cols)
         placeholders = ", ".join(f":{c}" for c in cols)

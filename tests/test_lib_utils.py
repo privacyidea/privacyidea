@@ -752,7 +752,8 @@ class UtilsTestCase(MyTestCase):
         class RequestMock():
             user_agent = UserAgentMock()
             path = "/validate/check"
-            url_root = ""
+            # A spoofed Host header must never end up in the {url} tag (CWE-640).
+            url_root = "http://attacker.example/"
 
         recipient = {"givenname": "<b>Sömeone</b>"}
         dict1 = create_tag_dict(request=RequestMock(), recipient=recipient)
@@ -763,6 +764,16 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(dict2["ua_string"], "&lt;b&gt;hello world&lt;/b&gt;")
         self.assertEqual(dict2["action"], "/validate/check")
         self.assertEqual(dict2["recipient_givenname"], "&lt;b&gt;Sömeone&lt;/b&gt;")
+
+        # The {url} tag is built only from the trusted PI_BASE_URL, never the request
+        # Host header. Unconfigured -> empty (not the spoofed request host).
+        self.app.config.pop("PI_BASE_URL", None)
+        self.assertEqual(create_tag_dict(request=RequestMock())["url"], "")
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+        try:
+            self.assertEqual(create_tag_dict(request=RequestMock())["url"], "https://pi.example.com")
+        finally:
+            self.app.config.pop("PI_BASE_URL", None)
 
     def test_32_allowed_serial_numbers(self):
         self.assertTrue(check_serial_valid("TOTP12345"))

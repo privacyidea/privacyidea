@@ -25,7 +25,8 @@
           <mat-icon class="small-icon">add_circle_outline</mat-icon>
           <h4
             class="margin-0"
-            i18n>Add New Conditions
+            i18n>
+            Add New Conditions
           </h4>
         </div>
       </mat-card-header>
@@ -67,7 +68,9 @@
                     [actionOnEnter]="true"
                     [toolTipText]="addToolTip"
                     (newConditionValue)="onConditionValueToBeAddedChange($event.conditionName, $event.conditionValue)"
-                    (actionButtonClicked)="onConditionValueChange($event.conditionName, $event.conditionValue)"></app-event-condition-list>
+                    (actionButtonClicked)="
+                      onConditionValueChange($event.conditionName, $event.conditionValue)
+                    "></app-event-condition-list>
                 </div>
               </mat-tab>
             }
@@ -84,7 +87,8 @@
           <mat-icon class="small-icon">settings</mat-icon>
           <h4
             class="margin-0"
-            i18n>Configured Conditions
+            i18n>
+            Configured Conditions
           </h4>
         </div>
       </mat-card-header>

@@ -36,28 +36,25 @@ import {
 describe("PeriodicTaskService", () => {
   let service: PeriodicTaskService;
   let httpTestingController: HttpTestingController;
-  let authMock: MockAuthService;
   let contentMock: MockContentService;
-  let notificationMock: MockNotificationService;
+  let notifyMock: MockNotificationService;
 
   beforeEach(() => {
-    authMock = new MockAuthService();
-    contentMock = new MockContentService();
-    notificationMock = new MockNotificationService();
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         PeriodicTaskService,
-        { provide: AuthService, useValue: authMock },
-        { provide: ContentService, useValue: contentMock },
-        { provide: NotificationService, useValue: notificationMock }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     });
 
     service = TestBed.inject(PeriodicTaskService);
     httpTestingController = TestBed.inject(HttpTestingController);
+    contentMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentMock.routeUrl.set("/configuration/periodictasks");
   });
 
@@ -86,7 +83,7 @@ describe("PeriodicTaskService", () => {
     const req = httpTestingController.expectOne((r) => r.url.includes("periodictask/enable/4"));
     req.flush(null, { status: 401, statusText: "Enabling periodic task not allowed" });
     const result = await promise;
-    expect(notificationMock.error).toHaveBeenCalledWith("Failed to enable periodic task!");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to enable periodic task!");
     expect(service.periodicTasksResource.reload).toHaveBeenCalled();
     expect(result).toBeUndefined();
   });
@@ -107,7 +104,7 @@ describe("PeriodicTaskService", () => {
     const req = httpTestingController.expectOne((r) => r.url.includes("periodictask/disable/6"));
     req.flush(null, { status: 500, statusText: "Server Error" });
     const result = await promise;
-    expect(notificationMock.error).toHaveBeenCalledWith("Failed to disable periodic task!");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to disable periodic task!");
     expect(service.periodicTasksResource.reload).toHaveBeenCalled();
     expect(result).toBeUndefined();
   });
@@ -125,7 +122,7 @@ describe("PeriodicTaskService", () => {
   it("should handle error when deleting a periodic task", (done) => {
     service.deletePeriodicTask(4).subscribe({
       error: () => {
-        expect(notificationMock.error).toHaveBeenCalledWith("Failed to delete periodic task. fail");
+        expect(notifyMock.error).toHaveBeenCalledWith("Failed to delete periodic task. fail");
         done();
       }
     });
@@ -146,7 +143,7 @@ describe("PeriodicTaskService", () => {
   it("should handle error when saving a periodic task", (done) => {
     service.savePeriodicTask(EMPTY_PERIODIC_TASK).subscribe((response) => {
       expect(response).toBeUndefined();
-      expect(notificationMock.error).toHaveBeenCalledWith("Failed to save periodic task. failure message");
+      expect(notifyMock.error).toHaveBeenCalledWith("Failed to save periodic task. failure message");
       done();
     });
     const req = httpTestingController.expectOne((r) => r.url.includes("/periodictask/") && r.method === "POST");
@@ -176,7 +173,7 @@ describe("PeriodicTaskService", () => {
     );
     reqs[0].flush(null, { status: 500, statusText: "Server Error" });
     // Do NOT flush the rest, as they are canceled
-    expect(notificationMock.error).toHaveBeenCalledWith("Failed to fetch module options.");
+    expect(notifyMock.error).toHaveBeenCalledWith("Failed to fetch module options.");
     expect(service.moduleOptions()).toEqual({});
   });
 

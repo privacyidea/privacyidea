@@ -111,8 +111,10 @@
                   <app-copyable [copyText]="element[column.key]">
                     <a
                       (click)="onClickResolver(element[column.key]); $event.preventDefault()"
+                      (keydown.enter)="onClickResolver(element[column.key]); $event.preventDefault()"
                       attr.aria-label="{{ column.label }} Link"
-                      role="button">
+                      role="button"
+                      tabindex="0">
                       {{ element[column.key] }}
                     </a>
                   </app-copyable>

@@ -112,10 +112,10 @@
           <app-edit-buttons
             [cancelEdit]="toggleInfoEdit.bind(this)"
             [element]="element"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser"
+            [isEditingInfo]="isEditingInfo()"
+            [isEditingUser]="isEditingUser()"
             [saveEdit]="saveInfo.bind(this)"
-            [shouldHideEdit]="isAnyEditingOrRevoked"
+            [shouldHideEdit]="isAnyEditingOrRevoked()"
             [toggleEdit]="toggleInfoEdit.bind(this)" />
         }
       </td>

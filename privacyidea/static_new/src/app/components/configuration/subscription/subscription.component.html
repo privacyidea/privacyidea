@@ -35,20 +35,19 @@
     </button>
     <input
       #fileInput
-      (change)="upload($event); fileInput.value=''"
-      style="display:none"
+      (change)="upload($event); fileInput.value = ''"
+      style="display: none"
       type="file" />
   </div>
 
   <div class="subscriptions-grid">
     @for (subscription of subscriptions(); track subscription.application) {
       <div class="subscription-details">
-
         <div class="margin-left-16 flex-row ali-center gap-16">
           <h4>Application:</h4>
           <h4 class="application-color">{{ subscription.application }}</h4>
 
-          @if (authService.actionAllowed('delete')) {
+          @if (authService.actionAllowed("delete")) {
             <button
               (click)="deleteSubscription(subscription.application)"
               class="action-button-delete-secondary button-width-s"
@@ -88,15 +87,17 @@
           <span> {{ subscription.level }} </span>
 
           <strong i18n>Users:</strong>
-          <span> {{ subscription.num_users }} ({{ subscription.active_users }}
-            <span i18n>distinct users with active tokens</span>, {{ subscription.num_users - subscription.active_users }}
-            <span i18n>remaining</span>) </span>
+          <span>
+            {{ subscription.num_users }} ({{ subscription.active_users }}
+            <span i18n>distinct users with active tokens</span>,
+            {{ subscription.num_users - subscription.active_users }} <span i18n>remaining</span>)
+          </span>
 
           <strong i18n>Tokens:</strong>
-          <span> {{ subscription.num_tokens }} ({{ subscription.active_tokens }}
-            <span i18n>active, assigned tokens</span>, {{ subscription.num_tokens - subscription.active_tokens }}
-            <span i18n>remaining</span>)
-        </span>
+          <span>
+            {{ subscription.num_tokens }} ({{ subscription.active_tokens }} <span i18n>active, assigned tokens</span>,
+            {{ subscription.num_tokens - subscription.active_tokens }} <span i18n>remaining</span>)
+          </span>
 
           <strong i18n>Clients:</strong>
           <span> {{ subscription.num_clients }} </span>
@@ -115,20 +116,21 @@
             </mat-card-header>
             <mat-card-content>
               {{ subscription.for_name }}
-              <br>
+              <br />
               <a [href]="'mailto:' + subscription.for_email">
                 {{ subscription.for_email }}
               </a>
-              <br>
+              <br />
               {{ subscription.for_address }}
-              <br>
+              <br />
               {{ subscription.for_phone }}
-              <br>
+              <br />
               <a
                 [href]="subscription.for_url"
-                target="_blank">{{ subscription.for_url }}
+                target="_blank"
+                >{{ subscription.for_url }}
               </a>
-              <br>
+              <br />
               {{ subscription.for_comment }}
             </mat-card-content>
           </mat-card>
@@ -139,18 +141,19 @@
             </mat-card-header>
             <mat-card-content>
               {{ subscription.by_name }}
-              <br>
+              <br />
               <a
                 [href]="subscription.by_url"
-                target="_blank">{{ subscription.by_url }}
+                target="_blank"
+                >{{ subscription.by_url }}
               </a>
-              <br>
+              <br />
               {{ subscription.by_address }}
-              <br>
+              <br />
               <a [href]="'mailto:' + subscription.by_email">
                 {{ subscription.by_email }}
               </a>
-              <br>
+              <br />
               {{ subscription.by_phone }}
             </mat-card-content>
           </mat-card>

@@ -24,7 +24,7 @@ import { ViewActionColumnComponent } from "./view-action-column.component";
 describe("ViewActionColumnComponent", () => {
   let component: ViewActionColumnComponent;
   let fixture: ComponentFixture<ViewActionColumnComponent>;
-  let mockPolicyService: any;
+  let mockPolicyService: { getDetailsOfAction: jest.Mock };
 
   beforeEach(async () => {
     mockPolicyService = {
