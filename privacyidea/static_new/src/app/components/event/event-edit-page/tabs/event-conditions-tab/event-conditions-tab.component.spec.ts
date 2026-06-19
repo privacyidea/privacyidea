@@ -113,6 +113,21 @@ describe("EventConditionsTabComponent", () => {
     expect(component.conditionsToBeAdded()["condX"]).toBe("valX");
   });
 
+  it("should join array values on onConditionValueToBeAddedChange", () => {
+    component.conditionsToBeAdded.set({});
+    component.onConditionValueToBeAddedChange("condX", ["v1", "v2"]);
+    expect(component.conditionsToBeAdded()["condX"]).toBe("v1,v2");
+  });
+
+  it("should join array values on onConditionValueChange", () => {
+    component.selectedConditions.set({});
+    const emitSpy = jest.fn();
+    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, unknown>>;
+    component.onConditionValueChange("condY", ["a", "b"]);
+    expect(component.selectedConditions()).toEqual({ condY: "a,b" });
+    expect(emitSpy).toHaveBeenCalledWith({ condY: "a,b" });
+  });
+
   it("should update selectedConditions and emit newConditions on onConditionValueChange", () => {
     component.selectedConditions.set({ condY: "oldVal" });
     const emitSpy = jest.fn();
