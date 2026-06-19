@@ -2334,7 +2334,7 @@ class APITokenTestCase(MyApiTestCase):
         # realm-scoped check actually runs.
         token.add_user(User(login="cornelius", realm=self.realm1))
         r = check_serial_pass(token.token.serial, "pin")
-        self.assertEqual(r[0], False)
+        self.assertFalse(r[0])
         transaction_id = r[1].get("transaction_id")
 
         # GET per-serial - must succeed because no admin policy is defined.
@@ -2342,8 +2342,8 @@ class APITokenTestCase(MyApiTestCase):
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
-            self.assertEqual(res.json["result"]["value"]["count"], 1)
+            self.assertEqual(200, res.status_code, res.data)
+            self.assertEqual(1, res.json["result"]["value"]["count"])
 
         # DELETE per-transaction - same: default-allow must apply.
         with self.app.test_request_context(
@@ -2351,19 +2351,19 @@ class APITokenTestCase(MyApiTestCase):
                 method='DELETE',
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(200, res.status_code, res.data)
             self.assertTrue(res.json["result"]["value"]["status"])
 
         # GET per-user - same idiom in the user endpoint must also default-allow.
         r = check_serial_pass(token.token.serial, "pin")
-        self.assertEqual(r[0], False)
+        self.assertFalse(r[0])
         with self.app.test_request_context('/token/challenges/',
                                            query_string={"user": "cornelius",
                                                          "realm": self.realm1},
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(200, res.status_code, res.data)
 
         delete_policy("chalresp_19b")
         remove_token("CHAL19B")

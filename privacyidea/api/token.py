@@ -115,6 +115,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
+from ..lib.tokenclass import TokenClass
 from ..lib.user import get_user_from_param, User
 
 token_blueprint = Blueprint('token_blueprint', __name__)
@@ -480,9 +481,9 @@ def get_challenges_api(serial=None):
     if serial and "*" not in serial:
         # Missing serial here is a real 404: the resource the admin
         # addressed (the token) doesn't exist.
-        token_obj = get_one_token(serial=serial)
-        _check_admin_realm_for_token(token_obj, PolicyAction.GETCHALLENGES,
-                                     "view challenges for")
+        token = get_one_token(serial=serial)
+        _check_admin_allowed_for_token_owner(token, PolicyAction.GETCHALLENGES,
+                                             "view challenges for")
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
                                          transaction_id=transaction_id,
                                          sortdir=sdir, page=page, psize=psize)
@@ -490,16 +491,20 @@ def get_challenges_api(serial=None):
     return send_result(challenges)
 
 
-def _check_admin_realm_for_token(token_obj, action: str, verb: str):
+def _check_admin_allowed_for_token_owner(token: TokenClass, action: str, verb: str):
     """
-    Re-scope an admin action to the realm of a known token's owner.
+    Re-scope an admin action to the owner of a known token.
+
+    The match is against the token owner's full user object (realm,
+    resolver and username), not the realm alone, so all three dimensions
+    of an admin policy scope are honored.
 
     The ``@prepolicy(check_base_action, ...)`` decorator only confirms the
     admin has ``action`` granted *somewhere*. This helper additionally
     matches the same action against the target token's owning user so
     that an admin whose ``getchallenges`` / ``cancelchallenge`` policy is
-    scoped to realm A cannot operate on a token whose owner lives in
-    realm B.
+    scoped to user/realm/resolver A cannot operate on a token whose owner
+    lives in B.
 
     Token resolution is the caller's job because the two callsites differ:
     GET wants ``ResourceNotFoundError`` on a missing serial (the addressed
@@ -507,17 +512,22 @@ def _check_admin_realm_for_token(token_obj, action: str, verb: str):
     tolerate it (the orphaned cache entry is exactly what needs cleanup).
 
     Tokens with no owner (e.g. usernameless passkey challenges) cannot
-    be realm-checked; the base-action policy is the only gate for them.
+    be scope-checked; the base-action policy is the only gate for them.
+
+    :param token: The token whose owner the admin action is re-scoped to.
+    :param action: The policy action to match against the owner.
+    :param verb: Human-readable verb for the error message (e.g. "view
+        challenges for").
     """
-    if token_obj.user is None:
+    if token.user is None:
         return
     # .allowed() honors privacyidea's default-allow-when-no-policies semantic.
     # .policies() truthiness alone would invert that into default-deny and
     # break factory-fresh installs that have no admin-scope policies defined.
-    if not Match.admin(g, action=action, user_obj=token_obj.user).allowed():
+    if not Match.admin(g, action=action, user_obj=token.user).allowed():
         raise PolicyError(f"You are not allowed to {verb} token "
-                          f"{token_obj.token.serial!s} "
-                          f"(realm {token_obj.user.realm!s}).")
+                          f"{token.token.serial!s} "
+                          f"(realm {token.user.realm!s}).")
 
 
 @token_blueprint.route('/challenges/transaction/<transaction_id>', methods=['DELETE'])
@@ -561,11 +571,11 @@ def cancel_challenge_api(transaction_id):
     # missing token here is not a reason to refuse the cancel.
     for s in serials:
         try:
-            token_obj = get_one_token(serial=s)
+            token = get_one_token(serial=s)
         except ResourceNotFoundError:
             continue
-        _check_admin_realm_for_token(token_obj, PolicyAction.CANCELCHALLENGE,
-                                     "cancel challenges for")
+        _check_admin_allowed_for_token_owner(token, PolicyAction.CANCELCHALLENGE,
+                                             "cancel challenges for")
     result = cancel_challenge(transaction_id)
     # Build a single audit entry now that the realm check passed and the
     # cancel result is known. The `serial` column is 40 chars by default -

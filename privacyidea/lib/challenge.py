@@ -111,10 +111,13 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     Each retrieved page will also contain a "next" and a "prev", indicating
     the next or previous page. If either does not exist, it is None.
 
-    When Redis is active and a serial or transaction_id filter is provided,
-    results are served from the cache.  Unfiltered requests always go to the
-    database (Redis has no concept of "list all"); when Redis is active those
-    results will be empty since challenges are not written to the DB.
+    When Redis is active, exact serial or transaction_id filters are served
+    from the cache. Wildcard filters (e.g. ``*foo*`` from the admin "List
+    Challenges" view) and unfiltered list-all cannot be answered by key
+    lookups and fall through to the database, which is empty under the cache,
+    so the aggregate listing is intentionally degraded (the WebUI shows a
+    banner). Per-token / per-user listing works via the cache path here and
+    via get_challenges_for_user.
 
     :param serial: The serial of the token
     :param transaction_id: The transaction_id of the challenge
@@ -130,14 +133,8 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
-    # When Redis is active and a specific exact-match filter is given, serve
-    # from cache. Wildcard filters like "*foo*" (sent by the admin "List
-    # Challenges" view) and unfiltered list-all cannot be answered by Redis
-    # key lookups, so they fall through to the DB path - which, when caching is
-    # enabled and challenges only live in Redis, returns an empty list. That is
-    # by design: the aggregate listing is degraded under the cache (the WebUI
-    # shows a banner saying so), while per-token / per-user listing works via
-    # the exact-serial cache path here and via get_challenges_for_user.
+    # Serve exact serial / transaction_id filters from the cache; wildcard and
+    # list-all queries fall through to the DB path (see docstring).
     def _is_exact(v):
         return v is not None and "*" not in v
 

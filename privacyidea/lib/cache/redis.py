@@ -144,7 +144,7 @@ def _redact_url(url: str) -> str:
         return "<redis-url>"
 
 
-def _build_client(url: str):
+def _build_client(url: str) -> "redis_lib.Redis":
     """
     Construct, ping, and version-check a Redis client. Raises on failure.
 
@@ -622,33 +622,33 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
     # `pi_redis_challenge_reads_total{outcome="hit|miss|unavailable"}`
     # so the cache hit ratio can drive an SLI. The three states map
     # directly to the three return paths below.
-    r = redis_client_for_feature("challenges")
-    if r is None:
+    redis_client = redis_client_for_feature("challenges")
+    if redis_client is None:
         return CacheState.UNAVAILABLE
     try:
         if transaction_id:
             # The txn hash holds one field per token serial. HGETALL returns
             # every challenge in the transaction - all triggered tokens.
-            raws = r.hgetall(_TXN_KEY.format(transaction_id))
-            if not raws:
+            raw_payloads = redis_client.hgetall(_TXN_KEY.format(transaction_id))
+            if not raw_payloads:
                 return CacheState.MISS
-            candidates = [_deserialize(raw) for raw in raws.values()]
+            candidates = [_deserialize(raw) for raw in raw_payloads.values()]
             candidates = [c for c in candidates if c is not None]
             if not candidates:
                 # Hash held only corrupt payloads - can't trust the cache here.
                 return CacheState.UNAVAILABLE
 
         elif serial:
-            txn_ids = r.smembers(_SERIAL_KEY.format(serial))
-            if not txn_ids:
+            transaction_ids = redis_client.smembers(_SERIAL_KEY.format(serial))
+            if not transaction_ids:
                 return CacheState.MISS
             # This serial's challenge in each of its transactions is the
             # field named after the serial. One HGET per transaction.
-            pipe = r.pipeline()
-            for tid in txn_ids:
-                pipe.hget(_TXN_KEY.format(tid), serial)
-            raws = pipe.execute()
-            candidates = [_deserialize(raw) for raw in raws if raw is not None]
+            pipe = redis_client.pipeline()
+            for txn_id in transaction_ids:
+                pipe.hget(_TXN_KEY.format(txn_id), serial)
+            raw_payloads = pipe.execute()
+            candidates = [_deserialize(raw) for raw in raw_payloads if raw is not None]
             candidates = [c for c in candidates if c is not None]
             if not candidates:
                 # Set membership pointed at hash fields that have all expired
