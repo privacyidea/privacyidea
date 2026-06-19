@@ -44,21 +44,42 @@ class AuthEventType(str, Enum):
     normalizes ``str()``/f-string output to the value across all supported versions (3.10-3.14); without it the
     output would differ between versions.
     """
+    # An authorization policy blocked the authentication
+    NOT_AUTHORIZED = "NOT_AUTHORIZED"
+    # Wrong user store password
     PASSWORD_FAIL = "PASSWORD_FAIL"
+    # Wrong token pin
     PIN_FAIL = "PIN_FAIL"
+    # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
     TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
+    # Correct first factor (pin / password), but the second factor failed, e.g. wrong otp
+    # Note: We also log this for a failed passkey authentication, even thought we can not be sure what exactly failed
+    # there.
     MFA_FAIL = "MFA_FAIL"
+    # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
+    # User is known but has no tokens assigned, or the requested token does not exist.
     NO_TOKEN = "NO_TOKEN"
+    # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
     NO_USABLE_TOKEN = "NO_USABLE_TOKEN"
+    # Authentication fully succeeded.
     LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    # Challenge answered correctly, but the token requires at least one further challenge.
     CHALLENGE_CONTINUED = "CHALLENGE_CONTINUED"
+    # A challenge was created and sent to the client (push notification, trigger_challenge, passkey, …).
     CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
+    # Push challenge approved on the smartphone (out-of-band, signature verified).
     CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
+    # Challenge response is wrong, expired, or the transaction_id is unknown.
     CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
+    # Push challenge explicitly rejected on the smartphone.
     CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+    # a successful authentication triggered the enrollment of a new token type to complete the authentication
     ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
+    # cancelling the enrollment failed (unknown or already-consumed transaction_id).
     ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
+    # Default fallback, if no auth event was set somewhere, but authentication failed we log this to have failed attempt
+    UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
     def __str__(self) -> str:
         return self.value
@@ -66,6 +87,7 @@ class AuthEventType(str, Enum):
 
 # Request-level precedence, highest signal first.
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
+    AuthEventType.NOT_AUTHORIZED,
     AuthEventType.ENROLLMENT_TRIGGERED,
     AuthEventType.LOGIN_SUCCESS,
     AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
@@ -80,7 +102,8 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.PIN_FAIL,
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
-    AuthEventType.USER_UNKNOWN
+    AuthEventType.USER_UNKNOWN,
+    AuthEventType.UNKNOWN_FAIL_REASON
 ]
 
 # Precedence rank of each event.

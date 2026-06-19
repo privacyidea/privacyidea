@@ -59,35 +59,18 @@ absent, malformed or expired.
 This API is distinct from :ref:`rest_validate`, which checks OTP
 values for end users.
 """
-from flask_babel import _
 import copy
-
-from flask import (Blueprint, request, current_app, g)
-import jwt
-from functools import wraps
+import logging
+import threading
+import traceback
 from datetime import (datetime, timezone)
+from functools import wraps
+
+import jwt
+from flask import (Blueprint, request, current_app, g)
+from flask_babel import _
 
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
-from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.audit import getAudit
-from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
-                                  db_admin_exists)
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
-                                                        evaluate_lockout_policies,
-                                                        evaluate_access_decision, AccessDecision,
-                                                        RestrictionStatus)
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.framework import get_app_config_value
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge
-from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.user import User, split_user, log_used_user
-from privacyidea.lib.policy import PolicyClass, REMOTE_USER
-from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
-from privacyidea.lib.token import get_tokens
-from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings, hide_specific_error_message)
@@ -97,13 +80,30 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            disabled_token_types, auth_timelimit, load_challenge_text)
 from privacyidea.api.lib.utils import (send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication)
+from privacyidea.lib.audit import getAudit
+from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
+                                  db_admin_exists)
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
+from privacyidea.lib.conditional_access.engine import (get_user_lockout, get_ip_block,
+                                                       evaluate_lockout_policies,
+                                                       evaluate_access_decision, AccessDecision,
+                                                       RestrictionStatus)
+from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
+from privacyidea.lib.crypto import geturandom, init_hsm
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
+from privacyidea.lib.event import event, EventConfiguration
+from privacyidea.lib.fido2.challenge import verify_fido2_challenge
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.policies.helper import get_jwt_validity
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
+from privacyidea.lib.realm import get_default_realm, realm_is_defined
+from privacyidea.lib.token import get_tokens
+from privacyidea.lib.user import User, split_user, log_used_user
 from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
-from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
-from privacyidea.lib.event import event, EventConfiguration
-import logging
-import traceback
-import threading
 
 log = logging.getLogger(__name__)
 
@@ -236,6 +236,7 @@ def _binding_restriction(lockout: RestrictionStatus | None, ip_block: Restrictio
     :return: ``"lock"`` or ``"block"`` for the restriction to report, or ``None``
         if neither is in force
     """
+
     def _remaining(state: RestrictionStatus | None) -> float | None:
         if not state:
             return None
@@ -448,6 +449,8 @@ def get_auth_token():
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
+                               transaction_id=transaction_id)
             raise AuthError(
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
@@ -642,7 +645,12 @@ def get_auth_token():
 
     # Authentication log
     if auth_event_type is None:
-        auth_event_type = AuthEventType.LOGIN_SUCCESS if (admin_auth or user_auth) else AuthEventType.PASSWORD_FAIL
+        # Nothing along the way classified this request. A successful login that no handler labelled is a
+        # LOGIN_SUCCESS; an unclassified failure is logged as UNKNOWN_FAIL_REASON (not PASSWORD_FAIL, which would
+        # misattribute it to a wrong userstore password and skew password-failure lockout counters), mirroring
+        # /validate/check.
+        auth_event_type = AuthEventType.LOGIN_SUCCESS if (
+                    admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
                        transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"))
 

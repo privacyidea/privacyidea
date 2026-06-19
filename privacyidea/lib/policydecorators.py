@@ -411,6 +411,8 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
     # Only execute wrapped function if auth is not temporarily locked for the user
     if result:
         result, reply_dict = wrapped_function(user, password, options)
+    else:
+        reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
 
     return result, reply_dict
 
@@ -462,7 +464,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 if not res:
                     reply_dict["message"] = (f"The last successful authentication was "
                                              f"{token.get_tokeninfo(PolicyAction.LASTAUTH)}. It is too long ago.")
-
+                    reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
                     g.audit_object.add_policy(next(iter(last_auth_dict.values())))
 
             # Set the last successful authentication, if res still true

@@ -79,7 +79,8 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
-from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional
+from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional, log_authentication
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -2803,6 +2804,7 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user)
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

@@ -1211,6 +1211,11 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            event_id = getattr(g, "auth_log_event_id", None)
+            if event_id:
+                reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
+            else:
+                log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

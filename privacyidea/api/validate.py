@@ -686,6 +686,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context["details"]["message"] = _(
                 "Last authentication policy check failed for token {serial}").format(
                 serial=token.get_serial())
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
             return
 
         if not token.is_active():
@@ -803,10 +804,13 @@ def _handle_standard_auth(context: dict):
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
             raise
 
-        # A policy decorator (passthru, passonnouser, authcache, accept-no-token) can
-        # accept the login without the token layer classifying it -> LOGIN_SUCCESS.
-        if success and details.get(AUTH_EVENT_TYPE_KEY) is None:
-            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+        if details.get(AUTH_EVENT_TYPE_KEY) is None:
+            if success:
+                # A policy decorator (passthru, passonnouser, authcache, accept-no-token) can
+                # accept the login without the token layer classifying it -> LOGIN_SUCCESS.
+                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+            else:
+                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.UNKNOWN_FAIL_REASON
 
     context["result"] = success
     context["details"] = details

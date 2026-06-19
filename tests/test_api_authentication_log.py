@@ -23,7 +23,7 @@ import mock
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_tokens, get_one_token, revoke_token
 from privacyidea.lib.user import User
@@ -158,6 +158,30 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
                                         user=User("doesnotexist", self.realm1))
+
+    def test_pass_on_no_token_logs_login_success(self):
+        # A user with no tokens accepted by PASSONNOTOKEN is a successful login.
+        remove_token(self.serial)
+        set_policy("passonnotoken", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
+        try:
+            body = self._check({"user": self.username, "pass": "anypassword"})
+            self.assertTrue(body["result"]["value"], body)
+        finally:
+            delete_policy("passonnotoken")
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user)
+
+    def test_passthru_logs_login_success(self):
+        # PASSTHRU=userstore: a user with no tokens who supplies the correct userstore password is accepted.
+        remove_token(self.serial)
+        set_policy("authlog_passthru", scope=SCOPE.AUTH, action=f"{PolicyAction.PASSTHRU}=userstore")
+        try:
+            body = self._check({"user": self.username, "pass": "test"})
+            self.assertTrue(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_passthru")
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user)
 
     # --- Normal auth: a single request with PIN/password + OTP concatenated ---
 
@@ -450,6 +474,65 @@ class ValidateCheckAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL],
                                         user=self.user, serials={self.serial})
 
+    # --- Authorization policies (NOT_AUTHORIZED) ---
+
+    def test_authmaxfail_logs_not_authorized(self):
+        # AUTHMAXFAIL=2/20s: after 2 failed auths the next request is blocked before credentials are checked.
+        set_policy("authlog_maxfail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/20s")
+        try:
+            for _ in range(2):
+                self._check({"user": self.username, "pass": "wrongpin000000"})
+            self._clear_log()
+            body = self._check({"user": self.username, "pass": f"{self.pin}755224"})
+            self.assertFalse(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_maxfail")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+
+    def test_authmaxsuccess_logs_not_authorized(self):
+        # AUTHMAXSUCCESS=1/20s: after 1 successful auth the next request is blocked before credentials are checked.
+        set_policy("authlog_maxsuccess", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=1/20s")
+        try:
+            body = self._check({"user": self.username, "pass": f"{self.pin}755224"})
+            self.assertTrue(body["result"]["value"], body)
+            self._clear_log()
+            body = self._check({"user": self.username, "pass": f"{self.pin}287082"})
+            self.assertFalse(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_maxsuccess")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+
+    def test_lastauth_exceeded_logs_not_authorized(self):
+        # LASTAUTH=1d: a token whose last successful auth was 2 days ago is blocked -> NOT_AUTHORIZED.
+        set_policy("authlog_lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
+        try:
+            token = get_one_token(serial=self.serial)
+            token.add_tokeninfo(PolicyAction.LASTAUTH,
+                                (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)).isoformat())
+            body = self._check({"user": self.username, "pass": f"{self.pin}755224"})
+            self.assertFalse(body["result"]["value"], body)
+        finally:
+            delete_policy("authlog_lastauth")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={self.serial})
+
+    def test_is_authorized_deny_logs_not_authorized(self):
+        # authorized=deny_access: a successful auth is reclassified to NOT_AUTHORIZED and the response is 400.
+        set_policy("authlog_deny", scope=SCOPE.AUTHZ,
+                   action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.username, "pass": f"{self.pin}755224"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+        finally:
+            delete_policy("authlog_deny")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
+
 
 class MultiTokenAuthLogTestCase(AuthLogTestCase):
     """Authentication-log coverage for a user that owns more than one token."""
@@ -539,6 +622,100 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
         self.assertTrue(body["result"]["value"]["token"], body)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS])
+
+    def test_no_token_logs_no_token(self):
+        # A resolvable user without a usable token -> NO_TOKEN (set in check_user_pass)
+        remove_token(self.serial)
+        self._enable_privacyidea_login()
+        try:
+            self._login(f"{self.pin}123456", status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.NO_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=self.user)
+
+    def test_disabled_token_logs_no_usable_token(self):
+        # The user has a token, but it is disabled, so it cannot be used -> NO_USABLE_TOKEN
+        token = get_one_token(serial=self.serial)
+        token.enable(False)
+        self._enable_privacyidea_login()
+        try:
+            self._login(f"{self.pin}123456", status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user)
+
+    def test_maxfail_token_logs_no_usable_token(self):
+        # The user's only token has its fail counter exceeded, so it cannot be used -> NO_USABLE_TOKEN.
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() + 1):
+            token.inc_failcount()
+        self._enable_privacyidea_login()
+        try:
+            self._login(f"{self.pin}123456", status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user)
+
+    def test_revoked_token_logs_no_usable_token(self):
+        # All of the user's tokens are revoked: check_user_pass raises TOKEN_LOCKED before it can classify the
+        # request. /auth keeps its generic "Wrong credentials" (4031) response, but the log must still record
+        # NO_USABLE_TOKEN.
+        revoke_token(self.serial)
+        self._enable_privacyidea_login()
+        try:
+            with self.app.test_request_context('/auth', method='POST',
+                                               data={"username": self.username, "realm": self.realm1,
+                                                     "password": f"{self.pin}755224"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+                self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user)
+
+    def test_unknown_user_logs_user_unknown(self):
+        # An unknown user on /auth fails with the generic "Wrong credentials" (4031), but the log must record
+        # USER_UNKNOWN (high-signal for credential stuffing), as /validate/check does.
+        self._enable_privacyidea_login()
+        try:
+            self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "whatever"}, status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
+        assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN],
+                                        user=User("doesnotexist", self.realm1))
+
+    def test_pass_on_no_token_logs_login_success(self):
+        # A user with no tokens accepted by PASSONNOTOKEN is a successful login.
+        remove_token(self.serial)
+        self._enable_privacyidea_login()
+        set_policy("passonnotoken", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
+        try:
+            body = self._login("anypassword")
+            self.assertTrue(body["result"]["value"]["token"], body)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("passonnotoken")
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user)
+
+    def test_auth_passthru_logs_login_success(self):
+        # PASSTHRU=userstore: a user with no tokens who supplies the correct userstore password is accepted.
+        self._enable_privacyidea_login()
+        remove_token(self.serial)
+        set_policy("authlog_passthru", scope=SCOPE.AUTH, action=f"{PolicyAction.PASSTHRU}=userstore")
+        try:
+            body = self._login("test")
+            self.assertTrue(body["result"]["value"]["token"], body)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_passthru")
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user)
 
     # --- Normal auth (LOGINMODE=privacyIDEA, login with PIN+OTP) ---
 
@@ -708,6 +885,23 @@ class AuthEndpointAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
                                         user=self.user, serials={self.serial},
                                         transaction_id=transaction_id)
+
+    # --- Authorization policies (NOT_AUTHORIZED) ---
+
+    def test_auth_authmaxfail_logs_not_authorized(self):
+        # AUTHMAXFAIL=2/1m on /auth: after 2 failed logins the auth_timelimit prepolicy blocks the next request.
+        self._enable_privacyidea_login()
+        set_policy("authlog_maxfail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m")
+        try:
+            for _ in range(2):
+                self._login("wrongpin000000", status=401)
+            self._clear_log()
+            self._login(f"{self.pin}755224", status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_maxfail")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user)
 
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
