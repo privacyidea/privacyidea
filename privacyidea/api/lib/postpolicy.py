@@ -258,8 +258,8 @@ def hide_version(request, response):
             try:
                 from privacyidea.lib.policy import PolicyClass
                 g.policy_object = PolicyClass()
-            except Exception:
-                return response
+            except Exception:  # pragma: no cover
+                return response  # pragma: no cover
         if not hasattr(g, "client_ip") or not g.client_ip:
             from privacyidea.lib.utils import get_client_ip
             try:

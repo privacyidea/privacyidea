@@ -471,7 +471,6 @@ def before_request():
 @info_blueprint.after_request
 @jwtauth.after_request
 @login_blueprint.after_request
-@healthz_blueprint.after_request
 @postrequest(sign_response, request=request)
 def after_request(response):
     """

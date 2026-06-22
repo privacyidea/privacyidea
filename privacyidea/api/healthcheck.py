@@ -39,6 +39,7 @@ from flask import Blueprint, current_app, g, request
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
+from privacyidea.api.lib.postpolicy import hide_version
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, Error
@@ -54,20 +55,18 @@ log = logging.getLogger(__name__)
 healthz_blueprint = Blueprint('healthz_blueprint', __name__)
 
 
-@healthz_blueprint.before_request
-def before_healthz_request():
-    """Set up minimal g attributes required by after_request handlers."""
-    if not getattr(g, 'policy_object', None):
-        try:
-            g.policy_object = PolicyClass()
-        except Exception:
-            g.policy_object = None
-    if not getattr(g, 'client_ip', None):
-        try:
-            override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
-        except Exception:
-            override_client = None
-        g.client_ip = get_client_ip(request, override_client)
+@healthz_blueprint.after_request
+def after_healthz_request(response):
+    """Lightweight after_request for health endpoints.
+
+    Unlike the shared after_request in before_after.py this does NOT sign the
+    response (no private-key I/O, no crypto).  Health probes are anonymous,
+    high-frequency, and must stay as cheap as possible.  We only apply
+    cache-control headers and the optional version stripping.
+    """
+    response.headers['Cache-Control'] = 'no-cache'
+    response = hide_version(request, response)
+    return response
 
 
 @healthz_blueprint.route('/', methods=['GET'])
