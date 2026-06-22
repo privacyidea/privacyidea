@@ -21,6 +21,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { APP_PREFIX, localeBaseHref } from "@core/locale";
 
 interface UiLocale {
   /** Canonical locale code; matches the built bundle folder and the /app/v2/<code>/ path. */
@@ -50,6 +51,9 @@ const UI_LOCALES: UiLocale[] = [
   { code: "uk", label: "Українська" }
 ];
 
+/** Locale codes that may appear as the first path segment of an /app/v2/ URL. */
+const LOCALE_CODES = new Set(UI_LOCALES.map((locale) => locale.code));
+
 @Component({
   selector: "app-language-switcher",
   standalone: true,
@@ -74,16 +78,21 @@ export class LanguageSwitcherComponent {
     document.cookie = `${LOCALE_COOKIE_NAME}=${code}; path=/; max-age=31536000; SameSite=Lax`;
     // later: when authenticated, also persist this to /user/settings as the user's
     // language preference and reconcile the cookie from it on login.
-    // Each locale is a separately compiled bundle at its own base href, so applying a
-    // language is always a full-page navigation to that bundle (English has no subpath).
-    // Preserve the current in-app route (plus query/hash) so the user stays on the same
-    // page instead of bouncing through the root -> login redirect after the reload. The
-    // base path for a locale mirrors baseHrefFactory: English has no locale subpath.
-    const baseFor = (locale: string) => (locale === "en" ? "/app/v2/" : `/app/v2/${locale}/`);
-    const currentBase = baseFor(this.currentLocale);
+    // Each locale is a separately compiled bundle, so applying a language is a full-page
+    // navigation. Preserve the current in-app route (plus query/hash) so the user stays on
+    // the same page instead of bouncing through the root -> login redirect after the reload.
+    this.navigate(localeBaseHref(code) + this.currentSubPath() + window.location.search + window.location.hash);
+  }
+
+  /** The in-app route after the /app/v2/ prefix and any leading locale segment. */
+  private currentSubPath(): string {
     const path = window.location.pathname;
-    const subPath = path.startsWith(currentBase) ? path.slice(currentBase.length) : "";
-    this.navigate(baseFor(code) + subPath + window.location.search + window.location.hash);
+    if (!path.startsWith(APP_PREFIX)) {
+      return "";
+    }
+    const rest = path.slice(APP_PREFIX.length);
+    const firstSegment = rest.split("/", 1)[0];
+    return LOCALE_CODES.has(firstSegment) ? rest.slice(firstSegment.length + 1) : rest;
   }
 
   protected navigate(url: string): void {

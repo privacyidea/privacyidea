@@ -156,12 +156,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   node = computed(() => this.configService.config()?.show_node);
 
   constructor() {
-    // Authenticated users are redirected away from the login route by loginGuard, so the
-    // form only needs setup for the unauthenticated case.
-    if (!this.authService.isAuthenticated()) {
-      this.showOtpField.set(false);
-    }
-
+    // Authenticated users are redirected away from the login route by loginGuard.
     effect(() => {
       if (this.showOtpField()) {
         // Use a timeout to ensure the element is rendered before trying to focus it.
@@ -234,9 +229,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   }
 
   logout(): void {
+    // AuthService.logout() already clears stored session keys and navigates to /login.
     this.authService.logout();
-    this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]);
   }
 
   resetLogin(): void {

@@ -116,6 +116,7 @@ describe("LoginComponent", () => {
     it("should redirect to token wizard", () => {
       authService.authData.set({
         ...authService.authData()!,
+        role: "user",
         token_wizard: true
       });
       component.onSubmit();
@@ -126,6 +127,7 @@ describe("LoginComponent", () => {
     it("should redirect to token wizard first if token and container wizard are enabled", () => {
       authService.authData.set({
         ...authService.authData()!,
+        role: "user",
         token_wizard: true,
         container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
@@ -137,6 +139,7 @@ describe("LoginComponent", () => {
     it("should redirect to container wizard if only container wizard is enabled", () => {
       authService.authData.set({
         ...authService.authData()!,
+        role: "user",
         token_wizard: false,
         container_wizard: { enabled: true, type: "smartphone", registration: false, template: null }
       });
@@ -470,14 +473,10 @@ describe("LoginComponent", () => {
   });
 
   describe("logout", () => {
-    it("should remove token, logout, and navigate to login", async () => {
+    it("delegates to authService.logout() (which clears storage and navigates)", () => {
       const authServiceSpy = jest.spyOn(authService, "logout");
       component.logout();
-      fixture.whenStable().then(() => {
-        expect(localService.removeData).toHaveBeenCalledWith("bearer_token");
-        expect(authServiceSpy).toHaveBeenCalled();
-        expect(router.navigate).toHaveBeenCalledWith(["login"]);
-      });
+      expect(authServiceSpy).toHaveBeenCalled();
     });
   });
 

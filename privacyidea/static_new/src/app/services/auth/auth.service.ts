@@ -364,13 +364,16 @@ export class AuthService implements AuthServiceInterface {
       return;
     }
     const jwt = this.decodeJwtPayload(token);
-    if (!jwt || (jwt.exp && jwt.exp * 1000 <= Date.now())) {
-      this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
-      this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+    // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
+    if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
+      this.clearStoredSession();
       return;
     }
     const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
     if (!storedAuthData) {
+      // A token without its auth data cannot be restored; clear it so getHeaders() does not
+      // keep sending a bearer token for a session the UI considers logged out.
+      this.clearStoredSession();
       return;
     }
     try {
@@ -378,8 +381,13 @@ export class AuthService implements AuthServiceInterface {
       this.jwtData.set(jwt);
       this.authenticationAccepted.set(true);
     } catch {
-      this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+      this.clearStoredSession();
     }
+  }
+
+  private clearStoredSession(): void {
+    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
+    this.localService.removeData(AUTH_DATA_STORAGE_KEY);
   }
 
   getHeaders(): HttpHeaders {
@@ -422,8 +430,7 @@ export class AuthService implements AuthServiceInterface {
     this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
-    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
-    this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+    this.clearStoredSession();
     this.authenticationAccepted.set(false);
     this.router.navigate(["login"]);
   }

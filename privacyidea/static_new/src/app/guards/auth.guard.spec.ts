@@ -180,13 +180,19 @@ describe("resolveLandingPath", () => {
 
   const landingPath = () => resolveLandingPath(authMock as unknown as AuthServiceInterface);
 
-  it("prioritizes the token wizard", () => {
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, token_wizard: true });
+  it("sends a self-service user with the token wizard enabled to the token wizard", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", token_wizard: true });
     expect(landingPath()).toBe(ROUTE_PATHS.TOKENS_WIZARD);
   });
 
   it("falls back to the tokens page for a regular admin", () => {
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", token_wizard: false });
+    expect(landingPath()).toBe(ROUTE_PATHS.TOKENS);
+  });
+
+  it("does NOT send a non-self-service user to a wizard route even when a wizard is enabled", () => {
+    // Wizard routes exist only for self-service; routing an admin there would loop via '**'.
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "admin", token_wizard: true });
     expect(landingPath()).toBe(ROUTE_PATHS.TOKENS);
   });
 });

@@ -96,4 +96,11 @@ describe("LanguageSwitcherComponent", () => {
     create("en").switchTo("de");
     expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
   });
+
+  it("does not double the locale prefix when a foreign locale segment is in the URL", () => {
+    // e.g. the English bundle served in place at a non-English URL after a missing-bundle fallback.
+    window.history.replaceState({}, "", "/app/v2/zh-Hant/tokens");
+    create("en").switchTo("de");
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
+  });
 });

@@ -30,13 +30,19 @@ export const selfServiceMatch: CanMatchFn = () => inject(AuthService).role() ===
  * navigation: wizards first, then tokens or containers depending on role and permissions.
  */
 export function resolveLandingPath(authService: AuthServiceInterface): string {
-  if (authService.tokenWizard()) {
-    return ROUTE_PATHS.TOKENS_WIZARD;
+  // The wizard routes live only in the self-service route tree (selfServiceMatch), so only a
+  // self-service user may be sent there. Directing any other role to a wizard path produces a
+  // URL with no matching route -> '**' -> /login -> loginGuard -> the same path -> redirect loop.
+  if (authService.role() === "user") {
+    if (authService.tokenWizard()) {
+      return ROUTE_PATHS.TOKENS_WIZARD;
+    }
+    if (authService.containerWizard().enabled) {
+      return ROUTE_PATHS.CONTAINERS_WIZARD;
+    }
+    return ROUTE_PATHS.TOKENS;
   }
-  if (authService.containerWizard().enabled) {
-    return ROUTE_PATHS.CONTAINERS_WIZARD;
-  }
-  if (authService.role() === "user" || authService.anyTokenActionAllowed()) {
+  if (authService.anyTokenActionAllowed()) {
     return ROUTE_PATHS.TOKENS;
   }
   if (authService.anyContainerActionAllowed()) {

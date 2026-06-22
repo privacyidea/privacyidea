@@ -43,8 +43,8 @@ describe("AppComponent", () => {
         provideRouter(routes),
         { provide: AuthService, useClass: MockAuthService },
         {
-          provode: AuthGuard,
-          useValue: { canActivate: () => true, canMatch: () => true }
+          provide: AuthGuard,
+          useValue: { canActivate: () => true, canActivateChild: () => true, canMatch: () => true }
         },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: SessionTimerService, useClass: MockSessionTimerService }
@@ -85,6 +85,26 @@ describe("AppComponent", () => {
 
     expect(timer.resetTimer).toHaveBeenCalled();
     expect(timer.startTimer).toHaveBeenCalled();
+  });
+
+  it("arms the session timer at bootstrap when a session was restored (already authenticated)", () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+
+    auth.isAuthenticated.set(true);
+    TestBed.createComponent(AppComponent);
+
+    expect(timer.initialTimerStart).toHaveBeenCalled();
+  });
+
+  it("does not arm the session timer at bootstrap when unauthenticated", () => {
+    const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+
+    auth.isAuthenticated.set(false);
+    TestBed.createComponent(AppComponent);
+
+    expect(timer.initialTimerStart).not.toHaveBeenCalled();
   });
 
   describe("Routing", () => {

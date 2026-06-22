@@ -113,6 +113,11 @@ export class AppComponent {
   lastSessionReset = 0;
 
   constructor() {
+    // A session restored on bootstrap (e.g. after a language-switch reload) must arm the
+    // session timer here, because initialTimerStart() otherwise only runs on interactive login.
+    if (this.authService.isAuthenticated()) {
+      this.sessionTimerService.initialTimerStart();
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _welcomeInit = inject(WelcomeDialogService);
     /** Uncomment to enable subscription expiry dialog
