@@ -43,7 +43,6 @@ import { ClearButtonComponent } from "@components/shared/clear-button/clear-butt
 import { environment } from "@env/environment";
 import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
-import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
 import { ValidateService, ValidateServiceInterface, WebAuthnSignRequest } from "@services/validate/validate.service";
@@ -77,7 +76,6 @@ const NO_REALM_SENTINEL = "-";
 export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
@@ -304,8 +302,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
     if (isAuthenticationSuccessful(response)) {
-      // Successful auth -> log in
-      this.localService.saveData("bearer_token", response.result.value.token);
+      // Successful auth -> log in. AuthService.authenticate() (which every login path goes
+      // through) has already persisted the token and auth data, so nothing to store here.
       this.showOtpField.set(false);
       this.sessionTimerService.initialTimerStart();
       this.router.navigateByUrl(resolveLandingPath(this.authService)).then();

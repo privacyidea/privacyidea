@@ -382,7 +382,6 @@ describe("LoginComponent", () => {
       component.passkeyLogin();
 
       expect(validateService.authenticatePasskey).toHaveBeenCalled();
-      expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "passkey-token");
       expect(router.navigateByUrl).toHaveBeenCalledWith("/tokens");
     });
 
@@ -468,7 +467,6 @@ describe("LoginComponent", () => {
         password: "",
         transaction_id: "tx-push-success"
       });
-      expect(localService.saveData).toHaveBeenCalledWith("bearer_token", "push-token");
     });
   });
 
