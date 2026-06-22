@@ -254,12 +254,19 @@ def hide_version(request, response):
         # Ensure g.policy_object and g.client_ip are available even when
         # before_request failed early (e.g. due to AuthError before the
         # policy object was created).
-        if not getattr(g, "policy_object", None):
-            from privacyidea.lib.policy import PolicyClass
-            g.policy_object = PolicyClass()
-        if not getattr(g, "client_ip", None):
+        if not hasattr(g, "policy_object"):
+            try:
+                from privacyidea.lib.policy import PolicyClass
+                g.policy_object = PolicyClass()
+            except Exception:
+                return response
+        if not hasattr(g, "client_ip") or not g.client_ip:
             from privacyidea.lib.utils import get_client_ip
-            g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+            try:
+                override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
+            except Exception:
+                override_client = None
+            g.client_ip = get_client_ip(request, override_client)
         try:
             policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
                 write_to_audit_log=False)
