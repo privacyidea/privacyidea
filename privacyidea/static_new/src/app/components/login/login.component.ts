@@ -38,7 +38,7 @@ import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/i
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { resolveLandingPath } from "@app/guards/auth.guard";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
 import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
@@ -156,10 +156,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   node = computed(() => this.configService.config()?.show_node);
 
   constructor() {
-    if (this.authService.isAuthenticated()) {
-      console.warn("User is already logged in.");
-      this.notificationService.warning($localize`User is already logged in.`);
-    } else {
+    // Authenticated users are redirected away from the login route by loginGuard, so the
+    // form only needs setup for the unauthenticated case.
+    if (!this.authService.isAuthenticated()) {
       this.showOtpField.set(false);
     }
 
@@ -315,17 +314,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       this.localService.saveData("bearer_token", response.result.value.token);
       this.showOtpField.set(false);
       this.sessionTimerService.initialTimerStart();
-      if (this.authService.tokenWizard()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
-      } else if (this.authService.containerWizard().enabled) {
-        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
-      } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-      } else if (this.authService.anyContainerActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
-      } else {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-      }
+      this.router.navigateByUrl(resolveLandingPath(this.authService)).then();
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {

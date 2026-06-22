@@ -22,7 +22,7 @@ import { Injectable, Signal, WritableSignal, computed, inject, signal } from "@a
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
-import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
@@ -336,6 +336,40 @@ export class AuthService implements AuthServiceInterface {
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
+  constructor() {
+    this.restoreSession();
+  }
+
+  /**
+   * Rehydrate the session from storage on bootstrap so a full page reload (e.g. switching
+   * the UI language, which loads a different locale bundle) does not drop an active login.
+   * The token and the auth data are restored only while the JWT is still valid; an
+   * expired or corrupt session is cleared instead.
+   */
+  private restoreSession(): void {
+    const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
+    if (!token) {
+      return;
+    }
+    const jwt = this.decodeJwtPayload(token);
+    if (!jwt || (jwt.exp && jwt.exp * 1000 <= Date.now())) {
+      this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
+      this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+      return;
+    }
+    const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
+    if (!storedAuthData) {
+      return;
+    }
+    try {
+      this.authData.set(JSON.parse(storedAuthData) as AuthData);
+      this.jwtData.set(jwt);
+      this.authenticationAccepted.set(true);
+    } catch {
+      this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+    }
+  }
+
   getHeaders(): HttpHeaders {
     return new HttpHeaders({
       "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""
@@ -359,6 +393,7 @@ export class AuthService implements AuthServiceInterface {
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
+            this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(value));
           }
         }),
         catchError((error) => {
@@ -376,6 +411,7 @@ export class AuthService implements AuthServiceInterface {
     this.authData.set(null);
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
+    this.localService.removeData(AUTH_DATA_STORAGE_KEY);
     this.authenticationAccepted.set(false);
     this.router.navigate(["login"]);
   }

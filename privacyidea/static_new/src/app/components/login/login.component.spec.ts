@@ -92,7 +92,7 @@ describe("LoginComponent", () => {
   });
 
   describe("when already logged in", () => {
-    it("should warn and open a snack bar on initialization", () => {
+    it("does not warn (loginGuard redirects authenticated users away from the login route)", () => {
       authService.isAuthenticated.set(true);
       const warn = jest.spyOn(console, "warn").mockImplementation();
 
@@ -100,8 +100,8 @@ describe("LoginComponent", () => {
       const loggedInFixture = TestBed.createComponent(LoginComponent);
       loggedInFixture.detectChanges();
 
-      expect(notificationService.warning).toHaveBeenCalledWith("User is already logged in.");
-      expect(warn).toHaveBeenCalledWith("User is already logged in.");
+      expect(notificationService.warning).not.toHaveBeenCalledWith("User is already logged in.");
+      expect(warn).not.toHaveBeenCalledWith("User is already logged in.");
 
       warn.mockRestore();
     });

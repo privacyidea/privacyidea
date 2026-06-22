@@ -76,7 +76,14 @@ export class LanguageSwitcherComponent {
     // language preference and reconcile the cookie from it on login.
     // Each locale is a separately compiled bundle at its own base href, so applying a
     // language is always a full-page navigation to that bundle (English has no subpath).
-    this.navigate(code === "en" ? "/app/v2/" : `/app/v2/${code}/`);
+    // Preserve the current in-app route (plus query/hash) so the user stays on the same
+    // page instead of bouncing through the root -> login redirect after the reload. The
+    // base path for a locale mirrors baseHrefFactory: English has no locale subpath.
+    const baseFor = (locale: string) => (locale === "en" ? "/app/v2/" : `/app/v2/${locale}/`);
+    const currentBase = baseFor(this.currentLocale);
+    const path = window.location.pathname;
+    const subPath = path.startsWith(currentBase) ? path.slice(currentBase.length) : "";
+    this.navigate(baseFor(code) + subPath + window.location.search + window.location.hash);
   }
 
   protected navigate(url: string): void {

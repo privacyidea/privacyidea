@@ -20,7 +20,6 @@ import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
 
 export interface PiResponse<Value, Detail = unknown> {
@@ -108,17 +107,12 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
 })
 export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
 
   title = "privacyidea-webui";
   lastSessionReset = 0;
 
   constructor() {
-    if (this.authService.isAuthenticated()) {
-      console.warn("User is already logged in.");
-      this.notificationService.warning("User is already logged in.");
-    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _welcomeInit = inject(WelcomeDialogService);
     /** Uncomment to enable subscription expiry dialog

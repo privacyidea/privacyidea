@@ -44,8 +44,9 @@ describe("LanguageSwitcherComponent", () => {
   };
 
   beforeEach(() => {
-    // Clear the locale cookie between tests.
+    // Clear the locale cookie and reset the URL to a known root between tests.
     document.cookie = `${LOCALE_COOKIE_NAME}=; path=/; max-age=0`;
+    window.history.replaceState({}, "", "/");
   });
 
   afterEach(() => {
@@ -82,5 +83,17 @@ describe("LanguageSwitcherComponent", () => {
     create("de").switchTo("de");
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(document.cookie).not.toContain(`${LOCALE_COOKIE_NAME}=de`);
+  });
+
+  it("preserves the current in-app route and query string when switching", () => {
+    window.history.replaceState({}, "", "/app/v2/de/tokens/details/OATH0001?foo=bar");
+    create("de").switchTo("fr");
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/fr/tokens/details/OATH0001?foo=bar");
+  });
+
+  it("maps the route correctly when leaving English (no locale subpath)", () => {
+    window.history.replaceState({}, "", "/app/v2/tokens");
+    create("en").switchTo("de");
+    expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/tokens");
   });
 });

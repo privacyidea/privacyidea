@@ -64,7 +64,7 @@ describe("AppComponent", () => {
     expect(fixture.componentInstance.title).toBe("privacyidea-webui");
   });
 
-  it("shows snackbar when user already authenticated", () => {
+  it("does not warn when the user is already authenticated (e.g. session restored after reload)", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
     const note = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
@@ -72,7 +72,7 @@ describe("AppComponent", () => {
 
     TestBed.createComponent(AppComponent).detectChanges();
 
-    expect(note.warning).toHaveBeenCalledWith("User is already logged in.");
+    expect(note.warning).not.toHaveBeenCalled();
   });
 
   it("resets & restarts timer on user interaction", () => {
@@ -104,11 +104,20 @@ describe("AppComponent", () => {
       await Promise.resolve();
     });
 
-    it("navigates to /login", async () => {
+    it("navigates to /login when unauthenticated", async () => {
+      auth.isAuthenticated.set(false);
       await router.navigate(["/login"]);
       jest.runOnlyPendingTimers();
       await Promise.resolve();
       expect(location.path()).toBe("/login");
+    });
+
+    it("redirects an authenticated user away from /login to the landing page", async () => {
+      auth.isAuthenticated.set(true);
+      await router.navigate(["/login"]);
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+      expect(location.path()).toBe("/tokens");
     });
 
     it("navigates to /token", async () => {
@@ -118,7 +127,8 @@ describe("AppComponent", () => {
       expect(location.path()).toBe("/tokens");
     });
 
-    it("redirects unknown routes to /login", async () => {
+    it("redirects unknown routes to /login when unauthenticated", async () => {
+      auth.isAuthenticated.set(false);
       await router.navigate(["/does-not-exist"]);
       jest.runOnlyPendingTimers();
       await Promise.resolve();

@@ -22,6 +22,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { Router } from "@angular/router";
 import { AppComponent } from "@app/app.component";
+import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { VersioningService } from "@services/version/version.service";
@@ -490,6 +491,51 @@ describe("AuthService", () => {
         rights: ["totp_2step=allow", "totp_2step"]
       } as unknown as AuthData);
       expect(authService.check2Step("totp")).toBe("allow");
+    });
+  });
+
+  describe("session rehydration (restoreSession)", () => {
+    const makeJwt = (expSecondsFromNow: number): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + expSecondsFromNow,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    const restore = () => (authService as unknown as { restoreSession: () => void }).restoreSession();
+
+    it("restores an active session from a valid stored token and auth data", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t", role: "admin", username: "admin" }));
+      restore();
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.role()).toBe("admin");
+    });
+
+    it("does not restore and clears storage when the token is expired", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(-3600));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t" }));
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(mockLocal.removeData).toHaveBeenCalledWith(BEARER_TOKEN_STORAGE_KEY);
+      expect(mockLocal.removeData).toHaveBeenCalledWith(AUTH_DATA_STORAGE_KEY);
+    });
+
+    it("stays unauthenticated when no token is stored", () => {
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+
+    it("stays unauthenticated when the token is valid but auth data is missing", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
     });
   });
 });
