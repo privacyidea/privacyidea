@@ -581,6 +581,7 @@ angular.module("privacyideaApp").controller("userController", [
       $location.path("/user/list");
     }
 
+    $scope.usersLoading = false;
     $scope._getUsers = function (live_search) {
       if (
         !$rootScope.search_on_enter ||
@@ -604,14 +605,24 @@ angular.module("privacyideaApp").controller("userController", [
         params.attributes =
           "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
         params.include_custom_attributes = false;
-        UserFactory.getUsers(params, function (data) {
-          //debug: console.log("success");
-          // The backend returns the complete list of users; pagination is done client-side.
-          $scope._allUsers = data.result.value;
-          $scope.userCount = $scope._allUsers.length;
-          $scope._applyPageSlice();
-          //debug: console.log($scope.userlist);
-        });
+        $scope.usersLoading = true;
+        UserFactory.getUsers(
+          params,
+          function (data) {
+            // The backend returns the complete list of users; pagination is done client-side.
+            $scope._allUsers = data.result.value || [];
+            $scope.userCount = $scope._allUsers.length;
+            $scope._applyPageSlice();
+            $scope.usersLoading = false;
+          },
+          function (error) {
+            // Cancelled in-flight requests come through here too
+            // (status -1); a follow-up call will re-set the flag.
+            if (error && error.status !== -1) {
+              $scope.usersLoading = false;
+            }
+          },
+        );
       }
     };
 
@@ -651,6 +662,11 @@ angular.module("privacyideaApp").controller("userController", [
 
     $scope.changeRealm = function () {
       $scope.params = { page: 1 };
+      // Clear stale entries so the user immediately sees that the
+      // previous realm's data is gone while the new search runs.
+      $scope.userlist = [];
+      $scope._allUsers = [];
+      $scope.userCount = 0;
       $scope._getUsers();
     };
 
