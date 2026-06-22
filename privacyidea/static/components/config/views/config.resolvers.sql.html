@@ -42,7 +42,8 @@
 
             <div class="col-sm-3">
                 <input id="server" class="form-control"
-                       ng-model="params.Server" required
+                       ng-model="params.Server"
+                       ng-required="params.Driver !== 'sqlite'"
                        placeholder="127.0.0.1"/>
             </div>
             <label for="port" class="col-sm-3 control-label"
