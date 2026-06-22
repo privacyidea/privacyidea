@@ -16,15 +16,72 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
-Assertion helpers for the conditional-access authentication log, shared across
-test modules. Registered for pytest assert-rewriting in tests/conftest.py so the
-plain ``assert`` statements still produce rich failure diffs.
+Shared test support for the conditional-access authentication log: the :class:`AuthLogTestCase` base fixture and the
+``assert_authentication_log*`` helpers, used across the authentication-log test modules. Registered for pytest
+assert-rewriting in tests/conftest.py so the plain ``assert`` statements still produce rich failure diffs.
 """
 from collections import Counter
 
+from flask import Response
+
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
+from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User
-from privacyidea.models import AuthenticationLog
+from privacyidea.models import AuthenticationLog, db
+from .base import MyApiTestCase
+
+
+class AuthLogTestCase(MyApiTestCase):
+    """
+    Shared fixture for the authentication-log tests: a resolvable user ``cornelius`` with one HOTP token, a clean
+    authentication log around each test, and thin request/challenge helpers. Subclassed by the recording-behaviour
+    tests (one subclass per authenticating endpoint) and by the /authenticationlog/ API tests.
+    """
+
+    serial = "AUTHLOG_HOTP"
+    second_serial = "AUTHLOG_HOTP2"
+    username = "cornelius"
+    pin = "pin"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User(self.username, self.realm1)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": self.pin},
+                   user=self.user)
+        self._clear_log()
+
+    def tearDown(self) -> None:
+        for serial in (self.serial, self.second_serial):
+            if get_tokens(serial=serial):
+                remove_token(serial)
+        self._clear_log()
+        super().tearDown()
+
+    @staticmethod
+    def _clear_log() -> None:
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+    @staticmethod
+    def _enable_challenge_response() -> None:
+        set_policy("authlog_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+
+    def _add_second_token(self, pin: str) -> None:
+        # A second HOTP token for the same user, sharing the first token's OTP key.
+        init_token({"serial": self.second_serial, "type": "hotp", "otpkey": self.otpkey, "pin": pin},
+                   user=self.user)
+
+    def _post(self, path: str, data: dict, headers: dict | None = None) -> Response:
+        with self.app.test_request_context(path, method='POST', data=data, headers=headers or {}):
+            return self.app.full_dispatch_request()
+
+    def _check(self, data: dict, headers: dict | None = None) -> dict:
+        # /validate/check convenience for tests that inspect the body directly; always HTTP 200.
+        response = self._post('/validate/check', data, headers)
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json
 
 
 class AuthLogEntries(dict):
