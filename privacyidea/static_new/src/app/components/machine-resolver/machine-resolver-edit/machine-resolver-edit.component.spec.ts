@@ -23,10 +23,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, convertToParamMap, ParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService } from "@services/auth/auth.service";
 import { MachineResolver, MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { BehaviorSubject, of } from "rxjs";
@@ -46,6 +48,7 @@ describe("MachineResolverEditComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let dialog: LocalMockMatDialog;
   let router: Router;
+  let authServiceMock: MockAuthService;
   let paramMap$: BehaviorSubject<ParamMap>;
 
   async function setup(name: string | null): Promise<void> {
@@ -59,6 +62,7 @@ describe("MachineResolverEditComponent", () => {
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: MatDialog, useValue: dialog },
         {
           provide: Router,
@@ -72,6 +76,7 @@ describe("MachineResolverEditComponent", () => {
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     router = TestBed.inject(Router);
     fixture.detectChanges();
   }
@@ -144,18 +149,46 @@ describe("MachineResolverEditComponent", () => {
       fixture.detectChanges();
     });
 
-    it("loads the selected machine resolver", () => {
+    it("loads the selected machine resolver read-only", () => {
       expect(component.isEditMode()).toBe(true);
       expect(component.currentMachineResolver().resolvername).toBe("hosts1");
       expect(component.isEdited()).toBe(false);
+      expect(component.isEditing()).toBe(false);
+      expect(component.fieldsEditable()).toBe(false);
     });
 
-    it("posts an update and navigates back on save", async () => {
+    it("startEditing makes the fields editable", () => {
+      component.startEditing();
+      expect(component.isEditing()).toBe(true);
+      expect(component.fieldsEditable()).toBe(true);
+    });
+
+    it("gates the edit toggle behind the mresolverwrite right", () => {
+      authServiceMock.actionAllowed.mockReturnValue(false);
+      expect(component.authService.actionAllowed("mresolverwrite")).toBe(false);
+      authServiceMock.actionAllowed.mockReturnValue(true);
+      expect(component.authService.actionAllowed("mresolverwrite")).toBe(true);
+    });
+
+    it("posts an update and stays on the details page on save", async () => {
+      component.startEditing();
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/etc/hosts" } as never);
       const saved = await component.saveMachineResolver();
       expect(saved).toBe(true);
       expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
-      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(component.isEditing()).toBe(false);
+    });
+
+    it("onCancel discards changes and exits edit mode without navigating", () => {
+      component.startEditing();
+      component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
+      expect(component.isEdited()).toBe(true);
+      dialog.result$ = of("discard");
+      component.onCancel();
+      expect(component.isEditing()).toBe(false);
+      expect(component.isEdited()).toBe(false);
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
   });
 });

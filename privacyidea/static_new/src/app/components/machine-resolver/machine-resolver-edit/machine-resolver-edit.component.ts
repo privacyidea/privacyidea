@@ -32,6 +32,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
   MachineResolver,
@@ -62,6 +63,7 @@ import { lastValueFrom } from "rxjs";
 })
 export class MachineResolverEditComponent implements OnInit, OnDestroy {
   readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
@@ -81,6 +83,8 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
 
   readonly selectedName = signal<string>("");
   readonly isEditMode = computed(() => this.selectedName() !== "");
+  readonly isEditing = signal(false);
+  readonly fieldsEditable = computed(() => !this.isEditMode() || this.isEditing());
 
   readonly originalMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverEditComponent.machineResolverDefault));
   readonly currentMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverEditComponent.machineResolverDefault));
@@ -135,6 +139,10 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+  }
+
+  startEditing(): void {
+    this.isEditing.set(true);
   }
 
   onResolvernameChange(newName: string) {
@@ -193,13 +201,17 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
       return false;
     }
     this.originalMachineResolver.set(deepCopy(current));
-    this.navigateBack();
+    if (this.isEditMode()) {
+      this.isEditing.set(false);
+    } else {
+      this.navigateBack();
+    }
     return true;
   }
 
   onCancel(): void {
     if (!this.isEdited()) {
-      this.navigateBack();
+      this.exitEditOrNavigate();
       return;
     }
     this.dialogService
@@ -218,14 +230,22 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
             if (!this.canSaveMachineResolver()) return;
             await this.saveMachineResolver();
           } else if (result === "discard") {
-            this.originalMachineResolver.set(deepCopy(this.currentMachineResolver()));
-            this.navigateBack();
+            this.exitEditOrNavigate();
           }
         },
         error: (err) => {
           console.error("Error handling unsaved changes dialog:", err);
         }
       });
+  }
+
+  private exitEditOrNavigate(): void {
+    if (this.isEditMode()) {
+      this.currentMachineResolver.set(deepCopy(this.originalMachineResolver()));
+      this.isEditing.set(false);
+    } else {
+      this.navigateBack();
+    }
   }
 
   private navigateBack(): void {

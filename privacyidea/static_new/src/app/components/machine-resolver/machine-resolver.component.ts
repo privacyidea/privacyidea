@@ -116,7 +116,7 @@ export class MachineResolverComponent {
     this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
   }
 
-  onEditMachineResolver(machineResolver: MachineResolver): void {
+  onOpenMachineResolver(machineResolver: MachineResolver): void {
     this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(machineResolver.resolvername));
   }
 

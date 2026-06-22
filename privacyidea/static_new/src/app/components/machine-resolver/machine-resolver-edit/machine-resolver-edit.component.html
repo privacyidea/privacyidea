@@ -23,7 +23,13 @@
   <div
     appScrollToTop
     class="machine-resolver-edit-container">
-    @if (isEditMode()) {
+    @if (!isEditMode()) {
+      <h3
+        class="margin-8"
+        i18n>
+        Create Machine Resolver
+      </h3>
+    } @else if (isEditing()) {
       <h3
         class="margin-8"
         i18n>
@@ -33,28 +39,41 @@
       <h3
         class="margin-8"
         i18n>
-        Create Machine Resolver
+        Machine Resolver Details
       </h3>
     }
 
     <div class="machine-resolver-edit-body margin-left-16">
       <div class="machine-resolver-edit-controls">
-        <button
-          (click)="onCancel()"
-          class="action-button-secondary button-width-s"
-          mat-stroked-button
-          type="button">
-          <span i18n>Cancel</span>
-        </button>
-        <button
-          (click)="saveMachineResolver()"
-          [disabled]="!canSaveMachineResolver() || !isEdited()"
-          class="action-button-primary button-width-s"
-          mat-stroked-button
-          type="button">
-          <mat-icon>save</mat-icon>
-          <span i18n>Save</span>
-        </button>
+        @if (isEditMode() && !isEditing()) {
+          @if (authService.actionAllowed("mresolverwrite")) {
+            <button
+              (click)="startEditing()"
+              class="action-button-primary button-width-s"
+              mat-stroked-button
+              type="button">
+              <mat-icon>edit</mat-icon>
+              <span i18n>Edit</span>
+            </button>
+          }
+        } @else {
+          <button
+            (click)="onCancel()"
+            class="action-button-secondary button-width-s"
+            mat-stroked-button
+            type="button">
+            <span i18n>Cancel</span>
+          </button>
+          <button
+            (click)="saveMachineResolver()"
+            [disabled]="!canSaveMachineResolver() || !isEdited()"
+            class="action-button-primary button-width-s"
+            mat-stroked-button
+            type="button">
+            <mat-icon>save</mat-icon>
+            <span i18n>Save</span>
+          </button>
+        }
       </div>
 
       <div class="flex-row">
@@ -98,14 +117,14 @@
       @switch (currentMachineResolver().type) {
         @case ("hosts") {
           <app-machine-resolver-hosts-tab
-            [isEditMode]="true"
+            [isEditMode]="fieldsEditable()"
             [machineResolverData]="currentMachineResolver().data"
             (newData)="onNewData($event)"
             (newValidator)="onNewValidator($event)" />
         }
         @case ("ldap") {
           <app-machine-resolver-ldap-tab
-            [isEditMode]="true"
+            [isEditMode]="fieldsEditable()"
             [machineResolverData]="currentMachineResolver().data"
             (newData)="onNewData($event)"
             (newValidator)="onNewValidator($event)" />

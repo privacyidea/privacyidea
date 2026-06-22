@@ -74,25 +74,13 @@
           mat-cell>
           <div class="name-actions-container">
             <a
-              (click)="onEditMachineResolver(element)"
-              (keydown.enter)="onEditMachineResolver(element)"
+              (click)="onOpenMachineResolver(element)"
+              (keydown.enter)="onOpenMachineResolver(element)"
               role="button"
               tabindex="0">
               {{ element.resolvername }}
             </a>
             <div class="actions-buttons">
-              @if (authService.actionAllowed("mresolverwrite")) {
-                <button
-                  (click)="onEditMachineResolver(element)"
-                  aria-label="Edit machine resolver"
-                  i18n-aria-label
-                  mat-icon-button
-                  matTooltip="Edit machine resolver"
-                  i18n-matTooltip
-                  type="button">
-                  <mat-icon>edit</mat-icon>
-                </button>
-              }
               @if (authService.actionAllowed("mresolverdelete")) {
                 <button
                   (click)="onDeleteMachineResolver(element)"

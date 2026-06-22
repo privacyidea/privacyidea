@@ -105,8 +105,8 @@ describe("MachineResolverComponent", () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
   });
 
-  it("onEditMachineResolver navigates to the details page", () => {
-    component.onEditMachineResolver({ resolvername: "hosts1" } as MachineResolver);
+  it("onOpenMachineResolver navigates to the details page", () => {
+    component.onOpenMachineResolver({ resolvername: "hosts1" } as MachineResolver);
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts1");
   });
 
