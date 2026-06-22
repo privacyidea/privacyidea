@@ -40,7 +40,7 @@ export interface MachineResolver {
 }
 
 export interface HostsMachineResolverData extends MachineResolverData {
-  filename: string;
+  filename?: string;
   type: "hosts";
 }
 
@@ -51,21 +51,21 @@ export interface HostsMachineResolver extends MachineResolver {
 
 export interface LdapMachineResolverData extends MachineResolverData {
   type: "ldap";
-  AUTHTYPE: string;
-  TLS_VERIFY: boolean;
-  START_TLS: boolean;
-  LDAPURI: string;
-  TLS_CA_FILE: string;
-  LDAPBASE: string;
-  BINDDN: string;
-  BINDPW: string;
-  TIMEOUT: string;
-  SIZELIMIT: string;
-  SEARCHFILTER: string;
-  IDATTRIBUTE: string;
-  IPATTRIBUTE: string;
-  HOSTNAMEATTRIBUTE: string;
-  NOREFERRALS: "True" | "False";
+  AUTHTYPE?: string;
+  TLS_VERIFY?: boolean;
+  START_TLS?: boolean;
+  LDAPURI?: string;
+  TLS_CA_FILE?: string;
+  LDAPBASE?: string;
+  BINDDN?: string;
+  BINDPW?: string;
+  TIMEOUT?: string;
+  SIZELIMIT?: string;
+  SEARCHFILTER?: string;
+  IDATTRIBUTE?: string;
+  IPATTRIBUTE?: string;
+  HOSTNAMEATTRIBUTE?: string;
+  NOREFERRALS?: "True" | "False";
 }
 
 export interface LdapMachineResolver extends MachineResolver {
@@ -130,6 +130,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}${encodeURIComponent(resolver.resolvername)}`;
+    console.log("postMachineResolver", url, JSON.stringify(resolver.data));
     const request = this.http.post<PiResponse<number>>(url, resolver.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -151,6 +152,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}test`;
+    console.log("postTestMachineResolver", url, JSON.stringify(resolver.data));
     const request = this.http.post<PiResponse<boolean>>(url, resolver.data, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
       .then(() => undefined)
