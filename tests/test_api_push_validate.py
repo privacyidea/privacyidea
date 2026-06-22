@@ -1679,6 +1679,38 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("push_config")
         delete_policy("push_wait")
 
+    def test_24b_push_wait_no_challenge_keeps_other_challenges(self):
+        """
+        If create_challenge persists nothing (no firebase_configuration), push_wait gets
+        transaction_id=None. The cleanup must NOT delete by serial alone, otherwise it would
+        wipe unrelated challenges of the same token.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=1")
+        self._enroll_push_token()
+        # Remove the firebase config so create_challenge does not persist a challenge
+        # and returns transaction_id=None.
+        get_one_token(serial=self.serial_push).delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        # An unrelated, concurrent challenge for the same token that must survive.
+        Challenge(self.serial_push, transaction_id="unrelated-tx", challenge="abc").save()
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+
+        # The unrelated challenge was not wiped by the push_wait cleanup
+        survivors = get_challenges(serial=self.serial_push, transaction_id="unrelated-tx")
+        self.assertEqual(1, len(survivors), survivors)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_wait")
+
     def test_25_push_answer_challenge_deleted_concurrently(self):
         """
         If the challenge row is deleted concurrently while the smartphone answer is being

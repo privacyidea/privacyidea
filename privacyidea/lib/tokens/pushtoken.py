@@ -803,9 +803,11 @@ class PushTokenClass(TokenClass):
                 except StaleDataError:
                     # The challenge row was deleted concurrently while we were committing the
                     # answer (e.g. a push_wait timeout firing at the same instant). The answer
-                    # is moot, so treat it as a non-match instead of failing the request.
+                    # is moot, so treat it as a non-match instead of failing the request. Clear
+                    # any details already collected.
                     db.session.rollback()
                     result = False
+                    details = {}
         return result, details
 
     @classmethod
@@ -1297,9 +1299,10 @@ class PushTokenClass(TokenClass):
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
                 # The push_wait transaction_id is never returned to the client, so nothing can
-                # poll or redeem this challenge after the loop. Delete it unconditionally (success,
-                # decline or timeout).
-                delete_challenges(serial=self.token.serial, transaction_id=transaction_id)
+                # poll or redeem this challenge after the loop. Delete it (whether answered,
+                # declined or timed out).
+                if transaction_id:
+                    delete_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
