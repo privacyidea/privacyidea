@@ -294,6 +294,17 @@ def _conditional_access_precheck(user: User) -> None:
                         id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
 
+def _previous_transaction_id(details: dict) -> str | None:
+    """
+    The answered-challenge transaction_id to link from this login's authentication-log row, when answering one
+    challenge immediately created a fresh one (CHALLENGE_CONTINUED); otherwise None. Mirrors /validate/check: the
+    newly-created challenge transaction_id lives in *details*, the answered one in the request, and they differ.
+    """
+    request_txn = get_optional(request.all_data, "transaction_id")
+    details_txn = details.get("transaction_id")
+    return request_txn if (details_txn and request_txn and details_txn != request_txn) else None
+
+
 @jwtauth.route('', methods=['POST'])
 @prepolicy(auth_timelimit, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
@@ -620,7 +631,10 @@ def get_auth_token():
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])
-                auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
+                # The lib distinguishes an initial challenge (CHALLENGE_TRIGGERED) from a continuation that answered
+                # one challenge and created the next (CHALLENGE_CONTINUED). Keep the latter; only default to TRIGGERED.
+                if auth_event_type != AuthEventType.CHALLENGE_CONTINUED:
+                    auth_event_type = AuthEventType.CHALLENGE_TRIGGERED
             else:
                 serials = details.get('serial')
                 token_types = details.get('type')
@@ -644,7 +658,8 @@ def get_auth_token():
             if not user_auth and "multi_challenge" in details and len(details["multi_challenge"]) > 0:
                 # Do not return user data in case of a challenge request.
                 log_authentication(auth_event_type, request, user=user, serial=serials,
-                                   transaction_id=details.get("transaction_id"))
+                                   transaction_id=details.get("transaction_id"),
+                                   previous_transaction_id=_previous_transaction_id(details))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -657,7 +672,8 @@ def get_auth_token():
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                     admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
-                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"))
+                       transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
+                       previous_transaction_id=_previous_transaction_id(details))
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the
     # count includes it). It writes lockout state for the next request and returns any
