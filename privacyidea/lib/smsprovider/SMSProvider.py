@@ -38,7 +38,7 @@ import time
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.crypto import is_censored
+from privacyidea.lib.crypto import is_censored, encryptPassword
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
@@ -54,6 +54,16 @@ SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
     "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
     "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"]
+
+# Keywords in option keys that indicate the value is sensitive and must be
+# stored encrypted in the database (case-insensitive substring match).
+SENSITIVE_OPTION_KEYWORDS = ("PASSWORD", "SECRET")
+
+
+def _is_sensitive_key(key):
+    """Return True if the given option/header key name indicates a secret value."""
+    upper_key = key.upper()
+    return any(kw in upper_key for kw in SENSITIVE_OPTION_KEYWORDS)
 
 
 class SMSError(Exception):
@@ -236,6 +246,10 @@ def set_smsgateway(identifier, providermodule=None, description=None,
             # Skip updating if the value is CENSORED (keep existing value)
             if is_censored(options[option]):
                 continue
+            # Encrypt sensitive values (PASSWORD, SECRET, etc.) before storing
+            value = options[option]
+            if _is_sensitive_key(option) and value:
+                value = encryptPassword(value)
             if (option_type == "option" and option in existing_option_keys) or (
                     option_type == "header" and option in existing_header_keys):
                 # Update existing option
@@ -243,13 +257,13 @@ def set_smsgateway(identifier, providermodule=None, description=None,
                     SMSGatewayOption.gateway_id == sms_gateway.id,
                     SMSGatewayOption.Key == option,
                     SMSGatewayOption.Type == option_type
-                ).values(Value=options[option])
+                ).values(Value=value)
                 db.session.execute(update_stmt)
             else:
                 # Create new option
                 sms_option = SMSGatewayOption(gateway_id=sms_gateway.id,
                                               Key=option,
-                                              Value=options[option],
+                                              Value=value,
                                               Type=option_type)
                 db.session.add(sms_option)
     db.session.commit()

@@ -31,7 +31,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from privacyidea.lib.crypto import get_rand_digit_str
+from privacyidea.lib.crypto import get_rand_digit_str, encryptPassword, decryptPassword
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
@@ -89,27 +89,39 @@ class Challenge(MethodsMixin, db.Model):
 
     def set_data(self, data):
         """
-        set the internal data of the challenge
+        set the internal data of the challenge.
+        The data is encrypted before being stored in the database since it
+        may contain OTP values.
 
         :param data: Unicode data
         :type data: string, length 512
         """
-        if isinstance(data, str):
-            self.data = data
+        if not data:
+            self.data = ''
         elif isinstance(data, dict):
-            self.data = json.dumps(data)
+            self.data = encryptPassword(json.dumps(data))
+        elif isinstance(data, str):
+            self.data = encryptPassword(data)
         else:
-            self.data = convert_column_to_unicode(data)
+            self.data = encryptPassword(convert_column_to_unicode(data))
 
     def get_data(self):
         if not self.data:
             return {}
         try:
-            data = json.loads(self.data)
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            # todo the return type should be clear, not string or dict but just dict
-            # todo check for __init__ of this class to see what type of data is used when refactoring
-            data = self.data
+            decrypted = decryptPassword(self.data)
+            # If decryption succeeded (not the FAILED marker), parse the result
+            if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+                data = json.loads(decrypted)
+            else:
+                # Fallback: try reading as unencrypted (legacy data)
+                data = json.loads(self.data)
+        except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+            # Try legacy unencrypted format or return raw string
+            try:
+                data = json.loads(self.data)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                data = self.data
         return data
 
     def get_session(self):

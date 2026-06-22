@@ -24,8 +24,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
 from privacyidea.lib.utils import convert_column_to_unicode
+from privacyidea.lib.crypto import decryptPassword
 
 log = logging.getLogger(__name__)
+
+# Keywords in option keys that indicate the value is stored encrypted
+# (case-insensitive substring match). Must stay in sync with
+# privacyidea.lib.smsprovider.SMSProvider.SENSITIVE_OPTION_KEYWORDS.
+_SENSITIVE_OPTION_KEYWORDS = ("PASSWORD", "SECRET")
 
 
 class SMSGateway(MethodsMixin, db.Model):
@@ -74,7 +80,10 @@ class SMSGateway(MethodsMixin, db.Model):
         res = {}
         for option in self.options:
             if option.Type == "option" or not option.Type:
-                res[option.Key] = option.Value
+                value = option.Value
+                if value and any(kw in option.Key.upper() for kw in _SENSITIVE_OPTION_KEYWORDS):
+                    value = decryptPassword(value)
+                res[option.Key] = value
         return res
 
     @property
@@ -82,7 +91,10 @@ class SMSGateway(MethodsMixin, db.Model):
         res = {}
         for option in self.options:
             if option.Type == "header":
-                res[option.Key] = option.Value
+                value = option.Value
+                if value and any(kw in option.Key.upper() for kw in _SENSITIVE_OPTION_KEYWORDS):
+                    value = decryptPassword(value)
+                res[option.Key] = value
         return res
 
     def as_dict(self):
