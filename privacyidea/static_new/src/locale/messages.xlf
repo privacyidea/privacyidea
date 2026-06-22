@@ -7144,41 +7144,41 @@
         <source>Refresh Resources</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.component.html</context>
-          <context context-type="linenumber">40,41</context>
+          <context context-type="linenumber">41,42</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.self-service.component.html</context>
-          <context context-type="linenumber">28,29</context>
+          <context context-type="linenumber">29,30</context>
         </context-group>
       </trans-unit>
       <trans-unit id="947729324223651141" datatype="html">
         <source>Time until session expires</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.component.html</context>
-          <context context-type="linenumber">53,54</context>
+          <context context-type="linenumber">54,55</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.self-service.component.html</context>
-          <context context-type="linenumber">52,53</context>
+          <context context-type="linenumber">53,54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3797778920049399855" datatype="html">
         <source>Logout</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.component.html</context>
-          <context context-type="linenumber">59</context>
+          <context context-type="linenumber">60</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.component.html</context>
-          <context context-type="linenumber">63</context>
+          <context context-type="linenumber">64</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.self-service.component.html</context>
-          <context context-type="linenumber">35</context>
+          <context context-type="linenumber">36</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/user-utils-panel/user-utils-panel.self-service.component.html</context>
-          <context context-type="linenumber">40</context>
+          <context context-type="linenumber">41</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component.ts</context>
@@ -8284,6 +8284,17 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.ts</context>
           <context context-type="linenumber">49</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1210069423269934042" datatype="html">
+        <source>Change language</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/language-switcher/language-switcher.component.html</context>
+          <context context-type="linenumber">22,23</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/language-switcher/language-switcher.component.html</context>
+          <context context-type="linenumber">26,27</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3607584482891376289" datatype="html">

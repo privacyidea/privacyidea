@@ -16629,6 +16629,18 @@
           <context context-type="linenumber">31,32</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="1210069423269934042" datatype="html">
+        <source>Change language</source>
+        <target>Alterar idioma</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/language-switcher/language-switcher.component.html</context>
+          <context context-type="linenumber">22,23</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/language-switcher/language-switcher.component.html</context>
+          <context context-type="linenumber">26,27</context>
+        </context-group>
+      </trans-unit>
     </body>
   </file>
 </xliff>
