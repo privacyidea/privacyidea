@@ -658,7 +658,8 @@ def get_health_resolver_timing():
     return send_result(raw)
 
 
-def _aggregate_delivery_channel(counter_name, duration_name, key_label, since_seconds):
+def _aggregate_delivery_channel(counter_name: str, duration_name: str, key_label: str,
+                                since_seconds: int) -> list[dict]:
     """Fold counter rows by their key label into one entry per key.
 
     Counter rows are grouped by the value of ``key_label`` (e.g. ``"provider"``,

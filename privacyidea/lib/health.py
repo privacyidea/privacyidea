@@ -64,7 +64,7 @@ def _cert_info(cert: x509.Certificate, now: datetime.datetime) -> dict:
     }
 
 
-def _fetch_ldaps_cert(host: str, port: int, timeout: float) -> x509.Certificate:
+def _fetch_tls_cert(host: str, port: int, timeout: float) -> x509.Certificate:
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
@@ -107,7 +107,7 @@ def _check_ldap_endpoint(resolver_name: str, host: str, port: int,
     }
     try:
         if use_ldaps:
-            cert = _fetch_ldaps_cert(host, port, timeout)
+            cert = _fetch_tls_cert(host, port, timeout)
         else:
             cert = _fetch_starttls_cert(host, port, timeout)
         entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
@@ -152,7 +152,7 @@ def _check_keycloak_endpoint(resolver_name: str, host: str, port: int, timeout: 
     try:
         # A Keycloak endpoint is a plain TLS server, so the generic TLS-wrap
         # probe used for ldaps:// reads its certificate too.
-        cert = _fetch_ldaps_cert(host, port, timeout)
+        cert = _fetch_tls_cert(host, port, timeout)
         entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
         entry["error"] = None
     except Exception as e:
@@ -166,9 +166,7 @@ def _check_keycloak_resolvers() -> list:
     """Probe the TLS server certificate of each Keycloak resolver's ``base_url``.
 
     Keycloak resolvers talk to an admin-operated (often self-hosted) HTTPS
-    endpoint, so its server certificate is worth surfacing. The EntraID resolver
-    is handled separately because it targets Microsoft-managed endpoints whose
-    certificates rotate automatically and are not the admin's concern.
+    endpoint, so its server certificate is worth surfacing.
     """
     results = []
     for name, reso in get_resolver_list(filter_resolver_type="keycloakresolver").items():
@@ -275,7 +273,7 @@ def _check_server_cert_probe(host: str, port: int, timeout: float = 5.0) -> dict
              "host": f"{host}:{port}",
              "tls_mode": "ldaps"}  # plain TLS wrap, same as ldaps probe
     try:
-        cert = _fetch_ldaps_cert(host, port, timeout=timeout)
+        cert = _fetch_tls_cert(host, port, timeout=timeout)
         entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
         entry["error"] = None
     except Exception as e:

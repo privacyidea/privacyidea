@@ -47,14 +47,14 @@ class ClassifyTest(MyTestCase):
 
     def test_status_buckets(self):
         # ok > 30, warning <= 30, critical <= 7, expired <= 0, error on None.
-        self.assertEqual(health._classify(31), "ok")
-        self.assertEqual(health._classify(30), "warning")
-        self.assertEqual(health._classify(8), "warning")
-        self.assertEqual(health._classify(7), "critical")
-        self.assertEqual(health._classify(1), "critical")
-        self.assertEqual(health._classify(0), "expired")
-        self.assertEqual(health._classify(-5), "expired")
-        self.assertEqual(health._classify(None), "error")
+        self.assertEqual("ok", health._classify(31))
+        self.assertEqual("warning", health._classify(30))
+        self.assertEqual("warning", health._classify(8))
+        self.assertEqual("critical", health._classify(7))
+        self.assertEqual("critical", health._classify(1))
+        self.assertEqual("expired", health._classify(0))
+        self.assertEqual("expired", health._classify(-5))
+        self.assertEqual("error", health._classify(None))
 
 
 class CertInfoTest(MyTestCase):
@@ -169,7 +169,7 @@ class ServerCertEntriesTest(MyTestCase):
                                             {"host": "nginx", "port": 443}]}
         with (patch.object(health, "get_app_config_value",
                            side_effect=lambda k, *a, **kw: config.get(k)),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert) as fetch):
+              patch.object(health, "_fetch_tls_cert", return_value=cert) as fetch):
             entries = health._server_cert_entries()
         self.assertEqual(len(entries), 2)
         self.assertEqual(fetch.call_count, 2)
@@ -182,7 +182,7 @@ class ServerCertEntriesTest(MyTestCase):
                   "PI_HEALTH_CERT_PROBES": [{"host": "127.0.0.1", "port": 443}]}
         with (patch.object(health, "get_app_config_value",
                            side_effect=lambda k, *a, **kw: config.get(k)),
-              patch.object(health, "_fetch_ldaps_cert",
+              patch.object(health, "_fetch_tls_cert",
                            side_effect=ConnectionRefusedError("nope"))):
             entries = health._server_cert_entries()
         self.assertEqual(entries[0]["status"], "error")
@@ -195,7 +195,7 @@ class ServerCertEntriesTest(MyTestCase):
                   "PI_HEALTH_CERT_PROBES": {"host": "pi.example", "port": 5000}}
         with (patch.object(health, "get_app_config_value",
                            side_effect=lambda k, *a, **kw: config.get(k)),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert)):
+              patch.object(health, "_fetch_tls_cert", return_value=cert)):
             entries = health._server_cert_entries()
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0]["host"], "pi.example:5000")
@@ -209,7 +209,7 @@ class ServerCertEntriesTest(MyTestCase):
                                             {"host": "ok2", "port": "not-a-number"}]}
         with (patch.object(health, "get_app_config_value",
                            side_effect=lambda k, *a, **kw: config.get(k)),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert)):
+              patch.object(health, "_fetch_tls_cert", return_value=cert)):
             entries = health._server_cert_entries()
         # Only the well-formed entry made it through.
         self.assertEqual(len(entries), 1)
@@ -221,7 +221,7 @@ class LdapEndpointCheckTest(MyTestCase):
 
     def test_ldaps_success(self):
         cert = _make_cert(days_until_expiry=10)
-        with patch.object(health, "_fetch_ldaps_cert", return_value=cert):
+        with patch.object(health, "_fetch_tls_cert", return_value=cert):
             entry = health._check_ldap_endpoint("openldap", "ldap.example", 636,
                                                 use_ldaps=True, start_tls=False, timeout=2.0)
         self.assertEqual(entry["status"], "warning")  # 10 days < 30
@@ -233,7 +233,7 @@ class LdapEndpointCheckTest(MyTestCase):
     def test_starttls_dispatches_to_starttls_helper(self):
         cert = _make_cert(days_until_expiry=200)
         with (patch.object(health, "_fetch_starttls_cert", return_value=cert) as starttls,
-              patch.object(health, "_fetch_ldaps_cert") as ldaps):
+              patch.object(health, "_fetch_tls_cert") as ldaps):
             entry = health._check_ldap_endpoint("ad", "ldap.example", 389,
                                                 use_ldaps=False, start_tls=True, timeout=2.0)
         starttls.assert_called_once()
@@ -242,7 +242,7 @@ class LdapEndpointCheckTest(MyTestCase):
         self.assertEqual(entry["status"], "ok")
 
     def test_error_status_on_probe_failure(self):
-        with patch.object(health, "_fetch_ldaps_cert",
+        with patch.object(health, "_fetch_tls_cert",
                           side_effect=TimeoutError("timed out")):
             entry = health._check_ldap_endpoint("openldap", "ldap.example", 636,
                                                 use_ldaps=True, start_tls=False, timeout=2.0)
@@ -273,7 +273,7 @@ class ResolverListIntegrationTest(MyTestCase):
                                        "TIMEOUT": "5", "START_TLS": "True"}},
         }
         with (patch.object(health, "get_resolver_list", return_value=resolvers),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert),
+              patch.object(health, "_fetch_tls_cert", return_value=cert),
               patch.object(health, "_fetch_starttls_cert", return_value=cert)):
             results = health._check_ldap_resolvers()
         names = sorted(r["name"] for r in results)
@@ -288,7 +288,7 @@ class ResolverListIntegrationTest(MyTestCase):
                                    "TIMEOUT": "5", "START_TLS": "False"}},
         }
         with (patch.object(health, "get_resolver_list", return_value=resolvers),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert)):
+              patch.object(health, "_fetch_tls_cert", return_value=cert)):
             results = health._check_ldap_resolvers()
         # Both URIs in the same resolver definition produce separate entries.
         self.assertEqual(len(results), 2)
@@ -312,7 +312,7 @@ class KeycloakResolversTest(MyTestCase):
         cert = _make_cert(days_until_expiry=100)
         resolvers = {"kc": {"data": {"base_url": "https://keycloak.example:8443", "timeout": "5"}}}
         with (patch.object(health, "get_resolver_list", return_value=resolvers),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert) as fetch):
+              patch.object(health, "_fetch_tls_cert", return_value=cert) as fetch):
             results = health._check_keycloak_resolvers()
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["source"], "keycloak-resolver")
@@ -324,7 +324,7 @@ class KeycloakResolversTest(MyTestCase):
         cert = _make_cert(days_until_expiry=10)
         resolvers = {"kc": {"data": {"base_url": "https://keycloak.example"}}}
         with (patch.object(health, "get_resolver_list", return_value=resolvers),
-              patch.object(health, "_fetch_ldaps_cert", return_value=cert) as fetch):
+              patch.object(health, "_fetch_tls_cert", return_value=cert) as fetch):
             results = health._check_keycloak_resolvers()
         self.assertEqual(results[0]["host"], "keycloak.example:443")
         self.assertEqual(results[0]["status"], "warning")
@@ -333,7 +333,7 @@ class KeycloakResolversTest(MyTestCase):
     def test_probe_failure_surfaces_error(self):
         resolvers = {"kc": {"data": {"base_url": "https://keycloak.example"}}}
         with (patch.object(health, "get_resolver_list", return_value=resolvers),
-              patch.object(health, "_fetch_ldaps_cert", side_effect=OSError("refused"))):
+              patch.object(health, "_fetch_tls_cert", side_effect=OSError("refused"))):
             results = health._check_keycloak_resolvers()
         self.assertEqual(results[0]["status"], "error")
         self.assertIn("refused", results[0]["error"])
@@ -423,7 +423,7 @@ class ResolverHookTest(MyTestCase):
 
 
 class FetchLdapsCertTest(MyTestCase):
-    """Cover ``_fetch_ldaps_cert`` with the socket / ssl layer faked out.
+    """Cover ``_fetch_tls_cert`` with the socket / ssl layer faked out.
 
     The real probe needs an actual TLS endpoint, which is too heavy for unit
     tests. We instead inject a synthetic DER-encoded certificate at the
@@ -441,9 +441,9 @@ class FetchLdapsCertTest(MyTestCase):
         ssl_ctx = MagicMock()
         ssl_ctx.wrap_socket = MagicMock(return_value=_cm(ssock))
 
-        with patch.object(health.ssl, "create_default_context", return_value=ssl_ctx), \
-                patch.object(health.socket, "create_connection", return_value=_cm(MagicMock())):
-            result = health._fetch_ldaps_cert("ldap.example", 636, 5.0)
+        with (patch.object(health.ssl, "create_default_context", return_value=ssl_ctx),
+              patch.object(health.socket, "create_connection", return_value=_cm(MagicMock()))):
+            result = health._fetch_tls_cert("ldap.example", 636, 5.0)
 
         self.assertEqual(result.serial_number, cert.serial_number)
         # Make sure we requested the binary form (DER), not the parsed dict form,
