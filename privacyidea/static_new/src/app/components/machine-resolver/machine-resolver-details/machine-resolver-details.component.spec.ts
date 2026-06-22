@@ -32,7 +32,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { BehaviorSubject, of } from "rxjs";
-import { MachineResolverEditComponent } from "./machine-resolver-edit.component";
+import { MachineResolverDetailsComponent } from "./machine-resolver-details.component";
 
 class LocalMockMatDialog {
   result$ = of("save-exit");
@@ -41,9 +41,9 @@ class LocalMockMatDialog {
   });
 }
 
-describe("MachineResolverEditComponent", () => {
-  let component: MachineResolverEditComponent;
-  let fixture: ComponentFixture<MachineResolverEditComponent>;
+describe("MachineResolverDetailsComponent", () => {
+  let component: MachineResolverDetailsComponent;
+  let fixture: ComponentFixture<MachineResolverDetailsComponent>;
   let machineResolverServiceMock: MockMachineResolverService;
   let pendingChangesService: MockPendingChangesService;
   let dialog: LocalMockMatDialog;
@@ -55,7 +55,7 @@ describe("MachineResolverEditComponent", () => {
     dialog = new LocalMockMatDialog();
     paramMap$ = new BehaviorSubject<ParamMap>(convertToParamMap(name ? { name } : {}));
     await TestBed.configureTestingModule({
-      imports: [MachineResolverEditComponent],
+      imports: [MachineResolverDetailsComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -72,7 +72,7 @@ describe("MachineResolverEditComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MachineResolverEditComponent);
+    fixture = TestBed.createComponent(MachineResolverDetailsComponent);
     component = fixture.componentInstance;
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
@@ -180,12 +180,12 @@ describe("MachineResolverEditComponent", () => {
       expect(component.isEditing()).toBe(false);
     });
 
-    it("onCancel discards changes and exits edit mode without navigating", () => {
+    it("onCancel discards changes and exits edit mode without navigating", async () => {
       component.startEditing();
       component.onNewData({ resolver: "hosts1", type: "hosts", filename: "/changed" } as never);
       expect(component.isEdited()).toBe(true);
       dialog.result$ = of("discard");
-      component.onCancel();
+      await component.onCancel();
       expect(component.isEditing()).toBe(false);
       expect(component.isEdited()).toBe(false);
       expect(router.navigateByUrl).not.toHaveBeenCalled();

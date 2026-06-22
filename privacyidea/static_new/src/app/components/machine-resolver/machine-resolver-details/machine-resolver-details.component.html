@@ -18,11 +18,11 @@
 -->
 <div
   aria-label="Machine Resolver Editor"
-  class="machine-resolver-edit-layout"
+  class="machine-resolver-details-layout"
   i18n-aria-label>
   <div
     appScrollToTop
-    class="machine-resolver-edit-container">
+    class="machine-resolver-details-container">
     @if (!isEditMode()) {
       <h3
         class="margin-8"
@@ -43,8 +43,8 @@
       </h3>
     }
 
-    <div class="machine-resolver-edit-body margin-left-16">
-      <div class="machine-resolver-edit-controls">
+    <div class="machine-resolver-details-body margin-left-16">
+      <div class="machine-resolver-details-controls">
         @if (isEditMode() && !isEditing()) {
           @if (authService.actionAllowed("mresolverwrite")) {
             <button

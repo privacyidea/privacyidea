@@ -130,7 +130,6 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}${encodeURIComponent(resolver.resolvername)}`;
-    console.log("postMachineResolver", url, JSON.stringify(resolver.data));
     const request = this.http.post<PiResponse<number>>(url, resolver.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -152,7 +151,6 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}test`;
-    console.log("postTestMachineResolver", url, JSON.stringify(resolver.data));
     const request = this.http.post<PiResponse<boolean>>(url, resolver.data, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
       .then(() => undefined)

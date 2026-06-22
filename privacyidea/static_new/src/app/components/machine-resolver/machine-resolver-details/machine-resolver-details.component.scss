@@ -1,11 +1,11 @@
 @use "styles";
 
-.machine-resolver-edit-layout {
+.machine-resolver-details-layout {
   display: flex;
   justify-content: center;
 }
 
-.machine-resolver-edit-container {
+.machine-resolver-details-container {
   @include styles.main-component-style;
 
   & {
@@ -16,7 +16,7 @@
   }
 }
 
-.machine-resolver-edit-body {
+.machine-resolver-details-body {
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
@@ -26,7 +26,7 @@
   margin-left: var(--global-padding);
 }
 
-.machine-resolver-edit-controls {
+.machine-resolver-details-controls {
   display: flex;
   justify-content: flex-start;
   gap: var(--global-gap);

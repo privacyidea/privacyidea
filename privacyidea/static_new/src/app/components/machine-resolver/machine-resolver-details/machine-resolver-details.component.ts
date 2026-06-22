@@ -46,9 +46,9 @@ import { deepCopy } from "@utils/deep-copy.utils";
 import { lastValueFrom } from "rxjs";
 
 @Component({
-  selector: "app-machine-resolver-edit",
-  templateUrl: "./machine-resolver-edit.component.html",
-  styleUrls: ["./machine-resolver-edit.component.scss"],
+  selector: "app-machine-resolver-details",
+  templateUrl: "./machine-resolver-details.component.html",
+  styleUrls: ["./machine-resolver-details.component.scss"],
   imports: [
     MatButtonModule,
     MatFormFieldModule,
@@ -61,7 +61,7 @@ import { lastValueFrom } from "rxjs";
     MachineResolverLdapTabComponent
   ]
 })
-export class MachineResolverEditComponent implements OnInit, OnDestroy {
+export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
@@ -86,8 +86,8 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly fieldsEditable = computed(() => !this.isEditMode() || this.isEditing());
 
-  readonly originalMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverEditComponent.machineResolverDefault));
-  readonly currentMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverEditComponent.machineResolverDefault));
+  readonly originalMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverDetailsComponent.machineResolverDefault));
+  readonly currentMachineResolver = signal<MachineResolver>(deepCopy(MachineResolverDetailsComponent.machineResolverDefault));
 
   readonly isEdited = computed(
     () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
@@ -210,34 +210,33 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  onCancel(): void {
+  async onCancel(): Promise<void> {
     if (!this.isEdited()) {
       this.exitEditOrNavigate();
       return;
     }
-    this.dialogService
-      .openDialog({
-        component: SaveAndExitDialogComponent,
-        data: {
-          title: $localize`Discard changes`,
-          allowSaveExit: this.canSaveMachineResolver(),
-          saveExitDisabled: !this.canSaveMachineResolver()
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: async (result) => {
-          if (result === "save-exit") {
-            if (!this.canSaveMachineResolver()) return;
-            await this.saveMachineResolver();
-          } else if (result === "discard") {
-            this.exitEditOrNavigate();
-          }
-        },
-        error: (err) => {
-          console.error("Error handling unsaved changes dialog:", err);
-        }
-      });
+    try {
+      const result = await lastValueFrom(
+        this.dialogService
+          .openDialog({
+            component: SaveAndExitDialogComponent,
+            data: {
+              title: $localize`Discard changes`,
+              allowSaveExit: this.canSaveMachineResolver(),
+              saveExitDisabled: !this.canSaveMachineResolver()
+            }
+          })
+          .afterClosed()
+      );
+      if (result === "save-exit") {
+        if (!this.canSaveMachineResolver()) return;
+        await this.saveMachineResolver();
+      } else if (result === "discard") {
+        this.exitEditOrNavigate();
+      }
+    } catch (err) {
+      console.error("Error handling unsaved changes dialog:", err);
+    }
   }
 
   private exitEditOrNavigate(): void {
