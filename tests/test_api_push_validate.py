@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
 import logging
+import threading
 import time
 from base64 import b32encode
 
@@ -38,6 +39,57 @@ FB_CONFIG_VALS = {
     FirebaseConfig.JSON_CONFIG: FIREBASE_FILE}
 REGISTRATION_URL = "http://test/ttype/push"
 TTL = "10"
+
+
+class _PushSmartphoneAnswer(threading.Thread):
+    """
+    Background thread that simulates the smartphone answering the pending push_wait challenge
+    through the real /ttype/push endpoints. /validate/check blocks during push_wait, so the
+    answer must arrive from another thread. It polls /ttype/push by serial for the pending nonce
+    and posts the signed response. After ``join()``, ``response`` holds the JSON of the answer
+    POST, or ``None`` if no challenge appeared.
+
+    :param mode: 'accept' (valid signature), 'decline' (valid signature with the decline flag)
+        or 'fail' (invalid signature)
+    """
+
+    def __init__(self, app, private_key, serial, mode="accept"):
+        super().__init__()
+        self.app = app
+        self.private_key = private_key
+        self.serial = serial
+        self.mode = mode
+        self.response = None
+
+    def run(self):
+        nonce = None
+        for _ in range(50):
+            timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+            poll_sig = self.private_key.sign(f"{self.serial}|{timestamp}".encode("utf8"),
+                                             padding.PKCS1v15(), hashes.SHA256())
+            with self.app.test_request_context('/ttype/push', method='GET',
+                                               query_string={"serial": self.serial,
+                                                             "timestamp": timestamp,
+                                                             "signature": b32encode(poll_sig)}):
+                value = self.app.full_dispatch_request().json["result"]["value"]
+            if value:
+                nonce = value[0]["nonce"]
+                break
+            time.sleep(0.2)
+        if not nonce:
+            return
+        sign_data = f"{nonce}|{self.serial}"
+        if self.mode == "decline":
+            sign_data += "|decline"
+        elif self.mode == "fail":
+            # Sign data the server will not reconstruct, so the signature check fails
+            sign_data = f"{nonce}|{self.serial}_wrong"
+        answer_sig = self.private_key.sign(sign_data.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+        data = {"serial": self.serial, "signature": b32encode(answer_sig)}
+        if self.mode == "decline":
+            data["decline"] = "1"
+        with self.app.test_request_context('/ttype/push', method='POST', data=data):
+            self.response = self.app.full_dispatch_request().json
 
 
 class PushAPITestCase(MyApiTestCase):
@@ -759,6 +811,9 @@ class PushAPITestCase(MyApiTestCase):
                                   "Unable to use 'require_presence' policy with 'push_wait'. "
                                   "Disabling 'require_presence' policy!"))
 
+        # The timed-out push_wait challenge is cleaned up, it never outlives the request
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
         remove_token(self.serial_push)
         delete_policy("pol_push_config")
         delete_policy("pol_push_require_presence")
@@ -1401,6 +1456,25 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
 
+        # The challenge is deleted once the request returns, so its data can only be
+        # inspected while /validate/check is still blocking in the push_wait loop. Capture
+        # it in parallel to assert that push_wait forced STANDARD mode over code_to_phone.
+        captured = {}
+
+        def capture_challenge_data():
+            for _ in range(50):
+                # A fresh request context per poll gives a fresh DB read, so the challenge
+                # created by the blocking request becomes visible.
+                with self.app.test_request_context():
+                    challenges = get_challenges(serial=self.serial_push)
+                    if challenges:
+                        captured["data"] = challenges[0].get_data()
+                        return
+                time.sleep(0.2)
+
+        inspector = threading.Thread(target=capture_challenge_data)
+        inspector.start()
+
         # Authentication
         start_time = time.time()
         with self.app.test_request_context('/validate/check',
@@ -1412,21 +1486,141 @@ class PushAPITestCase(MyApiTestCase):
             # Check that we actually waited
             self.assertGreater(time.time() - start_time, push_wait_time_seconds - 1)
             result = res.json.get("result")
-            # The challenge was not answered in time, so we get reject
+            # The challenge was not answered in time, so we get reject.
             self.assertTrue(result.get("status"))
             self.assertFalse(result.get("value"))
             self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"))
+        inspector.join()
 
-            # Check the challenge data as well
-            challenge = get_challenges()[0]
-            challenge_data = challenge.get_data()
-            self.assertIsInstance(challenge_data, dict)
-            self.assertEqual(challenge_data.get("type"), "push")
-            # STANDARD takes precedence because push_wait disables code_to_phone
-            self.assertEqual(challenge_data.get("mode"), PushMode.STANDARD)
-            self.assertNotIn("display_code", challenge_data)
+        # The parallel hook saw the live challenge: STANDARD takes precedence because
+        # push_wait disables code_to_phone, hence no display_code is generated.
+        self.assertEqual("push", captured.get("data", {}).get("type"))
+        self.assertEqual(PushMode.STANDARD, captured.get("data", {}).get("mode"))
+        self.assertNotIn("display_code", captured.get("data", {}))
+        # The timed-out push_wait challenge is cleaned up, it never outlives the request
+        self.assertEqual([], get_challenges())
 
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
+        delete_policy("push_wait")
+
+    def _enroll_push_token(self):
+        """Enroll a push token for "selfservice" (the two smartphone-side steps)."""
+        with self.app.test_request_context('/token/init', method='POST',
+                                           data={"type": "push", "pin": "push_pin",
+                                                 "user": "selfservice", "realm": self.realm1,
+                                                 "serial": self.serial_push, "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            enrollment_credential = self.app.full_dispatch_request().json["detail"]["enrollment_credential"]
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def _start_smartphone_answer(self, mode="accept"):
+        """Start and return a :class:`_PushSmartphoneAnswer` thread for the pending push_wait
+        challenge. After ``join()`` its ``response`` holds the JSON of the answer POST."""
+        thread = _PushSmartphoneAnswer(self.app, self.smartphone_private_key, self.serial_push, mode)
+        thread.start()
+        return thread
+
+    def test_21_push_wait_success(self):
+        """
+        Push with push_wait, answered successfully: the smartphone confirms the challenge
+        while /validate/check is still blocking in the push_wait loop. Authentication
+        succeeds and the answered challenge is cleaned up (it never outlives the request).
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20")
+        self._enroll_push_token()
+
+        smartphone = self._start_smartphone_answer("accept")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("value"), res.json)
+                self.assertEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"), res.json)
+        finally:
+            smartphone.join()
+
+        # The answered push_wait challenge is cleaned up, it never outlives the request
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_wait")
+
+    def test_22_push_wait_declined(self):
+        """
+        Push with push_wait, declined: the smartphone declines while /validate/check is blocking.
+        The wait loop does not short-circuit on a decline, so it runs to timeout and rejects; the
+        challenge is still cleaned up.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=3")
+        self._enroll_push_token()
+
+        smartphone = self._start_smartphone_answer("decline")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("value"), res.json)
+                self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"), res.json)
+        finally:
+            smartphone.join()
+
+        # The decline (valid signature) was accepted by the server
+        self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
+        # The declined push_wait challenge is cleaned up
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_wait")
+
+    def test_23_push_wait_failed(self):
+        """
+        Push with push_wait, invalid answer: the smartphone posts a bad signature while
+        /validate/check is blocking. The answer is rejected, the loop times out and rejects;
+        the challenge is cleaned up.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=3")
+        self._enroll_push_token()
+
+        smartphone = self._start_smartphone_answer("fail")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("value"), res.json)
+                self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"), res.json)
+        finally:
+            smartphone.join()
+
+        # The invalid signature was rejected by the server
+        self.assertFalse(smartphone.response["result"]["value"], smartphone.response)
+        # The push_wait challenge is cleaned up
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
         delete_policy("push_wait")

@@ -49,7 +49,7 @@ from dateutil.parser import isoparse
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.decorators import check_token_locked
@@ -1288,6 +1288,11 @@ class PushTokenClass(TokenClass):
                     if otp_counter >= 0 or elapsed_time > waiting or elapsed_time < 0:
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
+
+                # The push_wait transaction_id is never returned to the client, so nothing can
+                # poll or redeem this challenge after the loop. Delete it unconditionally (success,
+                # decline or timeout).
+                delete_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
