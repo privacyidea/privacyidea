@@ -119,7 +119,7 @@ describe("UserService", () => {
     alice = buildUser("Alice");
     users = [alice, buildUser("Bob"), buildUser("Charlie")];
     userService.users.set(users);
-    userService.detailsUsername.set("Alice");
+    userService.detailsUser.set({ username: "Alice", realm: "" });
   });
 
   afterEach(() => {
@@ -215,7 +215,7 @@ describe("UserService", () => {
 
     it("deleteUserAttribute issues DELETE /user/attribute/<key>/<user>/<realm> with proper encoding", () => {
       realmService.realmOptions.set(["realm1", "r 1"]);
-      userService.detailsUsername.set("Alice Smith");
+      userService.detailsUser.set({ username: "Alice Smith", realm: "" });
       realmService.setDefaultRealm("r 1");
 
       const key = "department/role";
@@ -445,7 +445,7 @@ describe("UserService", () => {
       const realm = "test-realm";
       const user = "alice";
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
-      userService.detailsUsername.set(user);
+      userService.detailsUser.set({ username: user, realm: "" });
       userService.selectedUserRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
       TestBed.tick();
@@ -467,7 +467,7 @@ describe("UserService", () => {
       const realm = "test-realm";
       const user = "alice";
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
-      userService.detailsUsername.set(user);
+      userService.detailsUser.set({ username: user, realm: "" });
       userService.selectedUserRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
       TestBed.tick();
@@ -504,7 +504,7 @@ describe("UserService", () => {
     it("should not show previous user details when detailsUsername changes", async () => {
       const realm = "test-realm";
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/alice");
-      userService.detailsUsername.set("alice");
+      userService.detailsUser.set({ username: "alice", realm: "" });
       userService.selectedUserRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
       TestBed.tick();
@@ -519,7 +519,7 @@ describe("UserService", () => {
 
       // Switch to bob — while loading, user signal should NOT keep alice's data
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/bob");
-      userService.detailsUsername.set("bob");
+      userService.detailsUser.set({ username: "bob", realm: "" });
       TestBed.tick();
 
       // Before bob's response arrives, user should be reset to empty

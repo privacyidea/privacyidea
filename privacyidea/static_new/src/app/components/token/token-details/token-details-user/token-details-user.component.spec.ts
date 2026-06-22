@@ -139,6 +139,14 @@ describe("TokenDetailsUserComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("derives userRealm from the user_realm row for the user link", () => {
+    component.userData.set([
+      { keyMap: { key: "username" }, value: "alice", isEditing: signal(false) },
+      { keyMap: { key: "user_realm" }, value: "themis", isEditing: signal(false) }
+    ]);
+    expect((component as unknown as { userRealm: () => string }).userRealm()).toBe("themis");
+  });
+
   it("creates self service", () => {
     expect(selfComponent).toBeTruthy();
   });

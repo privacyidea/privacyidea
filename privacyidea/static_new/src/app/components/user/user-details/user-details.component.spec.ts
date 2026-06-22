@@ -233,7 +233,7 @@ describe("UserDetailsComponent", () => {
   });
 
   it("assignUserToToken opens PIN dialog and assigns user to token, then reloads resources", () => {
-    userServiceMock.detailsUsername.set("Alice");
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
     userServiceMock.selectedUserRealm.set("realm1");
 
     dialogServiceMock.openDialog = jest.fn().mockReturnValue({

@@ -144,6 +144,17 @@ describe("ContentService", () => {
     });
   });
 
+  describe("userSelected()", () => {
+    it("navigates to user details and stores username and realm", () => {
+      emitNav("/tokens");
+      service.userSelected("alice", "themis");
+
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      expect(service.detailsUser().realm).toBe("themis");
+    });
+  });
+
   describe("containerSelected()", () => {
     it("navigates to container details and sets serial", async () => {
       emitNav("/tokens");
