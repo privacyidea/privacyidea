@@ -232,6 +232,15 @@ describe("UserDetailsComponent", () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("showUserAuditLog sets the audit filter to the current user", () => {
+    const auditServiceMock = TestBed.inject(AuditService) as unknown as MockAuditService;
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
+
+    component.showUserAuditLog();
+
+    expect(auditServiceMock.auditFilter().value).toBe("user: Alice");
+  });
+
   it("assignUserToToken opens PIN dialog and assigns user to token, then reloads resources", () => {
     userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
     userServiceMock.selectedUserRealm.set("realm1");

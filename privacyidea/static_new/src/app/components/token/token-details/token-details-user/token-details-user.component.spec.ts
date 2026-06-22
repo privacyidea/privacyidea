@@ -147,6 +147,11 @@ describe("TokenDetailsUserComponent", () => {
     expect((component as unknown as { userRealm: () => string }).userRealm()).toBe("themis");
   });
 
+  it("falls back to an empty userRealm when no user_realm row is present", () => {
+    component.userData.set([{ keyMap: { key: "username" }, value: "alice", isEditing: signal(false) }]);
+    expect((component as unknown as { userRealm: () => string }).userRealm()).toBe("");
+  });
+
   it("creates self service", () => {
     expect(selfComponent).toBeTruthy();
   });

@@ -157,6 +157,12 @@ describe("UserService", () => {
     expect(userService.selectedUserRealm()).toBe("realm1");
   });
 
+  it("selectedUserRealm uses the opened user's realm on user details", () => {
+    contentServiceMock.onUserDetails = signal(true);
+    contentServiceMock.detailsUser.set({ username: "Alice", realm: "userRealm" });
+    expect(userService.selectedUserRealm()).toBe("userRealm");
+  });
+
   it("allUsernames exposes every user.username", () => {
     expect(userService.allUsernames()).toEqual(["Alice", "Bob", "Charlie"]);
   });
