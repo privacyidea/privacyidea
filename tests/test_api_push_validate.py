@@ -46,11 +46,12 @@ class _PushSmartphoneAnswer(threading.Thread):
     Background thread that simulates the smartphone answering the pending push_wait challenge
     through the real /ttype/push endpoints. /validate/check blocks during push_wait, so the
     answer must arrive from another thread. It polls /ttype/push by serial for the pending nonce
-    and posts the signed response. After ``join()``, ``response`` holds the JSON of the answer
-    POST, or ``None`` if no challenge appeared.
+    and posts the signed response. After ``join()``, ``nonce`` holds the captured challenge nonce
+    (or ``None`` if no challenge appeared) and ``response`` holds the JSON of the answer POST.
 
-    :param mode: 'accept' (valid signature), 'decline' (valid signature with the decline flag)
-        or 'fail' (invalid signature)
+    :param mode: 'accept' (valid signature), 'decline' (valid signature with the decline flag),
+        'fail' (invalid signature) or 'capture' (only capture the nonce, do not answer, so the
+        push_wait times out)
     """
 
     def __init__(self, app, private_key, serial, mode="accept"):
@@ -59,6 +60,7 @@ class _PushSmartphoneAnswer(threading.Thread):
         self.private_key = private_key
         self.serial = serial
         self.mode = mode
+        self.nonce = None
         self.response = None
 
     def run(self):
@@ -77,6 +79,9 @@ class _PushSmartphoneAnswer(threading.Thread):
                 break
             time.sleep(0.2)
         if not nonce:
+            return
+        self.nonce = nonce
+        if self.mode == "capture":
             return
         sign_data = f"{nonce}|{self.serial}"
         if self.mode == "decline":
@@ -1494,9 +1499,10 @@ class PushAPITestCase(MyApiTestCase):
 
         # The parallel hook saw the live challenge: STANDARD takes precedence because
         # push_wait disables code_to_phone, hence no display_code is generated.
-        self.assertEqual("push", captured.get("data", {}).get("type"))
-        self.assertEqual(PushMode.STANDARD, captured.get("data", {}).get("mode"))
-        self.assertNotIn("display_code", captured.get("data", {}))
+        self.assertIn("data", captured, "inspector thread never observed the live challenge")
+        self.assertEqual("push", captured["data"].get("type"))
+        self.assertEqual(PushMode.STANDARD, captured["data"].get("mode"))
+        self.assertNotIn("display_code", captured["data"])
         # The timed-out push_wait challenge is cleaned up, it never outlives the request
         self.assertEqual([], get_challenges())
 
@@ -1619,6 +1625,51 @@ class PushAPITestCase(MyApiTestCase):
         # The invalid signature was rejected by the server
         self.assertFalse(smartphone.response["result"]["value"], smartphone.response)
         # The push_wait challenge is cleaned up
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_wait")
+
+    def test_24_push_wait_late_answer(self):
+        """
+        Push with push_wait, answered too late: the smartphone confirms only after the wait has
+        already timed out. The challenge has been cleaned up, so the late confirmation finds no
+        matching challenge and is rejected - no stray answered challenge is resurrected.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=2")
+        self._enroll_push_token()
+
+        # Capture the challenge nonce during the wait but do not answer, so the auth times out.
+        smartphone = self._start_smartphone_answer("capture")
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("value"), res.json)
+                self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"), res.json)
+        finally:
+            smartphone.join()
+        # The timed-out push_wait challenge is cleaned up
+        self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        # The smartphone now answers with a valid signature, but the challenge is already gone.
+        self.assertIsNotNone(smartphone.nonce, "smartphone never observed the push_wait challenge")
+        answer_sig = self.smartphone_private_key.sign(f"{smartphone.nonce}|{self.serial_push}".encode("utf8"),
+                                                      padding.PKCS1v15(), hashes.SHA256())
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push, "signature": b32encode(answer_sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            # No matching challenge -> the late confirmation is rejected
+            self.assertFalse(res.json["result"]["value"], res.json)
+        # No challenge was resurrected by the late answer
         self.assertEqual([], get_challenges(serial=self.serial_push))
 
         remove_token(self.serial_push)
