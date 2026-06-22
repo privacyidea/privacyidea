@@ -47,7 +47,7 @@ class Challenge(MethodsMixin, db.Model):
     __tablename__ = "challenge"
     id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
     transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
-    data: Mapped[str | None] = mapped_column(Unicode(512), default='')
+    _data: Mapped[str | None] = mapped_column("data", Unicode(512), default='')
     challenge: Mapped[str | None] = mapped_column(Text, default='')
     session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
@@ -56,6 +56,26 @@ class Challenge(MethodsMixin, db.Model):
     expiration: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     received_count: Mapped[int | None] = mapped_column(Integer, default=0)
     otp_valid: Mapped[bool | None] = mapped_column(Boolean, default=False)
+
+    @property
+    def data(self):
+        """Return the decrypted challenge data, or the raw value for legacy data."""
+        raw = self._data
+        if not raw:
+            return raw
+        try:
+            decrypted = decryptPassword(raw)
+            if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+                return decrypted
+        except Exception:
+            pass
+        # Legacy unencrypted data - return as-is
+        return raw
+
+    @data.setter
+    def data(self, value):
+        """Allow direct assignment to data (sets raw _data)."""
+        self._data = value
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
@@ -97,31 +117,21 @@ class Challenge(MethodsMixin, db.Model):
         :type data: string, length 512
         """
         if not data:
-            self.data = ''
+            self._data = ''
         elif isinstance(data, dict):
-            self.data = encryptPassword(json.dumps(data))
+            self._data = encryptPassword(json.dumps(data))
         elif isinstance(data, str):
-            self.data = encryptPassword(data)
+            self._data = encryptPassword(data)
         else:
-            self.data = encryptPassword(convert_column_to_unicode(data))
+            self._data = encryptPassword(convert_column_to_unicode(data))
 
     def get_data(self):
         if not self.data:
             return {}
         try:
-            decrypted = decryptPassword(self.data)
-            # If decryption succeeded (not the FAILED marker), parse the result
-            if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
-                data = json.loads(decrypted)
-            else:
-                # Fallback: try reading as unencrypted (legacy data)
-                data = json.loads(self.data)
+            data = json.loads(self.data)
         except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
-            # Try legacy unencrypted format or return raw string
-            try:
-                data = json.loads(self.data)
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                data = self.data
+            data = self.data
         return data
 
     def get_session(self):
