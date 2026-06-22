@@ -395,6 +395,19 @@ describe("AuthService", () => {
     expect(authService.jwtData()).toMatchObject(payload);
     expect(authService.isAuthenticated()).toBe(true);
 
+    // The JWT is persisted on its own; the stored auth data must not duplicate the token
+    // or any JWT claim (token, rights, role, username, realm), but keeps the UI config.
+    expect(mockLocal.saveData).toHaveBeenCalledWith(BEARER_TOKEN_STORAGE_KEY, jwt);
+    const authDataCall = (mockLocal.saveData as jest.Mock).mock.calls.find((c) => c[0] === AUTH_DATA_STORAGE_KEY);
+    const persisted = JSON.parse(authDataCall![1]);
+    expect(persisted.token).toBeUndefined();
+    expect(persisted.rights).toBeUndefined();
+    expect(persisted.role).toBeUndefined();
+    expect(persisted.username).toBeUndefined();
+    expect(persisted.realm).toBeUndefined();
+    expect(persisted.menus).toEqual([]);
+    expect(persisted.default_tokentype).toBe("hotp");
+
     sub.unsubscribe();
   });
 

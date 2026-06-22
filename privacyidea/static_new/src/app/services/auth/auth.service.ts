@@ -346,6 +346,18 @@ export class AuthService implements AuthServiceInterface {
    * The token and the auth data are restored only while the JWT is still valid; an
    * expired or corrupt session is cleared instead.
    */
+  /**
+   * Strip the fields that the bearer token already carries before persisting the auth data.
+   * The token (stored separately) is the source of truth for identity and rights via the
+   * decoded JWT, so the token string and the JWT claims (rights, role, username, realm) are
+   * not duplicated into storage; everything that remains is UI/policy config not in the JWT.
+   */
+  private persistableAuthData(authData: AuthData): Omit<AuthData, "token" | "rights" | "role" | "username" | "realm"> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { token, rights, role, username, realm, ...rest } = authData;
+    return rest;
+  }
+
   private restoreSession(): void {
     const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
     if (!token) {
@@ -393,7 +405,7 @@ export class AuthService implements AuthServiceInterface {
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
-            this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(value));
+            this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(value)));
           }
         }),
         catchError((error) => {
