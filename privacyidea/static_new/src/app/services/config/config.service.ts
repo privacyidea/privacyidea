@@ -86,7 +86,15 @@ export class ConfigService implements ConfigServiceInterface {
         })
       )
       .subscribe((data) => {
-        this.config.set(data.result?.value as AppConfig);
+        const configValue = data.result?.value;
+
+        if (data.result?.status && configValue) {
+          this.config.set(configValue);
+        } else {
+          console.error("Failed to load config: Invalid response", data);
+          return;
+        }
+
         this.versioningService.rawVersion.set(data.versionnumber ?? "");
       });
   }
