@@ -3,12 +3,15 @@ import datetime
 import json
 import os
 import unittest
+from unittest.mock import patch
 from urllib.parse import urlencode
 
 import gnupg
 
+from privacyidea.lib import health
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
+from privacyidea.lib.metrics import _utc_now, inc, observe
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
 from privacyidea.lib.radiusserver import add_radius, delete_radius
@@ -16,6 +19,7 @@ from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.models import UserCache
 from privacyidea.models import db, NodeName
+from privacyidea.models.metric_aggregate import MetricAggregate
 from .base import MyApiTestCase
 from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
 from .test_lib_resolver import LDAPDirectory, ldap3mock
@@ -1585,3 +1589,208 @@ class APIConfigTestCase(MyApiTestCase):
         delete_resolver("local_resolver_2")
         db.session.delete(node1)
         db.session.delete(node2)
+
+
+class HealthEndpointsTestCase(MyApiTestCase):
+    """Tests for the three /system/health/* endpoints (certificates, resolver_timing,
+    notification_delivery). The certificate path is fully mocked - we exercise the API
+    plumbing, not the real LDAP/TLS probes (those are covered in test_lib_health)."""
+
+    def setUp(self):
+        # Ensure a clean metrics table for each test so assertions on counts/labels
+        # don't depend on side effects from earlier tests in the suite.
+        db.session.query(MetricAggregate).delete()
+        db.session.commit()
+        health.invalidate_certificate_cache()
+
+    def test_certificates_requires_auth(self):
+        with self.app.test_request_context('/system/health/certificates', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+
+    def test_certificates_returns_status_list(self):
+        fake_entries = [
+            {"source": "ldap-resolver", "name": "openldap", "host": "ldap:636",
+             "tls_mode": "ldaps", "status": "ok", "days_remaining": 200,
+             "not_after": "2027-01-01T00:00:00", "subject": "CN=ldap", "issuer": "CN=ca",
+             "error": None},
+        ]
+        # Patch where the function is *used* (api.system imported the name at module load
+        # via "from privacyidea.lib.health import get_certificate_status"), not where it
+        # is defined.
+        with patch("privacyidea.api.system.get_certificate_status", return_value=fake_entries) as gcs:
+            with self.app.test_request_context('/system/health/certificates', method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.data)
+                value = res.json["result"]["value"]
+                self.assertEqual(value, fake_entries)
+        gcs.assert_called_once()
+        # The endpoint should not pass refresh=True unless explicitly asked.
+        self.assertFalse(gcs.call_args.kwargs.get("refresh", False))
+
+    def test_certificates_refresh_param_bypasses_cache(self):
+        with patch("privacyidea.api.system.get_certificate_status", return_value=[]) as gcs:
+            with self.app.test_request_context('/system/health/certificates?refresh=1',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.data)
+        self.assertTrue(gcs.call_args.kwargs.get("refresh"))
+
+    def test_resolver_timing_requires_auth(self):
+        with self.app.test_request_context('/system/health/resolver_timing', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+
+    def test_resolver_timing_returns_recorded_observations(self):
+        # Drop a few observations under a single (resolver, op) pair and read back via the API.
+        for _ in range(5):
+            observe("resolver_op_duration_seconds", 0.05,
+                    {"resolver": "ldap1", "resolver_type": "ldapresolver", "op": "checkPass"})
+        with self.app.test_request_context('/system/health/resolver_timing',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            entries = res.json["result"]["value"]
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        self.assertEqual(entry["count"], 5)
+        self.assertEqual(entry["labels"]["resolver"], "ldap1")
+        self.assertEqual(entry["labels"]["op"], "checkPass")
+
+    def test_resolver_timing_invalid_since_seconds_falls_back_to_default(self):
+        # Junk in the query string must not 500; the handler falls back to 3600s.
+        with self.app.test_request_context('/system/health/resolver_timing?since_seconds=notanint',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"], [])
+
+    def test_notification_delivery_requires_auth(self):
+        with self.app.test_request_context('/system/health/notification_delivery', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 401, res)
+
+    def test_notification_delivery_empty_window(self):
+        with self.app.test_request_context('/system/health/notification_delivery',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+        # All three channels are always present, even when empty.
+        self.assertEqual(value["push"], [])
+        self.assertEqual(value["sms"], [])
+        self.assertEqual(value["email"], [])
+        self.assertEqual(value["since_seconds"], 3600)
+
+    def test_notification_delivery_folds_each_channel_by_key_label(self):
+        # Push: two ok, one failed - same gateway, so they all collapse into one row.
+        inc("push_delivery_total", {"gateway": "firebase", "result": "ok"}, by=2)
+        inc("push_delivery_total", {"gateway": "firebase", "result": "failed"})
+        observe("push_delivery_duration_seconds", 0.1, {"gateway": "firebase"})
+
+        # SMS across two gateways; the response orders by total desc.
+        inc("sms_send_total", {"gateway": "primary", "result": "ok"}, by=4)
+        inc("sms_send_total", {"gateway": "secondary", "result": "ok"})
+
+        # Email with both an ok and an error-path increment.
+        inc("email_send_total", {"identifier": "smtp1", "result": "ok"}, by=3)
+        inc("email_send_total", {"identifier": "smtp1", "result": "error"})
+
+        with self.app.test_request_context('/system/health/notification_delivery',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+
+        # Push: one row with gateway=firebase, ok=2, failed=1, total=3.
+        self.assertEqual(len(value["push"]), 1)
+        push = value["push"][0]
+        self.assertEqual(push["key"], "firebase")
+        self.assertEqual(push["ok"], 2)
+        self.assertEqual(push["failed"], 1)
+        self.assertEqual(push["total"], 3)
+
+        # SMS: two rows, busiest first.
+        self.assertEqual([r["key"] for r in value["sms"]], ["primary", "secondary"])
+        self.assertEqual(value["sms"][0]["ok"], 4)
+        self.assertEqual(value["sms"][1]["ok"], 1)
+
+        # Email: error-path increment is folded into the "error" outcome.
+        self.assertEqual(len(value["email"]), 1)
+        email = value["email"][0]
+        self.assertEqual(email["ok"], 3)
+        self.assertEqual(email["error"], 1)
+        self.assertEqual(email["total"], 4)
+
+    def test_notification_delivery_custom_window(self):
+        with self.app.test_request_context('/system/health/notification_delivery?since_seconds=60',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"]["since_seconds"], 60)
+
+    def _seed_metric_at(self, hours_ago):
+        # Insert one MetricAggregate row whose window_start is `hours_ago` hours
+        # in the past, bypassing the bucket-rounding in inc()/observe().
+        row = MetricAggregate(
+            metric_name="sms_send_total",
+            labels_key='{"gateway":"x","result":"ok"}',
+            window_start=_utc_now() - datetime.timedelta(hours=hours_ago),
+            count=1)
+        db.session.add(row)
+        db.session.commit()
+
+    def test_metricscleanup_default_24h_retains_recent_drops_old(self):
+        self._seed_metric_at(hours_ago=1)    # recent - kept
+        self._seed_metric_at(hours_ago=48)   # old - dropped
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+        self.assertEqual(value["deleted"], 1)
+        self.assertEqual(value["older_than_hours"], 24)
+        # End db.session's REPEATABLE READ snapshot (taken when we seeded) so
+        # the cleanup commit issued on the dedicated metric session is visible.
+        db.session.commit()
+        self.assertEqual(db.session.query(MetricAggregate).count(), 1)
+
+    def test_metricscleanup_custom_hours(self):
+        self._seed_metric_at(hours_ago=2)
+        self._seed_metric_at(hours_ago=10)
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           data={'older_than_hours': '5'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+        self.assertEqual(value["deleted"], 1)
+        self.assertEqual(value["older_than_hours"], 5)
+
+    def test_metricscleanup_invalid_hours_falls_back_to_default(self):
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           data={'older_than_hours': 'not-a-number'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"]["older_than_hours"], 24)
+
+    def test_metricscleanup_clamps_low_hours(self):
+        # Negative or zero would otherwise wipe the in-progress bucket.
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           data={'older_than_hours': '0'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"]["older_than_hours"], 1)
