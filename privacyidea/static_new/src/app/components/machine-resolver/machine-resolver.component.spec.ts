@@ -21,7 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
-import { Router } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { MachineResolver, MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
@@ -55,10 +55,7 @@ describe("MachineResolverComponent", () => {
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: MatDialog, useValue: dialog },
-        {
-          provide: Router,
-          useValue: { navigate: jest.fn(), navigateByUrl: jest.fn(), events: of(), url: "" }
-        }
+        provideRouter([])
       ]
     }).compileComponents();
 
@@ -67,6 +64,7 @@ describe("MachineResolverComponent", () => {
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     authServiceMock.actionAllowed.mockReturnValue(true);
     fixture.detectChanges();
   });
@@ -105,9 +103,15 @@ describe("MachineResolverComponent", () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
   });
 
-  it("onOpenMachineResolver navigates to the details page", () => {
-    component.onOpenMachineResolver({ resolvername: "hosts1" } as MachineResolver);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts1");
+  it("links each resolver name to its details page", () => {
+    machineResolverServiceMock.machineResolvers.set([
+      { resolvername: "hosts1", type: "hosts", data: { resolver: "hosts1", type: "hosts" } } as MachineResolver
+    ]);
+    fixture.detectChanges();
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      ".name-actions-container a"
+    );
+    expect(link?.getAttribute("href")).toBe(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts1");
   });
 
   it("onDeleteMachineResolver deletes after confirmation", async () => {

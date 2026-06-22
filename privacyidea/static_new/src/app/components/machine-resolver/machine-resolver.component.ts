@@ -26,7 +26,7 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -38,6 +38,7 @@ import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
+import { lastValueFrom } from "rxjs";
 
 const columnKeysMap = [
   { key: "resolvername", label: "Name" },
@@ -58,10 +59,12 @@ const columnKeysMap = [
     MatButtonModule,
     MatTooltipModule,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    RouterLink
   ]
 })
 export class MachineResolverComponent {
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
 
@@ -116,31 +119,27 @@ export class MachineResolverComponent {
     this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
   }
 
-  onOpenMachineResolver(machineResolver: MachineResolver): void {
-    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(machineResolver.resolvername));
-  }
-
-  onDeleteMachineResolver(machineResolver: MachineResolver): void {
-    this.dialogService
-      .openDialog({
-        component: SimpleConfirmationDialogComponent,
-        data: {
-          title: $localize`Delete Machine Resolver`,
-          items: [machineResolver.resolvername],
-          itemType: "machine resolver",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
-        }
-      })
-      .afterClosed()
-      .subscribe(async (result) => {
-        if (!result) {
-          return;
-        }
-        try {
-          await this.machineResolverService.deleteMachineResolver(machineResolver.resolvername);
-        } catch {
-          /* notification handled by the service */
-        }
-      });
+  async onDeleteMachineResolver(machineResolver: MachineResolver): Promise<void> {
+    const result = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`Delete Machine Resolver`,
+            items: [machineResolver.resolvername],
+            itemType: "machine resolver",
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          }
+        })
+        .afterClosed()
+    );
+    if (!result) {
+      return;
+    }
+    try {
+      await this.machineResolverService.deleteMachineResolver(machineResolver.resolvername);
+    } catch {
+      /* notification handled by the service */
+    }
   }
 }

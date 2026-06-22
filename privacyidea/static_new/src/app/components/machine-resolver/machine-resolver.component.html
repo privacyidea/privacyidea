@@ -73,11 +73,7 @@
           *matCellDef="let element"
           mat-cell>
           <div class="name-actions-container">
-            <a
-              (click)="onOpenMachineResolver(element)"
-              (keydown.enter)="onOpenMachineResolver(element)"
-              role="button"
-              tabindex="0">
+            <a [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, element.resolvername]">
               {{ element.resolvername }}
             </a>
             <div class="actions-buttons">

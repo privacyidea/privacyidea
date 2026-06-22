@@ -76,7 +76,7 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
     data: { resolver: "", type: "hosts" }
   };
 
-  private _loaded = false;
+  private _loadedName: string | null = null;
 
   readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
   readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
@@ -111,7 +111,7 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
 
     effect(() => {
       const name = this.selectedName();
-      if (!name || this._loaded) {
+      if (!name || this._loadedName === name) {
         return;
       }
       const resource = this.machineResolverService.machineResolverResource;
@@ -123,7 +123,8 @@ export class MachineResolverEditComponent implements OnInit, OnDestroy {
       if (resolver) {
         this.originalMachineResolver.set(deepCopy(resolver));
         this.currentMachineResolver.set(deepCopy(resolver));
-        this._loaded = true;
+        this.isEditing.set(false);
+        this._loadedName = name;
       } else {
         this.notificationService.error($localize`Machine resolver "${name}" not found.`);
         this.navigateBack();
