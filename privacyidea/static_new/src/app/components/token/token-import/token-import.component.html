@@ -50,10 +50,9 @@
         (click)="importTokens()"
         [disabled]="!formValid()"
         class="action-button-primary button-width-m margin-left-auto"
-        i18n
         mat-stroked-button>
         <mat-icon>input</mat-icon>
-        Import File
+        <span i18n>Import File</span>
       </button>
     </div>
   </div>
@@ -208,10 +207,9 @@
         <button
           (click)="fileUpload.click()"
           class="action-button-secondary text-center just-center button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>folder_open</mat-icon>
-          Browse Files
+          <span i18n>Browse Files</span>
         </button>
       </div>
     </div>

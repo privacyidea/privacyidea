@@ -23,19 +23,17 @@
     data-overflow-pinned
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
     class="action-button-primary button-width-m"
-    i18n
     mat-stroked-button>
     <mat-icon> add_moderator</mat-icon>
-    Enroll Token
+    <span i18n>Enroll Token</span>
   </button>
   <button
     data-overflow-pinned
     [matMenuTriggerFor]="advancedFilterMenu"
     class="action-button-secondary button-width-m"
-    i18n
     mat-stroked-button>
     <mat-icon> filter_list</mat-icon>
-    More Filter
+    <span i18n>More Filter</span>
   </button>
   <mat-menu #advancedFilterMenu="matMenu">
     @for (keyword of advancedApiFilter; track keyword) {
@@ -54,10 +52,9 @@
         (click)="deleteSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
         class="action-button-delete-secondary button-width-m"
-        i18n
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
-        Delete
+        <span i18n>Delete</span>
       </button>
     }
     @if (authService.actionAllowed("assign")) {
@@ -65,10 +62,9 @@
         (click)="assignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
         class="action-button-secondary button-width-m"
-        i18n
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
-        Assign
+        <span i18n>Assign</span>
       </button>
     }
     @if (authService.actionAllowed("unassign")) {
@@ -76,10 +72,9 @@
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
         class="action-button-secondary button-width-m"
-        i18n
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
-        Unassign
+        <span i18n>Unassign</span>
       </button>
     }
     @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -87,10 +82,9 @@
         (click)="toggleActiveSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
         class="action-button-secondary button-width-m"
-        i18n
         mat-stroked-button>
         <mat-icon> toggle_on</mat-icon>
-        (De)activate
+        <span i18n>(De)activate</span>
       </button>
     }
     @if (authService.actionAllowed("reset")) {
@@ -98,10 +92,9 @@
         (click)="resetFailcounterSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
         class="action-button-secondary button-width-m"
-        i18n
         mat-stroked-button>
         <mat-icon> restart_alt</mat-icon>
-        Reset Failcounters
+        <span i18n>Reset Failcounters</span>
       </button>
     }
   }

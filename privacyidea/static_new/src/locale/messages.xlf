@@ -152,18 +152,18 @@
           <context context-type="linenumber">38,39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3158464241286156814" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>download<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Download </source>
+      <trans-unit id="3099741642167775297" datatype="html">
+        <source>Download</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">57,59</context>
+          <context context-type="linenumber">57,58</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2201237987005516275" datatype="html">
         <source>Audit Data Table</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">64,65</context>
+          <context context-type="linenumber">63,64</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
@@ -174,7 +174,7 @@
         <source>Header Row</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">183,184</context>
+          <context context-type="linenumber">182,183</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
@@ -182,7 +182,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">213,214</context>
+          <context context-type="linenumber">216,217</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
@@ -213,7 +213,7 @@
         <source>Data Row</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">188,189</context>
+          <context context-type="linenumber">187,188</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
@@ -221,7 +221,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">219,220</context>
+          <context context-type="linenumber">222,223</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
@@ -252,7 +252,7 @@
         <source>No Data Row</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">193,194</context>
+          <context context-type="linenumber">192,193</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
@@ -264,7 +264,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">224,225</context>
+          <context context-type="linenumber">227,228</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates.component.html</context>
@@ -303,7 +303,7 @@
         <source>No Data Cell</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">197,198</context>
+          <context context-type="linenumber">196,197</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
@@ -315,7 +315,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">228,229</context>
+          <context context-type="linenumber">231,232</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates.component.html</context>
@@ -347,7 +347,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">381,382</context>
+          <context context-type="linenumber">377,378</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.html</context>
@@ -366,7 +366,7 @@
         <source> No data matching the filter. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
-          <context context-type="linenumber">200,201</context>
+          <context context-type="linenumber">199,200</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.self-service.component.html</context>
@@ -378,7 +378,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">231,232</context>
+          <context context-type="linenumber">234,235</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
@@ -418,7 +418,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">384</context>
+          <context context-type="linenumber">380</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-container-table/user-details-container-table.component.html</context>
@@ -537,7 +537,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">69</context>
+          <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2392488717875840729" datatype="html">
@@ -591,7 +591,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">156,157</context>
+          <context context-type="linenumber">155,156</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
@@ -961,20 +961,24 @@
           <context context-type="linenumber">188</context>
         </context-group>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
+          <context context-type="linenumber">181</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
-          <context context-type="linenumber">107,108</context>
+          <context context-type="linenumber">106,107</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">143,144</context>
+          <context context-type="linenumber">142,143</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">137,138</context>
+          <context context-type="linenumber">136,137</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">132,133</context>
+          <context context-type="linenumber">131,132</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
@@ -986,15 +990,15 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">122,123</context>
+          <context context-type="linenumber">121,122</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">156,157</context>
+          <context context-type="linenumber">155,156</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">122,123</context>
+          <context context-type="linenumber">121,122</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-additional-conditions/edit-additional-conditions.component.html</context>
@@ -1236,7 +1240,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
-          <context context-type="linenumber">162,163</context>
+          <context context-type="linenumber">161,162</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8204176479746810612" datatype="html">
@@ -1747,15 +1751,15 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">94,95</context>
+          <context context-type="linenumber">93,94</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">69,70</context>
+          <context context-type="linenumber">68,69</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">84,85</context>
+          <context context-type="linenumber">83,84</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6189229139786721491" datatype="html">
@@ -1815,12 +1819,20 @@
           <context context-type="linenumber">80</context>
         </context-group>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
+          <context context-type="linenumber">33,34</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.ts</context>
           <context context-type="linenumber">123</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.ts</context>
           <context context-type="linenumber">308</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
+          <context context-type="linenumber">58,59</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.ts</context>
@@ -1848,7 +1860,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
-          <context context-type="linenumber">119</context>
+          <context context-type="linenumber">118</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.ts</context>
@@ -1856,7 +1868,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">155</context>
+          <context context-type="linenumber">154</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.ts</context>
@@ -1864,7 +1876,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">149</context>
+          <context context-type="linenumber">148</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.ts</context>
@@ -1872,7 +1884,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">144</context>
+          <context context-type="linenumber">143</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.ts</context>
@@ -1880,7 +1892,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">134</context>
+          <context context-type="linenumber">133</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.ts</context>
@@ -1888,7 +1900,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">168</context>
+          <context context-type="linenumber">167</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.ts</context>
@@ -1896,7 +1908,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">134</context>
+          <context context-type="linenumber">133</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.ts</context>
@@ -1915,8 +1927,16 @@
           <context context-type="linenumber">63</context>
         </context-group>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
+          <context context-type="linenumber">80,81</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
           <context context-type="linenumber">453</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
+          <context context-type="linenumber">57,58</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
@@ -1977,25 +1997,25 @@
           <context context-type="linenumber">25,27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9152310982608420126" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Select and Upload File </source>
+      <trans-unit id="2297488482315025374" datatype="html">
+        <source>Select and Upload File</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">33,36</context>
+          <context context-type="linenumber">33,34</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4300403911469631614" datatype="html">
         <source>Application:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">47,48</context>
+          <context context-type="linenumber">46,47</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7501813719543032906" datatype="html">
         <source>Delete Subscription</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">56,57</context>
+          <context context-type="linenumber">55,56</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.ts</context>
@@ -2006,102 +2026,102 @@
         <source> Valid subscription </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">67</context>
+          <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6915780613445523949" datatype="html">
         <source> Subscription about to expire </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">74</context>
+          <context context-type="linenumber">73</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3400320711376722730" datatype="html">
         <source> Subscription expired </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">81</context>
+          <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7420289231407832388" datatype="html">
         <source>Level:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">86,87</context>
+          <context context-type="linenumber">85,86</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2191775412581217688" datatype="html">
         <source>Users:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">89,90</context>
+          <context context-type="linenumber">88,89</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2118317108126412124" datatype="html">
         <source>distinct users with active tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">92,93</context>
+          <context context-type="linenumber">91,92</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4817071212830976815" datatype="html">
         <source>remaining</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">93,94</context>
+          <context context-type="linenumber">92,93</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">99,100</context>
+          <context context-type="linenumber">98,99</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2859516482195587173" datatype="html">
         <source>Tokens:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">96,97</context>
+          <context context-type="linenumber">95,96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7443611914731341153" datatype="html">
         <source>active, assigned tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">98,99</context>
+          <context context-type="linenumber">97,98</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1141173004200695232" datatype="html">
         <source>Clients:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">102,103</context>
+          <context context-type="linenumber">101,102</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5487630018331375668" datatype="html">
         <source>From:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">105,106</context>
+          <context context-type="linenumber">104,105</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5752829569732845992" datatype="html">
         <source>To:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5446823947919728051" datatype="html">
         <source>Subscription Issued To:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1578741046646291108" datatype="html">
         <source>Issuer:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/subscription/subscription.component.html</context>
-          <context context-type="linenumber">140</context>
+          <context context-type="linenumber">139</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1820047936164452052" datatype="html">
@@ -2230,60 +2250,60 @@
           <context context-type="linenumber">135</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8712793952750800901" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete User Cache </source>
+      <trans-unit id="3084423083260945804" datatype="html">
+        <source>Delete User Cache</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">143,145</context>
+          <context context-type="linenumber">143,144</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4167383086622021284" datatype="html">
         <source>Override Authorization Clients</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">150</context>
+          <context context-type="linenumber">149</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2432358871474206894" datatype="html">
         <source> These client IP addresses or subnets are allowed to masquerade as another client </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">161</context>
+          <context context-type="linenumber">160</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2436541737245225058" datatype="html">
         <source>SMTP Server for Password Recovery</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">165</context>
+          <context context-type="linenumber">164</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1748233095592580997" datatype="html">
         <source>None </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">173</context>
+          <context context-type="linenumber">172</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4289723965222991091" datatype="html">
         <source> Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMTP server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">179,181</context>
+          <context context-type="linenumber">178,180</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2015689026279681101" datatype="html">
         <source> Default Settings for New Enrolled Tokens </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">191</context>
+          <context context-type="linenumber">190</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8529250135322138104" datatype="html">
         <source>OTP Length</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">196</context>
+          <context context-type="linenumber">195</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
@@ -2294,7 +2314,7 @@
         <source>Count Window</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">205</context>
+          <context context-type="linenumber">204</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
@@ -2302,21 +2322,21 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">112</context>
+          <context context-type="linenumber">111</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8785962825380657095" datatype="html">
         <source>Max Failcount</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">214</context>
+          <context context-type="linenumber">213</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7804656729965002370" datatype="html">
         <source>Sync Window</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">225</context>
+          <context context-type="linenumber">224</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
@@ -2327,14 +2347,14 @@
         <source>Challenge Validity</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">234</context>
+          <context context-type="linenumber">233</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8899490491233073684" datatype="html">
         <source>Time in seconds.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
-          <context context-type="linenumber">240</context>
+          <context context-type="linenumber">239</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3072578341080791882" datatype="html">
@@ -3456,7 +3476,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">336,337</context>
+          <context context-type="linenumber">332,333</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-create/user-create.component.html</context>
@@ -3506,14 +3526,34 @@
           <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9054316909030086320" datatype="html">
-        <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_TAG_BUTTON" ctype="x-button" equiv-text="&lt;button
-        (click)=&quot;regenerateQRCode()&quot;
-        class=&quot;action-button-secondary button-width-l&quot;
-        mat-stroked-button&gt;"/><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>autorenew<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Regenerate QR Code <x id="CLOSE_TAG_BUTTON" ctype="x-button" equiv-text="&lt;/button&gt;"/></source>
+      <trans-unit id="7440620503006475812" datatype="html">
+        <source> Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
-          <context context-type="linenumber">49,62</context>
+          <context context-type="linenumber">47,50</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.wizard.component.html</context>
+          <context context-type="linenumber">58,61</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component.html</context>
+          <context context-type="linenumber">48,51</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8364879732772791668" datatype="html">
+        <source>Regenerate QR Code</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
+          <context context-type="linenumber">57,58</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component.html</context>
+          <context context-type="linenumber">59,60</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component.ts</context>
+          <context context-type="linenumber">105</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1016174858849368844" datatype="html">
@@ -3523,18 +3563,11 @@
           <context context-type="linenumber">30,31</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9003223718878669519" datatype="html">
-        <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.wizard.component.html</context>
-          <context context-type="linenumber">60,66</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="7504940227782988572" datatype="html">
         <source> Logout </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.wizard.component.html</context>
-          <context context-type="linenumber">81,82</context>
+          <context context-type="linenumber">79,80</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component.html</context>
@@ -3620,54 +3653,67 @@
           <context context-type="linenumber">24,25</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5050307465636924350" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete </source>
+      <trans-unit id="3103515648538504311" datatype="html">
+        <source>Enroll Token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
-          <context context-type="linenumber">33,35</context>
+          <context context-type="linenumber">41,42</context>
         </context-group>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">82,84</context>
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.html</context>
+          <context context-type="linenumber">47,48</context>
         </context-group>
-      </trans-unit>
-      <trans-unit id="3701782776627563786" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Enroll Token </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
-          <context context-type="linenumber">42,44</context>
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
+          <context context-type="linenumber">43,44</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
+          <context context-type="linenumber">28,29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="51231246243826413" datatype="html">
         <source>Compare to Template</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
-          <context context-type="linenumber">51,52</context>
+          <context context-type="linenumber">49,50</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1860051429496425795" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>phonelink<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Register </source>
+      <trans-unit id="3301086086650990787" datatype="html">
+        <source>Register</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
-          <context context-type="linenumber">67,69</context>
+          <context context-type="linenumber">65,66</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-init-dialog/container-registration-init-dialog.component.ts</context>
+          <context context-type="linenumber">58</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="814775611784559286" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>sync<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Rollover </source>
+      <trans-unit id="4560156750107459625" datatype="html">
+        <source>Rollover</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
-          <context context-type="linenumber">76,78</context>
+          <context context-type="linenumber">73,74</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-init-dialog/container-registration-init-dialog.component.ts</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-rollover/token-rollover.component.ts</context>
+          <context context-type="linenumber">67</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">102,104</context>
+          <context context-type="linenumber">98,99</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4487097183791196976" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>phonelink_off<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Unregister </source>
+      <trans-unit id="8426224947227400092" datatype="html">
+        <source>Unregister</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-actions/container-details-actions.component.html</context>
-          <context context-type="linenumber">86,88</context>
+          <context context-type="linenumber">82,83</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4198023821868343082" datatype="html">
@@ -3749,46 +3795,46 @@
           <context context-type="linenumber">24,25</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8741778720027136568" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Assign All </source>
+      <trans-unit id="6226407596314087567" datatype="html">
+        <source>Assign All</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
-          <context context-type="linenumber">34,36</context>
+          <context context-type="linenumber">34,35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7258114024674703541" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Unassign All </source>
+      <trans-unit id="4376792888105212486" datatype="html">
+        <source>Unassign All</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
-          <context context-type="linenumber">45,47</context>
+          <context context-type="linenumber">44,45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8744296306372188055" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>playlist_play<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Activate All </source>
+      <trans-unit id="6356221762194125000" datatype="html">
+        <source>Activate All</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
-          <context context-type="linenumber">62,64</context>
+          <context context-type="linenumber">60,61</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3384070828027072245" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot; /&gt;"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot; /&gt;"/> Deactivate All </source>
+      <trans-unit id="3877923725970335102" datatype="html">
+        <source>Deactivate All</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
-          <context context-type="linenumber">73,75</context>
+          <context context-type="linenumber">70,71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3408138413630729607" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Remove All </source>
+      <trans-unit id="5994697604396931641" datatype="html">
+        <source>Remove All</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
-          <context context-type="linenumber">93,95</context>
+          <context context-type="linenumber">89,90</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8066921160528260409" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete All </source>
+      <trans-unit id="1446710878173113225" datatype="html">
+        <source>Delete All</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
-          <context context-type="linenumber">104,106</context>
+          <context context-type="linenumber">99,100</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5195080560302041484" datatype="html">
@@ -3803,6 +3849,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.ts</context>
           <context context-type="linenumber">84</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
+          <context context-type="linenumber">77,78</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
@@ -3873,25 +3923,18 @@
           <context context-type="linenumber">175,176</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2195226608365436802" datatype="html">
-        <source><x id="START_TAG_DIV" ctype="x-div" equiv-text="&lt;div class=&quot;flex just-center&quot;&gt;"/>Actions<x id="CLOSE_TAG_DIV" ctype="x-div" equiv-text="&lt;/div&gt;"/></source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">179,181</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="4370506963617990993" datatype="html">
         <source>Actions Button Cell</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">183,184</context>
+          <context context-type="linenumber">186,187</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2579643993906157062" datatype="html">
         <source>Remove Token from Container</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">193,194</context>
+          <context context-type="linenumber">196,197</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.html</context>
@@ -3902,7 +3945,7 @@
         <source>Delete Token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.html</context>
-          <context context-type="linenumber">202,203</context>
+          <context context-type="linenumber">205,206</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-table/container-details-token-table.component.ts</context>
@@ -3997,7 +4040,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">342</context>
+          <context context-type="linenumber">332</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
@@ -4020,7 +4063,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">467,468</context>
+          <context context-type="linenumber">457,458</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.self-service.component.html</context>
@@ -4222,7 +4265,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">172</context>
+          <context context-type="linenumber">162</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
@@ -4391,24 +4434,6 @@
           <context context-type="linenumber">39,42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7440620503006475812" datatype="html">
-        <source> Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint. </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component.html</context>
-          <context context-type="linenumber">48,51</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="8364879732772791668" datatype="html">
-        <source>Regenerate QR Code</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component.html</context>
-          <context context-type="linenumber">59,60</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component.ts</context>
-          <context context-type="linenumber">105</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="3308296399200982215" datatype="html">
         <source>Container Rollover</source>
         <context-group purpose="location">
@@ -4423,52 +4448,31 @@
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4560156750107459625" datatype="html">
-        <source>Rollover</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-init-dialog/container-registration-init-dialog.component.ts</context>
-          <context context-type="linenumber">50</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-rollover/token-rollover.component.ts</context>
-          <context context-type="linenumber">67</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="3301086086650990787" datatype="html">
-        <source>Register</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-init-dialog/container-registration-init-dialog.component.ts</context>
-          <context context-type="linenumber">58</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="5867272595505845738" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> filter_list<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> More Filter </source>
+      <trans-unit id="6695303955737228389" datatype="html">
+        <source>More Filter</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
-          <context context-type="linenumber">37,40</context>
+          <context context-type="linenumber">37,38</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table-actions/challenges-table-actions.component.html</context>
-          <context context-type="linenumber">42,45</context>
+          <context context-type="linenumber">38,39</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table-actions/challenges-table-actions.component.html</context>
+          <context context-type="linenumber">41,42</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-actions/token-applications-actions.component.html</context>
-          <context context-type="linenumber">29,32</context>
+          <context context-type="linenumber">26,27</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-actions/token-applications-actions.component.html</context>
+          <context context-type="linenumber">29,30</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">37,40</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="8678182278667716526" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
-          <context context-type="linenumber">59,62</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">59,61</context>
+          <context context-type="linenumber">36,37</context>
         </context-group>
       </trans-unit>
       <trans-unit id="9073102763816026563" datatype="html">
@@ -4613,15 +4617,15 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">219,221</context>
+          <context context-type="linenumber">209,211</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">91,92</context>
+          <context context-type="linenumber">90,91</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
-          <context context-type="linenumber">268,269</context>
+          <context context-type="linenumber">267,268</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -4925,6 +4929,10 @@
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.ts</context>
           <context context-type="linenumber">114</context>
         </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/event/event.component.html</context>
+          <context context-type="linenumber">57,58</context>
+        </context-group>
       </trans-unit>
       <trans-unit id="6009831442076062430" datatype="html">
         <source>Edit Event Handler</source>
@@ -5163,25 +5171,18 @@
           <context context-type="linenumber">42,43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5783955506397087005" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create New Event Handler </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/event/event.component.html</context>
-          <context context-type="linenumber">57,59</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="1061486586577716295" datatype="html">
         <source>Detailed View </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
-          <context context-type="linenumber">65,66</context>
+          <context context-type="linenumber">64,65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3035445874261462043" datatype="html">
         <source>Delete Event Handler</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
-          <context context-type="linenumber">169,170</context>
+          <context context-type="linenumber">168,169</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
@@ -5229,32 +5230,36 @@
           <context context-type="linenumber">42,43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5690170849622219546" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create CA Connector </source>
+      <trans-unit id="2890720429730839186" datatype="html">
+        <source>Create CA Connector</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
-          <context context-type="linenumber">54,57</context>
+          <context context-type="linenumber">54,55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
+          <context context-type="linenumber">671,672</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5118138283933895543" datatype="html">
         <source> CA Connector Name </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
-          <context context-type="linenumber">69,70</context>
+          <context context-type="linenumber">68,69</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7840301863034787689" datatype="html">
         <source> Type </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
-          <context context-type="linenumber">93,94</context>
+          <context context-type="linenumber">92,93</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1031602001425487723" datatype="html">
         <source> No CA connectors found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
-          <context context-type="linenumber">139,140</context>
+          <context context-type="linenumber">138,139</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4273115642053644797" datatype="html">
@@ -5704,11 +5709,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">129</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">136,137</context>
+          <context context-type="linenumber">135,136</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -5748,71 +5753,75 @@
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4834122211267844633" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create PrivacyIDEA Server </source>
+      <trans-unit id="2802888711895067342" datatype="html">
+        <source>Create PrivacyIDEA Server</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">54,57</context>
+          <context context-type="linenumber">54,55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
+          <context context-type="linenumber">701,702</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8640432927101972930" datatype="html">
         <source> Identifier </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">69,70</context>
+          <context context-type="linenumber">68,69</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">69,70</context>
+          <context context-type="linenumber">68,69</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">69,70</context>
+          <context context-type="linenumber">68,69</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4492871004050155394" datatype="html">
         <source> URL </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">93,94</context>
+          <context context-type="linenumber">92,93</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7621183429782746595" datatype="html">
         <source> Verify TLS </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3563823504206575540" datatype="html">
         <source> Description </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">129,130</context>
+          <context context-type="linenumber">128,129</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">123,124</context>
+          <context context-type="linenumber">122,123</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">118,119</context>
+          <context context-type="linenumber">117,118</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">93,94</context>
+          <context context-type="linenumber">92,93</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">142,143</context>
+          <context context-type="linenumber">141,142</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">187</context>
+          <context context-type="linenumber">177</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -5823,7 +5832,7 @@
         <source> No privacyIDEA servers found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
-          <context context-type="linenumber">175,176</context>
+          <context context-type="linenumber">174,175</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2206408050560204602" datatype="html">
@@ -6025,36 +6034,40 @@
           <context context-type="linenumber">27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8899015629858253009" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create RADIUS Server </source>
+      <trans-unit id="2946975121659342281" datatype="html">
+        <source>Create RADIUS Server</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">54,57</context>
+          <context context-type="linenumber">54,55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
+          <context context-type="linenumber">611,612</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1802385719118525406" datatype="html">
         <source> IP/FQDN </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">93,94</context>
+          <context context-type="linenumber">92,93</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">93,94</context>
+          <context context-type="linenumber">92,93</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4818117737937055535" datatype="html">
         <source> Dictionary </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="10128036244705177" datatype="html">
         <source> No RADIUS servers found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
-          <context context-type="linenumber">169,170</context>
+          <context context-type="linenumber">168,169</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1040691641944709334" datatype="html">
@@ -6121,36 +6134,40 @@
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8162678047636915395" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create Service ID </source>
+      <trans-unit id="8143000510071354453" datatype="html">
+        <source>Create Service ID</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">54,58</context>
+          <context context-type="linenumber">54,55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
+          <context context-type="linenumber">761,762</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2749813652358496750" datatype="html">
         <source> Service IDs can be used to attach e.g. SSH keys to certain machines and services. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> To view attached tokens go to <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.TOKENS_APPLICATIONS]&quot;&gt;"/>token applications.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">61,66</context>
+          <context context-type="linenumber">60,65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4675308506928673670" datatype="html">
         <source> Id </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">79,80</context>
+          <context context-type="linenumber">78,79</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">69,70</context>
+          <context context-type="linenumber">68,69</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4144925823764469446" datatype="html">
         <source> No service IDs found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
-          <context context-type="linenumber">164,165</context>
+          <context context-type="linenumber">163,164</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3994673721782824671" datatype="html">
@@ -6273,25 +6290,29 @@
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2340932011848271745" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create SMS Gateway </source>
+      <trans-unit id="7492498602959340215" datatype="html">
+        <source>Create SMS Gateway</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">54,57</context>
+          <context context-type="linenumber">54,55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
+          <context context-type="linenumber">641,642</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5179432698650152474" datatype="html">
         <source> Provider Module </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1835222705771112561" datatype="html">
         <source> No SMS gateways found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
-          <context context-type="linenumber">154,155</context>
+          <context context-type="linenumber">153,154</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4666233829760043776" datatype="html">
@@ -6453,32 +6474,36 @@
           <context context-type="linenumber">27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5810646118243661179" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create SMTP Server </source>
+      <trans-unit id="2627932360046728167" datatype="html">
+        <source>Create SMTP Server</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">54,57</context>
+          <context context-type="linenumber">54,55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
+          <context context-type="linenumber">581,582</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2630865067176779866" datatype="html">
         <source> Sender </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1019336384853138917" datatype="html">
         <source> StartTLS </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">123,124</context>
+          <context context-type="linenumber">122,123</context>
         </context-group>
       </trans-unit>
       <trans-unit id="9180031957602708436" datatype="html">
         <source> No SMTP servers found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
-          <context context-type="linenumber">188,189</context>
+          <context context-type="linenumber">187,188</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2477655292313678799" datatype="html">
@@ -6516,18 +6541,18 @@
           <context context-type="linenumber">27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="880679334143750995" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Create Token Group </source>
+      <trans-unit id="6790391574667051517" datatype="html">
+        <source>Create Token Group</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">54,57</context>
+          <context context-type="linenumber">54,55</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4373036848762635419" datatype="html">
         <source> No tokengroups found. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
-          <context context-type="linenumber">154,155</context>
+          <context context-type="linenumber">153,154</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4108679553341339247" datatype="html">
@@ -6589,6 +6614,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">64,66</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
+          <context context-type="linenumber">41,42</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8296640497525814291" datatype="html">
@@ -6846,7 +6875,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">292</context>
+          <context context-type="linenumber">288</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
@@ -6948,13 +6977,6 @@
           <context context-type="linenumber">570,571</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2627932360046728167" datatype="html">
-        <source>Create SMTP Server</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
-          <context context-type="linenumber">581,582</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="8652692981132891576" datatype="html">
         <source>RADIUS Servers</source>
         <context-group purpose="location">
@@ -6967,13 +6989,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">600,601</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2946975121659342281" datatype="html">
-        <source>Create RADIUS Server</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
-          <context context-type="linenumber">611,612</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1411314889757643021" datatype="html">
@@ -6990,13 +7005,6 @@
           <context context-type="linenumber">630,631</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7492498602959340215" datatype="html">
-        <source>Create SMS Gateway</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
-          <context context-type="linenumber">641,642</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="8346577706596549869" datatype="html">
         <source>CA Connectors</source>
         <context-group purpose="location">
@@ -7011,13 +7019,6 @@
           <context context-type="linenumber">660,661</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2890720429730839186" datatype="html">
-        <source>Create CA Connector</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
-          <context context-type="linenumber">671,672</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="7094001179684470877" datatype="html">
         <source>PrivacyIDEA Servers</source>
         <context-group purpose="location">
@@ -7030,13 +7031,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">690,691</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2802888711895067342" datatype="html">
-        <source>Create PrivacyIDEA Server</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
-          <context context-type="linenumber">701,702</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5257682977316709001" datatype="html">
@@ -7072,13 +7066,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">750,751</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="8143000510071354453" datatype="html">
-        <source>Create Service ID</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
-          <context context-type="linenumber">761,762</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3039940756451018621" datatype="html">
@@ -7329,7 +7316,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">347,348</context>
+          <context context-type="linenumber">343,344</context>
         </context-group>
         <note priority="1" from="description">Reset button text</note>
       </trans-unit>
@@ -7546,7 +7533,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">268</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3922954428947564264" datatype="html">
@@ -8156,7 +8143,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
-          <context context-type="linenumber">253,254</context>
+          <context context-type="linenumber">252,253</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7900230809285891793" datatype="html">
@@ -8251,7 +8238,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">66,67</context>
+          <context context-type="linenumber">65,66</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
+          <context context-type="linenumber">58,59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2935871829967083793" datatype="html">
@@ -8262,7 +8253,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">75</context>
+          <context context-type="linenumber">74</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
@@ -8277,7 +8268,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">84</context>
+          <context context-type="linenumber">83</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
@@ -8472,18 +8463,18 @@
           <context context-type="linenumber">143,146</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7571948196586105318" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>replay<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Read again </source>
+      <trans-unit id="2147000037268211875" datatype="html">
+        <source>Read again</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">151,153</context>
+          <context context-type="linenumber">151,152</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4244981153280399309" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>keyboard_arrow_right<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Dive In! </source>
+      <trans-unit id="8745257210647242626" datatype="html">
+        <source>Dive In!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">159,161</context>
+          <context context-type="linenumber">158,159</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7646301140547143726" datatype="html">
@@ -8496,14 +8487,14 @@
           &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">169,190</context>
+          <context context-type="linenumber">167,188</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4956057181541022936" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>done<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Okay </source>
+      <trans-unit id="1579692722565712588" datatype="html">
+        <source>Okay</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
-          <context context-type="linenumber">196,198</context>
+          <context context-type="linenumber">194,195</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8102109482071322921" datatype="html">
@@ -8520,50 +8511,32 @@
           <context context-type="linenumber">32,33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3111139149453166188" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Assign Token </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">41,43</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="9009627132386793643" datatype="html">
         <source> If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a serial number printed on the token. Please enter this serial number and make up a token pin. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">51,52</context>
+          <context context-type="linenumber">50,51</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7718776613508850583" datatype="html">
         <source>Enter Serial</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">56</context>
+          <context context-type="linenumber">55</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2841006058202716029" datatype="html">
         <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
-          <context context-type="linenumber">62,63</context>
+          <context context-type="linenumber">61,62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8686941918436398029" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Delete Expired </source>
+      <trans-unit id="7968188737966551147" datatype="html">
+        <source>Delete Expired</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table-actions/challenges-table-actions.component.html</context>
-          <context context-type="linenumber">28,32</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="6695303955737228389" datatype="html">
-        <source>More Filter</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table-actions/challenges-table-actions.component.html</context>
-          <context context-type="linenumber">40,41</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-actions/token-applications-actions.component.html</context>
-          <context context-type="linenumber">27,28</context>
+          <context context-type="linenumber">28,29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4112208227784768237" datatype="html">
@@ -8793,18 +8766,18 @@
           <context context-type="linenumber">31,32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1839347343820573248" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"/>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Mark Token as Lost </source>
+      <trans-unit id="252808375892649100" datatype="html">
+        <source>Mark Token as Lost</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.html</context>
-          <context context-type="linenumber">39,41</context>
+          <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4085203128751493648" datatype="html">
         <source> Token was marked as lost successfully. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.html</context>
-          <context context-type="linenumber">50,51</context>
+          <context context-type="linenumber">49,50</context>
         </context-group>
       </trans-unit>
       <trans-unit id="674438606532897003" datatype="html">
@@ -8817,14 +8790,14 @@
         &gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> The password that needs to be combined with the OTP PIN: </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.html</context>
-          <context context-type="linenumber">54,65</context>
+          <context context-type="linenumber">53,64</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2974563650891271881" datatype="html">
         <source> The password can not be shown again later! </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.html</context>
-          <context context-type="linenumber">72,73</context>
+          <context context-type="linenumber">71,72</context>
         </context-group>
       </trans-unit>
       <trans-unit id="803299385964446794" datatype="html">
@@ -8833,7 +8806,7 @@
         }}"/>. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.html</context>
-          <context context-type="linenumber">75,80</context>
+          <context context-type="linenumber">74,79</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5906853010723436134" datatype="html">
@@ -8878,25 +8851,18 @@
           <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="409280130760559345" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>sync<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Resync Token </source>
+      <trans-unit id="5410656713722145905" datatype="html">
+        <source>Resync Token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component.html</context>
-          <context context-type="linenumber">42,45</context>
+          <context context-type="linenumber">42,43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5089069083331724122" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>password<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Set PIN </source>
+      <trans-unit id="5275874703860997194" datatype="html">
+        <source>Random PIN</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
-          <context context-type="linenumber">58,60</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="1305659226730521106" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>casino<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Random PIN </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
-          <context context-type="linenumber">68,70</context>
+          <context context-type="linenumber">67,68</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2919954369079709850" datatype="html">
@@ -8927,18 +8893,18 @@
           <context context-type="linenumber">28</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3680194310459289797" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Test Token </source>
+      <trans-unit id="6782420573471778191" datatype="html">
+        <source>Test Token</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
-          <context context-type="linenumber">52,55</context>
+          <context context-type="linenumber">52,53</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7851122111198854253" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Verify OTP Value </source>
+      <trans-unit id="2344453975684255524" datatype="html">
+        <source>Verify OTP Value</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
-          <context context-type="linenumber">60,63</context>
+          <context context-type="linenumber">59,60</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1510548409662857515" datatype="html">
@@ -8970,35 +8936,35 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
-          <context context-type="linenumber">106</context>
+          <context context-type="linenumber">105</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2819182917765561151" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>key<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Test Passkey </source>
+      <trans-unit id="5545546628213501287" datatype="html">
+        <source>Test Passkey</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
-          <context context-type="linenumber">54,56</context>
+          <context context-type="linenumber">54,55</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2661304540290079069" datatype="html">
         <source>Matched token: </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
-          <context context-type="linenumber">65,66</context>
+          <context context-type="linenumber">64,65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5059236257790315428" datatype="html">
         <source>, user: </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
-          <context context-type="linenumber">68,69</context>
+          <context context-type="linenumber">67,68</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4679350652881155098" datatype="html">
         <source> Sync </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-details-actions.component.html</context>
-          <context context-type="linenumber">93</context>
+          <context context-type="linenumber">92</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8319316595040583780" datatype="html">
@@ -9101,64 +9067,73 @@
           <context context-type="linenumber">34,36</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4071377376054753380" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ tokenIsActive() ? &quot;lock&quot; : &quot;play_circle&quot; }}"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ tokenIsActive() ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"/> </source>
+      <trans-unit id="135077277733987408" datatype="html">
+        <source>Revoke</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">61,64</context>
+          <context context-type="linenumber">71,72</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
+          <context context-type="linenumber">479</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
+          <context context-type="linenumber">86</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.ts</context>
+          <context context-type="linenumber">69</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.ts</context>
+          <context context-type="linenumber">86</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7082517667331881763" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>undo<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Revoke </source>
+      <trans-unit id="1527623684357747860" datatype="html">
+        <source>Lost This Token?</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">72,74</context>
+          <context context-type="linenumber">89,90</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5509499632011288514" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Lost This Token? </source>
+      <trans-unit id="8026173016825837201" datatype="html">
+        <source>Show in Audit</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">92,94</context>
+          <context context-type="linenumber">108,109</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1694581876650630653" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>receipt_long<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Show in Audit </source>
+      <trans-unit id="7173446555130447477" datatype="html">
+        <source>Attach to Machine</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">113,115</context>
+          <context context-type="linenumber">118,119</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6749830878331728619" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>computer<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Attach to Machine </source>
+      <trans-unit id="7696022914744539391" datatype="html">
+        <source>Disable Offline</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">124,126</context>
+          <context context-type="linenumber">127,128</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5171589210281594642" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>computer<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Disable Offline </source>
+      <trans-unit id="1050186287351630958" datatype="html">
+        <source>Use Offline</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">134,136</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="3355986459319935507" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>computer<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Use Offline </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">143,145</context>
+          <context context-type="linenumber">135,136</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">153,155</context>
+          <context context-type="linenumber">144,145</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6452425567891618523" datatype="html">
         <source>Enter Container</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">293</context>
+          <context context-type="linenumber">283</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.self-service.component.html</context>
@@ -9169,14 +9144,14 @@
         <source> Filter by token owner </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">317</context>
+          <context context-type="linenumber">307</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5485506078448093226" datatype="html">
         <source>Select Token Group</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
-          <context context-type="linenumber">378</context>
+          <context context-type="linenumber">368</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7740372053795863162" datatype="html">
@@ -9290,25 +9265,6 @@
           <context context-type="linenumber">83</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="135077277733987408" datatype="html">
-        <source>Revoke</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
-          <context context-type="linenumber">479</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
-          <context context-type="linenumber">86</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.ts</context>
-          <context context-type="linenumber">69</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.ts</context>
-          <context context-type="linenumber">86</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="3469781829788869882" datatype="html">
         <source>No user found.</source>
         <context-group purpose="location">
@@ -9381,6 +9337,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.ts</context>
           <context context-type="linenumber">74</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
+          <context context-type="linenumber">67,68</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2708274538532560790" datatype="html">
@@ -10607,19 +10567,12 @@
           <context context-type="linenumber">23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7264859246828600935" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>autorenew<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION" equiv-text="{{ regenerateButtonText() }}"/> </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component.html</context>
-          <context context-type="linenumber">40,43</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="4623630148400372997" datatype="html">
         <source> Your Password: <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/><x id="INTERPOLATION" equiv-text="{{ enrolledData()?.[&quot;password&quot;] }}"/><x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong
         &gt;"/>. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component.html</context>
-          <context context-type="linenumber">46,50</context>
+          <context context-type="linenumber">45,49</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component.html</context>
@@ -10698,17 +10651,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component.html</context>
           <context context-type="linenumber">41</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="3103515648538504311" datatype="html">
-        <source>Enroll Token</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.html</context>
-          <context context-type="linenumber">47,48</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">43,44</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6145522417887142472" datatype="html">
@@ -11010,67 +10952,67 @@
           <context context-type="linenumber">52,53</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5927398364887792350" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"/><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"/> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/>Search<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/></source>
+      <trans-unit id="4580988005648117665" datatype="html">
+        <source>Search</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">60,64</context>
+          <context context-type="linenumber">61,62</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6767205545613597058" datatype="html">
         <source>Search Configuration</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">66,67</context>
+          <context context-type="linenumber">65,66</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7852237977890639579" datatype="html">
         <source>Select token type</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">74,75</context>
+          <context context-type="linenumber">73,74</context>
         </context-group>
       </trans-unit>
       <trans-unit id="981959707836119514" datatype="html">
         <source>Assignment State</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">81</context>
+          <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="9173880639106076252" datatype="html">
         <source>Specify assignment state</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">86,87</context>
+          <context context-type="linenumber">85,86</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5959504058797648467" datatype="html">
         <source>Serial Substring</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">100</context>
+          <context context-type="linenumber">99</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5630936943548482737" datatype="html">
         <source>Enter optional serial substring</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">108,109</context>
+          <context context-type="linenumber">107,108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1223094679925357812" datatype="html">
         <source>Lookahead OTP values</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">120,121</context>
+          <context context-type="linenumber">119,120</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2374495806424779174" datatype="html">
         <source>Set number of lookahead OTP values.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
-          <context context-type="linenumber">122</context>
+          <context context-type="linenumber">121</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8935361738086854226" datatype="html">
@@ -11115,141 +11057,141 @@
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4416281591833009416" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>input<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Import File </source>
+      <trans-unit id="5191801385630785092" datatype="html">
+        <source>Import File</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">55,57</context>
+          <context context-type="linenumber">55,56</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3230249841116803476" datatype="html">
         <source> Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">65,66</context>
+          <context context-type="linenumber">64,65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2295098959686567539" datatype="html">
         <source> The file is supposed to contain one token per line. At least the serial number and the seed are required. Other parameters are optional. If not defined, the following default values are used: <x id="START_UNORDERED_LIST" ctype="x-ul" equiv-text="&lt;ul&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Type: hotp<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>OTP length: 6<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Time Step: 30<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="CLOSE_UNORDERED_LIST" ctype="x-ul" equiv-text="&lt;/ul&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">72,81</context>
+          <context context-type="linenumber">71,80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4683312323450864814" datatype="html">
         <source>HOTP and TOTP tokens:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">81,82</context>
+          <context context-type="linenumber">80,81</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1888340892651619773" datatype="html">
         <source> serial number, seed, type, otp length, time step </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">85,86</context>
+          <context context-type="linenumber">84,85</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5685813843974376467" datatype="html">
         <source>OCRA tokens:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">88,89</context>
+          <context context-type="linenumber">87,88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5773943959574801736" datatype="html">
         <source> serial number, seed, type, ocrasuite </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">92,93</context>
+          <context context-type="linenumber">91,92</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5065826238420403281" datatype="html">
         <source> The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should use the PSKC file format in the newer version of the Yubikey GUI. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">97,98</context>
+          <context context-type="linenumber">96,97</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3329749106135049019" datatype="html">
         <source> This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted with a Pre Shared Key or password. If the values are encrypted, please specify the Pre Shared Key in hex format or the password. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">105,107</context>
+          <context context-type="linenumber">104,106</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1563564686550095491" datatype="html">
         <source>Pre Shared Key</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">111</context>
+          <context context-type="linenumber">110</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8683555337371632730" datatype="html">
         <source>Pre Shared Key in hex format</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">117,118</context>
+          <context context-type="linenumber">116,117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3789777437580458465" datatype="html">
         <source>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">119,120</context>
+          <context context-type="linenumber">118,119</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">123,124</context>
+          <context context-type="linenumber">122,123</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7560835588791005073" datatype="html">
         <source>Verification Method for the Authenticity of Imported Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">141</context>
+          <context context-type="linenumber">140</context>
         </context-group>
       </trans-unit>
       <trans-unit id="958529541016246434" datatype="html">
         <source>Select Realm for Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">158</context>
+          <context context-type="linenumber">157</context>
         </context-group>
       </trans-unit>
       <trans-unit id="994199233104462986" datatype="html">
         <source> All imported tokens will be added to these realms. </source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">168</context>
+          <context context-type="linenumber">167</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4347553215219271086" datatype="html">
         <source>Select File</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">173,175</context>
+          <context context-type="linenumber">172,174</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8171417275760223107" datatype="html">
         <source>No file selected yet</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">188,189</context>
+          <context context-type="linenumber">187,188</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8786125453048489342" datatype="html">
         <source>Drag and Drop file here or</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">198,199</context>
+          <context context-type="linenumber">197,198</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2238101313057908514" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>folder_open<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Browse Files </source>
+      <trans-unit id="2934378117270446087" datatype="html">
+        <source>Browse Files</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.html</context>
-          <context context-type="linenumber">213,215</context>
+          <context context-type="linenumber">212,213</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8707056517170378577" datatype="html">
@@ -11459,39 +11401,18 @@
           <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7115891352885997887" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Enroll Token </source>
+      <trans-unit id="1592450341109276210" datatype="html">
+        <source>(De)activate</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">28,31</context>
+          <context context-type="linenumber">87,88</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6742891515372922438" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Assign </source>
+      <trans-unit id="6882371501493248209" datatype="html">
+        <source>Reset Failcounters</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">70,72</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="7902557408087012938" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> person_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Unassign </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">81,83</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="2409363124957880133" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> toggle_on<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> (De)activate </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">92,94</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="5146249006354492956" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/> restart_alt<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/> Reset Failcounters </source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
-          <context context-type="linenumber">103,105</context>
+          <context context-type="linenumber">97,98</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1010762357410897298" datatype="html">
@@ -11751,68 +11672,61 @@
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="752476062638779967" datatype="html">
-        <source><x id="INTERPOLATION" equiv-text="{{ r.name }}"/> Priority:</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">139,140</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="2563462987035682953" datatype="html">
         <source>No Resolvers</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">161,162</context>
+          <context context-type="linenumber">157,158</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6463701216061273965" datatype="html">
         <source>Save realm</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">206,207</context>
+          <context context-type="linenumber">202,203</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7435987726117859556" datatype="html">
         <source>Cancel edit</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">215,216</context>
+          <context context-type="linenumber">211,212</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6182168653975040294" datatype="html">
         <source>Edit realm</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">227,228</context>
+          <context context-type="linenumber">223,224</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">230,231</context>
+          <context context-type="linenumber">226,227</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1544456426772379260" datatype="html">
         <source>Delete realm</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">239,240</context>
+          <context context-type="linenumber">235,236</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">243,244</context>
+          <context context-type="linenumber">239,240</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2317799298267426958" datatype="html">
         <source>Realm Name</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">266</context>
+          <context context-type="linenumber">262</context>
         </context-group>
       </trans-unit>
       <trans-unit id="9144388092572424640" datatype="html">
         <source>Reset form</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
-          <context context-type="linenumber">343,344</context>
+          <context context-type="linenumber">339,340</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6649245712850858925" datatype="html">
@@ -12070,11 +11984,18 @@
           <context context-type="linenumber">190,191</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="898002202269556724" datatype="html">
-        <source><x id="START_HEADING_LEVEL3" ctype="x-h3" equiv-text="&lt;h3&gt;"/>Details for User:<x id="CLOSE_HEADING_LEVEL3" ctype="x-h3" equiv-text="&lt;/h3&gt;"/><x id="START_TAG_APP_COPYABLE" ctype="x-app_copyable" equiv-text="&lt;app-copyable [copyText]=&quot;userService.detailsUsername()&quot;&gt;"/><x id="START_HEADING_LEVEL3_1" equiv-text="&lt;h3 class=&quot;username-header&quot;&gt;"/><x id="INTERPOLATION" equiv-text="{{ userService.detailsUsername() }}"/><x id="CLOSE_HEADING_LEVEL3" ctype="x-h3" equiv-text="&lt;/h3&gt;"/><x id="CLOSE_TAG_APP_COPYABLE" ctype="x-app_copyable" equiv-text="&lt;/app-copyable&gt;"/><x id="START_HEADING_LEVEL3" ctype="x-h3" equiv-text="&lt;h3&gt;"/>in Realm<x id="CLOSE_HEADING_LEVEL3" ctype="x-h3" equiv-text="&lt;/h3&gt;"/><x id="START_TAG_APP_COPYABLE_1" ctype="x-app_copyable_1" equiv-text="&lt;app-copyable [copyText]=&quot;userService.selectedUserRealm()&quot;&gt;"/><x id="START_HEADING_LEVEL3_2" equiv-text="&lt;h3 class=&quot;margin-0&quot;&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userService.selectedUserRealm() }}"/><x id="CLOSE_HEADING_LEVEL3" ctype="x-h3" equiv-text="&lt;/h3&gt;"/><x id="CLOSE_TAG_APP_COPYABLE" ctype="x-app_copyable" equiv-text="&lt;/app-copyable&gt;"/></source>
+      <trans-unit id="5024535866129817579" datatype="html">
+        <source>Details for User:</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
-          <context context-type="linenumber">27,36</context>
+          <context context-type="linenumber">27,28</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5779219120765535559" datatype="html">
+        <source>in Realm</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
+          <context context-type="linenumber">31,32</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4814766753666840623" datatype="html">
@@ -12163,18 +12084,11 @@
           <context context-type="linenumber">186,187</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2932450774263631590" datatype="html">
-        <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"/>save<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"/></source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
-          <context context-type="linenumber">205,207</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="5953733817032506679" datatype="html">
         <source>Delete custom attribute</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
-          <context context-type="linenumber">219,220</context>
+          <context context-type="linenumber">218,219</context>
         </context-group>
         <note priority="1" from="description">Delete custom attribute</note>
       </trans-unit>
@@ -12182,7 +12096,7 @@
         <source>Assign Token to User</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
-          <context context-type="linenumber">241</context>
+          <context context-type="linenumber">240</context>
         </context-group>
       </trans-unit>
       <trans-unit id="4045680080746516690" datatype="html">

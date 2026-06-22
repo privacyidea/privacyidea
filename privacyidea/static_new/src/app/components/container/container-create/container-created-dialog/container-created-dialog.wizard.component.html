@@ -53,10 +53,8 @@
         width="300px" />
     }
     @if (!postTopHtml?.hasContent && data()?.response?.result?.value?.container_url?.value) {
-      <div
-        class="flex-column gap-16"
-        i18n>
-        <p>
+      <div class="flex-column gap-16">
+        <p i18n>
           Please scan the QR code with the privacyIDEA Authenticator App or click this
           <a href="{{ data()?.response?.result?.value?.container_url?.value }}">link</a>
           on your smartphone to register your container. It will send the missing registration data to the configured
