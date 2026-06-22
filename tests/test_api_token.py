@@ -84,6 +84,21 @@ OTPKEY = "3132333435363738393031323334353637383930"
 OTPKEY2 = "010fe88d31948c0c2e3258a4b0f7b11956a258ef"
 
 
+def test_pack_serials():
+    from privacyidea.api.token import _pack_serials
+    # Everything fits: no drop, no marker.
+    assert _pack_serials(["TOK00001", "TOK00002"], 40) == ("TOK00001,TOK00002", 0)
+    # Only whole serials are packed - the third would overflow, so it and the
+    # rest are reported as dropped rather than chopped mid-serial.
+    packed, dropped = _pack_serials(["AAAA", "BBBB", "CCCC"], 9)
+    assert packed == "AAAA,BBBB"
+    assert dropped == 1
+    # A single serial longer than the limit fits nothing.
+    assert _pack_serials(["WAYTOOLONG"], 4) == ("", 1)
+    # Empty input.
+    assert _pack_serials([], 40) == ("", 0)
+
+
 class API000TokenAdminRealmList(MyApiTestCase):
 
     def setUp(self):

@@ -267,8 +267,22 @@ angular.module("privacyideaApp").controller("userDetailsController", [
     // click actually issues the DELETE. Mirrors the same flow on
     // the token-details page (tokenDetailController.cancelChallenge).
     $scope.showCancelChallengeDialog = {};
+    // Serials a cancel will affect, keyed by transaction id. A single
+    // transaction can span several tokens (they share the id), and the
+    // cancel deletes the whole transaction. Fetched on confirm so the admin
+    // sees every affected token, including any not shown in this table.
+    $scope.cancelChallengeSerials = {};
     $scope.cancelChallenge = function (transactionId, ask) {
       if (ask) {
+        TokenFactory.getChallengesByTransaction(function (data) {
+          var serials = [];
+          angular.forEach(data.result.value.challenges, function (challenge) {
+            if (challenge.serial && serials.indexOf(challenge.serial) === -1) {
+              serials.push(challenge.serial);
+            }
+          });
+          $scope.cancelChallengeSerials[transactionId] = serials;
+        }, transactionId);
         $scope.showCancelChallengeDialog[transactionId] = true;
         return;
       }
@@ -521,6 +535,12 @@ angular.module("privacyideaApp").controller("userDetailsController", [
       $scope._getUserToken();
       $scope.getCustomAttributes();
       $scope.getUserContainer();
+      // The challenge section is lazy-loaded on first expand. Only refresh
+      // it here once it has actually been loaded, so the visible count/table
+      // stays current without forcing a fetch the admin never asked for.
+      if ($scope.userChallengesLoaded) {
+        $scope.getUserChallenges();
+      }
     });
 
     // Container

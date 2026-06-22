@@ -591,8 +591,23 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             // destructive — the user retries the auth and a new challenge
             // is issued — so we want a deliberate second click before doing it.
             $scope.showCancelChallengeDialog = {};
+            // Serials a cancel will affect, keyed by transaction id. A single
+            // transaction can span several tokens (they share the id), and the
+            // cancel deletes the whole transaction - not just this token's row,
+            // which is the only one visible here. Fetched on confirm so the
+            // admin sees the full blast radius before committing.
+            $scope.cancelChallengeSerials = {};
             $scope.cancelChallenge = function (transactionId, ask) {
                 if (ask) {
+                    TokenFactory.getChallengesByTransaction(function (data) {
+                        var serials = [];
+                        angular.forEach(data.result.value.challenges, function (challenge) {
+                            if (challenge.serial && serials.indexOf(challenge.serial) === -1) {
+                                serials.push(challenge.serial);
+                            }
+                        });
+                        $scope.cancelChallengeSerials[transactionId] = serials;
+                    }, transactionId);
                     $scope.showCancelChallengeDialog[transactionId] = true;
                     return;
                 }

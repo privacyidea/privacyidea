@@ -214,11 +214,12 @@ class Audit(AuditBase):
         # suffix instead. ``serial`` and ``container_serial`` are nominally
         # single-value fields, but callers that comma-join into them
         # (e.g. multi-token operations) get the same protection rather
-        # than a silent mid-serial chop. ``info`` is free-form text, but
-        # callers (e.g. cancel_challenge_api) also use it as the overflow
-        # fallback for serial lists; the "," in data" gate below means
-        # comma-free info messages still get the regular [:length] cut.
-        comma_list_columns = {"policies", "serial", "container_serial", "info"}
+        # than a silent mid-serial chop. ``info`` is deliberately NOT here:
+        # it is free-form prose that routinely contains natural commas, and
+        # treating those as list separators mangles the message. Callers
+        # that pack a serial list into ``info`` size it to the column budget
+        # themselves (see cancel_challenge_api).
+        comma_list_columns = {"policies", "serial", "container_serial"}
         for column, length in self.custom_column_length.items():
             if column in self.audit_data:
                 data = self.audit_data[column]

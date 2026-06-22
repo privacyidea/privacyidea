@@ -8,7 +8,10 @@
 # divergence surfaces here. A single Python version is enough - the Redis path
 # is independent of the Python version, so a per-version matrix would only add
 # redundant runs. The DB-only matrix lives in the MariaDB/Postgres workflows.
-# Migration tests are excluded - they have their own dedicated workflow.
+# Migration tests are excluded - they have their own dedicated workflow. Backup
+# round-trip tests are excluded too: they dump the database via mysqldump and
+# exercise nothing on the Redis path, so they add no signal here (the DB-only
+# MariaDB job already covers them).
 
 name: Unit Tests Redis
 
@@ -138,7 +141,7 @@ jobs:
         # cache path (lib/cache/redis.py and the cache branches), so its report
         # must reach Codecov - otherwise that code shows as uncovered, since the
         # MariaDB upload runs DB-only. Codecov merges both reports per commit.
-        python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
+        python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration and not backup" tests/
 
     - name: Codecov upload
       if: ${{ steps.pytest_run.outcome == 'success' }}

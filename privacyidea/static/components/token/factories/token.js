@@ -397,6 +397,20 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         if (errback) { errback(error); }
                     });
                 },
+                getChallengesByTransaction: function (callback, transactionId, errback) {
+                    // List every challenge sharing this transaction id, across
+                    // all tokens it triggered. Used to warn which tokens a
+                    // cancel will affect before it is issued.
+                    $http.get(tokenUrl + "/challenges/", {
+                        params: {transaction_id: transactionId},
+                        headers: {'PI-Authorization': AuthFactory.getAuthToken()}
+                    }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                        if (errback) { errback(error); }
+                    });
+                },
                 cancelChallenge: function (callback, transactionId) {
                     $http.delete(tokenUrl + "/challenges/transaction/" + transactionId, {
                         headers: {

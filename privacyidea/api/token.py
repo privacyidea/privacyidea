@@ -115,7 +115,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
-from ..lib.tokenclass import TokenClass
+from ..lib.policydecorators import check_admin_allowed_for_token_owner
 from ..lib.user import get_user_from_param, User
 
 token_blueprint = Blueprint('token_blueprint', __name__)
@@ -477,8 +477,8 @@ def get_challenges_api(serial=None):
         # Missing serial here is a real 404: the resource the admin
         # addressed (the token) doesn't exist.
         token = get_one_token(serial=serial)
-        _check_admin_allowed_for_token_owner(token, PolicyAction.GETCHALLENGES,
-                                             "view challenges for")
+        check_admin_allowed_for_token_owner(g, token, PolicyAction.GETCHALLENGES,
+                                            "view challenges for")
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
                                          transaction_id=transaction_id,
                                          sortdir=sdir, page=page, psize=psize)
@@ -486,43 +486,22 @@ def get_challenges_api(serial=None):
     return send_result(challenges)
 
 
-def _check_admin_allowed_for_token_owner(token: TokenClass, action: str, verb: str):
+def _pack_serials(serials: list, limit: int) -> tuple:
     """
-    Re-scope an admin action to the owner of a known token.
+    Comma-join whole serials up to ``limit`` characters.
 
-    The match is against the token owner's full user object (realm,
-    resolver and username), not the realm alone, so all three dimensions
-    of an admin policy scope are honored.
-
-    The ``@prepolicy(check_base_action, ...)`` decorator only confirms the
-    admin has ``action`` granted *somewhere*. This helper additionally
-    matches the same action against the target token's owning user so
-    that an admin whose ``getchallenges`` / ``cancelchallenge`` policy is
-    scoped to user/realm/resolver A cannot operate on a token whose owner
-    lives in B.
-
-    Token resolution is the caller's job because the two callsites differ:
-    GET wants ``ResourceNotFoundError`` on a missing serial (the addressed
-    resource doesn't exist); the cancel-by-transaction-id path wants to
-    tolerate it (the orphaned cache entry is exactly what needs cleanup).
-
-    Tokens with no owner (e.g. usernameless passkey challenges) cannot
-    be scope-checked; the base-action policy is the only gate for them.
-
-    :param token: The token whose owner the admin action is re-scoped to.
-    :param action: The policy action to match against the owner.
-    :param verb: Human-readable verb for the error message (e.g. "view
-        challenges for").
+    Returns ``(packed, dropped)`` where ``dropped`` is the number of serials
+    that did not fit. Packing whole serials avoids a mid-serial chop that
+    would corrupt forensic detail when written into a fixed-width audit
+    column (which is hard-cut by the audit module).
     """
-    if token.user is None:
-        return
-    # .allowed() honors privacyidea's default-allow-when-no-policies semantic.
-    # .policies() truthiness alone would invert that into default-deny and
-    # break factory-fresh installs that have no admin-scope policies defined.
-    if not Match.admin(g, action=action, user_obj=token.user).allowed():
-        raise PolicyError(f"You are not allowed to {verb} token "
-                          f"{token.token.serial!s} "
-                          f"(realm {token.user.realm!s}).")
+    packed = ""
+    for index, serial in enumerate(serials):
+        candidate = f"{packed},{serial}" if packed else serial
+        if len(candidate) > limit:
+            return packed, len(serials) - index
+        packed = candidate
+    return packed, 0
 
 
 @token_blueprint.route('/challenges/transaction/<transaction_id>', methods=['DELETE'])
@@ -569,30 +548,32 @@ def cancel_challenge_api(transaction_id):
             token = get_one_token(serial=s)
         except ResourceNotFoundError:
             continue
-        _check_admin_allowed_for_token_owner(token, PolicyAction.CANCELCHALLENGE,
-                                             "cancel challenges for")
+        check_admin_allowed_for_token_owner(g, token, PolicyAction.CANCELCHALLENGE,
+                                            "cancel challenges for")
     result = cancel_challenge(transaction_id)
     # Build a single audit entry now that the realm check passed and the
     # cancel result is known. The `serial` column is 40 chars by default -
     # plenty for the common case (one transaction -> one token, with
     # default 8-char serials, 4-5 still fit comma-joined). Pack whole
     # serials in arrival order up to the column budget; if some had to be
-    # dropped, also stuff the full list into `info` (500 chars) so the
-    # forensic detail isn't lost. This avoids the audit-module's
-    # ``+``-abbreviation fallback (still in place as a backstop for
-    # callers that don't pre-pack like we do here).
+    # dropped, also record the list in `info` (500 chars) so the forensic
+    # detail isn't lost. `info` is hard-cut by the audit module, so pack it
+    # to whole serials here too rather than risk a mid-serial chop, and
+    # summarise any that still overflow with a trailing "+N more".
     serial_limit = audit_column_length.get("serial")
-    packed_serials = ""
-    fitted = 0
-    for s in serials:
-        candidate = f"{packed_serials},{s}" if packed_serials else s
-        if len(candidate) > serial_limit:
-            break
-        packed_serials = candidate
-        fitted += 1
+    info_limit = audit_column_length.get("info")
+    packed_serials, serial_dropped = _pack_serials(serials, serial_limit)
     info = f"Cancelled {result.removed} challenge(s) for transaction {transaction_id}"
-    if serials and fitted < len(serials):
-        info += f" (serials: {','.join(serials)})"
+    if serial_dropped:
+        prefix, suffix = f"{info} (serials: ", ")"
+        # Reserve room for a worst-case "+<count> more" marker so the closing
+        # state always fits regardless of how many serials are dropped.
+        marker_reserve = len(f",+{len(serials)} more")
+        packed_info, info_dropped = _pack_serials(
+            serials, info_limit - len(prefix) - len(suffix) - marker_reserve)
+        if info_dropped:
+            packed_info += f"{',' if packed_info else ''}+{info_dropped} more"
+        info = f"{prefix}{packed_info}{suffix}"
     g.audit_object.log({
         "success": True,
         "serial": packed_serials or None,

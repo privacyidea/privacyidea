@@ -870,6 +870,12 @@
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Cancel</span>
                     </button>
+                    <div ng-show="showCancelChallengeDialog[challenge.transaction_id]
+                                  && cancelChallengeSerials[challenge.transaction_id].length > 1"
+                         class="text-danger small">
+                        <span translate>This also cancels the related challenges on:</span>
+                        {{ cancelChallengeSerials[challenge.transaction_id].join(', ') }}
+                    </div>
                     <button class="btn btn-danger btn-sm"
                             ng-click="cancelChallenge(challenge.transaction_id, false)"
                             ng-show="showCancelChallengeDialog[challenge.transaction_id]">

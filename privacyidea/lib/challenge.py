@@ -326,8 +326,16 @@ def delete_challenges(serial: str = None, transaction_id: str = None,
 
 def cancel_challenge(transaction_id: str) -> DeleteChallengesResult:
     """
-    Cancel a single challenge identified by ``transaction_id``, removing it
-    from both Redis (if cached) and the database.
+    Abort an in-flight authentication by its ``transaction_id``, removing the
+    challenge from both Redis (if cached) and the database.
+
+    This is an intentionally narrow alias for the cancel-an-authentication
+    semantic used by the auth and API paths (the cancel-challenge endpoint,
+    the post-auth cleanup, FIDO2 cancellation). It exposes only the
+    transaction_id and always commits, so those callers cannot accidentally
+    pass a ``serial`` or a staged ``commit=False`` that only the lifecycle
+    cleanup paths need. The general, by-serial / stage-able delete is
+    ``delete_challenges`` - use that for token/container teardown.
 
     Returns a ``DeleteChallengesResult`` carrying the removed count and a
     ``cache_available`` flag - see ``delete_challenges`` for the meaning
