@@ -832,6 +832,43 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Restore g.policy_object for subsequent tests
         g.policy_object = PolicyClass()
 
+        # --- Test: get_from_config raises Exception (lines 267-268) ---
+        # When g.client_ip is missing and get_from_config fails, hide_version
+        # should fall back to override_client=None and still strip version.
+        from unittest.mock import patch
+        g.logged_in_user = {}
+        if hasattr(g, 'client_ip'):
+            del g.client_ip
+        g.policy_object = PolicyClass()
+        set_policy(name="hide_version_pol",
+                   scope=SCOPE.HARDENING,
+                   action=PolicyAction.HIDE_VERSION)
+        g.policy_object = PolicyClass()
+        resp = jsonify(res)
+        with patch("privacyidea.api.lib.postpolicy.get_from_config",
+                   side_effect=Exception("DB unavailable")):
+            new_response = hide_version(req, resp)
+        jresult = new_response.json
+        self.assertNotIn("version", jresult)
+        self.assertNotIn("versionnumber", jresult)
+
+        # --- Test: Match.action_only raises AttributeError (lines 273-275) ---
+        # When g.policy_object is set to a non-None value that doesn't support
+        # the expected interface, hide_version should catch AttributeError and
+        # return the response unchanged.
+        g.logged_in_user = {}
+        g.client_ip = "192.168.0.1"
+        g.policy_object = "broken"  # not a real PolicyClass
+        resp = jsonify(res)
+        new_response = hide_version(req, resp)
+        jresult = new_response.json
+        # Response should be returned unchanged (version NOT stripped)
+        self.assertIn("version", jresult)
+        self.assertIn("versionnumber", jresult)
+
+        # Restore for cleanup
+        g.policy_object = PolicyClass()
+
         delete_policy("hide_version_pol")
 
     def test_08_get_webui_settings(self):
