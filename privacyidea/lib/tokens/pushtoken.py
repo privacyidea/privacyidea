@@ -45,6 +45,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
+from sqlalchemy.orm.exc import StaleDataError
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
@@ -799,6 +800,12 @@ class PushTokenClass(TokenClass):
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
+                except StaleDataError:
+                    # The challenge row was deleted concurrently while we were committing the
+                    # answer (e.g. a push_wait timeout firing at the same instant). The answer
+                    # is moot, so treat it as a non-match instead of failing the request.
+                    db.session.rollback()
+                    result = False
         return result, details
 
     @classmethod

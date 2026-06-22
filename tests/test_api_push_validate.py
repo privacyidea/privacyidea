@@ -6,10 +6,12 @@ import threading
 import time
 from base64 import b32encode
 
+import mock
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from sqlalchemy.orm.exc import StaleDataError
 from testfixtures import LogCapture
 
 from privacyidea.lib.challenge import get_challenges
@@ -27,6 +29,7 @@ from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POL
                                               DEFAULT_CHALLENGE_TEXT, PushMode)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
+from privacyidea.models import Challenge
 from . import ldap3mock
 from .base import MyApiTestCase
 
@@ -1675,3 +1678,37 @@ class PushAPITestCase(MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("push_wait")
+
+    def test_25_push_answer_challenge_deleted_concurrently(self):
+        """
+        If the challenge row is deleted concurrently while the smartphone answer is being
+        committed (e.g. a push_wait timeout firing at the same instant), the /ttype/push handler
+        must not raise (HTTP 500) but report a clean negative result.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._enroll_push_token()
+
+        # Trigger a challenge and read its nonce
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+        challenges = get_challenges(serial=self.serial_push)
+        self.assertEqual(1, len(challenges))
+        nonce = challenges[0].challenge
+
+        answer_sig = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
+                                                      padding.PKCS1v15(), hashes.SHA256())
+        # Simulate the challenge row vanishing during the answer commit.
+        with mock.patch.object(Challenge, "save", side_effect=StaleDataError("row gone")):
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(answer_sig)}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                self.assertFalse(res.json["result"]["value"], res.json)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
