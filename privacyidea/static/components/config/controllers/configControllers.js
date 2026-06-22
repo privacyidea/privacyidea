@@ -291,6 +291,11 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 }
             });
 
+            // Always use the actionValues code-path so that the accordion
+            // template receives actions in {name, type, desc, group} format.
+            // Scopes with only bool actions (e.g. "hardening") need this too.
+            $scope.isActionValues = true;
+
             if ($scope.isActionValues) {
                 // This holds the array of actionValues
                 $scope.actionValuesStr = {};
