@@ -787,7 +787,6 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         user=User(self.testadmin, self.realm1))
 
     def test_logs_local_admin_username(self):
-        # A successful local-admin login uses User() (empty), so no identity fields are recorded.
         response = self._auth({"username": self.testadmin, "password": self.testadminpw}, status=200)
         self.assertTrue(response.json["result"]["value"]["token"], response.json)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
