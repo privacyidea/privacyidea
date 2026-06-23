@@ -134,14 +134,14 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertEqual(AuthEventType.MFA_FAIL, value["auth_logs"][0]["event_type"])
 
     def test_filter_by_event_type_csv_list(self):
-        self._seed_entries()
+        self._seed(include_no_realm=True)
         value = self._get({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
         self.assertEqual(2, value["count"])
         self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.USER_UNKNOWN},
                             {entry["event_type"] for entry in value["auth_logs"]})
 
     def test_filter_by_event_type_wildcard(self):
-        self._seed_entries()
+        self._seed(include_no_realm=True)
         # the two LOGIN_SUCCESS rows match the LOGIN* prefix; MFA_FAIL and USER_UNKNOWN do not
         value = self._get({"event_type": "LOGIN*"})["result"]["value"]
         self.assertEqual(2, value["count"])
