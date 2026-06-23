@@ -808,6 +808,11 @@ class PushTokenClass(TokenClass):
                     db.session.rollback()
                     result = False
                     details = {}
+                    # rollback() expires every challenge object in the session, so re-reading a
+                    # not-yet-checked sibling below would re-fetch it from the DB - raising an
+                    # uncaught ObjectDeletedError if that row was deleted concurrently too. A unique
+                    # nonce matches at most one challenge, so break: there is nothing left to check.
+                    break
         return result, details
 
     @classmethod
