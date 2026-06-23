@@ -42,7 +42,7 @@ authentication_log_blueprint = Blueprint("authentication_log_blueprint", __name_
 
 # Filter parameters that map 1:1 to a get_authentication_logs_paginate keyword argument.
 _FILTER_PARAMS = ["resolver", "uid", "realm", "username", "event_type", "source_ip", "serial",
-                  "transaction_id", "previous_transaction_id"]
+                  "transaction_id", "previous_transaction_id", "client_label"]
 
 
 def _split_csv(value: str | None) -> list[str] | None:
@@ -82,7 +82,8 @@ def get_authentication_log():
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter to filter on it. A value may
+    ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
+    on it. A value may
     be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal any of the values.
     A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead of exactly.
 
@@ -148,7 +149,8 @@ def delete_authentication_log():
     than a point in time, pass ``end`` (entries with a timestamp at or before it).
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter to filter on it. A value may
+    ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
+    on it. A value may
     be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal any of the values.
     A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead of exactly.
 

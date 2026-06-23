@@ -215,6 +215,16 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(1, len(results))
         self.assertEqual("10.0.0.1", results[0].source_ip)
 
+    def test_get_authentication_logs_filter_by_client_label(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 client_label="vpn")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 client_label="webui")
+
+        results = get_authentication_logs(client_label="vpn")
+        self.assertEqual(1, len(results))
+        self.assertEqual("vpn", results[0].client_label)
+
     def test_get_authentication_logs_filter_by_transaction_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-a",
                                  resolver="res1", uid="u1", realm="r1")
