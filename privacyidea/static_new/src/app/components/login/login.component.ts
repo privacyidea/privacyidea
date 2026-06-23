@@ -227,7 +227,6 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   }
 
   logout(): void {
-    // AuthService.logout() already clears stored session keys and navigates to /login.
     this.authService.logout();
   }
 
@@ -302,8 +301,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
     if (isAuthenticationSuccessful(response)) {
-      // Successful auth -> log in. AuthService.authenticate() (which every login path goes
-      // through) has already persisted the token and auth data, so nothing to store here.
+      // Successful auth -> log in
       this.showOtpField.set(false);
       this.sessionTimerService.initialTimerStart();
       this.router.navigateByUrl(resolveLandingPath(this.authService)).then();

@@ -161,14 +161,17 @@ export interface WebAuthnLoginParams {
  * Imported `PasskeyCheckParams` from `validate.service` would create a
  * cycle, so callers pass the structurally compatible shape directly.
  */
-export type AuthenticateParams = PasswordLoginParams | WebAuthnLoginParams | {
-  transaction_id: string;
-  credential_id: string;
-  authenticatorData: string;
-  clientDataJSON: string;
-  signature: string;
-  userHandle: string;
-};
+export type AuthenticateParams =
+  | PasswordLoginParams
+  | WebAuthnLoginParams
+  | {
+      transaction_id: string;
+      credential_id: string;
+      authenticatorData: string;
+      clientDataJSON: string;
+      signature: string;
+      userHandle: string;
+    };
 
 export interface AuthServiceInterface {
   // Properties
@@ -341,12 +344,6 @@ export class AuthService implements AuthServiceInterface {
   }
 
   /**
-   * Rehydrate the session from storage on bootstrap so a full page reload (e.g. switching
-   * the UI language, which loads a different locale bundle) does not drop an active login.
-   * The token and the auth data are restored only while the JWT is still valid; an
-   * expired or corrupt session is cleared instead.
-   */
-  /**
    * Strip the fields that the bearer token already carries before persisting the auth data.
    * The token (stored separately) is the source of truth for identity and rights via the
    * decoded JWT, so the token string and the JWT claims (rights, role, username, realm) are
@@ -358,6 +355,12 @@ export class AuthService implements AuthServiceInterface {
     return rest;
   }
 
+  /**
+   * Rehydrate the session from storage on bootstrap so a full page reload (e.g. switching
+   * the UI language, which loads a different locale bundle) does not drop an active login.
+   * The token and the auth data are restored only while the JWT is still valid; an
+   * expired or corrupt session is cleared instead.
+   */
   private restoreSession(): void {
     const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
     if (!token) {
