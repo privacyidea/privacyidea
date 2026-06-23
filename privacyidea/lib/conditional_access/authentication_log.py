@@ -373,7 +373,7 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
         conditions.append(_visibility_condition(visibility_scopes))
     stmt = select(AuthenticationLog).where(*conditions)
 
-    count = db.session.scalar(select(func.count()).select_from(stmt.subquery()))
+    count = db.session.scalar(select(func.count()).select_from(AuthenticationLog).where(*conditions))
 
     order_column = SORTABLE_COLUMNS.get(sort_column)
     if order_column is None:
