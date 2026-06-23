@@ -24,7 +24,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { lastValueFrom } from "rxjs";
+import { lastValueFrom, Observable } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
 export interface PolicyActionDetail<T extends string | number | boolean = string | number | boolean> {
@@ -176,6 +176,7 @@ export interface PolicyServiceInterface {
   enablePolicy(name: string): Promise<PiResponse<number>>;
   disablePolicy(name: string): Promise<PiResponse<number>>;
   isScopeChangeable(policy: PolicyDetail): boolean;
+  getPolicies(): Observable<PiResponse<PolicyDetail[]>>;
   getActionNamesOf(scope?: string, group?: string): string[];
   getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
   actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean;
@@ -436,6 +437,12 @@ export class PolicyService implements PolicyServiceInterface {
     return lastValueFrom(
       this.http.post<PiResponse<number>>(`${this.policyBaseUrl}disable/${encodeURIComponent(name)}`, {}, { headers })
     );
+  }
+
+  getPolicies(): Observable<PiResponse<PolicyDetail[]>> {
+    return this.http.get<PiResponse<PolicyDetail[]>>(this.policyBaseUrl, {
+      headers: this.authService.getHeaders()
+    });
   }
 
   isScopeChangeable(policy: PolicyDetail): boolean {
