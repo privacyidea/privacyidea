@@ -83,9 +83,9 @@ def get_authentication_log():
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
     ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
-    on it. A value may
-    be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal any of the values.
-    A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead of exactly.
+    on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal
+    any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead
+    of exactly.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
@@ -150,9 +150,9 @@ def delete_authentication_log():
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
     ``transaction_id``, ``previous_transaction_id`` and ``client_label`` may be passed as a query parameter to filter
-    on it. A value may
-    be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal any of the values.
-    A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead of exactly.
+    on it. A value may be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal
+    any of the values. A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead
+    of exactly.
 
     :query start: only entries at/after this ISO 8601 timestamp.
     :query end: only entries at/before this ISO 8601 timestamp (i.e. "older than").
