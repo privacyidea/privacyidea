@@ -19,6 +19,7 @@
 
 <div class="utils-group-self-service utils">
   @if (!wizard()) {
+    <app-language-switcher></app-language-switcher>
     <app-theme-switcher></app-theme-switcher>
     <button
       (click)="refreshPage()"

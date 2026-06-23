@@ -17,12 +17,52 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable } from "@angular/core";
-import { CanActivate, CanActivateChild, CanMatchFn, Router } from "@angular/router";
+import { CanActivate, CanActivateChild, CanActivateFn, CanMatchFn, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
 export const adminMatch: CanMatchFn = () => inject(AuthService).role() === "admin";
 export const selfServiceMatch: CanMatchFn = () => inject(AuthService).role() === "user";
+
+/**
+ * Resolve the route an authenticated user should land on. Mirrors the post-login
+ * navigation: wizards first, then tokens or containers depending on role and permissions.
+ */
+export function resolveLandingPath(authService: AuthServiceInterface): string {
+  // The wizard routes live only in the self-service route tree (selfServiceMatch), so only a
+  // self-service user may be sent there. Directing any other role to a wizard path produces a
+  // URL with no matching route -> '**' -> /login -> loginGuard -> the same path -> redirect loop.
+  if (authService.role() === "user") {
+    if (authService.tokenWizard()) {
+      return ROUTE_PATHS.TOKENS_WIZARD;
+    }
+    if (authService.containerWizard().enabled) {
+      return ROUTE_PATHS.CONTAINERS_WIZARD;
+    }
+    return ROUTE_PATHS.TOKENS;
+  }
+  if (authService.anyTokenActionAllowed()) {
+    return ROUTE_PATHS.TOKENS;
+  }
+  if (authService.anyContainerActionAllowed()) {
+    return ROUTE_PATHS.CONTAINERS;
+  }
+  return ROUTE_PATHS.TOKENS;
+}
+
+/**
+ * Keeps authenticated users off the login page: when a session is already active (e.g.
+ * restored after a full reload from switching the UI language), redirect to the landing
+ * page instead of showing the login form.
+ */
+export const loginGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  if (!authService.isAuthenticated()) {
+    return true;
+  }
+  return inject(Router).parseUrl(resolveLandingPath(authService));
+};
 
 @Injectable({
   providedIn: "root"
