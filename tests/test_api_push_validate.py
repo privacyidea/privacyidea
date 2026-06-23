@@ -1417,8 +1417,9 @@ class PushAPITestCase(MyApiTestCase):
             self.assertFalse(result.get("value"))
             self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"))
 
-            # Check the challenge data as well
-            challenge = get_challenges()[0]
+            # Check the challenge data as well (query by serial - an unfiltered
+            # get_challenges() can't be served from the cache in aggregate)
+            challenge = get_challenges(serial=self.serial_push)[0]
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual(challenge_data.get("type"), "push")

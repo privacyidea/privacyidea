@@ -677,3 +677,43 @@ def force_challenge_response(wrapped_function, user_object, passw, options=None)
     else:
         log.warning("force_challenge_response can not work without options!")
     return wrapped_function(user_object, passw, options)
+
+
+def check_admin_allowed_for_token_owner(g, token: "TokenClass", action: str, verb: str):
+    """
+    Re-scope an admin action to the owner of a known token.
+
+    The match is against the token owner's full user object (realm,
+    resolver and username), not the realm alone, so all three dimensions
+    of an admin policy scope are honored.
+
+    The ``@prepolicy(check_base_action, ...)`` decorator only confirms the
+    admin has ``action`` granted *somewhere*. This helper additionally
+    matches the same action against the target token's owning user so
+    that an admin whose ``getchallenges`` / ``cancelchallenge`` policy is
+    scoped to user/realm/resolver A cannot operate on a token whose owner
+    lives in B.
+
+    Token resolution is the caller's job because the two callsites differ:
+    GET wants ``ResourceNotFoundError`` on a missing serial (the addressed
+    resource doesn't exist); the cancel-by-transaction-id path wants to
+    tolerate it (the orphaned cache entry is exactly what needs cleanup).
+
+    Tokens with no owner (e.g. usernameless passkey challenges) cannot
+    be scope-checked; the base-action policy is the only gate for them.
+
+    :param g: The flask g object used for policy matching.
+    :param token: The token whose owner the admin action is re-scoped to.
+    :param action: The policy action to match against the owner.
+    :param verb: Human-readable verb for the error message (e.g. "view
+        challenges for").
+    """
+    if token.user is None:
+        return
+    # .allowed() honors privacyidea's default-allow-when-no-policies semantic.
+    # .policies() truthiness alone would invert that into default-deny and
+    # break factory-fresh installs that have no admin-scope policies defined.
+    if not Match.admin(g, action=action, user_obj=token.user).allowed():
+        raise PolicyError(f"You are not allowed to {verb} token "
+                          f"{token.token.serial!s} "
+                          f"(realm {token.user.realm!s}).")
