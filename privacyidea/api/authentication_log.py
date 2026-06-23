@@ -45,6 +45,18 @@ _FILTER_PARAMS = ["resolver", "uid", "realm", "username", "event_type", "source_
                   "transaction_id", "previous_transaction_id"]
 
 
+def _split_csv(value: str | None) -> list[str] | None:
+    """
+    Split a comma-separated filter value into a list of non-empty, stripped entries (so a single value yields a
+    one-element list and several values can be matched at once). Returns ``None`` for a missing or empty value, i.e.
+    no filter on that field.
+    """
+    if value is None:
+        return None
+    items = [item.strip() for item in value.split(",") if item.strip()]
+    return items or None
+
+
 def _positive_int(value: int | str, default: int) -> int:
     """
     Parse a positive paging parameter, falling back to *default* for a missing, non-numeric or non-positive value.
@@ -70,7 +82,9 @@ def get_authentication_log():
     scope are returned. A **user** with the action set in the user scope may read only their own entries.
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
+    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter to filter on it. A value may
+    be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal any of the values.
+    A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead of exactly.
 
     :query page: page number, 1-indexed (default 1).
     :query page_size: entries per page (default 15).
@@ -84,7 +98,7 @@ def get_authentication_log():
     :status 200: paginated result in ``result.value`` with ``auth_logs``, ``count``, ``current``, ``prev``, ``next``.
     """
     params = request.all_data
-    filters = {name: get_optional(params, name) for name in _FILTER_PARAMS}
+    filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
 
     timelimit = get_optional(params, "timelimit")
     if timelimit:
@@ -134,7 +148,9 @@ def delete_authentication_log():
     than a point in time, pass ``end`` (entries with a timestamp at or before it).
 
     Each of ``resolver``, ``uid``, ``realm``, ``username``, ``event_type``, ``source_ip``, ``serial``,
-    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter for an exact-match filter.
+    ``transaction_id`` and ``previous_transaction_id`` may be passed as a query parameter to filter on it. A value may
+    be a comma-separated list (e.g. ``event_type=MFA_FAIL,PIN_FAIL``), matching entries that equal any of the values.
+    A value may contain a ``*`` wildcard (e.g. ``serial=TOTP*``) to match by prefix/pattern instead of exactly.
 
     :query start: only entries at/after this ISO 8601 timestamp.
     :query end: only entries at/before this ISO 8601 timestamp (i.e. "older than").
@@ -142,7 +158,7 @@ def delete_authentication_log():
     :status 400: no filter was given.
     """
     params = request.all_data
-    filters = {name: get_optional(params, name) for name in _FILTER_PARAMS}
+    filters = {name: _split_csv(get_optional(params, name)) for name in _FILTER_PARAMS}
     start = get_optional(params, "start")
     end = get_optional(params, "end")
 

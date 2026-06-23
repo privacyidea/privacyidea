@@ -140,6 +140,61 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(1, len(results))
         self.assertEqual(AuthEventType.MFA_FAIL, results[0].event_type)
 
+    def test_get_authentication_logs_filter_by_event_type_list(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.PIN_FAIL, resolver="res1", uid="u1", realm="r1")
+
+        results = get_authentication_logs(event_type=[AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL])
+        self.assertEqual(2, len(results))
+        self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL},
+                            {entry.event_type for entry in results})
+
+    def test_get_authentication_logs_filter_by_serial_wildcard(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP002")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="HOTP001")
+
+        results = get_authentication_logs(serial="TOTP*")
+        self.assertSetEqual({"TOTP001", "TOTP002"}, {entry.serial for entry in results})
+
+    def test_get_authentication_logs_wildcard_escapes_like_specials(self):
+        # Only '*' is a wildcard; the SQL LIKE specials '_' and '%' must match literally.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="A_B")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="AXB")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="50%OFF")
+
+        # 'A_*' must match only the literal "A_..." entry, not "AXB" (which an unescaped '_' wildcard would match)
+        self.assertSetEqual({"A_B"}, {entry.serial for entry in get_authentication_logs(serial="A_*")})
+        # '%' is literal too
+        self.assertSetEqual({"50%OFF"}, {entry.serial for entry in get_authentication_logs(serial="50%*")})
+
+    def test_get_authentication_logs_event_type_wildcard_underscore_literal(self):
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.PIN_FAIL, resolver="res1", uid="u1", realm="r1")
+
+        # the '_' in the pattern is literal, so 'MFA_*' matches MFA_FAIL but not PIN_FAIL
+        results = get_authentication_logs(event_type="MFA_*")
+        self.assertListEqual([AuthEventType.MFA_FAIL], [entry.event_type for entry in results])
+
+    def test_get_authentication_logs_filter_mixed_exact_and_wildcard(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="HOTP001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="YUBI999")
+
+        # one exact value (batched into IN) plus one wildcard pattern (LIKE), OR'd together
+        results = get_authentication_logs(serial=["HOTP001", "TOTP*"])
+        self.assertSetEqual({"TOTP001", "HOTP001"}, {entry.serial for entry in results})
+
     def test_get_authentication_logs_filter_by_serial(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
                                  serial="TOK001")

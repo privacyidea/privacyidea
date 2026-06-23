@@ -1240,6 +1240,20 @@ class AuthenticationLogReadAPITestCase(AuthLogTestCase):
         self.assertEqual(1, value["count"])
         self.assertEqual(AuthEventType.MFA_FAIL, value["auth_logs"][0]["event_type"])
 
+    def test_filter_by_event_type_csv_list(self):
+        self._seed_entries()
+        value = self._get({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
+        self.assertEqual(2, value["count"])
+        self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.USER_UNKNOWN},
+                            {entry["event_type"] for entry in value["auth_logs"]})
+
+    def test_filter_by_event_type_wildcard(self):
+        self._seed_entries()
+        # the two LOGIN_SUCCESS rows match the LOGIN* prefix; MFA_FAIL and USER_UNKNOWN do not
+        value = self._get({"event_type": "LOGIN*"})["result"]["value"]
+        self.assertEqual(2, value["count"])
+        self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
+
     def test_policy_gate_denies_without_action(self):
         # Admin policies exist but none grant authentication_log_read -> the admin is denied.
         set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
@@ -1403,6 +1417,12 @@ class AuthenticationLogDeleteAPITestCase(AuthLogTestCase):
         self.assertEqual(1, body["result"]["value"])
         # Exactly the MFA_FAIL row is gone; the two LOGIN_SUCCESS rows remain.
         self.assertEqual({ids["realm1_login"], ids["other_login"]}, self._remaining_ids())
+
+    def test_delete_by_event_type_csv_list(self):
+        self._seed()
+        body = self._delete({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.LOGIN_SUCCESS}"})
+        self.assertEqual(3, body["result"]["value"])
+        self.assertSetEqual(set(), self._remaining_ids())
 
     def test_delete_older_than_end(self):
         self._seed()
