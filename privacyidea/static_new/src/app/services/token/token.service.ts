@@ -115,6 +115,8 @@ export interface Tokens {
   tokens: TokenDetails[];
 }
 
+export type TokenCount = Pick<Tokens, "count">;
+
 export interface TokenInfo {
   CA?: string;
   dynamic_email?: string;
@@ -315,6 +317,8 @@ export interface TokenServiceInterface {
   resyncOTPToken(tokenSerial: string, firstOTPValue: string, secondOTPValue: string): Promise<PiResponse<boolean>>;
 
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
+
+  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>>;
 
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
@@ -1035,6 +1039,13 @@ export class TokenService implements TokenServiceInterface {
     const params = new HttpParams().set("serial", tokenSerial);
     return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
       headers,
+      params
+    });
+  }
+
+  getTokenCount(params: Record<string, string | number>): Observable<PiResponse<TokenCount>> {
+    return this.http.get<PiResponse<TokenCount>>(this.tokenBaseUrl, {
+      headers: this.authService.getHeaders(),
       params
     });
   }

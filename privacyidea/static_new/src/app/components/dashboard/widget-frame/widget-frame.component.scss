@@ -1,0 +1,79 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+.widget-frame {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--mat-sys-surface-container-lowest);
+  border: 1px solid var(--mat-sys-surface-container-highest);
+  border-radius: var(--border-radius);
+  box-shadow: var(--elevation-5);
+}
+
+.widget-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--half-global-gap);
+  min-height: 38px;
+  padding: var(--quarter-global-padding) var(--global-padding);
+  border-bottom: 1px solid var(--mat-sys-surface-container-highest);
+
+  &.draggable {
+    cursor: move;
+  }
+}
+
+.widget-title {
+  font-weight: 500;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-remove {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  --mdc-icon-button-state-layer-size: 28px;
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    line-height: 18px;
+  }
+}
+
+.widget-body {
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  padding: var(--global-padding);
+  overflow: auto;
+}
