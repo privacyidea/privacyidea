@@ -121,7 +121,6 @@ export class UserDetailsTokenTableComponent implements AfterViewInit {
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   constructor() {
-    this.tokenService.userRealm.set(this.userService.selectedUserRealm());
     effect(() => {
       if (!this.userTokenData) {
         return;
