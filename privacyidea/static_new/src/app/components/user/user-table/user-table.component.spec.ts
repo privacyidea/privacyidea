@@ -75,6 +75,14 @@ describe("UserTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("onClickUsername stores username and the selected realm", () => {
+    mockUserService.selectedUserRealm.set("themis");
+    component.onClickUsername({ username: "alice" } as never);
+
+    expect(mockUserService.detailsUser().username).toBe("alice");
+    expect(mockUserService.detailsUser().realm).toBe("themis");
+  });
+
   it("pageSizeOptions should add custom page size if not included in default options", () => {
     const defaultOptions = [5, 10, 25, 50];
     mockTableUtilsService.pageSizeOptions.set(defaultOptions);

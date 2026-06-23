@@ -91,8 +91,7 @@ export class MockTokenService implements TokenServiceInterface {
   readonly userTokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(
     MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })
   );
-  detailsUsername = signal("");
-  userRealm = signal("");
+  detailsUser = signal({ username: "", realm: "" });
   tokenTypeOptions = signal<TokenType[]>([
     { key: "hotp", name: "HOTP", info: "", text: "HMAC-based One-Time Password" },
     { key: "totp", name: "TOTP", info: "", text: "Time-based One-Time Password" },
