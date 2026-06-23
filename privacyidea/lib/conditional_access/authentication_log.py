@@ -384,6 +384,8 @@ def get_authentication_logs_paginate(resolver: str | list[str] | None = None,
     else:
         stmt = stmt.order_by(order_column.desc(), AuthenticationLog.id.desc())
 
+    page = max(1, page)
+    page_size = max(1, page_size)
     offset = (page - 1) * page_size
     auth_logs = db.session.scalars(stmt.limit(page_size).offset(offset)).all()
     return AuthenticationLogPage(auth_logs=auth_logs,
