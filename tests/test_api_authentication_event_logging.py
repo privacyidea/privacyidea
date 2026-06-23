@@ -786,12 +786,12 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL],
                                         user=User(self.testadmin, self.realm1))
 
-        self._clear_log()
+    def test_logs_local_admin_username(self):
         # A successful local-admin login uses User() (empty), so no identity fields are recorded.
         response = self._auth({"username": self.testadmin, "password": self.testadminpw}, status=200)
         self.assertTrue(response.json["result"]["value"]["token"], response.json)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User(self.testadmin))
 
     def test_revoked_token_logs_no_usable_token(self):
         # All of the user's tokens are revoked: check_user_pass raises TOKEN_LOCKED before it can classify the

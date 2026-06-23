@@ -234,7 +234,7 @@ def getLowerParams(param):
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
                        serial: str | None = None, transaction_id: str | None = None,
-                       previous_transaction_id: str | None = None) -> int | None:
+                       previous_transaction_id: str | None = None, username: str | None = None) -> int | None:
     """
     Write one authentication_log entry for the current request.
 
@@ -246,6 +246,10 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
     user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
     None while realm and username are still captured from the User object.
+
+    ``username`` overrides the login name derived from the User object. It is needed for
+    local administrators, who have no User object (the login name is not stored there) but
+    whose login name should still be recorded.
 
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
@@ -284,7 +288,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
-        username=(user.login or None) if user else None,
+        username=username or ((user.login or None) if user else None),
         source_ip=source_ip,
         client_label=client_label,
         serial=serial,

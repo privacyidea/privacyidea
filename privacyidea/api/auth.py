@@ -673,7 +673,7 @@ def get_auth_token():
                     admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user, serial=serials or details.get("serial"),
                        transaction_id=get_optional(request.all_data, "transaction_id") or details.get("transaction_id"),
-                       previous_transaction_id=_previous_transaction_id(details))
+                       previous_transaction_id=_previous_transaction_id(details), username=login_name)
 
     # Feed the classified outcome to the lockout engine (after the log row is written so the
     # count includes it). It writes lockout state for the next request and returns any
