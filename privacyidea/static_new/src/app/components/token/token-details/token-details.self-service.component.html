@@ -36,7 +36,11 @@
       </ng-container>
     </app-details-header>
 
-    <div class="details-grid">
+    <div
+      class="details-grid"
+      appMasonry
+      [columns]="3"
+      [columnWidthRem]="28">
       <app-token-details-status
         [tokenDetails]="tokenDetails()"
         [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"

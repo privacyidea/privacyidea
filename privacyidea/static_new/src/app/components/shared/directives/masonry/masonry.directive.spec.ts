@@ -54,6 +54,38 @@ interface WindowWithRaf {
 })
 class HostComponent {}
 
+@Component({
+  standalone: true,
+  imports: [MasonryDirective],
+  template: `
+    <div
+      appMasonry
+      [columns]="3"
+      [columnWidthRem]="10">
+      <div class="item">a</div>
+      <div class="item">b</div>
+      <div class="item">c</div>
+    </div>
+  `
+})
+class FixedColumnsHostComponent {}
+
+@Component({
+  standalone: true,
+  imports: [MasonryDirective],
+  template: `
+    <div
+      appMasonry
+      [columns]="6"
+      [columnWidthRem]="30">
+      <div class="item">a</div>
+      <div class="item">b</div>
+      <div class="item">c</div>
+    </div>
+  `
+})
+class ClampedColumnsHostComponent {}
+
 describe("MasonryDirective", () => {
   let fixture: ComponentFixture<HostComponent>;
   let rafSpy: jest.SpyInstance;
@@ -77,7 +109,9 @@ describe("MasonryDirective", () => {
       return 1;
     });
 
-    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [HostComponent, FixedColumnsHostComponent, ClampedColumnsHostComponent]
+    }).compileComponents();
     fixture = TestBed.createComponent(HostComponent);
   });
 
@@ -128,6 +162,29 @@ describe("MasonryDirective", () => {
 
     expect(observer.disconnect).toHaveBeenCalled();
     cancelSpy.mockRestore();
+  });
+
+  it("uses up to [columns] columns when they fit the available width", () => {
+    // 1000px container, 10rem (160px) min column width → 5 would fit, capped to 3.
+    const fx = TestBed.createComponent(FixedColumnsHostComponent);
+    fx.detectChanges();
+
+    const host = fx.nativeElement.querySelector("[appMasonry]") as HTMLElement;
+    const items = Array.from(host.querySelectorAll(".item")) as HTMLElement[];
+    const lefts = new Set(items.map((item) => item.style.left));
+    expect(lefts.size).toBe(3);
+  });
+
+  it("reduces below [columns] when columns would be narrower than columnWidthRem (e.g. under zoom)", () => {
+    // 1000px container, 30rem (480px) min column width → only 2 columns fit, so
+    // the requested 6 is clamped to 2 instead of forcing 6 overlapping columns.
+    const fx = TestBed.createComponent(ClampedColumnsHostComponent);
+    fx.detectChanges();
+
+    const host = fx.nativeElement.querySelector("[appMasonry]") as HTMLElement;
+    const items = Array.from(host.querySelectorAll(".item")) as HTMLElement[];
+    const lefts = new Set(items.map((item) => item.style.left));
+    expect(lefts.size).toBe(2);
   });
 
   it("falls back to a synchronous layout when requestAnimationFrame is unavailable", () => {

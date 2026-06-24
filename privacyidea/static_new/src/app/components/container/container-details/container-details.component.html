@@ -37,7 +37,9 @@
     </div>
     <div
       class="details-grid"
-      appMasonry>
+      appMasonry
+      [columns]="3"
+      [columnWidthRem]="28">
       @if (descriptionRow(); as desc) {
         <app-details-card
           class="details-card--description"

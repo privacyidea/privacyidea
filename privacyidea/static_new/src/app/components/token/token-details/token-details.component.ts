@@ -65,6 +65,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { DetailsEditRegistry } from "@components/shared/details-shared/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { OverflowNavDirective } from "@components/shared/directives/overflow-nav/overflow-nav.directive";
+import { MasonryDirective } from "@components/shared/directives/masonry/masonry.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -102,7 +103,8 @@ import {
     ScrollToTopDirective,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
-    OverflowNavDirective
+    OverflowNavDirective,
+    MasonryDirective
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./token-details.component.html",

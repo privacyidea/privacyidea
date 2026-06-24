@@ -27,6 +27,12 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
 
   readonly columnWidthRem = input(40);
 
+  // Maximum number of columns. When > 0 the layout uses up to this many columns
+  // but never makes a column narrower than columnWidthRem, reducing the count as
+  // the available width shrinks (e.g. under browser zoom) instead of overflowing.
+  // 0 keeps the column count purely width-based.
+  readonly columns = input(0);
+
   private resizeObserver?: ResizeObserver;
   private mutationObserver?: MutationObserver;
   private readonly observedChildren = new Set<HTMLElement>();
@@ -106,7 +112,13 @@ export class MasonryDirective implements AfterViewInit, OnDestroy {
     const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const minColumnWidth = this.columnWidthRem() * rootFontSize;
     const width = this.host.clientWidth;
-    const columns = Math.max(1, Math.floor((width + gap) / (minColumnWidth + gap)));
+    // Columns that fit while keeping each at least minColumnWidth wide. A
+    // requested fixed count is an upper bound: it never forces columns narrower
+    // than minColumnWidth (which under browser zoom would make cards overlap),
+    // so the layout drops to fewer columns instead.
+    const fitColumns = Math.max(1, Math.floor((width + gap) / (minColumnWidth + gap)));
+    const requestedColumns = this.columns();
+    const columns = requestedColumns > 0 ? Math.min(requestedColumns, fitColumns) : fitColumns;
     const columnWidth = (width - (columns - 1) * gap) / columns;
     const heights = new Array<number>(columns).fill(0);
 

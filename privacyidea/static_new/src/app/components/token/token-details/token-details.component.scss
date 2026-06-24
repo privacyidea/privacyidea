@@ -2,7 +2,8 @@
 @use "table";
 
 :host {
-  display: block;
+  display: flex;
+  justify-content: center;
   flex: 1;
   min-width: 0;
   width: 100%;
@@ -92,12 +93,15 @@
 }
 
 .details-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+  position: relative;
   margin-top: 8px;
+  // The masonry directive sets this grid's height in px and positions its cards
+  // absolutely. As a child of the fixed-height, scrollable .details-container
+  // flex column it must not be flex-shrunk, otherwise the box collapses below the
+  // measured height and the bottom cards spill past the container's padding.
+  flex: 0 0 auto;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .details-card-machine { display: contents; }
