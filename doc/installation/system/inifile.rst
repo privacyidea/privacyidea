@@ -524,6 +524,52 @@ In a Docker deployment, the URL can be loaded from a secret file via
 ``PI_REDIS_URL_FILE`` (e.g. ``/run/secrets/redis_url``) instead of being passed
 in the environment.
 
+.. _redis_cache_security:
+
+Security
+~~~~~~~~
+
+The Redis connection is configured entirely through ``PI_REDIS_URL`` - the URL
+scheme, credentials and TLS parameters it carries are the whole security
+surface. privacyIDEA does **not** enforce transport encryption or
+authentication, so the points below are the operator's responsibility.
+
+**Transport encryption (TLS).** Use the ``rediss://`` scheme to connect over
+TLS::
+
+    PI_REDIS_URL = "rediss://redis.internal:6379/0"
+
+TLS options are taken from the URL query string (passed through to the
+underlying client), for example a custom CA or client certificate for mutual
+TLS::
+
+    PI_REDIS_URL = "rediss://redis.internal:6379/0?ssl_cert_reqs=required&ssl_ca_certs=/etc/ssl/redis-ca.pem"
+
+When relying on TLS, set ``ssl_cert_reqs=required`` explicitly so the server
+certificate is verified.
+
+**Authentication.** Credentials are embedded in the URL, either as a password
+or as a Redis ACL user and password::
+
+    PI_REDIS_URL = "redis://default:s3cr3t@redis.internal:6379/0"
+    PI_REDIS_URL = "rediss://pi-cache-user:s3cr3t@redis.internal:6379/0"
+
+To keep the password out of the process environment, load the whole URL from a
+secret file with ``PI_REDIS_URL_FILE`` (see above). Credentials embedded in the
+URL are redacted from the privacyIDEA log (only ``***@host`` is ever written),
+so they do not leak into log files on connect or on error.
+
+**Data sensitivity.** When challenge caching is enabled, challenge data is
+stored in Redis as plaintext - exactly the same content, and the same lack of
+encryption, as the SQL ``challenge`` table it replaces. Redis therefore needs
+the **same protection level as your database**: restrict it to a private
+network, require authentication, prefer ``rediss://``, and use at-rest
+encryption (encrypted volume, or a managed Redis with encryption) if your
+threat model requires it. Do not expose the Redis instance on a public
+interface. The exposure window is small (entries carry the challenge validity
+TTL, typically a few minutes), but the data is no less sensitive than a
+challenge row in the database.
+
 .. _redis_cache_upgrades:
 
 Upgrades and payload compatibility
