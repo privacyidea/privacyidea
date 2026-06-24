@@ -21,7 +21,7 @@
 <mat-toolbar class="primary-toolbar">
   <div class="toolbar-brand">
     <a
-      [routerLink]="[ROUTE_PATHS.TOKENS]"
+      [routerLink]="[landingPage()]"
       class="brand-link">
       @if (customLogo()) {
         <img
@@ -107,16 +107,14 @@
         An open-source project
         <a
           href="https://netknights.it/"
-          target="_blank"
-          >maintained by NetKnights
+          target="_blank">maintained by NetKnights
         </a>
       </div>
       <div>
         in collaboration with
         <a
           href="https://github.com/privacyidea/privacyidea"
-          target="_blank"
-          >community contributors
+          target="_blank">community contributors
         </a>
       </div>
     </div>
@@ -181,10 +179,48 @@
   </span>
   <span
     class="beta-badge margin-right-16"
-    i18n
-    >Beta
+    i18n>Beta
   </span>
 </ng-template>
+
+@if (activeSection() === "dashboard") {
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
+    <ng-container *ngTemplateOutlet="footerText"></ng-container>
+    <div class="flex gap-8 margin-left-4">
+      @if (dashboardLayoutService.editMode()) {
+        <button
+          mat-stroked-button
+          type="button"
+          class="action-button-primary button-width-s"
+          (click)="saveDashboard()">
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          class="action-button-delete-secondary button-width-s"
+          (click)="cancelDashboard()">
+          <mat-icon>cancel</mat-icon>
+          <span i18n>Cancel</span>
+        </button>
+        <app-widget-palette />
+      } @else {
+        <button
+          mat-stroked-button
+          type="button"
+          class="action-button-primary button-width-m"
+          (click)="enterDashboardEdit()">
+          <mat-icon>edit</mat-icon>
+          <span i18n>Edit Dashboard</span>
+        </button>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
+  </mat-toolbar>
+}
 
 @if (activeSection() === "token") {
   <mat-toolbar

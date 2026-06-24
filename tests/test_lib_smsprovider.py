@@ -839,3 +839,64 @@ class FirebaseProviderTestCase(MyTestCase):
             except Exception:
                 # Ignore cleanup errors; gateway may not have been created.
                 pass
+
+
+class SendSmsIdentifierMetricsTestCase(MyTestCase):
+    """Cover the metric-recording wrapper in ``send_sms_identifier``.
+
+    The function builds the provider via ``create_sms_instance`` and then
+    times / counts the call to ``submit_message``. We patch the factory so
+    these tests don't need a real gateway in the database.
+    """
+
+    def setUp(self):
+        from privacyidea.models import db as _db
+        from privacyidea.models.metric_aggregate import MetricAggregate
+        _db.session.query(MetricAggregate).delete()
+        _db.session.commit()
+
+    def _read_counter(self, result):
+        from privacyidea.lib.metrics import get_metrics
+        rows = get_metrics(name="sms_send_total")
+        match = [r for r in rows if r["labels"].get("result") == result
+                 and r["labels"].get("gateway") == "gw1"]
+        return sum(r["count"] for r in match)
+
+    def test_success_records_ok_counter(self):
+        from privacyidea.lib.smsprovider import SMSProvider as smsmod
+        fake = mock.MagicMock()
+        fake.submit_message.return_value = True
+        with mock.patch.object(smsmod, "create_sms_instance", return_value=fake):
+            self.assertTrue(smsmod.send_sms_identifier("gw1", "+1555", "hello"))
+        self.assertEqual(self._read_counter("ok"), 1)
+        self.assertEqual(self._read_counter("failed"), 0)
+
+    def test_returning_false_records_failed_counter(self):
+        # ISMSProvider.submit_message is documented as boolean-returning, so a
+        # provider that returns False (without raising) must still increment the
+        # failed counter, not ok.
+        from privacyidea.lib.smsprovider import SMSProvider as smsmod
+        fake = mock.MagicMock()
+        fake.submit_message.return_value = False
+        with mock.patch.object(smsmod, "create_sms_instance", return_value=fake):
+            self.assertFalse(smsmod.send_sms_identifier("gw1", "+1555", "hello"))
+        self.assertEqual(self._read_counter("failed"), 1)
+        self.assertEqual(self._read_counter("ok"), 0)
+
+    def test_exception_records_failed_counter_and_reraises(self):
+        # The path codecov flagged: the provider raises, we record duration +
+        # failed counter, then re-raise so the caller still sees the error.
+        from privacyidea.lib.smsprovider import SMSProvider as smsmod
+        fake = mock.MagicMock()
+        fake.submit_message.side_effect = SMSError(500, "gateway is down")
+        with mock.patch.object(smsmod, "create_sms_instance", return_value=fake):
+            with self.assertRaises(SMSError):
+                smsmod.send_sms_identifier("gw1", "+1555", "hello")
+        self.assertEqual(self._read_counter("failed"), 1)
+        self.assertEqual(self._read_counter("ok"), 0)
+        # And the duration histogram must have been written too (count of 1).
+        from privacyidea.lib.metrics import get_metrics
+        durations = get_metrics(name="sms_send_duration_seconds")
+        durations = [d for d in durations if d["labels"].get("gateway") == "gw1"]
+        self.assertEqual(len(durations), 1)
+        self.assertEqual(durations[0]["count"], 1)

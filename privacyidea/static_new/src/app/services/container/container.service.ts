@@ -417,7 +417,7 @@ export class ContainerService implements ContainerServiceInterface {
     return this.containerRequest({
       no_token: 1,
       ...this.filterParams(),
-      ...(this.userService.detailsUsername() && { user: this.userService.detailsUsername() }),
+      ...(this.userService.detailsUser().username && { user: this.userService.detailsUser().username }),
       ...(this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
     });
   });

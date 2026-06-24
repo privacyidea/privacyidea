@@ -90,7 +90,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
-import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-serivce";
+import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { of } from "rxjs";
 
 describe("NavigationSelfServiceComponent", () => {

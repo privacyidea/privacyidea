@@ -133,8 +133,14 @@ myApp.controller("periodicTaskDetailController", ["$scope", "$stateParams",
                     // exist. Since if the handler was changed, there
                     // could be an option of another handler type, which
                     // is not available anymore.
-                    if ($scope.taskmoduleOptions[opt].type === "bool" && isTrue(value)) {
+                    if (!$scope.taskmoduleOptions[opt]) return;
+                    var type = $scope.taskmoduleOptions[opt].type;
+                    if (type === "bool" && isTrue(value)) {
                         $scope.form.options[opt] = true;
+                    } else if (type === "int" && value !== null && value !== "") {
+                        // Option values come back from the API as strings; AngularJS's
+                        // type="number" input would render blank without this coercion.
+                        $scope.form.options[opt] = Number(value);
                     }
                 });
             });

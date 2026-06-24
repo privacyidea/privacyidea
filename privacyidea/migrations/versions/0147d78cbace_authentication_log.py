@@ -18,7 +18,7 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-down_revision = '7d4e9b2c1a3f'
+down_revision = 'c2d3e4f5a6b7'
 branch_labels = None
 depends_on = None
 

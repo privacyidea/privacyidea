@@ -23,7 +23,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentServiceInterface } from "@services/content/content.service";
 
 export class MockContentService implements ContentServiceInterface {
-  detailsUsername = signal("");
+  detailsUser = signal({ username: "", realm: "" });
   router: Router = {} as Router;
   routeUrl = signal("");
   previousUrl = signal("");
