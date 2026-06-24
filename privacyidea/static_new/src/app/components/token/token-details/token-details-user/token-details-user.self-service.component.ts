@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -36,7 +35,6 @@ import { TokenDetailsUserComponent } from "./token-details-user.component";
     MatIconButton,
     MatIcon,
     MatTooltip,
-    NgClass,
     CopyableComponent,
     DetailsCardComponent
   ],
