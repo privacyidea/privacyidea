@@ -31,14 +31,21 @@ from privacyidea.lib.sqlutils import delete_matching_rows
 log = logging.getLogger(__name__)
 
 # Columns that may be used to sort a paginated authentication-log query, keyed by the name accepted from the API.
+# Every scalar column is sortable; ``other_info`` is excluded because it is a JSON column whose ordering is not
+# meaningful and not portable across databases.
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
     "event_type": AuthenticationLog.event_type,
+    "resolver": AuthenticationLog.resolver,
+    "uid": AuthenticationLog.uid,
     "realm": AuthenticationLog.realm,
     "username": AuthenticationLog.username,
     "source_ip": AuthenticationLog.source_ip,
+    "client_label": AuthenticationLog.client_label,
     "serial": AuthenticationLog.serial,
+    "transaction_id": AuthenticationLog.transaction_id,
+    "previous_transaction_id": AuthenticationLog.previous_transaction_id,
 }
 DEFAULT_PAGE_SIZE = 15
 
