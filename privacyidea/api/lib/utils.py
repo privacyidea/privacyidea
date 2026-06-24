@@ -32,10 +32,12 @@ from copy import copy
 from urllib.parse import unquote
 
 import jwt
-from flask import jsonify, current_app, Response, request, g
+from flask import jsonify, current_app, Response, Request, g, has_request_context
 from flask_babel import _
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
+from privacyidea.lib.user import User
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -230,7 +232,9 @@ def getLowerParams(param):
     return ret
 
 
-def log_authentication(event_type, user=None, serial=None, transaction_id=None, login=None):
+def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,
+                       serial: str | None = None, transaction_id: str | None = None,
+                       previous_transaction_id: str | None = None, username: str | None = None) -> int | None:
     """
     Write one authentication_log entry for the current request.
 
@@ -240,26 +244,54 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
     ``client_id`` parameter if supplied, otherwise the User-Agent header.
 
     The ``(resolver, uid, realm)`` identity tuple is only written for a resolved
-    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with all three None.
-    ``login`` records the claimed username for forensics when there is no resolved
-    identity, stored in ``other_info``.
+    user; an unresolvable user (e.g. USER_UNKNOWN) is logged with resolver and uid
+    None while realm and username are still captured from the User object.
+
+    ``username`` overrides the login name derived from the User object. It is needed for
+    local administrators, who have no User object (the login name is not stored there) but
+    whose login name should still be recorded.
+
+    Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
+    serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
+    records that token's user, keeping the log symmetric.
+
+    ``source_ip`` (from ``g``) and ``client_label`` (from ``request``) are only read inside a request context, so the
+    lib layer can record an event from outside a view (e.g. push_wait). Worst case those two columns are empty; the
+    event itself is never lost.
     """
     if not event_type:
         log.debug("Not logging authentication event, because no event type is given.")
         return
-    client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
+    client_label = None
+    source_ip = None
+    if has_request_context():
+        source_ip = g.client_ip
+        if request is not None:
+            client_label = get_optional(request.all_data, "client_id") or (request.user_agent.string or None)
     # TODO: replace by user function (after related PR is merged)
     resolved = bool(user and user.resolver)
-    log_authentication_event(
+    if not resolved and serial and "," not in serial:
+        # The request carried a single serial but no (resolved) user. Resolve the token owner so the user is logged
+        # alongside the serial. A failure here must not break the logging, so it is swallowed.
+        try:
+            from privacyidea.lib.token import get_one_token
+            token = get_one_token(serial=serial, silent_fail=True)
+            if token is not None and token.user and token.user.resolver:
+                user = token.user
+                resolved = True
+        except Exception as ex:
+            log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
+    return log_authentication_event(
         event_type=event_type,
         transaction_id=transaction_id,
+        previous_transaction_id=previous_transaction_id,
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
-        realm=user.realm if resolved else None,
-        source_ip=g.client_ip,
+        realm=(user.realm or None) if user else None,
+        username=username or ((user.login or None) if user else None),
+        source_ip=source_ip,
         client_label=client_label,
         serial=serial,
-        other_info={"login": login} if login else None,
     )
 
 

@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from passlib.hash import argon2
 
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.token import (remove_token)
 from privacyidea.lib.tokens.pushtoken import PushAction, strip_pem_headers
@@ -113,9 +113,10 @@ class PushChallengeTags(MyApiTestCase):
             self.assertEqual("Please confirm the authentication on your mobile device!", detail.get("message"))
 
         # The PIN step created the push challenge -> CHALLENGE_TRIGGERED for the user and token
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User(self.user, self.realm1), serial=serial)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
+                                        user=User(self.user, self.realm1), serials={serial},
+                                        transaction_id=transaction_id)
 
         # We do poll only, so we need to poll
         ts = datetime.datetime.utcnow().isoformat()

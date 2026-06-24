@@ -79,7 +79,8 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
-from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional
+from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional, log_authentication
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -1273,12 +1274,17 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action is PolicyAction.AUDIT:
-        # In case of audit requests, the parameters "realm" and "user" are used for
-        # filtering the audit log. So these values must not be taken from the request parameters,
-        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
-        # in the decorator "allowed_audit_realm".
+    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ,
+                                         PolicyAction.AUTHENTICATION_LOG_DELETE):
+        # For an admin, the request "realm"/"user" parameters filter the log and must not drive the policy match;
+        # the realm restriction is enforced separately (audit: "allowed_audit_realm" decorator; authentication log:
+        # get_authentication_log_visibility_scopes). For a user reading the authentication log, realm/username are
+        # the user's own identity (from determine_logged_in_userparams) and are kept so a realm/resolver-scoped
+        # user-scope policy matches; the user only ever sees their own entries anyway.
         realm = username = resolver = None
+    elif action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ,
+                    PolicyAction.AUTHENTICATION_LOG_DELETE):
+        pass
     else:
         realm = params.get("realm")
         if isinstance(realm, list) and len(realm) == 1:
@@ -2798,6 +2804,7 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user)
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

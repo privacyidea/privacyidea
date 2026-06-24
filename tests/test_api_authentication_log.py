@@ -15,436 +15,369 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
+"""
+Tests for the /authenticationlog/ management API: admin GET (pagination, filtering, realm/resolver-scoped visibility,
+the policy gate), admin DELETE (filtered bulk delete), and user-scope GET. Rows are seeded directly; the recording of
+events during authentication is covered in test_api_authentication_event_logging.py.
+"""
 import datetime
 
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType, AUTH_EVENT_TYPE_KEY
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+import mock
+
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, log_authentication_event
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
-from privacyidea.lib.token import init_token, remove_token, get_tokens
-from privacyidea.lib.user import User
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.models import db
-from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.utils import utc_now
-from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
-from .base import MyApiTestCase
+from .authlog_utils import AuthLogTestCase
 
 
-class AuthLogTestCase(MyApiTestCase):
-    """
-    Shared fixture for the authentication-log end-to-end tests: the lib layer
-    classifies the request outcome (stashed in reply_dict) and the API layer
-    persists exactly one row per request, populates client_label, and never leaks
-    the internal classification key into the response.
+class AuthenticationLogApiTestCase(AuthLogTestCase):
+    """The /authenticationlog/ API: admin GET (pagination, filtering, realm/resolver visibility, the policy gate),
+    admin DELETE (filtered bulk delete), and user-scope GET. All share the same blueprint and seed fixtures."""
 
-    Each request type (/validate/check, /auth, /validate/triggerchallenge) is
-    tested in its own subclass below.
-    """
+    OTHER_REALM = "otherrealm"
 
-    serial = "AUTHLOG_HOTP"
+    def _seed(self, include_no_realm=False):
+        # LOGIN_SUCCESS + MFA_FAIL in realm1 and a LOGIN_SUCCESS in another realm; optionally a null-realm row
+        # (e.g. USER_UNKNOWN). Returns the created ids by key.
+        ids = {
+            "realm1_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1",
+                                                     realm=self.realm1),
+            "realm1_fail": log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res", uid="2",
+                                                    realm=self.realm1),
+            "other_login": log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="3",
+                                                    realm=self.OTHER_REALM),
+        }
+        if include_no_realm:
+            ids["no_realm"] = log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)
+        db.session.commit()
+        return ids
 
-    def setUp(self):
-        super().setUp()
-        self.setUp_user_realms()
-        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"},
-                   user=User("cornelius", self.realm1))
-        self._clear_log()
+    def _get(self, query_string=None, status=200):
+        with self.app.test_request_context('/authenticationlog/', method='GET', query_string=query_string or {},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
 
-    def tearDown(self):
-        if get_tokens(serial=self.serial):
-            remove_token(self.serial)
-        self._clear_log()
-        super().tearDown()
+    def _delete(self, query_string=None, status=200):
+        with self.app.test_request_context("/authenticationlog/", method="DELETE", query_string=query_string or {},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
+
+    def _user_get(self, query_string=None, status=200):
+        with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string or {},
+                                           headers={"Authorization": self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(status, res.status_code, res.json)
+            return res.json
 
     @staticmethod
-    def _clear_log():
-        db.session.query(AuthenticationLog).delete()
+    def _returned_ids(value):
+        return {entry["id"] for entry in value["auth_logs"]}
+
+    @staticmethod
+    def _remaining_ids():
+        return {entry.id for entry in get_authentication_logs()}
+
+    # --- admin GET ---
+
+    def test_requires_admin(self):
+        with self.app.test_request_context('/authenticationlog/', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+    def test_returns_paginated_page(self):
+        self._seed(include_no_realm=True)
+        value = self._get({"page": 1, "page_size": 2})["result"]["value"]
+        self.assertEqual(4, value["count"])
+        self.assertEqual(2, len(value["auth_logs"]))
+        self.assertEqual(1, value["current"])
+        self.assertIsNone(value["prev"])
+        self.assertEqual(2, value["next"])
+
+        last = self._get({"page": 2, "page_size": 2})["result"]["value"]
+        self.assertEqual(1, last["prev"])
+        self.assertIsNone(last["next"])
+
+    def test_invalid_paging_params_fall_back_to_defaults(self):
+        # A bad page / page_size must not reach the query as a negative offset or empty limit: non-positive and
+        # non-numeric values fall back to the defaults (page 1, default page_size) instead.
+        self._seed(include_no_realm=True)
+        for bad in ({"page": 0}, {"page": -3}, {"page": "abc"}):
+            value = self._get(bad)["result"]["value"]
+            self.assertEqual(1, value["current"], bad)
+            self.assertEqual(4, value["count"], bad)
+            self.assertEqual(4, len(value["auth_logs"]), bad)
+            self.assertIsNone(value["prev"], bad)
+        for bad in ({"page_size": 0}, {"page_size": -10}, {"page_size": "abc"}):
+            value = self._get(bad)["result"]["value"]
+            self.assertEqual(4, len(value["auth_logs"]), bad)
+
+    def test_serialized_entry_shape(self):
+        self._seed(include_no_realm=True)
+        value = self._get({"page_size": 50})["result"]["value"]
+        entry = value["auth_logs"][0]
+        self.assertIn("event_type", entry)
+        self.assertIn("realm", entry)
+        # timestamp is serialized as an ISO 8601 string, not a datetime
+        self.assertIsInstance(entry["timestamp"], str)
+        datetime.datetime.fromisoformat(entry["timestamp"])
+
+    def test_filter_by_event_type(self):
+        self._seed(include_no_realm=True)
+        value = self._get({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual(AuthEventType.MFA_FAIL, value["auth_logs"][0]["event_type"])
+
+    def test_filter_by_event_type_csv_list(self):
+        self._seed(include_no_realm=True)
+        value = self._get({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.USER_UNKNOWN}"})["result"]["value"]
+        self.assertEqual(2, value["count"])
+        self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.USER_UNKNOWN},
+                            {entry["event_type"] for entry in value["auth_logs"]})
+
+    def test_filter_by_event_type_wildcard(self):
+        self._seed(include_no_realm=True)
+        # the two LOGIN_SUCCESS rows match the LOGIN* prefix; MFA_FAIL and USER_UNKNOWN do not
+        value = self._get({"event_type": "LOGIN*"})["result"]["value"]
+        self.assertEqual(2, value["count"])
+        self.assertSetEqual({AuthEventType.LOGIN_SUCCESS}, {entry["event_type"] for entry in value["auth_logs"]})
+
+    def test_filter_by_client_label(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="1", realm=self.realm1,
+                                 client_label="vpn")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res", uid="2", realm=self.realm1,
+                                 client_label="webui")
         db.session.commit()
 
-    @staticmethod
-    def _enable_challenge_response():
-        set_policy("authlog_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        value = self._get({"client_label": "vpn"})["result"]["value"]
+        self.assertEqual(1, value["count"])
+        self.assertEqual("vpn", value["auth_logs"][0]["client_label"])
 
+    def test_policy_gate_denies_without_action(self):
+        # Admin policies exist but none grant authentication_log_read -> the admin is denied.
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            body = self._get(status=403)
+            self.assertFalse(body["result"]["status"], body)
+        finally:
+            delete_policy("authlog_other")
 
-class ValidateCheckAuthLogTestCase(AuthLogTestCase):
-    """Authentication-log coverage for /validate/check (user, serial and challenge flows)."""
-
-    def _check(self, data, headers=None):
-        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers or {}):
-            response = self.app.full_dispatch_request()
-            self.assertEqual(200, response.status_code, response)
-            return response.json
-
-    def _trigger_challenge(self):
-        body = self._check({"user": "cornelius", "pass": "pin"})
-        self.assertEqual("CHALLENGE", body["result"]["authentication"], body)
-        return body["detail"]["transaction_id"]
-
-    # --- Generic ---
-
-    def test_client_label_falls_back_to_user_agent(self):
-        self._check({"user": "cornelius", "pass": "pin755224"}, headers={"User-Agent": "pytest-UA"})
-        logs = get_authentication_logs()
-        self.assertEqual(1, len(logs), logs)
-        self.assertEqual("pytest-UA", logs[0].client_label)
-
-    def test_no_token_logs_no_token(self):
-        # A resolvable user without a usable token -> NO_TOKEN (set in check_user_pass)
-        remove_token(self.serial)
-        body = self._check({"user": "cornelius", "pass": "pin123456"})
-        self.assertFalse(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.NO_TOKEN])
-        assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=User("cornelius", self.realm1))
-
-    def test_unknown_user_logs_user_unknown(self):
-        # An unknown user is rejected by the auth_user_does_not_exist policy decorator;
-        # the API catches that and still logs USER_UNKNOWN (high-signal for stuffing).
-        with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"user": "doesnotexist", "pass": "whatever"}):
-            res = self.app.full_dispatch_request()
-            self.assertFalse(res.json["result"]["status"], res.json)
-        entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
-        # TODO: What should be logged here for the user?
-        assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=None,
-                                        other_info={"login": "doesnotexist"})
-
-    def test_pass_on_no_user_logs_login_success(self):
-        # An unknown user accepted by a PASSONNOUSER policy is a successful login.
-        set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,
+    def test_realm_scoped_policy_restricts_visible_entries(self):
+        ids = self._seed(include_no_realm=True)
+        # Policy scoped to realm1: the admin sees exactly the realm1 rows, not the other realm or the null-realm row.
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
                    realm=self.realm1)
         try:
-            body = self._check({"user": "doesnotexist", "realm": self.realm1, "pass": "secret"})
-            self.assertTrue(body["result"]["value"], body)
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual({ids["realm1_login"], ids["realm1_fail"]}, self._returned_ids(value))
         finally:
-            delete_policy("passonnouser")
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        # TODO: What should be logged here for the user?
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=None)
-        # self.assertIsNone(entries[AuthEventType.LOGIN_SUCCESS].uid)
+            delete_policy("authlog_realm")
 
-    # --- Normal auth: a single request with PIN/password + OTP concatenated ---
-
-    def test_normal_auth_login_success(self):
-        # OTP for counter 0 of the standard test key
-        body = self._check({"user": "cornelius", "pass": "pin755224", "client_id": "myapp"})
-        self.assertTrue(body["result"]["value"], body)
-        # The internal classification key must never reach the client
-        self.assertNotIn(AUTH_EVENT_TYPE_KEY, body["detail"])
-
-        # Exactly one LOGIN_SUCCESS row carrying the resolved user, the token serial, and client label
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User("cornelius", self.realm1),
-                                        serial=self.serial, client_label="myapp")
-
-    def test_normal_auth_password_fail(self):
-        # otppin=userstore: the PIN part is the userstore password; a wrong one is PASSWORD_FAIL.
-        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
+    def test_resolver_scoped_policy_restricts_visible_entries(self):
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver", uid="2",
+                                 realm=self.realm1)
+        db.session.commit()
+        set_policy("authlog_resolver", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   resolver=self.resolvername1)
         try:
-            body = self._check({"user": "cornelius", "pass": "wrongpassword755224", "client_id": "myapp"})
-            self.assertFalse(body["result"]["value"], body)
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual({in_scope}, self._returned_ids(value))
         finally:
-            delete_policy("authlog_otppin")
-        entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=User("cornelius", self.realm1),
-                                        client_label="myapp")
+            delete_policy("authlog_resolver")
 
-    def test_normal_auth_pin_fail(self):
-        # Wrong token PIN (otppin=token, the default) -> PIN_FAIL
-        body = self._check({"user": "cornelius", "pass": "wrongpin755224", "client_id": "myapp"})
-        self.assertFalse(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.PIN_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=User("cornelius", self.realm1),
-                                        client_label="myapp")
-
-    def test_normal_auth_wrong_otp_is_mfa_fail(self):
-        # PIN correct, OTP wrong
-        body = self._check({"user": "cornelius", "pass": "pin000000", "client_id": "myapp"})
-        self.assertFalse(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=User("cornelius", self.realm1),
-                                        serial=self.serial, client_label="myapp")
-
-    # --- Challenge response ---
-
-    def test_challenge_triggered(self):
-        # A challenge-response token issues a challenge -> CHALLENGE_TRIGGERED
-        self._enable_challenge_response()
+    def test_multiple_policies_union_scopes(self):
+        # P1 scopes realm1, P2 scopes resolver1 -> the admin sees (realm1) OR (resolver1).
+        matches_p1 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver",
+                                              uid="1", realm=self.realm1)
+        matches_p2 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                              uid="2", realm=self.OTHER_REALM)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver", uid="3",
+                                 realm=self.OTHER_REALM)  # matches neither
+        db.session.commit()
+        set_policy("authlog_p1", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        set_policy("authlog_p2", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   resolver=self.resolvername1)
         try:
-            transaction_id = self._trigger_challenge()
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual({matches_p1, matches_p2}, self._returned_ids(value))
         finally:
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
+            delete_policy("authlog_p1")
+            delete_policy("authlog_p2")
 
-    def test_challenge_wrong_otp_answered_fail(self):
-        # Trigger, then answer with a wrong OTP -> CHALLENGE_ANSWERED_FAIL
-        self._enable_challenge_response()
+    def test_unscoped_policy_grants_all_even_alongside_a_scoped_one(self):
+        # If any applicable policy has no target scope, the admin is unrestricted -- even when another policy is
+        # scoped. (The scoped policy alone would have limited the result to realm1's 2 rows.)
+        ids = self._seed(include_no_realm=True)  # realm1 x2, OTHER_REALM x1, null-realm x1
+        set_policy("authlog_scoped", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        set_policy("authlog_all", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ)
         try:
-            transaction_id = self._trigger_challenge()
-            body = self._check({"user": "cornelius", "transaction_id": transaction_id, "pass": "000000"})
-            self.assertFalse(body["result"]["value"], body)
+            value = self._get({"page_size": 50})["result"]["value"]
+            self.assertEqual(set(ids.values()), self._returned_ids(value))
         finally:
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                            transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
+            delete_policy("authlog_scoped")
+            delete_policy("authlog_all")
 
-    def test_challenge_expired_answered_fail(self):
-        # Trigger, expire the challenge in the DB, then answer with the correct OTP -> CHALLENGE_ANSWERED_FAIL
-        self._enable_challenge_response()
-        try:
-            transaction_id = self._trigger_challenge()
-            for challenge in get_challenges(transaction_id=transaction_id):
-                challenge.expiration = utc_now() - datetime.timedelta(minutes=10)
-                challenge.save()
-            body = self._check({"user": "cornelius", "transaction_id": transaction_id, "pass": "755224"})
-            self.assertFalse(body["result"]["value"], body)
-        finally:
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                            transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
+    def test_unscoped_policy_builds_no_visibility_filter(self):
+        # Efficiency: an unscoped policy grants everything, so no realm/resolver/user filter is built at all -- the
+        # lib is called with visibility_scopes=None, not scopes that merely happen to match every row.
+        with mock.patch("privacyidea.api.authentication_log.get_authentication_logs_paginate") as paginate_mock:
+            paginate_mock.return_value.to_dict.return_value = {}
+            # Only a scoped policy -> the lib receives concrete scopes.
+            set_policy("authlog_scoped", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                       realm=self.realm1)
+            self._get()
+            self.assertIsNotNone(paginate_mock.call_args.kwargs["visibility_scopes"])
+            # Adding an unscoped policy of the same action -> no filter is built at all.
+            set_policy("authlog_all", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ)
+            try:
+                self._get()
+                self.assertIsNone(paginate_mock.call_args.kwargs["visibility_scopes"])
+            finally:
+                delete_policy("authlog_scoped")
+                delete_policy("authlog_all")
 
-    def test_challenge_stale_transaction_answered_fail(self):
-        # A transaction_id with no live challenge for the token (expired, cleaned up or for another token) is still a
-        # failed challenge answer -> CHALLENGE_ANSWERED_FAIL (not PIN_FAIL).
-        body = self._check({"user": "cornelius", "transaction_id": "9" * 20, "pass": "pin755224"})
-        self.assertFalse(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        # TODO: Should we have the serial here in the log?
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=User("cornelius", self.realm1))
-
-    def test_challenge_answered_ok(self):
-        # Trigger, then answer with the correct OTP -> CHALLENGE_ANSWERED_OK
-        self._enable_challenge_response()
-        try:
-            transaction_id = self._trigger_challenge()
-            body = self._check({"user": "cornelius", "transaction_id": transaction_id, "pass": "755224"})
-            self.assertTrue(body["result"]["value"], body)
-        finally:
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OK],
-                                  transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_OK],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    # --- Serial auth (serial provided instead of user) ---
-    # TODO: Serial should be added to logs (context) if passed as request parameter
-
-    def test_serial_otponly_success(self):
-        # serial + otponly validates only the OTP (no PIN); a correct value is LOGIN_SUCCESS.
-        # This classification is set by the API handler (check_otp), not the lib layer.
-        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"})
-        self.assertTrue(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=User("cornelius", self.realm1))
-
-    def test_serial_otp_only_fail(self):
-        # serial + otponly validates only the OTP (no PIN), so a wrong value is OTP_FAIL.
-        body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"})
-        self.assertFalse(body["result"]["value"], body)
-
-        entries = assert_authentication_log([AuthEventType.OTP_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.OTP_FAIL], user=User("cornelius", self.realm1))
-
-    def test_serial_pass_success(self):
-        # serial + pin+otp (no otponly) goes through check_serial_pass -> check_token_list -> LOGIN_SUCCESS.
-        body = self._check({"serial": self.serial, "pass": "pin755224"})
-        self.assertTrue(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    def test_serial_pass_wrong_otp_is_mfa_fail(self):
-        # serial + correct PIN, wrong OTP -> MFA_FAIL (same matrix as the standard path).
-        body = self._check({"serial": self.serial, "pass": "pin000000"})
-        self.assertFalse(body["result"]["value"], body)
-        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-
-class AuthEndpointAuthLogTestCase(AuthLogTestCase):
-    """Authentication-log coverage for the /auth WebUI login endpoint."""
-
-    def _auth(self, data, status=200):
-        with self.app.test_request_context('/auth', method='POST', data=data):
-            response = self.app.full_dispatch_request()
-            self.assertEqual(status, response.status_code, response.json)
-            return response.json
-
-    @staticmethod
-    def _enable_privacyidea_login():
-        # WebUI login against privacyIDEA: the user logs in with their token (PIN+OTP),
-        # so the /auth login runs the full check_user_pass classification matrix.
-        set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
-
-    def _login(self, password, status=200, transaction_id=None):
-        data = {"username": "cornelius", "realm": self.realm1, "password": password}
-        if transaction_id:
-            data["transaction_id"] = transaction_id
-        return self._auth(data, status=status)
-
-    def _trigger_auth_challenge(self):
-        body = self._login("pin")
-        self.assertFalse(body["result"]["value"], body)
-        return body["detail"]["transaction_id"]
-
-    def test_auth_endpoint_logs_login(self):
-        # A wrong /auth login (local admin, userstore mode) is logged as PASSWORD_FAIL
-        self._auth({"username": self.testadmin, "password": "wrong"}, status=401)
-        assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-
+    def test_include_own_adds_admins_own_entries(self):
+        # A helpdesk admin in the superuser realm "adminrealm" has a real (username, realm), so include_own works.
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": "selfservice@adminrealm", "password": "test"}):
+            helpdesk_token = self.app.full_dispatch_request().json["result"]["value"]["token"]
+        # The login above logged its own auth event; clear so the test works on controlled entries only.
         self._clear_log()
-        # A successful /auth login is logged as LOGIN_SUCCESS
-        body = self._auth({"username": self.testadmin, "password": self.testadminpw})
-        self.assertTrue(body["result"]["value"]["token"], body)
-        assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        # One in-scope (realm1) entry and the admin's own entry (username=selfservice, realm=adminrealm).
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                       realm="adminrealm", username="selfservice")
+        db.session.commit()
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
 
-    # --- Normal auth (LOGINMODE=privacyIDEA, login with PIN+OTP) ---
+        def helpdesk_get(query_string):
+            with self.app.test_request_context("/authenticationlog/", method="GET", query_string=query_string,
+                                               headers={"Authorization": helpdesk_token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return {entry["id"] for entry in res.json["result"]["value"]["auth_logs"]}
 
-    def test_auth_login_success(self):
-        self._enable_privacyidea_login()
         try:
-            body = self._login("pin755224")
-            self.assertTrue(body["result"]["value"]["token"], body)
+            # Without include_own: only the realm1 entry.
+            self.assertEqual({in_scope}, helpdesk_get({"page_size": 50}))
+            # With include_own: the realm1 entry plus the admin's own adminrealm entry.
+            self.assertEqual({in_scope, own}, helpdesk_get({"page_size": 50, "include_own": "1"}))
         finally:
-            delete_policy("authlog_login_mode")
-        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
-        assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    def test_auth_password_fail(self):
-        # otppin=userstore: the PIN part is the userstore password; a wrong one is PASSWORD_FAIL.
-        self._enable_privacyidea_login()
-        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
-        try:
-            self._login("wrongpassword755224", status=401)
-        finally:
-            delete_policy("authlog_login_mode")
-            delete_policy("authlog_otppin")
-        entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=User("cornelius", self.realm1))
-
-    def test_auth_pin_fail(self):
-        self._enable_privacyidea_login()
-        try:
-            self._login("wrongpin755224", status=401)
-        finally:
-            delete_policy("authlog_login_mode")
-        entries = assert_authentication_log([AuthEventType.PIN_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=User("cornelius", self.realm1))
-
-    def test_auth_wrong_otp_is_mfa_fail(self):
-        self._enable_privacyidea_login()
-        try:
-            self._login("pin000000", status=401)
-        finally:
-            delete_policy("authlog_login_mode")
-        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    # --- Challenge response (LOGINMODE=privacyIDEA + challenge_response) ---
-
-    def test_auth_challenge_triggered(self):
-        self._enable_privacyidea_login()
-        self._enable_challenge_response()
-        try:
-            transaction_id = self._trigger_auth_challenge()
-        finally:
-            delete_policy("authlog_login_mode")
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    def test_auth_challenge_wrong_otp_answered_fail(self):
-        self._enable_privacyidea_login()
-        self._enable_challenge_response()
-        try:
-            transaction_id = self._trigger_auth_challenge()
-            self._login("000000", status=401, transaction_id=transaction_id)
-        finally:
-            delete_policy("authlog_login_mode")
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                            transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    def test_auth_challenge_expired_answered_fail(self):
-        self._enable_privacyidea_login()
-        self._enable_challenge_response()
-        try:
-            transaction_id = self._trigger_auth_challenge()
-            for challenge in get_challenges(transaction_id=transaction_id):
-                challenge.expiration = utc_now() - datetime.timedelta(minutes=10)
-                challenge.save()
-            self._login("755224", status=401, transaction_id=transaction_id)
-        finally:
-            delete_policy("authlog_login_mode")
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                            transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
-
-    def test_auth_challenge_stale_transaction_answered_fail(self):
-        self._enable_privacyidea_login()
-        try:
-            self._login("pin755224", status=401, transaction_id="9" * 20)
-        finally:
-            delete_policy("authlog_login_mode")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                        user=User("cornelius", self.realm1))
-
-    def test_auth_challenge_answered_ok(self):
-        self._enable_privacyidea_login()
-        self._enable_challenge_response()
-        try:
-            transaction_id = self._trigger_auth_challenge()
-            body = self._login("755224", transaction_id=transaction_id)
-            self.assertTrue(body["result"]["value"]["token"], body)
-        finally:
-            delete_policy("authlog_login_mode")
-            delete_policy("authlog_cr")
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_OK],
-                                            transaction_id=transaction_id)
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_OK],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
+            delete_policy("authlog_realm")
+            delete_realm("adminrealm")
 
 
-class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
-    """Authentication-log coverage for the admin /validate/triggerchallenge endpoint."""
+    # --- admin DELETE ---
 
-    def test_triggerchallenge_logs_challenge_triggered(self):
-        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
-                                           data={"user": "cornelius"},
-                                           headers={"Authorization": self.at}):
+    def test_delete_requires_admin(self):
+        with self.app.test_request_context("/authenticationlog/", method="DELETE",
+                                           query_string={"event_type": AuthEventType.MFA_FAIL}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            self.assertGreaterEqual(res.json["result"]["value"], 1, res.json)
+            self.assertEqual(401, res.status_code, res.json)
 
-        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User("cornelius", self.realm1), serial=self.serial)
+    def test_delete_without_filter_is_rejected(self):
+        self._seed()
+        self._delete(status=400)
+        self.assertEqual(3, len(get_authentication_logs()))
 
-    def test_triggerchallenge_without_token_logs_no_token(self):
-        # No challenge-capable token for the user -> nothing is triggered -> NO_TOKEN
-        remove_token(self.serial)
-        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
-                                           data={"user": "cornelius"},
-                                           headers={"Authorization": self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            self.assertEqual(0, res.json["result"]["value"], res.json)
+    def test_delete_by_filter(self):
+        ids = self._seed()
+        body = self._delete({"event_type": AuthEventType.MFA_FAIL})
+        self.assertEqual(1, body["result"]["value"])
+        # Exactly the MFA_FAIL row is gone; the two LOGIN_SUCCESS rows remain.
+        self.assertEqual({ids["realm1_login"], ids["other_login"]}, self._remaining_ids())
 
-        entries = assert_authentication_log([AuthEventType.NO_TOKEN])
-        assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=User("cornelius", self.realm1))
+    def test_delete_by_event_type_csv_list(self):
+        self._seed()
+        body = self._delete({"event_type": f"{AuthEventType.MFA_FAIL},{AuthEventType.LOGIN_SUCCESS}"})
+        self.assertEqual(3, body["result"]["value"])
+        self.assertSetEqual(set(), self._remaining_ids())
+
+    def test_delete_older_than_end(self):
+        self._seed()
+        past = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=1)).isoformat()
+        future = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=1)).isoformat()
+        # Nothing is older than a minute ago
+        self.assertEqual(0, self._delete({"end": past})["result"]["value"])
+        self.assertEqual(3, len(get_authentication_logs()))
+        # Everything is older than a minute from now
+        self.assertEqual(3, self._delete({"end": future})["result"]["value"])
+        self.assertEqual(0, len(get_authentication_logs()))
+
+    def test_delete_policy_gate_denies(self):
+        # Admin policies exist but none grant authentication_log_delete -> denied and nothing is deleted.
+        self._seed()
+        set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            self._delete({"event_type": AuthEventType.MFA_FAIL}, status=403)
+        finally:
+            delete_policy("authlog_other")
+        self.assertEqual(3, len(get_authentication_logs()))
+
+    def test_delete_realm_restriction(self):
+        ids = self._seed()
+        set_policy("authlog_delete_realm", scope=SCOPE.ADMIN,
+                   action=PolicyAction.AUTHENTICATION_LOG_DELETE, realm=self.realm1)
+        try:
+            # Deleting all LOGIN_SUCCESS only affects realm1; the realm1 MFA_FAIL and the other realm's row survive.
+            count = self._delete({"event_type": AuthEventType.LOGIN_SUCCESS})["result"]["value"]
+            self.assertEqual(1, count)
+            self.assertEqual({ids["realm1_fail"], ids["other_login"]}, self._remaining_ids())
+        finally:
+            delete_policy("authlog_delete_realm")
+
+    def test_delete_resolver_restriction(self):
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver=self.resolvername1, uid="1",
+                                 realm=self.realm1)  # in scope -> deleted
+        other = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="otherresolver", uid="2",
+                                         realm=self.realm1)
+        db.session.commit()
+        set_policy("authlog_delete_resolver", scope=SCOPE.ADMIN,
+                   action=PolicyAction.AUTHENTICATION_LOG_DELETE, resolver=self.resolvername1)
+        try:
+            # Deleting all MFA_FAIL only removes the scoped resolver's row; the other resolver's row survives.
+            count = self._delete({"event_type": AuthEventType.MFA_FAIL})["result"]["value"]
+            self.assertEqual(1, count)
+            self.assertEqual({other}, self._remaining_ids())
+        finally:
+            delete_policy("authlog_delete_resolver")
+
+
+    # --- user-scope GET (a normal user sees only their own entries) ---
+
+    def test_user_sees_only_own_entries(self):
+        # Log in the self-service user "selfservice" in realm1 (-> self.at_user); that login writes its own auth-log
+        # entry, so clear the log to test on controlled entries only.
+        self.authenticate_selfservice_user()
+        self._clear_log()
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",
+                                       realm=self.realm1, username="selfservice")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+                                 realm=self.realm1, username="hans")  # another user, same realm
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)  # no identity
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            value = self._user_get({"page_size": 50})["result"]["value"]
+            self.assertEqual({own}, {entry["id"] for entry in value["auth_logs"]})
+        finally:
+            delete_policy("authlog_user")
+
+    def test_user_denied_without_action(self):
+        # A user-scope policy exists but does not grant authentication_log_read -> the user is denied.
+        self.authenticate_selfservice_user()  # -> self.at_user
+        set_policy("user_other", scope=SCOPE.USER, action=PolicyAction.DISABLE)
+        try:
+            body = self._user_get(status=403)
+            self.assertFalse(body["result"]["status"], body)
+        finally:
+            delete_policy("user_other")

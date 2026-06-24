@@ -23,6 +23,18 @@ log = logging.getLogger(__name__)
 # Key under which the classified AuthEventType is carried from lib to api layer
 AUTH_EVENT_TYPE_KEY = "authentication_event_type"
 
+# Key set on token.auth_details when the token is verified without a first factor (knowledge factor), i.e. otppin=none.
+NO_FIRST_FACTOR_KEY = "no_first_factor"
+
+# Key set on token.auth_details when the token logged its own outcome and no terminal event should be added on top.
+# A push_wait timeout sets this: the unanswered challenge is recorded only as CHALLENGE_TRIGGERED, not an MFA_FAIL.
+SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
+
+# Key a token sets in its reply to carry the challenge transaction_id to the terminal authentication-log row without
+# exposing it in the response. push_wait uses it so its LOGIN_SUCCESS row correlates with the trigger and out-of-band
+# answer; the API layer pops it from the response details before sending.
+LOG_TRANSACTION_ID_KEY = "log_transaction_id"
+
 
 class AuthEventType(str, Enum):
     """
@@ -32,17 +44,42 @@ class AuthEventType(str, Enum):
     normalizes ``str()``/f-string output to the value across all supported versions (3.10-3.14); without it the
     output would differ between versions.
     """
+    # An authorization policy blocked the authentication
+    NOT_AUTHORIZED = "NOT_AUTHORIZED"
+    # Wrong user store password
     PASSWORD_FAIL = "PASSWORD_FAIL"
+    # Wrong token pin
     PIN_FAIL = "PIN_FAIL"
-    OTP_FAIL = "OTP_FAIL"
+    # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
+    TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
+    # Correct first factor (pin / password), but the second factor failed, e.g. wrong otp
+    # Note: We also log this for a failed passkey authentication, even thought we can not be sure what exactly failed
+    # there.
     MFA_FAIL = "MFA_FAIL"
+    # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
+    # User is known but has no tokens assigned, or the requested token does not exist.
     NO_TOKEN = "NO_TOKEN"
+    # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
+    NO_USABLE_TOKEN = "NO_USABLE_TOKEN"
+    # Authentication fully succeeded.
     LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    # Challenge answered correctly, but the token requires at least one further challenge.
+    CHALLENGE_CONTINUED = "CHALLENGE_CONTINUED"
+    # A challenge was created and sent to the client (push notification, trigger_challenge, passkey, …).
     CHALLENGE_TRIGGERED = "CHALLENGE_TRIGGERED"
-    CHALLENGE_ANSWERED_OK = "CHALLENGE_ANSWERED_OK"
+    # Push challenge approved on the smartphone (out-of-band, signature verified).
+    CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
+    # Challenge response is wrong, expired, or the transaction_id is unknown.
     CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
+    # Push challenge explicitly rejected on the smartphone.
     CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+    # a successful authentication triggered the enrollment of a new token type to complete the authentication
+    ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
+    # cancelling the enrollment failed (unknown or already-consumed transaction_id).
+    ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
+    # Default fallback, if no auth event was set somewhere, but authentication failed we log this to have failed attempt
+    UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
     def __str__(self) -> str:
         return self.value
@@ -50,17 +87,23 @@ class AuthEventType(str, Enum):
 
 # Request-level precedence, highest signal first.
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
+    AuthEventType.NOT_AUTHORIZED,
+    AuthEventType.ENROLLMENT_TRIGGERED,
     AuthEventType.LOGIN_SUCCESS,
-    AuthEventType.CHALLENGE_ANSWERED_OK,
+    AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
+    AuthEventType.CHALLENGE_CONTINUED,
     AuthEventType.CHALLENGE_TRIGGERED,
     AuthEventType.CHALLENGE_ANSWERED_FAIL,
     AuthEventType.CHALLENGE_DECLINED,
+    AuthEventType.ENROLLMENT_CANCELED_FAIL,
     AuthEventType.MFA_FAIL,
-    AuthEventType.OTP_FAIL,
+    AuthEventType.TOKEN_ONLY_FAIL,
     AuthEventType.PASSWORD_FAIL,
     AuthEventType.PIN_FAIL,
+    AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
     AuthEventType.USER_UNKNOWN,
+    AuthEventType.UNKNOWN_FAIL_REASON
 ]
 
 # Precedence rank of each event.
