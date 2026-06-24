@@ -40,6 +40,7 @@ const apiFilter = ["container_serial", "type", "description", "container_realm",
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
+// TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
 const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
 
 export function toWildcardParam(

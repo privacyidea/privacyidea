@@ -168,6 +168,9 @@ def list_containers():
     param = request.all_data
     user = request.User
     cserial = get_optional(param, "container_serial")
+    # TODO(4.0.0): replace the separate "type" and "type_list" query params
+    #   with a single list-only "types" param. They are kept separate here only
+    #   for consistency with the token API on the 3.x line.
     ctype = get_optional(param, "type")
     ctype_list = get_optional(param, "type_list")
     if ctype_list:
