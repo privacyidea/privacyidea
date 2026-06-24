@@ -76,35 +76,61 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 @event("user_list", request, g)
 def get_users():
     """
-    Return users from the configured resolvers.
+    List users from the configured resolvers.
 
-    When called by a regular user the response is restricted to that
-    user's own record \u2014 the ``user`` / ``realm`` / ``resolver``
-    parameters are bound to the calling user before the search runs.
+    **Who may call this**
 
-    Requires admin authentication and the policy action
-    :ref:`policy_userlist` to list other users.
+    Both administrators and regular users may call this endpoint.
+    Requires the policy action :ref:`policy_userlist` in the matching
+    scope (admin scope for admins, user scope for users). For non-admin
+    callers the ``user`` / ``realm`` / ``resolver`` parameters are
+    overwritten with the caller's own identity before the search runs,
+    so a regular user only ever sees their own record.
 
-    Realm and resolver scoping is additive: ``realm=R`` queries every
-    resolver in ``R``, ``resolver=X`` queries ``X``, and combining both
-    queries the union. With neither parameter all resolvers across all
-    realms are queried.
+    **Realm and resolver scoping**
 
-    :query realm: query every resolver in this realm.
-    :query resolver: query this resolver.
-    :query user / username: filter by login name; supports the ``*``
-        wildcard.
+    * ``realm=R`` only — queries every resolver assigned to realm
+      ``R``.
+    * ``resolver=X`` only — queries only resolver ``X``, in every
+      realm that contains it.
+    * ``realm=R`` together with ``resolver=X`` — queries only ``X``
+      within ``R``. The result is empty if ``X`` is not part of ``R``.
+    * Neither parameter — queries every resolver in every realm.
+
+    If an admin caller omits ``realm=`` and their matching
+    :ref:`policy_userlist` policy is restricted to one or more realms,
+    the first realm from the policy is used as ``realm=`` for the
+    request. Additional realms in the same policy are not consulted by
+    this endpoint.
+
+    :query realm: realm to list (see scoping rules above).
+    :query resolver: resolver to list (see scoping rules above).
+    :query user / username: filter by login name. Both keys are
+        accepted; ``user`` wins if both are sent. Wildcard support
+        (e.g. ``*``) is resolver-class-specific.
     :query <resolver-attr>: any other key is forwarded to each
-        resolver's ``getUserList`` as a search field. Wildcard support
-        is resolver-class-specific.
+        resolver's ``getUserList`` as an additional search field.
+        Wildcard support is resolver-class-specific. A resolver that
+        rejects an unknown search key is skipped for that request and
+        reported back via ``detail.skipped_resolvers`` (see
+        :status:`200`).
     :query attributes: comma-separated list of attribute names to
-        return per user. In addition to user-store attributes,
-        ``resolver`` and ``editable`` are privacyIDEA-managed extras.
-        If omitted, all attributes are returned.
-    :query include_custom_attributes: ``True`` (default) merges
-        privacyIDEA custom user attributes into the response. Custom
-        attributes are only merged when a single realm is in scope.
-    :status 200: list of user dictionaries in ``result.value``.
+        return per user (whitespace around names is stripped). In
+        addition to user-store attributes, the privacyIDEA-managed
+        extras ``realm``, ``resolver`` and ``editable`` may be
+        requested. Names the resolver does not recognise are silently
+        dropped from the response. When omitted, the response contains
+        every user-store attribute plus the three privacyIDEA extras.
+    :query include_custom_attributes: defaults to ``True`` and merges
+        privacyIDEA custom user attributes into each user record. The
+        default is forced to ``False`` if no custom attributes are
+        defined anywhere in the database, to skip an unnecessary
+        per-user lookup.
+    :status 200: list of user dictionaries in ``result.value``. If any
+        targeted resolver raised an error (broken connection, unknown
+        search key, ...) the request still returns ``200`` with the
+        partial result; the names of the skipped resolvers are
+        reported in ``detail.skipped_resolvers``.
 
     **Example request**:
 
@@ -144,6 +170,7 @@ def get_users():
        }
     """
     realm = get_optional(request.all_data, "realm")
+    resolver = get_optional(request.all_data, "resolver")
     search_parameters = dict(request.all_data)
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:
@@ -154,13 +181,20 @@ def get_users():
                                  and is_attribute_at_all())
     if "include_custom_attributes" in search_parameters:
         del search_parameters["include_custom_attributes"]
+    failures: list[str] = []
     users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
-                          requested_attributes=requested_attributes)
+                          requested_attributes=requested_attributes, failures=failures)
 
+    info = f"realm: {realm!s}; resolver: {resolver!s}"
+    details = None
+    if failures:
+        skipped_names = sorted(failures)
+        info += f"; skipped_resolvers: {','.join(skipped_names)}"
+        details = {"skipped_resolvers": skipped_names}
     g.audit_object.log({'success': True,
-                        'info': f"realm: {realm!s}"})
+                        'info': info})
 
-    return send_result(users)
+    return send_result(users, details=details)
 
 
 @user_blueprint.route('/attribute', methods=['POST'])
