@@ -34,11 +34,13 @@ authentication_log_column_length = {
     "resolver": 120,
     "uid": 320,
     "realm": 255,
+    "username": 255,
     "event_type": 40,
     "source_ip": 50,
     "client_label": 1024,
     "serial": 1024,
     "transaction_id": 1024,
+    "previous_transaction_id": 1024,
 }
 
 
@@ -46,7 +48,9 @@ class AuthenticationLog(MethodsMixin, db.Model):
     """
     Append-only log of authentication events: every authenticated HTTP request produces exactly one row.
     Several rows may share a ``transaction_id`` to correlate the multiple requests of one logical authentication
-    attempt (e.g. a challenge trigger and its later response) at query time.
+    attempt (e.g. a challenge trigger and its later response) at query time. In multi-challenge flows where answering
+    one challenge triggers another, ``previous_transaction_id`` records the old transaction so the full chain can be
+    reconstructed.
     """
     __tablename__ = "authentication_log"
     __table_args__ = (
@@ -58,12 +62,14 @@ class AuthenticationLog(MethodsMixin, db.Model):
     resolver: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["resolver"]))
     uid: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["uid"]))
     realm: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["realm"]))
+    username: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["username"]))
     event_type: Mapped[str] = mapped_column(Unicode(authentication_log_column_length["event_type"]), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     source_ip: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["source_ip"]))
     client_label: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["client_label"]))
     serial: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["serial"]))
     transaction_id: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["transaction_id"]))
+    previous_transaction_id: Mapped[str | None] = mapped_column(Unicode(authentication_log_column_length["previous_transaction_id"]))
     other_info: Mapped[dict | None] = mapped_column(JSON)
 
     @property
@@ -76,3 +82,8 @@ class AuthenticationLog(MethodsMixin, db.Model):
         UTC and re-attach the timezone on read.
         """
         return self.timestamp.replace(tzinfo=timezone.utc)
+
+    def to_dict(self):
+        auth_log_dict = {name: getattr(self, name) for name in self.__table__.columns.keys()}
+        auth_log_dict["timestamp"] = self.aware_timestamp.isoformat()
+        return auth_log_dict

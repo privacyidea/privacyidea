@@ -56,7 +56,9 @@ from urllib.parse import quote
 from flask import g, current_app, make_response, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params
+from privacyidea.api.lib.utils import get_all_params, log_authentication
+from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import reclassify_authentication_log_event
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
@@ -1100,6 +1102,16 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+
+        # Re-classify authentication log entry to ENROLLMENT_TRIGGERED. Fall back to a fresh row if no id was stashed.
+        enrolled_serial = content.get("detail", {}).get("serial")
+        event_id = getattr(g, "auth_log_event_id", None)
+        if event_id:
+            reclassify_authentication_log_event(event_id, AuthEventType.ENROLLMENT_TRIGGERED,
+                                                serial=enrolled_serial, transaction_id=transaction_id)
+        else:
+            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
+                               serial=enrolled_serial, transaction_id=transaction_id)
     response.set_data(json.dumps(content))
 
     return response
@@ -1199,6 +1211,11 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            event_id = getattr(g, "auth_log_event_id", None)
+            if event_id:
+                reclassify_authentication_log_event(event_id, AuthEventType.NOT_AUTHORIZED)
+            else:
+                log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

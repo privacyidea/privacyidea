@@ -17,15 +17,21 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from datetime import datetime, timezone, timedelta
 
-from .base import MyTestCase
+import mock
+
 from privacyidea.lib.conditional_access.authentication_error_codes import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import (
     log_authentication_event,
     delete_authentication_log_event,
     get_authentication_log_event,
     get_authentication_logs,
+    get_authentication_logs_paginate,
+    delete_authentication_logs,
     cleanup_authentication_log,
+    AuthenticationLogVisibilityScope,
 )
+from privacyidea.lib.error import ParameterError
+from .base import MyTestCase
 
 
 class AuthenticationLogTestCase(MyTestCase):
@@ -39,7 +45,8 @@ class AuthenticationLogTestCase(MyTestCase):
         super().tearDown()
 
     def test_create_required_fields_only(self):
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1")
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1",
+                                            realm="realm1")
         self.assertIsNotNone(event_id)
         self.assertGreater(event_id, 0)
 
@@ -48,26 +55,30 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual("res1", entry.resolver)
         self.assertEqual("user1", entry.uid)
         self.assertEqual("realm1", entry.realm)
+        self.assertIsNone(entry.username)
         self.assertEqual(AuthEventType.LOGIN_SUCCESS, entry.event_type)
         self.assertIsNone(entry.source_ip)
         self.assertIsNone(entry.client_label)
         self.assertIsNone(entry.serial)
         self.assertIsNone(entry.transaction_id)
+        self.assertIsNone(entry.previous_transaction_id)
         self.assertIsNone(entry.other_info)
 
     def test_create_all_fields(self):
         event_id = log_authentication_event(
             event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
-            source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
-            transaction_id="txn-123", other_info={"key": "value"}
+            username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
+            transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
         )
 
         entry = get_authentication_log_event(event_id)
         assert entry is not None
+        self.assertEqual("testuser", entry.username)
         self.assertEqual("192.168.1.1", entry.source_ip)
         self.assertEqual("vpn", entry.client_label)
         self.assertEqual("TOK001", entry.serial)
         self.assertEqual("txn-123", entry.transaction_id)
+        self.assertEqual("txn-prev", entry.previous_transaction_id)
         self.assertEqual({"key": "value"}, entry.other_info)
 
     def test_create_returns_unique_ids(self):
@@ -76,7 +87,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertNotEqual(id1, id2)
 
     def test_delete_existing_entry(self):
-        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1")
+        event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1",
+                                            realm="realm1")
         self.assertIsNotNone(get_authentication_log_event(event_id))
 
         delete_authentication_log_event(event_id)
@@ -128,27 +140,96 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(1, len(results))
         self.assertEqual(AuthEventType.MFA_FAIL, results[0].event_type)
 
+    def test_get_authentication_logs_filter_by_event_type_list(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.PIN_FAIL, resolver="res1", uid="u1", realm="r1")
+
+        results = get_authentication_logs(event_type=[AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL])
+        self.assertEqual(2, len(results))
+        self.assertSetEqual({AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL},
+                            {entry.event_type for entry in results})
+
+    def test_get_authentication_logs_filter_by_serial_wildcard(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP002")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="HOTP001")
+
+        results = get_authentication_logs(serial="TOTP*")
+        self.assertSetEqual({"TOTP001", "TOTP002"}, {entry.serial for entry in results})
+
+    def test_get_authentication_logs_wildcard_escapes_like_specials(self):
+        # Only '*' is a wildcard; the SQL LIKE specials '_' and '%' must match literally.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="A_B")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="AXB")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="50%OFF")
+
+        # 'A_*' must match only the literal "A_..." entry, not "AXB" (which an unescaped '_' wildcard would match)
+        self.assertSetEqual({"A_B"}, {entry.serial for entry in get_authentication_logs(serial="A_*")})
+        # '%' is literal too
+        self.assertSetEqual({"50%OFF"}, {entry.serial for entry in get_authentication_logs(serial="50%*")})
+
+    def test_get_authentication_logs_event_type_wildcard_underscore_literal(self):
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm="r1")
+        log_authentication_event(event_type=AuthEventType.PIN_FAIL, resolver="res1", uid="u1", realm="r1")
+
+        # the '_' in the pattern is literal, so 'MFA_*' matches MFA_FAIL but not PIN_FAIL
+        results = get_authentication_logs(event_type="MFA_*")
+        self.assertListEqual([AuthEventType.MFA_FAIL], [entry.event_type for entry in results])
+
+    def test_get_authentication_logs_filter_mixed_exact_and_wildcard(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOTP001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="HOTP001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="YUBI999")
+
+        # one exact value (batched into IN) plus one wildcard pattern (LIKE), OR'd together
+        results = get_authentication_logs(serial=["HOTP001", "TOTP*"])
+        self.assertSetEqual({"TOTP001", "HOTP001"}, {entry.serial for entry in results})
+
     def test_get_authentication_logs_filter_by_serial(self):
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", serial="TOK001")
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", serial="TOK002")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOK001")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 serial="TOK002")
 
         results = get_authentication_logs(serial="TOK001")
         self.assertEqual(1, len(results))
         self.assertEqual("TOK001", results[0].serial)
 
     def test_get_authentication_logs_filter_by_source_ip(self):
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", source_ip="10.0.0.1")
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1", source_ip="10.0.0.2")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="10.0.0.1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 source_ip="10.0.0.2")
 
         results = get_authentication_logs(source_ip="10.0.0.1")
         self.assertEqual(1, len(results))
         self.assertEqual("10.0.0.1", results[0].source_ip)
 
+    def test_get_authentication_logs_filter_by_client_label(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 client_label="vpn")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1",
+                                 client_label="webui")
+
+        results = get_authentication_logs(client_label="vpn")
+        self.assertEqual(1, len(results))
+        self.assertEqual("vpn", results[0].client_label)
+
     def test_get_authentication_logs_filter_by_transaction_id(self):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-a",
-                                  resolver="res1", uid="u1", realm="r1")
+                                 resolver="res1", uid="u1", realm="r1")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, transaction_id="txn-b",
-                                  resolver="res1", uid="u1", realm="r1")
+                                 resolver="res1", uid="u1", realm="r1")
 
         results = get_authentication_logs(transaction_id="txn-a")
         self.assertEqual(1, len(results))
@@ -179,11 +260,13 @@ class AuthenticationLogTestCase(MyTestCase):
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = past
-            id1 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+            id1 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                           realm="r1")
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = future
-            id2 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
+            id2 = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2",
+                                           realm="r1")
 
         # only the past entry
         results = get_authentication_logs(end_timestamp=now)
@@ -208,6 +291,8 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertIsNone(entry.resolver)
         self.assertIsNone(entry.uid)
         self.assertIsNone(entry.realm)
+        self.assertIsNone(entry.username)
+        self.assertIsNone(entry.previous_transaction_id)
         self.assertEqual("10.0.0.1", entry.source_ip)
 
     def test_cleanup_removes_old_entries(self):
@@ -219,11 +304,13 @@ class AuthenticationLogTestCase(MyTestCase):
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = old_ts
-            old_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="r1")
+            old_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                              realm="r1")
 
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = recent_ts
-            recent_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="r1")
+            recent_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2",
+                                                 realm="r1")
 
         cutoff = now - timedelta(days=7)
         deleted = cleanup_authentication_log(older_than=cutoff)
@@ -260,6 +347,35 @@ class AuthenticationLogTestCase(MyTestCase):
         self.assertEqual(timezone.utc, entry.aware_timestamp.tzinfo)
         self.assertEqual(entry.timestamp, entry.aware_timestamp.replace(tzinfo=None))
 
+    def test_failed_write_is_swallowed_and_not_persisted(self):
+        # event_type is NOT NULL, so passing None makes the insert fail at flush. The failure must be swallowed
+        # (return None, no exception) and no row must be written.
+        from privacyidea.models import db
+
+        event_id = log_authentication_event(event_type=None, resolver="res1", uid="u1", realm="r1")
+        db.session.commit()
+
+        self.assertIsNone(event_id)
+        self.assertEqual([], get_authentication_logs())
+
+    def test_failed_write_preserves_prior_pending_write(self):
+        # The insert runs inside a SAVEPOINT, so a failing entry must roll back only itself and leave an earlier,
+        # still-uncommitted write of the same session intact.
+        from privacyidea.models import db
+        from privacyidea.models.authentication_log import AuthenticationLog
+
+        # A prior write that is pending but not yet committed.
+        db.session.add(AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, resolver="prior"))
+
+        # A failing auth-log write (event_type is NOT NULL).
+        event_id = log_authentication_event(event_type=None, resolver="failing", uid="u1", realm="r1")
+        self.assertIsNone(event_id)
+
+        # The prior pending write survived the savepoint rollback and was committed; the failing one was not written.
+        results = get_authentication_logs()
+        self.assertEqual(1, len(results))
+        self.assertEqual("prior", results[0].resolver)
+
     def test_values_are_truncated_to_column_length(self):
         from privacyidea.models import authentication_log_column_length
 
@@ -270,10 +386,191 @@ class AuthenticationLogTestCase(MyTestCase):
             return "X" * (authentication_log_column_length[column] + 50)
 
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=over("resolver"),
-                                            uid="u1", realm="r1", client_label=over("client_label"),
-                                            serial=over("serial"))
+                                            uid="u1", realm="r1", username=over("username"),
+                                            client_label=over("client_label"), serial=over("serial"),
+                                            previous_transaction_id=over("previous_transaction_id"))
         entry = get_authentication_log_event(event_id)
         assert entry is not None
-        self.assertEqual(authentication_log_column_length["resolver"], len(entry.resolver))
-        self.assertEqual(authentication_log_column_length["client_label"], len(entry.client_label))
-        self.assertEqual(authentication_log_column_length["serial"], len(entry.serial))
+        self.assertEqual("X" * authentication_log_column_length["resolver"], entry.resolver)
+        self.assertEqual("X" * authentication_log_column_length["username"], entry.username)
+        self.assertEqual("X" * authentication_log_column_length["client_label"], entry.client_label)
+        self.assertEqual("X" * authentication_log_column_length["serial"], entry.serial)
+        self.assertEqual("X" * authentication_log_column_length["previous_transaction_id"],
+                         entry.previous_transaction_id)
+
+
+class AuthenticationLogDBTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+
+        super().tearDown()
+
+    def test_get_as_dict(self):
+        log_time_utc_naive = datetime(2026, 6, 1, 5, 23, 21, 1, tzinfo=None)
+        with mock.patch("privacyidea.models.utils.datetime") as datetime_mock:
+            datetime_mock.now.return_value = log_time_utc_naive
+            event_id = log_authentication_event(
+                event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="user1", realm="realm1",
+                username="testuser", source_ip="192.168.1.1", client_label="vpn", serial="TOK001",
+                transaction_id="txn-123", previous_transaction_id="txn-prev", other_info={"key": "value"}
+            )
+
+        entry = get_authentication_log_event(event_id)
+        auth_log_dict = entry.to_dict()
+
+        expected_keys = {"id", "resolver", "uid", "realm", "username", "event_type", "timestamp", "source_ip",
+                         "client_label", "serial", "transaction_id", "previous_transaction_id", "other_info"}
+        self.assertSetEqual(expected_keys, set(auth_log_dict.keys()))
+        self.assertEqual(event_id, auth_log_dict["id"])
+        self.assertEqual("res1", auth_log_dict["resolver"])
+        self.assertEqual("user1", auth_log_dict["uid"])
+        self.assertEqual("realm1", auth_log_dict["realm"])
+        self.assertEqual("testuser", auth_log_dict["username"])
+        self.assertEqual(AuthEventType.LOGIN_SUCCESS, auth_log_dict["event_type"])
+        log_time_tz_aware = log_time_utc_naive.replace(tzinfo=timezone.utc)
+        self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])
+        self.assertEqual("192.168.1.1", auth_log_dict["source_ip"])
+        self.assertEqual("vpn", auth_log_dict["client_label"])
+        self.assertEqual("TOK001", auth_log_dict["serial"])
+        self.assertEqual("txn-123", auth_log_dict["transaction_id"])
+        self.assertEqual("txn-prev", auth_log_dict["previous_transaction_id"])
+        self.assertEqual({"key": "value"}, auth_log_dict["other_info"])
+
+
+class AuthenticationLogPaginateTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    @staticmethod
+    def _create(count, **kwargs):
+        return [log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid=f"u{i}",
+                                         realm="realm1", **kwargs) for i in range(count)]
+
+    def test_pagination_metadata_across_pages(self):
+        self._create(5)
+        first = get_authentication_logs_paginate(page=1, page_size=2)
+        self.assertEqual(5, first.count)
+        self.assertEqual(2, len(first.auth_logs))
+        self.assertEqual(1, first.current)
+        self.assertIsNone(first.prev)
+        self.assertEqual(2, first.next)
+
+        last = get_authentication_logs_paginate(page=3, page_size=2)
+        self.assertEqual(1, len(last.auth_logs))
+        self.assertEqual(2, last.prev)
+        self.assertIsNone(last.next)
+
+    def test_default_sort_is_newest_first(self):
+        ids = self._create(3)
+        page = get_authentication_logs_paginate()
+        self.assertEqual(sorted(ids, reverse=True), [entry.id for entry in page.auth_logs])
+
+    def test_sort_ascending(self):
+        ids = self._create(3)
+        page = get_authentication_logs_paginate(sort_order="asc")
+        self.assertEqual(sorted(ids), [entry.id for entry in page.auth_logs])
+
+    def test_unknown_sort_falls_back_to_timestamp(self):
+        self._create(2)
+        page = get_authentication_logs_paginate(sort_column="not_a_column")
+        self.assertEqual(2, page.count)
+
+    def test_filters_are_applied(self):
+        self._create(2, serial="TOK_A")
+        self._create(3, serial="TOK_B")
+        page = get_authentication_logs_paginate(serial="TOK_A")
+        self.assertEqual(2, page.count)
+        self.assertTrue(all(entry.serial == "TOK_A" for entry in page.auth_logs))
+
+    def test_visibility_scope_by_realm_excludes_other_and_null_realms(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm2")
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN)  # no realm
+        # None means unrestricted
+        self.assertEqual(3, get_authentication_logs_paginate().count)
+        # A realm-only scope hides realm2 and the null-realm row
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("realm1", restricted.auth_logs[0].realm)
+
+    def test_visibility_scope_by_resolver(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="realm1")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=["res1"], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual("res1", restricted.auth_logs[0].resolver)
+
+    def test_visibility_scope_dimensions_are_anded(self):
+        # A single scope with realm + resolver matches only entries satisfying both.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u3", realm="realm2")
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=["res1"], usernames=[])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual(("res1", "realm1"), (restricted.auth_logs[0].resolver, restricted.auth_logs[0].realm))
+
+    def test_visibility_scopes_are_ored_across_policies(self):
+        # Two scopes (from two policies) act as a union: realm1 OR resolver res2.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="resA", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u2", realm="realm9")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="resZ", uid="u3", realm="realm9")
+        scopes = [AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[]),
+                  AuthenticationLogVisibilityScope(realms=[], resolvers=["res2"], usernames=[])]
+        restricted = get_authentication_logs_paginate(visibility_scopes=scopes)
+        self.assertEqual(2, restricted.count)
+
+    def test_to_dict_shape_and_iso_timestamp(self):
+        self._create(1)
+        page_dict = get_authentication_logs_paginate().to_dict()
+        self.assertEqual({"auth_logs", "count", "current", "prev", "next"}, set(page_dict.keys()))
+        timestamp = page_dict["auth_logs"][0]["timestamp"]
+        self.assertIsInstance(timestamp, str)
+        datetime.fromisoformat(timestamp)  # parseable ISO 8601
+
+
+class AuthenticationLogDeleteTestCase(MyTestCase):
+
+    def tearDown(self):
+        from privacyidea.models.authentication_log import AuthenticationLog
+        from privacyidea.models import db
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_delete_by_filter_returns_count(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u2", realm="realm1")
+        deleted = delete_authentication_logs(event_type=AuthEventType.MFA_FAIL)
+        self.assertEqual(1, deleted)
+        remaining = get_authentication_logs()
+        self.assertEqual(1, len(remaining))
+        self.assertEqual(AuthEventType.LOGIN_SUCCESS, remaining[0].event_type)
+
+    def test_delete_without_filter_raises(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        self.assertRaises(ParameterError, delete_authentication_logs)
+        # nothing was deleted
+        self.assertEqual(1, len(get_authentication_logs()))
+
+    def test_delete_visibility_scope_excludes_other_and_null_realms(self):
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1", realm="realm1")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm2")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS)  # no realm
+        # Deleting all LOGIN_SUCCESS while scoped to realm1 only removes the realm1 row.
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=[], usernames=[])
+        deleted = delete_authentication_logs(event_type=AuthEventType.LOGIN_SUCCESS, visibility_scopes=[scope])
+        self.assertEqual(1, deleted)
+        remaining_realms = {entry.realm for entry in get_authentication_logs()}
+        self.assertEqual({"realm2", None}, remaining_realms)
