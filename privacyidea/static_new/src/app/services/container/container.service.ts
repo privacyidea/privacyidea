@@ -39,6 +39,9 @@ import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwErro
 const apiFilter = ["container_serial", "type", "description", "container_realm", "state"];
 const advancedApiFilter = ["token_serial", "template", "assigned"];
 
+// Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
+const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
+
 export function toWildcardParam(
   key: string,
   value: string | null | undefined,
@@ -315,11 +318,26 @@ export class ContainerService implements ContainerServiceInterface {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
     const plainKeys = new Set(["user", "type", "state", "assigned"]);
 
-    const entries = Array.from(this.containerFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
+    const filterMap = this.containerFilter().filterMap;
+
+    const entries = Array.from(filterMap.entries())
+      .filter(([key]) => allowed.includes(key) && !CONTAINER_TYPE_FILTER_KEYS.has(key))
       .flatMap(([key, value]) => Object.entries(toWildcardParam(key, value?.toString(), plainKeys)));
 
-    return Object.fromEntries(entries) as Record<string, string>;
+    const params = Object.fromEntries(entries) as Record<string, string>;
+
+    const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
+      .flatMap((key) => (filterMap.get(key) ?? "").split(","))
+      .map((value) => value.trim())
+      .filter((value) => StringUtils.validFilterValue(value));
+    const uniqueTypes = Array.from(new Set(types));
+    if (uniqueTypes.length === 1) {
+      params["type"] = uniqueTypes[0];
+    } else if (uniqueTypes.length > 1) {
+      params["type_list"] = uniqueTypes.join(",");
+    }
+
+    return params;
   });
 
   pageSize = linkedSignal({

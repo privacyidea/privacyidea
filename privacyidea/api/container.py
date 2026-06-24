@@ -128,12 +128,12 @@ def list_containers():
     :query user: filter by the username of an assigned user.
     :query container_serial: filter by container serial
         (case-insensitive, ``*`` wildcard).
-    :query type: filter by container type. Either a single type
-        (case-insensitive, ``*`` wildcard) or a list of types — passed
-        as a JSON array or a comma-separated string (e.g.
-        ``type=generic,smartphone``). List entries are matched
+    :query type: filter by container type (case-insensitive, ``*``
+        wildcard).
+    :query type_list: comma-separated list of container types (e.g.
+        ``type_list=generic,smartphone``). Entries are matched
         case-insensitively as exact values; wildcards are not honored
-        inside a list.
+        inside the list. Takes precedence over ``type``.
     :query token_serial: filter to containers that hold a token with
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
@@ -168,14 +168,10 @@ def list_containers():
     param = request.all_data
     user = request.User
     cserial = get_optional(param, "container_serial")
-    ctype_raw = get_optional(param, "type")
-    if ctype_raw is None:
-        ctype = None
-    elif isinstance(ctype_raw, list):
-        ctype = _split_csv_or_list(ctype_raw)
-    else:
-        ctype_raw = str(ctype_raw)
-        ctype = _split_csv_or_list(ctype_raw) if "," in ctype_raw else ctype_raw
+    ctype = get_optional(param, "type")
+    ctype_list = get_optional(param, "type_list")
+    if ctype_list:
+        ctype = _split_csv_or_list(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")

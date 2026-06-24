@@ -408,6 +408,41 @@ describe("ContainerService", () => {
     expect(filterParams).toEqual({ type: "generic" });
   });
 
+  it("filterParams maps a single type to the scalar `type` param", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone" }));
+    expect(containerService.filterParams()).toEqual({ type: "smartphone" });
+  });
+
+  it("filterParams preserves `*` wildcards on a single type", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smart*" }));
+    expect(containerService.filterParams()).toEqual({ type: "smart*" });
+  });
+
+  it("filterParams maps multiple comma-separated types to `type_list`", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone,yubikey" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  it("filterParams trims whitespace and de-duplicates the type list", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: ' smartphone , yubikey , smartphone '" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  it("filterParams accepts `types` as a synonym for `type` (single)", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "types: generic" }));
+    expect(containerService.filterParams()).toEqual({ type: "generic" });
+  });
+
+  it("filterParams accepts `types` as a synonym for `type` (multiple)", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "types: smartphone,yubikey" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
+  it("filterParams merges `type` and `types` values into a single type_list", () => {
+    containerService.containerFilter.set(new FilterValue({ value: "type: smartphone types: yubikey" }));
+    expect(containerService.filterParams()).toEqual({ type_list: "smartphone,yubikey" });
+  });
+
   it("pageSize falls back to 10 for invalid eventPageSize", () => {
     containerService.eventPageSize.set(-1);
     expect(containerService.pageSize()).toBe(10);
