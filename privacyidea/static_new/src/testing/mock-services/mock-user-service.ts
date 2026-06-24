@@ -49,7 +49,7 @@ export class MockUserService implements UserServiceInterface {
     this.selectedUserRealm.set("");
   }
 
-  detailsUsername = signal("");
+  detailsUser = signal({ username: "", realm: "" });
 
   setUserAttribute = jest.fn().mockReturnValue(of({}));
   deleteUserAttribute = jest.fn().mockReturnValue(of({}));

@@ -1107,7 +1107,7 @@ describe("ContainerService", () => {
     beforeEach(() => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
-      userServiceMock.detailsUsername.set("alice");
+      userServiceMock.detailsUser.set({ username: "alice", realm: "realm1" });
       userServiceMock.selectedUserRealm.set("realm1");
     });
 

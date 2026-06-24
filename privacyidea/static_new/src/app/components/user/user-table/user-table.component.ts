@@ -190,7 +190,7 @@ export class UserTableComponent {
   }
 
   onClickUsername(user: UserData): void {
-    this.userService.detailsUsername.set(user.username);
+    this.userService.detailsUser.set({ username: user.username, realm: this.userService.selectedUserRealm() });
   }
 
   onClickResolver(resolverName: string): void {

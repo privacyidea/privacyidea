@@ -142,8 +142,10 @@ $breakpoint-compact: 1822px;
   box-shadow: var(--elevation-3);
   border-radius: var(--border-radius);
 
+  // Plain navigation links/buttons render as flat nav buttons. Action buttons
+  // (e.g. the dashboard edit controls) keep their own filled/outlined styling.
   a:not(.overflow-more-btn),
-  button:not(.overflow-more-btn) {
+  button:not(.overflow-more-btn):not([class*="action-button"]) {
     @include nav-button-base;
     justify-content: center;
     text-decoration: none;
@@ -160,6 +162,11 @@ $breakpoint-compact: 1822px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+  }
+
+  [class*="action-button"] {
+    flex-shrink: 0;
+    height: 40px;
   }
 }
 

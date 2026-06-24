@@ -33,12 +33,14 @@ The code is tested in tests/test_lib_smsprovider
 """
 import logging
 import re
+import time
 
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.crypto import is_censored
 from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMSGateway, SMSGatewayOption, db
@@ -359,7 +361,17 @@ def send_sms_identifier(identifier, phone, message):
     :return: True in case of success
     """
     sms = create_sms_instance(identifier)
-    return sms.submit_message(phone, message)
+    labels = {"gateway": identifier}
+    start = time.monotonic()
+    try:
+        result = sms.submit_message(phone, message)
+    except Exception:
+        observe("sms_send_duration_seconds", time.monotonic() - start, labels)
+        inc("sms_send_total", {**labels, "result": "failed"})
+        raise
+    observe("sms_send_duration_seconds", time.monotonic() - start, labels)
+    inc("sms_send_total", {**labels, "result": "ok" if result else "failed"})
+    return result
 
 
 def list_smsgateways(identifier=None, id=None, gwtype=None):

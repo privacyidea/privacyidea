@@ -34,6 +34,7 @@ from .UserIdResolver import UserIdResolver
 from ..error import ParameterError, ResolverError
 from ..log import log_with
 from ..utils import is_true
+from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.params import get_required
 
 ENCODING = "utf-8"
@@ -374,6 +375,7 @@ class HTTPResolver(UserIdResolver):
             mapping["password"] = "password"
         return mapping
 
+    @track_resolver_op("get_user_id")
     def getUserId(self, login_name: str) -> str:
         """
         Returns the user ID for the given username. If the user does not exist, an empty string is returned.
@@ -393,6 +395,7 @@ class HTTPResolver(UserIdResolver):
         user_id = user_info.get("userid", "")
         return user_id
 
+    @track_resolver_op("get_username")
     def getUsername(self, userid: str) -> str:
         """
         Returns the username for the given user ID.
@@ -401,6 +404,7 @@ class HTTPResolver(UserIdResolver):
         user_name = user_info.get("username", "")
         return user_name
 
+    @track_resolver_op("get_user_info")
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user information for a given user object
@@ -433,6 +437,7 @@ class HTTPResolver(UserIdResolver):
             attributes.append(self.pi_user_groups_key)
         return attributes
 
+    @track_resolver_op("get_user_list")
     def getUserList(self, search_dict: dict | None = None, attributes: list[str] = None) -> list[dict]:
         """
         Fetches all users from the user store according to the search dictionary.
@@ -452,6 +457,7 @@ class HTTPResolver(UserIdResolver):
         user_list = self._get_user_list(search_dict, config, attributes)
         return user_list
 
+    @track_resolver_op("add_user")
     def add_user(self, attributes: dict | None = None) -> str:
         """
         Add a new user in the useridresolver.
@@ -489,6 +495,7 @@ class HTTPResolver(UserIdResolver):
                 uid = self.getUserId(attributes.get('username', ''))
         return uid
 
+    @track_resolver_op("delete_user")
     def delete_user(self, uid: str) -> bool:
         """
         Delete a user from the useridresolver.
@@ -517,6 +524,7 @@ class HTTPResolver(UserIdResolver):
 
         return success
 
+    @track_resolver_op("update_user")
     def update_user(self, uid: str, attributes: dict | None = None) -> bool:
         """
         Update an existing user.
@@ -550,6 +558,7 @@ class HTTPResolver(UserIdResolver):
         return success
 
     @log_with(log, hide_args=[2])
+    @track_resolver_op("check_pass")
     def checkPass(self, uid: str, password: str, username: str | None = None) -> bool:
         """
         This function checks the password for a given user. The user can either be identified by the uid or the

@@ -46,11 +46,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
 from flask import request as flask_request
+from sqlalchemy.orm.exc import StaleDataError
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
@@ -811,6 +812,19 @@ class PushTokenClass(TokenClass):
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
+                except StaleDataError:
+                    # The challenge row was deleted concurrently while we were committing the
+                    # answer (e.g. a push_wait timeout firing at the same instant). The answer
+                    # is moot, so treat it as a non-match instead of failing the request. Clear
+                    # any details already collected.
+                    db.session.rollback()
+                    result = False
+                    details = {}
+                    # rollback() expires every challenge object in the session, so re-reading a
+                    # not-yet-checked sibling below would re-fetch it from the DB - raising an
+                    # uncaught ObjectDeletedError if that row was deleted concurrently too. A unique
+                    # nonce matches at most one challenge, so break: there is nothing left to check.
+                    break
 
         # Classify the smartphone's response for the authentication log.
         details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_FAIL
@@ -1336,6 +1350,12 @@ class PushTokenClass(TokenClass):
                     # Success: correlate the terminal LOGIN_SUCCESS row with the trigger and out-of-band answer via the
                     # challenge transaction_id.
                     reply = {LOG_TRANSACTION_ID_KEY: transaction_id}
+
+                # The push_wait transaction_id is never returned to the client, so nothing can
+                # poll or redeem this challenge after the loop. Delete it (whether answered,
+                # declined or timed out).
+                if transaction_id:
+                    delete_challenges(serial=self.token.serial, transaction_id=transaction_id)
 
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
