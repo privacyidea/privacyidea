@@ -72,6 +72,9 @@ export class TokenDetailsUserComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   @Input() userData = signal<EditableElement[]>([]);
+  protected readonly userRealm = computed(
+    () => (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) ?? ""
+  );
   @Input() tokenSerial!: WritableSignal<string>;
   @Input() isEditingUser!: WritableSignal<boolean>;
   @Input() isEditingInfo!: WritableSignal<boolean>;

@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, effect, inject, Renderer2, signal, OnInit, OnDestroy } from "@angular/core";
 
+import { Component, computed, DOCUMENT, effect, inject, OnDestroy, OnInit, Renderer2, signal } from "@angular/core";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
+import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
+import { NavigationSelfServiceWizardComponent } from "@components/layout/navigation-self-service/navigation-self-service.wizard.component";
+import { NavigationComponent } from "@components/layout/navigation/navigation.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
-import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
-import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
-import { NavigationComponent } from "./navigation/navigation.component";
 
 @Component({
   selector: "app-layout",
@@ -48,6 +48,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
   private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
+  protected readonly hasSecondaryToolbar = computed(() => this.authService.role() === "admin");
 
   constructor() {
     effect(() => {

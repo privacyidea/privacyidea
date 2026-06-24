@@ -268,6 +268,19 @@ describe("ContainerDetailsComponent", () => {
     expect(containerService.unassignUser).toHaveBeenCalledWith("Mock serial", "bob", "realmUser");
   });
 
+  it("userRealm reflects the assigned user's realm for the user link", () => {
+    component.containerDetails.set({
+      serial: "Mock serial",
+      states: [],
+      realms: [],
+      tokens: [],
+      type: "generic",
+      users: [{ user_realm: "themis", user_name: "alice", user_resolver: "res", user_id: "1" }]
+    } as unknown as ContainerDetailData);
+
+    expect(component.userRealm()).toBe("themis");
+  });
+
   describe("pending changes", () => {
     it("registers hasChanges in ngOnInit", () => {
       expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();

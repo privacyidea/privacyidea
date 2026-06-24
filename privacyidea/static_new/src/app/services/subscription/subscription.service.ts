@@ -82,6 +82,12 @@ export class SubscriptionService {
     this.reloadTrigger.update((v) => v + 1);
   }
 
+  getSubscriptions(): Observable<PiResponse<Record<string, Subscription>>> {
+    return this.http.get<PiResponse<Record<string, Subscription>>>(`${this.baseUrl}/`, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
   deleteSubscription(application: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http

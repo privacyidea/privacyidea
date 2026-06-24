@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, input, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, WritableSignal } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -79,4 +79,10 @@ export class ContainerDetailsUserComponent {
 
   readonly host = input.required<ContainerDetailsUserHost>();
   readonly userData = input.required<EditableElement[]>();
+
+  // The user-link realm is the value of the separate "user_realm" row, not a
+  // property of the "user_name" row, so it must be looked up across userData.
+  protected readonly userRealm = computed(
+    () => (this.userData().find((detail) => detail.keyMap.key === "user_realm")?.value as string) ?? ""
+  );
 }
