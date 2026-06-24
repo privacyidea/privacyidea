@@ -181,6 +181,10 @@ def save_resolver(params):
     save_config_timestamp()
     db.session.commit()
 
+    # Resolver TLS endpoints may have changed - drop cached cert health.
+    from privacyidea.lib.health import invalidate_certificate_cache
+    invalidate_certificate_cache()
+
     return resolver_id
 
 
@@ -287,6 +291,10 @@ def delete_resolver(resolvername):
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
 
+    # Resolver TLS endpoints may have changed - drop cached cert health.
+    from privacyidea.lib.health import invalidate_certificate_cache
+    invalidate_certificate_cache()
+
     return ret
 
 
@@ -390,6 +398,7 @@ def get_resolver_object(resolvername):
             if r_obj is not None:
                 resolver_config = get_resolver_config(resolvername)
                 r_obj.loadConfig(resolver_config)
+                r_obj.name = resolvername
         return resolver_objects[resolvername]
 
 

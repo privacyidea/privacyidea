@@ -342,7 +342,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
         this.tokenService
           .assignUser({
             tokenSerial: option["serial"],
-            username: this.userService.detailsUsername(),
+            username: this.userService.detailsUser().username,
             realm: this.userService.selectedUserRealm(),
             pin: pin
           })
@@ -365,7 +365,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   showUserAuditLog() {
-    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
+    this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
   }
 
   editMode = signal(false);
