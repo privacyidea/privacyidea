@@ -19,6 +19,7 @@
 <div
   aria-label="Layout"
   class="layout"
+  [class.with-secondary-toolbar]="hasSecondaryToolbar()"
   i18n-aria-label>
   <main
     aria-label="Main Router Outlet"
@@ -26,7 +27,7 @@
     @if (authService.role() === "admin") {
       <div class="admin-layout">
         <app-navigation />
-        <div class="admin-content padding-32">
+        <div class="admin-content">
           <router-outlet></router-outlet>
         </div>
       </div>
