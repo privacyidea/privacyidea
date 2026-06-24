@@ -55,6 +55,12 @@ export interface AuthenticationLogPage {
 
 const DEFAULT_PAGE_SIZE = 15;
 
+// Shallow value-equality for the flat string->string filter params record.
+function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
+  const aKeys = Object.keys(a);
+  return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
+}
+
 // Filter parameters that the backend matches exactly (see _FILTER_PARAMS in api/authentication_log.py).
 const apiFilter = [
   "resolver",
@@ -113,14 +119,19 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   authenticationLogFilter = signal(new FilterValue());
 
   // The backend matches these filters exactly, so values are sent verbatim (no wildcard wrapping, unlike the audit log).
-  filterParams = computed<Record<string, string>>(() => {
-    const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const entries = Array.from(this.authenticationLogFilter().filterMap.entries())
-      .filter(([key]) => allowed.includes(key))
-      .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
-      .filter(([, value]) => StringUtils.validFilterValue(value));
-    return Object.fromEntries(entries) as Record<string, string>;
-  });
+  // Value-based equality so adding/clearing a filter *key* without a value (e.g. "username: ") yields the same
+  // effective params object and does NOT re-notify -> no needless reload. A changed value still propagates.
+  filterParams = computed<Record<string, string>>(
+    () => {
+      const allowed = [...this.apiFilter, ...this.advancedApiFilter];
+      const entries = Array.from(this.authenticationLogFilter().filterMap.entries())
+        .filter(([key]) => allowed.includes(key))
+        .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
+        .filter(([, value]) => StringUtils.validFilterValue(value));
+      return Object.fromEntries(entries) as Record<string, string>;
+    },
+    { equal: shallowEqualRecord }
+  );
 
   pageSize = signal(DEFAULT_PAGE_SIZE);
   start = signal<string | null>(null);
@@ -132,8 +143,10 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
   canDelete = computed(() => this.authService.actionAllowed("authentication_log_delete"));
 
   pageIndex = linkedSignal({
+    // Keyed on the effective params (filterParams), not the raw filter text, so a value-less key edit does not
+    // reset the page (which would itself trigger a reload).
     source: () => ({
-      filterValue: this.authenticationLogFilter(),
+      filterParams: this.filterParams(),
       pageSize: this.pageSize(),
       start: this.start(),
       end: this.end(),

@@ -85,6 +85,29 @@ describe("AuthenticationLogService", () => {
     expect(service.pageIndex()).toBe(1);
   });
 
+  it("does not reload when a filter key is added without a value", () => {
+    TestBed.tick(); // initial load
+    httpMock.match((r) => r.method === "GET").forEach((r) => r.flush(emptyPage()));
+
+    // Adding a key with no value yields the same effective params -> no new request.
+    service.authenticationLogFilter.set(new FilterValue({ value: "username: " }));
+    TestBed.tick();
+    httpMock.expectNone((r) => r.method === "GET");
+  });
+
+  it("reloads when a filter value is removed", () => {
+    service.authenticationLogFilter.set(new FilterValue({ value: "username: bob" }));
+    TestBed.tick();
+    httpMock.match((r) => r.method === "GET").forEach((r) => r.flush(emptyPage()));
+
+    // Removing the value (key kept, value gone) changes the effective params -> a fresh request.
+    service.authenticationLogFilter.set(new FilterValue({ value: "username: " }));
+    TestBed.tick();
+    const requests = httpMock.match((r) => r.method === "GET");
+    expect(requests.length).toBe(1);
+    requests.forEach((r) => r.flush(emptyPage()));
+  });
+
   it("builds a GET request with 1-based page, sort and filter params", async () => {
     service.authenticationLogFilter.set(new FilterValue({ value: "serial: PISP0001" }));
     service.authenticationLogResource.reload();
