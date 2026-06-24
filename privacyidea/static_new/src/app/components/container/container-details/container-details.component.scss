@@ -2,8 +2,8 @@
 @use "table";
 
 :host {
-  display: block;
-  flex: 1;
+  display: flex;
+  justify-content: center;
   min-width: 0;
   width: 100%;
 }
