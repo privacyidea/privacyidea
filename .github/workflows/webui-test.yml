@@ -4,9 +4,6 @@
 name: Run WebUI tests
 on:
   pull_request:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'privacyidea/static_new/**'
 
