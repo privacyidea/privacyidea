@@ -150,7 +150,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   isEditingInfo = signal(false);
   tokenSerial = this.tokenService.tokenSerial;
   containerSerial = this.containerService.containerSerial;
-  showOnlyTokenNotInContainer = this.tokenService.showOnlyTokenNotInContainer;
+  showOnlyTokenInContainer = this.tokenService.showOnlyTokenInContainer;
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
@@ -340,9 +340,9 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     this.tokenService.pageSize.set(5);
 
     effect(() => {
-      this.showOnlyTokenNotInContainer();
-      // do not focus if showOnlyTokenNotInContainer is deselected to ensure the hint is visible
-      if (this.filterHTMLInputElement && this.showOnlyTokenNotInContainer()) {
+      this.showOnlyTokenInContainer();
+      // do not focus while in-container tokens are shown, to keep the hint visible
+      if (this.filterHTMLInputElement && !this.showOnlyTokenInContainer()) {
         this.filterHTMLInputElement.nativeElement.focus();
       }
     });

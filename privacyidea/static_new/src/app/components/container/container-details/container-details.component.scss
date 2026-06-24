@@ -109,6 +109,16 @@
   gap: var(--global-gap);
   align-items: flex-start;
   margin-top: var(--global-padding);
+
+  // Deterministic order (DOM order = visual order): add-token, token table, info.
+  // Equal flexible columns that wrap to fewer per row as width shrinks (matching
+  // the masonry's 28rem min column), so add-token stays left of / above the token
+  // table and the container info stays right of / below it.
+  > app-details-card {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
 }
 
 .details-card--description {

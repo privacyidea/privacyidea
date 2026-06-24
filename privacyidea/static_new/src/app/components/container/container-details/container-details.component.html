@@ -133,23 +133,13 @@
         [host]="this"
         [userData]="userData()" />
 
-      <app-details-card class="details-info-area">
-        <app-container-details-info
-          [detailData]="containerDetailData()"
-          [infoData]="infoData()"
-          [isAnyEditingOrRevoked]="isAnyEditing()"
-          [(isEditingInfo)]="isEditingInfo"
-          [isEditingUser]="isEditingUser()" />
-      </app-details-card>
+    </div>
 
-      <app-details-card class="details-card--tokens">
-        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
-      </app-details-card>
-
+    <div class="token-cards-row">
       <app-details-card class="details-card--add-token">
         <app-container-add-token
           [authService]="authService"
-          [(showOnlyTokenNotInContainer)]="showOnlyTokenNotInContainer"
+          [(showOnlyTokenInContainer)]="showOnlyTokenInContainer"
           [total]="total()"
           [pageIndex]="pageIndex()"
           [pageSize]="pageSize()"
@@ -161,6 +151,19 @@
           (clearFilter)="tokenService.clearFilter()"
           (addToken)="addTokenToContainer($event)">
         </app-container-add-token>
+      </app-details-card>
+
+      <app-details-card class="details-card--tokens">
+        <app-container-details-token-table [containerTokenData]="containerTokenData()" />
+      </app-details-card>
+
+      <app-details-card class="details-info-area">
+        <app-container-details-info
+          [detailData]="containerDetailData()"
+          [infoData]="infoData()"
+          [isAnyEditingOrRevoked]="isAnyEditing()"
+          [(isEditingInfo)]="isEditingInfo"
+          [isEditingUser]="isEditingUser()" />
       </app-details-card>
     </div>
   </div>
