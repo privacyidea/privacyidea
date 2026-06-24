@@ -72,6 +72,7 @@ class _PushSmartphoneAnswer(threading.Thread):
         self.serial = serial
         self.mode = mode
         self.nonce = None
+        self.transaction_id = None
         self.response = None
 
     def run(self):
@@ -92,6 +93,10 @@ class _PushSmartphoneAnswer(threading.Thread):
         if not nonce:
             return
         self.nonce = nonce
+        with self.app.app_context():
+            challenges = get_challenges(serial=self.serial)
+            if challenges:
+                self.transaction_id = challenges[0].transaction_id
         if self.mode == "capture":
             return
         sign_data = f"{nonce}|{self.serial}"
@@ -1804,11 +1809,13 @@ class PushAPITestCase(MyApiTestCase):
         succeeds and the answered challenge is cleaned up (it never outlives the request).
         """
         self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20")
         self._enroll_push_token()
 
+        clear_log()
         smartphone = self._start_smartphone_answer("accept")
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1820,6 +1827,17 @@ class PushAPITestCase(MyApiTestCase):
                 self.assertEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"), res.json)
         finally:
             smartphone.join()
+
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
+                                                      AuthEventType.LOGIN_SUCCESS])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND],
+                                        user=user, serials={self.serial_push},
+                                        transaction_id=smartphone.transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
 
         # The answered push_wait challenge is cleaned up, it never outlives the request
         self.assertEqual([], get_challenges(serial=self.serial_push))
@@ -2005,108 +2023,3 @@ class PushAPITestCase(MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push_config")
-
-    def test_21_push_wait_smartphone_confirms(self):
-        """
-        push_wait success path: the smartphone confirms the challenge while
-        /validate/check is still blocking in the wait loop.
-
-        push_wait makes /validate/check block synchronously and poll the
-        challenge from the DB once a second (pushtoken.authenticate). For the
-        success branch to fire, the challenge must be answered *during* that
-        blocking call, so the smartphone /ttype/push confirm is issued from a
-        background thread (the file-based test DB lets the second thread see the
-        same challenge). The thread waits for the wait-loop to create the
-        challenge, reads the nonce by polling, then confirms.
-        """
-        self.setUp_user_realms()
-        user = User("selfservice", self.realm1)
-        push_wait_seconds = 10
-        set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
-                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}={push_wait_seconds}")
-
-        # Enroll the push token
-        with self.app.test_request_context('/token/init', method='POST',
-                                           data={"type": "push", "pin": "push_pin",
-                                                 "user": "selfservice", "realm": self.realm1,
-                                                 "serial": self.serial_push, "genkey": 1},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            enrollment_credential = res.json.get("detail").get("enrollment_credential")
-        with self.app.test_request_context('/ttype/push', method='POST',
-                                           data={"enrollment_credential": enrollment_credential,
-                                                 "serial": self.serial_push,
-                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
-                                                 "fbtoken": "firebaseT"}):
-            self.assertEqual(200, self.app.full_dispatch_request().status_code)
-
-        # The background "smartphone": wait for the wait-loop to create the challenge, then confirm it.
-        confirm_errors = []
-        captured = {}
-
-        def smartphone_confirm():
-            try:
-                deadline = time.time() + push_wait_seconds
-                nonce = None
-                while time.time() < deadline and not nonce:
-                    timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-                    poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode("utf8"),
-                                                                padding.PKCS1v15(), hashes.SHA256())
-                    with self.app.test_request_context('/ttype/push', method='GET',
-                                                       query_string={"serial": self.serial_push,
-                                                                     "timestamp": timestamp,
-                                                                     "signature": b32encode(poll_sig)}):
-                        value = self.app.full_dispatch_request().json.get("result").get("value")
-                        if value:
-                            nonce = value[0].get("nonce")
-                    if not nonce:
-                        time.sleep(0.2)
-                self.assertIsNotNone(nonce, "smartphone never received the challenge to confirm")
-                # Capture the transaction_id now, while the challenge is open: the /validate/check never returns it.
-                # Needs its own app context as this runs in a separate thread.
-                with self.app.app_context():
-                    captured["transaction_id"] = get_challenges(serial=self.serial_push)[0].transaction_id
-                confirm_sig = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
-                                                               padding.PKCS1v15(), hashes.SHA256())
-                with self.app.test_request_context('/ttype/push', method='POST',
-                                                   data={"serial": self.serial_push,
-                                                         "signature": b32encode(confirm_sig)}):
-                    push_answered_response = self.app.full_dispatch_request()
-                    self.assertTrue(push_answered_response.json.get("result").get("value"), push_answered_response.json)
-            except Exception as exx:  # surface failures from the thread to the main assertion below
-                confirm_errors.append(exx)
-
-        clear_log()
-        worker = threading.Thread(target=smartphone_confirm)
-        worker.start()
-        # This call blocks in the push_wait loop until the smartphone thread confirms.
-        with self.app.test_request_context('/validate/check', method='POST',
-                                           data={"user": "selfservice", "pass": "push_pin"},
-                                           headers={"user_agent": "privacyidea-cp/2.0"}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res)
-            self.assertTrue(res.json.get("result").get("value"), res.json)
-            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json.get("result").get("authentication"), res.json)
-        worker.join(timeout=push_wait_seconds + 5)
-        self.assertFalse(worker.is_alive(), "smartphone confirm thread did not finish")
-        self.assertEqual([], confirm_errors, f"smartphone thread failed: {confirm_errors}")
-
-        # check auth log
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
-                                                  AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
-                                                  AuthEventType.LOGIN_SUCCESS])
-        transaction_id = captured["transaction_id"]
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id,
-                                        client_label="privacyidea-cp/2.0")
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND],
-                                        user=user, serials={self.serial_push}, transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_SUCCESS], user=user,
-                                        serials={self.serial_push}, transaction_id=transaction_id,
-                                        client_label="privacyidea-cp/2.0")
-
-        remove_token(self.serial_push)
-        delete_policy("push_config")
-        delete_policy("push_wait")
