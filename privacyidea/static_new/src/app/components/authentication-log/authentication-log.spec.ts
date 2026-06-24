@@ -39,7 +39,6 @@ describe("AuthenticationLog", () => {
   let fixture: ComponentFixture<AuthenticationLog>;
   let service: MockAuthenticationLogService;
   let tableUtils: MockTableUtilsService;
-  let realmService: MockRealmService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -62,7 +61,6 @@ describe("AuthenticationLog", () => {
     component = fixture.componentInstance;
     service = TestBed.inject(MockAuthenticationLogService);
     tableUtils = TestBed.inject(MockTableUtilsService);
-    realmService = TestBed.inject(MockRealmService);
     fixture.detectChanges();
   });
 
@@ -96,9 +94,7 @@ describe("AuthenticationLog", () => {
   it("onKeywordClick toggles the keyword in the filter for free-text columns", () => {
     tableUtils.toggleKeywordInFilter.mockReturnValue(new FilterValue({ value: "client_label: " }));
     component.onKeywordClick("client_label");
-    expect(tableUtils.toggleKeywordInFilter).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: "client_label" })
-    );
+    expect(tableUtils.toggleKeywordInFilter).toHaveBeenCalledWith(expect.objectContaining({ keyword: "client_label" }));
     expect(service.authenticationLogFilter().hasKey("client_label")).toBe(true);
   });
 
@@ -144,40 +140,20 @@ describe("AuthenticationLog", () => {
     expect(component.formatInfo(null)).toBe("");
   });
 
-  it("toggleFilterValue accumulates multiple event_type values as CSV and removes them when toggled off", () => {
-    component.toggleFilterValue("event_type", "LOGIN_SUCCESS");
-    expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("LOGIN_SUCCESS");
-    expect(component.isFilterValueSelected("event_type", "LOGIN_SUCCESS")).toBe(true);
-
-    component.toggleFilterValue("event_type", "MFA_FAIL");
+  it("setFilterValues stores a multi-value selection as CSV", () => {
+    component.setFilterValues("event_type", ["LOGIN_SUCCESS", "MFA_FAIL"]);
     expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("LOGIN_SUCCESS,MFA_FAIL");
-    expect(component.isFilterValueSelected("event_type", "MFA_FAIL")).toBe(true);
+  });
 
-    // Toggling an active value off removes just that one.
-    component.toggleFilterValue("event_type", "LOGIN_SUCCESS");
-    expect(service.authenticationLogFilter().getValueOfKey("event_type")).toBe("MFA_FAIL");
-    expect(component.isFilterValueSelected("event_type", "LOGIN_SUCCESS")).toBe(false);
-
-    // Removing the last value drops the key entirely.
-    component.toggleFilterValue("event_type", "MFA_FAIL");
+  it("setFilterValues removes the key when empty", () => {
+    component.setFilterValues("event_type", []);
     expect(service.authenticationLogFilter().hasKey("event_type")).toBe(false);
   });
 
-  it("toggleFilterValue works the same way for realm (multi-value selection list)", () => {
-    realmService.realmOptions.set(["realm1", "realm2"]);
-    component.toggleFilterValue("realm", "realm1");
-    component.toggleFilterValue("realm", "realm2");
-    expect(service.authenticationLogFilter().getValueOfKey("realm")).toBe("realm1,realm2");
-    expect(component.isFilterValueSelected("realm", "realm1")).toBe(true);
-  });
-
-  it("clearFilterKey removes all selected values for the key", () => {
-    component.toggleFilterValue("event_type", "LOGIN_SUCCESS");
-    component.toggleFilterValue("event_type", "PIN_FAIL");
-    expect(service.authenticationLogFilter().hasKey("event_type")).toBe(true);
-
-    component.clearFilterKey("event_type");
-    expect(service.authenticationLogFilter().hasKey("event_type")).toBe(false);
+  it("selectedFilterValues reads the current CSV selection back as an array", () => {
+    component.setFilterValues("realm", ["realm1", "realm2"]);
+    expect(component.selectedFilterValues("realm")).toEqual(["realm1", "realm2"]);
+    expect(component.selectedFilterValues("event_type")).toEqual([]);
   });
 
   it("exposes the full set of event-type options", () => {

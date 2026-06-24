@@ -752,8 +752,8 @@ body.self-service-layout {
   max-height: 400px;
 }
 
-// Filter selection menus (e.g. authentication-log event types) hold long values; let the panel grow to fit instead of
-// truncating at the default 280px.
+// Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
+// fit instead of truncating at the default 280px.
 .filter-select-menu.mat-mdc-menu-panel {
   max-width: none;
 }

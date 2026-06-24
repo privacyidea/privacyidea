@@ -61,26 +61,14 @@
           <div class="flex ali-center">
             {{ column.label }}
             @if (column.filterable || column.sortable) {
-              <div class="margin-left-16 flex">
+              <div class="margin-left-16 flex ali-center">
                 @if (column.filterable) {
-                  @if (column.key === "event_type") {
-                    <button
-                      [matMenuTriggerFor]="eventTypeMenu"
-                      class="filter-button"
-                      i18n-matTooltip
-                      mat-icon-button
-                      matTooltip="Filter by {{ column.label }}">
-                      <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
-                    </button>
-                  } @else if (column.key === "realm") {
-                    <button
-                      [matMenuTriggerFor]="realmMenu"
-                      class="filter-button"
-                      i18n-matTooltip
-                      mat-icon-button
-                      matTooltip="Filter by {{ column.label }}">
-                      <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
-                    </button>
+                  @if (["event_type", "realm"].includes(column.key) ) {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="eventTypeOptions"
+                      [selected]="selectedFilterValues(column.key)"
+                      (selectionChange)="setFilterValues(column.key, $event)" />
                   } @else {
                     <button
                       (click)="onKeywordClick(column.key)"
@@ -217,44 +205,3 @@
     </tr>
   </table>
 </div>
-
-<!-- Multi-select menus: each click toggles one value; stopPropagation keeps the menu open for further selections. -->
-<mat-menu
-  #eventTypeMenu="matMenu"
-  class="filter-select-menu">
-  <button
-    (click)="clearFilterKey('event_type')"
-    mat-menu-item>
-    <mat-icon>filter_alt_off</mat-icon>
-    <span i18n>Clear Filter</span>
-  </button>
-  <mat-divider />
-  @for (eventType of eventTypeOptions; track eventType) {
-    <button
-      (click)="$event.stopPropagation(); toggleFilterValue('event_type', eventType)"
-      mat-menu-item>
-      <mat-icon>{{ isFilterValueSelected("event_type", eventType) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
-      <span>{{ eventType }}</span>
-    </button>
-  }
-</mat-menu>
-
-<mat-menu
-  #realmMenu="matMenu"
-  class="filter-select-menu">
-  <button
-    (click)="clearFilterKey('realm')"
-    mat-menu-item>
-    <mat-icon>filter_alt_off</mat-icon>
-    <span i18n>Clear Filter</span>
-  </button>
-  <mat-divider />
-  @for (realm of realmService.realmOptions(); track realm) {
-    <button
-      (click)="$event.stopPropagation(); toggleFilterValue('realm', realm)"
-      mat-menu-item>
-      <mat-icon>{{ isFilterValueSelected("realm", realm) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
-      <span>{{ realm }}</span>
-    </button>
-  }
-</mat-menu>

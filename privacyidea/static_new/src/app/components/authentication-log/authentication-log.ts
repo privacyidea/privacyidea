@@ -19,11 +19,9 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDividerModule } from "@angular/material/divider";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import {
@@ -44,6 +42,7 @@ import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import {
   AuthenticationLogEntry,
   AuthenticationLogService,
@@ -129,11 +128,10 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
+    MultiSelectFilterComponent,
     MatIcon,
     MatButtonModule,
     MatIconModule,
-    MatMenuModule,
-    MatDividerModule,
     MatTooltipModule
   ],
   templateUrl: "./authentication-log.html",
@@ -223,28 +221,18 @@ export class AuthenticationLog {
     }
   }
 
-  // Predefined-value filters (event_type, realm) hold one or more comma-separated values; the API splits them as CSV.
-  private selectedFilterValues(keyword: string): string[] {
+  // Predefined-value filters (event_type, realm) hold one or more comma-separated values the API splits as CSV.
+  // The shared multi-select-filter component renders these and emits the full next selection.
+  selectedFilterValues(keyword: string): string[] {
     return this.splitCsv(this.authenticationLogService.authenticationLogFilter().getValueOfKey(keyword));
   }
 
-  isFilterValueSelected(keyword: string, value: string): boolean {
-    return this.selectedFilterValues(keyword).includes(value);
-  }
-
-  // Toggle a single value in/out of a multi-value filter, removing the key entirely when none remain.
-  toggleFilterValue(keyword: string, value: string): void {
-    const selected = this.selectedFilterValues(keyword);
-    const next = selected.includes(value) ? selected.filter((entry) => entry !== value) : [...selected, value];
+  setFilterValues(keyword: string, values: string[]): void {
     const currentFilter = this.authenticationLogService.authenticationLogFilter();
-    const newFilter = next.length ? currentFilter.addEntry(keyword, next.join(",")) : currentFilter.removeKey(keyword);
+    const newFilter = values.length
+      ? currentFilter.addEntry(keyword, values.join(","))
+      : currentFilter.removeKey(keyword);
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
-  }
-
-  clearFilterKey(keyword: string): void {
-    this.authenticationLogService.authenticationLogFilter.set(
-      this.authenticationLogService.authenticationLogFilter().removeKey(keyword)
-    );
   }
 
   // Color a row by its event's outcome severity (success/failure/neutral); unknown/empty values stay unstyled.
