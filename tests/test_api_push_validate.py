@@ -872,14 +872,6 @@ class PushAPITestCase(MyApiTestCase):
         # The timed-out push_wait challenge is cleaned up, it never outlives the request
         self.assertEqual([], get_challenges(serial=self.serial_push))
 
-        # require_presence is disabled by push_wait, so this is a standard push_wait that times out: recorded only as
-        # CHALLENGE_TRIGGERED, not an MFA_FAIL.
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
-                                        user=User("selfservice", self.realm1),
-                                        serials={self.serial_push},
-                                        transaction_id=get_challenges()[0].transaction_id)
-
         remove_token(self.serial_push)
         delete_policy("pol_push_config")
         delete_policy("pol_push_require_presence")
@@ -1735,6 +1727,7 @@ class PushAPITestCase(MyApiTestCase):
                     challenges = get_challenges(serial=self.serial_push)
                     if challenges:
                         captured["data"] = challenges[0].get_data()
+                        captured["transaction_id"] = challenges[0].transaction_id
                         return
                 time.sleep(0.2)
 
@@ -1773,7 +1766,7 @@ class PushAPITestCase(MyApiTestCase):
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         user=User("selfservice", self.realm1),
                                         serials={self.serial_push},
-                                        transaction_id=get_challenges()[0].transaction_id)
+                                        transaction_id=captured.get("transaction_id"))
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1853,12 +1846,14 @@ class PushAPITestCase(MyApiTestCase):
         challenge is still cleaned up.
         """
         self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=3")
         self._enroll_push_token()
 
+        clear_log()
         smartphone = self._start_smartphone_answer("decline")
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1870,6 +1865,13 @@ class PushAPITestCase(MyApiTestCase):
                 self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"), res.json)
         finally:
             smartphone.join()
+
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.CHALLENGE_DECLINED])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_DECLINED], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
 
         # The decline (valid signature) was accepted by the server
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
@@ -1887,11 +1889,13 @@ class PushAPITestCase(MyApiTestCase):
         the challenge is cleaned up.
         """
         self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=3")
         self._enroll_push_token()
 
+        clear_log()
         smartphone = self._start_smartphone_answer("fail")
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1903,6 +1907,13 @@ class PushAPITestCase(MyApiTestCase):
                 self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"), res.json)
         finally:
             smartphone.join()
+
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
 
         # The invalid signature was rejected by the server
         self.assertFalse(smartphone.response["result"]["value"], smartphone.response)
@@ -1920,6 +1931,7 @@ class PushAPITestCase(MyApiTestCase):
         matching challenge and is rejected - no stray answered challenge is resurrected.
         """
         self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
@@ -1927,6 +1939,7 @@ class PushAPITestCase(MyApiTestCase):
         self._enroll_push_token()
 
         # Capture the challenge nonce during the wait but do not answer, so the auth times out.
+        clear_log()
         smartphone = self._start_smartphone_answer("capture")
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1953,6 +1966,13 @@ class PushAPITestCase(MyApiTestCase):
             self.assertFalse(res.json["result"]["value"], res.json)
         # No challenge was resurrected by the late answer
         self.assertEqual([], get_challenges(serial=self.serial_push))
+
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+                                        serials={self.serial_push}, transaction_id=smartphone.transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
+                                        serials={self.serial_push})
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1997,18 +2017,21 @@ class PushAPITestCase(MyApiTestCase):
         must not raise (HTTP 500) but report a clean negative result.
         """
         self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         self._enroll_push_token()
 
         # Trigger a challenge and read its nonce
+        clear_log()
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "selfservice", "pass": "push_pin"}):
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
         challenges = get_challenges(serial=self.serial_push)
         self.assertEqual(1, len(challenges))
         nonce = challenges[0].challenge
+        transaction_id = challenges[0].transaction_id
 
         answer_sig = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
                                                       padding.PKCS1v15(), hashes.SHA256())
@@ -2020,6 +2043,13 @@ class PushAPITestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code, res)
                 self.assertFalse(res.json["result"]["value"], res.json)
+
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
+                                        serials={self.serial_push}, transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=user,
+                                        serials={self.serial_push}, transaction_id=transaction_id)
 
         remove_token(self.serial_push)
         delete_policy("push_config")
