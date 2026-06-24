@@ -34,6 +34,7 @@ from requests import Session
 from privacyidea.lib import _
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider)
 
 FIREBASE_URL_SEND = 'https://fcm.googleapis.com/v1/projects/{0!s}/messages:send'
@@ -160,13 +161,27 @@ class FirebaseProvider(ISMSProvider):
         with open(file_path) as config_file:
             server_config = json.load(config_file)
         url = FIREBASE_URL_SEND.format(server_config["project_id"])
-        response = authed_session.post(url, data=json.dumps(fcm_message), headers=headers, proxies=proxies)
+        labels = {"gateway": self.smsgateway.identifier}
+        start = time.monotonic()
+        try:
+            response = authed_session.post(url, data=json.dumps(fcm_message),
+                                           headers=headers, proxies=proxies)
+        except Exception:
+            # Network-level failure (timeout, DNS, TLS, ...) - record duration
+            # and an error counter so the dashboard surfaces these at all,
+            # then re-raise so the caller's existing error handling runs.
+            observe("push_delivery_duration_seconds", time.monotonic() - start, labels)
+            inc("push_delivery_total", {**labels, "result": "error"})
+            raise
+        observe("push_delivery_duration_seconds", time.monotonic() - start, labels)
 
         if response.status_code == 200:
             log.debug("Message sent successfully to Firebase service.")
             res = True
+            inc("push_delivery_total", {**labels, "result": "ok"})
         else:
             log.warning(f"Failed to send message to firebase service: {response.text}")
+            inc("push_delivery_total", {**labels, "result": "failed"})
 
         return res
 

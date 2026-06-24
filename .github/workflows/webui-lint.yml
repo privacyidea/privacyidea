@@ -4,9 +4,6 @@
 name: Linting WebUI
 on:
   pull_request:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'privacyidea/static_new/**'
 
