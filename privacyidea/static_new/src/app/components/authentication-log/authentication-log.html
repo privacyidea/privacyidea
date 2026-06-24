@@ -1,0 +1,260 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="authentication-log-table-container">
+  <div class="filter-paginator-container">
+    <mat-form-field
+      subscriptSizing="dynamic"
+      class="authentication-log-table-filter">
+      <mat-label i18n>Filter Authentication Log ...</mat-label>
+      <app-clearable-input
+        (clearButtonClick)="authenticationLogService.clearFilter()"
+        [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
+        <input
+          #filterHTMLInputElement
+          (input)="authenticationLogService.handleFilterInput($event)"
+          [value]="authenticationLogService.authenticationLogFilter().value"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
+      </app-clearable-input>
+    </mat-form-field>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="authenticationLogService.pageIndex() - 1"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="authenticationLogService.pageSize()"
+      showFirstLastButtons />
+  </div>
+  <table
+    [dataSource]="dataSource()"
+    aria-label="Authentication Log Data Table"
+    class="authentication-log-table"
+    i18n-aria-label
+    mat-table>
+    @for (column of columnKeysMap; track column.key) {
+      <ng-container [matColumnDef]="column.key">
+        <th
+          *matHeaderCellDef
+          aria-label="{{ column.label }} Header"
+          mat-header-cell>
+          <div class="flex ali-center">
+            {{ column.label }}
+            @if (column.filterable || column.sortable) {
+              <div class="margin-left-16 flex">
+                @if (column.filterable) {
+                  @if (column.key === "event_type") {
+                    <button
+                      [matMenuTriggerFor]="eventTypeMenu"
+                      class="filter-button"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Filter by {{ column.label }}">
+                      <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
+                    </button>
+                  } @else if (column.key === "realm") {
+                    <button
+                      [matMenuTriggerFor]="realmMenu"
+                      class="filter-button"
+                      i18n-matTooltip
+                      mat-icon-button
+                      matTooltip="Filter by {{ column.label }}">
+                      <mat-icon class="keyword-button-icon margin-left-0"> filter_list </mat-icon>
+                    </button>
+                  } @else {
+                    <button
+                      (click)="onKeywordClick(column.key)"
+                      class="filter-button"
+                      mat-icon-button>
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
+                }
+                @if (column.sortable) {
+                  <button
+                    (click)="onSortClick(column.key)"
+                    class="sort-button"
+                    i18n-matTooltip
+                    mat-icon-button
+                    matTooltip="Sort by {{ column.label }}"
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </th>
+        <td
+          *matCellDef="let element"
+          aria-label="{{ column.label }} Cell"
+          mat-cell>
+          <div>
+            @switch (column.key) {
+              @case ("timestamp") {
+                <span>
+                  {{ element[column.key] ? element[column.key].split(".")[0].replace("T", " ") : "" }}
+                </span>
+              }
+              @case ("event_type") {
+                <span [ngClass]="getEventTypeClass(element[column.key])">
+                  {{ element[column.key] }}
+                </span>
+              }
+              @case ("serial") {
+                @for (serial of splitSerials(element.serial); track serial) {
+                  <app-copyable [copyText]="serial">
+                    <a
+                      (click)="contentService.tokenSelected(serial)"
+                      aria-label="{{ column.label }} Link"
+                      routerLink="/token">
+                      {{ serial }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("username") {
+                @if (element.username) {
+                  <app-copyable [copyText]="element.username">
+                    <a
+                      (click)="contentService.userSelected(element.username, element.realm)"
+                      (keydown.enter)="contentService.userSelected(element.username, element.realm)"
+                      (keydown.space)="
+                        $event.preventDefault(); contentService.userSelected(element.username, element.realm)
+                      "
+                      aria-label="{{ column.label }} Link"
+                      role="button"
+                      tabindex="0">
+                      {{ element.username }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("realm") {
+                @if (element.realm) {
+                  <app-copyable [copyText]="element.realm">
+                    <a
+                      aria-label="{{ column.label }} Link"
+                      routerLink="/users/realms">
+                      {{ element.realm }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("resolver") {
+                @if (element.resolver) {
+                  <app-copyable [copyText]="element.resolver">
+                    <a
+                      [routerLink]="['/users/resolvers/details', element.resolver]"
+                      aria-label="{{ column.label }} Link">
+                      {{ element.resolver }}
+                    </a>
+                  </app-copyable>
+                }
+              }
+              @case ("other_info") {
+                @let info = formatInfo(element.other_info);
+                @if (info) {
+                  <app-copyable [copyText]="info">
+                    <span>{{ info }}</span>
+                  </app-copyable>
+                }
+              }
+              @default {
+                @if (element[column.key]) {
+                  <app-copyable [copyText]="element[column.key]">
+                    <span>{{ element[column.key] }}</span>
+                  </app-copyable>
+                }
+              }
+            }
+          </div>
+        </td>
+      </ng-container>
+    }
+    <tr
+      *matHeaderRowDef="columnKeys"
+      aria-label="Header Row"
+      i18n-aria-label
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: columnKeys"
+      aria-label="Data Row"
+      i18n-aria-label
+      mat-row></tr>
+    <tr
+      *matNoDataRow
+      aria-label="No Data Row"
+      i18n-aria-label>
+      <td
+        [attr.colspan]="columnKeys.length"
+        aria-label="No Data Cell"
+        i18n-aria-label>
+        {{ noDataText() }}
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- Multi-select menus: each click toggles one value; stopPropagation keeps the menu open for further selections. -->
+<mat-menu
+  #eventTypeMenu="matMenu"
+  class="filter-select-menu">
+  <button
+    (click)="clearFilterKey('event_type')"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n>Clear Filter</span>
+  </button>
+  <mat-divider />
+  @for (eventType of eventTypeOptions; track eventType) {
+    <button
+      (click)="$event.stopPropagation(); toggleFilterValue('event_type', eventType)"
+      mat-menu-item>
+      <mat-icon>{{ isFilterValueSelected("event_type", eventType) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+      <span>{{ eventType }}</span>
+    </button>
+  }
+</mat-menu>
+
+<mat-menu
+  #realmMenu="matMenu"
+  class="filter-select-menu">
+  <button
+    (click)="clearFilterKey('realm')"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n>Clear Filter</span>
+  </button>
+  <mat-divider />
+  @for (realm of realmService.realmOptions(); track realm) {
+    <button
+      (click)="$event.stopPropagation(); toggleFilterValue('realm', realm)"
+      mat-menu-item>
+      <mat-icon>{{ isFilterValueSelected("realm", realm) ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+      <span>{{ realm }}</span>
+    </button>
+  }
+</mat-menu>

@@ -752,6 +752,12 @@ body.self-service-layout {
   max-height: 400px;
 }
 
+// Filter selection menus (e.g. authentication-log event types) hold long values; let the panel grow to fit instead of
+// truncating at the default 280px.
+.filter-select-menu.mat-mdc-menu-panel {
+  max-width: none;
+}
+
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {

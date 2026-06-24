@@ -21,6 +21,7 @@ import { Routes } from "@angular/router";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuditComponent } from "@components/audit/audit.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
+import { AuthenticationLog } from "@components/authentication-log/authentication-log";
 import { MachineDetailsComponent } from "@components/configuration/machines/machine-details/machine-details.component";
 import { MachinesComponent } from "@components/configuration/machines/machines.component";
 import { PeriodicTaskEditComponent } from "@components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component";
@@ -159,6 +160,7 @@ export const routes: Routes = [
       { path: "clients", component: ClientsComponent }
     ]
   },
+  { path: "authentication-log", component: AuthenticationLog },
   {
     path: "external-services",
     children: [

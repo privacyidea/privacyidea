@@ -423,6 +423,14 @@
         <span i18n>Known Clients</span>
       </a>
     }
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUTHENTICATION_LOG ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]">
+        <mat-icon class="mdi--list-lock"></mat-icon>
+        <span i18n>Authentication Log</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

@@ -137,7 +137,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
-    if (url.startsWith(ROUTE_PATHS.AUDIT)) return "audit";
+    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.AUTHENTICATION_LOG)) return "audit";
     if (url.startsWith(ROUTE_PATHS.EXTERNAL_SERVICES)) return "external_services";
     if (url.startsWith(ROUTE_PATHS.CONFIGURATION) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
     if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
