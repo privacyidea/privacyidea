@@ -193,11 +193,11 @@
           </mat-form-field>
         }
 
-        <div class="login-actions margin-top-16">
+        <div class="login-actions">
           <button
             [disabled]="isLoginButtonDisabled()"
             aria-label="Login Button"
-            class="login-btn"
+            class="login-btn margin-top-16"
             extended
             i18n-aria-label
             mat-fab
@@ -236,7 +236,7 @@
         }
       </form>
       @if (!showOtpField() && passkeyLoginEnabled()) {
-        <div class="passkey-form">
+        <div class="passkey-form margin-top-16">
           <button
             (click)="passkeyLogin()"
             aria-label="Passkey Button"

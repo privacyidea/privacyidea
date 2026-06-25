@@ -263,6 +263,77 @@ def log_authentication(event_type, user=None, serial=None, transaction_id=None, 
     )
 
 
+def conditional_access_precheck(user) -> "Response | None":
+    """
+    Reject a request pre-auth (before any token logic and before the failcounter /
+    max_auth checks) when conditional-access policies forbid it. Returns a generic
+    failure :class:`~flask.Response` to be returned to the client, or ``None`` to
+    continue with the normal flow.
+
+    The rejection is deliberately generic and leaks no reason: the machine-facing
+    API response never reveals that the user is locked, the source IP is blocked,
+    or a policy denied access — the real reason is recorded only in the audit log.
+
+    A currently-locked user is rejected first, then a source IP blocked by a
+    ``BLOCK_IP`` action. The pre-auth conditional-access DENY decision is evaluated
+    last, after the lock/block pre-checks (so an ALLOW cannot override them); a
+    DENY rejects this single request without persisting state, while
+    ALLOW / CONTINUE fall through. ``g.client_ip`` is the source IP checked.
+    """
+    # Imported lazily: this module is loaded early, while the engine pulls in the
+    # ORM models, so a module-level import would risk an import-order cycle.
+    from privacyidea.lib.conditional_access.engine import (is_user_locked, is_ip_blocked,
+                                                           evaluate_access_decision, AccessDecision)
+    if is_user_locked(user):
+        log.info(f"Rejecting authentication for locked user {user!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: account is temporarily locked"})
+        return send_result(False, rid=2, details={})
+    if is_ip_blocked(g.client_ip):
+        log.info(f"Rejecting authentication from blocked IP {g.client_ip!r}.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: source IP is blocked"})
+        return send_result(False, rid=2, details={})
+    if evaluate_access_decision(user, g.client_ip) == AccessDecision.DENY:
+        log.info(f"Denying authentication for {user!r} by conditional-access policy.")
+        g.audit_object.log({"success": False,
+                            "info": "Rejected: denied by conditional-access policy"})
+        return send_result(False, rid=2, details={})
+    return None
+
+
+def conditional_access_posteval(user, event_type) -> None:
+    """
+    Run the conditional-access policy engine for this request's classified
+    *event_type*, after the authentication-log row for it has been written (so a
+    failure count over the log includes the just-written event). ``g.client_ip``
+    is passed as the source IP for ``BLOCK_IP`` actions.
+
+    This only produces side effects that the NEXT inbound request consults (it
+    writes lockout state); it must never alter or break the response that already
+    completed, so every error is swallowed.
+    """
+    from privacyidea.lib.conditional_access.engine import evaluate_lockout_policies
+    from privacyidea.models import db
+    try:
+        # The engine commits its own writes (and rolls them back on failure), so
+        # this caller must NOT wrap them in a transaction. Wrapping in
+        # db.session.begin_nested() and then committing breaks under SQLAlchemy 2.x:
+        # the engine's inner commit closes the transaction, so leaving the savepoint
+        # context raises InvalidRequestError ("Can't operate on closed transaction
+        # inside context manager") — which this caller would silently swallow.
+        evaluate_lockout_policies(user, event_type, source_ip=g.client_ip)
+    except Exception as ex:
+        log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
+        # A failure may leave the session in an aborted state; clear it so request
+        # teardown can proceed cleanly. Guard the rollback so this helper never
+        # raises (it must never break the already-completed response).
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+
+
 def check_unquote(request, data):
     """
     Check if we need to unquote the given data.

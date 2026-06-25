@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   justify-content: end;
-  gap: 16px;
+  gap: var(--global-gap);
 }
 
 .action-card-row-grid {
@@ -34,8 +34,6 @@
   display: grid;
   grid-template-columns: auto auto;
   justify-content: space-between;
-  align-items: center;
-  width: 574px;
 }
 
 .description {
