@@ -22,7 +22,7 @@
   <button
     data-overflow-pinned
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-    class="action-button-primary button-width-m"
+    class="action-button-primary button-width-l"
     mat-stroked-button>
     <mat-icon> add_moderator</mat-icon>
     <span i18n>Enroll Token</span>
@@ -30,7 +30,7 @@
   <button
     data-overflow-pinned
     [matMenuTriggerFor]="advancedFilterMenu"
-    class="action-button-secondary button-width-m"
+    class="action-button-secondary button-width-l"
     mat-stroked-button>
     <mat-icon> filter_list</mat-icon>
     <span i18n>More Filter</span>
@@ -51,7 +51,7 @@
       <button
         (click)="deleteSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-delete-secondary button-width-m"
+        class="action-button-delete-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
         <span i18n>Delete</span>
@@ -61,7 +61,7 @@
       <button
         (click)="assignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
         <span i18n>Assign</span>
@@ -71,7 +71,7 @@
       <button
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
         <span i18n>Unassign</span>
@@ -81,7 +81,7 @@
       <button
         (click)="toggleActiveSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> toggle_on</mat-icon>
         <span i18n>(De)activate</span>
@@ -91,7 +91,7 @@
       <button
         (click)="resetFailcounterSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary button-width-m"
+        class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon> restart_alt</mat-icon>
         <span i18n>Reset Failcounters</span>
