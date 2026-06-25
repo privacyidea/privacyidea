@@ -71,13 +71,14 @@ class MigrationEncryptionTestCase(MyTestCase):
         opt = db.session.execute(stmt).scalar_one()
         self.assertEqual(opt.Value, plaintext_pw)
 
-        # Simulate the migration: find and encrypt sensitive options
+        # Simulate the migration: find and encrypt sensitive options, set Encrypted flag
         all_options = db.session.scalars(select(SMSGatewayOption).filter_by(gateway_id=gw.id)).all()
         for option in all_options:
             upper_key = option.Key.upper()
             if any(kw in upper_key for kw in SENSITIVE_KEYWORDS):
                 if option.Value and not _looks_encrypted(option.Value):
                     option.Value = encryptPassword(option.Value)
+                    option.Encrypted = True
         db.session.commit()
 
         # Verify PASSWORD is now encrypted in DB
@@ -87,11 +88,13 @@ class MigrationEncryptionTestCase(MyTestCase):
         self.assertNotEqual(opt.Value, plaintext_pw)
         self.assertIn(":", opt.Value)
         self.assertEqual(decryptPassword(opt.Value), plaintext_pw)
+        self.assertTrue(opt.Encrypted)
 
         # URL should be unchanged
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw.id, Key="URL")
         opt = db.session.execute(stmt).scalar_one()
         self.assertEqual(opt.Value, "https://api.example.com")
+        self.assertFalse(opt.Encrypted)
 
         # Clean up
         gw.delete()

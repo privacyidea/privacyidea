@@ -3,7 +3,8 @@
 This migration encrypts sensitive data that was previously stored in plaintext:
 
 1. SMS Gateway options whose key contains PASSWORD or SECRET
-  (table: smsgatewayoption)
+  (table: smsgatewayoption) – adds an ``Encrypted`` boolean column to track
+  which values are encrypted.
 2. Challenge data field which may contain OTP values
   (table: challenge)
 
@@ -56,13 +57,19 @@ def upgrade():
     # We need the crypto module to encrypt values
     from privacyidea.lib.crypto import encryptPassword
 
-    # --- 0. Increase challenge.data column size to accommodate encrypted values ---
+    # --- 0a. Increase challenge.data column size to accommodate encrypted values ---
     log.info("Increasing challenge.data column size from 512 to 2000...")
     with op.batch_alter_table('challenge', schema=None) as batch_op:
         batch_op.alter_column('data',
                               existing_type=sa.Unicode(length=512),
                               type_=sa.Unicode(length=2000),
                               existing_nullable=True)
+
+    # --- 0b. Add Encrypted boolean column to smsgatewayoption ---
+    log.info("Adding Encrypted column to smsgatewayoption table...")
+    with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('Encrypted', sa.Boolean(),
+                                      server_default='0', nullable=False))
 
     conn = op.get_bind()
 
@@ -73,6 +80,7 @@ def upgrade():
         sa.column('id', sa.Integer),
         sa.column('Key', sa.Unicode),
         sa.column('Value', sa.UnicodeText),
+        sa.column('Encrypted', sa.Boolean),
     )
 
     result = conn.execute(
@@ -89,14 +97,20 @@ def upgrade():
             continue
         # Skip if already encrypted
         if _looks_encrypted(value):
-            log.debug(f"Option id={option_id} key={key} already encrypted, skipping.")
+            log.debug(f"Option id={option_id} key={key} already encrypted, marking Encrypted flag.")
+            conn.execute(
+                smsgatewayoption.update().where(
+                    smsgatewayoption.c.id == option_id
+                ).values(Encrypted=True)
+            )
+            encrypted_count += 1
             continue
         # Encrypt the plaintext value
         encrypted_value = encryptPassword(value)
         conn.execute(
             smsgatewayoption.update().where(
                 smsgatewayoption.c.id == option_id
-            ).values(Value=encrypted_value)
+            ).values(Value=encrypted_value, Encrypted=True)
         )
         encrypted_count += 1
 
@@ -150,17 +164,16 @@ def downgrade():
         sa.column('id', sa.Integer),
         sa.column('Key', sa.Unicode),
         sa.column('Value', sa.UnicodeText),
+        sa.column('Encrypted', sa.Boolean),
     )
 
     result = conn.execute(
-        sa.select(smsgatewayoption.c.id, smsgatewayoption.c.Key, smsgatewayoption.c.Value)
+        sa.select(smsgatewayoption.c.id, smsgatewayoption.c.Key,
+                  smsgatewayoption.c.Value, smsgatewayoption.c.Encrypted)
     )
     for row in result:
-        option_id, key, value = row
-        if not value:
-            continue
-        upper_key = key.upper()
-        if not any(kw in upper_key for kw in SENSITIVE_KEYWORDS):
+        option_id, key, value, encrypted = row
+        if not value or not encrypted:
             continue
         if not _looks_encrypted(value):
             continue
@@ -171,6 +184,11 @@ def downgrade():
                     smsgatewayoption.c.id == option_id
                 ).values(Value=decrypted_value)
             )
+
+    # --- 1b. Drop the Encrypted column ---
+    log.info("Dropping Encrypted column from smsgatewayoption table...")
+    with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
+        batch_op.drop_column('Encrypted')
 
     # --- 2. Decrypt challenge data fields ---
     log.info("Decrypting challenge data fields (downgrade)...")

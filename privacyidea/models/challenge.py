@@ -61,8 +61,6 @@ class Challenge(MethodsMixin, db.Model):
     def data(self):
         """Return the decrypted challenge data, or the raw value for legacy data."""
         raw = self._data
-        if not raw:
-            return raw
         decrypted = decryptPassword(raw)
         if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
             return decrypted

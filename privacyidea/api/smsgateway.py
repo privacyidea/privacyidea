@@ -91,15 +91,19 @@ def get_gateway(gwid=None):
         res = []
         for gw in get_smsgateway(id=gwid):
             gw_dict = gw.as_dict()
-            # Censor secret-looking options AND headers (e.g. auth headers) so they
-            # are not returned in clear text. NOTE: this is still a key-name
-            # heuristic; secrets in differently-named keys (e.g. an Authorization
-            # header or a Firebase credentials option) are not detected. A robust
-            # fix needs the provider classes to declare which fields are secret.
-            for section in ("options", "headers"):
-                secret_keys = [key for key in gw_dict.get(section, {})
-                               if "PASSWORD" in key.upper() or "SECRET" in key.upper()]
-                gw_dict[section] = censor_dict(gw_dict.get(section, {}), secret_keys)
+            # Censor values that are stored encrypted. The Encrypted column
+            # on each option/header row tells us exactly which values are
+            # secret – no key-name heuristic needed.
+            encrypted_option_keys = [opt.Key for opt in gw.options
+                                     if opt.Encrypted and (opt.Type == "option" or not opt.Type)]
+            encrypted_header_keys = [opt.Key for opt in gw.options
+                                     if opt.Encrypted and opt.Type == "header"]
+            gw_dict["options"] = censor_dict(gw_dict.get("options", {}), encrypted_option_keys)
+            gw_dict["headers"] = censor_dict(gw_dict.get("headers", {}), encrypted_header_keys)
+            # Include lists of secret key names so the UI can restore
+            # the "Secret" checkbox state when editing a gateway.
+            gw_dict["secret_options"] = encrypted_option_keys
+            gw_dict["secret_headers"] = encrypted_header_keys
             res.append(gw_dict)
 
     g.audit_object.log({"success": True})
@@ -135,14 +139,26 @@ def set_gateway():
     description = get_optional(param, "description")
     options = {}
     headers = {}
+    secret_options = set()
+    secret_headers = set()
     for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
         elif k.startswith("header."):
             headers[k[7:]] = v
+        elif k.startswith("secret.option."):
+            # Mark this option key as secret if the value is truthy
+            if v and str(v).lower() not in ("0", "false", "no", ""):
+                secret_options.add(k[14:])
+        elif k.startswith("secret.header."):
+            # Mark this header key as secret if the value is truthy
+            if v and str(v).lower() not in ("0", "false", "no", ""):
+                secret_headers.add(k[14:])
 
     res = set_smsgateway(identifier, providermodule, description,
-                         options=options, headers=headers)
+                         options=options, headers=headers,
+                         secret_options=secret_options,
+                         secret_headers=secret_headers)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)

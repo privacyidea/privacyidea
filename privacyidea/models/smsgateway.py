@@ -17,7 +17,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 
-from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, delete, \
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, delete, \
     UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,10 +28,6 @@ from privacyidea.lib.crypto import decryptPassword
 
 log = logging.getLogger(__name__)
 
-# Keywords in option keys that indicate the value is stored encrypted
-# (case-insensitive substring match). Must stay in sync with
-# privacyidea.lib.smsprovider.SMSProvider.SENSITIVE_OPTION_KEYWORDS.
-_SENSITIVE_OPTION_KEYWORDS = ("PASSWORD", "SECRET")
 
 
 class SMSGateway(MethodsMixin, db.Model):
@@ -81,11 +77,8 @@ class SMSGateway(MethodsMixin, db.Model):
         for option in self.options:
             if option.Type == "option" or not option.Type:
                 value = option.Value
-                if value and any(kw in option.Key.upper() for kw in _SENSITIVE_OPTION_KEYWORDS):
-                    try:
-                        decrypted = decryptPassword(value)
-                    except Exception:
-                        decrypted = None
+                if option.Encrypted and value:
+                    decrypted = decryptPassword(value)
                     if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
                         value = decrypted
                 res[option.Key] = value
@@ -97,8 +90,10 @@ class SMSGateway(MethodsMixin, db.Model):
         for option in self.options:
             if option.Type == "header":
                 value = option.Value
-                if value and any(kw in option.Key.upper() for kw in _SENSITIVE_OPTION_KEYWORDS):
-                    value = decryptPassword(value)
+                if option.Encrypted and value:
+                    decrypted = decryptPassword(value)
+                    if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+                        value = decrypted
                 res[option.Key] = value
         return res
 
@@ -122,6 +117,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     Value: Mapped[str | None] = mapped_column(UnicodeText(), default='')
     Type: Mapped[str | None] = mapped_column(Unicode(100), default='option')
+    Encrypted: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
     gateway_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('smsgateway.id'), index=True)
 
     smsgw = relationship("SMSGateway", back_populates="options")
@@ -130,7 +126,7 @@ class SMSGatewayOption(MethodsMixin, db.Model):
                                        'Key', 'Type',
                                        name='sgix_1'),)
 
-    def __init__(self, gateway_id, Key, Value, Type=None):
+    def __init__(self, gateway_id, Key, Value, Type=None, Encrypted=False):
         """
         Create a new gateway_option for the gateway_id
         """
@@ -138,4 +134,5 @@ class SMSGatewayOption(MethodsMixin, db.Model):
         self.Key = Key
         self.Value = convert_column_to_unicode(Value)
         self.Type = Type
+        self.Encrypted = Encrypted
         self.save()

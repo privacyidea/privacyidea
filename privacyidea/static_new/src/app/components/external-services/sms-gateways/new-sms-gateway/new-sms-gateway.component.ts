@@ -28,6 +28,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -47,6 +48,7 @@ import {
 interface KeyValueRow {
   key: string;
   value: string;
+  secret: boolean;
 }
 
 interface SmsFormModel {
@@ -73,6 +75,7 @@ const EMPTY_SMS_FORM: SmsFormModel = {
     MatSelectModule,
     MatOptionModule,
     MatTableModule,
+    MatCheckboxModule,
     ClearableInputComponent,
     CommonModule,
     StickyHeaderDirective
@@ -128,17 +131,21 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
   customOptions: Record<string, string> = {};
   customHeaders: Record<string, string> = {};
+  optionSecrets: Record<string, boolean> = {};
+  headerSecrets: Record<string, boolean> = {};
 
   newOptionKey = signal("");
   newOptionValue = signal("");
+  newOptionSecret = signal(false);
   newHeaderKey = signal("");
   newHeaderValue = signal("");
+  newHeaderSecret = signal(false);
 
-  optionDisplayedColumns: string[] = ["key", "value", "actions"];
-  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
+  optionDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
+  optionFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
 
-  headerDisplayedColumns: string[] = ["key", "value", "actions"];
-  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
+  headerDisplayedColumns: string[] = ["key", "value", "secret", "actions"];
+  headerFooterColumns: string[] = ["footerKey", "footerValue", "footerSecret", "footerActions"];
 
   providers = computed<Record<string, SmsProvider>>(() => {
     if (!this.smsGatewayService.smsProvidersResource.hasValue()) return {};
@@ -199,13 +206,13 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
   get optionRows(): KeyValueRow[] {
     return Object.entries(this.customOptions)
-      .map(([key, value]) => ({ key, value }))
+      .map(([key, value]) => ({ key, value, secret: !!this.optionSecrets[key] }))
       .sort((a, b) => a.key.localeCompare(b.key));
   }
 
   get headerRows(): KeyValueRow[] {
     return Object.entries(this.customHeaders)
-      .map(([key, value]) => ({ key, value }))
+      .map(([key, value]) => ({ key, value, secret: !!this.headerSecrets[key] }))
       .sort((a, b) => a.key.localeCompare(b.key));
   }
 
@@ -273,6 +280,21 @@ export class NewSmsGatewayComponent implements OnDestroy {
       this.customOptions = nextCustomOptions;
 
       this.customHeaders = { ...(this.data.headers || {}) };
+
+      // Restore the secret checkbox state from the API response
+      const nextOptionSecrets: Record<string, boolean> = {};
+      for (const key of this.data.secret_options || []) {
+        if (!paramKeys.includes(key)) {
+          nextOptionSecrets[key] = true;
+        }
+      }
+      this.optionSecrets = nextOptionSecrets;
+
+      const nextHeaderSecrets: Record<string, boolean> = {};
+      for (const key of this.data.secret_headers || []) {
+        nextHeaderSecrets[key] = true;
+      }
+      this.headerSecrets = nextHeaderSecrets;
     }
   }
 
@@ -299,14 +321,25 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
     Object.entries(paramValue).forEach(([key, value]) => {
       payload[`option.${key}`] = value;
+      // If the provider declares this parameter as secret, send the flag
+      const paramDef = this.selectedProvider()?.parameters?.[key];
+      if (paramDef?.secret) {
+        payload[`secret.option.${key}`] = 1;
+      }
     });
 
     Object.entries(this.customOptions).forEach(([key, value]) => {
       payload[`option.${key}`] = value;
+      if (this.optionSecrets[key]) {
+        payload[`secret.option.${key}`] = 1;
+      }
     });
 
     Object.entries(this.customHeaders).forEach(([key, value]) => {
       payload[`header.${key}`] = value;
+      if (this.headerSecrets[key]) {
+        payload[`secret.header.${key}`] = 1;
+      }
     });
 
     try {
@@ -354,9 +387,13 @@ export class NewSmsGatewayComponent implements OnDestroy {
         ...this.customOptions,
         [this.newOptionKey()]: this.newOptionValue()
       };
+      if (this.newOptionSecret()) {
+        this.optionSecrets = { ...this.optionSecrets, [this.newOptionKey()]: true };
+      }
 
       this.newOptionKey.set("");
       this.newOptionValue.set("");
+      this.newOptionSecret.set(false);
     }
   }
 
@@ -364,6 +401,9 @@ export class NewSmsGatewayComponent implements OnDestroy {
     const rest = { ...this.customOptions };
     delete rest[key];
     this.customOptions = rest;
+    const restSecrets = { ...this.optionSecrets };
+    delete restSecrets[key];
+    this.optionSecrets = restSecrets;
   }
 
   addHeader(): void {
@@ -372,9 +412,13 @@ export class NewSmsGatewayComponent implements OnDestroy {
         ...this.customHeaders,
         [this.newHeaderKey()]: this.newHeaderValue()
       };
+      if (this.newHeaderSecret()) {
+        this.headerSecrets = { ...this.headerSecrets, [this.newHeaderKey()]: true };
+      }
 
       this.newHeaderKey.set("");
       this.newHeaderValue.set("");
+      this.newHeaderSecret.set(false);
     }
   }
 
@@ -382,6 +426,17 @@ export class NewSmsGatewayComponent implements OnDestroy {
     const rest = { ...this.customHeaders };
     delete rest[key];
     this.customHeaders = rest;
+    const restSecrets = { ...this.headerSecrets };
+    delete restSecrets[key];
+    this.headerSecrets = restSecrets;
+  }
+
+  toggleOptionSecret(key: string): void {
+    this.optionSecrets = { ...this.optionSecrets, [key]: !this.optionSecrets[key] };
+  }
+
+  toggleHeaderSecret(key: string): void {
+    this.headerSecrets = { ...this.headerSecrets, [key]: !this.headerSecrets[key] };
   }
 
   protected readonly input = input;

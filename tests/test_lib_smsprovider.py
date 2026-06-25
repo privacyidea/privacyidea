@@ -940,6 +940,7 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
         self.assertNotEqual(option.Value, plaintext_password,
                             "PASSWORD should be stored encrypted, not as plaintext!")
         self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted, "Encrypted flag should be True for sensitive options")
 
         # Verify the decrypted value via option_dict matches the original
         gw = get_smsgateway(id=gw_id)[0]
@@ -949,11 +950,13 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="URL", Type="option")
         option = db.session.execute(stmt).scalar_one()
         self.assertEqual(option.Value, "https://example.com/sms")
+        self.assertFalse(option.Encrypted)
 
         # Verify USERNAME (not sensitive) is stored in plaintext
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="USERNAME", Type="option")
         option = db.session.execute(stmt).scalar_one()
         self.assertEqual(option.Value, "testuser")
+        self.assertFalse(option.Encrypted)
 
         # Clean up
         delete_smsgateway(identifier)
@@ -975,6 +978,7 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
         option = db.session.execute(stmt).scalar_one()
         self.assertNotEqual(option.Value, api_secret)
         self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted)
 
         # Verify decrypted value is correct
         gw = get_smsgateway(id=gw_id)[0]
@@ -1001,11 +1005,13 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
         option = db.session.execute(stmt).scalar_one()
         self.assertNotEqual(option.Value, secret_header_value)
         self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted)
 
         # Verify non-sensitive header is stored in plaintext
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="Content-Type", Type="header")
         option = db.session.execute(stmt).scalar_one()
         self.assertEqual(option.Value, "application/json")
+        self.assertFalse(option.Encrypted)
 
         # Verify decrypted header value is correct
         gw = get_smsgateway(id=gw_id)[0]
@@ -1044,6 +1050,7 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
         option = db.session.execute(stmt).scalar_one()
         self.assertNotEqual(option.Value, new_password)
         self.assertIn(":", option.Value)
+        self.assertTrue(option.Encrypted)
 
         # Clean up
         delete_smsgateway(identifier)
@@ -1096,6 +1103,7 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
         option = db.session.execute(stmt).scalar_one()
         self.assertEqual(option.Value, "")
+        self.assertFalse(option.Encrypted)
 
         # Clean up
         delete_smsgateway(identifier)

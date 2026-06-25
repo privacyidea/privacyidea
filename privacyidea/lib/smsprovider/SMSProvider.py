@@ -195,7 +195,8 @@ def get_sms_provider_class(packageName, className):
 
 
 def set_smsgateway(identifier, providermodule=None, description=None,
-                   options=None, headers=None):
+                   options=None, headers=None,
+                   secret_options=None, secret_headers=None):
     """
     Set an SMS Gateway configuration
 
@@ -208,8 +209,16 @@ def set_smsgateway(identifier, providermodule=None, description=None,
     :param description: A description of this gateway definition
     :param options: Options and Parameter for this module
     :param headers: Headers for this module
+    :param secret_options: Set of option key names whose values are secret
+        and must be stored encrypted. If None, falls back to the key-name
+        heuristic (PASSWORD/SECRET).
+    :param secret_headers: Set of header key names whose values are secret
+        and must be stored encrypted. If None, falls back to the key-name
+        heuristic (PASSWORD/SECRET).
     :type options: dict
     :type headers: dict
+    :type secret_options: set or None
+    :type secret_headers: set or None
     :return: The id of the event.
     """
     stmt = select(SMSGateway).filter_by(identifier=identifier)
@@ -240,16 +249,25 @@ def set_smsgateway(identifier, providermodule=None, description=None,
     # Update / Create options and header
     existing_option_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "option"}
     existing_header_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "header"}
+    secret_sets = {"option": secret_options, "header": secret_headers}
     header_and_options = {"option": options, "header": headers}
     for option_type, options in header_and_options.items():
         for option in options:
             # Skip updating if the value is CENSORED (keep existing value)
             if is_censored(options[option]):
                 continue
-            # Encrypt sensitive values (PASSWORD, SECRET, etc.) before storing
+            # Determine if this value is secret: use explicit set if provided,
+            # otherwise fall back to the key-name heuristic.
             value = options[option]
-            if _is_sensitive_key(option) and value:
+            explicit_secrets = secret_sets[option_type]
+            if explicit_secrets is not None:
+                is_secret = option in explicit_secrets
+            else:
+                is_secret = _is_sensitive_key(option)
+            encrypted = False
+            if is_secret and value:
                 value = encryptPassword(value)
+                encrypted = True
             if (option_type == "option" and option in existing_option_keys) or (
                     option_type == "header" and option in existing_header_keys):
                 # Update existing option
@@ -257,14 +275,15 @@ def set_smsgateway(identifier, providermodule=None, description=None,
                     SMSGatewayOption.gateway_id == sms_gateway.id,
                     SMSGatewayOption.Key == option,
                     SMSGatewayOption.Type == option_type
-                ).values(Value=value)
+                ).values(Value=value, Encrypted=encrypted)
                 db.session.execute(update_stmt)
             else:
                 # Create new option
                 sms_option = SMSGatewayOption(gateway_id=sms_gateway.id,
                                               Key=option,
                                               Value=value,
-                                              Type=option_type)
+                                              Type=option_type,
+                                              Encrypted=encrypted)
                 db.session.add(sms_option)
     db.session.commit()
 
