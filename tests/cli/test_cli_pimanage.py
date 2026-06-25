@@ -581,6 +581,29 @@ class TestPIManageConfigExport:
         assert "privacyIDEA_version" in out_text
         assert "periodictask" not in out_text
 
+    def test_pimanage_config_export_censor(self, app, tmp_path):
+        # With --censor secrets are replaced with the __CENSORED__ placeholder
+        from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
+        outfile = tmp_path / "censor.json"
+        runner = app.test_cli_runner()
+        with app.app_context():
+            add_smtpserver("censor_smtp", server="mail.example", password="supersecret")
+
+        # without --censor the password is exported in clear text
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "smtpserver", "-o", outfile])
+        assert not result.exception
+        assert "supersecret" in outfile.read_text()
+
+        # with --censor the password is replaced and no longer present in clear text
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "smtpserver", "--censor", "-o", outfile])
+        assert not result.exception
+        censored_text = outfile.read_text()
+        assert "supersecret" not in censored_text
+        assert "__CENSORED__" in censored_text
+
+        with app.app_context():
+            delete_smtpserver("censor_smtp")
+
 
 class TestPIManageConfigImport:
     """Test import functions of pi-manage"""
