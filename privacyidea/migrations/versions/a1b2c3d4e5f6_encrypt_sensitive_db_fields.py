@@ -1,4 +1,4 @@
-"""Encrypt plaintext SMS gateway secrets and challenge data in the database
+"""v3.14: Encrypt plaintext SMS gateway secrets and challenge data in the database
 
 This migration encrypts sensitive data that was previously stored in plaintext:
 

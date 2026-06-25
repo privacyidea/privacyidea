@@ -63,13 +63,11 @@ class Challenge(MethodsMixin, db.Model):
         raw = self._data
         if not raw:
             return raw
-        try:
-            decrypted = decryptPassword(raw)
-            if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
-                return decrypted
-        except Exception:
-            # Legacy unencrypted data - return as-is
-            return raw
+        decrypted = decryptPassword(raw)
+        if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+            return decrypted
+        # Legacy unencrypted data or decryption failure - return as-is
+        return raw
 
     @data.setter
     def data(self, value):
