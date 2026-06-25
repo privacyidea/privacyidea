@@ -39,7 +39,7 @@ describe("LanguageSwitcherComponent", () => {
     fixture.detectChanges();
     // Members are protected (template-only); access them through the instance for testing.
     const component = fixture.componentInstance as unknown as TestableSwitcher;
-    navigateSpy = jest.spyOn(component, "navigate").mockImplementation(() => {});
+    navigateSpy = jest.spyOn(component, "navigate").mockImplementation(() => undefined);
     return component;
   };
 
