@@ -16,6 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-export const APP_THEME_STORAGE_KEY = "appTheme";
-export const BEARER_TOKEN_STORAGE_KEY = "bearer_token";
-export const AUTH_DATA_STORAGE_KEY = "auth_data";
+
+/** Mount point of the new WebUI; locale bundles live at APP_PREFIX or APP_PREFIX + "<locale>/". */
+export const APP_PREFIX = "/app/v2/";
+
+/**
+ * Base href for a compiled locale bundle. The source locale (English) is served at the app
+ * root without a locale subpath; every other locale lives under /app/v2/<locale>/.
+ */
+export function localeBaseHref(locale: string): string {
+  return locale === "en" || locale.toLowerCase().startsWith("en-") ? APP_PREFIX : `${APP_PREFIX}${locale}/`;
+}

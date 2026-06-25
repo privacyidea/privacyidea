@@ -39,6 +39,7 @@
       <input
         matInput
         [formField]="validTimeField"
+        i18n-placeholder
         placeholder="Mon-Fri: 9-18, Sat: 10-15" />
       @if (validTimeField().errors().some(e => e.kind === 'invalidValidTime')) {
         <mat-error i18n>Please enter a valid time format</mat-error>
@@ -137,6 +138,7 @@
         <div class="select-search-header">
           <input
             matInput
+            i18n-placeholder
             placeholder="Search..."
             [value]="userAgentSearch()"
             (input)="userAgentSearch.set($any($event.target).value)"

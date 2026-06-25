@@ -55,11 +55,10 @@
       (click)="onClickRunSearch()"
       [disabled]="otpValue() === ''"
       class="action-button-primary button-width-m margin-bottom-16"
-      i18n
       mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
       {{ currentStep() !== "searching" ? "Run" : "Stop" }}
-      <span>Search</span>
+      <span i18n>Search</span>
     </button>
   </div>
   <div class="margin-left-16">

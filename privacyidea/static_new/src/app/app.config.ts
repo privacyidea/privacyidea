@@ -25,8 +25,11 @@ import {
   provideAppInitializer,
   provideZonelessChangeDetection
 } from "@angular/core";
+import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter } from "@angular/router";
+import { localeBaseHref } from "@core/locale";
 import { routes } from "./app.routes";
+import { createPaginatorIntl } from "./paginator-intl";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
 import { AuthService } from "./services/auth/auth.service";
@@ -34,10 +37,7 @@ import { ConfigService } from "./services/config/config.service";
 import { ThemeService } from "./services/theme/theme.service";
 
 export function baseHrefFactory(): string {
-  const locale = inject(LOCALE_ID);
-  return locale === "en" || locale.toLowerCase().startsWith("en-")
-    ? "/app/v2/"
-    : `/app/v2/${locale}/`;
+  return localeBaseHref(inject(LOCALE_ID));
 }
 
 export const appConfig: ApplicationConfig = {
@@ -53,6 +53,7 @@ export const appConfig: ApplicationConfig = {
       useFactory: baseHrefFactory
     },
     AuthService,
+    { provide: MatPaginatorIntl, useFactory: createPaginatorIntl },
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
     provideAppInitializer(() => {
       const themeService = inject(ThemeService);

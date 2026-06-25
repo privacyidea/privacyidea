@@ -56,7 +56,6 @@
           [ngClass]="[
             tokenIsActive() ? 'action-button-warn-secondary button-width-m' : 'action-button-primary button-width-m'
           ]"
-          i18n
           mat-stroked-button>
           <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
           {{ tokenIsActive() ? "Deactivate" : "Activate" }}
@@ -67,40 +66,36 @@
           (click)="revokeToken()"
           [disabled]="tokenIsRevoked()"
           class="action-button-delete-secondary button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>undo</mat-icon>
-          Revoke
+          <span i18n>Revoke</span>
         </button>
       }
       @if (authService.actionAllowed("delete")) {
         <button
           (click)="deleteToken()"
           class="action-button-delete-secondary button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
-          Delete
+          <span i18n>Delete</span>
         </button>
       }
       @if (authService.actionAllowed("losttoken")) {
         <button
           (click)="openLostTokenDialog()"
           class="action-button-secondary button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>remove_red_eye</mat-icon>
-          Lost This Token?
+          <span i18n>Lost This Token?</span>
         </button>
       }
       @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
         <button
           (click)="rolloverToken()"
           class="action-button-secondary button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>sync</mat-icon>
-          Rollover
+          <span i18n>Rollover</span>
         </button>
       }
       @if (authService.actionAllowed("auditlog")) {
@@ -108,10 +103,9 @@
           (click)="showTokenAuditLog()"
           [routerLink]="[ROUTE_PATHS.AUDIT]"
           class="action-button-secondary button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>receipt_long</mat-icon>
-          Show in Audit
+          <span i18n>Show in Audit</span>
         </button>
       }
       @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
@@ -119,39 +113,35 @@
           <button
             (click)="attachSshToMachineDialog()"
             class="action-button-secondary button-width-m"
-            i18n
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
-            Attach to Machine
+            <span i18n>Attach to Machine</span>
           </button>
         } @else if (tokenType() === "passkey") {
           @if (isAttachedToMachine()) {
             <button
               (click)="removePasskeyFromMachine()"
               class="action-button-secondary button-width-m"
-              i18n
               mat-stroked-button>
               <mat-icon>computer</mat-icon>
-              Disable Offline
+              <span i18n>Disable Offline</span>
             </button>
           } @else {
             <button
               (click)="attachPasskeyToMachine()"
               class="action-button-secondary button-width-m"
-              i18n
               mat-stroked-button>
               <mat-icon>computer</mat-icon>
-              Use Offline
+              <span i18n>Use Offline</span>
             </button>
           }
         } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
           <button
             (click)="attachHotpToMachineDialog()"
             class="action-button-secondary button-width-m"
-            i18n
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
-            Use Offline
+            <span i18n>Use Offline</span>
           </button>
         }
       }

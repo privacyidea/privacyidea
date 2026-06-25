@@ -38,12 +38,11 @@ import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/i
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { resolveLandingPath } from "@app/guards/auth.guard";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
 import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
-import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
 import { ValidateService, ValidateServiceInterface, WebAuthnSignRequest } from "@services/validate/validate.service";
@@ -77,7 +76,6 @@ const NO_REALM_SENTINEL = "-";
 export class LoginComponent implements OnDestroy, AfterViewInit {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly localService: LocalServiceInterface = inject(LocalService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
@@ -156,13 +154,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   node = computed(() => this.configService.config()?.show_node);
 
   constructor() {
-    if (this.authService.isAuthenticated()) {
-      console.warn("User is already logged in.");
-      this.notificationService.warning("User is already logged in.");
-    } else {
-      this.showOtpField.set(false);
-    }
-
+    // Authenticated users are redirected away from the login route by loginGuard.
     effect(() => {
       if (this.showOtpField()) {
         // Use a timeout to ensure the element is rendered before trying to focus it.
@@ -236,8 +228,6 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   logout(): void {
     this.authService.logout();
-    this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]);
   }
 
   resetLogin(): void {
@@ -312,20 +302,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
   private evaluateResponse(response: AuthResponse, context: "password" | "passkey" | "webauthn"): void {
     if (isAuthenticationSuccessful(response)) {
       // Successful auth -> log in
-      this.localService.saveData("bearer_token", response.result.value.token);
       this.showOtpField.set(false);
       this.sessionTimerService.initialTimerStart();
-      if (this.authService.tokenWizard()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
-      } else if (this.authService.containerWizard().enabled) {
-        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
-      } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-      } else if (this.authService.anyContainerActionAllowed()) {
-        this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
-      } else {
-        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
-      }
+      this.router.navigateByUrl(resolveLandingPath(this.authService)).then();
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {

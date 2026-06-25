@@ -27,11 +27,10 @@
     <button
       (click)="fileInput.click()"
       class="action-button-primary button-width-l"
-      i18n
       mat-stroked-button
       type="submit">
       <mat-icon>add</mat-icon>
-      Select and Upload File
+      <span i18n>Select and Upload File</span>
     </button>
     <input
       #fileInput
@@ -44,7 +43,7 @@
     @for (subscription of subscriptions(); track subscription.application) {
       <div class="subscription-details">
         <div class="margin-left-16 flex-row ali-center gap-16">
-          <h4>Application:</h4>
+          <h4 i18n>Application:</h4>
           <h4 class="application-color">{{ subscription.application }}</h4>
 
           @if (authService.actionAllowed("delete")) {
