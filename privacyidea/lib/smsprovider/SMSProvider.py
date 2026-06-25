@@ -246,41 +246,41 @@ def set_smsgateway(identifier, providermodule=None, description=None,
         if option.Type == "header" and option.Key not in new_header_keys:
             db.session.delete(option)
 
-    # Update / Create options and header
+    # Update / Create options and headers
     existing_option_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "option"}
     existing_header_keys = {opt.Key for opt in sms_gateway.options if opt.Type == "header"}
     secret_sets = {"option": secret_options, "header": secret_headers}
-    header_and_options = {"option": options, "header": headers}
-    for option_type, options in header_and_options.items():
-        for option in options:
+    sections = {"option": options, "header": headers}
+    for option_type, key_values in sections.items():
+        for key in key_values:
             # Skip updating if the value is CENSORED (keep existing value)
-            if is_censored(options[option]):
+            if is_censored(key_values[key]):
                 continue
             # Determine if this value is secret: use explicit set if provided,
             # otherwise fall back to the key-name heuristic.
-            value = options[option]
+            value = key_values[key]
             explicit_secrets = secret_sets[option_type]
             if explicit_secrets is not None:
-                is_secret = option in explicit_secrets
+                is_secret = key in explicit_secrets
             else:
-                is_secret = _is_sensitive_key(option)
+                is_secret = _is_sensitive_key(key)
             encrypted = False
             if is_secret and value:
                 value = encryptPassword(value)
                 encrypted = True
-            if (option_type == "option" and option in existing_option_keys) or (
-                    option_type == "header" and option in existing_header_keys):
+            if (option_type == "option" and key in existing_option_keys) or (
+                    option_type == "header" and key in existing_header_keys):
                 # Update existing option
                 update_stmt = update(SMSGatewayOption).where(
                     SMSGatewayOption.gateway_id == sms_gateway.id,
-                    SMSGatewayOption.Key == option,
+                    SMSGatewayOption.Key == key,
                     SMSGatewayOption.Type == option_type
                 ).values(Value=value, Encrypted=encrypted)
                 db.session.execute(update_stmt)
             else:
                 # Create new option
                 sms_option = SMSGatewayOption(gateway_id=sms_gateway.id,
-                                              Key=option,
+                                              Key=key,
                                               Value=value,
                                               Type=option_type,
                                               Encrypted=encrypted)
@@ -326,11 +326,11 @@ def delete_smsgateway_header(id, header_key):
 
 def delete_smsgateway_key_generic(id, key, Type="option"):
     """
-    Delete the SMS gateway header
+    Delete an SMS gateway option or header.
 
     :param id: The id of the SMS Gateway definition
     :param key: The identifier/key
-    :param type: The type of the key
+    :param Type: The type of the key ("option" or "header")
     :return: True
     """
     return fetch_one_resource(SMSGatewayOption, gateway_id=id, Key=key, Type=Type).delete()
