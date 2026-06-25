@@ -59,8 +59,8 @@ from flask_babel import _, lazy_gettext
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node, \
-    get_from_config, SYSCONF
+from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node,
+                                    get_from_config, SYSCONF)
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
@@ -275,13 +275,19 @@ def hide_version(request, response):
             return response
         if policy:
             content = response.json
-            content.pop("version", None)
-            content.pop("versionnumber", None)
-            # Also strip version from the nested result value (e.g. /config endpoint)
-            result_value = content.get("result", {}).get("value", {})
-            if isinstance(result_value, dict):
-                result_value.pop("privacyideaVersionNumber", None)
-            response.set_data(json.dumps(content))
+            # Guard the envelope shape: only operate on a top-level JSON object
+            # with a dict result/value. A non-dict body (list/scalar) or a null
+            # result must be a no-op, not a 500 raised out of after_request.
+            if isinstance(content, dict):
+                removed = content.pop("version", None) is not None
+                removed = content.pop("versionnumber", None) is not None or removed
+                # Also strip version from the nested result value (e.g. /config endpoint)
+                result = content.get("result")
+                if isinstance(result, dict) and isinstance(result.get("value"), dict):
+                    removed = result["value"].pop("privacyideaVersionNumber", None) is not None or removed
+                # Only re-serialize the (potentially large) body if we actually removed something
+                if removed:
+                    response.set_data(json.dumps(content))
     return response
 
 

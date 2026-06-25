@@ -39,7 +39,6 @@ from flask import Blueprint, current_app, g, request
 
 from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
-from privacyidea.api.lib.postpolicy import hide_version
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
 from privacyidea.lib.error import AuthError, Error
@@ -47,6 +46,7 @@ from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_ob
 from privacyidea.lib.policy import Match, SCOPE, PolicyAction, PolicyClass
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
 from privacyidea.lib.utils import get_client_ip
+import json
 import logging
 import time
 
@@ -60,12 +60,21 @@ def after_healthz_request(response):
     """Lightweight after_request for health endpoints.
 
     Unlike the shared after_request in before_after.py this does NOT sign the
-    response (no private-key I/O, no crypto).  Health probes are anonymous,
-    high-frequency, and must stay as cheap as possible.  We only apply
-    cache-control headers and the optional version stripping.
+    response (no private-key I/O, no crypto) and does NOT evaluate policies.
+    Health probes are anonymous, high-frequency, and must stay as cheap as
+    possible - in particular livez/readyz must keep answering while the
+    database is unavailable, so we never trigger a policy (DB) read here.
+
+    The version number is therefore stripped unconditionally: health probes
+    never need it, regardless of the hide_version policy.
     """
     response.headers['Cache-Control'] = 'no-cache'
-    response = hide_version(request, response)
+    if response.is_json:
+        content = response.json
+        removed = content.pop("version", None) is not None
+        removed = content.pop("versionnumber", None) is not None or removed
+        if removed:
+            response.set_data(json.dumps(content))
     return response
 
 
