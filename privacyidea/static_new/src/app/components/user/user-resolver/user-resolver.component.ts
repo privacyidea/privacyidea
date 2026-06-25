@@ -40,8 +40,8 @@ import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 const columnKeysMap = [
-  { key: "resolvername", label: "Name" },
-  { key: "type", label: "Type" }
+  { key: "resolvername", label: $localize`Name` },
+  { key: "type", label: $localize`Type` }
 ];
 
 @Component({

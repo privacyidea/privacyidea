@@ -50,6 +50,10 @@ DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs',
                          'it', 'ta', 'pt', 'ru', 'uk']  #:
 
+# Cookie that records an explicit UI language choice (set by the WebUI language switcher).
+# It is consulted before the browser's Accept-Language header when resolving the locale.
+LOCALE_COOKIE_NAME = "pi_ui_locale"
+
 # Case-insensitive, separator-insensitive lookup: normalized key → canonical BCP 47 locale
 _LOCALE_CANONICAL = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in DEFAULT_LANGUAGE_LIST}
 
@@ -74,6 +78,23 @@ def get_accepted_language():
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     # try to match the language from the users accept header the browser transmits.
     # (The best match wins)
+    return request.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
+
+
+def get_preferred_language():
+    """Resolve the preferred UI locale: an explicit choice stored in the locale cookie
+    takes precedence, otherwise fall back to the browser's Accept-Language header and
+    finally the configured default. Returns a canonical locale code or None outside a
+    request context."""
+    if not request:
+        return None
+    pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+    # An explicit choice (set by the language switcher) wins over the browser preference.
+    cookie_locale = request.cookies.get(LOCALE_COOKIE_NAME)
+    if cookie_locale:
+        canonical = _canonical_locale(cookie_locale, pi_lang_list)
+        if canonical:
+            return canonical
     return request.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
 
 
@@ -243,7 +264,7 @@ def single_page_application():
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
         return send_html(render_template("deactivated.html"))
-    locale = get_accepted_language()
+    locale = get_preferred_language()
     if locale and locale != "en":
         url_locale = locale.replace("_", "-")
         dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)

@@ -17,19 +17,25 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<app-dialog-wrapper
-  [title]="data ? 'Token Resync Successful' : 'Token Resync Failed'"
-  [showCancelButton]="true"
-  cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@closeButtonLabel"
-  (wrapperClose)="close()">
-  <mat-dialog-content>
-    <div class="text-center">
-      @if (data) {
-        <p i18n>The token was successfully synchronized.</p>
-      } @else {
-        <p i18n>The token could not be synchronized. Please check the OTP values and try again.</p>
+<button
+  [matMenuTriggerFor]="languageMenu"
+  aria-label="Change language"
+  i18n-aria-label
+  i18n-matTooltip
+  mat-icon-button
+  matTooltip="Change language">
+  <mat-icon>language</mat-icon>
+</button>
+<mat-menu #languageMenu="matMenu">
+  @for (locale of locales; track locale.code) {
+    <button
+      (click)="switchTo(locale.code)"
+      [disabled]="locale.code === currentLocale"
+      mat-menu-item>
+      <span>{{ locale.label }}</span>
+      @if (locale.code === currentLocale) {
+        <mat-icon>check</mat-icon>
       }
-    </div>
-  </mat-dialog-content>
-</app-dialog-wrapper>
+    </button>
+  }
+</mat-menu>

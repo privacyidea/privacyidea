@@ -347,9 +347,9 @@ def create_app(config_name="development",
         if (request.method == "GET"
                 and not request.path.startswith("/static/")
                 and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
-            from privacyidea.webui.login import _serve_locale
+            from privacyidea.webui.login import _serve_locale, get_preferred_language
             locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
-            locale = locale_prefix_match.group(1) if locale_prefix_match else "en"
+            locale = locale_prefix_match.group(1) if locale_prefix_match else (get_preferred_language() or "en")
             new_ui = _serve_locale(locale) or _serve_locale("en")
             if new_ui:
                 return new_ui
