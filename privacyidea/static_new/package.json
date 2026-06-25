@@ -9,7 +9,6 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "start-hmr": "ng serve --hmr --port 4200",
-    "start-hmr-de": "ng serve --hmr --port 4200 --configuration=de",
     "lint": "ng lint",
     "format:check": "prettier --check \"src/**/*.{ts,html,scss,css,json}\"",
     "format:write": "prettier --write \"src/**/*.{ts,html,scss,css,json}\""

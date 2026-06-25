@@ -30,7 +30,7 @@ __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 import os
 from flask import (Blueprint, render_template, request,
-                   current_app, g, send_from_directory, redirect, abort)
+                   current_app, g, send_from_directory, redirect, abort, Response)
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import send_html, send_result
@@ -58,7 +58,7 @@ LOCALE_COOKIE_NAME = "pi_ui_locale"
 _LOCALE_CANONICAL = {lang.replace("_", "-").lower(): lang.replace("_", "-") for lang in DEFAULT_LANGUAGE_LIST}
 
 
-def _canonical_locale(locale, lang_list=None):
+def _canonical_locale(locale: str, lang_list: list[str] | None = None) -> str | None:
     """Return the canonical BCP 47 locale for a given input, or None if unknown."""
     lookup = _LOCALE_CANONICAL
     if lang_list is not None:
@@ -81,7 +81,7 @@ def get_accepted_language():
     return request.accept_languages.best_match(pi_lang_list, default=pi_lang_list[0])
 
 
-def get_preferred_language():
+def get_preferred_language() -> str | None:
     """Resolve the preferred UI locale: an explicit choice stored in the locale cookie
     takes precedence, otherwise fall back to the browser's Accept-Language header and
     finally the configured default. Returns a canonical locale code or None outside a
@@ -248,7 +248,7 @@ def get_render_context():
     return render_context
 
 
-def _serve_locale(locale):
+def _serve_locale(locale: str) -> Response | None:
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     canonical = _canonical_locale(locale, pi_lang_list)
     if not canonical:
@@ -260,10 +260,12 @@ def _serve_locale(locale):
 
 
 @login_blueprint.route('/', methods=['GET'])
-def single_page_application():
+def single_page_application() -> Response:
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
         return send_html(render_template("deactivated.html"))
+    # New UI: if a localized build is present, redirect to its locale entrypoint
+    # under /app/v2/ so the Angular router runs with the correct base href.
     locale = get_preferred_language()
     if locale and locale != "en":
         url_locale = locale.replace("_", "-")
@@ -273,6 +275,8 @@ def single_page_application():
     en_dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", "en")
     if os.path.isfile(os.path.join(en_dist, "index.html")):
         return redirect("/app/v2/")
+    # Fallback to the classic AngularJS UI: no new-UI build exists, so render the
+    # legacy index template from the server.
     render_context = get_render_context()
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
@@ -281,7 +285,7 @@ def single_page_application():
 @login_blueprint.route('/app/v2/<locale>', methods=['GET'])
 @login_blueprint.route('/app/v2/<locale>/', defaults={'subpath': ''}, methods=['GET'])
 @login_blueprint.route('/app/v2/<locale>/<path:subpath>', methods=['GET'])
-def single_page_application_locale(locale, subpath=None):
+def single_page_application_locale(locale: str, subpath: str | None = None) -> Response:
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     canonical = _canonical_locale(locale, pi_lang_list)
     if not canonical:
