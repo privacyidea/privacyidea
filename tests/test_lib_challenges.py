@@ -22,7 +22,6 @@ class ChallengeTestCase(MyTestCase):
     """
 
     def test_01_challenge(self):
-
         set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         token = init_token({"genkey": 1, "serial": "CHAL1", "pin": "pin"})
 
@@ -289,6 +288,45 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         # get_data() should parse the JSON
         retrieved = c.get_data()
         self.assertEqual(retrieved, legacy_data)
+
+        # Clean up
+        db.session.delete(c)
+        db.session.commit()
+
+    def test_08_data_property_setter_encrypts(self):
+        """Assigning to c.data via the property setter encrypts the value."""
+        c = Challenge(serial="SETTER01", transaction_id="tid_enc_008",
+                      validitytime=300)
+        c.save()
+
+        # Assign via property setter (c.data = ...)
+        c.data = "secret_otp_789"
+        db.session.commit()
+
+        # Raw _data should be encrypted (not plaintext)
+        self.assertNotEqual(c._data, "secret_otp_789")
+        self.assertIn(":", c._data)
+
+        # Reading via property should decrypt
+        self.assertEqual(c.data, "secret_otp_789")
+
+        # Assign a dict via setter
+        c.data = {"push_confirmed": True}
+        db.session.commit()
+
+        self.assertNotEqual(c._data, json.dumps({"push_confirmed": True}))
+        self.assertIn(":", c._data)
+        self.assertEqual(json.loads(c.data), {"push_confirmed": True})
+
+        # Assign empty string via setter - stored as empty, not encrypted
+        c.data = ""
+        db.session.commit()
+        self.assertEqual(c._data, "")
+
+        # Assign None via setter
+        c.data = None
+        db.session.commit()
+        self.assertEqual(c._data, "")
 
         # Clean up
         db.session.delete(c)
