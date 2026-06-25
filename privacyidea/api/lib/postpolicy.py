@@ -59,7 +59,8 @@ from flask_babel import _, lazy_gettext
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
+from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node,
+                                    get_from_config, SYSCONF)
 from privacyidea.lib.crypto import Sign
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
@@ -230,6 +231,64 @@ def sign_response(request, response):
     else:
         resp = response_object
     return resp
+
+
+def hide_version(request, response):
+    """
+    This policy function is used as a postrequest decorator.
+    If the policy action HIDE_VERSION is set in the HARDENING scope,
+    the version and versionnumber fields are removed from JSON responses
+    for unauthenticated requests (before login). Authenticated users
+    will still see the version number.
+
+    :param request: The request object
+    :param response: The response object
+    :return: The (maybe modified) response
+    """
+    # Only hide the version for unauthenticated requests
+    logged_in_user = getattr(g, "logged_in_user", None)
+    if logged_in_user:
+        return response
+
+    if response.is_json:
+        # Ensure g.policy_object and g.client_ip are available even when
+        # before_request failed early (e.g. due to AuthError before the
+        # policy object was created).
+        if not hasattr(g, "policy_object"):
+            try:
+                from privacyidea.lib.policy import PolicyClass
+                g.policy_object = PolicyClass()
+            except Exception:  # pragma: no cover
+                return response  # pragma: no cover
+        if not hasattr(g, "client_ip") or not g.client_ip:
+            from privacyidea.lib.utils import get_client_ip
+            try:
+                override_client = get_from_config(SYSCONF.OVERRIDECLIENT)
+            except Exception:
+                override_client = None
+            g.client_ip = get_client_ip(request, override_client)
+        try:
+            policy = Match.action_only(g, scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION).policies(
+                write_to_audit_log=False)
+        except AttributeError:
+            # g.policy_object might not be set in some edge cases
+            return response
+        if policy:
+            content = response.json
+            # Guard the envelope shape: only operate on a top-level JSON object
+            # with a dict result/value. A non-dict body (list/scalar) or a null
+            # result must be a no-op, not a 500 raised out of after_request.
+            if isinstance(content, dict):
+                removed = content.pop("version", None) is not None
+                removed = content.pop("versionnumber", None) is not None or removed
+                # Also strip version from the nested result value (e.g. /config endpoint)
+                result = content.get("result")
+                if isinstance(result, dict) and isinstance(result.get("value"), dict):
+                    removed = result["value"].pop("privacyideaVersionNumber", None) is not None or removed
+                # Only re-serialize the (potentially large) body if we actually removed something
+                if removed:
+                    response.set_data(json.dumps(content))
+    return response
 
 
 def check_tokentype(request, response):

@@ -90,10 +90,12 @@ export class ConfigService implements ConfigServiceInterface {
 
         if (data.result?.status && configValue) {
           this.config.set(configValue);
-          this.versioningService.rawVersion.set(data.versionnumber);
         } else {
           console.error("Failed to load config: Invalid response", data);
+          return;
         }
+
+        this.versioningService.rawVersion.set(data.versionnumber ?? "");
       });
   }
 }
