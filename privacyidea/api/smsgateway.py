@@ -141,24 +141,27 @@ def set_gateway():
     headers = {}
     secret_options = set()
     secret_headers = set()
+    has_explicit_secrets = False
     for k, v in param.items():
         if k.startswith("option."):
             options[k[7:]] = v
         elif k.startswith("header."):
             headers[k[7:]] = v
         elif k.startswith("secret.option."):
+            has_explicit_secrets = True
             # Mark this option key as secret if the value is truthy
             if v and str(v).lower() not in ("0", "false", "no", ""):
                 secret_options.add(k[14:])
         elif k.startswith("secret.header."):
+            has_explicit_secrets = True
             # Mark this header key as secret if the value is truthy
             if v and str(v).lower() not in ("0", "false", "no", ""):
                 secret_headers.add(k[14:])
 
     res = set_smsgateway(identifier, providermodule, description,
                          options=options, headers=headers,
-                         secret_options=secret_options,
-                         secret_headers=secret_headers)
+                         secret_options=secret_options if has_explicit_secrets else None,
+                         secret_headers=secret_headers if has_explicit_secrets else None)
     g.audit_object.log({"success": True,
                         "info": res})
     return send_result(res)
