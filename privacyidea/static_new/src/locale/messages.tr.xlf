@@ -16645,6 +16645,10 @@
         <source>Upload</source>
         <target>Yükle</target>
       </trans-unit>
+      <trans-unit id="7578660057481779670" datatype="html">
+        <source>Generate System Documentation</source>
+        <target>Sistem belgelerini oluştur</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

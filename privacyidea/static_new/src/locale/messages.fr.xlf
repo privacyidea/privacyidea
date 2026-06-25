@@ -16645,6 +16645,10 @@
         <source>Upload</source>
         <target>Téléverser</target>
       </trans-unit>
+      <trans-unit id="7578660057481779670" datatype="html">
+        <source>Generate System Documentation</source>
+        <target>Générer la documentation système</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>
