@@ -350,6 +350,41 @@ class NewUIRoutingTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertIn(res.status_code, [200, 302])
 
+    def test_non_locale_segment_uses_accept_language(self):
+        """GET /app/v2/<app-route> resolves the SPA shell via the preferred locale
+        (here Accept-Language: de) instead of always defaulting to English."""
+        served = []
+
+        def serve_side_effect(locale):
+            served.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
+            with self.app.test_request_context("/app/v2/login", method="GET",
+                                               headers={"Accept": "text/html,*/*",
+                                                        "Accept-Language": "de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served[0], "de")
+
+    def test_non_locale_segment_cookie_wins_over_accept_language(self):
+        """The pi_ui_locale cookie (set by the language switcher) takes precedence
+        over Accept-Language when resolving a non-locale segment."""
+        served = []
+
+        def serve_side_effect(locale):
+            served.append(locale)
+            return self._mock_response
+
+        with mock.patch("privacyidea.webui.login._serve_locale", side_effect=serve_side_effect):
+            with self.app.test_request_context("/app/v2/login", method="GET",
+                                               headers={"Accept": "text/html,*/*",
+                                                        "Accept-Language": "fr",
+                                                        "Cookie": "pi_ui_locale=de"}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(served[0], "de")
+
     def test_zh_hant_underscore_mapper_uses_hyphen_directory(self):
         """_serve_locale maps zh_Hant (ICU) to zh-Hant (BCP 47) build directory."""
         with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:

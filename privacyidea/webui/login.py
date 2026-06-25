@@ -289,8 +289,13 @@ def single_page_application_locale(locale: str, subpath: str | None = None) -> R
     pi_lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
     canonical = _canonical_locale(locale, pi_lang_list)
     if not canonical:
+        # The first segment is not a known locale (e.g. an app route like
+        # /app/v2/login). Serve the SPA shell for the user's preferred locale
+        # (cookie set by the language switcher, then Accept-Language, then the
+        # configured default) instead of always defaulting to English.
         if request.accept_mimetypes.accept_html:
-            return _serve_locale("en") or abort(404)
+            preferred = get_preferred_language() or "en"
+            return _serve_locale(preferred) or _serve_locale("en") or abort(404)
         abort(404)
     if canonical != locale or subpath is None:
         path = f"/app/v2/{canonical}/" + (subpath or "")
