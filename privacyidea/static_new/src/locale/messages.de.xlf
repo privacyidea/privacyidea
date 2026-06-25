@@ -16630,6 +16630,10 @@
           <context context-type="linenumber">26,27</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="6932865105766151309" datatype="html">
+        <source>Upload</source>
+        <target>Hochladen</target>
+      </trans-unit>
     </body>
   </file>
 </xliff>

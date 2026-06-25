@@ -41,11 +41,11 @@
           @if (hasConfigWritePermission()) {
             <button
               [disabled]="!authService.actionAllowed('configwrite')"
-              class="action-button-primary button-width-l"
+              class="action-button-primary button-width-m"
               mat-stroked-button
               (click)="saveSystemConfig()">
               <mat-icon>save</mat-icon>
-              <span i18n>Save System Config</span>
+              <span i18n>Save</span>
             </button>
           }
         </div>
