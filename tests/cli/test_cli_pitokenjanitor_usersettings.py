@@ -103,6 +103,13 @@ class TestUserSettingsJanitor:
         assert result.exit_code == 0, result.output
         assert "No orphaned user settings" in result.output
 
+    def test_delete_when_no_orphans(self, app, realm):
+        # With nothing to clean up, delete reports it and exits 0 (no prompt).
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["user-settings", "delete", "--yes"])
+        assert result.exit_code == 0, result.output
+        assert "No orphaned user settings" in result.output
+
     def test_orphan_when_resolver_was_deleted(self, app, realm):
         with app.app_context():
             db.session.add(UserSetting(subject_type=SUBJECT_USER, user_id="some-uid",

@@ -50,6 +50,12 @@ class UserSettingsAPITestCase(MyApiTestCase):
         res = self._post({"settings": {"big": "x" * (MAX_SETTINGS_BYTES + 1000)}})
         self.assertEqual(400, res.status_code, res)
 
+    def test_04b_post_rejects_non_object_settings(self):
+        # The settings document must be a JSON object; a list (or any non-object)
+        # is rejected with 400 rather than stored.
+        res = self._post({"settings": ["not", "an", "object"]})
+        self.assertEqual(400, res.status_code, res)
+
     def test_05_post_requires_settings_param(self):
         res = self._post({})
         self.assertEqual(400, res.status_code, res)

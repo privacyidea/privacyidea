@@ -6,13 +6,18 @@ Tests for privacyidea.lib.usersetting (per-principal frontend settings).
 The backend is a pass-through store: it returns stored documents verbatim and
 does not supply default values (the WebUI owns those).
 """
+from unittest.mock import patch
+
+from sqlalchemy import select
+
 from privacyidea.lib.error import ParameterError, UserError
 from privacyidea.lib.user import User
 from privacyidea.lib.usersetting import (SettingsSubject, SUBJECT_LOCAL_ADMIN, SUBJECT_USER,
                                          KNOWN_SETTING_KEYS, MAX_SETTINGS_BYTES,
                                          get_allowed_keys, get_user_settings, set_user_settings,
                                          delete_user_settings, validate_user_settings,
-                                         find_orphaned_user_settings, delete_orphaned_user_settings)
+                                         find_orphaned_user_settings, delete_orphaned_user_settings,
+                                         _select_for_subject)
 from privacyidea.models import UserSetting
 from .base import MyTestCase
 
@@ -216,3 +221,92 @@ class UserSettingTestCase(MyTestCase):
         self.assertEqual([], find_orphaned_user_settings())
         self.assertEqual("dark", get_user_settings(self._admin_subject())["theme"])
         self.assertEqual("dark", get_user_settings(self._user_subject())["theme"])
+
+    def test_21_allowed_keys_accepts_comma_separated_string(self):
+        # Set via an environment variable, PI_USER_SETTINGS_ALLOWED_KEYS arrives
+        # as a comma-separated string instead of a list; it must be split (and
+        # blank entries from stray commas/whitespace dropped).
+        self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"] = "alpha, beta ,, gamma "
+        try:
+            allowed = get_allowed_keys()
+        finally:
+            del self.app.config["PI_USER_SETTINGS_ALLOWED_KEYS"]
+        self.assertTrue({"alpha", "beta", "gamma"}.issubset(allowed))
+        self.assertNotIn("", allowed)
+        # The built-in known keys are still present alongside the configured ones.
+        self.assertTrue(KNOWN_SETTING_KEYS.issubset(allowed))
+
+    def test_22_delete_on_absent_identified_row_is_noop(self):
+        # An identified principal that has never stored anything: delete must
+        # short-circuit on the missing row rather than error (distinct from the
+        # unidentified-subject guard exercised in test_09). A fresh username
+        # keeps this independent of rows other tests leave behind.
+        subject = SettingsSubject.from_logged_in_user(
+            {"username": "never-stored-admin", "realm": "", "role": "admin"})
+        self.assertTrue(subject.is_identified())
+        self.assertEqual({}, delete_user_settings(subject, "theme"))
+        self.assertEqual({}, delete_user_settings(subject))
+
+    def test_23_orphan_user_with_empty_identifiers(self):
+        # A SUBJECT_USER row with an empty user_id (or resolver) can never resolve
+        # to a user, so it is always an orphan -- caught before any resolver call.
+        UserSetting(subject_type=SUBJECT_USER, user_id="", resolver="",
+                    realm_id=None, settings={"a": 1}).save()
+        flagged = find_orphaned_user_settings()
+        self.assertTrue(any(o.subject_type == SUBJECT_USER and not o.user_id for o in flagged))
+
+    def test_24_orphaned_on_error_controls_unreadable_resolver(self):
+        # When the resolver raises while looking up the uid, the row counts as
+        # orphaned only with orphaned_on_error=True; otherwise it is skipped so a
+        # transiently unreachable resolver does not get a live user pruned.
+        realm_id = self._user_subject().realm_id
+        UserSetting(subject_type=SUBJECT_USER, user_id="boom-uid",
+                    resolver=self.resolvername1, realm_id=realm_id, settings={"a": 1}).save()
+
+        class _BoomResolver:
+            def getUsername(self, uid):
+                raise Exception("resolver unreachable")
+
+        # get_resolver_object is imported lazily inside find_orphaned_user_settings,
+        # so patch it at its source module.
+        with patch("privacyidea.lib.resolver.get_resolver_object", return_value=_BoomResolver()):
+            on_error = {o.user_id for o in find_orphaned_user_settings(orphaned_on_error=True)}
+            self.assertIn("boom-uid", on_error)
+            skipped = {o.user_id for o in find_orphaned_user_settings(orphaned_on_error=False)}
+            self.assertNotIn("boom-uid", skipped)
+
+    def test_25_delete_orphans_handles_empty_list(self):
+        # Nothing to delete -> returns 0 without touching the database.
+        self.assertEqual(0, delete_orphaned_user_settings([]))
+
+    def test_26_integrity_error_recovery_merges_into_existing(self):
+        # Simulate the concurrent-insert race: the first lookup misses (forcing
+        # the INSERT branch), the INSERT then trips the unique constraint because
+        # a row already exists, and the recovery path re-reads and merges the
+        # incoming keys onto the winning document instead of failing.
+        subject = self._user_subject()
+        # Clean slate for this principal, then plant the row a concurrent request
+        # "already committed".
+        delete_user_settings(subject)
+        UserSetting(subject_type=SUBJECT_USER, username="cornelius", user_id=subject.user_id,
+                    resolver=subject.resolver, realm_id=subject.realm_id,
+                    settings={"theme": "winner"}).save()
+
+        real_select = _select_for_subject
+        calls = {"n": 0}
+
+        def fake_select(subj):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                # First lookup must miss the existing row to take the INSERT path.
+                return select(UserSetting).filter_by(
+                    subject_type=SUBJECT_USER, user_id="__never__",
+                    resolver="__never__", realm_id=-1)
+            return real_select(subj)
+
+        with patch("privacyidea.lib.usersetting._select_for_subject", side_effect=fake_select):
+            stored = set_user_settings(subject, {"token_columns": ["serial"]})
+
+        self.assertEqual({"theme": "winner", "token_columns": ["serial"]}, stored)
+        self.assertEqual({"theme": "winner", "token_columns": ["serial"]},
+                         get_user_settings(subject))
