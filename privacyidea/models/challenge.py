@@ -61,6 +61,8 @@ class Challenge(MethodsMixin, db.Model):
     def data(self):
         """Return the decrypted challenge data, or the raw value for legacy data."""
         raw = self._data
+        if not raw:
+            return raw
         decrypted = decryptPassword(raw)
         if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
             return decrypted
@@ -104,12 +106,11 @@ class Challenge(MethodsMixin, db.Model):
 
     def set_data(self, data):
         """
-        set the internal data of the challenge.
+        Set the internal data of the challenge.
         The data is encrypted before being stored in the database since it
         may contain OTP values.
 
-        :param data: Unicode data
-        :type data: string, length 512
+        :param data: The challenge data (string, dict, or other serializable value)
         """
         if data is None or data == '':
             self._data = ''

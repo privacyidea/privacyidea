@@ -29,7 +29,6 @@ from privacyidea.lib.crypto import decryptPassword
 log = logging.getLogger(__name__)
 
 
-
 class SMSGateway(MethodsMixin, db.Model):
     """
     This table stores the SMS Gateway definitions.
@@ -73,22 +72,19 @@ class SMSGateway(MethodsMixin, db.Model):
 
     @property
     def option_dict(self):
-        res = {}
-        for option in self.options:
-            if option.Type == "option" or not option.Type:
-                value = option.Value
-                if option.Encrypted and value:
-                    decrypted = decryptPassword(value)
-                    if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
-                        value = decrypted
-                res[option.Key] = value
-        return res
+        return self._get_options_by_type("option")
 
     @property
     def header_dict(self):
+        return self._get_options_by_type("header")
+
+    def _get_options_by_type(self, option_type):
+        """Return a dict of key→decrypted-value for options matching the given Type."""
         res = {}
         for option in self.options:
-            if option.Type == "header":
+            matches = (option.Type == option_type) if option_type == "header" else (
+                    option.Type == "option" or not option.Type)
+            if matches:
                 value = option.Value
                 if option.Encrypted and value:
                     decrypted = decryptPassword(value)
