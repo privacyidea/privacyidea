@@ -42,7 +42,12 @@ import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
+import {
+  MultiSelectFilterComponent,
+  MultiSelectFilterOption
+} from "@components/shared/multi-select-filter/multi-select-filter.component";
+import { USER_AGENT_PRESETS } from "@core/constants/user-agents";
+import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
 import {
   AuthenticationLogEntry,
   AuthenticationLogService,
@@ -141,11 +146,40 @@ export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   readonly eventTypeOptions: readonly string[] = AUTH_EVENT_TYPES.map((entry) => entry.value);
+  // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
+  // the multi-select component since client_label stores the full user-agent string incl. version).
+  readonly clientLabelOptions: readonly MultiSelectFilterOption[] = USER_AGENT_PRESETS.map((preset) => ({
+    label: preset.displayName,
+    value: preset.identifier
+  }));
   protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly clientsService: ClientsServiceInterface = inject(ClientsService);
   sort = this.authenticationLogService.sort;
+
+  // Source-IP filter options come from the known clients (requires the `clienttype` right, hence may be empty). IPs
+  // match exactly and display == value, so plain strings suffice. When empty (no right or no known clients) the
+  // column falls back to free text.
+  readonly sourceIpOptions = computed<string[]>(() => {
+    const dict = this.clientsService.clientsResource.value()?.result?.value ?? {};
+    const ips = new Set<string>();
+    for (const entries of Object.values(dict)) {
+      for (const entry of entries) {
+        if (entry.ip) {
+          ips.add(entry.ip);
+        }
+      }
+    }
+    return Array.from(ips).sort((a, b) => a.localeCompare(b));
+  });
+  readonly showSourceIpMenu = computed(() => this.sourceIpOptions().length > 0);
+
+  constructor() {
+    // Load known clients for the source-IP options (no-op without the `clienttype` right; the resource gates on it).
+    this.clientsService.requestClientsForAutocomplete();
+  }
 
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -233,6 +267,17 @@ export class AuthenticationLog {
       ? currentFilter.addEntry(keyword, values.join(","))
       : currentFilter.removeKey(keyword);
     this.authenticationLogService.authenticationLogFilter.set(newFilter);
+  }
+
+  // "Enter custom value" from a selection menu: ensure the key is present in the main filter input and focus it, so
+  // the user can type a free value (no wildcard) just like the plain free-text filter columns. The focus is deferred
+  // because the menu item click closes the menu, which restores focus to its trigger afterwards — a synchronous
+  // focus() would be overridden.
+  onAddCustomFilter(keyword: string): void {
+    this.authenticationLogService.authenticationLogFilter.set(
+      this.authenticationLogService.authenticationLogFilter().addKey(keyword)
+    );
+    setTimeout(() => this.filterInput?.nativeElement.focus());
   }
 
   // Color a row by its event's outcome severity (success/failure/neutral); unknown/empty values stay unstyled.

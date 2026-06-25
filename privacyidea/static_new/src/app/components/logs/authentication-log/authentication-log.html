@@ -63,12 +63,35 @@
             @if (column.filterable || column.sortable) {
               <div class="margin-left-16 flex ali-center">
                 @if (column.filterable) {
-                  @if (["event_type", "realm"].includes(column.key) ) {
+                  @if (column.key === "event_type") {
                     <app-multi-select-filter
                       [label]="column.label"
                       [options]="eventTypeOptions"
-                      [selected]="selectedFilterValues(column.key)"
-                      (selectionChange)="setFilterValues(column.key, $event)" />
+                      [selected]="selectedFilterValues('event_type')"
+                      (selectionChange)="setFilterValues('event_type', $event)" />
+                  } @else if (column.key === "realm") {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="realmService.realmOptions()"
+                      [selected]="selectedFilterValues('realm')"
+                      (selectionChange)="setFilterValues('realm', $event)" />
+                  } @else if (column.key === "client_label") {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="clientLabelOptions"
+                      [valueSuffix]="'*'"
+                      [allowCustom]="true"
+                      [selected]="selectedFilterValues('client_label')"
+                      (selectionChange)="setFilterValues('client_label', $event)"
+                      (addCustom)="onAddCustomFilter('client_label')" />
+                  } @else if (column.key === "source_ip" && showSourceIpMenu()) {
+                    <app-multi-select-filter
+                      [label]="column.label"
+                      [options]="sourceIpOptions()"
+                      [allowCustom]="true"
+                      [selected]="selectedFilterValues('source_ip')"
+                      (selectionChange)="setFilterValues('source_ip', $event)"
+                      (addCustom)="onAddCustomFilter('source_ip')" />
                   } @else {
                     <button
                       (click)="onKeywordClick(column.key)"

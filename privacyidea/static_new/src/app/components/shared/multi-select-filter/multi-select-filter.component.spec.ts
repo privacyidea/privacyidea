@@ -41,21 +41,29 @@ describe("MultiSelectFilterComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("normalizes plain string options to label/value pairs", () => {
+    expect(component.normalizedOptions()).toEqual([
+      { label: "LOGIN_SUCCESS", value: "LOGIN_SUCCESS" },
+      { label: "MFA_FAIL", value: "MFA_FAIL" },
+      { label: "PIN_FAIL", value: "PIN_FAIL" }
+    ]);
+  });
+
   it("isSelected reflects the selected input", () => {
     fixture.componentRef.setInput("selected", ["MFA_FAIL"]);
-    expect(component.isSelected("MFA_FAIL")).toBe(true);
-    expect(component.isSelected("LOGIN_SUCCESS")).toBe(false);
+    expect(component.isSelected({ label: "MFA_FAIL", value: "MFA_FAIL" })).toBe(true);
+    expect(component.isSelected({ label: "LOGIN_SUCCESS", value: "LOGIN_SUCCESS" })).toBe(false);
   });
 
   it("toggle adds a value not yet selected", () => {
     fixture.componentRef.setInput("selected", ["LOGIN_SUCCESS"]);
-    component.toggle("MFA_FAIL");
+    component.toggle({ label: "MFA_FAIL", value: "MFA_FAIL" });
     expect(emitted).toEqual([["LOGIN_SUCCESS", "MFA_FAIL"]]);
   });
 
   it("toggle removes an already-selected value", () => {
     fixture.componentRef.setInput("selected", ["LOGIN_SUCCESS", "MFA_FAIL"]);
-    component.toggle("LOGIN_SUCCESS");
+    component.toggle({ label: "LOGIN_SUCCESS", value: "LOGIN_SUCCESS" });
     expect(emitted).toEqual([["MFA_FAIL"]]);
   });
 
@@ -63,5 +71,24 @@ describe("MultiSelectFilterComponent", () => {
     fixture.componentRef.setInput("selected", ["LOGIN_SUCCESS", "MFA_FAIL"]);
     component.clear();
     expect(emitted).toEqual([[]]);
+  });
+
+  it("applies valueSuffix and matches it against the selected values (display stays the raw label)", () => {
+    fixture.componentRef.setInput("options", [{ label: "Keycloak", value: "privacyIDEA-Keycloak" }]);
+    fixture.componentRef.setInput("valueSuffix", "*");
+    const option = { label: "Keycloak", value: "privacyIDEA-Keycloak" };
+
+    component.toggle(option);
+    expect(emitted).toEqual([["privacyIDEA-Keycloak*"]]);
+
+    fixture.componentRef.setInput("selected", ["privacyIDEA-Keycloak*"]);
+    expect(component.isSelected(option)).toBe(true);
+  });
+
+  it("onAddCustom emits the addCustom event", () => {
+    let fired = false;
+    component.addCustom.subscribe(() => (fired = true));
+    component.onAddCustom();
+    expect(fired).toBe(true);
   });
 });

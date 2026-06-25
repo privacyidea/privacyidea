@@ -20,12 +20,14 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { ClientsService } from "@services/clients/clients.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   MockAuthenticationLogService,
+  MockClientsService,
   MockContentService,
   MockPiResponse,
   MockRealmService,
@@ -39,6 +41,7 @@ describe("AuthenticationLog", () => {
   let fixture: ComponentFixture<AuthenticationLog>;
   let service: MockAuthenticationLogService;
   let tableUtils: MockTableUtilsService;
+  let clientsService: MockClientsService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -50,10 +53,12 @@ describe("AuthenticationLog", () => {
         { provide: MockTableUtilsService, useClass: MockTableUtilsService },
         { provide: MockContentService, useClass: MockContentService },
         { provide: MockRealmService, useClass: MockRealmService },
+        { provide: MockClientsService, useClass: MockClientsService },
         { provide: AuthenticationLogService, useExisting: MockAuthenticationLogService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
-        { provide: RealmService, useExisting: MockRealmService }
+        { provide: RealmService, useExisting: MockRealmService },
+        { provide: ClientsService, useExisting: MockClientsService }
       ]
     }).compileComponents();
 
@@ -61,6 +66,7 @@ describe("AuthenticationLog", () => {
     component = fixture.componentInstance;
     service = TestBed.inject(MockAuthenticationLogService);
     tableUtils = TestBed.inject(MockTableUtilsService);
+    clientsService = TestBed.inject(MockClientsService);
     fixture.detectChanges();
   });
 
@@ -160,6 +166,43 @@ describe("AuthenticationLog", () => {
     expect(component.eventTypeOptions).toContain("LOGIN_SUCCESS");
     expect(component.eventTypeOptions).toContain("UNKNOWN_FAIL_REASON");
     expect(component.eventTypeOptions.length).toBe(17);
+  });
+
+  it("exposes client-label options mapping friendly name -> identifier", () => {
+    expect(component.clientLabelOptions).toContainEqual({ label: "Keycloak", value: "privacyIDEA-Keycloak" });
+    expect(component.clientLabelOptions.every((o) => o.label && o.value)).toBe(true);
+  });
+
+  it("requests known clients on init for the source-IP options", () => {
+    expect(clientsService.requestClientsForAutocomplete).toHaveBeenCalled();
+  });
+
+  it("derives unique sorted source-IP options from known clients; menu hidden when none", () => {
+    expect(component.sourceIpOptions()).toEqual([]);
+    expect(component.showSourceIpMenu()).toBe(false);
+
+    clientsService.setClients({
+      pam: [{ ip: "10.0.0.2" }, { ip: "10.0.0.1" }],
+      keycloak: [{ ip: "10.0.0.1" }, { ip: null }]
+    });
+
+    expect(component.sourceIpOptions()).toEqual(["10.0.0.1", "10.0.0.2"]);
+    expect(component.showSourceIpMenu()).toBe(true);
+  });
+
+  it("onAddCustomFilter adds the key to the main filter and focuses the input for free-text entry", () => {
+    jest.useFakeTimers();
+    const focusSpy = jest.spyOn(component.filterInput.nativeElement, "focus");
+
+    component.onAddCustomFilter("client_label");
+    expect(service.authenticationLogFilter().hasKey("client_label")).toBe(true);
+    // No value yet -> nothing selected; the user types the value in the main input.
+    expect(component.selectedFilterValues("client_label")).toEqual([]);
+
+    // Focus is deferred (the closing menu restores focus to its trigger first).
+    jest.runAllTimers();
+    expect(focusSpy).toHaveBeenCalled();
+    jest.useRealTimers();
   });
 
   it("splitSerials splits comma-separated serials, trims, and drops blanks", () => {
