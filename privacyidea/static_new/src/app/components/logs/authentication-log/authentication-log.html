@@ -52,7 +52,7 @@
     class="authentication-log-table"
     i18n-aria-label
     mat-table>
-    @for (column of columnKeysMap; track column.key) {
+    @for (column of visibleColumns(); track column.key) {
       <ng-container [matColumnDef]="column.key">
         <th
           *matHeaderCellDef
@@ -206,12 +206,12 @@
       </ng-container>
     }
     <tr
-      *matHeaderRowDef="columnKeys"
+      *matHeaderRowDef="visibleColumnKeys()"
       aria-label="Header Row"
       i18n-aria-label
       mat-header-row></tr>
     <tr
-      *matRowDef="let row; columns: columnKeys"
+      *matRowDef="let row; columns: visibleColumnKeys()"
       aria-label="Data Row"
       i18n-aria-label
       mat-row></tr>
@@ -220,7 +220,7 @@
       aria-label="No Data Row"
       i18n-aria-label>
       <td
-        [attr.colspan]="columnKeys.length"
+        [attr.colspan]="visibleColumnKeys().length"
         aria-label="No Data Cell"
         i18n-aria-label>
         {{ noDataText() }}

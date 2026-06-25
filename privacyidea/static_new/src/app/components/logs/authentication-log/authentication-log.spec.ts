@@ -20,6 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
 import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { AuthService } from "@services/auth/auth.service";
 import { ClientsService } from "@services/clients/clients.service";
 import { ContentService } from "@services/content/content.service";
 import { RealmService } from "@services/realm/realm.service";
@@ -33,6 +34,7 @@ import {
   MockRealmService,
   MockTableUtilsService
 } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 import { AuthenticationLog } from "./authentication-log";
 
@@ -42,6 +44,7 @@ describe("AuthenticationLog", () => {
   let service: MockAuthenticationLogService;
   let tableUtils: MockTableUtilsService;
   let clientsService: MockClientsService;
+  let authService: MockAuthService;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -54,6 +57,7 @@ describe("AuthenticationLog", () => {
         { provide: MockContentService, useClass: MockContentService },
         { provide: MockRealmService, useClass: MockRealmService },
         { provide: MockClientsService, useClass: MockClientsService },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: AuthenticationLogService, useExisting: MockAuthenticationLogService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
@@ -67,12 +71,26 @@ describe("AuthenticationLog", () => {
     service = TestBed.inject(MockAuthenticationLogService);
     tableUtils = TestBed.inject(MockTableUtilsService);
     clientsService = TestBed.inject(MockClientsService);
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     fixture.detectChanges();
   });
 
   it("creates and exposes one column key per column definition", () => {
     expect(component).toBeTruthy();
-    expect(component.columnKeys.length).toBe(component.columnKeysMap.length);
+    expect(component.visibleColumnKeys().length).toBe(component.columnKeysMap.length);
+  });
+
+  it("hides the user-identifying columns in self-service", () => {
+    authService.role.set("user");
+    const keys = component.visibleColumnKeys();
+    expect(keys).not.toContain("username");
+    expect(keys).not.toContain("realm");
+    expect(keys).not.toContain("resolver");
+    expect(keys).not.toContain("uid");
+    // Non-user columns stay visible.
+    expect(keys).toContain("timestamp");
+    expect(keys).toContain("event_type");
+    expect(keys).toContain("source_ip");
   });
 
   it("renders one row per returned entry", () => {

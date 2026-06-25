@@ -47,6 +47,7 @@ import {
   MultiSelectFilterOption
 } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { USER_AGENT_PRESETS } from "@core/constants/user-agents";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
 import {
   AuthenticationLogEntry,
@@ -92,6 +93,10 @@ const AUTH_EVENT_TYPES: readonly { value: string; severity: EventSeverity }[] = 
 const SEVERITY_BY_EVENT_TYPE: Record<string, EventSeverity> = Object.fromEntries(
   AUTH_EVENT_TYPES.map((entry) => [entry.value, entry.severity])
 );
+
+// User-identifying columns hidden in self-service: every row is the logged-in user (redundant), and their
+// realm/resolver/user links point to admin-only pages.
+const USER_SCOPED_COLUMN_KEYS = ["username", "realm", "resolver", "uid"];
 
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py. Every column is
 // sortable except `other_info`, which is a JSON column the backend cannot order on meaningfully.
@@ -144,7 +149,6 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
 })
 export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
-  readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   readonly eventTypeOptions: readonly string[] = AUTH_EVENT_TYPES.map((entry) => entry.value);
   // Client filter: show the friendly user-agent name, filter by its identifier prefix (a trailing "*" is applied by
   // the multi-select component since client_label stores the full user-agent string incl. version).
@@ -157,7 +161,17 @@ export class AuthenticationLog {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly clientsService: ClientsServiceInterface = inject(ClientsService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   sort = this.authenticationLogService.sort;
+
+  // Columns to render: a self-service user only ever sees their own entries, so the user-identifying columns are
+  // hidden (redundant, and their realm/resolver/user links target admin-only pages).
+  readonly visibleColumns = computed(() =>
+    this.authService.isSelfServiceUser()
+      ? this.columnKeysMap.filter((column) => !USER_SCOPED_COLUMN_KEYS.includes(column.key))
+      : this.columnKeysMap
+  );
+  readonly visibleColumnKeys = computed(() => this.visibleColumns().map((column) => column.key));
 
   // Source-IP filter options come from the known clients (requires the `clienttype` right, hence may be empty). IPs
   // match exactly and display == value, so plain strings suffice. When empty (no right or no known clients) the
