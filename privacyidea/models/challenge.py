@@ -47,7 +47,7 @@ class Challenge(MethodsMixin, db.Model):
     __tablename__ = "challenge"
     id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
     transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
-    _data: Mapped[str | None] = mapped_column("data", Unicode(512), default='')
+    _data: Mapped[str | None] = mapped_column("data", Unicode(2000), default='')
     challenge: Mapped[str | None] = mapped_column(Text, default='')
     session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
@@ -68,14 +68,13 @@ class Challenge(MethodsMixin, db.Model):
             if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
                 return decrypted
         except Exception:
-            pass
-        # Legacy unencrypted data - return as-is
-        return raw
+            # Legacy unencrypted data - return as-is
+            return raw
 
     @data.setter
     def data(self, value):
-        """Allow direct assignment to data (sets raw _data)."""
-        self._data = value
+        """Allow direct assignment to data (encrypts before storing)."""
+        self.set_data(value)
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
@@ -116,7 +115,7 @@ class Challenge(MethodsMixin, db.Model):
         :param data: Unicode data
         :type data: string, length 512
         """
-        if not data:
+        if data is None or data == '':
             self._data = ''
         elif isinstance(data, dict):
             self._data = encryptPassword(json.dumps(data))

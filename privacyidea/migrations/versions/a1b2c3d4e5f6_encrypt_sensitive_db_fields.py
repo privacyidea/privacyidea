@@ -1,11 +1,11 @@
-"""Encrypt plaintext passwords and PINs in the database
+"""Encrypt plaintext SMS gateway secrets and challenge data in the database
 
 This migration encrypts sensitive data that was previously stored in plaintext:
 
 1. SMS Gateway options whose key contains PASSWORD or SECRET
-   (table: smsgatewayoption)
+  (table: smsgatewayoption)
 2. Challenge data field which may contain OTP values
-   (table: challenge)
+  (table: challenge)
 
 The migration is idempotent: values that are already in encrypted format
 (contain a colon separating IV:ciphertext hex) are skipped.
@@ -55,6 +55,14 @@ def _looks_encrypted(value):
 def upgrade():
     # We need the crypto module to encrypt values
     from privacyidea.lib.crypto import encryptPassword
+
+    # --- 0. Increase challenge.data column size to accommodate encrypted values ---
+    log.info("Increasing challenge.data column size from 512 to 2000...")
+    with op.batch_alter_table('challenge', schema=None) as batch_op:
+        batch_op.alter_column('data',
+                              existing_type=sa.Unicode(length=512),
+                              type_=sa.Unicode(length=2000),
+                              existing_nullable=True)
 
     conn = op.get_bind()
 
@@ -188,3 +196,11 @@ def downgrade():
                     challenge.c.id == challenge_id
                 ).values(data=decrypted_data)
             )
+
+    # --- 3. Revert challenge.data column size back to 512 ---
+    log.info("Reverting challenge.data column size from 2000 to 512...")
+    with op.batch_alter_table('challenge', schema=None) as batch_op:
+        batch_op.alter_column('data',
+                              existing_type=sa.Unicode(length=2000),
+                              type_=sa.Unicode(length=512),
+                              existing_nullable=True)

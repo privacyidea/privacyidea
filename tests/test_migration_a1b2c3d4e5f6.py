@@ -5,13 +5,11 @@ sensitive plaintext data (SMS gateway options and challenge data fields).
 This tests the helper functions and data transformation logic without
 running the full alembic migration (which requires TEST_DATABASE_URL).
 """
-import json
-
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.models import SMSGateway, SMSGatewayOption, Challenge, db
+from privacyidea.models.challenge import Challenge as ChallengeModel
 from .base import MyTestCase
 
 
@@ -179,3 +177,36 @@ class MigrationEncryptionTestCase(MyTestCase):
 
         # Clean up
         gw.delete()
+
+    def test_05_challenge_data_column_size_accommodates_encryption(self):
+        """
+        The challenge data column must be large enough to store encrypted values.
+        Encrypted output (hex IV + colon + hex ciphertext) is much larger than
+        the original plaintext. Verify a 512-char plaintext can be encrypted
+        and stored without truncation.
+        """
+        from sqlalchemy import inspect
+
+        # Verify the model column size is 2000
+        mapper = inspect(ChallengeModel)
+        data_col = mapper.columns['data']
+        self.assertEqual(data_col.type.length, 2000)
+
+        # Create a challenge with a large data payload (up to original 512 chars)
+        large_data = "x" * 512
+        c = Challenge(serial="COLSIZE01", transaction_id="colsize_tid001",
+                      data=large_data, validitytime=300)
+        c.save()
+
+        # Verify encrypted value fits and can be decrypted
+        db.session.expire_all()
+        stmt = select(Challenge).filter_by(transaction_id="colsize_tid001")
+        db_challenge = db.session.execute(stmt).scalar_one()
+        # The raw _data should be encrypted (longer than original)
+        self.assertGreater(len(db_challenge._data), 512)
+        # Should decrypt correctly
+        self.assertEqual(db_challenge.data, large_data)
+
+        # Clean up
+        db.session.delete(db_challenge)
+        db.session.commit()
