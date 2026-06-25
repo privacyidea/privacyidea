@@ -1,27 +1,139 @@
 @use "styles";
 @use "table";
 
-$gap-small: 8px;
+:host {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
 
 .details-container {
   @include styles.main-component-style;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
 
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
+
+  .details-grid .details-table {
+    width: 100%;
+    table-layout: fixed;
+
+    td:nth-child(even),
+    th:nth-child(even) {
+      background: transparent;
+    }
+
+    tr.mat-mdc-row:nth-child(odd) td {
+      background: var(--mat-sys-surface-variant);
+    }
+
+    td:nth-child(1) {
+      width: 35%;
+    }
+
+    td:nth-child(2) {
+      width: 65%;
+    }
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
 }
 
-.detail-table-wrapper {
+.container-actions-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
-  gap: 20px;
-  width: auto;
-  max-width: fit-content;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) 0;
+  background: var(--mat-sys-surface-container-lowest);
+
+  ::ng-deep .actions-otp-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--half-global-gap);
+
+    > h4 {
+      display: none;
+    }
+
+    .flex-column {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--half-global-gap);
+    }
+
+    mat-divider {
+      display: none;
+    }
+  }
 }
 
-.details-section {
-  width: auto;
-  max-width: fit-content;
-  table-layout: auto;
-  border-collapse: collapse;
+.details-grid {
+  position: relative;
+  margin-top: var(--half-global-padding);
+}
+
+.token-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--global-gap);
+  align-items: flex-start;
+  margin-top: var(--global-padding);
+
+  // Deterministic order (DOM order = visual order): add-token, token table, info.
+  // Equal flexible columns that wrap to fewer per row as width shrinks (matching
+  // the masonry's 28rem min column), so add-token stays left of / above the token
+  // table and the container info stays right of / below it.
+  > app-details-card {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+.details-card--description {
+  align-self: flex-start;
+
+  .value-edit {
+    min-width: 80px;
+    justify-content: flex-end;
+  }
+
+  .description-field {
+    width: 100%;
+  }
+}
+
+.details-info-area {
+  max-width: 100%;
 }

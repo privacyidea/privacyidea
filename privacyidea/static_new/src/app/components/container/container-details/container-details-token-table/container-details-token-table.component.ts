@@ -46,6 +46,7 @@ import {
   MatTableModule
 } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ContainerDetailsTokenActionsComponent } from "@components/container/container-details/container-details-token-actions/container-details-token-actions.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -87,7 +88,8 @@ interface ContainerDetailTokenData {
     MatIconModule,
     MatTooltipModule,
     MatInput,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ContainerDetailsTokenActionsComponent
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"

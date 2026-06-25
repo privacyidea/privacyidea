@@ -23,11 +23,12 @@ import { MatDivider } from "@angular/material/divider";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
-import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
+import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 
 @Component({
   selector: "app-token-details-info",
@@ -39,7 +40,8 @@ import { TIMESTAMP_INFO_KEYS } from "../token-details.component";
     MatIconButton,
     MatIcon,
     MatDivider,
-    EditButtonsComponent
+    EditButtonsComponent,
+    DetailsCardComponent
   ],
   templateUrl: "./token-details-info.component.html",
   styleUrl: "./token-details-info.component.scss"

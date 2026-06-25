@@ -16,82 +16,76 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<details class="token-info-panel">
-  <summary class="token-info-summary">
-    <span
-      class="token-info-title"
-      i18n
-      >Token Information</span
-    >
-    <mat-icon class="token-info-chevron">expand_more</mat-icon>
-  </summary>
-  <div class="token-info-body">
-    @if (infoData()[0]; as element) {
-      @let info = asInfoMap(element.value);
-      @if (authService.actionAllowed("settokeninfo")) {
-        <div class="info-actions-row">
-          <app-edit-buttons
-            [cancelEdit]="toggleInfoEdit.bind(this)"
-            [element]="asInfoElement(element)"
-            [isEditingInfo]="isEditingInfo()"
-            [isEditingUser]="isEditingUser()"
-            [saveEdit]="saveInfo.bind(this)"
-            [shouldHideEdit]="isAnyEditingOrRevoked()"
-            [toggleEdit]="toggleInfoEdit.bind(this)"></app-edit-buttons>
-        </div>
-      }
-      <dl class="info-grid">
-        @for (key of visibleInfoKeys(info); track key) {
-          <dt class="info-key">{{ key }}</dt>
-          <dd class="info-value">
-            @if (isEditingInfo()) {
-              <div class="info-edit-row">
-                <mat-form-field
-                  class="info-edit-field input-width-l"
-                  subscriptSizing="dynamic">
-                  <textarea
-                    [(ngModel)]="info[key]"
-                    matInput
-                    rows="1"></textarea>
-                </mat-form-field>
-                <button
-                  (click)="deleteInfo(key)"
-                  i18n-aria-label="Delete Information"
-                  mat-icon-button>
-                  <mat-icon>delete_outlined</mat-icon>
-                </button>
-              </div>
-            } @else {
-              <span>{{ info[key] }}</span>
-            }
-          </dd>
-        }
-      </dl>
-      @if (isEditingInfo()) {
-        <mat-divider class="margin-8" />
-        <div class="info-add-row">
-          <mat-form-field
-            class="input-width-m"
-            subscriptSizing="dynamic">
-            <input
-              [(ngModel)]="newInfo().key"
-              i18n-placeholder
-              matInput
-              placeholder="Add new key" />
-          </mat-form-field>
-          <span class="margin-right-16 flex ali-center">:</span>
-          <mat-form-field
-            class="input-width-m"
-            subscriptSizing="dynamic">
-            <textarea
-              [(ngModel)]="newInfo().value"
-              i18n-placeholder
-              matInput
-              placeholder="Add new info"
-              rows="1"></textarea>
-          </mat-form-field>
-        </div>
-      }
+<app-details-card
+  title="Token Information"
+  i18n-title
+  [collapsible]="true"
+  [collapseLocked]="isEditingInfo()">
+  @if (infoData()[0]; as element) {
+    @let info = asInfoMap(element.value);
+    @if (authService.actionAllowed("settokeninfo")) {
+      <div class="info-actions-row">
+        <app-edit-buttons
+          [cancelEdit]="toggleInfoEdit.bind(this)"
+          [element]="asInfoElement(element)"
+          [isEditingInfo]="isEditingInfo()"
+          [isEditingUser]="isEditingUser()"
+          [saveEdit]="saveInfo.bind(this)"
+          [shouldHideEdit]="isAnyEditingOrRevoked()"
+          [toggleEdit]="toggleInfoEdit.bind(this)"></app-edit-buttons>
+      </div>
     }
-  </div>
-</details>
+    <dl class="info-grid">
+      @for (key of visibleInfoKeys(info); track key) {
+        <dt class="info-key">{{ key }}</dt>
+        <dd class="info-value">
+          @if (isEditingInfo()) {
+            <div class="info-edit-row">
+              <mat-form-field
+                class="info-edit-field input-width-l"
+                subscriptSizing="dynamic">
+                <textarea
+                  [(ngModel)]="info[key]"
+                  matInput
+                  rows="1"></textarea>
+              </mat-form-field>
+              <button
+                (click)="deleteInfo(key)"
+                i18n-aria-label="Delete Information"
+                mat-icon-button>
+                <mat-icon>delete_outlined</mat-icon>
+              </button>
+            </div>
+          } @else {
+            <span>{{ info[key] }}</span>
+          }
+        </dd>
+      }
+    </dl>
+    @if (isEditingInfo()) {
+      <mat-divider class="margin-8" />
+      <div class="info-add-row">
+        <mat-form-field
+          class="input-width-m"
+          subscriptSizing="dynamic">
+          <input
+            [(ngModel)]="newInfo().key"
+            i18n-placeholder
+            matInput
+            placeholder="Add new key" />
+        </mat-form-field>
+        <span class="margin-right-16 flex ali-center">:</span>
+        <mat-form-field
+          class="input-width-m"
+          subscriptSizing="dynamic">
+          <textarea
+            [(ngModel)]="newInfo().value"
+            i18n-placeholder
+            matInput
+            placeholder="Add new info"
+            rows="1"></textarea>
+        </mat-form-field>
+      </div>
+    }
+  }
+</app-details-card>

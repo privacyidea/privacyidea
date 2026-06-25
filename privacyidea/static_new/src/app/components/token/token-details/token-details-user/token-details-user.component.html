@@ -16,12 +16,10 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<section class="user-container responsive-pad-0-1310 details-card">
-  <h4
-    class="details-card-title"
-    i18n>
-    User
-  </h4>
+<app-details-card
+  class="user-container responsive-pad-0-1310"
+  title="User"
+  i18n-title>
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -114,14 +112,16 @@
             @switch (element.keyMap.key) {
               @case ("username") {
                 @if (!(isAnyEditingOrRevoked() && !isEditingUser())) {
-                  @if (element.value && authService.actionAllowed("unassign")) {
-                    <button
-                      (click)="unassignUser()"
-                      class="yellow"
-                      i18n-aria-label="Unassign User"
-                      mat-icon-button>
-                      <mat-icon>person_remove</mat-icon>
-                    </button>
+                  @if (element.value) {
+                    @if (authService.actionAllowed("unassign")) {
+                      <button
+                        (click)="unassignUser()"
+                        class="yellow"
+                        i18n-aria-label="Unassign User"
+                        mat-icon-button>
+                        <mat-icon>person_remove</mat-icon>
+                      </button>
+                    }
                   } @else if (authService.actionAllowed("assign")) {
                     @if (isEditingUser()) {
                       <app-edit-buttons
@@ -152,4 +152,4 @@
       *matRowDef="let row; columns: ['key', 'value']"
       mat-row></tr>
   </table>
-</section>
+</app-details-card>

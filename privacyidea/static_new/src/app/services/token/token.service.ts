@@ -241,7 +241,7 @@ export interface TokenServiceInterface {
   eventPageSize: WritableSignal<number>;
   tokenSerial: WritableSignal<string>;
   selectedTokenType: WritableSignal<TokenType>;
-  showOnlyTokenNotInContainer: WritableSignal<boolean>;
+  showOnlyTokenInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenDetailResourceValue: Signal<Tokens | undefined>;
@@ -414,17 +414,18 @@ export class TokenService implements TokenServiceInterface {
       ({ key: "hotp", info: "", text: "" } as TokenType)
   });
 
-  showOnlyTokenNotInContainer = linkedSignal({
+  showOnlyTokenInContainer = linkedSignal({
     source: this.contentService.routeUrl,
     computation: () => {
-      // Initially show tokens not in a container on the container details route.
-      return this.contentService.onContainersDetails();
+      // Initially hide tokens that are already in a container (i.e. show only
+      // free tokens) on the container details route.
+      return !this.contentService.onContainersDetails();
     }
   });
 
   tokenFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
-      showOnlyTokenNotInContainer: this.showOnlyTokenNotInContainer(),
+      showOnlyTokenInContainer: this.showOnlyTokenInContainer(),
       routeUrl: this.contentService.routeUrl()
     }),
     computation: (source, previous) => {
@@ -436,9 +437,9 @@ export class TokenService implements TokenServiceInterface {
       if (!previous || source.routeUrl !== previous.source.routeUrl) {
         let filterValue = new FilterValue({
           hiddenValue: this.contentService.onContainersDetails()
-            ? source.showOnlyTokenNotInContainer
-              ? "container_serial:"
-              : " "
+            ? source.showOnlyTokenInContainer
+              ? " "
+              : "container_serial:"
             : ""
         });
 
@@ -451,9 +452,9 @@ export class TokenService implements TokenServiceInterface {
       let filterValue = previous.value;
 
       if (this.contentService.onContainersDetails()) {
-        filterValue = source.showOnlyTokenNotInContainer
-          ? filterValue.addHiddenKey("container_serial")
-          : filterValue.removeHiddenKey("container_serial");
+        filterValue = source.showOnlyTokenInContainer
+          ? filterValue.removeHiddenKey("container_serial")
+          : filterValue.addHiddenKey("container_serial");
       } else {
         filterValue = filterValue.removeHiddenKey("container_serial");
       }

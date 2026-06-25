@@ -158,73 +158,19 @@
     </div>
   </div>
 
-  <div class="details-grid margin-bottom-16">
-    @if (descriptionRow(); as desc) {
-      <section
-        class="description-row"
-        [class.is-editing]="desc.isEditing()">
-        <div class="value-row">
-          <div class="value-content">
-            @if (desc.isEditing()) {
-              <mat-form-field
-                class="description-field"
-                subscriptSizing="dynamic">
-                <mat-label i18n>Description</mat-label>
-                <textarea
-                  [value]="desc.value"
-                  (input)="desc.value = $any($event.target).value"
-                  maxlength="80"
-                  appAutofocus
-                  matInput
-                  rows="7"></textarea>
-                <mat-hint align="end">{{ desc.value.length || 0 }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
-              </mat-form-field>
-            } @else {
-              <div class="flex-column">
-                <h4
-                  class="details-card-title"
-                  i18n>
-                  Description
-                </h4>
-                <span class="description-text">{{ desc.value || "—" }}</span>
-              </div>
-            }
-          </div>
-          <div class="value-edit">
-            @if (isEditableElement(desc.keyMap.key)) {
-              <app-edit-buttons
-                [cancelEdit]="cancelTokenEdit.bind(this)"
-                [element]="desc"
-                [isEditingInfo]="isEditingInfo()"
-                [isEditingUser]="isEditingUser()"
-                [saveEdit]="saveTokenEdit.bind(this)"
-                [shouldHideEdit]="isAnyEditingOrRevoked()"
-                [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
-            }
-          </div>
-        </div>
-      </section>
-    }
+  <div
+    class="details-grid margin-bottom-16"
+    appMasonry
+    [columns]="3"
+    [columnWidthRem]="28">
+    <app-token-details-status
+      [tokenDetails]="tokenDetails()"
+      [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
 
-    @for (group of tokenDetailDataByGroup(); track group.id) {
-      @if (group.rows.length > 0) {
-        <section
-          class="details-card details-card--group"
-          [class.details-card--identity]="group.id === 'identity'"
-          [class.details-card--counters]="group.id === 'counters'"
-          [class.details-card--assignment]="group.id === 'assignment'">
-          <h4
-            class="details-card-title"
-            i18n>
-            {{ group.label }}
-          </h4>
-          <ng-container
-            *ngTemplateOutlet="
-              groupRowsTemplate;
-              context: { $implicit: group.rows, label: group.label }
-            "></ng-container>
-        </section>
-      }
+    @if (showCounters()) {
+      <app-token-details-counters
+        [tokenDetails]="tokenDetails()"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
     }
 
     <app-token-details-user
@@ -234,6 +180,11 @@
       [isEditingUser]="isEditingUser"
       [tokenSerial]="tokenSerial"
       [userData]="userData"></app-token-details-user>
+
+    <app-token-details-assignments
+      [tokenDetails]="tokenDetails()"
+      [userRealm]="userRealm"
+      [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
 
     @if (tokenType() === "sshkey" || tokenType() === "hotp") {
       <app-token-details-machine class="details-card-machine" />
@@ -248,6 +199,18 @@
       [passkeyTestResult]="passkeyTestResult"
       (testPasskey)="testPasskey()"></app-token-details-actions>
 
+    @if (descriptionRow(); as desc) {
+      <app-token-details-description
+        [element]="desc"
+        [editable]="isEditableElement(desc.keyMap.key)"
+        [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
+        [isEditingInfo]="isEditingInfo()"
+        [isEditingUser]="isEditingUser()"
+        [cancelEdit]="cancelTokenEdit.bind(this)"
+        [saveEdit]="saveTokenEdit.bind(this)"
+        [toggleEdit]="toggleTokenEdit.bind(this)" />
+    }
+
     <app-token-details-info
       class="details-info-area"
       [detailData]="tokenDetailData"
@@ -256,315 +219,4 @@
       [isEditingInfo]="isEditingInfo"
       [isEditingUser]="isEditingUser"></app-token-details-info>
   </div>
-
-  <ng-template
-    #groupRowsTemplate
-    let-rows
-    let-label="label">
-    <table
-      [dataSource]="rows"
-      attr.aria-label="{{ label }} details"
-      class="details-table"
-      mat-table>
-      <ng-container matColumnDef="key">
-        <td
-          *matCellDef="let element"
-          class="details-key-row"
-          mat-cell>
-          {{ element.keyMap.label }}
-        </td>
-      </ng-container>
-      <ng-container matColumnDef="value">
-        <td
-          *matCellDef="let element"
-          [ngClass]="
-            tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
-          "
-          mat-cell>
-          <div class="value-row">
-            <div class="value-content">
-              @switch (element.keyMap.key) {
-                @case ("container_serial") {
-                  <div class="container-serial-row">
-                    @if (element.isEditing()) {
-                      <mat-form-field
-                        class="input-width-m height-52"
-                        subscriptSizing="dynamic">
-                        <mat-label i18n>Enter Container</mat-label>
-                        <app-clearable-input
-                          (clearButtonClick)="containerService.selectedContainerSerial.set(null)"
-                          [showClearButton]="containerService.selectedContainerSerial() !== ''">
-                          <input
-                            [value]="containerService.selectedContainerSerial()"
-                            (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
-                            [matAutocomplete]="containerAuto"
-                            appAutofocus
-                            matInput />
-                        </app-clearable-input>
-                        <mat-autocomplete
-                          #containerAuto="matAutocomplete"
-                          (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
-                          @for (option of containerService.containersForTokenType(); track option) {
-                            <mat-option [value]="option">{{ option }}</mat-option>
-                          }
-                        </mat-autocomplete>
-                      </mat-form-field>
-                      <mat-checkbox
-                        [checked]="containerService.filterContainersByTokenOwner()"
-                        (change)="containerService.filterContainersByTokenOwner.set($event.checked)"
-                        [disabled]="!tokenDetails().username"
-                        i18n>
-                        Filter by token owner
-                      </mat-checkbox>
-                    } @else {
-                      <div class="flex-row flex-nowrap ali-center">
-                        <a
-                          (click)="contentService.navigateContainerDetails(element.value)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.value)"
-                          (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(element.value)"
-                          attr.aria-label="{{ element.keyMap.label }} Link"
-                          role="button"
-                          tabindex="0">
-                          {{ element.value }}
-                        </a>
-                        @if (element.value !== "") {
-                          <app-copy-button [copyText]="element.value"></app-copy-button>
-                        }
-                      </div>
-                    }
-                  </div>
-                }
-                @case ("realms") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m height-77"
-                      subscriptSizing="dynamic">
-                      <mat-label i18n>Select Realms</mat-label>
-                      <mat-select
-                        [value]="realmService.selectedRealms()"
-                        (selectionChange)="realmService.selectedRealms.set($event.value)"
-                        appAutofocus
-                        multiple>
-                        @for (option of realmService.realmOptions(); track option) {
-                          @if (option === userRealm) {
-                            <mat-option
-                              disabled
-                              value="{{ option }}">
-                              {{ option }}
-                            </mat-option>
-                          } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
-                          }
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else {
-                    <div
-                      [ngClass]="{ 'height-77': element.value.length > 2 }"
-                      class="details-scrollable-container">
-                      @for (realm of element.value; track realm) {
-                        <mat-list-item class="height-auto pad-0">
-                          <span class="font-14">• {{ realm }}</span>
-                        </mat-list-item>
-                      }
-                    </div>
-                  }
-                }
-                @case ("tokengroup") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m height-77"
-                      subscriptSizing="dynamic">
-                      <mat-label i18n>Select Token Group</mat-label>
-                      <mat-select
-                        [value]="selectedTokengroup()"
-                        (selectionChange)="selectedTokengroup.set($event.value)"
-                        appAutofocus
-                        multiple>
-                        @for (option of tokengroupOptions(); track option) {
-                          @if (option === userRealm) {
-                            <mat-option
-                              disabled
-                              value="{{ option }}">
-                              {{ option }}
-                            </mat-option>
-                          } @else {
-                            <mat-option value="{{ option }}">{{ option }}</mat-option>
-                          }
-                        }
-                      </mat-select>
-                    </mat-form-field>
-                  } @else {
-                    <div
-                      [ngClass]="{
-                        'details-scrollable-container': true,
-                        'height-77': element.value.length > 2
-                      }">
-                      @for (tokengroup of element.value; track tokengroup) {
-                        <mat-list-item class="height-auto pad-0">
-                          <span class="font-14">• {{ tokengroup }}</span>
-                        </mat-list-item>
-                      }
-                    </div>
-                  }
-                }
-                @case ("active") {
-                  @if (!isAnyEditingOrRevoked() && authService.actionAllowed(tokenIsActive() ? "disable" : "enable")) {
-                    <button
-                      type="button"
-                      class="status-toggle"
-                      (click)="toggleActive()"
-                      i18n-aria-label="Toggle Status">
-                      <span
-                        [ngClass]="[
-                          tableUtilsService.getSpanClassForKey({
-                            key: element.keyMap.key,
-                            value: element.value,
-                            maxfail: maxfail
-                          })
-                        ]">
-                        {{
-                          tableUtilsService.getDisplayTextForKeyAndRevoked(
-                            element.keyMap.key,
-                            element.value,
-                            tokenIsRevoked()
-                          )
-                        }}
-                      </span>
-                    </button>
-                  } @else {
-                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                      <span
-                        [ngClass]="[
-                          tableUtilsService.getSpanClassForKey({
-                            key: element.keyMap.key,
-                            value: element.value,
-                            maxfail: maxfail
-                          })
-                        ]">
-                        {{
-                          tableUtilsService.getDisplayTextForKeyAndRevoked(
-                            element.keyMap.key,
-                            element.value,
-                            tokenIsRevoked()
-                          )
-                        }}
-                      </span>
-                    </div>
-                  }
-                }
-                @case ("description") {
-                  @if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m description height-136"
-                      subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        maxlength="80"
-                        i18n-placeholder
-                        matInput
-                        placeholder="Enter description"
-                        rows="4"></textarea>
-                      <mat-hint align="end"
-                        >{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
-                      </mat-hint>
-                    </mat-form-field>
-                  } @else {
-                    <div class="details-description-div height-136">
-                      <span class="details-table-item">
-                        {{ element.value }}
-                      </span>
-                    </div>
-                  }
-                }
-                @default {
-                  @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field
-                      class="input-width-m height-52"
-                      subscriptSizing="dynamic">
-                      <input
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        appAutofocus
-                        matInput
-                        type="number" />
-                    </mat-form-field>
-                  } @else if (element.isEditing()) {
-                    <mat-form-field
-                      class="input-width-m"
-                      subscriptSizing="dynamic">
-                      <textarea
-                        [value]="element.value"
-                        (input)="element.value = $any($event.target).value"
-                        appAutofocus
-                        matInput
-                        rows="1"></textarea>
-                    </mat-form-field>
-                  } @else {
-                    <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
-                      <span
-                        [ngClass]="[
-                          tableUtilsService.getSpanClassForKey({
-                            key: element.keyMap.key,
-                            value: element.value,
-                            maxfail: maxfail
-                          })
-                        ]">
-                        {{
-                          tableUtilsService.getDisplayTextForKeyAndRevoked(
-                            element.keyMap.key,
-                            element.value,
-                            tokenIsRevoked()
-                          )
-                        }}
-                      </span>
-                    </div>
-                  }
-                }
-              }
-            </div>
-            <div class="value-edit">
-              @if (
-                element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
-              ) {
-                <button
-                  (click)="resetFailCount()"
-                  i18n-aria-label="Reset Fail Count"
-                  mat-icon-button>
-                  <mat-icon>lock_reset</mat-icon>
-                </button>
-              } @else if (
-                element.keyMap.key === "container_serial" &&
-                !isAnyEditingOrRevoked() &&
-                element.value &&
-                authService.actionAllowed("container_remove_token")
-              ) {
-                <button
-                  (click)="removeFromContainer()"
-                  class="red"
-                  i18n-aria-label="Delete Container"
-                  mat-icon-button>
-                  <mat-icon>folder_delete</mat-icon>
-                </button>
-              } @else if (isEditableElement(element.keyMap.key)) {
-                <app-edit-buttons
-                  [cancelEdit]="cancelTokenEdit.bind(this)"
-                  [element]="element"
-                  [isEditingInfo]="isEditingInfo()"
-                  [isEditingUser]="isEditingUser()"
-                  [saveEdit]="saveTokenEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditingOrRevoked()"
-                  [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
-              }
-            </div>
-          </div>
-        </td>
-      </ng-container>
-      <tr
-        *matRowDef="let row; columns: ['key', 'value']"
-        class="height-52"
-        mat-row></tr>
-    </table>
-  </ng-template>
 </div>

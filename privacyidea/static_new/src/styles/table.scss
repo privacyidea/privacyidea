@@ -303,6 +303,64 @@ th:nth-child(even) {
   padding: 8px 12px 12px;
 }
 
+.details-field-list {
+  display: flex;
+  flex-direction: column;
+
+  > * {
+    display: grid;
+    grid-template-columns: 35% 65%;
+    align-items: stretch;
+    min-height: 52px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-top-width: 0;
+  }
+
+  > :first-child {
+    border-top-width: 1px;
+  }
+
+  > :nth-child(odd) {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  .detail-field-key {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface-variant);
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .detail-field-value {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+}
+
 .details-card-title {
   margin: 0 0 4px;
   font-size: 12px;

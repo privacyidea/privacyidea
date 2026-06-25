@@ -2,9 +2,11 @@
 @use "table";
 
 :host {
-  display: block;
+  display: flex;
+  justify-content: center;
   flex: 1;
   min-width: 0;
+  width: 100%;
 }
 
 .details-container {
@@ -51,43 +53,6 @@
     }
   }
 
-  .value-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .value-content {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .value-edit {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-  }
-
-  .status-toggle {
-    padding: 0;
-    margin: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    font: inherit;
-    color: inherit;
-    display: inline-flex;
-    align-items: center;
-
-    &:focus-visible {
-      outline: 2px solid var(--mat-sys-primary);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-  }
-
 }
 
 .details-header h3 {
@@ -127,87 +92,26 @@
   }
 }
 
-.description-row {
-  padding: 8px 14px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  box-sizing: border-box;
-  display: flex;
-  align-items: baseline;
-  width: 340px;
-  align-self: flex-start;
-  order: 9;
-
-  .value-edit {
-    min-width: 80px;
-    justify-content: flex-end;
-  }
-
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  &.is-editing app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .description-label {
-    font-weight: 600;
-    margin-right: 8px;
-    color: var(--mat-sys-on-surface-variant);
-  }
-
-  .description-text {
-    overflow-wrap: anywhere;
-  }
-
-  .description-field {
-    width: 100%;
-    max-width: 700px;
-  }
-}
-
 .details-grid {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+  position: relative;
   margin-top: 8px;
+  // The masonry directive sets this grid's height in px and positions its cards
+  // absolutely. As a child of the fixed-height, scrollable .details-container
+  // flex column it must not be flex-shrunk, otherwise the box collapses below the
+  // measured height and the bottom cards spill past the container's padding.
+  flex: 0 0 auto;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-.details-card--identity { order: 1; }
-.details-card-user { order: 2; }
-.details-card--assignment { order: 3; }
-.details-card--counters { order: 4; }
-.details-card-machine { order: 5; display: contents; }
-.details-card-actions { display: contents; }
+.details-card-machine { display: contents; }
 
-.details-card--group,
 .details-card-user {
   display: block;
   min-width: 0;
   align-self: flex-start;
   box-sizing: border-box;
-  max-width: 585px;
-}
-
-.details-card--group {
-  app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover app-edit-buttons,
-  ::ng-deep td.padding-0 app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
+  max-width: var(--details-card-max-width);
 }
 
 .action-button-warn-secondary {
@@ -229,16 +133,7 @@
 }
 
 .details-info-area {
-  order: 10;
   align-self: flex-start;
   width: fit-content;
   max-width: 100%;
-}
-
-.container-serial-row {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  min-height: 101px;
 }
