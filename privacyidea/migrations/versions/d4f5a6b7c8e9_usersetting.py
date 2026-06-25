@@ -1,7 +1,7 @@
 """v3.14: Add usersetting table for per-principal frontend settings
 
 Revision ID: d4f5a6b7c8e9
-Revises: 7d4e9b2c1a3f
+Revises: c2d3e4f5a6b7
 Create Date: 2026-06-18 00:00:00.000000
 
 """
@@ -14,7 +14,7 @@ from privacyidea.models.db import (create_sequence_if_supported, restart_sequenc
 
 # revision identifiers, used by Alembic.
 revision = 'd4f5a6b7c8e9'
-down_revision = '7d4e9b2c1a3f'
+down_revision = 'c2d3e4f5a6b7'
 branch_labels = None
 depends_on = None
 
