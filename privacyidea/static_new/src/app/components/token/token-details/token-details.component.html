@@ -54,7 +54,7 @@
           (click)="toggleActive()"
           [disabled]="tokenIsRevoked()"
           [ngClass]="[
-            tokenIsActive() ? 'action-button-warn-secondary button-width-m' : 'action-button-primary button-width-m'
+            tokenIsActive() ? 'action-button-warn-secondary button-width-l' : 'action-button-primary button-width-l'
           ]"
           mat-stroked-button>
           <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
@@ -65,7 +65,7 @@
         <button
           (click)="revokeToken()"
           [disabled]="tokenIsRevoked()"
-          class="action-button-delete-secondary button-width-m"
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>undo</mat-icon>
           <span i18n>Revoke</span>
@@ -74,7 +74,7 @@
       @if (authService.actionAllowed("delete")) {
         <button
           (click)="deleteToken()"
-          class="action-button-delete-secondary button-width-m"
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
           <span i18n>Delete</span>
@@ -83,7 +83,7 @@
       @if (authService.actionAllowed("losttoken")) {
         <button
           (click)="openLostTokenDialog()"
-          class="action-button-secondary button-width-m"
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>remove_red_eye</mat-icon>
           <span i18n>Lost This Token?</span>
@@ -92,7 +92,7 @@
       @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
         <button
           (click)="rolloverToken()"
-          class="action-button-secondary button-width-m"
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>sync</mat-icon>
           <span i18n>Rollover</span>
@@ -102,7 +102,7 @@
         <button
           (click)="showTokenAuditLog()"
           [routerLink]="[ROUTE_PATHS.AUDIT]"
-          class="action-button-secondary button-width-m"
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>receipt_long</mat-icon>
           <span i18n>Show in Audit</span>
@@ -112,7 +112,7 @@
         @if (tokenType() === "sshkey") {
           <button
             (click)="attachSshToMachineDialog()"
-            class="action-button-secondary button-width-m"
+            class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
             <span i18n>Attach to Machine</span>
@@ -121,7 +121,7 @@
           @if (isAttachedToMachine()) {
             <button
               (click)="removePasskeyFromMachine()"
-              class="action-button-secondary button-width-m"
+              class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>computer</mat-icon>
               <span i18n>Disable Offline</span>
@@ -129,7 +129,7 @@
           } @else {
             <button
               (click)="attachPasskeyToMachine()"
-              class="action-button-secondary button-width-m"
+              class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>computer</mat-icon>
               <span i18n>Use Offline</span>
@@ -138,7 +138,7 @@
         } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
           <button
             (click)="attachHotpToMachineDialog()"
-            class="action-button-secondary button-width-m"
+            class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
             <span i18n>Use Offline</span>

@@ -27,7 +27,7 @@
       @if (authService.actionAllowed("container_delete")) {
         <button
           (click)="deleteContainer()"
-          class="action-button-delete-secondary button-width-m"
+          class="action-button-delete-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
           <span i18n>Delete</span>
@@ -35,7 +35,7 @@
       }
       <button
         (click)="enrollTokenInContainer()"
-        class="action-button-primary button-width-m"
+        class="action-button-primary button-width-l"
         mat-stroked-button>
         <mat-icon>add_moderator</mat-icon>
         <span i18n>Enroll Token</span>
@@ -43,7 +43,7 @@
       @if (containerService.containerDetail()?.template && authService.actionAllowed("container_template_list")) {
         <button
           (click)="containerService.compareWithTemplate()"
-          class="action-button-secondary button-width-m"
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>compare</mat-icon>
           <span i18n>Compare to Template</span>
@@ -59,7 +59,7 @@
         @if (registrationAllowed()) {
           <button
             (click)="openRegisterInitDialog(false)"
-            class="action-button-secondary button-width-m"
+            class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>phonelink</mat-icon>
             <span i18n>Register</span>
@@ -67,7 +67,7 @@
         } @else if (rolloverAllowed()) {
           <button
             (click)="openRegisterInitDialog(true)"
-            class="action-button-secondary button-width-m"
+            class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>sync</mat-icon>
             <span i18n>Rollover</span>
@@ -76,7 +76,7 @@
         @if (unregisterAllowed()) {
           <button
             (click)="unregisterContainer()"
-            class="action-button-secondary button-width-m"
+            class="action-button-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>phonelink_off</mat-icon>
             <span i18n>Unregister</span>
