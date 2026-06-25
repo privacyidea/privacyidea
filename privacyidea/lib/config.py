@@ -315,10 +315,6 @@ class SYSCONF:
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
-    # Comma/space-separated IPs or CIDR networks the conditional-access engine
-    # must never block (in addition to the built-in loopback default). Add your
-    # reverse-proxy / load-balancer / NAT-egress / management IPs here so a
-    # BLOCK_IP action can never lock out shared infrastructure.
     CONDITIONAL_ACCESS_NEVER_BLOCK = "ConditionalAccessNeverBlock"
 
 
