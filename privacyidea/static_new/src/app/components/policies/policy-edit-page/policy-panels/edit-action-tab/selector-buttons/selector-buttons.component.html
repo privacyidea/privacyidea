@@ -25,8 +25,14 @@
       [class.selected-button]="selectedValue() === value"
       [class.last-button]="$index === values().length - 1"
       (click)="selectValue(value)"
-      [disabled]="disabled()">
-      {{ labels()?.[$index] || value }}
+      [disabled]="disabled()"
+      matTooltip="{{ labels()?.[$index] || value }}"
+      [matTooltipDisabled]="!isOverflowing(labelEl)">
+      <span
+        #labelEl
+        class="button-label">
+        {{ labels()?.[$index] || value }}
+      </span>
     </button>
   }
 </div>

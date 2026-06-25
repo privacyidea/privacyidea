@@ -69,12 +69,12 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--global-gap);
+  gap: var(--half-global-gap);
 
   .selector-label {
-    min-width: 60px;
     font-weight: 500;
     margin: 0;
+    white-space: nowrap;
   }
 
   .flex-1 {

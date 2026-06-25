@@ -37,8 +37,7 @@ describe("EventConditionsTabComponent", () => {
     fixture = TestBed.createComponent(EventConditionsTabComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("conditions", { test_condition: "test_value" });
-    fixture.componentRef.setInput("isEditMode", true);
-    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, string>>;
+    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, unknown>>;
     fixture.detectChanges();
   });
 
@@ -109,15 +108,30 @@ describe("EventConditionsTabComponent", () => {
   });
 
   it("should update conditionsToBeAdded on onConditionValueToBeAddedChange", () => {
-    component.conditionsToBeAdded = {};
+    component.conditionsToBeAdded.set({});
     component.onConditionValueToBeAddedChange("condX", "valX");
-    expect(component.conditionsToBeAdded["condX"]).toBe("valX");
+    expect(component.conditionsToBeAdded()["condX"]).toBe("valX");
+  });
+
+  it("should join array values on onConditionValueToBeAddedChange", () => {
+    component.conditionsToBeAdded.set({});
+    component.onConditionValueToBeAddedChange("condX", ["v1", "v2"]);
+    expect(component.conditionsToBeAdded()["condX"]).toBe("v1,v2");
+  });
+
+  it("should join array values on onConditionValueChange", () => {
+    component.selectedConditions.set({});
+    const emitSpy = jest.fn();
+    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, unknown>>;
+    component.onConditionValueChange("condY", ["a", "b"]);
+    expect(component.selectedConditions()).toEqual({ condY: "a,b" });
+    expect(emitSpy).toHaveBeenCalledWith({ condY: "a,b" });
   });
 
   it("should update selectedConditions and emit newConditions on onConditionValueChange", () => {
     component.selectedConditions.set({ condY: "oldVal" });
     const emitSpy = jest.fn();
-    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, string>>;
+    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, unknown>>;
     component.onConditionValueChange("condY", "newVal");
     expect(component.selectedConditions()).toEqual({ condY: "newVal" });
     expect(emitSpy).toHaveBeenCalledWith({ condY: "newVal" });
@@ -126,8 +140,70 @@ describe("EventConditionsTabComponent", () => {
   it("should set addedCondition when value is empty in onConditionValueChange", () => {
     component.selectedConditions.set({ condZ: "something" });
     component.addedCondition.set("");
-    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, string>>;
+    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, unknown>>;
     component.onConditionValueChange("condZ", "");
     expect(component.addedCondition()).toBe("condZ");
+  });
+
+  it("availableNonEmptyGroups should only include groups with remaining conditions", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("");
+    const groups = component.availableNonEmptyGroups();
+    expect(groups).toContain("group1");
+    expect(groups).toContain("group2");
+  });
+
+  it("availableNonEmptyGroups should exclude groups where all conditions are selected", () => {
+    component.selectedConditions.set({ condA: "v", condB: "v" });
+    component.searchTerm.set("");
+    const groups = component.availableNonEmptyGroups();
+    expect(groups).not.toContain("group1");
+    expect(groups).toContain("group2");
+  });
+
+  it("availableNonEmptyGroups should exclude groups filtered out by search term", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("condC");
+    const groups = component.availableNonEmptyGroups();
+    expect(groups).not.toContain("group1");
+    expect(groups).toContain("group2");
+  });
+
+  it("selectedGroup should default to first non-empty group", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("");
+    expect(component.selectedGroup()).toBe("group1");
+  });
+
+  it("selectedGroup should keep current selection if group is still non-empty", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("");
+    component.selectedGroup.set("group2");
+    component.selectedConditions.set({ condA: "v" });
+    expect(component.selectedGroup()).toBe("group2");
+  });
+
+  it("selectedGroup should fall back to empty string when no non-empty groups remain", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("");
+    component.selectedGroup.set("group2");
+    component.selectedConditions.set({ condA: "v", condB: "v", condC: "v" });
+    expect(component.selectedGroup()).toBe("");
+  });
+
+  it("remainingConditionsInSelectedGroup should return conditions for the selected group", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("");
+    component.selectedGroup.set("group2");
+    const result = component.remainingConditionsInSelectedGroup();
+    expect(result).toEqual({ condC: "" });
+  });
+
+  it("remainingConditionsInSelectedGroup should return empty object for unknown group", () => {
+    component.selectedConditions.set({});
+    component.searchTerm.set("");
+    component.selectedGroup.set("nonExistentGroup");
+    const result = component.remainingConditionsInSelectedGroup();
+    expect(result).toEqual({});
   });
 });
