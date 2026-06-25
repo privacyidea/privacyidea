@@ -40,7 +40,7 @@ jobs:
       min: ${{ steps.load.outputs.min }}
       matrix: ${{ steps.load.outputs.matrix }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - id: load
@@ -90,7 +90,7 @@ jobs:
           --health-retries=10
 
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
 
@@ -141,7 +141,7 @@ jobs:
 
     - name: Codecov upload
       if: ${{ steps.pytest_run.outcome == 'success' && matrix.python-version == needs.versions.outputs.min }}
-      uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         files: ./coverage.xml
         flags: backend
@@ -156,7 +156,7 @@ jobs:
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - uses: ./.github/actions/notify-nightly-failure

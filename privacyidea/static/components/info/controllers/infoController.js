@@ -27,6 +27,12 @@ myApp.controller("infoController", ["InfoFactory", "$scope", "$location",
         $scope.rss = [];
         $scope.getRSS = function () {
             InfoFactory.getRSS(function (rssfeeds) {
+                // RFC-822 pub_date strings -> Date so the date filter works.
+                angular.forEach(rssfeeds, function (feed) {
+                    angular.forEach(feed, function (item) {
+                        if (item.pub_date) item.pub_date = new Date(item.pub_date);
+                    });
+                });
                 $scope.rss = rssfeeds;
             });
         }

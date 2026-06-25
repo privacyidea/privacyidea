@@ -261,6 +261,45 @@ you configure pooling. It uses the settings from the above mentioned
    Other monitoring modules will follow.
 
 
+.. _picfg_metrics_health:
+
+Metrics and certificate health
+------------------------------
+
+These parameters control the internal metrics and the certificate-health
+information shown on the :ref:`dashboard`.
+
+``PI_NO_INTERNAL_METRICS`` (default ``False``). privacyIDEA records
+pre-aggregated timing and delivery metrics into the ``metric_aggregate`` table,
+which back the *Resolver Timing* and *Notification Delivery* dashboard panels.
+Set this to ``True`` to disable recording entirely; the panels then show no
+data and the table stays empty. Reads remain available and the
+``MetricsCleanup`` task (see :ref:`taskmodule_metricscleanup`) keeps working.
+
+``PI_CERT_CHECK_CACHE_SECONDS`` (default ``3600``) sets how long the results of
+the certificate-health checks are cached. The cache is also invalidated
+automatically whenever a resolver is saved or deleted.
+
+The certificate-health panel inspects the TLS certificates of your configured
+LDAP and Keycloak resolvers automatically. To additionally report on the
+privacyIDEA server certificate, set one or both of the following (both off by
+default, both admin-controlled and never derived from request data):
+
+``PI_SERVER_CERT_FILE`` - absolute path to a PEM (or DER) certificate file that
+the privacyIDEA process can read::
+
+    PI_SERVER_CERT_FILE = "/etc/letsencrypt/live/auth.example.com/fullchain.pem"
+
+``PI_HEALTH_CERT_PROBES`` - a list of ``{"host": "...", "port": int}`` endpoints
+that privacyIDEA opens a TLS connection to in order to read the served
+certificate::
+
+    PI_HEALTH_CERT_PROBES = [{"host": "127.0.0.1", "port": 443}]
+
+See :ref:`dashboard` for the full description of the panels these parameters
+feed.
+
+
 privacyIDEA Nodes
 -----------------
 

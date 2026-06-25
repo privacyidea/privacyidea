@@ -22,6 +22,7 @@ import logging
 from requests import Response
 
 from privacyidea.lib.error import ResolverError
+from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOINT, CONFIG_GET_USER_BY_ID,
                                                     CONFIG_GET_USER_BY_NAME, CONFIG_GET_USER_LIST, REQUEST_MAPPING,
                                                     RequestConfig, HEADERS, ADVANCED, RESPONSE_MAPPING,
@@ -127,6 +128,7 @@ class KeycloakResolver(HTTPResolver):
         """
         return KeycloakResolver.getResolverClassDescriptor()
 
+    @track_resolver_op("get_user_id")
     def getUserId(self, login_name: str) -> str:
         """
         Searches for a user by its name. Keycloak does not have an explicit endpoint for this purpose. Hence, we use
