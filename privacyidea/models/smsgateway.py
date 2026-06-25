@@ -82,7 +82,12 @@ class SMSGateway(MethodsMixin, db.Model):
             if option.Type == "option" or not option.Type:
                 value = option.Value
                 if value and any(kw in option.Key.upper() for kw in _SENSITIVE_OPTION_KEYWORDS):
-                    value = decryptPassword(value)
+                    try:
+                        decrypted = decryptPassword(value)
+                    except Exception:
+                        decrypted = None
+                    if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
+                        value = decrypted
                 res[option.Key] = value
         return res
 
