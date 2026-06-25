@@ -316,7 +316,12 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
       } else if (this.authService.containerWizard().enabled) {
         this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_WIZARD).then();
-      } else if (this.authService.role() === "user" || this.authService.anyTokenActionAllowed()) {
+      } else if (this.authService.role() === "user") {
+        // Self-service users have no dashboard yet; land on their token list.
+        this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
+      } else if (this.authService.adminDashboard()) {
+        this.router.navigateByUrl(ROUTE_PATHS.DASHBOARD).then();
+      } else if (this.authService.anyTokenActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       } else if (this.authService.anyContainerActionAllowed()) {
         this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS).then();
