@@ -438,7 +438,7 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === "audit") {
+@if (activeSection() === "logs") {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
@@ -448,15 +448,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.AUDIT]">
         <mat-icon>list_alt</mat-icon>
-        <span i18n>Log</span>
-      </a>
-    }
-    @if (authService.actionAllowed("clienttype")) {
-      <a
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CLIENTS]">
-        <mat-icon>recent_actors</mat-icon>
-        <span i18n>Known Clients</span>
+        <span i18n>Audit Log</span>
       </a>
     }
     @if (authService.actionAllowed("authentication_log_read")) {
@@ -465,6 +457,14 @@
         [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]">
         <mat-icon class="mdi--list-lock"></mat-icon>
         <span i18n>Authentication Log</span>
+      </a>
+    }
+    @if (authService.actionAllowed("clienttype")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CLIENTS]">
+        <mat-icon>recent_actors</mat-icon>
+        <span i18n>Known Clients</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>

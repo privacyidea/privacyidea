@@ -79,7 +79,7 @@ describe("AuditService (signals & helpers)", () => {
     jest.clearAllMocks();
     const getHeadersMock = jest.spyOn(authService, "getHeaders");
 
-    content.routeUrl.set("/audit");
+    content.routeUrl.set("/logs/audit");
     auditService.auditResource.reload();
     expect(getHeadersMock).toHaveBeenCalledTimes(1);
 
@@ -99,7 +99,7 @@ describe("AuditService (signals & helpers)", () => {
   });
 
   it("auditResource becomes active and derived params update", () => {
-    content.routeUrl.set("/audit");
+    content.routeUrl.set("/logs/audit");
     auditService.auditFilter.set(new FilterValue({ value: "serial: otp123" }));
     auditService.auditResource.reload();
 
