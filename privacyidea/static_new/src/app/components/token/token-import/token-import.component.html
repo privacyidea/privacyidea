@@ -52,7 +52,7 @@
         class="action-button-primary button-width-m margin-left-auto"
         mat-stroked-button>
         <mat-icon>input</mat-icon>
-        Import File
+        <span i18n>Import File</span>
       </button>
     </div>
   </div>
@@ -60,10 +60,14 @@
   <div class="margin-top-16 margin-left-16">
     @switch (fileType()) {
       @case ("aladdin-xml") {
-        Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
+        <div i18n>
+          Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
+        </div>
       }
       @case ("OATH CSV") {
-        <div class="margin-bottom-16">
+        <div
+          class="margin-bottom-16"
+          i18n>
           The file is supposed to contain one token per line. At least the serial number and the seed are required.
           Other parameters are optional. If not defined, the following default values are used:
           <ul>
@@ -73,37 +77,48 @@
           </ul>
         </div>
 
-        <div>HOTP and TOTP tokens:</div>
-        <div class="italic margin-bottom-16">serial number, seed, type, otp length, time step</div>
+        <div i18n>HOTP and TOTP tokens:</div>
+        <div
+          class="italic margin-bottom-16"
+          i18n>
+          serial number, seed, type, otp length, time step
+        </div>
 
-        <div>OCRA tokens:</div>
-        <div class="italic">serial number, seed, type, ocrasuite</div>
+        <div i18n>OCRA tokens:</div>
+        <div
+          class="italic"
+          i18n>
+          serial number, seed, type, ocrasuite
+        </div>
       }
       @case ("Yubikey CSV") {
-        <div>
+        <div i18n>
           The file is supposed to contain one token per line. If you are enrolling the Yubikey in HOTP mode, you should
           use the PSKC file format in the newer version of the Yubikey GUI.
         </div>
       }
       @case ("pskc") {
-        <div class="margin-bottom-32">
+        <div
+          class="margin-bottom-32"
+          i18n>
           This is an RFC6030 OATH compliant PSKC file. Values in the PSKC files may be unencrypted or either encrypted
           with a Pre Shared Key or password. If the values are encrypted, please specify the Pre Shared Key in hex
           format or the password.
         </div>
         <div>
           <mat-form-field class="input-width-xl margin-bottom-16">
-            <mat-label>Pre Shared Key</mat-label>
+            <mat-label i18n>Pre Shared Key</mat-label>
             <input
               [value]="preSharedKey()"
               (input)="preSharedKey.set($any($event.target).value)"
+              i18n-placeholder
               matInput
               placeholder="Pre Shared Key in hex format" />
-            <mat-hint
+            <mat-hint i18n
               >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
             </mat-hint>
             @if (!preSharedKeyValid()) {
-              <mat-error
+              <mat-error i18n
                 >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
               </mat-error>
             }
@@ -111,17 +126,18 @@
         </div>
         <div>
           <mat-form-field class="input-width-xl">
-            <mat-label>Password</mat-label>
+            <mat-label i18n>Password</mat-label>
             <input
               [value]="pskPassword()"
               (input)="pskPassword.set($any($event.target).value)"
+              i18n-placeholder
               matInput
               placeholder="Password" />
           </mat-form-field>
         </div>
         <div>
           <mat-form-field class="input-width-xl">
-            <mat-label>Verification Method for the Authenticity of Imported Tokens</mat-label>
+            <mat-label i18n>Verification Method for the Authenticity of Imported Tokens</mat-label>
             <mat-select
               (selectionChange)="pskValidation.set($event.value)"
               [value]="pskValidation()">
@@ -136,9 +152,9 @@
   </div>
 
   <div class="margin-bottom-16 margin-left-16">
-    <h4>Realm</h4>
+    <h4 i18n>Realm</h4>
     <mat-form-field class="input-width-l">
-      <mat-label>Select Realm for Tokens</mat-label>
+      <mat-label i18n>Select Realm for Tokens</mat-label>
       <mat-select
         (selectionChange)="selectedRealms.set($event.value)"
         [value]="selectedRealms()"
@@ -148,12 +164,12 @@
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-hint> All imported tokens will be added to these realms. </mat-hint>
+      <mat-hint i18n> All imported tokens will be added to these realms. </mat-hint>
     </mat-form-field>
   </div>
 
   <div class="margin-left-16">
-    <h4>Select File</h4>
+    <h4 i18n>Select File</h4>
 
     <div class="input-container file-input-container">
       @if (fileName()) {
@@ -165,7 +181,11 @@
           <mat-icon>add_circle</mat-icon>
         </button>
       } @else {
-        <span class="file-name not-selected">No file selected yet</span>
+        <span
+          class="file-name not-selected"
+          i18n
+          >No file selected yet</span
+        >
       }
     </div>
 
@@ -174,7 +194,7 @@
         <div class="flex just-center margin-bottom-8">
           <mat-icon>upload_file</mat-icon>
         </div>
-        Drag and Drop file here or
+        <span i18n>Drag and Drop file here or</span>
       </div>
 
       <input
@@ -186,10 +206,10 @@
       <div>
         <button
           (click)="fileUpload.click()"
-          class="action-button-secondary text-center just-center button-width-m"
+          class="action-button-secondary text-center just-center button-width-l"
           mat-stroked-button>
           <mat-icon>folder_open</mat-icon>
-          Browse Files
+          <span i18n>Browse Files</span>
         </button>
       </div>
     </div>
