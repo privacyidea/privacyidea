@@ -189,7 +189,7 @@ class MigrationEncryptionTestCase(MyTestCase):
 
         # Verify the model column size is 2000
         mapper = inspect(ChallengeModel)
-        data_col = mapper.columns['data']
+        data_col = mapper.columns['_data']
         self.assertEqual(data_col.type.length, 2000)
 
         # Create a challenge with a large data payload (up to original 512 chars)
